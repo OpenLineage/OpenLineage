@@ -6,7 +6,6 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.CONDITIONAL;
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.SORT;
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 
 import io.openlineage.client.utils.TransformationInfo;
@@ -21,6 +20,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.GenerateNodeVi
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.JoinNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ProjectNodeVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.SortNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
 import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
 import java.util.Arrays;
@@ -46,13 +46,11 @@ import org.apache.spark.sql.catalyst.expressions.RankLike;
 import org.apache.spark.sql.catalyst.expressions.RowNumberLike;
 import org.apache.spark.sql.catalyst.expressions.Sha1;
 import org.apache.spark.sql.catalyst.expressions.Sha2;
-import org.apache.spark.sql.catalyst.expressions.SortOrder;
 import org.apache.spark.sql.catalyst.expressions.WindowExpression;
 import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.catalyst.plans.logical.Sort;
 import org.apache.spark.sql.catalyst.plans.logical.Window;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import scala.Tuple2;
@@ -93,6 +91,7 @@ public class ExpressionDependencyCollector {
           new AggregateNodeVisitor(),
           new JoinNodeVisitor(),
           new FilterNodeVisitor(),
+          new SortNodeVisitor(),
           new UnionDependencyVisitor(),
           new IcebergMergeIntoDependencyVisitor());
 
@@ -114,10 +113,7 @@ public class ExpressionDependencyCollector {
     List<Expression> datasetDependencies = new LinkedList<>();
     Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
-    if (node instanceof Sort) {
-      datasetDependencies.addAll(ScalaConversionUtils.<SortOrder>fromSeq(((Sort) node).order()));
-      datasetTransformation = Optional.of(TransformationInfo.indirect(SORT));
-    } else if (node instanceof Window) {
+    if (node instanceof Window) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Window) node).windowExpressions()));
     } else if (node instanceof DataSourceV2Relation
