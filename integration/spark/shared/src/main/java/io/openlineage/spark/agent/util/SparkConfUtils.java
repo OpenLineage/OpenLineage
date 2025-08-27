@@ -12,18 +12,18 @@ import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
-import scala.Option;
 
 public class SparkConfUtils {
   private static final String metastoreUriKey = "spark.sql.hive.metastore.uris";
   private static final String metastoreHadoopUriKey = "hive.metastore.uris";
 
-  public static Optional<String> findSparkConfigKey(SparkConf conf, String name) {
-    Option<String> opt = conf.getOption(name);
-    if (opt.isDefined()) {
-      return Optional.of(opt.get());
-    }
-    return Optional.empty();
+  public static Optional<String> findSparkConfigKey(SparkConf conf, String... names) {
+    return Arrays.stream(names)
+        .map(conf::getOption)
+        .map(ScalaConversionUtils::asJavaOptional)
+        .filter(Optional::isPresent)
+        .findFirst()
+        .flatMap(opt -> opt);
   }
 
   public static Optional<String> findHadoopConfigKey(Configuration conf, String name) {
@@ -32,7 +32,8 @@ public class SparkConfUtils {
   }
 
   public static Optional<URI> getMetastoreUri(SparkContext context) {
-    Optional<String> metastoreUris = findSparkConfigKey(context.getConf(), metastoreUriKey);
+    Optional<String> metastoreUris =
+        findSparkConfigKey(context.getConf(), metastoreUriKey, metastoreHadoopUriKey);
     if (!metastoreUris.isPresent()) {
       metastoreUris = findHadoopConfigKey(context.hadoopConfiguration(), metastoreHadoopUriKey);
     }
