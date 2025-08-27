@@ -3,17 +3,16 @@
 
 from __future__ import annotations
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import JobFacet
 
 
-@define
+@attr.define
 class DocumentationJobFacet(JobFacet):
     description: str
     """The description of the job."""
 
-    contentType: str | None = attr_field(default=None)  # noqa: N815
+    contentType: str | None = attr.field(default=None)  # noqa: N815
     """MIME type of the description field content."""
 
     @staticmethod

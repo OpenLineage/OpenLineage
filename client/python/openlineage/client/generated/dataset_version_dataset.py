@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-from attr import define
+import attr
 from openlineage.client.generated.base import DatasetFacet
 
 
-@define
+@attr.define
 class DatasetVersionDatasetFacet(DatasetFacet):
     datasetVersion: str  # noqa: N815
     """The version of the dataset."""

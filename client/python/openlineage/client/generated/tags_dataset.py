@@ -3,15 +3,14 @@
 
 from __future__ import annotations
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
 
 
-@define
+@attr.define
 class TagsDatasetFacet(DatasetFacet):
-    tags: list[TagsDatasetFacetFields] | None = attr_field(factory=list)
+    tags: list[TagsDatasetFacetFields] | None = attr.field(factory=list)
     """The tags applied to the dataset facet"""
 
     @staticmethod
@@ -19,7 +18,7 @@ class TagsDatasetFacet(DatasetFacet):
         return "https://openlineage.io/spec/facets/1-0-0/TagsDatasetFacet.json#/$defs/TagsDatasetFacet"
 
 
-@define
+@attr.define
 class TagsDatasetFacetFields(RedactMixin):
     key: str
     """Key that identifies the tag"""
@@ -27,10 +26,10 @@ class TagsDatasetFacetFields(RedactMixin):
     value: str
     """The value of the field"""
 
-    source: str | None = attr_field(default=None)
+    source: str | None = attr.field(default=None)
     """The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc."""
 
-    field: str | None = attr_field(default=None)
+    field: str | None = attr.field(default=None)
     """Identifies the field in a dataset if a tag applies to one"""
 
     @staticmethod

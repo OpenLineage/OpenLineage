@@ -32,15 +32,10 @@ def camel_to_snake(string: str) -> str:
 
 # import attrs instead of dataclass
 DATA_MODELS_TYPES = get_data_model_types(
-    DataModelType.DataclassesDataclass, target_python_version=PythonVersion.PY_39
+    DataModelType.DataclassesDataclass, target_python_version=PythonVersion.PY_38
 )
 NEW_MODEL = DATA_MODELS_TYPES.data_model
-NEW_MODEL.DEFAULT_IMPORTS = (
-    Import.from_full_path("attr.define"),
-    Import(from_="attr", import_="field", alias="attr_field"),
-    Import.from_full_path("attr.make_class"),
-    Import.from_full_path("attr.fields"),
-)
+NEW_MODEL.DEFAULT_IMPORTS = (Import.from_full_path("attr"),)
 
 # custom code
 SET_PRODUCER_CODE = """

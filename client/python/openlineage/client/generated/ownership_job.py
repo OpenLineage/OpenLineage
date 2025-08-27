@@ -3,26 +3,25 @@
 
 from __future__ import annotations
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import JobFacet
 from openlineage.client.utils import RedactMixin
 
 
-@define
+@attr.define
 class Owner(RedactMixin):
     name: str
     """
     the identifier of the owner of the Job. It is recommended to define this as a URN. For example
     application:foo, user:jdoe, team:data
     """
-    type: str | None = attr_field(default=None)  # noqa: A003
+    type: str | None = attr.field(default=None)  # noqa: A003
     """The type of ownership (optional)"""
 
 
-@define
+@attr.define
 class OwnershipJobFacet(JobFacet):
-    owners: list[Owner] | None = attr_field(factory=list)
+    owners: list[Owner] | None = attr.field(factory=list)
     """The owners of the job."""
 
     @staticmethod
