@@ -6,7 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.CatalogUtils;
+import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -34,7 +34,7 @@ public class InsertIntoHiveDirVisitor
     InsertIntoHiveDirCommand cmd = (InsertIntoHiveDirCommand) x;
     Optional<URI> optionalUri = ScalaConversionUtils.asJavaOptional(cmd.storage().locationUri());
     Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacetForHive =
-        CatalogUtils.getCatalogDatasetFacetForHive(context);
+        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context);
     return optionalUri
         .map(
             uri -> {

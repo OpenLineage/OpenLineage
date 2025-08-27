@@ -7,7 +7,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.CatalogUtils;
+import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -45,7 +45,7 @@ public class HiveTableRelationVisitor<D extends Dataset>
         PathUtils.fromCatalogTable(hiveTable.tableMeta(), context.getSparkSession().get());
 
     return Collections.singletonList(
-        CatalogUtils.getCatalogDatasetFacetForHive(context)
+        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context)
             .map(
                 catalogDatasetFacet ->
                     factory.getDataset(datasetId, x.schema(), catalogDatasetFacet))

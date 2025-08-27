@@ -6,7 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.CatalogUtils;
+import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -49,7 +49,7 @@ public class InsertIntoHiveTableVisitor
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
     Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacetForHive =
-        CatalogUtils.getCatalogDatasetFacetForHive(context);
+        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context);
     OpenLineage.OutputDataset outputDataset;
     if (cmd.overwrite()) {
       outputDataset =

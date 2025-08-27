@@ -7,7 +7,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.CatalogUtils;
+import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -57,7 +57,7 @@ public class CreateHiveTableAsSelectCommandVisitor
                     attributes.get(index).withName(command.outputColumnNames().apply(index))));
 
     return Collections.singletonList(
-        CatalogUtils.getCatalogDatasetFacetForHive(context)
+        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context)
             .map(
                 catalogDatasetFacet ->
                     outputDataset()
