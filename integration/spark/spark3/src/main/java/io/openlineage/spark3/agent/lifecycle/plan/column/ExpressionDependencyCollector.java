@@ -22,12 +22,11 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.JoinNodeVisito
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ProjectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.SortNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.WindowNodeVisitor;
 import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.Alias;
@@ -41,7 +40,6 @@ import org.apache.spark.sql.catalyst.expressions.HiveHash;
 import org.apache.spark.sql.catalyst.expressions.If;
 import org.apache.spark.sql.catalyst.expressions.Md5;
 import org.apache.spark.sql.catalyst.expressions.Murmur3Hash;
-import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.expressions.RankLike;
 import org.apache.spark.sql.catalyst.expressions.RowNumberLike;
 import org.apache.spark.sql.catalyst.expressions.Sha1;
@@ -51,7 +49,6 @@ import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.catalyst.plans.logical.Window;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import scala.Tuple2;
 import scala.collection.Seq;
@@ -92,6 +89,7 @@ public class ExpressionDependencyCollector {
           new JoinNodeVisitor(),
           new FilterNodeVisitor(),
           new SortNodeVisitor(),
+          new WindowNodeVisitor(),
           new UnionDependencyVisitor(),
           new IcebergMergeIntoDependencyVisitor());
 
@@ -109,29 +107,10 @@ public class ExpressionDependencyCollector {
         .filter(collector -> collector.isDefinedAt(node))
         .forEach(collector -> collector.apply(node, builder));
 
-    List<NamedExpression> expressions = new LinkedList<>();
-    List<Expression> datasetDependencies = new LinkedList<>();
-    Optional<TransformationInfo> datasetTransformation = Optional.empty();
-
-    if (node instanceof Window) {
-      expressions.addAll(
-          ScalaConversionUtils.<NamedExpression>fromSeq(((Window) node).windowExpressions()));
-    } else if (node instanceof DataSourceV2Relation
+    if (node instanceof DataSourceV2Relation
         && ExtensionDataSourceV2Utils.hasQueryExtensionLineage((DataSourceV2Relation) node)) {
       QueryRelationColumnLineageCollector.extractExpressionsFromQuery(builder, node);
     }
-    expressions.stream()
-        .forEach(
-            expr ->
-                traverseExpression(
-                    (Expression) expr, expr.exprId(), TransformationInfo.identity(), builder));
-
-    datasetTransformation.ifPresent(
-        dt -> {
-          ExprId exprId = NamedExpression.newExprId();
-          builder.addDatasetDependency(exprId);
-          datasetDependencies.forEach(e -> traverseExpression(e, exprId, dt, builder));
-        });
   }
 
   public static void traverseExpression(

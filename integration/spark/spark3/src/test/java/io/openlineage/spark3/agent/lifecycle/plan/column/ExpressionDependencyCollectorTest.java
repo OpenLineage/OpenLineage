@@ -28,7 +28,6 @@ import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.BinaryExpression;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
 import org.apache.spark.sql.catalyst.expressions.Coalesce;
-import org.apache.spark.sql.catalyst.expressions.Descending$;
 import org.apache.spark.sql.catalyst.expressions.EqualTo;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
@@ -37,16 +36,9 @@ import org.apache.spark.sql.catalyst.expressions.If;
 import org.apache.spark.sql.catalyst.expressions.Literal;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.expressions.NullOrdering;
-import org.apache.spark.sql.catalyst.expressions.Rank;
-import org.apache.spark.sql.catalyst.expressions.RowFrame$;
 import org.apache.spark.sql.catalyst.expressions.Sha1;
 import org.apache.spark.sql.catalyst.expressions.SortDirection;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
-import org.apache.spark.sql.catalyst.expressions.SortOrder$;
-import org.apache.spark.sql.catalyst.expressions.SpecifiedWindowFrame$;
-import org.apache.spark.sql.catalyst.expressions.WindowExpression;
-import org.apache.spark.sql.catalyst.expressions.WindowExpression$;
-import org.apache.spark.sql.catalyst.expressions.WindowSpecDefinition$;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.plans.JoinType;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
@@ -56,7 +48,6 @@ import org.apache.spark.sql.catalyst.plans.logical.JoinHint;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.Sort;
-import org.apache.spark.sql.catalyst.plans.logical.Window;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
 import org.jetbrains.annotations.NotNull;
@@ -184,46 +175,6 @@ class ExpressionDependencyCollectorTest {
             exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
     verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.identity());
     verify(builder, times(1)).addDependency(exprId5, exprId4, TransformationInfo.identity());
-  }
-
-  @Test
-  void testCollectFromWindow() {
-    Seq<SortOrder> sortOrderSeq =
-        ScalaConversionUtils.fromList(
-            Collections.singletonList(
-                SortOrder$.MODULE$.apply(
-                    (Expression) expression1,
-                    Descending$.MODULE$,
-                    ScalaConversionUtils.asScalaSeqEmpty())));
-    Seq<Expression> partitionSeq = getExpressionSeq((Expression) expression2);
-    WindowExpression winExpr =
-        WindowExpression$.MODULE$.apply(
-            new Rank(getExpressionSeq((Expression) expression1)),
-            WindowSpecDefinition$.MODULE$.apply(
-                partitionSeq,
-                sortOrderSeq,
-                SpecifiedWindowFrame$.MODULE$.apply(
-                    mock(RowFrame$.MODULE$.getClass()),
-                    mock(Expression.class),
-                    mock(Expression.class))));
-
-    Window window =
-        new Window(
-            getNamedExpressionSeq(alias(exprId3, "rank", winExpr)),
-            partitionSeq,
-            sortOrderSeq,
-            mock(LogicalPlan.class));
-
-    LogicalPlan plan = new CreateTableAsSelect(null, null, null, window, null, null, false);
-    ExpressionDependencyCollector.collect(context, plan);
-
-    verify(builder, times(0)).addDependency(exprId3, exprId1, TransformationInfo.transformation());
-    verify(builder, times(1))
-        .addDependency(
-            exprId3, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.WINDOW));
-    verify(builder, times(1))
-        .addDependency(
-            exprId3, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.WINDOW));
   }
 
   @Test
