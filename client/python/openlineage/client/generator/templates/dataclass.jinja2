@@ -68,6 +68,7 @@ class {{ class_name }}:
     {%- else -%}
         {%- set type_hint = field.type_hint -%}
     {%- endif -%}
+    {%- set type_hint = type_hint.replace('_aliased', '') -%}
     {%- if field.field %}
     {{ field.name }}: {{ type_hint }} =
         {#- attrs requires field() for validators -#}

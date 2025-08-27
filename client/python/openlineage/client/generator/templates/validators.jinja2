@@ -39,5 +39,6 @@
 
 {%- macro validator_needed(type) -%}
     {#- generate validators only for below types -#}
-    {{ type in ['date-time', 'uuid', 'uri'] }}
+    {#- remove aliased introduced in #2379 -#}
+    {{ type.replace('_aliased', '') in ['date-time', 'uuid', 'uri'] }}
 {%- endmacro -%}
