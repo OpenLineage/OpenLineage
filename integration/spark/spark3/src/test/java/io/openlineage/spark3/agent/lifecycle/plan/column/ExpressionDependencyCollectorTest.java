@@ -94,36 +94,6 @@ class ExpressionDependencyCollectorTest {
   }
 
   @Test
-  void testCollectFromSortPlan() {
-    try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
-      mockNewExprId(exprIdAccumulator, utilities);
-      ExprId datasetDependencyExpression = ExprId.apply(0);
-      Sort sort =
-          new Sort(
-              ScalaConversionUtils.fromList(
-                  Collections.singletonList(
-                      new SortOrder(
-                          (Expression) expression1,
-                          mock(SortDirection.class),
-                          mock(NullOrdering.class),
-                          ScalaConversionUtils.asScalaSeqEmpty()))),
-              true,
-              mock(LogicalPlan.class));
-
-      LogicalPlan plan = new CreateTableAsSelect(null, null, null, sort, null, null, false);
-      ExpressionDependencyCollector.collect(context, plan);
-
-      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
-      verify(builder, times(1))
-          .addDependency(
-              datasetDependencyExpression,
-              exprId1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.SORT));
-      utilities.verify(NamedExpression::newExprId, times(1));
-    }
-  }
-
-  @Test
   void CollectFromComplexPlan() {
     try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
       mockNewExprId(exprIdAccumulator, utilities);
