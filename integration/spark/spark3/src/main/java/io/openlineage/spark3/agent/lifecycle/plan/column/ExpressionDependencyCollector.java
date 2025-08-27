@@ -14,6 +14,7 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContex
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.AggregateNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.CreateTableAsSelectNodeVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.DataSourceV2RelationNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.FilterNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.GenerateNodeVisitor;
@@ -23,7 +24,6 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ProjectNodeVis
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.SortNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.WindowNodeVisitor;
-import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +49,6 @@ import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import scala.Tuple2;
 import scala.collection.Seq;
 
@@ -90,6 +89,7 @@ public class ExpressionDependencyCollector {
           new FilterNodeVisitor(),
           new SortNodeVisitor(),
           new WindowNodeVisitor(),
+          new DataSourceV2RelationNodeVisitor(),
           new UnionDependencyVisitor(),
           new IcebergMergeIntoDependencyVisitor());
 
@@ -106,11 +106,6 @@ public class ExpressionDependencyCollector {
     expressionDependencyVisitors.stream()
         .filter(collector -> collector.isDefinedAt(node))
         .forEach(collector -> collector.apply(node, builder));
-
-    if (node instanceof DataSourceV2Relation
-        && ExtensionDataSourceV2Utils.hasQueryExtensionLineage((DataSourceV2Relation) node)) {
-      QueryRelationColumnLineageCollector.extractExpressionsFromQuery(builder, node);
-    }
   }
 
   public static void traverseExpression(
