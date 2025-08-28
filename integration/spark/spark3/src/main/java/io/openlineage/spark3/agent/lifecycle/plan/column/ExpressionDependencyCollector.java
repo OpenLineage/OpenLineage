@@ -12,6 +12,7 @@ import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionVisitor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -95,9 +96,13 @@ public class ExpressionDependencyCollector {
       TransformationInfo transformationInfo,
       ColumnLevelLineageBuilder builder) {
 
-    visitorFactory.expressionVisitors().stream()
-        .filter(collector -> collector.isDefinedAt(expr))
-        .forEach(collector -> collector.apply(expr, builder));
+    List<ExpressionVisitor> visitors = visitorFactory.expressionVisitors();
+    for (ExpressionVisitor v : visitors) {
+      if (v.isDefinedAt(expr)) {
+        v.apply(expr, builder);
+        return;
+      }
+    }
 
     if (expr instanceof AttributeReference) {
       AttributeReference attRef = (AttributeReference) expr;
