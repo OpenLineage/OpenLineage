@@ -31,6 +31,7 @@ public class ColumnLevelFixtures {
   public static final ExprId EXPR_ID_1 = ExprId.apply(21);
   public static final ExprId EXPR_ID_2 = ExprId.apply(22);
   public static final ExprId EXPR_ID_3 = ExprId.apply(23);
+  public static final ExprId EXPR_ID_4 = ExprId.apply(24);
 
   public static AttributeReference field(String name, ExprId exprId) {
     return new AttributeReference(
