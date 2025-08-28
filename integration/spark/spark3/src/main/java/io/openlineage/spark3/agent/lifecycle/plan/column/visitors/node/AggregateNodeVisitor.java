@@ -6,11 +6,11 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
 
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.GROUP_BY;
-import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -54,13 +54,16 @@ public class AggregateNodeVisitor implements NodeVisitor {
 
     ScalaConversionUtils.<Expression>fromSeq((aggregate).groupingExpressions())
         .forEach(
-            e -> traverseExpression(e, exprId, TransformationInfo.indirect(GROUP_BY), builder));
+            e ->
+                ExpressionTraverser.of(e, exprId, TransformationInfo.indirect(GROUP_BY), builder)
+                    .traverse());
 
     ScalaConversionUtils.<NamedExpression>fromSeq((aggregate).aggregateExpressions())
         .forEach(
             e ->
-                traverseExpression(
-                    (Expression) e, e.exprId(), TransformationInfo.identity(), builder));
+                ExpressionTraverser.of(
+                        (Expression) e, e.exprId(), TransformationInfo.identity(), builder)
+                    .traverse());
   }
 
   /**

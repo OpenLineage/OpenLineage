@@ -7,7 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -153,8 +153,8 @@ public class IcebergMergeIntoNodesVisitor implements NodeVisitor {
                   .filter(expr -> expr instanceof NamedExpression)
                   .forEach(
                       expr ->
-                          ExpressionDependencyCollector.traverseExpression(
-                              expr, output[position].exprId(), builder));
+                          ExpressionTraverser.of(expr, output[position].exprId(), builder)
+                              .traverse());
 
               notMatched.stream()
                   .filter(exprs -> exprs.size() > position)
@@ -162,8 +162,8 @@ public class IcebergMergeIntoNodesVisitor implements NodeVisitor {
                   .filter(expr -> expr instanceof NamedExpression)
                   .forEach(
                       expr ->
-                          ExpressionDependencyCollector.traverseExpression(
-                              expr, output[position].exprId(), builder));
+                          ExpressionTraverser.of(expr, output[position].exprId(), builder)
+                              .traverse());
             });
   }
 

@@ -3,9 +3,9 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression;
 
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 
 /** Interface to visit LogicalPlan's {@link Expression}s to collect expression dependencies. */
@@ -19,10 +19,10 @@ public interface ExpressionVisitor {
   boolean isDefinedAt(Expression expression);
 
   /**
-   * Processes the expression and records column-level lineage with the supplied builder.
+   * Traverses through the expression tree and records column-level lineage.
    *
    * @param expression the expression to process
-   * @param builder the lineage builder to which the visitor must add discovered dependencies
+   * @param traverser the expression traverser used to go through the expression tree
    */
-  void apply(Expression expression, ColumnLevelLineageBuilder builder);
+  void apply(Expression expression, ExpressionTraverser traverser);
 }

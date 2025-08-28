@@ -5,11 +5,10 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
 
-import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
-
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Window;
@@ -35,7 +34,8 @@ public class WindowNodeVisitor implements NodeVisitor {
     ScalaConversionUtils.fromSeq(((Window) plan).windowExpressions())
         .forEach(
             e ->
-                traverseExpression(
-                    (Expression) e, e.exprId(), TransformationInfo.identity(), builder));
+                ExpressionTraverser.of(
+                        (Expression) e, e.exprId(), TransformationInfo.identity(), builder)
+                    .traverse());
   }
 }
