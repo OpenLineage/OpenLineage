@@ -6,10 +6,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
 
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.FILTER;
-import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
@@ -35,6 +35,7 @@ public class FilterNodeVisitor implements NodeVisitor {
     Filter filter = (Filter) plan;
     ExprId exprId = NamedExpression.newExprId();
     builder.addDatasetDependency(exprId);
-    traverseExpression(filter.condition(), exprId, TransformationInfo.indirect(FILTER), builder);
+    ExpressionTraverser.of(filter.condition(), exprId, TransformationInfo.indirect(FILTER), builder)
+        .traverse();
   }
 }
