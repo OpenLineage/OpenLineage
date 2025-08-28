@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Window;
  * FROM payments;
  * }</pre>
  */
-public class WindowNodeVisitor implements ExpressionDependencyVisitor {
+public class WindowNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof Window;

@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Sort;
  * ORDER BY salary DESC;
  * }</pre>
  */
-public class SortNodeVisitor implements ExpressionDependencyVisitor {
+public class SortNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof Sort;

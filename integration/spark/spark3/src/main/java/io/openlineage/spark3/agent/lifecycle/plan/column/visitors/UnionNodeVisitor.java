@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Union;
  *     code</a>
  */
 @Slf4j
-public class UnionDependencyVisitor implements ExpressionDependencyVisitor {
+public class UnionNodeVisitor implements NodeVisitor {
 
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {

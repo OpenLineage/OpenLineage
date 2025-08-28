@@ -20,7 +20,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * Extracts expression dependencies from Generate node in {@link LogicalPlan}. Example query 'SELECT
  * explode(split(a, ' ')) AS a FROM t)'.
  */
-public class GenerateNodeVisitor implements ExpressionDependencyVisitor {
+public class GenerateNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof Generate;

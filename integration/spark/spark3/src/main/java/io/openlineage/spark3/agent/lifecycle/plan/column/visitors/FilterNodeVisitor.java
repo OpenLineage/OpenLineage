@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * WHERE salary > 50000;
  * }</pre>
  */
-public class FilterNodeVisitor implements ExpressionDependencyVisitor {
+public class FilterNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof Filter;
