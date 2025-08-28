@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
-import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
 import org.apache.spark.sql.catalyst.expressions.Coalesce;
@@ -125,9 +124,7 @@ public class ExpressionTraverser {
           return;
         }
       }
-      if (expression instanceof Alias) {
-        handleExpression((Alias) expression);
-      } else if (expression instanceof CaseWhen) {
+      if (expression instanceof CaseWhen) {
         handleExpression((CaseWhen) expression);
       } else if (expression instanceof If) {
         handleExpression((If) expression);
@@ -218,9 +215,5 @@ public class ExpressionTraverser {
     }
     ScalaConversionUtils.fromSeq(expr.windowSpec().children())
         .forEach(child -> copyFor(child, TransformationInfo.indirect(WINDOW)).traverse());
-  }
-
-  private void handleExpression(Alias expr) {
-    copyFor(expr.child(), TransformationInfo.identity()).traverse();
   }
 }
