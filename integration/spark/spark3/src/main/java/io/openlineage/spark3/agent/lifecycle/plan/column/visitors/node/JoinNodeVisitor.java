@@ -6,10 +6,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
 
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.JOIN;
-import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
@@ -39,7 +39,8 @@ public class JoinNodeVisitor implements NodeVisitor {
     if (condition.isDefined()) {
       ExprId exprId = NamedExpression.newExprId();
       builder.addDatasetDependency(exprId);
-      traverseExpression(condition.get(), exprId, TransformationInfo.indirect(JOIN), builder);
+      ExpressionTraverser.of(condition.get(), exprId, TransformationInfo.indirect(JOIN), builder)
+          .traverse();
     }
   }
 }
