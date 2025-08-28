@@ -30,7 +30,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Union;
  * GROUP BY dept;
  * }</pre>
  */
-public class AggregateNodeVisitor implements ExpressionDependencyVisitor {
+public class AggregateNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     boolean defined = false;

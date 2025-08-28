@@ -12,7 +12,7 @@ import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /** Extracts expression dependencies from CreateTableAsSelect node in {@link LogicalPlan}. */
-public class CreateTableAsSelectNodeVisitor implements ExpressionDependencyVisitor {
+public class CreateTableAsSelectNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof CreateTableAsSelect

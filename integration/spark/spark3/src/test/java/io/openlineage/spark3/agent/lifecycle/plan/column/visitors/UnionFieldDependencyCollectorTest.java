@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 class UnionFieldDependencyCollectorTest {
 
-  UnionDependencyVisitor visitor = new UnionDependencyVisitor();
+  UnionNodeVisitor visitor = new UnionNodeVisitor();
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
   ExprId exprId1 = mock(ExprId.class);

@@ -12,7 +12,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * Interface to visit custom {@link LogicalPlan} nodes to collect expression dependencies within the
  * plan.
  */
-public interface ExpressionDependencyVisitor {
+public interface NodeVisitor {
 
   /**
    * Verifies if the visitor should be applied on the plan

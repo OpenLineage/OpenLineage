@@ -23,7 +23,7 @@ import scala.collection.Seq;
 
 /** Custom visitor for `MERGE INTO TABLE` implementation of Iceberg provider. */
 @Slf4j
-public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVisitor {
+public class IcebergMergeIntoNodesVisitor implements NodeVisitor {
 
   // https://github.com/apache/iceberg/blob/apache-iceberg-0.13.1/spark/v3.2/spark-extensions/src/main/scala/org/apache/spark/sql/catalyst/plans/logical/MergeRows.scala
   // https://github.com/apache/iceberg/blob/apache-iceberg-1.3.0/spark/v3.4/spark-extensions/src/main/scala/org/apache/spark/sql/catalyst/plans/logical/MergeRows.scala
