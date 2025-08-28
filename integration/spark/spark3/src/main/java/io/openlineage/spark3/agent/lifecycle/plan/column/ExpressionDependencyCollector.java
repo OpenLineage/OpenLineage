@@ -15,14 +15,14 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.AggregateNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.CreateTableAsSelectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.DataSourceV2RelationNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.FilterNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.GenerateNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoNodesVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.JoinNodeVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.NodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ProjectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.SortNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.WindowNodeVisitor;
 import java.util.Arrays;
 import java.util.Collections;
@@ -79,7 +79,7 @@ public class ExpressionDependencyCollector {
         || classNames.stream().anyMatch(n -> n.equals(expression.getClass().getCanonicalName()));
   }
 
-  private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
+  private static final List<NodeVisitor> NODE_VISITORS =
       Arrays.asList(
           new ProjectNodeVisitor(),
           new GenerateNodeVisitor(),
@@ -90,8 +90,8 @@ public class ExpressionDependencyCollector {
           new SortNodeVisitor(),
           new WindowNodeVisitor(),
           new DataSourceV2RelationNodeVisitor(),
-          new UnionDependencyVisitor(),
-          new IcebergMergeIntoDependencyVisitor());
+          new UnionNodeVisitor(),
+          new IcebergMergeIntoNodesVisitor());
 
   static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
     plan.foreach(
@@ -103,7 +103,7 @@ public class ExpressionDependencyCollector {
   }
 
   public static void collectFromNode(ColumnLevelLineageBuilder builder, LogicalPlan node) {
-    expressionDependencyVisitors.stream()
+    NODE_VISITORS.stream()
         .filter(collector -> collector.isDefinedAt(node))
         .forEach(collector -> collector.apply(node, builder));
   }

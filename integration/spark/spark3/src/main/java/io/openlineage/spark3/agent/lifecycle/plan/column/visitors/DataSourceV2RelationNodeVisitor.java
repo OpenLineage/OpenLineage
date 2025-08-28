@@ -12,7 +12,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 /** Extracts expression dependencies from a DataSourceV2Relation node in {@link LogicalPlan}. */
-public class DataSourceV2RelationNodeVisitor implements ExpressionDependencyVisitor {
+public class DataSourceV2RelationNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof DataSourceV2Relation

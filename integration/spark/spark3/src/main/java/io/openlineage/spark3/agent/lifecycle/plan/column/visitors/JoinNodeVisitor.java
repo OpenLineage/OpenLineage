@@ -27,7 +27,7 @@ import scala.Option;
  *   ON o.customer_id = c.id;
  * }</pre>
  */
-public class JoinNodeVisitor implements ExpressionDependencyVisitor {
+public class JoinNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof Join;

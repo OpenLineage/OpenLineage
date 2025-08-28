@@ -14,7 +14,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 
 /** Extracts expression dependencies from Project node in {@link LogicalPlan}. */
-public class ProjectNodeVisitor implements ExpressionDependencyVisitor {
+public class ProjectNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof Project;
