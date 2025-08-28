@@ -249,3 +249,9 @@
   classes:
     - class_name: CatalogDatasetFacet
       redact_fields: []
+- module: database_hierarchy_dataset
+  classes:
+    - class_name: DatabaseHierarchyDatasetFacet
+      redact_fields: []
+    - class_name: DatabaseHierarchyDatasetFacetLevel
+      redact_fields: []
