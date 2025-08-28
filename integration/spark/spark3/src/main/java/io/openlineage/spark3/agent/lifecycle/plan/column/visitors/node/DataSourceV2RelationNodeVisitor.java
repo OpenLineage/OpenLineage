@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.column.QueryRelationColumnLineageCollector;

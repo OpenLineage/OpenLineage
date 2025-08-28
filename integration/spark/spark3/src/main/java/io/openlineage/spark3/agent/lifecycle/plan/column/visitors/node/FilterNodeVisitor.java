@@ -3,40 +3,38 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
 
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.SORT;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.FILTER;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
+import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.catalyst.plans.logical.Sort;
 
 /**
- * Extracts expression dependencies from a Sort node in {@link LogicalPlan}. Example query:
+ * Extracts expression dependencies from a Filter node in {@link LogicalPlan}. Example query:
  *
  * <pre>{@code
- * SELECT name, salary
+ * SELECT *
  * FROM employees
- * ORDER BY salary DESC;
+ * WHERE salary > 50000;
  * }</pre>
  */
-public class SortNodeVisitor implements NodeVisitor {
+public class FilterNodeVisitor implements NodeVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
-    return plan instanceof Sort;
+    return plan instanceof Filter;
   }
 
   @Override
   public void apply(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    Sort sort = (Sort) plan;
+    Filter filter = (Filter) plan;
     ExprId exprId = NamedExpression.newExprId();
     builder.addDatasetDependency(exprId);
-    ScalaConversionUtils.fromSeq(sort.order())
-        .forEach(e -> traverseExpression(e, exprId, TransformationInfo.indirect(SORT), builder));
+    traverseExpression(filter.condition(), exprId, TransformationInfo.indirect(FILTER), builder);
   }
 }
