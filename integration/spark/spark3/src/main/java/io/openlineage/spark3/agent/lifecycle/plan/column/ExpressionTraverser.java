@@ -116,7 +116,7 @@ public class ExpressionTraverser {
     if (isLeafNode()) {
       AttributeReference attRef = (AttributeReference) expression;
       if (!attRef.exprId().equals(outputExpressionId)) {
-        builder.addDependency(outputExpressionId, attRef.exprId(), transformationInfo);
+        addDependency(attRef.exprId());
       }
     } else {
       for (ExpressionVisitor v : visitors) {
@@ -134,63 +134,57 @@ public class ExpressionTraverser {
       } else if (expression instanceof Coalesce) {
         handleExpression((Coalesce) expression);
       } else if (expression instanceof AggregateExpression) {
-        handleExpression(
-            (AggregateExpression) expression, outputExpressionId, transformationInfo, builder);
+        handleExpression((AggregateExpression) expression);
       } else if (expression instanceof WindowExpression) {
         handleExpression((WindowExpression) expression);
-      } else if (shouldHandleAsGenericExpression()) {
+      } else if (shouldFallbackToGenericHandling()) {
         fromSeq(expression.children())
             .forEach(
                 child ->
-                    this.copyFor(child, TransformationInfo.transformation(isMasking(expression)))
+                    copyFor(child, TransformationInfo.transformation(isMasking(expression)))
                         .traverse());
       }
     }
+  }
+
+  public void addDependency(ExprId inputExprId) {
+    builder.addDependency(outputExpressionId, inputExprId, transformationInfo);
+  }
+
+  public void addDependency(ExprId inputExprId, TransformationInfo transformationInfo) {
+    builder.addDependency(
+        outputExpressionId, inputExprId, this.transformationInfo.merge(transformationInfo));
   }
 
   private boolean isLeafNode() {
     return expression instanceof AttributeReference;
   }
 
-  private boolean shouldHandleAsGenericExpression() {
+  private boolean shouldFallbackToGenericHandling() {
     return nonNull(expression) && nonNull(expression.children());
   }
 
-  private void handleExpression(
-      AggregateExpression expr,
-      ExprId outputExprId,
-      TransformationInfo transformationInfo,
-      ColumnLevelLineageBuilder builder) {
-    AggregateExpression aggr = expr;
-
+  private void handleExpression(AggregateExpression expr) {
     // in databricks `resultId` method is not present. Instead, there exists `resultIds`
     if (MethodUtils.getAccessibleMethod(AggregateExpression.class, "resultId") != null) {
-      builder.addDependency(
-          outputExprId,
-          aggr.resultId(),
-          transformationInfo.merge(TransformationInfo.aggregation()));
+      addDependency(expr.resultId(), TransformationInfo.aggregation());
     } else {
       try {
-        Seq<ExprId> resultIds = (Seq<ExprId>) MethodUtils.invokeMethod(aggr, "resultIds");
-        ScalaConversionUtils.<ExprId>fromSeq(resultIds).stream()
-            .forEach(
-                e ->
-                    builder.addDependency(
-                        outputExprId,
-                        e,
-                        transformationInfo.merge(TransformationInfo.aggregation())));
+        Seq<ExprId> resultIds = (Seq<ExprId>) MethodUtils.invokeMethod(expr, "resultIds");
+        ScalaConversionUtils.<ExprId>fromSeq(resultIds)
+            .forEach(e -> addDependency(e, TransformationInfo.aggregation()));
       } catch (Exception e) {
         // do nothing
         log.warn("Failed extracting resultIds from AggregateExpression", e);
       }
     }
-    this.copyFor(aggr.aggregateFunction(), TransformationInfo.aggregation()).traverse();
+    copyFor(expr.aggregateFunction(), TransformationInfo.aggregation()).traverse();
   }
 
   private void handleExpression(If expr) {
-    this.copyFor(expr.predicate(), TransformationInfo.indirect(CONDITIONAL)).traverse();
-    this.copyFor(expr.trueValue()).traverse();
-    this.copyFor(expr.falseValue()).traverse();
+    copyFor(expr.predicate(), TransformationInfo.indirect(CONDITIONAL)).traverse();
+    copyFor(expr.trueValue()).traverse();
+    copyFor(expr.falseValue()).traverse();
   }
 
   private void handleExpression(CaseWhen expr) {
@@ -198,10 +192,10 @@ public class ExpressionTraverser {
         ScalaConversionUtils.<Tuple2<Expression, Expression>>fromSeq(expr.branches());
     branches.stream()
         .map(e -> e._1)
-        .forEach(e -> this.copyFor(e, TransformationInfo.indirect(CONDITIONAL)).traverse());
-    branches.stream().map(e -> e._2).forEach(e -> this.copyFor(e).traverse());
+        .forEach(e -> copyFor(e, TransformationInfo.indirect(CONDITIONAL)).traverse());
+    branches.stream().map(e -> e._2).forEach(e -> copyFor(e).traverse());
     if (expr.elseValue().isDefined()) {
-      this.copyFor(expr.elseValue().get()).traverse();
+      copyFor(expr.elseValue().get()).traverse();
     }
   }
 
@@ -209,8 +203,8 @@ public class ExpressionTraverser {
     ScalaConversionUtils.fromSeq(expr.children())
         .forEach(
             e -> {
-              this.copyFor(e, TransformationInfo.indirect(CONDITIONAL)).traverse();
-              this.copyFor(e).traverse();
+              copyFor(e, TransformationInfo.indirect(CONDITIONAL)).traverse();
+              copyFor(e).traverse();
             });
   }
 
@@ -220,13 +214,13 @@ public class ExpressionTraverser {
     // even though value of rank is only indirectly dependent of X
     // so in case of RankLike and RowNumberLike we omit possible children
     if (!(expression instanceof RankLike || expression instanceof RowNumberLike)) {
-      this.copyFor(expr.windowFunction(), TransformationInfo.transformation()).traverse();
+      copyFor(expr.windowFunction(), TransformationInfo.transformation()).traverse();
     }
     ScalaConversionUtils.fromSeq(expr.windowSpec().children())
-        .forEach(child -> this.copyFor(child, TransformationInfo.indirect(WINDOW)).traverse());
+        .forEach(child -> copyFor(child, TransformationInfo.indirect(WINDOW)).traverse());
   }
 
   private void handleExpression(Alias expr) {
-    this.copyFor(expr.child(), TransformationInfo.identity()).traverse();
+    copyFor(expr.child(), TransformationInfo.identity()).traverse();
   }
 }
