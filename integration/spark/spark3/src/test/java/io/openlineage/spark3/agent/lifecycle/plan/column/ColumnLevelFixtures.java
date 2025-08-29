@@ -5,6 +5,8 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.mockito.Mockito.mock;
+
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Arrays;
 import java.util.concurrent.atomic.LongAccumulator;
@@ -16,6 +18,9 @@ import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.GreaterThan;
 import org.apache.spark.sql.catalyst.expressions.Literal;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
+import org.apache.spark.sql.catalyst.expressions.NullOrdering;
+import org.apache.spark.sql.catalyst.expressions.SortDirection;
+import org.apache.spark.sql.catalyst.expressions.SortOrder;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
 import org.mockito.MockedStatic;
@@ -43,12 +48,24 @@ public class ColumnLevelFixtures {
         ScalaConversionUtils.asScalaSeqEmpty());
   }
 
+  public static Literal intLiteral(int value) {
+    return new Literal(value, IntegerType$.MODULE$);
+  }
+
   public static EqualTo equalTo(Expression left, Expression right) {
     return new EqualTo(left, right);
   }
 
   public static GreaterThan greaterThan(AttributeReference field, int value) {
-    return new GreaterThan(field, new Literal(value, IntegerType$.MODULE$));
+    return new GreaterThan(field, intLiteral(value));
+  }
+
+  public static SortOrder sortOrder(AttributeReference field) {
+    return new SortOrder(
+        field,
+        mock(SortDirection.class),
+        mock(NullOrdering.class),
+        ScalaConversionUtils.asScalaSeqEmpty());
   }
 
   @SafeVarargs
