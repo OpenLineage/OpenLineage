@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.Crc32;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -31,9 +30,7 @@ import org.apache.spark.sql.catalyst.expressions.Sha1;
 import org.apache.spark.sql.catalyst.expressions.Sha2;
 import org.apache.spark.sql.catalyst.expressions.WindowExpression;
 import org.apache.spark.sql.catalyst.expressions.XxHash64;
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
-import scala.collection.Seq;
 
 @Slf4j
 public class ExpressionTraverser {
@@ -119,9 +116,7 @@ public class ExpressionTraverser {
           return;
         }
       }
-      if (expression instanceof AggregateExpression) {
-        handleExpression((AggregateExpression) expression);
-      } else if (expression instanceof WindowExpression) {
+      if (expression instanceof WindowExpression) {
         handleExpression((WindowExpression) expression);
       } else if (shouldFallbackToGenericHandling()) {
         fromSeq(expression.children())
@@ -148,23 +143,6 @@ public class ExpressionTraverser {
 
   private boolean shouldFallbackToGenericHandling() {
     return nonNull(expression) && nonNull(expression.children());
-  }
-
-  private void handleExpression(AggregateExpression expr) {
-    // in databricks `resultId` method is not present. Instead, there exists `resultIds`
-    if (MethodUtils.getAccessibleMethod(AggregateExpression.class, "resultId") != null) {
-      addDependency(expr.resultId(), TransformationInfo.aggregation());
-    } else {
-      try {
-        Seq<ExprId> resultIds = (Seq<ExprId>) MethodUtils.invokeMethod(expr, "resultIds");
-        ScalaConversionUtils.<ExprId>fromSeq(resultIds)
-            .forEach(e -> addDependency(e, TransformationInfo.aggregation()));
-      } catch (Exception e) {
-        // do nothing
-        log.warn("Failed extracting resultIds from AggregateExpression", e);
-      }
-    }
-    copyFor(expr.aggregateFunction(), TransformationInfo.aggregation()).traverse();
   }
 
   private void handleExpression(WindowExpression expr) {
