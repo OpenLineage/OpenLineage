@@ -338,6 +338,9 @@ public class PlanUtils {
     } catch (NoClassDefFoundError e) {
       log.info("isDefinedAt method failed on {}", e.getMessage());
       return false;
+    } catch (TypeNotPresentException e) {
+      log.info("isDefinedAt method failed due to missing type: {}", e.getTypeName());
+      return false;
     }
   }
 
