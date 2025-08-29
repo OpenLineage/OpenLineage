@@ -7,8 +7,10 @@ package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
 
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_1;
+import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.asSeq;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.field;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.mockNewExprId;
+import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.sortOrder;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -17,14 +19,9 @@ import static org.mockito.Mockito.verify;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import java.util.Collections;
 import java.util.concurrent.atomic.LongAccumulator;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
-import org.apache.spark.sql.catalyst.expressions.NullOrdering;
-import org.apache.spark.sql.catalyst.expressions.SortDirection;
-import org.apache.spark.sql.catalyst.expressions.SortOrder;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Sort;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,16 +51,7 @@ class SortNodeVisitorTest {
       mockNewExprId(exprIdAccumulator, utilities);
       ExprId datasetDependencyExpression = ExprId.apply(0);
       Sort sort =
-          new Sort(
-              ScalaConversionUtils.fromList(
-                  Collections.singletonList(
-                      new SortOrder(
-                          field(NAME_1, EXPR_ID_1),
-                          mock(SortDirection.class),
-                          mock(NullOrdering.class),
-                          ScalaConversionUtils.asScalaSeqEmpty()))),
-              true,
-              mock(LogicalPlan.class));
+          new Sort(asSeq(sortOrder(field(NAME_1, EXPR_ID_1))), true, mock(LogicalPlan.class));
 
       visitor.apply(sort, builder);
 

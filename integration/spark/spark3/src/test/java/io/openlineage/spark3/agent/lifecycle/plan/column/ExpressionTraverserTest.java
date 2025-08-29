@@ -13,7 +13,9 @@ import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtu
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_2;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_3;
+import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.equalTo;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.field;
+import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.intLiteral;
 import static org.mockito.Mockito.verify;
 
 import io.openlineage.client.utils.TransformationInfo;
@@ -21,13 +23,10 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilde
 import org.apache.spark.sql.catalyst.expressions.Add;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
-import org.apache.spark.sql.catalyst.expressions.EqualTo;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.If;
-import org.apache.spark.sql.catalyst.expressions.Literal;
 import org.apache.spark.sql.catalyst.expressions.Md5;
-import org.apache.spark.sql.types.IntegerType$;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -76,10 +75,7 @@ class ExpressionTraverserTest {
   @Test
   void shouldTraverseTheExpressionTree() {
     If ifExpr =
-        new If(
-            new EqualTo(LEAF_NODE_1, LEAF_NODE_2),
-            LEAF_NODE_3,
-            new Add(LEAF_NODE_3, new Literal(1, IntegerType$.MODULE$)));
+        new If(equalTo(LEAF_NODE_1, LEAF_NODE_2), LEAF_NODE_3, new Add(LEAF_NODE_3, intLiteral(1)));
     Alias res = alias(ifExpr).as("a", OUTPUT_EXPRESSION_ID);
 
     aTraverser(res, OUTPUT_EXPRESSION_ID).traverse();
@@ -101,7 +97,7 @@ class ExpressionTraverserTest {
 
   @Test
   void traverserFallsBackToGenericHandlingOfExpressions() {
-    Add unhandledExpression = new Add(LEAF_NODE_1, new Literal(1, IntegerType$.MODULE$));
+    Add unhandledExpression = new Add(LEAF_NODE_1, intLiteral(1));
 
     aTraverser(unhandledExpression, OUTPUT_EXPRESSION_ID).traverse();
 

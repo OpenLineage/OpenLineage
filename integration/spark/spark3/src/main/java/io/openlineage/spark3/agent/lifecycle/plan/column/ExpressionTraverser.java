@@ -5,13 +5,11 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
 import static java.util.Objects.nonNull;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.ExpressionVisitor;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,11 +22,8 @@ import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.HiveHash;
 import org.apache.spark.sql.catalyst.expressions.Md5;
 import org.apache.spark.sql.catalyst.expressions.Murmur3Hash;
-import org.apache.spark.sql.catalyst.expressions.RankLike;
-import org.apache.spark.sql.catalyst.expressions.RowNumberLike;
 import org.apache.spark.sql.catalyst.expressions.Sha1;
 import org.apache.spark.sql.catalyst.expressions.Sha2;
-import org.apache.spark.sql.catalyst.expressions.WindowExpression;
 import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 
@@ -103,28 +98,26 @@ public class ExpressionTraverser {
   }
 
   public void traverse() {
-    List<ExpressionVisitor> visitors = visitorFactory.expressionVisitors();
     if (isLeafNode()) {
       AttributeReference attRef = (AttributeReference) expression;
       if (!attRef.exprId().equals(outputExpressionId)) {
         addDependency(attRef.exprId());
       }
-    } else {
-      for (ExpressionVisitor v : visitors) {
-        if (v.isDefinedAt(expression)) {
-          v.apply(expression, this);
-          return;
-        }
+      return;
+    }
+
+    for (ExpressionVisitor v : visitorFactory.expressionVisitors()) {
+      if (v.isDefinedAt(expression)) {
+        v.apply(expression, this);
+        return;
       }
-      if (expression instanceof WindowExpression) {
-        handleExpression((WindowExpression) expression);
-      } else if (shouldFallbackToGenericHandling()) {
-        fromSeq(expression.children())
-            .forEach(
-                child ->
-                    copyFor(child, TransformationInfo.transformation(isMasking(expression)))
-                        .traverse());
-      }
+    }
+    if (shouldFallbackToGenericHandling()) {
+      fromSeq(expression.children())
+          .forEach(
+              child ->
+                  copyFor(child, TransformationInfo.transformation(isMasking(expression)))
+                      .traverse());
     }
   }
 
@@ -143,17 +136,5 @@ public class ExpressionTraverser {
 
   private boolean shouldFallbackToGenericHandling() {
     return nonNull(expression) && nonNull(expression.children());
-  }
-
-  private void handleExpression(WindowExpression expr) {
-    Expression expression = expr.windowFunction();
-    // in case of e.g. RANK() OVER (... ORDER BY X) we can get X as child of Rank
-    // even though value of rank is only indirectly dependent of X
-    // so in case of RankLike and RowNumberLike we omit possible children
-    if (!(expression instanceof RankLike || expression instanceof RowNumberLike)) {
-      copyFor(expr.windowFunction(), TransformationInfo.transformation()).traverse();
-    }
-    ScalaConversionUtils.fromSeq(expr.windowSpec().children())
-        .forEach(child -> copyFor(child, TransformationInfo.indirect(WINDOW)).traverse());
   }
 }
