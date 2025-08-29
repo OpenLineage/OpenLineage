@@ -12,7 +12,6 @@ import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtu
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_2;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_3;
-import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.asSeq;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.field;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,45 +23,42 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
-import org.apache.spark.sql.catalyst.expressions.CaseWhen;
 import org.apache.spark.sql.catalyst.expressions.Expression;
+import org.apache.spark.sql.catalyst.expressions.If;
 import org.junit.jupiter.api.Test;
-import scala.Option;
-import scala.Tuple2;
 
-class CaseWhenExpressionVisitorTest {
-  CaseWhenExpressionVisitor visitor = new CaseWhenExpressionVisitor();
-  ExpressionTraverser traverser = mock(ExpressionTraverser.class);
-  ExpressionTraverser predTrav = mock(ExpressionTraverser.class);
-  ExpressionTraverser thenTrav = mock(ExpressionTraverser.class);
-  ExpressionTraverser elseTrav = mock(ExpressionTraverser.class);
+class IfExpressionVisitorTest {
+  private final IfExpressionVisitor visitor = new IfExpressionVisitor();
+  private final ExpressionTraverser traverser = mock(ExpressionTraverser.class);
+  private final ExpressionTraverser predTrav = mock(ExpressionTraverser.class);
+  private final ExpressionTraverser trueTrav = mock(ExpressionTraverser.class);
+  private final ExpressionTraverser falseTrav = mock(ExpressionTraverser.class);
 
   @Test
   void testIsDefinedAt() {
-    assertTrue(visitor.isDefinedAt(mock(CaseWhen.class)));
+    assertTrue(visitor.isDefinedAt(mock(If.class)));
     assertFalse(visitor.isDefinedAt(mock(AttributeReference.class)));
   }
 
   @Test
   void testApply() {
-    Expression condExpr = field(NAME_1, EXPR_ID_1);
-    Expression thenExpr = field(NAME_2, EXPR_ID_2);
-    Expression elseExpr = field(NAME_3, EXPR_ID_3);
-    CaseWhen caseWhen =
-        new CaseWhen(asSeq(new Tuple2<>(condExpr, thenExpr)), Option.apply(elseExpr));
-    when(traverser.copyFor(eq(condExpr), any())).thenReturn(predTrav);
-    when(traverser.copyFor(thenExpr)).thenReturn(thenTrav);
-    when(traverser.copyFor(elseExpr)).thenReturn(elseTrav);
+    Expression predicate = field(NAME_1, EXPR_ID_1);
+    Expression trueVal = field(NAME_2, EXPR_ID_2);
+    Expression falseVal = field(NAME_3, EXPR_ID_3);
+    If expr = new If(predicate, trueVal, falseVal);
+    when(traverser.copyFor(eq(predicate), any())).thenReturn(predTrav);
+    when(traverser.copyFor(trueVal)).thenReturn(trueTrav);
+    when(traverser.copyFor(falseVal)).thenReturn(falseTrav);
 
-    visitor.apply(caseWhen, traverser);
+    visitor.apply(expr, traverser);
 
-    verify(traverser).copyFor(condExpr, TransformationInfo.indirect(CONDITIONAL));
+    verify(traverser).copyFor(predicate, TransformationInfo.indirect(CONDITIONAL));
     verify(predTrav).traverse();
 
-    verify(traverser).copyFor(thenExpr);
-    verify(thenTrav).traverse();
+    verify(traverser).copyFor(eq(trueVal));
+    verify(trueTrav).traverse();
 
-    verify(traverser).copyFor(elseExpr);
-    verify(elseTrav).traverse();
+    verify(traverser).copyFor(eq(falseVal));
+    verify(falseTrav).traverse();
   }
 }
