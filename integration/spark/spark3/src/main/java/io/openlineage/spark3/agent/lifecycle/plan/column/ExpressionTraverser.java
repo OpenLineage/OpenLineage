@@ -20,7 +20,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
-import org.apache.spark.sql.catalyst.expressions.CaseWhen;
 import org.apache.spark.sql.catalyst.expressions.Coalesce;
 import org.apache.spark.sql.catalyst.expressions.Crc32;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -37,7 +36,6 @@ import org.apache.spark.sql.catalyst.expressions.WindowExpression;
 import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
-import scala.Tuple2;
 import scala.collection.Seq;
 
 @Slf4j
@@ -124,9 +122,7 @@ public class ExpressionTraverser {
           return;
         }
       }
-      if (expression instanceof CaseWhen) {
-        handleExpression((CaseWhen) expression);
-      } else if (expression instanceof If) {
+      if (expression instanceof If) {
         handleExpression((If) expression);
       } else if (expression instanceof Coalesce) {
         handleExpression((Coalesce) expression);
@@ -182,18 +178,6 @@ public class ExpressionTraverser {
     copyFor(expr.predicate(), TransformationInfo.indirect(CONDITIONAL)).traverse();
     copyFor(expr.trueValue()).traverse();
     copyFor(expr.falseValue()).traverse();
-  }
-
-  private void handleExpression(CaseWhen expr) {
-    List<Tuple2<Expression, Expression>> branches =
-        ScalaConversionUtils.<Tuple2<Expression, Expression>>fromSeq(expr.branches());
-    branches.stream()
-        .map(e -> e._1)
-        .forEach(e -> copyFor(e, TransformationInfo.indirect(CONDITIONAL)).traverse());
-    branches.stream().map(e -> e._2).forEach(e -> copyFor(e).traverse());
-    if (expr.elseValue().isDefined()) {
-      copyFor(expr.elseValue().get()).traverse();
-    }
   }
 
   private void handleExpression(Coalesce expr) {
