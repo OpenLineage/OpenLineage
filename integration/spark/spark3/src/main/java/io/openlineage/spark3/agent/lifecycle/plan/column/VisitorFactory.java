@@ -11,6 +11,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.Cas
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.CoalesceExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.ExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.IfExpressionVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.WindowExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.AggregateNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.CreateTableAsSelectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.DataSourceV2RelationNodeVisitor;
@@ -51,6 +52,7 @@ class VisitorFactory {
             new CaseWhenExpressionVisitor(),
             new IfExpressionVisitor(),
             new CoalesceExpressionVisitor(),
-            new AggregateExpressionVisitor()));
+            new AggregateExpressionVisitor(),
+            new WindowExpressionVisitor()));
   }
 }
