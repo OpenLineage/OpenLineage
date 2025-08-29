@@ -24,14 +24,16 @@ Example:
     ...
     "inputs": {
         "facets": {
-          "_producer": "https://some.producer.com/version/1.0",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/CatalogDatasetFacet.json",
-          "framework": "iceberg",
-          "type": "polaris",
-          "name": "my_iceberg_catalog",
-          "metadataUri": "http://host:1234/iceberg_database",
-          "warehouseUri": "s3://bucket/path/to/iceberg/warehouse",
-          "source": "spark"
+            "catalog": {
+                "_producer": "https://some.producer.com/version/1.0",
+                "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/CatalogDatasetFacet.json",
+                "framework": "iceberg",
+                "type": "polaris",
+                "name": "my_iceberg_catalog",
+                "metadataUri": "http://host:1234/iceberg_database",
+                "warehouseUri": "s3://bucket/path/to/iceberg/warehouse",
+                "source": "spark"
+            }
         }
     }
     ...
