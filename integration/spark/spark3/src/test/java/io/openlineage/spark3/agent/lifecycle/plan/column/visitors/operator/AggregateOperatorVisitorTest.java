@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.AliasBuilder.alias;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
@@ -36,9 +36,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-class AggregateNodeVisitorTest {
+class AggregateOperatorVisitorTest {
 
-  AggregateNodeVisitor visitor = new AggregateNodeVisitor();
+  AggregateOperatorVisitor visitor = new AggregateOperatorVisitor();
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   LongAccumulator exprIdAccumulator = new LongAccumulator(Long::sum, 0L);
 

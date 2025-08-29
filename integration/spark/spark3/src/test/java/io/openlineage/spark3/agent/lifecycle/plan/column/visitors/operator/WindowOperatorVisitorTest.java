@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.AliasBuilder.alias;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
@@ -38,9 +38,9 @@ import org.apache.spark.sql.catalyst.plans.logical.Window;
 import org.junit.jupiter.api.Test;
 import scala.collection.immutable.Seq;
 
-class WindowNodeVisitorTest {
+class WindowOperatorVisitorTest {
 
-  WindowNodeVisitor visitor = new WindowNodeVisitor();
+  WindowOperatorVisitor visitor = new WindowOperatorVisitor();
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
   @Test

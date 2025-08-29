@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
@@ -14,7 +14,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Window;
 
 /**
- * Extracts expression dependencies from a Window node in {@link LogicalPlan}. Example query:
+ * Extracts expression dependencies from a Window operator in {@link LogicalPlan}. Example query:
  *
  * <pre>{@code
  * SELECT id,
@@ -23,15 +23,15 @@ import org.apache.spark.sql.catalyst.plans.logical.Window;
  * FROM payments;
  * }</pre>
  */
-public class WindowNodeVisitor implements NodeVisitor {
+public class WindowOperatorVisitor implements OperatorVisitor {
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
-    return plan instanceof Window;
+  public boolean isDefinedAt(LogicalPlan operator) {
+    return operator instanceof Window;
   }
 
   @Override
-  public void apply(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    ScalaConversionUtils.fromSeq(((Window) plan).windowExpressions())
+  public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
+    ScalaConversionUtils.fromSeq(((Window) operator).windowExpressions())
         .forEach(
             e ->
                 ExpressionTraverser.of(
