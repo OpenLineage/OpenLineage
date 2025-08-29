@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.expressions.Crc32;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.HiveHash;
-import org.apache.spark.sql.catalyst.expressions.If;
 import org.apache.spark.sql.catalyst.expressions.Md5;
 import org.apache.spark.sql.catalyst.expressions.Murmur3Hash;
 import org.apache.spark.sql.catalyst.expressions.RankLike;
@@ -122,9 +121,7 @@ public class ExpressionTraverser {
           return;
         }
       }
-      if (expression instanceof If) {
-        handleExpression((If) expression);
-      } else if (expression instanceof Coalesce) {
+      if (expression instanceof Coalesce) {
         handleExpression((Coalesce) expression);
       } else if (expression instanceof AggregateExpression) {
         handleExpression((AggregateExpression) expression);
@@ -172,12 +169,6 @@ public class ExpressionTraverser {
       }
     }
     copyFor(expr.aggregateFunction(), TransformationInfo.aggregation()).traverse();
-  }
-
-  private void handleExpression(If expr) {
-    copyFor(expr.predicate(), TransformationInfo.indirect(CONDITIONAL)).traverse();
-    copyFor(expr.trueValue()).traverse();
-    copyFor(expr.falseValue()).traverse();
   }
 
   private void handleExpression(Coalesce expr) {

@@ -8,6 +8,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.AliasExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.CaseWhenExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.ExpressionVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.IfExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.AggregateNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.CreateTableAsSelectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.DataSourceV2RelationNodeVisitor;
@@ -43,6 +44,9 @@ class VisitorFactory {
 
   List<ExpressionVisitor> expressionVisitors() {
     return Collections.unmodifiableList(
-        Arrays.asList(new AliasExpressionVisitor(), new CaseWhenExpressionVisitor()));
+        Arrays.asList(
+            new AliasExpressionVisitor(),
+            new CaseWhenExpressionVisitor(),
+            new IfExpressionVisitor()));
   }
 }
