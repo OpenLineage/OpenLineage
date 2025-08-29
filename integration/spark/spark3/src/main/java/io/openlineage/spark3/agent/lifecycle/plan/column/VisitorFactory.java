@@ -12,37 +12,37 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.Coa
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.ExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.IfExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.WindowExpressionVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.AggregateNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.CreateTableAsSelectNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.DataSourceV2RelationNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.FilterNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.GenerateNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.IcebergMergeIntoNodesVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.JoinNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.NodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.ProjectNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.SortNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.UnionNodeVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.WindowNodeVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.AggregateOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.CreateTableAsSelectOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.DataSourceV2RelationOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.FilterOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.GenerateOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.IcebergMergeIntoOperatorsVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.JoinOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.OperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.ProjectOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.SortOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.UnionOperatorVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.WindowOperatorVisitor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 class VisitorFactory {
-  List<NodeVisitor> nodeVisitors() {
+  List<OperatorVisitor> operatorVisitors() {
     return Collections.unmodifiableList(
         Arrays.asList(
-            new ProjectNodeVisitor(),
-            new GenerateNodeVisitor(),
-            new CreateTableAsSelectNodeVisitor(),
-            new AggregateNodeVisitor(),
-            new JoinNodeVisitor(),
-            new FilterNodeVisitor(),
-            new SortNodeVisitor(),
-            new WindowNodeVisitor(),
-            new DataSourceV2RelationNodeVisitor(),
-            new UnionNodeVisitor(),
-            new IcebergMergeIntoNodesVisitor()));
+            new ProjectOperatorVisitor(),
+            new GenerateOperatorVisitor(),
+            new CreateTableAsSelectOperatorVisitor(),
+            new AggregateOperatorVisitor(),
+            new JoinOperatorVisitor(),
+            new FilterOperatorVisitor(),
+            new SortOperatorVisitor(),
+            new WindowOperatorVisitor(),
+            new DataSourceV2RelationOperatorVisitor(),
+            new UnionOperatorVisitor(),
+            new IcebergMergeIntoOperatorsVisitor()));
   }
 
   List<ExpressionVisitor> expressionVisitors() {

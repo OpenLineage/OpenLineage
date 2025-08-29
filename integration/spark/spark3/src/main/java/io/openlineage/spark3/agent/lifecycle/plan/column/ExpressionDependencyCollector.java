@@ -20,16 +20,16 @@ public class ExpressionDependencyCollector {
 
   static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
     plan.foreach(
-        node -> {
-          CustomCollectorsUtils.collectExpressionDependencies(context, node);
-          collectFromNode(context.getBuilder(), node);
+        operator -> {
+          CustomCollectorsUtils.collectExpressionDependencies(context, operator);
+          collectFromOperator(context.getBuilder(), operator);
           return scala.runtime.BoxedUnit.UNIT;
         });
   }
 
-  public static void collectFromNode(ColumnLevelLineageBuilder builder, LogicalPlan node) {
-    visitorFactory.nodeVisitors().stream()
-        .filter(collector -> collector.isDefinedAt(node))
-        .forEach(collector -> collector.apply(node, builder));
+  public static void collectFromOperator(ColumnLevelLineageBuilder builder, LogicalPlan operator) {
+    visitorFactory.operatorVisitors().stream()
+        .filter(collector -> collector.isDefinedAt(operator))
+        .forEach(collector -> collector.apply(operator, builder));
   }
 }

@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
@@ -16,18 +16,18 @@ import org.apache.spark.sql.catalyst.plans.logical.Generate;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
- * Extracts expression dependencies from Generate node in {@link LogicalPlan}. Example query 'SELECT
- * explode(split(a, ' ')) AS a FROM t)'.
+ * Extracts expression dependencies from Generate operator in {@link LogicalPlan}. Example query
+ * 'SELECT explode(split(a, ' ')) AS a FROM t)'.
  */
-public class GenerateNodeVisitor implements NodeVisitor {
+public class GenerateOperatorVisitor implements OperatorVisitor {
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
-    return plan instanceof Generate;
+  public boolean isDefinedAt(LogicalPlan operator) {
+    return operator instanceof Generate;
   }
 
   @Override
-  public void apply(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    Generate node = (Generate) plan;
+  public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
+    Generate node = (Generate) operator;
     List<Attribute> attributes = ScalaConversionUtils.fromSeq(node.generatorOutput());
     List<Expression> children =
         ScalaConversionUtils.fromSeq(((Expression) node.generator()).children());

@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_2;
@@ -38,8 +38,8 @@ import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.immutable.Seq;
 
-class DataSourceV2RelationNodeVisitorTest {
-  DataSourceV2RelationNodeVisitor visitor = new DataSourceV2RelationNodeVisitor();
+class DataSourceV2RelationOperatorVisitorTest {
+  DataSourceV2RelationOperatorVisitor visitor = new DataSourceV2RelationOperatorVisitor();
   ColumnLevelLineageBuilder builder =
       spy(
           new ColumnLevelLineageBuilder(
