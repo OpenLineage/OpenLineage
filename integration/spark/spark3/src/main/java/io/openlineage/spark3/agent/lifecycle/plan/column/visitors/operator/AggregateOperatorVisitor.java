@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.GROUP_BY;
 
@@ -22,7 +22,8 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Union;
 
 /**
- * Extracts expression dependencies from an Aggregate node in {@link LogicalPlan}. Example query:
+ * Extracts expression dependencies from an Aggregate operator in {@link LogicalPlan}. Example
+ * query:
  *
  * <pre>{@code
  * SELECT dept, SUM(salary) AS total_salary
@@ -30,12 +31,12 @@ import org.apache.spark.sql.catalyst.plans.logical.Union;
  * GROUP BY dept;
  * }</pre>
  */
-public class AggregateNodeVisitor implements NodeVisitor {
+public class AggregateOperatorVisitor implements OperatorVisitor {
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
+  public boolean isDefinedAt(LogicalPlan operator) {
     boolean defined = false;
-    if (plan instanceof Aggregate) {
-      Aggregate aggregate = (Aggregate) plan;
+    if (operator instanceof Aggregate) {
+      Aggregate aggregate = (Aggregate) operator;
       // don't add group by transformations if child is UNION and aggregate contains group by
       // expressions for all aggregate expressions
       if (!(aggregate.child() instanceof Union && doesGroupByAllAggregateExpressions(aggregate))) {
@@ -46,8 +47,8 @@ public class AggregateNodeVisitor implements NodeVisitor {
   }
 
   @Override
-  public void apply(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    Aggregate aggregate = (Aggregate) plan;
+  public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
+    Aggregate aggregate = (Aggregate) operator;
 
     ExprId exprId = NamedExpression.newExprId();
     builder.addDatasetDependency(exprId);

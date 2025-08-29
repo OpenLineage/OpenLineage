@@ -50,7 +50,7 @@ class WindowExpressionVisitorTest {
     windowFuncTraverser = mock(ExpressionTraverser.class);
     windowSpecTraverser = mock(ExpressionTraverser.class);
   }
-  
+
   @Test
   void testIsDefinedAt() {
     assertTrue(visitor.isDefinedAt(mock(WindowExpression.class)));
