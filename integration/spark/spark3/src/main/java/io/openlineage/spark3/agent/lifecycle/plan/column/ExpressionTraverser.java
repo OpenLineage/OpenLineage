@@ -5,7 +5,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.CONDITIONAL;
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
 import static java.util.Objects.nonNull;
@@ -20,7 +19,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
-import org.apache.spark.sql.catalyst.expressions.Coalesce;
 import org.apache.spark.sql.catalyst.expressions.Crc32;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
@@ -121,9 +119,7 @@ public class ExpressionTraverser {
           return;
         }
       }
-      if (expression instanceof Coalesce) {
-        handleExpression((Coalesce) expression);
-      } else if (expression instanceof AggregateExpression) {
+      if (expression instanceof AggregateExpression) {
         handleExpression((AggregateExpression) expression);
       } else if (expression instanceof WindowExpression) {
         handleExpression((WindowExpression) expression);
@@ -169,15 +165,6 @@ public class ExpressionTraverser {
       }
     }
     copyFor(expr.aggregateFunction(), TransformationInfo.aggregation()).traverse();
-  }
-
-  private void handleExpression(Coalesce expr) {
-    ScalaConversionUtils.fromSeq(expr.children())
-        .forEach(
-            e -> {
-              copyFor(e, TransformationInfo.indirect(CONDITIONAL)).traverse();
-              copyFor(e).traverse();
-            });
   }
 
   private void handleExpression(WindowExpression expr) {
