@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.AliasExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.CaseWhenExpressionVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.CoalesceExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.ExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.IfExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.node.AggregateNodeVisitor;
@@ -47,6 +48,7 @@ class VisitorFactory {
         Arrays.asList(
             new AliasExpressionVisitor(),
             new CaseWhenExpressionVisitor(),
-            new IfExpressionVisitor()));
+            new IfExpressionVisitor(),
+            new CoalesceExpressionVisitor()));
   }
 }
