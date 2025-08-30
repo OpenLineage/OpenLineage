@@ -3,8 +3,8 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-import io.openlineage.sql.OpenLineageSql;
-import io.openlineage.sql.SqlMeta;
+import shaded.io.openlineage.sql.OpenLineageSql;
+import shaded.io.openlineage.sql.SqlMeta;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;

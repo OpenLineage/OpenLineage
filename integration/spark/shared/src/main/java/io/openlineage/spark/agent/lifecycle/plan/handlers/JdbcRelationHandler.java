@@ -8,7 +8,7 @@ package io.openlineage.spark.agent.lifecycle.plan.handlers;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.api.DatasetFactory;
-import io.openlineage.sql.SqlMeta;
+import shaded.io.openlineage.sql.SqlMeta;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

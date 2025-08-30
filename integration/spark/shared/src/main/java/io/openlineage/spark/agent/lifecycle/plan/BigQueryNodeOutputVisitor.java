@@ -11,7 +11,9 @@ import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ReflectionUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -25,6 +27,7 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
+import org.apache.spark.sql.types.StructType;
 import scala.Option;
 
 /**
@@ -37,67 +40,78 @@ import scala.Option;
  */
 @Slf4j
 public class BigQueryNodeOutputVisitor
-    extends QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset> {
-  private static final String BIGQUERY_NAMESPACE = "bigquery";
-  private final DatasetFactory<OpenLineage.OutputDataset> factory;
+        extends QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset> {
+    private static final String BIGQUERY_NAMESPACE = "bigquery";
+    private final DatasetFactory<OpenLineage.OutputDataset> factory;
 
-  public BigQueryNodeOutputVisitor(
-      OpenLineageContext context, DatasetFactory<OpenLineage.OutputDataset> factory) {
-    super(context);
-    this.factory = factory;
-  }
-
-  @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
-    return plan instanceof SaveIntoDataSourceCommand
-        && ReflectionUtils.hasClass("com.google.cloud.spark.bigquery.BigQueryRelationProvider")
-        && ((SaveIntoDataSourceCommand) plan).dataSource() instanceof BigQueryRelationProvider;
-  }
-
-  private String getFromSaveIntoDataSourceCommand(
-      SaveIntoDataSourceCommand saveCommand, SparkSession session) {
-    SQLContext sqlContext = session.sqlContext();
-    BigQueryRelationProvider bqRelationProvider =
-        (BigQueryRelationProvider) saveCommand.dataSource();
-    SparkBigQueryConfig config =
-        bqRelationProvider.createSparkBigQueryConfig(
-            sqlContext, saveCommand.options(), Option.apply(saveCommand.schema()));
-    return getBigQueryTableName(config).get();
-  }
-
-  private static Optional<Object> extractDatasetIdentifierFromTableId(Object tableId) {
-    return Stream.of(
-            ReflectionUtils.tryExecuteStaticMethodForClassName(
-                "com.google.cloud.bigquery.connector.common.BigQueryUtil",
-                "friendlyTableName",
-                tableId),
-            ReflectionUtils.tryExecuteStaticMethodForClassName(
-                "com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryUtil",
-                "friendlyTableName",
-                tableId))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .findFirst();
-  }
-
-  private Optional<String> getBigQueryTableName(SparkBigQueryConfig config) {
-    return tryExecuteMethod(config, "getTableId")
-        .flatMap(BigQueryNodeOutputVisitor::extractDatasetIdentifierFromTableId)
-        .map(x -> (String) x);
-  }
-
-  @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan plan) {
-    SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
-    Optional<SparkSession> session = SparkSessionUtils.activeSession();
-    if (session.isPresent()) {
-      return Collections.singletonList(
-          factory.getDataset(
-              getFromSaveIntoDataSourceCommand(saveCommand, session.get()),
-              BIGQUERY_NAMESPACE,
-              saveCommand.schema()));
-    } else {
-      return Collections.emptyList();
+    public BigQueryNodeOutputVisitor(
+            OpenLineageContext context, DatasetFactory<OpenLineage.OutputDataset> factory) {
+        super(context);
+        this.factory = factory;
     }
-  }
+
+    @Override
+    public boolean isDefinedAt(LogicalPlan plan) {
+        return plan instanceof SaveIntoDataSourceCommand
+                && ReflectionUtils.hasClass("com.google.cloud.spark.bigquery.BigQueryRelationProvider")
+                && ((SaveIntoDataSourceCommand) plan).dataSource() instanceof BigQueryRelationProvider;
+    }
+
+    private String getFromSaveIntoDataSourceCommand(
+            SaveIntoDataSourceCommand saveCommand, SparkSession session) {
+        SQLContext sqlContext = session.sqlContext();
+        BigQueryRelationProvider bqRelationProvider =
+                (BigQueryRelationProvider) saveCommand.dataSource();
+        SparkBigQueryConfig config =
+                bqRelationProvider.createSparkBigQueryConfig(
+                        sqlContext, saveCommand.options(), Option.apply(saveCommand.schema()));
+        return getBigQueryTableName(config).get();
+    }
+
+    private static Optional<Object> extractDatasetIdentifierFromTableId(Object tableId) {
+        return Stream.of(
+                        ReflectionUtils.tryExecuteStaticMethodForClassName(
+                                "com.google.cloud.bigquery.connector.common.BigQueryUtil",
+                                "friendlyTableName",
+                                tableId),
+                        ReflectionUtils.tryExecuteStaticMethodForClassName(
+                                "com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryUtil",
+                                "friendlyTableName",
+                                tableId))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
+    private Optional<String> getBigQueryTableName(SparkBigQueryConfig config) {
+        return tryExecuteMethod(config, "getTableId")
+                .flatMap(BigQueryNodeOutputVisitor::extractDatasetIdentifierFromTableId)
+                .map(x -> (String) x);
+    }
+
+    private StructType getSchema(SaveIntoDataSourceCommand command) {
+        StructType schema = command.schema();
+        if ((schema == null || schema.fields() == null || schema.fields().length == 0)
+                && command.query() != null
+                && command.query().output() != null) {
+            // get schema from logical plan's output
+            schema = PlanUtils.toStructType(ScalaConversionUtils.fromSeq(command.query().output()));
+        }
+        return schema;
+    }
+
+    @Override
+    public List<OpenLineage.OutputDataset> apply(LogicalPlan plan) {
+        SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
+        Optional<SparkSession> session = SparkSessionUtils.activeSession();
+        if (session.isPresent()) {
+            return Collections.singletonList(
+                    factory.getDataset(
+                            getFromSaveIntoDataSourceCommand(saveCommand, session.get()),
+                            BIGQUERY_NAMESPACE,
+                            getSchema(saveCommand)));
+        } else {
+            return Collections.emptyList();
+        }
+    }
 }
