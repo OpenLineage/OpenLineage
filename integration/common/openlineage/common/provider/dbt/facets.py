@@ -16,9 +16,9 @@ class ParentRunMetadata:
     run_id: str
     job_name: str
     job_namespace: str
-    root_parent_job_name: Optional[str] = None
-    root_parent_job_namespace: Optional[str] = None
-    root_parent_run_id: Optional[str] = None
+    root_parent_job_name: Optional[str] = attr.field(default=None)
+    root_parent_job_namespace: Optional[str] = attr.field(default=None)
+    root_parent_run_id: Optional[str] = attr.field(default=None)
 
     def to_openlineage(self) -> parent_run.ParentRunFacet:
         root = None
@@ -49,6 +49,10 @@ class DbtVersionRunFacet(BaseFacet):
 @attr.define
 class DbtRunRunFacet(BaseFacet):
     invocation_id: str
+    project_name: Optional[str] = attr.field(default=None)
+    dbt_runtime: Optional[str] = attr.field(default=None)
+    project_version: Optional[str] = attr.field(default=None)
+    profile_name: Optional[str] = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:

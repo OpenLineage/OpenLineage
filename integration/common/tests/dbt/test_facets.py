@@ -14,6 +14,8 @@ def test_facet_copy_serialization_dbt_version_run_facet():
 
 
 def test_facet_copy_serialization_dbt_run_run_facet():
-    facet = DbtRunRunFacet(invocation_id="invocation_id", producer="producer")
+    facet = DbtRunRunFacet(
+        invocation_id="invocation_id", project_name="project_name", dbt_runtime="core", producer="producer"
+    )
     facet_copy = copy.deepcopy(facet)
     assert Serde.to_json(facet) == Serde.to_json(facet_copy)

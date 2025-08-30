@@ -744,11 +744,9 @@ class DbtArtifactProcessor:
         )
         return {"dbt_version": DbtVersionRunFacet(version=dbt_version)}
 
+    @abstractmethod
     def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]:
-        invocation_id = self.run_metadata.get("invocation_id")
-        if not invocation_id:
-            return {}
-        return {"dbt_run": DbtRunRunFacet(invocation_id=invocation_id)}
+        ...
 
     def processing_engine_facet(self) -> dict[str, processing_engine_run.ProcessingEngineRunFacet]:
         dbt_version = self.run_metadata.get("dbt_version")
