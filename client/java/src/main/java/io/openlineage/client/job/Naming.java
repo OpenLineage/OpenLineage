@@ -15,6 +15,7 @@ import lombok.Builder;
  *
  * <ul>
  *   <li>Spark: {@code {appName}.{command}.{table}}
+ *   <li>Hive: {@code {operationName}}
  * </ul>
  */
 @SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass")
@@ -65,6 +66,24 @@ public class Naming {
     @Override
     public String getName() {
       return appName + (command != null ? "." + command : "") + (table != null ? "." + table : "");
+    }
+  }
+
+  /** Represents a Hive job name */
+  @Builder
+  public static class Hive implements JobName {
+    private final String operationName;
+
+    public Hive(String operationName) {
+      if (operationName == null || operationName.isEmpty()) {
+        throw new IllegalArgumentException("operationName must be non-empty");
+      }
+      this.operationName = operationName;
+    }
+
+    @Override
+    public String getName() {
+      return operationName;
     }
   }
 }
