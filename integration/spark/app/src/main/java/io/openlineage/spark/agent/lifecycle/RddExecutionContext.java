@@ -10,10 +10,14 @@ import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.OutputDatasetBuilder;
+import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.JobMetricsHolder;
+import io.openlineage.spark.agent.JobMetricsHolder.Metric;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.builder.SparkJobDetailsFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
@@ -38,6 +42,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -72,6 +78,7 @@ class RddExecutionContext implements ExecutionContext {
   private List<URI> inputs = Collections.emptyList();
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
+  private Integer activeJobId;
 
   public RddExecutionContext(
       OpenLineageContext olContext,
@@ -98,6 +105,7 @@ class RddExecutionContext implements ExecutionContext {
   @SuppressWarnings("PMD") // f.setAccessible(true);
   public void setActiveJob(ActiveJob activeJob) {
     log.debug("setActiveJob within RddExecutionContext {}", activeJob);
+    olContext.setActiveJobId(activeJob.jobId());
     RDD<?> finalRDD = activeJob.finalStage().rdd();
     this.jobSuffix = nameRDD(finalRDD);
     Set<RDD<?>> rdds = Rdds.flattenRDDs(finalRDD, new HashSet<>());
@@ -131,6 +139,7 @@ class RddExecutionContext implements ExecutionContext {
       }
       log.info("Found job conf from RDD {}", jobConf);
     }
+    this.activeJobId = activeJob.jobId();
     this.outputs = findOutputs(finalRDD, jobConf);
   }
 
@@ -397,7 +406,12 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected List<OpenLineage.OutputDataset> buildOutputs(List<URI> outputs) {
-    return outputs.stream().map(this::buildOutputDataset).collect(Collectors.toList());
+    return outputs.stream()
+        .map(
+            d ->
+                buildOutputDataset(
+                    d, outputs.size() == 1)) // output statistics only for single output
+        .collect(Collectors.toList());
   }
 
   protected OpenLineage.InputDataset buildInputDataset(URI uri) {
@@ -410,14 +424,54 @@ class RddExecutionContext implements ExecutionContext {
         .build();
   }
 
-  protected OpenLineage.OutputDataset buildOutputDataset(URI uri) {
+  protected OpenLineage.OutputDataset buildOutputDataset(URI uri, boolean withOutputStatistics) {
     DatasetIdentifier di = PathUtils.fromURI(uri);
-    return olContext
-        .getOpenLineage()
-        .newOutputDatasetBuilder()
-        .name(di.getName())
-        .namespace(di.getNamespace())
-        .build();
+
+    OutputDatasetBuilder builder = olContext.getOpenLineage().newOutputDatasetBuilder();
+    if (withOutputStatistics) {
+      getOutputStatisticsFacet()
+          .ifPresent(
+              f ->
+                  olContext
+                      .getOpenLineage()
+                      .newOutputDatasetOutputFacetsBuilder()
+                      .outputStatistics(f)
+                      .build());
+    }
+
+    return builder.name(di.getName()).namespace(di.getNamespace()).build();
+  }
+
+  private Optional<OutputStatisticsOutputDatasetFacet> getOutputStatisticsFacet() {
+    if (!olContext.getActiveJobId().isPresent()) {
+      log.warn("No active jobId found in context");
+      return Optional.empty();
+    }
+
+    JobMetricsHolder jobMetricsHolder = JobMetricsHolder.getInstance();
+    Map<Metric, Number> metrics = jobMetricsHolder.pollMetrics(activeJobId);
+
+    if (!metrics.containsKey(JobMetricsHolder.Metric.WRITE_BYTES)
+        && !metrics.containsKey(JobMetricsHolder.Metric.WRITE_RECORDS)) {
+      log.warn("No write metrics found in job {}", activeJobId);
+      return Optional.empty();
+    }
+
+    return Optional.of(
+        olContext
+            .getOpenLineage()
+            .newOutputStatisticsOutputDatasetFacetBuilder()
+            .rowCount(
+                Optional.of(metrics.get(JobMetricsHolder.Metric.WRITE_RECORDS))
+                    .map(Number::longValue)
+                    .orElse(null))
+            .size(
+                Optional.of(metrics.get(JobMetricsHolder.Metric.WRITE_BYTES))
+                    .map(Number::longValue)
+                    .orElse(null))
+            .fileCount(
+                Optional.of(metrics.get(Metric.FILES_WRITTEN)).map(Number::longValue).orElse(null))
+            .build());
   }
 
   protected List<OpenLineage.InputDataset> buildInputs(List<URI> inputs) {
