@@ -330,6 +330,9 @@ public class PlanUtils {
     } catch (ClassCastException e) {
       // do nothing
       return false;
+    } catch (TypeNotPresentException e) {
+      log.info("isDefinedAt method failed due to missing type: {}", e.getMessage());
+      return false;
     } catch (Exception e) {
       if (e != null) {
         log.info("isDefinedAt method failed on {}", e);

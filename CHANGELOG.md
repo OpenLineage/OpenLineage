@@ -2,6 +2,9 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.37.0...HEAD)
 
+### Fixed
+* **Spark: Fix for TypeNotPresentExceptio/RefreshTableCommand errors in spark 3.0.2** [`#3818`] (https://github.com/OpenLineage/OpenLineage/pull/4002) [@MaciejGajewski](https://github.com/MaciejGajewski)
+
 ## [1.37.0](https://github.com/OpenLineage/OpenLineage/compare/1.36.0...1.37.0) - 2025-08-11
 
 ### Added
