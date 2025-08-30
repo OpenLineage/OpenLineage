@@ -12,6 +12,7 @@ NC='\033[0m'
 BASEDIR=$(dirname "${BASH_SOURCE[0]}")
 ROOT=$BASEDIR/..
 RESOURCES=$ROOT/src/main/resources/io/openlineage/sql
+SHADED_RESOURCES=$ROOT/shaded/src/main/resources/shaded/io/openlineage/sql
 SCRIPTS=$ROOT/script
 
 if [[ -d $ROOT/../target/debug ]]; then
@@ -21,6 +22,7 @@ elif [[ -d ~/openlineage/integration/sql ]]; then
 fi
 
 mkdir -p "$RESOURCES"
+mkdir -p "$SHADED_RESOURCES"
 
 echo "$LIBS"
 ls -halt "$LIBS"/target/debug
@@ -28,15 +30,19 @@ ls -halt "$LIBS"/target/debug
 # Native lib should be compiled at this point by compile.sh
 if [[ -f "$LIBS/target/debug/libopenlineage_sql_java_x86_64.so" ]]; then
     cp "$LIBS"/target/debug/libopenlineage_sql_java_x86_64.so "$RESOURCES"
+    cp "$LIBS"/target/debug/libopenlineage_sql_java_x86_64.so "$SHADED_RESOURCES"
 fi
 if [[ -f "$LIBS/target/debug/libopenlineage_sql_java_aarch64.so" ]]; then
     cp "$LIBS"/target/debug/libopenlineage_sql_java_aarch64.so "$RESOURCES"
+    cp "$LIBS"/target/debug/libopenlineage_sql_java_aarch64.so "$SHADED_RESOURCES"
 fi
 if [[ -f "$LIBS/target/debug/libopenlineage_sql_java.dylib" ]]; then
     cp "$LIBS"/target/debug/libopenlineage_sql_java.dylib "$RESOURCES"
+    cp "$LIBS"/target/debug/libopenlineage_sql_java.dylib "$SHADED_RESOURCES"
 fi
 if [[ -f "$LIBS/target/debug/libopenlineage_sql_java_arm64.dylib" ]]; then
     cp "$LIBS"/target/debug/libopenlineage_sql_java_arm64.dylib "$RESOURCES"
+    cp "$LIBS"/target/debug/libopenlineage_sql_java_arm64.dylib "$SHADED_RESOURCES"
 fi
 
 ls -halt "$RESOURCES"
@@ -61,7 +67,7 @@ printf "\n------ Gradle tests passed ------\n"
 "$ROOT"/gradlew -x javadoc publishToMavenLocal
 
 # Package into jar
-"$ROOT"/gradlew shadowJar
+"$ROOT"/gradlew shadowJar :shaded:shadowJar
 
 # Run a simple integration test
 printf "\n------ Running smoke test ------\n"

@@ -10,4 +10,6 @@ BASEDIR=$(dirname "${BASH_SOURCE[0]}")
 SRC=$BASEDIR/../src
 DEPENDENCIES=$BASEDIR/../build/dependencies
 JAVA_SRC=$SRC/main/java/io/openlineage/sql
+SHADED_JAVA_SRC=$BASEDIR/../shaded/src/main/java/shaded/io/openlineage/sql
 javac -cp "$DEPENDENCIES/*" -h "$SRC"/main/jni "$JAVA_SRC"/*.java
+javac -cp "$DEPENDENCIES/*" -h "$SRC"/../shaded/main/jni "$SHADED_JAVA_SRC"/*.java
