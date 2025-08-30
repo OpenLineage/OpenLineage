@@ -3,30 +3,30 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
- * Interface to visit custom {@link LogicalPlan} nodes to collect expression dependencies within the
+ * Interface to visit {@link LogicalPlan} operators to collect expression dependencies within the
  * plan.
  */
-public interface ExpressionDependencyVisitor {
+public interface OperatorVisitor {
 
   /**
-   * Verifies if the visitor should be applied on the plan
+   * Verifies if the visitor should be applied on the operator
    *
-   * @param plan
+   * @param operator
    * @return
    */
-  boolean isDefinedAt(LogicalPlan plan);
+  boolean isDefinedAt(LogicalPlan operator);
 
   /**
    * Applies the visitor and adds extracted dependencies to {@link ColumnLevelLineageBuilder}
    *
-   * @param plan
+   * @param operator
    * @param builder
    */
-  void apply(LogicalPlan plan, ColumnLevelLineageBuilder builder);
+  void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder);
 }
