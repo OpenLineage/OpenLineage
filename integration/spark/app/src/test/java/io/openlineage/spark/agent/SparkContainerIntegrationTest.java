@@ -11,6 +11,7 @@ import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage.Job;
+import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.Run;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
@@ -20,6 +21,7 @@ import io.openlineage.client.OpenLineageClientUtils;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -346,7 +348,20 @@ class SparkContainerIntegrationTest {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testRddWithParquet", "spark_rdd_with_parquet.py");
 
-    verifyEvents(mockServerClient, "pysparkRDDWithParquetComplete.json");
+    verifyEvents(mockServerClient, "pysparkRDDWithParquet.json");
+
+    // verify content of output statistics facet
+    Optional<OutputStatisticsOutputDatasetFacet> outputStatisticsFacet =
+        Arrays.stream(
+                mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+            .flatMap(r -> r.getOutputs().stream())
+            .filter(d -> d.getName().contains("rdd_c"))
+            .filter(d -> d.getOutputFacets().getOutputStatistics() != null)
+            .map(d -> d.getOutputFacets().getOutputStatistics())
+            .findFirst();
+    assertThat(outputStatisticsFacet.isPresent()).isTrue();
+    assertThat(outputStatisticsFacet.get().getRowCount()).isEqualTo(4L);
   }
 
   @Test
