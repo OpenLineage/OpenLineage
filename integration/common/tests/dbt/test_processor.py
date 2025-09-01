@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from unittest.mock import MagicMock
+
 import pytest
 from openlineage.client.facet_v2 import external_query_run, processing_engine_run
 from openlineage.client.uuid import generate_new_uuid
@@ -62,6 +64,11 @@ def test_get_query_id(
 ):
     run_result["adapter_response"][adapter_key] = QUERY_ID
     dbt_artifact_processor.adapter_type = adapter_type
+    dbt_artifact_processor.dbt_run_run_facet = MagicMock()
+    dbt_artifact_processor.dbt_run_run_facet.return_value = {
+        "dbt_run": DbtRunRunFacet(invocation_id="1", project_name="test", dbt_runtime="core")
+    }
+
     dbt_artifact_processor.extract_dataset_namespace(profile)
     generated_query_id = dbt_artifact_processor.get_query_id(run_result)
     generated_run = dbt_artifact_processor.get_run(run_id=RUN_ID, query_id=generated_query_id)
@@ -69,7 +76,7 @@ def test_get_query_id(
     assert generated_query_id == QUERY_ID
     assert generated_run.facets == {
         "dbt_version": DbtVersionRunFacet(version=DBT_VERSION),
-        "dbt_run": DbtRunRunFacet(invocation_id="1"),
+        "dbt_run": DbtRunRunFacet(invocation_id="1", project_name="test", dbt_runtime="core"),
         "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
             name="dbt",
             version=DBT_VERSION,
@@ -84,13 +91,17 @@ def test_get_query_id(
 def test_invalid_adapter(dbt_artifact_processor, run_result):
     run_result["adapter_response"]["query_id"] = None
     dbt_artifact_processor.adapter_type = Adapter.GLUE
+    dbt_artifact_processor.dbt_run_run_facet = MagicMock()
+    dbt_artifact_processor.dbt_run_run_facet.return_value = {
+        "dbt_run": DbtRunRunFacet(invocation_id="1", project_name="test", dbt_runtime="core")
+    }
     generated_query_id = dbt_artifact_processor.get_query_id(run_result)
     generated_run = dbt_artifact_processor.get_run(run_id=RUN_ID, query_id=generated_query_id)
 
     assert generated_query_id is None
     assert generated_run.facets == {
         "dbt_version": DbtVersionRunFacet(version=DBT_VERSION),
-        "dbt_run": DbtRunRunFacet(invocation_id="1"),
+        "dbt_run": DbtRunRunFacet(invocation_id="1", project_name="test", dbt_runtime="core"),
         "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
             name="dbt",
             version=DBT_VERSION,
