@@ -28,7 +28,9 @@ class GCPLineageConfig(Config):
         project_id: GCP project ID where the lineage data will be stored
         location: GCP location (region) for the lineage service (default: "us-central1")
         credentials_path: Path to service account JSON credentials file (optional)
-        async_transport_rules: Rules for when to use async transport (default: {"dbt": {"*": True}})
+        async_transport_rules: Controls async vs sync transport based on integration and jobType.
+            Format: {"integration": {"jobType": True/False}}. Use "*" wildcards. True=async, False=sync.
+            Default: {"dbt": {"*": True}}
 
     The transport will use default credentials if credentials_path is not provided.
     """

@@ -114,7 +114,6 @@ lint.select = [
     "I001"
 ]
 lint.ignore-init-module-imports = true
-target-version = "py39"
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/client"]
 
