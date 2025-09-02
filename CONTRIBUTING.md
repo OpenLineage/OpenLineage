@@ -98,6 +98,17 @@ Before submitting your pull request, make sure to set up and run pre-commit hook
 
 * Run prek: Now, every time you attempt to make a commit, the prek hooks will automatically run on the staged files. If any issues are detected, the commit process will be halted, allowing you to address the problems before making the commit. Some of the hooks might be configured to fix the issues automatically, in which case you just need to review the applied changes and commit. You can also run `prek run --all-files` to manually trigger the hooks for all files in the repository.
 
+## License header
+
+If contributing changes, additions or fixes, please include the following header in any new files:
+
+```
+/*
+/* Copyright 2018-2024 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0 
+*/
+```
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2025 contributors to the OpenLineage project

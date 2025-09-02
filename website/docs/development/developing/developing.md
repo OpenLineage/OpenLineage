@@ -34,15 +34,6 @@ You can take a look at its code on [GitHub](https://github.com/OpenLineage/OpenL
 
 ## Contributing
 
-If contributing changes, additions or fixes, please include the following header in any new files:
-
-```
-/*
-/* Copyright 2018-2024 contributors to the OpenLineage project
-/* SPDX-License-Identifier: Apache-2.0 
-*/
-```
-
-There is a pre-commit step that checks license in headers for new files when pull requests are opened.
+Before making any changes, please read [CONTRIBUTING](https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md) first.
 
 Thanks for your contributions to the project!
