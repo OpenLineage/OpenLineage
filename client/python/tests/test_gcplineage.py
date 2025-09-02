@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +11,13 @@ from openlineage.client.facet import JobTypeJobFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.transport.gcplineage import GCPLineageConfig, GCPLineageTransport
 from openlineage.client.uuid import generate_new_uuid
+
+# Mock the google cloud modules at module level since they may not be installed
+sys.modules["google"] = MagicMock()
+sys.modules["google.cloud"] = MagicMock()
+sys.modules["google.cloud.datacatalog_lineage_v1"] = MagicMock()
+sys.modules["google.oauth2"] = MagicMock()
+sys.modules["google.oauth2.service_account"] = MagicMock()
 
 
 class TestGCPLineageConfig:
