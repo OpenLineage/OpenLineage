@@ -1,14 +1,7 @@
 ---
 sidebar_position: 1
-title: Build
+title: Setup
 ---
-
-# Build
-
-## Java 17
-
-Testing requires a Java 17 JVM to test the Scala Spark components.
-Use your favourite tool (sdkman, `/usr/libexec/java_home`) to set `JAVA_HOME` and `PATH` environmental variables properly.
 
 ## Preparation
 
