@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import attr
 from openlineage.client import event_v2
@@ -14,6 +14,7 @@ from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
 
 if TYPE_CHECKING:
+    from google.cloud.datacatalog_lineage_v1 import LineageAsyncClient, LineageClient
     from openlineage.client.client import Event
 
 log = logging.getLogger(__name__)
@@ -53,8 +54,8 @@ class GCPLineageTransport(Transport):
 
     def __init__(self, config: GCPLineageConfig) -> None:
         self.config = config
-        self.client = None
-        self.async_client = None
+        self.client: Optional[LineageClient] = None
+        self.async_client: Optional[LineageAsyncClient] = None
         self.parent = f"projects/{self.config.project_id}/locations/{self.config.location}"
 
         self._setup_client()
@@ -111,10 +112,10 @@ class GCPLineageTransport(Transport):
 
     def _emit_sync(self, event: Event) -> Any:
         try:
-            import json
+            event_dict = Serde.to_dict(event)
 
-            event_dict = json.loads(Serde.to_json(event))
-
+            if self.client is None:
+                raise RuntimeError("GCP Lineage client not initialized")
             self.client.process_open_lineage_run_event(parent=self.parent, open_lineage=event_dict)
 
         except Exception as e:
@@ -127,6 +128,8 @@ class GCPLineageTransport(Transport):
 
             event_dict = json.loads(Serde.to_json(event))
 
+            if self.async_client is None:
+                raise RuntimeError("GCP Lineage async client not initialized")
             await self.async_client.process_open_lineage_run_event(
                 parent=self.parent, open_lineage=event_dict
             )
@@ -185,13 +188,14 @@ class GCPLineageTransport(Transport):
         if self.async_client:
             try:
                 # Async client cleanup - run async close properly
-                async def close_async():
-                    close_result = self.async_client.transport.close()
-                    if hasattr(close_result, "__await__"):
-                        await close_result
-                    else:
-                        # Fallback - just close the client
-                        await self.async_client.close()
+                async def close_async() -> None:
+                    if self.async_client is not None:
+                        close_result = self.async_client.transport.close()
+                        if hasattr(close_result, "__await__"):
+                            await close_result
+                        else:
+                            # Fallback - just close the client
+                            await self.async_client.close()
 
                 try:
                     loop = asyncio.get_event_loop()

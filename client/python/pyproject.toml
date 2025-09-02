@@ -96,6 +96,8 @@ show_error_codes = true
 overrides = [
   { ignore_missing_imports = true, module = [
   "confluent_kafka.*",
+  "google.cloud.*",
+  "google.oauth2.*",
 ] } ]
 strict = true
 pretty = true
