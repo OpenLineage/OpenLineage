@@ -100,11 +100,11 @@ Before submitting your pull request, make sure to set up and run pre-commit hook
 
 ## License header
 
-If contributing changes, additions or fixes, please include the following header in any new files:
+If contributing changes, additions or fixes, please include an [appropriate header](.github/header_templates.md) in any new files, e.g. for Java files:
 
 ```
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0 
 */
 ```
