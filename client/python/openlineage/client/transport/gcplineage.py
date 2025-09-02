@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Awaitable, Optional, TypeVar
 
 import attr
 from openlineage.client import event_v2
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+T = TypeVar("T")
 DEFAULT_LOCATION = "us-central1"
 
 
@@ -107,7 +108,7 @@ class GCPLineageTransport(Transport):
             )
             raise
 
-    def _run_async_safely(self, coro):
+    def _run_async_safely(self, coro: Awaitable[T]) -> T:
         """Safely run async coroutine in sync context with robust event loop handling."""
         try:
             loop = asyncio.get_event_loop()
@@ -203,7 +204,7 @@ class GCPLineageTransport(Transport):
         # Close sync client if it exists
         if self.client:
             try:
-                self.client.close()
+                self.client.transport.close()
             except Exception as e:
                 log.warning("Error closing GCP lineage client (sync): %s", e)
                 sync_result = False
@@ -213,7 +214,7 @@ class GCPLineageTransport(Transport):
             try:
 
                 async def close_async() -> None:
-                    await self.async_client.close()
+                    await self.async_client.transport.close()
 
                 self._run_async_safely(close_async())
             except Exception as e:
