@@ -41,21 +41,6 @@ To ensure your pull request is accepted, follow these guidelines:
 
 ### Branching
 
-* Use a _group_ at the beginning of your branch names:
-
-  ```
-  feature  Add or expand a feature
-  bug      Fix a bug
-  ```
-
-  _For example_:
-
-  ```
-  feature/my-cool-new-feature
-  bug/my-bug-fix
-  bug/my-other-bug-fix
-  ```
-
 * Choose _short_ and _descriptive_ branch names
 * Use dashes (`-`) to separate _words_ in branch names
 * Use _lowercase_ in branch names
