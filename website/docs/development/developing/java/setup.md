@@ -21,10 +21,11 @@ java --version && javac --version
 Both tools should show version 17.X.X. If the commands are not found or are on a different version, install a correct version and make sure it is on your `PATH`.
 Tools like SDKMAN! can be used to simplify the installation process.
 
-## GCC
+## C Compiler
 
-`openlineage-sql-java` module is almost always a dependency for integrations. The SQL parser it contains is written in Rust, and it requires GCC for the compilation process.
-To verify you have GCC installed run:
+`openlineage-sql-java` module is almost always a dependency for integrations. The SQL parser it contains is written in Rust,
+and it requires a C Compiler for the compilation process.
+To verify you have CC installed run:
 ```bash
-gcc --version
+cc --version
 ```
