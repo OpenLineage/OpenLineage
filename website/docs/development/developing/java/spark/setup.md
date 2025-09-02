@@ -5,9 +5,11 @@ title: Setup
 
 ## Preparation
 
-The integration depends on four libraries that are build locally `openlineage-java`, `spark-extension-interfaces`, `spark-extension-entrypoint` and `openlineage-sql-java`,
-so before any testing or building of a package you need to publish the appropriate artifacts to local maven repository.
-To build the packages you need to execute:
+The integration expects `openlineage-java`, `spark-extension-interfaces` and `openlineage-sql-java` to exist in
+your local maven repository, so before building/testing the Spark integration you need to first build and publish
+the required dependencies.
+
+You can do it using the convenience script:
 
 ```sh
 ./buildDependencies.sh
