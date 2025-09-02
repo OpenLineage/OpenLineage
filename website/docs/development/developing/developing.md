@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Developing With OpenLineage
 
-As there are hundreds and possibly thousands databases, query engines and other tools you could use to process, create and move data, there's great chance that existing OpenLineage integration won't cover your needs.
+As there are hundreds and possibly thousands databases, query engines and other tools you could use to process, create and move data, there's great chance that existing OpenLineage integrations won't cover your needs.
 
 However, OpenLineage project also provides libraries you could use to write your own integration. 
 
@@ -21,11 +21,6 @@ For [Python](../../client/python.md) and [Java](../../client/java/java.md), we'v
 
 Getting lineage from systems like BigQuery or Redshift isn't necessarily tied to orchestrator or processing engine you're using. For this reason, we've extracted
 that functionality from our Airflow library and [packaged it for separate use](https://pypi.org/project/openlineage-integration-common/). 
-
-### Environment Variables
-
-The list of available environment variables for **Python** can be found [here](../../client/python.md#environment-variables).
-The list of available environment variables for **Java** can be found [here](../../client/java/java.md#environment-variables).
 
 ### SQL parser
 
