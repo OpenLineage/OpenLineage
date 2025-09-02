@@ -43,7 +43,7 @@ class GCPLineageConfig(Config):
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> GCPLineageConfig:
         if "project_id" not in params:
-            msg = "project_id is required for GCPLineageTransportProvide it in config"
+            msg = "project_id is required for GCPLineageTransport. Provide it in config"
             raise ValueError(msg)
 
         specified_dict = get_only_specified_fields(cls, params)
@@ -79,7 +79,7 @@ class GCPLineageTransport(Transport):
 
         except ModuleNotFoundError:
             log.exception(
-                "OpenLineage client did not found google-cloud-datacatalog-lineage module. "
+                "OpenLineage client did not find google-cloud-datacatalog-lineage module. "
                 "Installing it is required for GCPLineage to work. "
                 "You can also get it via `pip install google-cloud-datacatalog-lineage`",
             )
