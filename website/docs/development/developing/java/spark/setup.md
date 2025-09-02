@@ -32,18 +32,3 @@ To run the integration tests, from the current directory run:
 ```sh
 ./gradlew shadowJar
 ```
-
-## Contributing
-
-If contributing changes, additions or fixes to the Spark integration, please include the following header in any new `.java` files:
-
-```
-/* 
-/* Copyright 2018-2024 contributors to the OpenLineage project
-/* SPDX-License-Identifier: Apache-2.0 
-*/
-```
-
-A Github Action checks for headers in new `.java` files when pull requests are opened.
-
-Thank you for your contributions to the project!
