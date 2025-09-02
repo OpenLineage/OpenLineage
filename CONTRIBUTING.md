@@ -37,7 +37,7 @@ To ensure your pull request is accepted, follow these guidelines:
 * [Keep diffs small](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and self-contained
 * If your change fixes a bug, please [link the issue](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
 * Your pull request title should be of the form `component: name`, where `component` is the part of openlineage repo that your PR changes. For example: `flink: add Iceberg source visitor`
-* Use tags to indicate parts of the repository that your PR refers to
+* Review tags added by a bot after PR creation, they should indicate parts of the repository that your PR refers to
 
 ### Branching
 
