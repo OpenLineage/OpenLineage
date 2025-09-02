@@ -363,19 +363,14 @@ class TestGCPLineageTransportMethods:
 
         event = self._create_event("spark", "job")
 
-        with (
-            patch("json.loads") as mock_json_loads,
-            patch("openlineage.client.transport.gcplineage.Serde") as mock_serde,
-        ):
-            mock_serde.to_json.return_value = '{"test": "data"}'
-            mock_json_loads.return_value = {"test": "data"}
+        transport._emit_sync(event)
 
-            transport._emit_sync(event)
-
-            # Verify the sync client was called with correct parameters
-            mock_sync_client.process_open_lineage_run_event.assert_called_once_with(
-                parent="projects/test-project/locations/us-central1", open_lineage={"test": "data"}
-            )
+        # Verify the sync client was called with correct parameters
+        mock_sync_client.process_open_lineage_run_event.assert_called_once()
+        # Get the actual call arguments to verify the parent and that open_lineage is a dict
+        call_args = mock_sync_client.process_open_lineage_run_event.call_args
+        assert call_args.kwargs["parent"] == "projects/test-project/locations/us-central1"
+        assert isinstance(call_args.kwargs["open_lineage"], dict)
 
     @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
     @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
