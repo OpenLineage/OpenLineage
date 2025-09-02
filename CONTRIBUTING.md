@@ -37,24 +37,9 @@ To ensure your pull request is accepted, follow these guidelines:
 * [Keep diffs small](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and self-contained
 * If your change fixes a bug, please [link the issue](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
 * Your pull request title should be of the form `component: name`, where `component` is the part of openlineage repo that your PR changes. For example: `flink: add Iceberg source visitor`
-* Use tags to indicate parts of the repository that your PR refers to
+* Review tags added by a bot after PR creation, they should indicate parts of the repository that your PR refers to
 
 ### Branching
-
-* Use a _group_ at the beginning of your branch names:
-
-  ```
-  feature  Add or expand a feature
-  bug      Fix a bug
-  ```
-
-  _For example_:
-
-  ```
-  feature/my-cool-new-feature
-  bug/my-bug-fix
-  bug/my-other-bug-fix
-  ```
 
 * Choose _short_ and _descriptive_ branch names
 * Use dashes (`-`) to separate _words_ in branch names
@@ -107,18 +92,26 @@ Look for tickets labeled ['good first issue'][goodfirstissues] and ['help wanted
 
 Before submitting your pull request, make sure to set up and run pre-commit hooks to ensure code quality and consistency. [Pre-commit](pre-commit.com) hooks are automated checks that run before each commit is made. These checks include code formatting, linting and JSON Schema specification validations. To set up the pre-commit hooks for this project, follow these steps:
 
-* Install prek: If you haven't already, install prek on your local machine by running `pip install prek` in your virtual environment.
+* Install prek: If you haven't already, install prek on your local machine by running `pip install prek` (or check [installation instructions](https://github.com/j178/prek?tab=readme-ov-file#installation) for your environment).
 
 * Set up hooks: Once prek is installed, navigate to the project's root directory and execute `prek install`. This command will set up the necessary hooks in your local repository.
 
-* Run prek: Now, every time you attempt to make a commit, the prek hooks will automatically run on the staged files. If any issues are detected, the commit process will be halted, allowing you to address the problems before making the commit. You can also run `prek run --all-files` to manually trigger the hooks for all files in the repository.
+* Run prek: Now, every time you attempt to make a commit, the prek hooks will automatically run on the staged files. If any issues are detected, the commit process will be halted, allowing you to address the problems before making the commit. Some of the hooks might be configured to fix the issues automatically, in which case you just need to review the applied changes and commit. You can also run `prek run --all-files` to manually trigger the hooks for all files in the repository.
 
+## License header
 
-## Triggering CI runs from forks (committers)
+If contributing changes, additions or fixes, please include an [appropriate header](.github/header_templates.md) in any new files, e.g. for Java files:
 
-CI runs on forks are disabled due to the possibility of access by external services via CI run. 
-Once a contributor decides a PR is ready to be checked, they can use [this script](https://github.com/jklukas/git-push-fork-to-upstream-branch)
-to trigger a CI run on a separate branch with the same commit ID. This will update the CI status of a PR.
+```
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0 
+*/
+```
+
+## Development
+
+To set up your local environment and start developing, check the [Development documentation](https://openlineage.io/docs/development/developing/).
 
 ----
 SPDX-License-Identifier: Apache-2.0\
