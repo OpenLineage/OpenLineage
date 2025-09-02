@@ -98,13 +98,6 @@ Before submitting your pull request, make sure to set up and run pre-commit hook
 
 * Run prek: Now, every time you attempt to make a commit, the prek hooks will automatically run on the staged files. If any issues are detected, the commit process will be halted, allowing you to address the problems before making the commit. Some of the hooks might be configured to fix the issues automatically, in which case you just need to review the applied changes and commit. You can also run `prek run --all-files` to manually trigger the hooks for all files in the repository.
 
-
-## Triggering CI runs from forks (committers)
-
-CI runs on forks are disabled due to the possibility of access by external services via CI run. 
-Once a contributor decides a PR is ready to be checked, they can use [this script](https://github.com/jklukas/git-push-fork-to-upstream-branch)
-to trigger a CI run on a separate branch with the same commit ID. This will update the CI status of a PR.
-
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2025 contributors to the OpenLineage project
