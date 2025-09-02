@@ -24,8 +24,8 @@ that functionality from our Airflow library and [packaged it for separate use](h
 
 ### SQL parser
 
-We've created SQL parser that allows you to extract lineage from SQL statements. The parser is implemented in Rust; however, it's also available as a [Python library](https://pypi.org/project/openlineage-sql/).
-You can take a look at its code on [GitHub](https://github.com/OpenLineage/OpenLineage/tree/main/integration/sql).
+We've created a SQL parser that allows you to extract lineage from SQL statements. The parser is implemented in Rust; however, it's also available as a [Java](https://mvnrepository.com/artifact/io.openlineage/openlineage-sql-java) or [Python](https://pypi.org/project/openlineage-sql/) library.
+You can take a look at its sourcecode on [GitHub](https://github.com/OpenLineage/OpenLineage/tree/main/integration/sql).
 
 ## Contributing
 
