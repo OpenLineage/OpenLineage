@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Union
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, Optional
 
 import attr
 from openlineage.client import event_v2
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
     from openlineage.client.client import Event
 
 log = logging.getLogger(__name__)
+
+DEFAULT_LOCATION = "us-central1"
 
 
 @attr.define
@@ -36,9 +39,9 @@ class GCPLineageConfig(Config):
     """
 
     project_id: str = attr.field()
-    location: str = attr.field(default="us-central1")
-    credentials_path: Union[str, None] = attr.field(default=None)
-    async_transport_rules: dict[str, dict[str, bool]] = attr.field(default={"dbt": {"*": True}})
+    location: str = attr.field(default=DEFAULT_LOCATION)
+    credentials_path: Optional[str] = attr.field(default=None)
+    async_transport_rules: dict[str, dict[str, bool]] = attr.field(factory=lambda: {"dbt": {"*": True}})
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> GCPLineageConfig:
@@ -56,26 +59,22 @@ class GCPLineageTransport(Transport):
 
     def __init__(self, config: GCPLineageConfig) -> None:
         self.config = config
-        self.client: Optional[LineageClient] = None
-        self.async_client: Optional[LineageAsyncClient] = None
         self.parent = f"projects/{self.config.project_id}/locations/{self.config.location}"
 
-        self._setup_client()
-
-    def _setup_client(self) -> None:
+    @cached_property
+    def client(self) -> "LineageClient":
+        """Lazy initialization of sync LineageClient."""
         try:
-            from google.cloud.datacatalog_lineage_v1 import LineageAsyncClient, LineageClient
+            from google.cloud.datacatalog_lineage_v1 import LineageClient
             from google.oauth2 import service_account
 
             if self.config.credentials_path:
                 credentials = service_account.Credentials.from_service_account_file(
                     self.config.credentials_path
                 )
-                self.client = LineageClient(credentials=credentials)
-                self.async_client = LineageAsyncClient(credentials=credentials)
+                return LineageClient(credentials=credentials)
             else:
-                self.client = LineageClient()
-                self.async_client = LineageAsyncClient()
+                return LineageClient()
 
         except ModuleNotFoundError:
             log.exception(
@@ -84,6 +83,46 @@ class GCPLineageTransport(Transport):
                 "You can also get it via `pip install google-cloud-datacatalog-lineage`",
             )
             raise
+
+    @cached_property
+    def async_client(self) -> "LineageAsyncClient":
+        """Lazy initialization of async LineageAsyncClient."""
+        try:
+            from google.cloud.datacatalog_lineage_v1 import LineageAsyncClient
+            from google.oauth2 import service_account
+
+            if self.config.credentials_path:
+                credentials = service_account.Credentials.from_service_account_file(
+                    self.config.credentials_path
+                )
+                return LineageAsyncClient(credentials=credentials)
+            else:
+                return LineageAsyncClient()
+
+        except ModuleNotFoundError:
+            log.exception(
+                "OpenLineage client did not find google-cloud-datacatalog-lineage module. "
+                "Installing it is required for GCPLineage to work. "
+                "You can also get it via `pip install google-cloud-datacatalog-lineage`",
+            )
+            raise
+
+    def _run_async_safely(self, coro):
+        """Safely run async coroutine in sync context with robust event loop handling."""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Event loop is running, use thread pool
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    return executor.submit(asyncio.run, coro).result()
+            else:
+                # Event loop exists but not running
+                return loop.run_until_complete(coro)
+        except RuntimeError:
+            # No event loop exists, create one
+            return asyncio.run(coro)
 
     def emit(self, event: Event) -> Any:
         if not isinstance(event, (RunEvent, event_v2.RunEvent)):
@@ -94,30 +133,13 @@ class GCPLineageTransport(Transport):
         should_use_async = self._should_use_async_transport(event)
 
         if should_use_async:
-            # Run the async function in the current thread's event loop
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # If loop is already running, create a task
-                    import concurrent.futures
-
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(asyncio.run, self._emit_async(event))
-                        return future.result()
-                else:
-                    return loop.run_until_complete(self._emit_async(event))
-            except RuntimeError:
-                # No event loop exists, create one
-                return asyncio.run(self._emit_async(event))
+            return self._run_async_safely(self._emit_async(event))
         else:
             return self._emit_sync(event)
 
     def _emit_sync(self, event: Event) -> Any:
         try:
             event_dict = Serde.to_dict(event)
-
-            if self.client is None:
-                raise RuntimeError("GCP Lineage client not initialized")
             self.client.process_open_lineage_run_event(parent=self.parent, open_lineage=event_dict)
 
         except Exception as e:
@@ -178,43 +200,24 @@ class GCPLineageTransport(Transport):
         sync_result = True
         async_result = True
 
+        # Close sync client if it exists
         if self.client:
             try:
-                self.client.transport.close()
+                self.client.close()
             except Exception as e:
                 log.warning("Error closing GCP lineage client (sync): %s", e)
                 sync_result = False
-            finally:
-                self.client = None
 
+        # Close async client if it exists
         if self.async_client:
             try:
-                # Async client cleanup - run async close properly
+
                 async def close_async() -> None:
-                    if self.async_client is not None:
-                        close_result = self.async_client.transport.close()
-                        if hasattr(close_result, "__await__"):
-                            await close_result
-                        else:
-                            # Fallback - just close the client
-                            await self.async_client.close()
+                    await self.async_client.close()
 
-                try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        import concurrent.futures
-
-                        with concurrent.futures.ThreadPoolExecutor() as executor:
-                            future = executor.submit(asyncio.run, close_async())
-                            future.result()
-                    else:
-                        loop.run_until_complete(close_async())
-                except RuntimeError:
-                    asyncio.run(close_async())
+                self._run_async_safely(close_async())
             except Exception as e:
                 log.warning("Error closing GCP lineage client (async): %s", e)
                 async_result = False
-            finally:
-                self.async_client = None
 
         return sync_result and async_result

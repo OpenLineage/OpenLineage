@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,12 +11,30 @@ from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.transport.gcplineage import GCPLineageConfig, GCPLineageTransport
 from openlineage.client.uuid import generate_new_uuid
 
-# Mock the google cloud modules at module level since they may not be installed
-sys.modules["google"] = MagicMock()
-sys.modules["google.cloud"] = MagicMock()
-sys.modules["google.cloud.datacatalog_lineage_v1"] = MagicMock()
-sys.modules["google.oauth2"] = MagicMock()
-sys.modules["google.oauth2.service_account"] = MagicMock()
+
+@pytest.fixture
+def mock_gcp_modules():
+    """Fixture to mock Google Cloud modules for tests that need GCP transport."""
+    with (
+        patch.dict(
+            "sys.modules",
+            {
+                "google": MagicMock(),
+                "google.cloud": MagicMock(),
+                "google.cloud.datacatalog_lineage_v1": MagicMock(),
+                "google.oauth2": MagicMock(),
+                "google.oauth2.service_account": MagicMock(),
+            },
+        ),
+        patch("google.cloud.datacatalog_lineage_v1.LineageClient") as mock_client,
+        patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient") as mock_async_client,
+        patch("google.oauth2.service_account.Credentials") as mock_credentials,
+    ):
+        yield {
+            "client": mock_client,
+            "async_client": mock_async_client,
+            "credentials": mock_credentials,
+        }
 
 
 class TestGCPLineageConfig:
@@ -91,7 +108,7 @@ class TestGCPLineageConfig:
 class TestGCPLineageTransportInitialization:
     """Test GCPLineageTransport initialization and client creation."""
 
-    def test_gcplineage_transport_initialization_default_credentials(self):
+    def test_gcplineage_transport_initialization_default_credentials(self, mock_gcp_modules):
         """Test that GCPLineageTransport creates both sync and async clients with default credentials."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -105,7 +122,7 @@ class TestGCPLineageTransportInitialization:
         assert transport.client is not None
         assert transport.async_client is not None
 
-    def test_gcplineage_transport_initialization_with_credentials(self):
+    def test_gcplineage_transport_initialization_with_credentials(self, mock_gcp_modules):
         """Test that GCPLineageTransport creates clients with service account credentials."""
         config = GCPLineageConfig.from_dict(
             {
@@ -119,7 +136,7 @@ class TestGCPLineageTransportInitialization:
         assert transport.client is not None
         assert transport.async_client is not None
 
-    def test_gcplineage_transport_parent_construction(self):
+    def test_gcplineage_transport_parent_construction(self, mock_gcp_modules):
         """Test correct parent string construction for different locations."""
         test_cases = [
             ("test-project", "us-central1", "projects/test-project/locations/us-central1"),
@@ -151,16 +168,8 @@ class TestGCPLineageTransportRouting:
             schemaURL="test",
         )
 
-    @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
-    @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
-    def test_routing_dbt_event_to_async(self, mock_async_client_class, mock_sync_client_class):
+    def test_routing_dbt_event_to_async(self, mock_gcp_modules):
         """Test that events with JobTypeJobFacet integration='dbt' use async transport."""
-        # Create mock client instances
-        mock_sync_client = MagicMock()
-        mock_async_client = MagicMock()
-        mock_sync_client_class.return_value = mock_sync_client
-        mock_async_client_class.return_value = mock_async_client
-
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
 
@@ -177,16 +186,8 @@ class TestGCPLineageTransportRouting:
             mock_emit_async.assert_called_once()
             mock_emit_sync.assert_not_called()
 
-    @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
-    @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
-    def test_routing_non_dbt_event_to_sync(self, mock_async_client_class, mock_sync_client_class):
+    def test_routing_non_dbt_event_to_sync(self, mock_gcp_modules):
         """Test that events with JobTypeJobFacet integration!='dbt' use sync transport."""
-        # Create mock client instances
-        mock_sync_client = MagicMock()
-        mock_async_client = MagicMock()
-        mock_sync_client_class.return_value = mock_sync_client
-        mock_async_client_class.return_value = mock_async_client
-
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
 
@@ -203,16 +204,8 @@ class TestGCPLineageTransportRouting:
             mock_emit_sync.assert_called_once_with(event)
             mock_emit_async.assert_not_called()
 
-    @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
-    @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
-    def test_routing_event_without_facets_to_sync(self, mock_async_client_class, mock_sync_client_class):
+    def test_routing_event_without_facets_to_sync(self, mock_gcp_modules):
         """Test that events without facets use sync transport."""
-        # Create mock client instances
-        mock_sync_client = MagicMock()
-        mock_async_client = MagicMock()
-        mock_sync_client_class.return_value = mock_sync_client
-        mock_async_client_class.return_value = mock_async_client
-
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
 
@@ -236,15 +229,8 @@ class TestGCPLineageTransportRouting:
             mock_emit_sync.assert_called_once_with(event)
             mock_emit_async.assert_not_called()
 
-    @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
-    @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
-    def test_routing_custom_async_rules(self, mock_async_client_class, mock_sync_client_class):
+    def test_routing_custom_async_rules(self, mock_gcp_modules):
         """Test routing with custom async transport rules."""
-        # Create mock client instances
-        mock_sync_client = MagicMock()
-        mock_async_client = MagicMock()
-        mock_sync_client_class.return_value = mock_sync_client
-        mock_async_client_class.return_value = mock_async_client
 
         config = GCPLineageConfig.from_dict(
             {
@@ -301,16 +287,8 @@ class TestGCPLineageTransportRouting:
             mock_emit_sync.assert_called_once_with(airflow_task_event)
             mock_emit_async.assert_not_called()
 
-    @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
-    @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
-    def test_routing_non_run_event_warning(self, mock_async_client_class, mock_sync_client_class):
+    def test_routing_non_run_event_warning(self, mock_gcp_modules):
         """Test that non-RunEvent objects are handled with warning."""
-        # Create mock client instances
-        mock_sync_client = MagicMock()
-        mock_async_client = MagicMock()
-        mock_sync_client_class.return_value = mock_sync_client
-        mock_async_client_class.return_value = mock_async_client
-
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
 
@@ -327,7 +305,7 @@ class TestGCPLineageTransportRouting:
 class TestGCPLineageTransportMethods:
     """Test GCPLineageTransport emit methods."""
 
-    def test_emit_sync_success(self):
+    def test_emit_sync_success(self, mock_gcp_modules):
         """Test successful sync emit."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -337,7 +315,7 @@ class TestGCPLineageTransportMethods:
         # This should not raise an exception
         transport._emit_sync(event)
 
-    def test_emit_sync_error(self):
+    def test_emit_sync_error(self, mock_gcp_modules):
         """Test sync emit error handling."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -350,6 +328,19 @@ class TestGCPLineageTransportMethods:
 
         with pytest.raises(Exception, match="GCP API error"):
             transport._emit_sync(event)
+
+    def test_emit_async_error(self, mock_gcp_modules):
+        """Test async emit error handling."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+
+        # Configure async client to raise exception
+        transport.async_client.process_open_lineage_run_event.side_effect = Exception("GCP Async API error")
+
+        event = self._create_event("dbt", "model")
+
+        with pytest.raises(Exception, match="GCP Async API error"):
+            transport._run_async_safely(transport._emit_async(event))
 
     def _create_event(self, integration: str, job_type: str) -> RunEvent:
         """Helper method to create events with JobTypeJobFacet."""
@@ -383,15 +374,8 @@ class TestGCPLineageTransportAsyncRules:
             schemaURL="test",
         )
 
-    @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
-    @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
-    def test_should_use_async_transport_method(self, mock_async_client_class, mock_sync_client_class):
+    def test_should_use_async_transport_method(self, mock_gcp_modules):
         """Test _should_use_async_transport method directly."""
-        mock_sync_client = MagicMock()
-        mock_async_client = MagicMock()
-        mock_sync_client_class.return_value = mock_sync_client
-        mock_async_client_class.return_value = mock_async_client
-
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
 
@@ -414,14 +398,8 @@ class TestGCPLineageTransportAsyncRules:
         event_spark = self._create_event("SPARK", "JOB")
         assert transport._should_use_async_transport(event_spark) is False
 
-    @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
-    @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
-    def test_wildcard_rules(self, mock_async_client_class, mock_sync_client_class):
+    def test_wildcard_rules(self, mock_gcp_modules):
         """Test wildcard async transport rules."""
-        mock_sync_client = MagicMock()
-        mock_async_client = MagicMock()
-        mock_sync_client_class.return_value = mock_sync_client
-        mock_async_client_class.return_value = mock_async_client
 
         config = GCPLineageConfig.from_dict(
             {
@@ -442,14 +420,8 @@ class TestGCPLineageTransportAsyncRules:
         spark_batch_event = self._create_event("spark", "job")
         assert transport._should_use_async_transport(spark_batch_event) is False
 
-    @patch("google.cloud.datacatalog_lineage_v1.LineageClient")
-    @patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient")
-    def test_double_wildcard_rules(self, mock_async_client_class, mock_sync_client_class):
+    def test_double_wildcard_rules(self, mock_gcp_modules):
         """Test double wildcard rules for all events."""
-        mock_sync_client = MagicMock()
-        mock_async_client = MagicMock()
-        mock_sync_client_class.return_value = mock_sync_client
-        mock_async_client_class.return_value = mock_async_client
 
         config = GCPLineageConfig.from_dict(
             {
@@ -488,7 +460,7 @@ class TestGCPLineageTransportIntegration:
         assert "gcplineage" in factory.transports
         assert factory.transports["gcplineage"] == GCPLineageTransport
 
-    def test_gcplineage_transport_creation_from_dict(self):
+    def test_gcplineage_transport_creation_from_dict(self, mock_gcp_modules):
         """Test creating GCPLineageTransport through factory from dict config."""
         from openlineage.client.transport import get_default_factory
 
@@ -500,16 +472,12 @@ class TestGCPLineageTransportIntegration:
             "location": "us-west1",
         }
 
-        with (
-            patch("google.cloud.datacatalog_lineage_v1.LineageClient"),
-            patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient"),
-        ):
-            transport = factory.create(config_dict)
+        transport = factory.create(config_dict)
 
-            assert isinstance(transport, GCPLineageTransport)
-            assert transport.kind == "gcplineage"
-            assert transport.config.project_id == "test-project"
-            assert transport.config.location == "us-west1"
+        assert isinstance(transport, GCPLineageTransport)
+        assert transport.kind == "gcplineage"
+        assert transport.config.project_id == "test-project"
+        assert transport.config.location == "us-west1"
 
     @patch.dict(
         os.environ,
@@ -519,16 +487,12 @@ class TestGCPLineageTransportIntegration:
             "OPENLINEAGE__TRANSPORT__LOCATION": "europe-west1",
         },
     )
-    def test_gcplineage_transport_from_ol_environment(self):
+    def test_gcplineage_transport_from_ol_environment(self, mock_gcp_modules):
         """Test creating GCPLineageTransport from environment variables."""
         from openlineage.client import OpenLineageClient
 
-        with (
-            patch("google.cloud.datacatalog_lineage_v1.LineageClient"),
-            patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient"),
-        ):
-            client = OpenLineageClient()
+        client = OpenLineageClient()
 
-            assert isinstance(client.transport, GCPLineageTransport)
-            assert client.transport.config.project_id == "env-project"
-            assert client.transport.config.location == "europe-west1"
+        assert isinstance(client.transport, GCPLineageTransport)
+        assert client.transport.config.project_id == "env-project"
+        assert client.transport.config.location == "europe-west1"
