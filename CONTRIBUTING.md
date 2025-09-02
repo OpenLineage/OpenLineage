@@ -109,6 +109,10 @@ If contributing changes, additions or fixes, please include an [appropriate head
 */
 ```
 
+## Development
+
+To set up your local environment and start developing, check the [Development documentation](https://openlineage.io/docs/development/developing/).
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2025 contributors to the OpenLineage project
