@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Awaitable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Coroutine, Optional, TypeVar
 
 import attr
 from openlineage.client import event_v2
@@ -108,7 +108,7 @@ class GCPLineageTransport(Transport):
             )
             raise
 
-    def _run_async_safely(self, coro: Awaitable[T]) -> T:
+    def _run_async_safely(self, coro: Coroutine[Any, Any, T]) -> T:
         """Safely run async coroutine in sync context with robust event loop handling."""
         try:
             loop = asyncio.get_event_loop()
