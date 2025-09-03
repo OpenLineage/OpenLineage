@@ -12,7 +12,7 @@ from openlineage.client.transport.gcplineage import GCPLineageConfig, GCPLineage
 from openlineage.client.uuid import generate_new_uuid
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_gcp_modules():
     """Fixture to mock Google Cloud modules for tests that need GCP transport."""
     with (
@@ -108,7 +108,7 @@ class TestGCPLineageConfig:
 class TestGCPLineageTransportInitialization:
     """Test GCPLineageTransport initialization and client creation."""
 
-    def test_gcplineage_transport_initialization_default_credentials(self, mock_gcp_modules):
+    def test_gcplineage_transport_initialization_default_credentials(self):
         """Test that GCPLineageTransport creates both sync and async clients with default credentials."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -122,7 +122,7 @@ class TestGCPLineageTransportInitialization:
         assert transport.client is not None
         assert transport.async_client is not None
 
-    def test_gcplineage_transport_initialization_with_credentials(self, mock_gcp_modules):
+    def test_gcplineage_transport_initialization_with_credentials(self):
         """Test that GCPLineageTransport creates clients with service account credentials."""
         config = GCPLineageConfig.from_dict(
             {
@@ -136,7 +136,7 @@ class TestGCPLineageTransportInitialization:
         assert transport.client is not None
         assert transport.async_client is not None
 
-    def test_gcplineage_transport_parent_construction(self, mock_gcp_modules):
+    def test_gcplineage_transport_parent_construction(self):
         """Test correct parent string construction for different locations."""
         test_cases = [
             ("test-project", "us-central1", "projects/test-project/locations/us-central1"),
@@ -168,7 +168,7 @@ class TestGCPLineageTransportRouting:
             schemaURL="test",
         )
 
-    def test_routing_dbt_event_to_async(self, mock_gcp_modules):
+    def test_routing_dbt_event_to_async(self):
         """Test that events with JobTypeJobFacet integration='dbt' use async transport."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -186,7 +186,7 @@ class TestGCPLineageTransportRouting:
             mock_emit_async.assert_called_once()
             mock_emit_sync.assert_not_called()
 
-    def test_routing_non_dbt_event_to_sync(self, mock_gcp_modules):
+    def test_routing_non_dbt_event_to_sync(self):
         """Test that events with JobTypeJobFacet integration!='dbt' use sync transport."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -204,7 +204,7 @@ class TestGCPLineageTransportRouting:
             mock_emit_sync.assert_called_once_with(event)
             mock_emit_async.assert_not_called()
 
-    def test_routing_event_without_facets_to_sync(self, mock_gcp_modules):
+    def test_routing_event_without_facets_to_sync(self):
         """Test that events without facets use sync transport."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -229,7 +229,7 @@ class TestGCPLineageTransportRouting:
             mock_emit_sync.assert_called_once_with(event)
             mock_emit_async.assert_not_called()
 
-    def test_routing_custom_async_rules(self, mock_gcp_modules):
+    def test_routing_custom_async_rules(self):
         """Test routing with custom async transport rules."""
 
         config = GCPLineageConfig.from_dict(
@@ -287,7 +287,7 @@ class TestGCPLineageTransportRouting:
             mock_emit_sync.assert_called_once_with(airflow_task_event)
             mock_emit_async.assert_not_called()
 
-    def test_routing_non_run_event_warning(self, mock_gcp_modules):
+    def test_routing_non_run_event_warning(self):
         """Test that non-RunEvent objects are handled with warning."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -305,7 +305,7 @@ class TestGCPLineageTransportRouting:
 class TestGCPLineageTransportMethods:
     """Test GCPLineageTransport emit methods."""
 
-    def test_emit_sync_success(self, mock_gcp_modules):
+    def test_emit_sync_success(self):
         """Test successful sync emit."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -315,7 +315,7 @@ class TestGCPLineageTransportMethods:
         # This should not raise an exception
         transport._emit_sync(event)
 
-    def test_emit_sync_error(self, mock_gcp_modules):
+    def test_emit_sync_error(self):
         """Test sync emit error handling."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -329,7 +329,7 @@ class TestGCPLineageTransportMethods:
         with pytest.raises(Exception, match="GCP API error"):
             transport._emit_sync(event)
 
-    def test_emit_async_error(self, mock_gcp_modules):
+    def test_emit_async_error(self):
         """Test async emit error handling."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -374,7 +374,7 @@ class TestGCPLineageTransportAsyncRules:
             schemaURL="test",
         )
 
-    def test_should_use_async_transport_method(self, mock_gcp_modules):
+    def test_should_use_async_transport_method(self):
         """Test _should_use_async_transport method directly."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
@@ -398,7 +398,7 @@ class TestGCPLineageTransportAsyncRules:
         event_spark = self._create_event("SPARK", "JOB")
         assert transport._should_use_async_transport(event_spark) is False
 
-    def test_wildcard_rules(self, mock_gcp_modules):
+    def test_wildcard_rules(self):
         """Test wildcard async transport rules."""
 
         config = GCPLineageConfig.from_dict(
@@ -460,7 +460,7 @@ class TestGCPLineageTransportIntegration:
         assert "gcplineage" in factory.transports
         assert factory.transports["gcplineage"] == GCPLineageTransport
 
-    def test_gcplineage_transport_creation_from_dict(self, mock_gcp_modules):
+    def test_gcplineage_transport_creation_from_dict(self):
         """Test creating GCPLineageTransport through factory from dict config."""
         from openlineage.client.transport import get_default_factory
 
@@ -487,7 +487,7 @@ class TestGCPLineageTransportIntegration:
             "OPENLINEAGE__TRANSPORT__LOCATION": "europe-west1",
         },
     )
-    def test_gcplineage_transport_from_ol_environment(self, mock_gcp_modules):
+    def test_gcplineage_transport_from_ol_environment(self):
         """Test creating GCPLineageTransport from environment variables."""
         from openlineage.client import OpenLineageClient
 

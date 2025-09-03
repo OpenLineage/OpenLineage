@@ -156,8 +156,6 @@ class GCPLineageTransport(Transport):
 
             event_dict = json.loads(Serde.to_json(event))
 
-            if self.async_client is None:
-                raise RuntimeError("GCP Lineage async client not initialized")
             await self.async_client.process_open_lineage_run_event(
                 parent=self.parent, open_lineage=event_dict
             )
@@ -204,24 +202,20 @@ class GCPLineageTransport(Transport):
         sync_result = True
         async_result = True
 
-        # Close sync client if it exists
-        if self.client:
-            try:
-                self.client.transport.close()
-            except Exception as e:
-                log.warning("Error closing GCP lineage client (sync): %s", e)
-                sync_result = False
+        try:
+            self.client.transport.close()
+        except Exception as e:
+            log.warning("Error closing GCP lineage client (sync): %s", e)
+            sync_result = False
+        # Close async client
+        try:
 
-        # Close async client if it exists
-        if self.async_client:
-            try:
+            async def close_async() -> None:
+                await self.async_client.transport.close()
 
-                async def close_async() -> None:
-                    await self.async_client.transport.close()
-
-                self._run_async_safely(close_async())
-            except Exception as e:
-                log.warning("Error closing GCP lineage client (async): %s", e)
-                async_result = False
+            self._run_async_safely(close_async())
+        except Exception as e:
+            log.warning("Error closing GCP lineage client (async): %s", e)
+            async_result = False
 
         return sync_result and async_result
