@@ -116,8 +116,11 @@ class GCPLineageTransport(Transport):
                 # Event loop is running, use thread pool
                 import concurrent.futures
 
+                def _run_coro() -> T:
+                    return asyncio.run(coro)
+
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    return executor.submit(asyncio.run, coro).result()
+                    return executor.submit(_run_coro).result()
             else:
                 # Event loop exists but not running
                 return loop.run_until_complete(coro)
