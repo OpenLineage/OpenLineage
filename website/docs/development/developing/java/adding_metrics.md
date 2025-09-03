@@ -1,6 +1,6 @@
 ---
 title: Metrics Backends
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 To integrate additional metrics backend into the OpenLineage client, implement the `MeterRegistryFactory` interface and ensure it is utilized by the `MicrometerProvider`'s `getMetricsBuilders` method.
