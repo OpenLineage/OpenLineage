@@ -18,6 +18,13 @@ import io.openlineage.client.transports.TransportConfig;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -166,5 +173,164 @@ class OpenLineageClientUtilsTest {
     HttpConfig httpConfig = (HttpConfig) transportConfig;
     assertThat(httpConfig.getUrl()).isEqualTo(URI.create("https://localhost:1234/api/v1/lineage"));
     assertThat(httpConfig.getCompression()).isEqualTo(HttpConfig.Compression.GZIP);
+  }
+
+  @Test
+  void testGetOrCreateExecutor_createsFixedThreadPool() {
+    // Clear any existing executor first
+    clearExecutor();
+
+    ExecutorService executor = OpenLineageClientUtils.getOrCreateExecutor();
+
+    assertThat(executor).isNotNull();
+    assertThat(executor).isInstanceOf(ThreadPoolExecutor.class);
+
+    ThreadPoolExecutor threadPool = (ThreadPoolExecutor) executor;
+    // FixedThreadPool has core and max pool size equal
+    assertThat(threadPool.getCorePoolSize())
+        .isEqualTo(OpenLineageClientUtils.DEFAULT_THREAD_POOL_SIZE);
+    assertThat(threadPool.getMaximumPoolSize())
+        .isEqualTo(OpenLineageClientUtils.DEFAULT_THREAD_POOL_SIZE);
+  }
+
+  @Test
+  void testGetOrCreateExecutor_returnsSameInstanceOnMultipleCalls() {
+    // Clear any existing executor first
+    clearExecutor();
+
+    ExecutorService executor1 = OpenLineageClientUtils.getOrCreateExecutor();
+    ExecutorService executor2 = OpenLineageClientUtils.getOrCreateExecutor();
+
+    assertThat(executor1).isSameAs(executor2);
+  }
+
+  @Test
+  void testGetOrCreateExecutor_withCustomThreadFactory() {
+    // Clear any existing executor first
+    clearExecutor();
+
+    ThreadFactory customFactory =
+        r -> {
+          Thread t = new Thread(r);
+          t.setName("custom-thread");
+          return t;
+        };
+
+    ExecutorService executor = OpenLineageClientUtils.getOrCreateExecutor(customFactory);
+
+    assertThat(executor).isNotNull();
+    assertThat(executor).isInstanceOf(ThreadPoolExecutor.class);
+
+    ThreadPoolExecutor threadPool = (ThreadPoolExecutor) executor;
+    assertThat(threadPool.getCorePoolSize())
+        .isEqualTo(OpenLineageClientUtils.DEFAULT_THREAD_POOL_SIZE);
+    assertThat(threadPool.getMaximumPoolSize())
+        .isEqualTo(OpenLineageClientUtils.DEFAULT_THREAD_POOL_SIZE);
+  }
+
+  @Test
+  void testGetOrCreateExecutor_threadSafety() throws InterruptedException {
+    // Clear any existing executor first
+    clearExecutor();
+
+    int threadCount = 10;
+    CountDownLatch startLatch = new CountDownLatch(1);
+    CountDownLatch endLatch = new CountDownLatch(threadCount);
+    @SuppressWarnings("unchecked")
+    AtomicReference<ExecutorService>[] results = new AtomicReference[threadCount];
+
+    // Initialize the array
+    for (int i = 0; i < threadCount; i++) {
+      results[i] = new AtomicReference<>();
+    }
+
+    // Create multiple threads that will call getOrCreateExecutor simultaneously
+    for (int i = 0; i < threadCount; i++) {
+      final int index = i;
+      new Thread(
+              () -> {
+                try {
+                  startLatch.await(); // Wait for all threads to be ready
+                  ExecutorService executor = OpenLineageClientUtils.getOrCreateExecutor();
+                  results[index].set(executor);
+                } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                } finally {
+                  endLatch.countDown();
+                }
+              })
+          .start();
+    }
+
+    startLatch.countDown(); // Start all threads simultaneously
+    assertThat(endLatch.await(5, TimeUnit.SECONDS)).isTrue();
+
+    // All threads should get the same executor instance
+    ExecutorService firstResult = results[0].get();
+    assertThat(firstResult).isNotNull();
+
+    for (int i = 1; i < threadCount; i++) {
+      assertThat(results[i].get()).isSameAs(firstResult);
+    }
+  }
+
+  @Test
+  void testGetExecutor_whenNotCreated() {
+    // Clear any existing executor first
+    clearExecutor();
+
+    Optional<ExecutorService> executor = OpenLineageClientUtils.getExecutor();
+
+    assertThat(executor).isEmpty();
+  }
+
+  @Test
+  void testGetExecutor_afterCreation() {
+    // Clear any existing executor first
+    clearExecutor();
+
+    ExecutorService created = OpenLineageClientUtils.getOrCreateExecutor();
+    Optional<ExecutorService> retrieved = OpenLineageClientUtils.getExecutor();
+
+    assertThat(retrieved).isPresent();
+    assertThat(retrieved.get()).isSameAs(created);
+  }
+
+  @Test
+  void testExecutorThreadFactory_createsNamedThreads() {
+    OpenLineageClientUtils.ExecutorThreadFactory factory =
+        new OpenLineageClientUtils.ExecutorThreadFactory("test-prefix");
+
+    Thread thread1 = factory.newThread(() -> {});
+    Thread thread2 = factory.newThread(() -> {});
+
+    assertThat(thread1.getName()).startsWith("test-prefix-");
+    assertThat(thread2.getName()).startsWith("test-prefix-");
+    assertThat(thread1.getName()).isNotEqualTo(thread2.getName());
+
+    // Verify thread properties
+    assertThat(thread1.isDaemon()).isFalse();
+    assertThat(thread1.getPriority()).isEqualTo(Thread.NORM_PRIORITY);
+  }
+
+  /**
+   * Helper method to clear the static executor for test isolation. Uses reflection to access the
+   * private static field.
+   */
+  @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
+  private void clearExecutor() {
+    try {
+      java.lang.reflect.Field executorField =
+          OpenLineageClientUtils.class.getDeclaredField("EXECUTOR");
+      executorField.setAccessible(true);
+      AtomicReference<ExecutorService> executorRef =
+          (AtomicReference<ExecutorService>) executorField.get(null);
+      ExecutorService existing = executorRef.getAndSet(null);
+      if (existing != null) {
+        existing.shutdown();
+      }
+    } catch (Exception e) {
+      // Ignore reflection errors in tests
+    }
   }
 }
