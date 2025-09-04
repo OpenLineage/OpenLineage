@@ -246,9 +246,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     meterRegistry.counter("openlineage.spark.event.job.end").increment();
     circuitBreaker.run(
         () -> {
-          if (SparkVersionUtils.isSpark3OrHigher(sparkVersion)) {
-            jobMetrics.cleanUp(jobEnd.jobId());
-          }
           if (context != null) {
             context.end(jobEnd);
           }

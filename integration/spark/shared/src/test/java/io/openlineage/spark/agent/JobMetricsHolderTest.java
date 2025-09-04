@@ -41,6 +41,7 @@ class JobMetricsHolderTest {
         .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 110L);
 
     // second poll event should clear the maps
+    underTest.cleanUp(0);
     Map<JobMetricsHolder.Metric, Number> secondPollResult = underTest.pollMetrics(0);
     assertThat(secondPollResult).isEmpty();
   }
@@ -125,12 +126,13 @@ class JobMetricsHolderTest {
   }
 
   @Test
-  void testPollingMetricsClearsMetrics() {
+  void testCleanUpClearsMaps() {
     // add some stage and metric
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
     underTest.addMetrics(1, outputTaskMetrics(100, 10));
 
     assertThat(underTest.pollMetrics(0).get(Metric.WRITE_RECORDS)).isEqualTo(10L);
+    underTest.cleanUp(0);
     assertThat(underTest.pollMetrics(0)).isEmpty();
   }
 

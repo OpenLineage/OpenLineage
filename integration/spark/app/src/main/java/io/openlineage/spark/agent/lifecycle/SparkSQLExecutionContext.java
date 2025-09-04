@@ -16,6 +16,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -155,6 +156,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
+    if (eventType.equals(EventType.COMPLETE)) {
+      // clean up metrics on complete only
+      olContext.getActiveJobId().ifPresent(i -> JobMetricsHolder.getInstance().cleanUp(i));
+    }
     if (log.isDebugEnabled()) {
       log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
     }
@@ -242,6 +247,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     log.debug("SparkListenerJobStart - executionId: {}", executionId);
+    olContext.setActiveJobId(jobStart.jobId());
+
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
       return;
@@ -320,6 +327,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
+    if (eventType.equals(EventType.COMPLETE)) {
+      // clean up metrics on complete only
+      JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
+    }
     log.debug("Posting event for end {}: {}", executionId, event);
     eventEmitter.emit(event);
   }
