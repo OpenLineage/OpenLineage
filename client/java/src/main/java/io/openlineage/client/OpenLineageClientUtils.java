@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,9 @@ import lombok.extern.slf4j.Slf4j;
 public final class OpenLineageClientUtils {
   private OpenLineageClientUtils() {}
 
+  /** Default thread pool size for the executor service. */
+  public static final int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors() + 2;
+
   private static final ObjectMapper MAPPER = newObjectMapper();
 
   private static final ObjectMapper YML = newObjectMapper(new YAMLFactory());
@@ -62,7 +66,7 @@ public final class OpenLineageClientUtils {
    * An {@link ExecutorService} that can be used for asynchronous operations. It is initialized to
    * null and can be set up when needed.
    */
-  private static ExecutorService EXECUTOR;
+  private static final AtomicReference<ExecutorService> EXECUTOR = new AtomicReference<>();
 
   @JsonFilter("disabledFacets")
   public class DisabledFacetsMixin {}
@@ -353,21 +357,28 @@ public final class OpenLineageClientUtils {
   }
 
   public static ExecutorService getOrCreateExecutor() {
-    if (EXECUTOR == null || EXECUTOR.isShutdown()) {
-      EXECUTOR = Executors.newCachedThreadPool(new ExecutorThreadFactory("openlineage-executor"));
-    }
-    return EXECUTOR;
+    return EXECUTOR.updateAndGet(
+        existing -> {
+          if (existing == null) {
+            return Executors.newFixedThreadPool(
+                DEFAULT_THREAD_POOL_SIZE, new ExecutorThreadFactory("openlineage-executor"));
+          }
+          return existing;
+        });
   }
 
   public static ExecutorService getOrCreateExecutor(ThreadFactory threadFactory) {
-    if (EXECUTOR == null || EXECUTOR.isShutdown()) {
-      EXECUTOR = Executors.newCachedThreadPool(threadFactory);
-    }
-    return EXECUTOR;
+    return EXECUTOR.updateAndGet(
+        existing -> {
+          if (existing == null) {
+            return Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE, threadFactory);
+          }
+          return existing;
+        });
   }
 
   public static Optional<ExecutorService> getExecutor() {
-    return Optional.ofNullable(EXECUTOR);
+    return Optional.ofNullable(EXECUTOR.get());
   }
 
   public static class ExecutorThreadFactory implements java.util.concurrent.ThreadFactory {
@@ -389,7 +400,6 @@ public final class OpenLineageClientUtils {
     @Override
     public Thread newThread(Runnable r) {
       Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
-      if (t.isDaemon()) t.setDaemon(false);
       if (t.getPriority() != Thread.NORM_PRIORITY) t.setPriority(Thread.NORM_PRIORITY);
       return t;
     }
