@@ -23,6 +23,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
@@ -335,7 +336,7 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, times(4)).emit(lineageEvent.capture());
-    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
+    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(3);
     assertThat(completeEvent.getInputs())
         .singleElement()
         .hasFieldOrPropertyWithValue(NAME, csvPath)
@@ -349,6 +350,14 @@ class SparkReadWriteIntegTest {
     // last event shall be complete
     assertThat(lineageEvent.getAllValues().get(3))
         .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
+
+    // assert output statistics are present on COMPLETE event
+    assertThat(completeEvent.getOutputs())
+        .first()
+        .extracting(OutputDataset::getOutputFacets)
+        .extracting(OutputDatasetOutputFacets::getOutputStatistics)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("rowCount", 4L);
   }
 
   @Test

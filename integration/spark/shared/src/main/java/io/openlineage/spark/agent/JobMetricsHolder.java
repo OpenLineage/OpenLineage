@@ -67,11 +67,10 @@ public class JobMetricsHolder {
    * @return
    */
   public Map<Metric, Number> pollMetrics(int jobId) {
-    if (jobMetrics.containsKey(jobId)) {
-      return jobMetrics.remove(jobId);
-    } else {
-      return computeJobMetricsAndClearTemporaryResults(jobId);
+    if (!jobMetrics.containsKey(jobId)) {
+      jobMetrics.put(jobId, computeJobMetricsAndClearTemporaryResults(jobId));
     }
+    return jobMetrics.get(jobId);
   }
 
   private Map<Metric, Number> computeJobMetricsAndClearTemporaryResults(int jobId) {

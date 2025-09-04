@@ -12,6 +12,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetBuilder;
 import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.UUIDUtils;
@@ -265,12 +266,13 @@ class RddExecutionContext implements ExecutionContext {
     olContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
     FacetUtils.attachSmartDebugFacet(olContext, runFacetsBuilder);
 
+    EventType eventType = getEventType(jobEnd.jobResult());
     OpenLineage.RunEvent event =
         olContext
             .getOpenLineage()
             .newRunEventBuilder()
             .eventTime(toZonedTime(jobEnd.time()))
-            .eventType(getEventType(jobEnd.jobResult()))
+            .eventType(eventType)
             .inputs(inputDatasets)
             .outputs(outputDatasets)
             .run(
@@ -282,6 +284,10 @@ class RddExecutionContext implements ExecutionContext {
                     .build())
             .job(buildJob(jobEnd.jobId()))
             .build();
+    if (eventType.equals(EventType.COMPLETE)) {
+      // clean up metrics on complete only
+      JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
+    }
     log.debug("Posting event for end {}: {}", jobEnd, event);
     eventEmitter.emit(event);
   }
