@@ -53,6 +53,7 @@ class DbtRunRunFacet(BaseFacet):
     dbt_runtime: Optional[str] = attr.field(default=None)
     project_version: Optional[str] = attr.field(default=None)
     profile_name: Optional[str] = attr.field(default=None)
+    account_id: Optional[str] = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
