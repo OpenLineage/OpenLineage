@@ -13,6 +13,7 @@ import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 
+import io.openlineage.client.SchemaParser.PrimitiveType;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -24,6 +25,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.lang.model.element.Modifier;
@@ -208,12 +210,17 @@ public class JavaPoetGenerator {
 
       @Override
       public void onField(ResolvedField f) {
-        constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
-        constructor.addParameter(
-            ParameterSpec.builder(getTypeName(f.getType()), f.getName())
-                .addAnnotation(AnnotationSpec.builder(JsonProperty.class).addMember("value", "$S", f.getName()).build())
-                .build());
-        constructor.addCode("this.$N = $N;\n", f.getName(), f.getName());
+        if (f.getConstantValue().isPresent()) {
+          // add code to constructor, skip parameter
+          constructor.addCode("this.$N = \"$N\";\n", f.getName(), f.getConstantValue().get());
+        } else {
+          constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
+          constructor.addParameter(
+              ParameterSpec.builder(getTypeName(f.getType()), f.getName())
+                  .addAnnotation(AnnotationSpec.builder(JsonProperty.class).addMember("value", "$S", f.getName()).build())
+                  .build());
+          constructor.addCode("this.$N = $N;\n", f.getName(), f.getName());
+        }
       }
 
     });
@@ -320,6 +327,10 @@ public class JavaPoetGenerator {
       // only regular fields are used in the builder
       @Override
       public void onField(ResolvedField f) {
+        if (f.getConstantValue().isPresent()) {
+          // skip builder for constants
+          return;
+        }
         builderClassBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE);
         builderClassBuilder.addMethod(
             MethodSpec
@@ -377,6 +388,10 @@ public class JavaPoetGenerator {
 
       @Override
       public void onField(ResolvedField f) {
+        if (f.getConstantValue().isPresent()) {
+          // skip builder for constants
+          return;
+        }
         builderParams.add(CodeBlock.of("$N", f.getName()));
       }
     });
@@ -416,6 +431,10 @@ public class JavaPoetGenerator {
 
       @Override
       public void onField(ResolvedField f) {
+        if (f.getConstantValue().isPresent()) {
+          // skip builder for constants
+          return;
+        }
         factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
         factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
         factoryParams.add(CodeBlock.of("$N", f.getName()));
@@ -481,6 +500,11 @@ public class JavaPoetGenerator {
           .addModifiers(ABSTRACT, PUBLIC)
           .build();
       interfaceBuilder.addMethod(getter);
+
+      if (f.getConstantValue().isPresent()) {
+        // skip builder for constants
+        continue;
+      }
 
       if (isADeletedField(f)) {
         // add isDeleted() method in addition to get_deleted()
@@ -558,6 +582,10 @@ public class JavaPoetGenerator {
 
           @Override
           public void onField(ResolvedField f) {
+            if (f.getConstantValue().isPresent()) {
+              // skip builder for constants
+              return;
+            }
             addConstructorParameter(constructor, f);
 
           }
@@ -617,6 +645,10 @@ public class JavaPoetGenerator {
 
       @Override
       public void onField(ResolvedField f) {
+        if (f.getConstantValue().isPresent()) {
+          // skip builder for constants
+          return;
+        }
         factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
         factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
         factoryParams.add(CodeBlock.of("$N", f.getName()));
