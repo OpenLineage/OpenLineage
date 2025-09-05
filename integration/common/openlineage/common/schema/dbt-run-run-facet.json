@@ -30,6 +30,11 @@
             "dbt_runtime": {
               "type": "str",
               "example": "cloud"
+            },
+            "account_id": {
+              "type": "str",
+              "description": "dbt cloud account id",
+              "example": "1234567890"
             }
           },
           "required": ["invocation_id"]
