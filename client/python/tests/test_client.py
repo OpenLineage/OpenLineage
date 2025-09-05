@@ -610,7 +610,7 @@ def test_composite_transport_with_aliased_url() -> None:
     assert transport.kind == CompositeTransport.kind
     assert len(transport.transports) == 1
     assert transport.transports[0].kind == HttpTransport.kind
-    assert isinstance(transport.transports[0].config.auth, TokenProvider)
+    assert type(transport.transports[0].config.auth) is TokenProvider
 
 
 @patch.dict(
@@ -626,7 +626,7 @@ def test_composite_transport_with_aliased_url_and_api_key() -> None:
     assert transport.kind == CompositeTransport.kind
     assert len(transport.transports) == 1
     assert transport.transports[0].kind == HttpTransport.kind
-    assert isinstance(transport.transports[0].config.auth, ApiKeyTokenProvider)
+    assert type(transport.transports[0].config.auth) is ApiKeyTokenProvider
     assert transport.transports[0].config.auth.api_key == "random_key"
 
 
@@ -665,7 +665,7 @@ def test_composite_transport_with_aliased_url_and_overriden_alias() -> None:
     os.environ,
     {
         "OPENLINEAGE__TRANSPORT": '{"type": "async_http", "url": "https://data-obs-intake.datadoghq.com", '
-        '"auth": {"type": "apiKey", "apiKey": "YOUR_API_KEY"}}',
+        '"auth": {"type": "api_key", "apiKey": "YOUR_API_KEY"}}',
     },
 )
 def test_configures_async_transport() -> None:
@@ -675,6 +675,8 @@ def test_configures_async_transport() -> None:
     transport: AsyncHttpTransport = client.transport
     with closing_immediately(transport) as transport:
         assert transport.kind == "async_http"
+        assert type(transport.config.auth) is ApiKeyTokenProvider
+        assert transport.config.auth.api_key == "YOUR_API_KEY"
 
 
 @patch.dict(

@@ -16,8 +16,17 @@ from openlineage.client.transport.http import (
     HttpCompression,
     HttpConfig,
     HttpTransport,
+    TokenProvider,
 )
 from openlineage.client.uuid import generate_new_uuid
+
+
+class CustomTokenProvider(TokenProvider):
+    pass
+
+
+class NotATokenProvider:
+    pass
 
 
 class TestHttpConfig:
@@ -51,6 +60,7 @@ class TestHttpConfig:
         assert config.url == "http://backend:5000"
         assert config.endpoint == "api/v1/lineage"
         assert config.verify is False
+        assert type(config.auth) is ApiKeyTokenProvider
         assert config.auth.api_key == "1500100900"
         assert config.compression is HttpCompression.GZIP
         assert config.retry == {
@@ -75,8 +85,68 @@ class TestHttpConfig:
         )
         assert config.url == "http://backend:5000/api/v1/lineage"
         assert config.verify is True
-        assert not hasattr(config.auth, "api_key")
+        assert type(config.auth) is TokenProvider
         assert config.compression is None
+
+    def test_http_loads_auth_type_api_key_camelcase(self):
+        config = HttpConfig.from_dict(
+            {
+                "type": "http",
+                "url": "http://backend:5000/api/v1/lineage",
+                "auth": {
+                    "type": "api_key",
+                    "apiKey": "1500100900",
+                },
+            },
+        )
+        assert type(config.auth) is ApiKeyTokenProvider
+        assert config.auth.api_key == "1500100900"
+
+    def test_http_loads_auth_type_custom(self):
+        config = HttpConfig.from_dict(
+            {
+                "type": "http",
+                "url": "http://backend:5000/api/v1/lineage",
+                "auth": {
+                    "type": f"{__name__}.CustomTokenProvider",
+                },
+            },
+        )
+        assert type(config.auth) is CustomTokenProvider
+
+    def test_http_loads_auth_type_cannot_import(self):
+        config_dict = {
+            "type": "http",
+            "url": "http://backend:5000/api/v1/lineage",
+            "auth": {
+                "type": "fake.module.TokenProvider",
+            },
+        }
+        with pytest.raises(ImportError):
+            HttpConfig.from_dict(config_dict)
+
+    def test_http_loads_auth_type_is_not_class(self):
+        config_dict = {
+            "type": "http",
+            "url": "http://backend:5000/api/v1/lineage",
+            "auth": {
+                "type": "os.path.exists",
+            },
+        }
+        with pytest.raises(TypeError, match="Expected token provider <function exists .*> to be a class"):
+            HttpConfig.from_dict(config_dict)
+
+    def test_http_loads_auth_type_is_not_token_provider(self):
+        config_dict = {
+            "type": "http",
+            "url": "http://backend:5000/api/v1/lineage",
+            "auth": {
+                "type": f"{__name__}.NotATokenProvider",
+            },
+        }
+        error_msg = f"<class '{__name__}.NotATokenProvider'> is not a subclass of TokenProvider"
+        with pytest.raises(TypeError, match=error_msg):
+            HttpConfig.from_dict(config_dict)
 
     def test_http_client_loads_retry(self):
         total = 7
