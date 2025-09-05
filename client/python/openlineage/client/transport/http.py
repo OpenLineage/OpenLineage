@@ -15,7 +15,7 @@ import attr
 import urllib3.util
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import get_only_specified_fields, try_import_from_string
+from openlineage.client.utils import get_only_specified_fields, import_from_string
 from requests import Session
 from requests.adapters import HTTPAdapter
 
@@ -57,16 +57,24 @@ class ApiKeyTokenProvider(TokenProvider):
 
 
 def create_token_provider(auth: dict[str, str]) -> TokenProvider:
-    if "type" in auth:
-        if auth["type"] == "api_key":
-            return ApiKeyTokenProvider(auth)
+    if "type" not in auth:
+        log.debug("No auth type specified, fallback to default TokenProvider")
+        return TokenProvider({})
 
-        of_type: str = auth["type"]
-        subclass = try_import_from_string(of_type)
-        if inspect.isclass(subclass) and issubclass(subclass, TokenProvider):
-            return subclass(auth)
+    if auth["type"] == "api_key":
+        log.debug("Using ApiKeyTokenProvider")
+        return ApiKeyTokenProvider(auth)
 
-    return TokenProvider({})
+    of_type: str = auth["type"]
+    subclass = import_from_string(of_type)
+
+    if not inspect.isclass(subclass):
+        raise TypeError(f"Expected token provider {subclass} to be a class")
+    if not issubclass(subclass, TokenProvider):
+        raise TypeError(f"{subclass} is not a subclass of TokenProvider")
+
+    log.debug("Using %s as token provider", subclass)
+    return subclass(auth)
 
 
 def get_session() -> Session:
