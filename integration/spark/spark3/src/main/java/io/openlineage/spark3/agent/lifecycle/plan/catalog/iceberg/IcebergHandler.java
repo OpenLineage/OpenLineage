@@ -88,8 +88,8 @@ public class IcebergHandler implements CatalogHandler {
       return Optional.empty();
     }
     Map<String, String> conf = catalogConf.get();
-    String catalogType =
-        Optional.ofNullable(conf.get(TYPE)).orElse(getCatalogTypeHandler(conf).getType());
+    BaseCatalogTypeHandler catalogTypeHandler = getCatalogTypeHandler(conf);
+    String catalogType = Optional.ofNullable(conf.get(TYPE)).orElse(catalogTypeHandler.getType());
 
     OpenLineage.CatalogDatasetFacetBuilder builder =
         context
@@ -110,6 +110,13 @@ public class IcebergHandler implements CatalogHandler {
       builder.metadataUri(catalogUri);
     }
 
+    Map<String, String> catalogProperties = catalogTypeHandler.catalogProperties(conf);
+    if (!catalogProperties.isEmpty()) {
+      OpenLineage.CatalogDatasetFacetCatalogPropertiesBuilder catalogPropertiesBuilder =
+          context.getOpenLineage().newCatalogDatasetFacetCatalogPropertiesBuilder();
+      catalogProperties.forEach(catalogPropertiesBuilder::put);
+      builder.catalogProperties(catalogPropertiesBuilder.build());
+    }
     return Optional.of(CatalogWithAdditionalFacets.of(builder.build()));
   }
 
