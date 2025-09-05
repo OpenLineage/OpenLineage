@@ -98,9 +98,8 @@ When enabled, the library will:
 
 The OpenLineage integration can be disabled at startup. This is useful for temporarily turning off metadata collection for debugging or in specific environments. The configuration is checked in the following order of precedence:
 
-1.  **Native Airflow Provider:** If the `apache-airflow-providers-openlineage` package is installed, this plugin will be automatically disabled to prevent conflicts.
-2.  **`OPENLINEAGE_DISABLED` Environment Variable:** If this environment variable is set to `true`, the integration will be disabled. This acts as a master switch.
-3.  **`openlineage.disabled` Airflow Variable:** If neither of the above conditions is met, the plugin will check for an Airflow Variable named `openlineage.disabled`. If this variable is set to `true`, the integration will be disabled.
+1.  **`OPENLINEAGE_DISABLED` Environment Variable:** If this environment variable is set to `true`, the integration will be disabled. This acts as a master switch.
+2.  **`openlineage.disabled` Airflow Variable:** If the environment variable is not set to `true`, the plugin will check for an Airflow Variable named `openlineage.disabled`. If this variable is set to `true`, the integration will be disabled.
 
 To use the Airflow Variable, create a new Variable in the Airflow UI (**Admin -> Variables**) with:
 - **Key**: `openlineage.disabled`
