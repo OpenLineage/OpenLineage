@@ -27,6 +27,9 @@ class CatalogDatasetFacet(DatasetFacet):
     source: str | None = attr.field(default=None)
     """Source system where the catalog is configured."""
 
+    catalogProperties: dict[str, str] | None = attr.field(factory=dict)  # noqa: N815
+    """Additional catalog properties"""
+
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/CatalogDatasetFacet.json#/$defs/CatalogDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-1-0/CatalogDatasetFacet.json#/$defs/CatalogDatasetFacet"
