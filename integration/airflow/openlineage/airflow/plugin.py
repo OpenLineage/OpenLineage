@@ -22,6 +22,7 @@ def _is_disabled():
         from airflow.providers.openlineage.plugins.openlineage import (  # noqa: F401
             OpenLineageProviderPlugin,
         )
+
         return True
     except ImportError:
         pass
