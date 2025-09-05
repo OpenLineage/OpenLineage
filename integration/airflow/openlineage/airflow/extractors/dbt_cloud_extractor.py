@@ -179,6 +179,7 @@ class DbtCloudExtractor(BaseExtractor):
                 profile=connection,
                 catalog=catalog,
                 project_name=self.context["project_name"],
+                account_id=account_id,
             )
 
             # parent run is an Airflow task triggering DBT Cloud run

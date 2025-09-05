@@ -32,7 +32,9 @@ T = TypeVar("T")
 class DbtCloudArtifactProcessor(DbtArtifactProcessor):
     should_raise_on_unsupported_command = False
 
-    def __init__(self, manifest, run_result, profile, catalog, project_name=None, *args, **kwargs):
+    def __init__(
+        self, manifest, run_result, profile, catalog, project_name=None, account_id=None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.manifest = manifest
@@ -40,6 +42,7 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
         self.profile = profile
         self.catalog = catalog
         self.project_name = project_name
+        self.account_id = account_id
 
     @classmethod
     def check_metadata_version(
@@ -79,5 +82,6 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
                 project_name=self.project_name,
                 profile_name=self.profile["name"],
                 dbt_runtime="cloud",
+                account_id=self.account_id,
             )
         }
