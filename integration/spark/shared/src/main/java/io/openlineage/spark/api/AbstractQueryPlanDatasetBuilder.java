@@ -75,6 +75,8 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
                     .collect(Collectors.toList());
               } else if (PlanUtils.safeIsDefinedAt(visitor, qe.optimizedPlan())) {
                 return PlanUtils.safeApply(visitor, qe.optimizedPlan());
+              } else if (PlanUtils.safeIsDefinedAt(visitor, qe.analyzed())) {
+                return PlanUtils.safeApply(visitor, qe.analyzed());
               } else {
                 return Collections.<D>emptyList();
               }
