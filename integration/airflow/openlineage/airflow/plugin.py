@@ -26,7 +26,20 @@ def _is_disabled():
         return True
     except ImportError:
         pass
-    return os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true"
+
+    if os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true":
+        return True
+
+    try:
+        from airflow.models.variable import Variable
+
+        variable_val = Variable.get("openlineage.disabled", default_var="false")
+        if variable_val.lower() in ("t", "true", "1"):
+            return True
+    except Exception:
+        pass
+
+    return False
 
 
 if (
