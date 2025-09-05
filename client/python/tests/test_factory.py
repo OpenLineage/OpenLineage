@@ -11,11 +11,12 @@ import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.transport import (
     DefaultTransportFactory,
+    HttpTransport,
     KafkaTransport,
+    NoopTransport,
+    Transport,
     get_default_factory,
 )
-from openlineage.client.transport.http import HttpTransport
-from openlineage.client.transport.noop import NoopTransport
 
 from tests.transport import AccumulatingTransport, FakeTransport
 
@@ -192,6 +193,14 @@ def test_factory_create_transport_missing_type() -> None:
         factory._create_transport(config)
 
 
+def test_factory_create_transport_cannot_import_transport_class() -> None:
+    """Test error when transport class cannot be imported."""
+    factory = DefaultTransportFactory()
+
+    with pytest.raises(ImportError, match="Failed to import fake.module.Transport"):
+        factory._create_transport({"type": "fake.module.Transport"})
+
+
 def test_factory_create_transport_invalid_transport_class() -> None:
     """Test error when transport class is not a Transport subclass."""
     factory = DefaultTransportFactory()
@@ -201,16 +210,29 @@ def test_factory_create_transport_invalid_transport_class() -> None:
         pass
 
     factory.register_transport("invalid", NotATransport)
-    config = {"type": "invalid"}
 
     with pytest.raises(TypeError, match="Transport .* has to be class, and subclass of Transport"):
-        factory._create_transport(config)
+        factory._create_transport({"type": "invalid"})
+
+
+def test_factory_create_transport_cannot_import_config_class() -> None:
+    """Test error when config class cannot be imported."""
+    factory = DefaultTransportFactory()
+
+    class InvalidTransport(Transport):
+        config_class = "fake.module.Config"
+
+        def emit(self, event):
+            pass
+
+    factory.register_transport("invalid_config", InvalidTransport)
+
+    with pytest.raises(ImportError, match="Failed to import fake.module.Config"):
+        factory._create_transport({"type": "invalid_config"})
 
 
 def test_factory_create_transport_invalid_config_class() -> None:
     """Test error when config class is not a Config subclass."""
-    from openlineage.client.transport import Transport
-
     factory = DefaultTransportFactory()
 
     # Create a transport with invalid config_class
