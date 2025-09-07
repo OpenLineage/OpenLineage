@@ -15,9 +15,9 @@ plugins {
     id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '7.0.2'
     id "org.openapi.generator" version "6.6.0"
-    id "com.gradleup.shadow" version "8.3.8"
+    id "com.gradleup.shadow" version "9.1.0"
     id "pmd"
-    id "io.freefair.lombok" version "8.14"
+    id "io.freefair.lombok" version "8.14.2"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
@@ -53,12 +53,12 @@ repositories {
 }
 
 ext {
-    assertjVersion = '3.27.3'
+    assertjVersion = '3.27.4'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.13.3'
-    lombokVersion = '1.18.38'
-    mockitoVersion = '5.18.0'
-    micrometerVersion = '1.15.2'
+    junit5Version = '5.13.4'
+    lombokVersion = '1.18.40'
+    mockitoVersion = '5.19.0'
+    micrometerVersion = '1.15.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     guavaVersion = '33.4.8-jre'
 }
@@ -82,7 +82,7 @@ dependencies {
     implementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.kafka:kafka-clients:4.0.0'
+    compileOnly 'org.apache.kafka:kafka-clients:4.1.0'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
