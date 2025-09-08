@@ -352,7 +352,7 @@
 				"name": "sha256",
 				"checksum": "6f18a29204dad1de6dbb0c288144c4990742e0a1e065c3b2a67b5f98334c22ba"
 			},
-			"tags": [],
+			"tags": ["postgres", "test"],
 			"refs": [
 				["raw_customers"]
 			],
