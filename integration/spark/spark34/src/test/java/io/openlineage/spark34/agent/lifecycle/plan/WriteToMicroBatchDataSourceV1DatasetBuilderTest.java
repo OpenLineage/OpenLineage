@@ -24,7 +24,6 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import java.net.URI;
 import java.util.List;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -53,9 +52,6 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
   private Sink unsupportedSink;
   private SparkListenerSQLExecutionEnd event;
   private StructType schema;
-
-  private final String TEST_PATH = "file:///tmp/test-output";
-  private final String FILE_SINK_TO_STRING = "FileSink[file:///tmp/test-output]";
 
   @BeforeEach
   void setUp() {
@@ -132,41 +128,18 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
   }
 
   @Test
-  void testApply_WithFileStreamSink_ValidPath_NoCatalogTable() {
-    DatasetIdentifier expectedDatasetIdentifier = new DatasetIdentifier("test-output", "file://");
-    OpenLineage.OutputDataset expectedDataset = mock(OpenLineage.OutputDataset.class);
-
+  void testApply_WithFileStreamSink_NoCatalogTable() {
     when(writeToMicroBatchV1.sink()).thenReturn(fileStreamSink);
-    when(writeToMicroBatchV1.schema()).thenReturn(schema);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
-    when(fileStreamSink.toString()).thenReturn(FILE_SINK_TO_STRING);
 
-    try (MockedStatic<PathUtils> pathUtilsMock = mockStatic(PathUtils.class)) {
-      pathUtilsMock
-          .when(() -> PathUtils.fromURI(URI.create(TEST_PATH)))
-          .thenReturn(expectedDatasetIdentifier);
-
-      when(factory.getDataset(eq(expectedDatasetIdentifier), eq(schema)))
-          .thenReturn(expectedDataset);
-
-      List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
-
-      assertEquals(1, result.size());
-      assertEquals(expectedDataset, result.get(0));
-      verify(factory).getDataset(eq(expectedDatasetIdentifier), eq(schema));
-    }
+    List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
+    assertTrue(result.isEmpty());
   }
 
   @Test
   void testApply_WithFileStreamSink_ValidPath_WithCatalogTable() {
-    DatasetIdentifier pathDatasetIdentifier = new DatasetIdentifier("test-output", "file://");
     DatasetIdentifier catalogDatasetIdentifier =
         new DatasetIdentifier("catalog_table", "catalog_namespace");
-    DatasetIdentifier expectedDatasetIdentifier =
-        pathDatasetIdentifier.withSymlink(
-            catalogDatasetIdentifier.getName(),
-            catalogDatasetIdentifier.getNamespace(),
-            DatasetIdentifier.SymlinkType.TABLE);
 
     OpenLineage.OutputDataset expectedDataset = mock(OpenLineage.OutputDataset.class);
     CatalogTable catalogTable = mock(CatalogTable.class);
@@ -174,24 +147,20 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     when(writeToMicroBatchV1.sink()).thenReturn(fileStreamSink);
     when(writeToMicroBatchV1.schema()).thenReturn(schema);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.apply(catalogTable));
-    when(fileStreamSink.toString()).thenReturn(FILE_SINK_TO_STRING);
 
     try (MockedStatic<PathUtils> pathUtilsMock = mockStatic(PathUtils.class)) {
-      pathUtilsMock
-          .when(() -> PathUtils.fromURI(URI.create(TEST_PATH)))
-          .thenReturn(pathDatasetIdentifier);
       pathUtilsMock
           .when(() -> PathUtils.fromCatalogTable(eq(catalogTable), any()))
           .thenReturn(catalogDatasetIdentifier);
 
-      when(factory.getDataset(eq(expectedDatasetIdentifier), eq(schema)))
+      when(factory.getDataset(eq(catalogDatasetIdentifier), eq(schema)))
           .thenReturn(expectedDataset);
 
       List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
 
       assertEquals(1, result.size());
       assertEquals(expectedDataset, result.get(0));
-      verify(factory).getDataset(eq(expectedDatasetIdentifier), eq(schema));
+      verify(factory).getDataset(eq(catalogDatasetIdentifier), eq(schema));
     }
   }
 }
