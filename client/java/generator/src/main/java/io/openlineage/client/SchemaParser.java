@@ -5,6 +5,7 @@
 
 package io.openlineage.client;
 
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -29,6 +30,12 @@ public class SchemaParser {
       } else if (typeJson.has("$ref")) {
         String pointer = typeJson.get("$ref").asText();
         return new RefType(pointer);
+      } else if (typeJson.has("const")) {
+        if (!typeJson.get("const").getNodeType().equals(JsonNodeType.STRING)) {
+          throw new RuntimeException("Invalid schema, const should be string, given" + typeJson.get("const").getNodeType());
+        }
+        return new PrimitiveType("string", null);
+
       } else if (typeJson.has("type")) {
         String typeName = typeJson.get("type").asText();
         if (typeName.equals("string") && typeJson.has("enum")) {
@@ -50,11 +57,11 @@ public class SchemaParser {
             for (Iterator<Entry<String, JsonNode>> fieldsJson = properties.fields(); fieldsJson.hasNext(); ) {
               Entry<String, JsonNode> field = fieldsJson.next();
               String description = field.getValue().has("description") ? field.getValue().get("description").asText() : null;
+              Type fieldType = parse(field.getValue());
               if (field.getValue().has("const")) {
                 // only String const are supported
-                fields.add(new Field(field.getKey(), new PrimitiveType("string", null), description, field.getValue().get("const").asText()));
+                fields.add(new Field(field.getKey(), fieldType, description, field.getValue().get("const").asText()));
               } else {
-                Type fieldType = parse(field.getValue());
                 fields.add(new Field(field.getKey(), fieldType, description));
               }
             }
