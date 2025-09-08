@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.command.CreateDataSourceTableAsSelectCommand;
 import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
 import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
@@ -45,7 +46,8 @@ public class CommandPlanVisitor
     return x instanceof SaveIntoDataSourceCommand
         || x instanceof InsertIntoDir
         || x instanceof InsertIntoDataSourceCommand
-        || x instanceof InsertIntoDataSourceDirCommand;
+        || x instanceof InsertIntoDataSourceDirCommand
+        || x instanceof CreateDataSourceTableAsSelectCommand;
   }
 
   @Override
@@ -95,6 +97,8 @@ public class CommandPlanVisitor
       return Optional.of(((InsertIntoDataSourceCommand) x).query());
     } else if (x instanceof InsertIntoDataSourceDirCommand) {
       return Optional.of(((InsertIntoDataSourceDirCommand) x).query());
+    } else if (x instanceof CreateDataSourceTableAsSelectCommand) {
+      return Optional.of(((CreateDataSourceTableAsSelectCommand) x).query());
     }
     return Optional.empty();
   }
