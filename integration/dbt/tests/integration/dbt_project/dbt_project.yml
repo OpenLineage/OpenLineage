@@ -23,6 +23,8 @@ models:
       +materialized: view
     marts:
       +materialized: table
+    +tags:
+      - some_tag
 
 seeds:
   openlineage_integration_test:
