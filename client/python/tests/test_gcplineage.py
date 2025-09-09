@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import asyncio
 import os
+from unittest import mock
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -24,16 +26,20 @@ def mock_gcp_modules():
                 "google.cloud.datacatalog_lineage_v1": MagicMock(),
                 "google.oauth2": MagicMock(),
                 "google.oauth2.service_account": MagicMock(),
+                "google.auth": MagicMock(),
+                "google.auth.exceptions": MagicMock(),
             },
         ),
         patch("google.cloud.datacatalog_lineage_v1.LineageClient") as mock_client,
         patch("google.cloud.datacatalog_lineage_v1.LineageAsyncClient") as mock_async_client,
         patch("google.oauth2.service_account.Credentials") as mock_credentials,
+        patch("google.auth.exceptions.GoogleAuthError", Exception) as mock_auth_error,
     ):
         yield {
             "client": mock_client,
             "async_client": mock_async_client,
             "credentials": mock_credentials,
+            "auth_error": mock_auth_error,
         }
 
 
@@ -130,11 +136,17 @@ class TestGCPLineageTransportInitialization:
                 "credentials_path": "/path/to/credentials.json",
             }
         )
-        transport = GCPLineageTransport(config)
+        
+        # Mock file system access for credentials
+        with patch("os.path.exists", return_value=True), \
+             patch("os.access", return_value=True), \
+             patch("builtins.open", mock.mock_open(read_data='{"type": "service_account", "project_id": "test", "private_key_id": "123", "private_key": "-----BEGIN PRIVATE KEY-----\\ntest\\n-----END PRIVATE KEY-----\\n", "client_email": "test@test.iam.gserviceaccount.com"}')):
+            
+            transport = GCPLineageTransport(config)
 
-        # Verify both clients were created (not None)
-        assert transport.client is not None
-        assert transport.async_client is not None
+            # Verify both clients were created (not None)
+            assert transport.client is not None
+            assert transport.async_client is not None
 
     def test_gcplineage_transport_parent_construction(self):
         """Test correct parent string construction for different locations."""
@@ -287,19 +299,20 @@ class TestGCPLineageTransportRouting:
             mock_emit_sync.assert_called_once_with(airflow_task_event)
             mock_emit_async.assert_not_called()
 
-    def test_routing_non_run_event_warning(self):
-        """Test that non-RunEvent objects are handled with warning."""
+    def test_routing_non_run_event_validation(self):
+        """Test that non-RunEvent objects are rejected with proper error."""
         config = GCPLineageConfig.from_dict({"project_id": "test-project"})
         transport = GCPLineageTransport(config)
 
         # Create a non-RunEvent
         mock_event = MagicMock()
 
-        with patch("openlineage.client.transport.gcplineage.log") as mock_log:
-            result = transport.emit(mock_event)
-
-            mock_log.warning.assert_called_once_with("GCP Lineage only supports RunEvent")
-            assert result is None
+        # Should raise ValueError for invalid event types
+        with pytest.raises(ValueError, match="GCP Lineage only supports RunEvent"):
+            transport.emit(mock_event)
+            
+        # Cleanup
+        transport.close()
 
 
 class TestGCPLineageTransportMethods:
@@ -331,7 +344,10 @@ class TestGCPLineageTransportMethods:
 
     def test_emit_async_error(self):
         """Test async emit error handling."""
-        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        config = GCPLineageConfig.from_dict({
+            "project_id": "test-project",
+            "async_transport_rules": {"dbt": {"*": True}}  # Enable async for dbt
+        })
         transport = GCPLineageTransport(config)
 
         # Configure async client to raise exception
@@ -339,8 +355,12 @@ class TestGCPLineageTransportMethods:
 
         event = self._create_event("dbt", "model")
 
-        with pytest.raises(Exception, match="GCP Async API error"):
-            transport._run_async_safely(transport._emit_async(event))
+        # Use the full emit() method to test real-world error handling
+        with pytest.raises(RuntimeError, match="Async event emission failed"):
+            transport.emit(event)
+            
+        # Cleanup
+        transport.close()
 
     def _create_event(self, integration: str, job_type: str) -> RunEvent:
         """Helper method to create events with JobTypeJobFacet."""
@@ -447,6 +467,232 @@ class TestGCPLineageTransportAsyncRules:
         assert transport._should_use_async_transport(event_with_facet) is True
 
 
+class TestGCPLineageTransportAsyncTracking:
+    """Test async operation tracking and flush functionality."""
+
+    def _create_event(self, integration: str, job_type: str) -> RunEvent:
+        """Helper method to create events with JobTypeJobFacet."""
+        job_facets = {
+            "jobType": JobTypeJobFacet(processingType="BATCH", integration=integration, jobType=job_type)
+        }
+        return RunEvent(
+            eventType=RunState.START,
+            eventTime="2024-01-01T00:00:00Z",
+            run=Run(runId=str(generate_new_uuid())),
+            job=Job(namespace="test", name="job", facets=job_facets),
+            producer="test",
+            schemaURL="test",
+        )
+
+    def test_async_tracking_initialization(self):
+        """Test that async tracking structures are initialized properly."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        assert hasattr(transport, "_pending_operations")
+        import weakref
+        assert isinstance(transport._pending_operations, weakref.WeakSet)
+        assert len(transport._pending_operations) == 0
+        assert hasattr(transport, "_operations_lock")
+        assert hasattr(transport, "_shutdown_event")
+        import threading
+        assert isinstance(transport._operations_lock, type(threading.RLock()))  # We use RLock for nested acquisition
+        assert isinstance(transport._shutdown_event, threading.Event)
+        assert not transport._shutdown_event.is_set()  # Should start as not set
+        
+        # Cleanup
+        transport.close()
+
+    @patch("concurrent.futures.ThreadPoolExecutor")
+    def test_async_tracking_with_thread_pool(self, mock_executor_class):
+        """Test that async operations are properly tracked when using thread pool."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        # Setup mocks
+        mock_executor = MagicMock()
+        mock_future = MagicMock()
+        mock_future.result.return_value = None
+        mock_executor.submit.return_value = mock_future
+        mock_executor_class.return_value = mock_executor
+        transport._thread_pool = mock_executor
+        
+        event = self._create_event("dbt", "model")
+        
+        with patch.object(transport, "_emit_async", return_value=None):
+            transport._emit_async_with_tracking(event)
+        
+        # Verify thread pool was used
+        mock_executor.submit.assert_called_once()
+
+    def test_shutdown_prevents_new_operations(self):
+        """Test that setting shutdown event prevents new async operations."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        # Set shutdown event
+        transport._shutdown_event.set()
+        
+        event = self._create_event("dbt", "model")
+        
+        # Should return early without doing anything
+        result = transport._emit_async_with_tracking(event)
+        assert result is None
+
+    def test_flush_no_pending_operations(self):
+        """Test flush when no operations are pending."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        result = transport.flush(timeout=1.0)
+        assert result is True
+
+    def test_flush_with_pending_operations(self):
+        """Test flush with pending operations."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        # Test flush when no operations are pending (should return True)
+        result = transport.flush(timeout=1.0)
+        assert result is True
+        
+        # Cleanup
+        transport.close()
+
+    def test_flush_no_event_loop_exists(self):
+        """Test flush when no event loop exists."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        # Test flush returns True when no operations are pending
+        result = transport.flush(timeout=5.0)
+        
+        assert result is True
+        
+        # Cleanup
+        transport.close()
+
+    def test_flush_timeout(self):
+        """Test flush timeout behavior."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        # Create mock pending futures
+        future1 = MagicMock()
+        future1.done.return_value = False
+        transport._pending_operations = {future1}
+        
+        with patch("asyncio.get_event_loop") as mock_get_loop, \
+             patch("asyncio.wait_for") as mock_wait_for:
+            
+            mock_loop = MagicMock()
+            mock_loop.is_running.return_value = False
+            mock_get_loop.return_value = mock_loop
+            mock_wait_for.side_effect = asyncio.TimeoutError()
+            
+            result = transport.flush(timeout=0.1)
+            
+            assert result is False
+
+    def test_close_calls_flush(self):
+        """Test that close() method calls flush() before closing clients."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        with patch.object(transport, "flush", return_value=True) as mock_flush, \
+             patch.object(transport, "_close_clients", return_value=True) as mock_close_clients, \
+             patch.object(transport, "_shutdown_thread_pool", return_value=True) as mock_shutdown_pool:
+            
+            result = transport.close(timeout=10.0)
+            
+            mock_flush.assert_called_once_with(timeout=10.0)
+            mock_close_clients.assert_called_once()
+            mock_shutdown_pool.assert_called_once()
+            assert result is True
+            assert transport._shutdown_event.is_set()
+
+    def test_close_with_default_timeout(self):
+        """Test close() with default timeout (-1) uses 30s for flush."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        with patch.object(transport, "flush", return_value=True) as mock_flush, \
+             patch.object(transport, "_run_async_safely"):
+            
+            transport.close()  # Default timeout=-1
+            
+            mock_flush.assert_called_once_with(timeout=30.0)
+
+    def test_close_with_zero_timeout_skips_flush(self):
+        """Test that close() with timeout=0 skips flush operation."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        with patch.object(transport, "flush") as mock_flush, \
+             patch.object(transport, "_run_async_safely"):
+            
+            transport.close(timeout=0)
+            
+            mock_flush.assert_not_called()
+
+    def test_close_handles_flush_failure(self):
+        """Test that close() handles flush failures gracefully."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        with patch.object(transport, "flush", side_effect=Exception("Flush error")), \
+             patch.object(transport, "_run_async_safely"), \
+             patch("openlineage.client.transport.gcplineage.log") as mock_log:
+            
+            result = transport.close(timeout=5.0)
+            
+            # Should still return False due to flush failure but not crash
+            assert result is False
+            mock_log.warning.assert_called_with("Error during flush: %s", 
+                                               mock.ANY)
+
+    def test_close_checks_client_existence(self):
+        """Test that close() only tries to close clients that exist."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        with patch.object(transport, "flush", return_value=True):
+            # Don't access any clients so they don't get created
+            result = transport.close()
+            
+            # Should succeed even without clients being initialized
+            assert result is True
+
+    @patch("concurrent.futures.ThreadPoolExecutor")
+    @patch("asyncio.get_event_loop")
+    def test_flush_with_running_event_loop(self, mock_get_loop, mock_executor_class):
+        """Test flush behavior when event loop is already running."""
+        config = GCPLineageConfig.from_dict({"project_id": "test-project"})
+        transport = GCPLineageTransport(config)
+        
+        # Create mock pending futures
+        future1 = MagicMock()
+        future1.done.return_value = False
+        transport._pending_operations = {future1}
+        
+        # Setup mocks - event loop is running
+        mock_loop = MagicMock()
+        mock_loop.is_running.return_value = True
+        mock_get_loop.return_value = mock_loop
+        
+        mock_executor = MagicMock()
+        mock_future = MagicMock()
+        mock_future.result.return_value = True
+        mock_executor.submit.return_value = mock_future
+        mock_executor_class.return_value.__enter__.return_value = mock_executor
+        mock_executor_class.return_value.__exit__.return_value = None
+        
+        result = transport.flush(timeout=5.0)
+        
+        assert result is True
+        mock_executor.submit.assert_called_once()
+
+
 class TestGCPLineageTransportIntegration:
     """Integration-style tests without mocking the underlying clients."""
 
@@ -496,3 +742,86 @@ class TestGCPLineageTransportIntegration:
         assert isinstance(client.transport, GCPLineageTransport)
         assert client.transport.config.project_id == "env-project"
         assert client.transport.config.location == "europe-west1"
+
+
+class TestGCPLineageTransportShutdownFix:
+    """Test the fix for issue #3815 - ensuring async events are sent before shutdown."""
+    
+    def _create_event(self, integration: str, job_type: str) -> RunEvent:
+        """Helper method to create events with JobTypeJobFacet."""
+        job_facets = {
+            "jobType": JobTypeJobFacet(processingType="BATCH", integration=integration, jobType=job_type)
+        }
+        return RunEvent(
+            eventType=RunState.START,
+            eventTime="2024-01-01T00:00:00Z",
+            run=Run(runId=str(generate_new_uuid())),
+            job=Job(namespace="test", name="job", facets=job_facets),
+            producer="test",
+            schemaURL="test",
+        )
+    
+    @patch("concurrent.futures.ThreadPoolExecutor")
+    def test_async_event_completed_before_shutdown(self, mock_executor_class):
+        """Test that async events are properly waited for during shutdown."""
+        config = GCPLineageConfig.from_dict({
+            "project_id": "test-project",
+            "async_transport_rules": {"dbt": {"*": True}}
+        })
+        transport = GCPLineageTransport(config)
+        
+        # Setup mocks for thread pool
+        mock_executor = MagicMock()
+        mock_future = MagicMock()
+        mock_executor.submit.return_value = mock_future
+        mock_executor_class.return_value = mock_executor
+        transport._thread_pool = mock_executor
+        
+        # Mock the async emission to return successfully
+        with patch.object(transport, "_emit_async", return_value=None):
+            # Create and emit a dbt event (should use async)
+            event = self._create_event("dbt", "model")
+            transport.emit(event)
+            
+            # Verify the async operation was submitted
+            mock_executor.submit.assert_called_once()
+            
+            # Mock the result to simulate successful completion
+            mock_future.result.return_value = None
+            
+            # Now close the transport - this should wait for the async operation
+            with patch.object(transport, "_close_clients", return_value=True), \
+                 patch.object(transport, "_shutdown_thread_pool", return_value=True):
+                
+                result = transport.close()
+                
+                # Should succeed and wait for the async operation
+                assert result is True
+                assert transport._shutdown_event.is_set()
+    
+    def test_quick_shutdown_scenario_reproduction(self):
+        """Test the scenario described in issue #3815 - quick shutdown after event emission."""
+        config = GCPLineageConfig.from_dict({
+            "project_id": "test-project",
+            "async_transport_rules": {"dbt": {"*": True}}
+        })
+        
+        transport = GCPLineageTransport(config)
+        
+        # Simulate the problematic scenario: emit event then immediately close
+        with patch.object(transport, "_emit_async", return_value=None), \
+             patch.object(transport, "flush", return_value=True) as mock_flush, \
+             patch.object(transport, "_close_clients", return_value=True), \
+             patch.object(transport, "_shutdown_thread_pool", return_value=True):
+            
+            # Emit async event
+            event = self._create_event("dbt", "model")
+            transport.emit(event)
+            
+            # Immediately close (this is where the bug would occur)
+            result = transport.close()
+            
+            # The fix ensures flush() is called to wait for pending operations
+            assert result is True
+            mock_flush.assert_called_once_with(timeout=30.0)
+            assert transport._shutdown_event.is_set()
