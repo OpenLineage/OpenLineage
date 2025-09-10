@@ -336,7 +336,7 @@ class AsyncHttpTransport(Transport):
                 elif not processed_items:
                     current_time = time.time()
                     if current_time - last_processed_time >= 10.0:
-                        log.warning(
+                        log.debug(
                             "No new events processed for %.1fs. Queue empty: %s, "
                             "active tasks: %d, max concurrent: %d, "
                             "query stats: pending %d success %d failed %s",
