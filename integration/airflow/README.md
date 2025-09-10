@@ -98,21 +98,29 @@ When enabled, the library will:
 
 ### Disabling the Integration
 
-The OpenLineage integration can be disabled in two ways:
+The OpenLineage integration can be disabled in two ways, which are evaluated in order.
 
-#### At Startup (Static)
+#### 1. At Startup (Requires Restart)
 
-You can completely prevent the OpenLineage plugin from being registered by setting the `OPENLINEAGE_DISABLED` environment variable to `true`. This is a master "kill switch" that takes precedence over other settings. Changes to this variable require a restart of the Airflow Scheduler and Workers.
+These checks are performed only once when the Airflow Scheduler and Workers start up. Changing them requires a restart.
 
-#### At Runtime (Dynamic)
+The integration will be **disabled at startup** if either of the following are true:
+- **The Native Airflow Provider is Installed:** If the `apache-airflow-providers-openlineage` package is found, this plugin is automatically disabled to prevent conflicts.
+- **`OPENLINEAGE_DISABLED` is `true`:** If this environment variable is set to `true`, the integration is disabled. This acts as a master "kill switch."
 
-For more flexible control, you can disable the integration at runtime without needing to restart Airflow. To do this, create a new Variable in the Airflow UI (**Admin -> Variables**) with:
+---
+
+#### 2. At Runtime (Dynamic, No Restart Required)
+
+If the integration is not disabled at startup, you can still toggle it on and off dynamically.
+
+- **`openlineage.disabled` Airflow Variable:** The integration will periodically check for an Airflow Variable named `openlineage.disabled`. If this variable is set to `true`, the integration will stop emitting events for all subsequent DAG and task runs.
+
+To use this feature, create a new Variable in the Airflow UI (**Admin -> Variables**) with:
 - **Key**: `openlineage.disabled`
 - **Value**: `true`
 
-When this variable is set to `true`, the OpenLineage listener will stop emitting events for all subsequent DAG and task runs.
-
-**Important:** The integration uses a caching mechanism to check this variable safely and efficiently. A background thread checks the variable's value every 60 seconds. This means there may be a delay of up to one minute from when you change the variable to when the integration's behavior changes.
+**Important:** To ensure stability, this check is performed by a background process every 60 seconds. This means there may be a delay of up to one minute from when you change the variable to when the integration's behavior changes. This does **not** require an Airflow restart.
 
 ### `HTTP` Backend Environment Variables
 
@@ -223,10 +231,10 @@ validation_operators:
       - name: update_data_docs
         action:
           class_name: UpdateDataDocsAction
-+     - name: openlineage
-+       action:
-+         class_name: OpenLineageValidationAction
-+         module_name: openlineage.common.provider.great_expectations.action
+      - name: openlineage
+        action:
+          class_name: OpenLineageValidationAction
+          module_name: openlineage.common.provider.great_expectations.action
       # - name: send_slack_notification_on_validation_result
       #   action:
       #     class_name: SlackNotificationAction
