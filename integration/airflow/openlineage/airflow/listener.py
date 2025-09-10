@@ -289,7 +289,6 @@ def on_starting(component):
     global executor, _cache_thread
     executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="openlineage_")
 
-    # Start the background caching thread if it's not already running
     if not _cache_thread:
         _stop_event.clear()
         _cache_thread = threading.Thread(target=_refresh_cache_loop, daemon=True)
@@ -305,7 +304,6 @@ def before_stopping(component):
     # Block until all pending events are processed
     adapter.close()
 
-    # Stop the background caching thread
     if _cache_thread:
         log.debug("Stopping OpenLineage runtime-disable cache thread.")
         _stop_event.set()
