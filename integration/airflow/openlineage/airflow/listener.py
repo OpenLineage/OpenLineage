@@ -51,7 +51,6 @@ def _refresh_cache_loop():
         try:
             from airflow.models.variable import Variable
 
-            # Use create_session to safely get a temporary, independent session
             with create_session() as session:
                 var = session.query(Variable).filter(Variable.key == "openlineage.disabled").first()
                 is_disabled = var.val.lower() in ("t", "true", "1") if var else False
@@ -63,7 +62,6 @@ def _refresh_cache_loop():
         except Exception as e:
             log.error("Failed to refresh OpenLineage runtime-disable cache: %s", e, exc_info=True)
 
-        # Wait for the TTL or until the stop event is set
         _stop_event.wait(timeout=_CACHE_TTL_SECONDS)
     log.info("Exiting OpenLineage runtime-disable cache refresh loop.")
 
