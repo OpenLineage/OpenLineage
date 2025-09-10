@@ -96,6 +96,24 @@ When enabled, the library will:
 
 ## Configuration
 
+### Disabling the Integration
+
+The OpenLineage integration can be disabled in two ways:
+
+#### At Startup (Static)
+
+You can completely prevent the OpenLineage plugin from being registered by setting the `OPENLINEAGE_DISABLED` environment variable to `true`. This is a master "kill switch" that takes precedence over other settings. Changes to this variable require a restart of the Airflow Scheduler and Workers.
+
+#### At Runtime (Dynamic)
+
+For more flexible control, you can disable the integration at runtime without needing to restart Airflow. To do this, create a new Variable in the Airflow UI (**Admin -> Variables**) with:
+- **Key**: `openlineage.disabled`
+- **Value**: `true`
+
+When this variable is set to `true`, the OpenLineage listener will stop emitting events for all subsequent DAG and task runs.
+
+**Important:** The integration uses a caching mechanism to check this variable safely and efficiently. A background thread checks the variable's value every 60 seconds. This means there may be a delay of up to one minute from when you change the variable to when the integration's behavior changes.
+
 ### `HTTP` Backend Environment Variables
 
 `openlineage-airflow` uses the OpenLineage client to push data to OpenLineage backend.
