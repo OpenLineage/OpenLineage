@@ -42,8 +42,8 @@ def _is_disabled() -> bool:
 def _refresh_cache_loop():
     """
     This function runs in a background thread and periodically refreshes the
-    `_is_disabled_cached` variable from the Airflow database. This is the
-    only place where the Airflow Variable is queried.
+    `_is_disabled_cached` variable from the 'openlineage.disabled' Airflow Variable in the database.
+    This is the only place where the Airflow Variable is queried.
     """
     global _is_disabled_cached
     log.info("Starting OpenLineage runtime-disable cache refresh loop.")
