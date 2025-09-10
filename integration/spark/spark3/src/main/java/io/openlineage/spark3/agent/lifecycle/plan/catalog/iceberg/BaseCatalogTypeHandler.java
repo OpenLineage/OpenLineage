@@ -8,6 +8,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
@@ -30,5 +31,9 @@ abstract class BaseCatalogTypeHandler {
     pathComponents.addAll(Arrays.asList(namespace));
     pathComponents.add(identifier.name());
     return new Path(warehouseLocation, String.join(Path.SEPARATOR, pathComponents));
+  }
+
+  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+    return Collections.emptyMap();
   }
 }

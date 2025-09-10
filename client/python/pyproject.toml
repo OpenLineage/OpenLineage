@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "openlineage-python"
-version = "1.37.0"
+version = "1.38.0"
 description = "OpenLineage Python Client"
 readme = "README.md"
 keywords = [
@@ -43,6 +43,12 @@ optional-dependencies.msk-iam = [
 optional-dependencies.datazone = [
   "boto3>=1.34.134"
 ]
+optional-dependencies.gcplineage = [
+  "google-cloud-datacatalog-lineage>=0.3.14"
+]
+optional-dependencies.fsspec = [
+  "fsspec>=2023.1.0"
+]
 optional-dependencies.test = [
   "covdefaults>=2.3",
   "pytest>=7.3.1",
@@ -63,7 +69,7 @@ optional-dependencies.docs = [
 optional-dependencies.generator = [
   "ruff",
   "click",
-  "datamodel-code-generator==0.25.4"
+  "datamodel-code-generator==0.33.0"
 ]
 
 [tool.hatch.build]
@@ -90,6 +96,8 @@ show_error_codes = true
 overrides = [
   { ignore_missing_imports = true, module = [
   "confluent_kafka.*",
+  "google.cloud.*",
+  "google.oauth2.*",
 ] } ]
 strict = true
 pretty = true
@@ -105,7 +113,6 @@ lint.select = [
     "W",
     "I001"
 ]
-target-version = "py39"
 lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/client"]
@@ -124,4 +131,9 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "-ra"
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.2",
 ]

@@ -1,1 +1,13 @@
-{#- this file is empty on purpose not to generate anything -#}
+{#- generate type aliases only -#}
+{%- if not class_name == 'ClassToBeSkipped' %}
+{%- set field = fields[0] %}
+
+{%- set type_hint = field.type_hint -%}
+{%- if '|' in type_hint -%}
+from typing import Union
+
+{{ class_name }} = Union[{% for p in type_hint.split('|') %}"{{ p | trim }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+{%- else -%}
+{{ class_name }} = {{ type_hint }}
+{%- endif -%}
+{% endif %}

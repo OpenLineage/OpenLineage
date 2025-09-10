@@ -38,7 +38,7 @@ In this example, bumping up the version to the new value, should be changed from
 
 Both Python and Java clients automatically generate code to handle the schema, so there is generally little work to do for modifications and new facets. Core logic changes may require manual code in both the Java and Python clients. These changes are rare and require additional planning in the proposal to plan out the steps. These are the steps for adding a new facet, which covers the majority of schema changes.  
 
-> It is important to have pre-commit installed by running `pre-commit install` before committing to the repository. All commits should be signed off with -s `git commit -s -m "commit message"`
+> It is important to have prek installed by running `prek install` before committing to the repository. All commits should be signed off with -s `git commit -s -m "commit message"`
 
 > The OpenLineage commutity is very helpful. Do not hesitate to reach out to [#dev-discuss](https://openlineage.slack.com/archives/C065PQ4TL8K) with questions. 
 
@@ -63,7 +63,7 @@ Configure Python client
 
 Commit your code to run Python code generation, various tests, and update website docs. 
 
-1. Optional `pre-commit run` (See if your commit will work.)
+1. Optional `prek run` (See if your commit will work.)
 1. `git commit -s -m "commit message"` (If anything goes wrong, verify your code.)
 
 ## Add test cases (For spec changes that require manual client code.)

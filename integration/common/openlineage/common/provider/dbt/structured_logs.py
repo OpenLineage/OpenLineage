@@ -16,11 +16,11 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.facet_v2 import (
     error_message_run,
+    external_query_run,
     job_type_job,
     processing_engine_run,
     sql_job,
 )
-from openlineage.client.generated import external_query_run
 from openlineage.client.run import InputDataset
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
@@ -635,7 +635,15 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def dbt_run_run_facet(self) -> Dict[str, DbtRunRunFacet]:
         if not self.invocation_id:
             return {}
-        return {"dbt_run": DbtRunRunFacet(invocation_id=self.invocation_id)}
+        return {
+            "dbt_run": DbtRunRunFacet(
+                invocation_id=self.invocation_id,
+                project_name=self.project_name,
+                project_version=self.project_version,
+                profile_name=self.profile_name,
+                dbt_runtime="core",
+            )
+        }
 
     def processing_engine_facet(self) -> Dict[str, processing_engine_run.ProcessingEngineRunFacet]:
         if not self.dbt_version:

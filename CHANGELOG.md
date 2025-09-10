@@ -1,12 +1,48 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.36.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.37.0...HEAD)
+
+### Fixed
+* **Spark: Fix for TypeNotPresentExceptio/RefreshTableCommand errors in spark 3.0.2** [`#3818`] (https://github.com/OpenLineage/OpenLineage/pull/4002) [@MaciejGajewski](https://github.com/MaciejGajewski)
+
+## [1.37.0](https://github.com/OpenLineage/OpenLineage/compare/1.36.0...1.37.0) - 2025-08-11
 
 ### Added
 
+* **Python: Add Datadog transport with configurable async routing** [`#3950`](https://github.com/OpenLineage/OpenLineage/pull/3950) [@mobuchowski](https://github.com/mobuchowski)  
+  *Add Datadog transport with intelligent routing between sync/async transports based on configurable rules. Supports wildcard matching and provides seamless integration with Datadog's observability platform.*
+* **Spark: Implement support for WriteDelta, WriteIcebergDelta logical plan nodes** [`#3860`](https://github.com/OpenLineage/OpenLineage/pull/3860) [@orthoxerox](https://github.com/orthoxerox)  
+  *Add support for WriteDelta and WriteIcebergDelta logical plan nodes in Spark integration.*
+* **dbt: Add option to override dbt job name** [`#3933`](https://github.com/OpenLineage/OpenLineage/pull/3933) [@mobuchowski](https://github.com/mobuchowski)  
+  *Add configuration option to override dbt job names in OpenLineage events.*
+* **Java: Add Jackson Blackbird module for JSON performance optimization** [`#3923`](https://github.com/OpenLineage/OpenLineage/pull/3923) [@kyungryun](https://github.com/kyungryun)  
+  *Improve JSON serialization performance with Jackson Blackbird module.*
+
 ### Changed
 
+* **Spark: Remove Spark 2 support** [`#3904`](https://github.com/OpenLineage/OpenLineage/pull/3904) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Drop support for Spark 2.x versions. Minimum supported version is now Spark 3.x.*
+* **Python: Change gzip compression level in HTTP transport** [`#3956`](https://github.com/OpenLineage/OpenLineage/pull/3956) [@dolfinus](https://github.com/dolfinus)  
+  *Optimize HTTP transport performance by adjusting gzip compression level.*
+* **Spark: Add support for Spark 4 in streaming tests** [`#3925`](https://github.com/OpenLineage/OpenLineage/pull/3925) [@SalvadorRomo](https://github.com/SalvadorRomo)  
+  *Extend streaming integration tests to support Spark 4.0.*
+
 ### Fixed
+
+* **Spark: Improve performance of column level lineage** [`#3946`](https://github.com/OpenLineage/OpenLineage/pull/3946) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Limit memory consumption, provide limits for the amount of dependencies processed (1M) and input fields returned in the facet (100K). Turns on dataset lineage by default.*
+* **Spark: Add schema size limit for column level lineage processing** [`#3949`](https://github.com/OpenLineage/OpenLineage/pull/3949) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+  *Add limits to prevent performance issues with large schemas in column-level lineage processing.*
+* **Spark: Fix context factory for Spark 4** [`#3934`](https://github.com/OpenLineage/OpenLineage/pull/3934) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Fix context factory implementation for Spark 4.0 compatibility.*
+* **Spark: Fix LogicalRelation constructor compatibility for Spark 4** [`#3930`](https://github.com/OpenLineage/OpenLineage/pull/3930) [@yunchipang](https://github.com/yunchipang)  
+  *Fix LogicalRelation constructor to maintain compatibility with Spark 4.0.*
+* **Spark: Fix vendors parsing in SparkOpenLineageConfig** [`#3947`](https://github.com/OpenLineage/OpenLineage/pull/3947) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+  *Fix parsing of vendor configurations in Spark OpenLineage configuration.*
+* **dbt: Use correct namespace for dbt externalQuery facet** [`#3953`](https://github.com/OpenLineage/OpenLineage/pull/3953) [@jroachgolf84](https://github.com/jroachgolf84)  
+  *Fix namespace handling in dbt external query facets.*
+* **Python: Fix tags configuration** [`#3943`](https://github.com/OpenLineage/OpenLineage/pull/3943) [@JDarDagran](https://github.com/JDarDagran)  
+  *Fix configuration handling for user-supplied tags in Python client.*
 
 ## [1.36.0](https://github.com/OpenLineage/OpenLineage/compare/1.35.0...1.36.0) - 2025-07-22
 

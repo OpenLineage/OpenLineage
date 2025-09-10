@@ -73,7 +73,7 @@ const Wall = ({ twoColumnWall = false, capitalizeTitleOnHome = false }) => {
         <Button title="Quickstart" to="/getting-started" type="link" iconRight={<ArrowRight />} />
         <Button
           title="Slack"
-          to="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA"
+          to="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
           type="link"
           iconRight={<Slack />}
         />
@@ -158,7 +158,7 @@ const Participate = () => {
         <Button title="GitHub" to="https://github.com/openlineage/" type="extbutton" iconRight={<GitHub />} />
         <Button
           title="Slack"
-          to="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA"
+          to="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
           type="extbutton"
           iconRight={<Slack />}
         />

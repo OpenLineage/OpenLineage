@@ -251,9 +251,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           }
           return null;
         });
-    if (SparkVersionUtils.isSpark3OrHigher(sparkVersion)) {
-      jobMetrics.cleanUp(jobEnd.jobId());
-    }
   }
 
   @Override

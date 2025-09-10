@@ -31,8 +31,8 @@ fi
 rustup target add aarch64-apple-darwin
 rustup target add x86_64-apple-darwin
 
-echo "Installing Python 3.9"
-uv python install 3.9
+echo "Installing Python 3.10"
+uv python install 3.10
 
 # Maturin is build tool that we're using. It can build python wheels based on standard Rust Cargo.toml.
 echo "Installing Maturin"
@@ -53,7 +53,7 @@ uv tool run maturin build --target universal2-apple-darwin --out target/wheels -
 
 echo "Package build, trying to import"
 echo "Platform:"
-echo "from distutils import util; print(util.get_platform())" | uv run -
+echo "import platform; print(platform.platform())" | uv run -
 # Verify that it imports and works properly
 uv pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
 echo "from openlineage_sql import parse, ColumnLineage; import sys; sys.exit(len(parse([\"SELECT b.a from b\"]).column_lineage) != 1)" | uv run -

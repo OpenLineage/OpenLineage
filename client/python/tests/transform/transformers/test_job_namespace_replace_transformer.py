@@ -3,9 +3,8 @@
 import datetime
 
 import pytest
-from openlineage.client.event_v2 import DatasetEvent, Job, JobEvent, Run, RunEvent, RunState
+from openlineage.client.event_v2 import DatasetEvent, Job, JobEvent, Run, RunEvent, RunState, StaticDataset
 from openlineage.client.facet_v2 import parent_run
-from openlineage.client.generated.base import StaticDataset
 from openlineage.client.transport.transform.transformers.job_namespace_replace_transformer import (
     JobNamespaceReplaceTransformer,
 )

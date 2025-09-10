@@ -111,6 +111,21 @@ repos:
             client/python/openlineage/client/facet\.py |
             client/python/openlineage/client/run\.py
           )$
+      - id: check-python-generated-imports
+        name: Check python imports from generated modules
+        description: "Checks if objects are correctly imported in python from event_v2 and facet_v2 modules"
+        language: pygrep
+        entry: "from openlineage.client.generated"
+        files: "\\.py$"
+        # Exclude internal modules that must import this way
+        exclude: |
+          (?x)^(
+            client/python/openlineage/client/generated/.* |
+            client/python/openlineage/client/facet_v2\.py |
+            client/python/openlineage/client/event_v2\.py |
+            client/python/openlineage/client/generator/base\.py |
+            client/python/tests/generator/test_base\.py
+          )$
       - id: prettier
         name: prettier
         description: ""
@@ -139,10 +154,10 @@ repos:
         name: Generate OpenLineage facets for Python client.
         language: python
         entry: python ./client/python/openlineage/client/generator/generate.py
-        files: ^spec/.*\.json$|^client/python/facets\.py$
+        files: ^spec/.*\.json$|^client/python/facets\.py$|^client/python/openlineage/client/generator
         exclude: ^spec/tests/.*$
         pass_filenames: false
-        additional_dependencies: ["ruff==0.3.5", "click", "datamodel-code-generator==0.25.4"]
+        additional_dependencies: ["ruff==0.12.10", "click", "datamodel-code-generator==0.33.0"]
       - id: check_facets_redactions
         name: Check if all Facets have redacted fields defined
         language: python
@@ -178,7 +193,7 @@ repos:
         description: "Runs the PMD static code analyzer - Spark."
         language: script
         entry: .pre_commit/run-pmd.sh --java-version 17 --ruleset-file integration/spark/pmd-openlineage.xml
-        files: ^integration/flink/.*\.java$
+        files: ^integration/spark/.*\.java$
         exclude: ".*test.*"
         require_serial: true
       - id: spotless-client-java
@@ -197,3 +212,5 @@ repos:
         files: ^integration/spark/.*\.java$
         exclude: ".*test.*"
         pass_filenames: false
+default_language_version:
+  python: "3.10"

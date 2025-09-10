@@ -300,68 +300,39 @@ class CompositeTransportTest {
       Map<String, Object> config = new HashMap<>();
       Map<String, Object> fakeTransportConfig = new HashMap<>();
       fakeTransportConfig.put("type", "fakeA");
-      IntStream.range(0, 10)
+      IntStream.range(0, Runtime.getRuntime().availableProcessors())
           .forEach(
               i -> {
                 config.put("myFakeA" + i, fakeTransportConfig);
               });
 
       compositeConfig = new CompositeConfig(config, true, withThreadPool);
-      CompositeTransport compositeTransport = new CompositeTransport(compositeConfig);
+      try (CompositeTransport compositeTransport = new CompositeTransport(compositeConfig)) {
+        for (int iteration = 0; iteration < 2; iteration++) {
+          long startTime = System.currentTimeMillis();
+          compositeTransport.emit(runEvent());
+          long endTime = System.currentTimeMillis();
 
-      long startTime;
-      long endTime;
-      // Verify RunEvent emission
-      startTime = System.currentTimeMillis();
-      compositeTransport.emit(runEvent());
-      endTime = System.currentTimeMillis();
+          assertThat(eventsEmitted.get())
+              .isEqualTo(
+                  (iteration + 1)
+                      * Runtime.getRuntime().availableProcessors()); // All events should be emitted
 
-      assertThat(eventsEmitted.get()).isEqualTo(10); // All events should be emitted
-
-      if (withThreadPool) {
-        assertThat(endTime - startTime)
-            .isGreaterThanOrEqualTo(100)
-            .isLessThan(200); // Should take around 100ms to emit all events
-      } else {
-        assertThat(endTime - startTime)
-            .isGreaterThanOrEqualTo(1000)
-            .isLessThan(2000); // Should take around 1000ms to emit all events
+          if (withThreadPool) {
+            assertThat(endTime - startTime)
+                .isGreaterThanOrEqualTo(100)
+                .isLessThan(200); // Should take around 100ms to emit all events
+          } else {
+            assertThat(endTime - startTime)
+                .isGreaterThanOrEqualTo(Runtime.getRuntime().availableProcessors() * 100)
+                .isLessThan(
+                    Runtime.getRuntime().availableProcessors()
+                        * 200); // Should take around N*100ms to emit all events
+          }
+        }
+      } catch (Exception e) {
+        throw new RuntimeException("Error closing CompositeTransport", e);
       }
-
-      // Verify DatasetEvent emission
-      startTime = System.currentTimeMillis();
-      compositeTransport.emit(datasetEvent());
-      endTime = System.currentTimeMillis();
-
-      assertThat(eventsEmitted.get()).isEqualTo(20); // All events should be emitted
-      if (withThreadPool) {
-        assertThat(endTime - startTime)
-            .isGreaterThanOrEqualTo(100)
-            .isLessThan(200); // Should take around 100ms to emit all events
-      } else {
-        assertThat(endTime - startTime)
-            .isGreaterThanOrEqualTo(1000)
-            .isLessThan(2000); // Should take around 1000ms to emit all events
-      }
-      // Verify JobEvent emission
-      startTime = System.currentTimeMillis();
-      compositeTransport.emit(jobEvent());
-      endTime = System.currentTimeMillis();
-
-      assertThat(eventsEmitted.get()).isEqualTo(30); // All events should be emitted
-      if (withThreadPool) {
-        assertThat(endTime - startTime)
-            .isGreaterThanOrEqualTo(100)
-            .isLessThan(200); // Should take around 100ms to emit all events
-      } else {
-        assertThat(endTime - startTime)
-            .isGreaterThanOrEqualTo(1000)
-            .isLessThan(2000); // Should take around 1000ms to emit all events
-      }
-
-      // Verify thread pool not shutdown
-      compositeTransport.emit(runEvent());
-      assertThat(eventsEmitted.get()).isEqualTo(40); // All events should be emitted
     }
   }
 

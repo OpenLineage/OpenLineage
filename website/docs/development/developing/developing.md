@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Developing With OpenLineage
 
-As there are hundreds and possibly thousands databases, query engines and other tools you could use to process, create and move data, there's great chance that existing OpenLineage integration won't cover your needs.
+As there are hundreds and possibly thousands databases, query engines and other tools you could use to process, create and move data, there's great chance that existing OpenLineage integrations won't cover your needs.
 
 However, OpenLineage project also provides libraries you could use to write your own integration. 
 
@@ -22,27 +22,13 @@ For [Python](../../client/python.md) and [Java](../../client/java/java.md), we'v
 Getting lineage from systems like BigQuery or Redshift isn't necessarily tied to orchestrator or processing engine you're using. For this reason, we've extracted
 that functionality from our Airflow library and [packaged it for separate use](https://pypi.org/project/openlineage-integration-common/). 
 
-### Environment Variables
-
-The list of available environment variables for **Python** can be found [here](../../client/python.md#environment-variables).
-The list of available environment variables for **Java** can be found [here](../../client/java/java.md#environment-variables).
-
 ### SQL parser
 
-We've created SQL parser that allows you to extract lineage from SQL statements. The parser is implemented in Rust; however, it's also available as a [Python library](https://pypi.org/project/openlineage-sql/).
-You can take a look at its code on [GitHub](https://github.com/OpenLineage/OpenLineage/tree/main/integration/sql).
+We've created a SQL parser that allows you to extract lineage from SQL statements. The parser is implemented in Rust; however, it's also available as a [Java](https://mvnrepository.com/artifact/io.openlineage/openlineage-sql-java) or [Python](https://pypi.org/project/openlineage-sql/) library.
+You can take a look at its sourcecode on [GitHub](https://github.com/OpenLineage/OpenLineage/tree/main/integration/sql).
 
 ## Contributing
 
-If contributing changes, additions or fixes, please include the following header in any new files:
-
-```
-/*
-/* Copyright 2018-2024 contributors to the OpenLineage project
-/* SPDX-License-Identifier: Apache-2.0 
-*/
-```
-
-There is a pre-commit step that checks license in headers for new files when pull requests are opened.
+Before making any changes, please read [CONTRIBUTING](https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md) first.
 
 Thanks for your contributions to the project!

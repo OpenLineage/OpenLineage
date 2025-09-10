@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.hive.hooks.OutputCLL;
-import io.openlineage.hive.hooks.TransformationInfo;
 import io.openlineage.hive.parsing.ColumnLineageCollector;
 import io.openlineage.hive.parsing.Parsing;
 import io.openlineage.hive.parsing.QueryExpr;

@@ -3,37 +3,43 @@
 `java`
 
 ```
-/* 
-* Copyright 2018-2024 contributors to the Marquez project
-* SPDX-License-Identifier: Apache-2.0
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
 */
 ```
 
 `bash`
 
-```   
+```
 #!/bin/bash
 #
-# Copyright 2018-2024 contributors to the Marquez project
+# Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 ```
 
 `py`
 
 ```
-# Copyright 2018-2024 contributors to the Marquez project
+# Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 ```
 
 `rust`
 
 ```
-// Copyright 2018-2024 contributors to the OpenLineage project
+// Copyright 2018-2025 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 ```
 
-`md`
+`md` (footer)
+
+```
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2025 contributors to the OpenLineage project
+```
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2024 contributors to the OpenLineage project
+Copyright 2018-2025 contributors to the OpenLineage project

@@ -54,7 +54,7 @@ class OpenLineageRunEventBuilderTest {
         @Override
         @SneakyThrows
         public List<InputDataset> apply(Object v1) {
-          Thread.sleep(60L);
+          Thread.sleep(600L);
           return Collections.emptyList();
         }
 
@@ -94,7 +94,7 @@ class OpenLineageRunEventBuilderTest {
     when(runEventContext.loadNodes(anyMap(), anyMap()))
         .thenReturn(Collections.singletonList(mock(SparkListenerSQLExecutionEnd.class)));
     when(config.getCircuitBreaker()).thenReturn(circuitBreakerConfig);
-    when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.of(Duration.ofMillis(100)));
+    when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.of(Duration.ofMillis(1000)));
     when(openLineageEventHandlerFactory.createInputDatasetBuilder(openLineageContext))
         .thenReturn(Collections.singletonList(timeoutInputDatasetBuilder));
   }

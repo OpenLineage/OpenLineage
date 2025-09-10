@@ -5,7 +5,7 @@ import logging
 from typing import Dict, List, TypeVar
 
 from jinja2 import Undefined
-from openlineage.common.provider.dbt.processor import DbtArtifactProcessor
+from openlineage.common.provider.dbt.processor import DbtArtifactProcessor, DbtRunRunFacet
 from openlineage.common.utils import get_from_nullable_chain
 
 
@@ -32,13 +32,17 @@ T = TypeVar("T")
 class DbtCloudArtifactProcessor(DbtArtifactProcessor):
     should_raise_on_unsupported_command = False
 
-    def __init__(self, manifest, run_result, profile, catalog, *args, **kwargs):
+    def __init__(
+        self, manifest, run_result, profile, catalog, project_name=None, account_id=None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.manifest = manifest
         self.run_result = run_result
         self.profile = profile
         self.catalog = catalog
+        self.project_name = project_name
+        self.account_id = account_id
 
     @classmethod
     def check_metadata_version(
@@ -67,3 +71,17 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
 
     def extract_namespace(self, profile: Dict) -> str:
         return super().extract_namespace(profile["details"])
+
+    def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]:
+        invocation_id = self.run_metadata.get("invocation_id")
+        if not invocation_id:
+            return {}
+        return {
+            "dbt_run": DbtRunRunFacet(
+                invocation_id=invocation_id,
+                project_name=self.project_name,
+                profile_name=self.profile["name"],
+                dbt_runtime="cloud",
+                account_id=self.account_id,
+            )
+        }

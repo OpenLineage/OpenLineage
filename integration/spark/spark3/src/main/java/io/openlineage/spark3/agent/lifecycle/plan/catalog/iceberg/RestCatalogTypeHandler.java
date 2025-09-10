@@ -10,6 +10,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,8 @@ import org.apache.spark.sql.SparkSession;
 class RestCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   private static final String REST_CATALOG_TYPE = "rest";
+  private static final String BIGLAKE_CATALOG_URI =
+      "https://biglake.googleapis.com/iceberg/v1beta/restcatalog";
 
   @Override
   String getType() {
@@ -40,5 +43,15 @@ class RestCatalogTypeHandler extends BaseCatalogTypeHandler {
     String confUri = catalogConf.get(CatalogProperties.URI);
     String uri = new URI(confUri).toString();
     return new DatasetIdentifier(table, uri);
+  }
+
+  @Override
+  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+    if (BIGLAKE_CATALOG_URI.equals(catalogConf.get(CatalogProperties.URI))) {
+      Map<String, String> properties = new HashMap<>();
+      properties.put("gcp_project_id", catalogConf.get("header.x-goog-user-project"));
+      return properties;
+    }
+    return super.catalogProperties(catalogConf);
   }
 }

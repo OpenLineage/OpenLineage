@@ -23,6 +23,7 @@ import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.OpenLineage.SymlinksDatasetFacet;
 import io.openlineage.client.OpenLineage.SymlinksDatasetFacetIdentifiers;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
 import io.openlineage.hive.client.HiveOpenLineageConfigParser;

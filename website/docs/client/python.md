@@ -29,6 +29,40 @@ To install the package from source, use
 python -m pip install .
 ```
 
+### Optional Dependencies
+
+The Python client supports optional dependencies for enhanced functionality:
+
+#### Remote Filesystem Support
+For file transport with remote storage backends (S3, GCS, Azure, etc.):
+```bash
+pip install openlineage-python[fsspec]
+```
+
+#### Kafka Support
+For Kafka transport:
+```bash
+pip install openlineage-python[kafka]
+```
+
+#### MSK IAM Support
+For AWS MSK with IAM authentication:
+```bash
+pip install openlineage-python[msk-iam]
+```
+
+#### DataZone Support
+For AWS DataZone integration:
+```bash
+pip install openlineage-python[datazone]
+```
+
+#### All Optional Dependencies
+To install all optional dependencies:
+```bash
+pip install openlineage-python[fsspec,kafka,msk-iam,datazone]
+```
+
 ## Configuration
 
 We recommend configuring the client with an `openlineage.yml` file that contains all the
@@ -199,6 +233,30 @@ transport:
     retries: 3
   flush: true
   message_key: some-value # this has been aliased to messageKey
+```
+</TabItem>
+
+<TabItem value="file" label="File Transport with Remote Storage">
+
+Setting following environment variables:
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=file
+OPENLINEAGE__TRANSPORT__LOG_FILE_PATH=s3://my-bucket/lineage/events.jsonl
+OPENLINEAGE__TRANSPORT__APPEND=true
+OPENLINEAGE__TRANSPORT__STORAGE_OPTIONS='{"key": "AKIAIOSFODNN7EXAMPLE", "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "endpoint_url": "https://s3.amazonaws.com"}'
+```
+
+is equivalent to passing following YAML configuration:
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  append: true
+  storage_options:
+    key: AKIAIOSFODNN7EXAMPLE
+    secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    endpoint_url: https://s3.amazonaws.com
 ```
 </TabItem>
 
@@ -405,6 +463,283 @@ client.close()
 
 </Tabs>
 
+### Datadog Transport
+
+The Datadog transport sends OpenLineage events to Datadog's observability platform with intelligent transport routing based on event characteristics. This transport combines both synchronous HTTP and asynchronous HTTP capabilities, automatically selecting the optimal transport method based on configurable rules.
+
+#### Configuration
+
+- `type` - string, must be `"datadog"`. Required.
+- `apiKey` - string, Datadog API key for authentication. Can also be set via `DD_API_KEY` environment variable. Required.
+- `site` - string, Datadog site endpoint. Can be one of the predefined sites or a custom URL. Can also be set via `DD_SITE` environment variable. Optional, default: `"datadoghq.com"`.
+- `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5.0`.
+- `retry` - dictionary of additional configuration options for HTTP retries. Optional, same defaults as HTTP transport.
+- `max_queue_size` - integer specifying maximum events in async processing queue. Optional, default: `10000`.
+- `max_concurrent_requests` - integer specifying maximum parallel HTTP requests for async transport. Optional, default: `100`.
+- `async_transport_rules` - dictionary mapping integration and job types to transport selection. Optional, default: `{"dbt": {"*": True}}`.
+
+#### Predefined Datadog Sites
+
+The transport supports the following predefined Datadog sites:
+- `datadoghq.com`
+- `us3.datadoghq.com`
+- `us5.datadoghq.com`
+- `datadoghq.eu`
+- `ap1.datadoghq.com`
+- `ap2.datadoghq.com`
+- `ddog-gov.com`
+- `datad0g.com`
+
+You can also provide a custom URL for `site` if using a proxy or custom endpoint.
+
+#### Async Transport Rules
+
+The `async_transport_rules` configuration allows fine-grained control over which events use asynchronous transport vs synchronous HTTP transport. Rules are defined as a two-level dictionary:
+
+```yaml
+async_transport_rules:
+  <integration>:
+    <jobType>: <boolean>
+```
+
+First-level keys match against the `integration` field in `JobTypeJobFacet` Second-level keys match against the `jobType` field in `JobTypeJobFacet`.
+Value `true` uses async transport, `false` or lack of value uses synchronous HTTP transport.
+Use `"*"` to match all integrations or job types. All matching is case-insensitive.
+
+When the mapping for some `integration` - `jobType` pair aren't provided, it will use synchronous HTTPTransport. 
+If you want to send all events via async transport, use double wildcard configuration. It will force async transport even if the `JobTypeJobFacet` is not present.
+
+```yaml
+async_transport_rules:
+  "*":
+   "*": true
+```
+
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: datadog
+  apiKey: your-datadog-api-key
+  site: datadoghq.com
+  timeout: 10
+  max_queue_size: 5000
+  max_concurrent_requests: 50
+  async_transport_rules:
+    # All dbt events use async transport
+    dbt:
+      "*": true
+    # Spark sql-level events use async, other use sync
+    spark:
+      sql: true
+    # All Airflow events use async transport
+    airflow:
+      "*": true
+    # Example configuration that sends all events via async transport
+    "*":
+      "*": true
+  retry:
+    total: 5
+    backoff_factor: 0.3
+    status_forcelist: [500, 502, 503, 504]
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.datadog import DatadogConfig, DatadogTransport
+
+datadog_config = DatadogConfig(
+    apiKey="your-datadog-api-key",
+    site="datadoghq.com",
+    timeout=10.0,
+    max_queue_size=5000,
+    max_concurrent_requests=50,
+    async_transport_rules={
+        "dbt": {"*": True},
+        "spark": {"sql": True},
+        "airflow": {"*": True},
+        "*": {"*": True}  # Send all events via async transport.
+    },
+    retry={
+        "total": 5,
+        "backoff_factor": 0.3,
+        "status_forcelist": [500, 502, 503, 504]
+    }
+)
+
+client = OpenLineageClient(transport=DatadogTransport(datadog_config))
+```
+
+</TabItem>
+<TabItem value="env-vars" label="Environment Variables">
+
+```bash
+# Basic configuration
+export OPENLINEAGE__TRANSPORT__TYPE=datadog
+export OPENLINEAGE__TRANSPORT__APIKEY=your-datadog-api-key
+export OPENLINEAGE__TRANSPORT__SITE=datadoghq.com
+export OPENLINEAGE__TRANSPORT__TIMEOUT=10
+
+# Async transport rules
+export OPENLINEAGE__TRANSPORT__ASYNC_TRANSPORT_RULES='{"dbt": {"*": true}, "spark": {"batch_job": true, "streaming_job": false}, "airflow": {"*": true}}'
+```
+
+
+Or using DD environment variables
+```bash
+export OPENLINEAGE__TRANSPORT__TYPE=datadog
+export DD_API_KEY=your-datadog-api-key
+export DD_SITE=datadoghq.com
+```
+
+</TabItem>
+
+</Tabs>
+
+#### Transport Selection Examples
+
+Given these rules:
+```yaml
+async_transport_rules:
+  dbt:
+    "*": true
+  spark:
+    batch_job: true
+    streaming_job: false
+  "*":
+    ml_training: true
+```
+
+**Event routing behavior**:
+- `integration="dbt", jobType="model"` → **Async** (matches `dbt → *`)
+- `integration="spark", jobType="batch_job"` → **Async** (matches `spark → batch_job`)
+- `integration="spark", jobType="streaming_job"` → **HTTP** (matches `spark → streaming_job`)
+- `integration="flink", jobType="ml_training"` → **Async** (matches `* → ml_training`)
+- `integration="kafka", jobType="consumer"` → **HTTP** (no matching rule)
+
+### GCP Data Catalog Lineage
+
+The GCP Data Catalog Lineage transport sends OpenLineage events to Google Cloud Data Catalog Lineage API with intelligent transport routing. This transport combines both synchronous and asynchronous capabilities, automatically selecting the optimal transport method based on configurable rules similar to the Datadog transport.
+
+#### Configuration
+
+- `type` - string, must be `"gcplineage"`. Required.
+- `project_id` - string, GCP project ID where the lineage data will be stored. Required.
+- `location` - string, GCP location (region) for the lineage service. Optional, default: `"us-central1"`.
+- `credentials_path` - string, path to service account JSON credentials file. Optional, uses default credentials if not provided.
+- `async_transport_rules` - dictionary mapping integration and job types to transport selection. Optional, default: `{"dbt": {"*": True}}`.
+
+#### Authentication
+
+The transport supports two authentication methods:
+
+1. **Service Account Key File**: Provide the path to a JSON key file via `credentials_path`
+2. **Default Credentials**: Uses Google Cloud SDK default credentials (recommended for production)
+
+When using default credentials, ensure your environment has proper authentication configured:
+- For local development: `gcloud auth application-default login`
+- For production: Use service account attached to compute resources or workload identity
+
+#### Async Transport Rules
+
+The `async_transport_rules` configuration works identically to the Datadog transport, allowing fine-grained control over which events use asynchronous transport vs synchronous transport. Rules are defined as a two-level dictionary:
+
+```yaml
+async_transport_rules:
+  <integration>:
+    <jobType>: <boolean>
+```
+
+First-level keys match against the `integration` field in `JobTypeJobFacet`. Second-level keys match against the `jobType` field in `JobTypeJobFacet`.
+Value `true` uses async transport, `false` or missing value uses synchronous transport.
+Use `"*"` to match all integrations or job types. All matching is case-insensitive.
+
+When no mapping is provided for an `integration` - `jobType` pair, it uses synchronous transport.
+To send all events via async transport, use double wildcard configuration:
+
+```yaml
+async_transport_rules:
+  "*":
+   "*": true
+```
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: gcplineage
+  project_id: my-gcp-project
+  location: us-central1
+  credentials_path: /path/to/service-account.json
+  async_transport_rules:
+    # All dbt events use async transport
+    dbt:
+      "*": true
+    # All Airflow events use async transport
+    airflow:
+      "*": true
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.gcplineage import GCPLineageConfig, GCPLineageTransport
+
+gcp_config = GCPLineageConfig(
+    project_id="my-gcp-project",
+    location="us-central1",
+    credentials_path="/path/to/service-account.json",
+    async_transport_rules={
+        "dbt": {"*": True},
+        "airflow": {"*": True}
+    }
+)
+
+client = OpenLineageClient(transport=GCPLineageTransport(gcp_config))
+```
+
+</TabItem>
+<TabItem value="env-vars" label="Environment Variables">
+
+```bash
+# Basic configuration
+export OPENLINEAGE__TRANSPORT__TYPE=gcplineage
+export OPENLINEAGE__TRANSPORT__PROJECT_ID=my-gcp-project
+export OPENLINEAGE__TRANSPORT__LOCATION=us-central1
+export OPENLINEAGE__TRANSPORT__CREDENTIALS_PATH=/path/to/service-account.json
+
+# Async transport rules
+export OPENLINEAGE__TRANSPORT__ASYNC_TRANSPORT_RULES='{"dbt": {"*": true}, "airflow": {"*": true}}'
+```
+
+</TabItem>
+
+</Tabs>
+
+#### Requirements
+
+This transport requires the `google-cloud-datacatalog-lineage` package:
+
+```bash
+pip install google-cloud-datacatalog-lineage
+```
+
+#### Integration with Google Dataplex
+
+Events sent via this transport will appear in Google Cloud Data Catalog and can be viewed through Google Dataplex for lineage visualization and metadata management.
+
 ### Console
 
 This straightforward transport emits OpenLineage events directly to the console through a logger.
@@ -526,24 +861,100 @@ client = OpenLineageClient(transport=KafkaTransport(kafka_config))
 
 ### File
 
-Designed mainly for integration testing, the `FileTransport` emits OpenLineage events to a given file(s).
+Designed mainly for integration testing, the `FileTransport` emits OpenLineage events to a given file(s). Supports both local and remote filesystems through optional fsspec integration.
 
 #### Configuration
 
 - `type` - string, must be `"file"`. Required.
 - `log_file_path` - string specifying the path of the file or file prefix (when `append` is true). Required.
 - `append` - boolean, see *Behavior* section below. Optional, default: `false`.
+- `storage_options` - dictionary, additional options passed to fsspec for authentication and configuration. Optional.
+- `filesystem` - string, dotted import path to a custom filesystem class or instance. Optional, provides explicit control over the filesystem.
+- `fs_kwargs` - dictionary, keyword arguments for constructing the filesystem when using `filesystem`. Optional.
 
 #### Behavior
 
 - If the target file is absent, it's created.
 - If `append` is `true`, each event will be appended to a single file `log_file_path`, separated by newlines.
 - If `append` is `false`, each event will be written to as separated file with name `{log_file_path}-{datetime}`.
+- When using remote filesystems, the transport automatically handles authentication and connection management through fsspec.
+
+#### Remote Filesystem Support
+
+The File transport supports remote filesystems through [fsspec](https://filesystem-spec.readthedocs.io/), which provides a unified interface for various storage backends including:
+
+- **Amazon S3** (`s3://`)
+- **Google Cloud Storage** (`gcs://` or `gs://`)
+- **Azure Blob Storage** (`az://`, `abfs://`)
+- **HDFS** (`hdfs://`)
+- **FTP/SFTP** (`ftp://`, `sftp://`)
+- **HTTP** (`http://`, `https://`)
+
+##### Installation
+
+To use remote filesystems, install the fsspec extra:
+
+```bash
+pip install openlineage-python[fsspec]
+```
+
+##### Configuration Methods
+
+**Auto-detection Configuration**: FSSpec automatically detects the protocol from URL schemes:
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  # Protocol auto-detected from s3:// scheme
+  storage_options:
+    key: your-access-key
+    secret: your-secret-key
+    endpoint_url: https://custom-s3-endpoint.com
+```
+
+**Explicit Filesystem Configuration**: Provide explicit control over the filesystem using the `filesystem` parameter. This supports three approaches:
+
+1. **Filesystem Class**: Reference a filesystem class that will be instantiated with `fs_kwargs`
+2. **Filesystem Instance**: Reference a pre-configured filesystem instance (ignores `fs_kwargs`)  
+3. **Factory Function**: Reference a callable that returns a filesystem instance when called with `fs_kwargs`
+
+```yaml
+# Example: Filesystem class
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  filesystem: s3fs.S3FileSystem
+  fs_kwargs:
+    key: your-access-key
+    secret: your-secret-key
+```
+
+##### Append Mode Considerations
+
+**Important**: Many cloud storage filesystems (S3, GCS, Azure) do not support reliable append operations. When append mode is requested but not supported by the underlying filesystem, these filesystems may silently switch to overwrite mode, potentially causing data loss.
+
+**Recommendations for cloud storage**:
+
+- Use `append: false` to create timestamped files for better reliability
+- Test append behavior with your specific storage backend before production use
+- Monitor file outputs to ensure expected behavior
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events
+  protocol: s3
+  append: false  # Recommended for cloud storage (creates timestamped files)
+  storage_options:
+    key: your-access-key
+    secret: your-secret-key
+```
 
 #### Examples
 
 <Tabs groupId="integrations">
-<TabItem value="yaml" label="Yaml Config">
+<TabItem value="yaml-local" label="Local File">
 
 ```yaml
 transport:
@@ -553,21 +964,198 @@ transport:
 ```
 
 </TabItem>
-<TabItem value="python" label="Python Code">
+<TabItem value="yaml-s3" label="Amazon S3">
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  append: false  # Recommended for cloud storage
+  storage_options:
+    key: AKIAIOSFODNN7EXAMPLE
+    secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    endpoint_url: https://s3.amazonaws.com
+```
+
+</TabItem>
+<TabItem value="yaml-gcs" label="Google Cloud Storage">
+
+```yaml
+transport:
+  type: file
+  log_file_path: gs://my-bucket/lineage/events.jsonl
+  append: false  # Recommended for cloud storage
+  storage_options:
+    token: /path/to/service-account.json
+    project: my-gcp-project
+```
+
+</TabItem>
+<TabItem value="yaml-azure" label="Azure Blob Storage">
+
+```yaml
+transport:
+  type: file
+  log_file_path: az://container/lineage/events.jsonl
+  append: false  # Recommended for cloud storage
+  storage_options:
+    account_name: mystorageaccount
+    account_key: base64_encoded_key
+```
+
+</TabItem>
+<TabItem value="yaml-custom-fs" label="Custom Filesystem">
+
+```yaml
+transport:
+  type: file
+  log_file_path: /custom/path/events.jsonl
+  filesystem: mymodule.MyCustomFileSystem
+  fs_kwargs:
+    endpoint: https://custom-storage.example.com
+    auth_token: custom_token_123
+    timeout: 30
+```
+
+</TabItem>
+<TabItem value="yaml-fs-instance" label="Filesystem Instance">
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  filesystem: mymodule.my_preconfigured_s3_instance
+  # fs_kwargs ignored when using an instance
+```
+
+</TabItem>
+<TabItem value="yaml-fs-factory" label="Filesystem Factory">
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  filesystem: mymodule.create_secure_s3_filesystem
+  fs_kwargs:
+    key: AKIAIOSFODNN7EXAMPLE
+    secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    endpoint_url: https://custom-s3-endpoint.com
+    use_ssl: true
+```
+
+</TabItem>
+<TabItem value="python-local" label="Python Code (Local)">
 
 ```python
 from openlineage.client import OpenLineageClient
 from openlineage.client.transport.file import FileConfig, FileTransport
 
 file_config = FileConfig(
-  log_file_path="/path/to/your/file",
-  append=False,
+    log_file_path="/path/to/your/file",
+    append=False,
 )
 
 client = OpenLineageClient(transport=FileTransport(file_config))
 ```
-</TabItem>
 
+</TabItem>
+<TabItem value="python-s3" label="Python Code (S3)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.file import FileConfig, FileTransport
+
+file_config = FileConfig(
+    log_file_path="s3://my-bucket/lineage/events.jsonl",
+    append=True,
+    storage_options={
+        "key": "AKIAIOSFODNN7EXAMPLE",
+        "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "endpoint_url": "https://s3.amazonaws.com",
+    },
+)
+
+client = OpenLineageClient(transport=FileTransport(file_config))
+```
+
+</TabItem>
+<TabItem value="python-custom" label="Python Code (Custom FS)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.file import FileConfig, FileTransport
+
+file_config = FileConfig(
+    log_file_path="/custom/path/events.jsonl",
+    filesystem="s3fs.S3FileSystem",
+    fs_kwargs={
+        "key": "AKIAIOSFODNN7EXAMPLE",
+        "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "client_kwargs": {"region_name": "us-west-2"},
+    },
+)
+
+client = OpenLineageClient(transport=FileTransport(file_config))
+```
+
+</TabItem>
+<TabItem value="python-fs-instance" label="Python Code (FS Instance)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.file import FileConfig, FileTransport
+import s3fs
+
+# Create filesystem instance directly
+s3_fs = s3fs.S3FileSystem(
+    key="AKIAIOSFODNN7EXAMPLE",
+    secret="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    endpoint_url="https://s3.amazonaws.com"
+)
+
+file_config = FileConfig(
+    log_file_path="s3://my-bucket/lineage/events.jsonl",
+    filesystem="__main__.s3_fs",  # Reference to the instance
+    # fs_kwargs are ignored when using an instance
+)
+
+client = OpenLineageClient(transport=FileTransport(file_config))
+```
+
+</TabItem>
+<TabItem value="python-fs-factory" label="Python Code (FS Factory)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.file import FileConfig, FileTransport
+
+def create_custom_s3_filesystem(**kwargs):
+    """Factory function that creates a customized S3 filesystem."""
+    import s3fs
+    
+    # Apply custom defaults or modifications
+    config = {
+        "use_ssl": True,
+        "s3_additional_kwargs": {"ServerSideEncryption": "AES256"},
+        **kwargs  # Allow override via fs_kwargs
+    }
+    
+    return s3fs.S3FileSystem(**config)
+
+file_config = FileConfig(
+    log_file_path="s3://my-bucket/lineage/events.jsonl",
+    filesystem="__main__.create_custom_s3_filesystem",  # Reference to factory function
+    fs_kwargs={
+        "key": "AKIAIOSFODNN7EXAMPLE",
+        "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "endpoint_url": "https://custom-s3-endpoint.com",
+    },
+)
+
+client = OpenLineageClient(transport=FileTransport(file_config))
+```
+
+</TabItem>
 </Tabs>
 
 ### Composite

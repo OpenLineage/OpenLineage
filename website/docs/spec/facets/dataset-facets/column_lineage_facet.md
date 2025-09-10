@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 # Column Level Lineage Dataset Facet
@@ -206,7 +206,7 @@ Indirect:
 - `FILTER` - input used as a filtering condition (e.g. `WHERE` clause)
 - `SORT` - output is sorted based on input field (e.g. `ORDER BY` clause)
 - `WINDOW` - output is windowed based on input field
-- `CONDITION` - input value is used in `IF` or `CASE WHEN` statements
+- `CONDITIONAL` - input value is used in `IF`, `CASE WHEN` or `COALESCE` statements
 
 #### Masking
 Boolean value indicating if the input value was obfuscated during the transformation. 

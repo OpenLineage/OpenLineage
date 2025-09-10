@@ -20,13 +20,13 @@ from openlineage.client.facet_v2 import (
     data_quality_assertions_dataset,
     datasource_dataset,
     documentation_dataset,
+    external_query_run,
     job_type_job,
     output_statistics_output_dataset,
     processing_engine_run,
     schema_dataset,
     sql_job,
 )
-from openlineage.client.generated.external_query_run import ExternalQueryRunFacet
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
@@ -141,11 +141,13 @@ class DbtArtifactProcessor:
         logger: Optional[logging.Logger] = None,
         models: Optional[Sequence[str]] = None,
         selector: Optional[str] = None,
+        openlineage_job_name: Optional[str] = None,
     ):
         self.producer = producer
         self._dbt_run_metadata: Optional[ParentRunMetadata] = None
         self.logger = logger or logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
 
+        self.openlineage_job_name = openlineage_job_name
         self.job_namespace = job_namespace
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
@@ -376,7 +378,7 @@ class DbtArtifactProcessor:
                     "success",
                     started_at,
                     completed_at,
-                    self.get_run(run_id),
+                    self.get_run(run_id=run_id),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [
                         InputDataset(
@@ -721,8 +723,8 @@ class DbtArtifactProcessor:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
         if query_id:
-            run_facets["externalQuery"] = ExternalQueryRunFacet(
-                externalQueryId=query_id, source=self.job_namespace
+            run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
+                externalQueryId=query_id, source=self.dataset_namespace
             )
 
         return Run(
@@ -742,11 +744,9 @@ class DbtArtifactProcessor:
         )
         return {"dbt_version": DbtVersionRunFacet(version=dbt_version)}
 
+    @abstractmethod
     def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]:
-        invocation_id = self.run_metadata.get("invocation_id")
-        if not invocation_id:
-            return {}
-        return {"dbt_run": DbtRunRunFacet(invocation_id=invocation_id)}
+        ...
 
     def processing_engine_facet(self) -> dict[str, processing_engine_run.ProcessingEngineRunFacet]:
         dbt_version = self.run_metadata.get("dbt_version")

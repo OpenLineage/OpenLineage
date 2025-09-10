@@ -24,6 +24,12 @@
             }
           ]
         },
+        "catalog": {
+          "framework": "hive",
+          "type": "hive",
+          "warehouseUri": "file:/tmp/warehouse",
+          "source": "spark"
+        },
         "symlinks": {
           "identifiers": [
             {

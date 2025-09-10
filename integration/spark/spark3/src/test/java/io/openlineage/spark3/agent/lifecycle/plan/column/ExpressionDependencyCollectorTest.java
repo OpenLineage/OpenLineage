@@ -9,11 +9,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
-import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
@@ -26,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.And;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.BinaryExpression;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
+import org.apache.spark.sql.catalyst.expressions.Coalesce;
 import org.apache.spark.sql.catalyst.expressions.Descending$;
 import org.apache.spark.sql.catalyst.expressions.EqualTo;
 import org.apache.spark.sql.catalyst.expressions.Explode;
@@ -73,6 +75,7 @@ import scala.collection.immutable.Seq;
 
 class ExpressionDependencyCollectorTest {
 
+  final String ALIAS_NAME = "res";
   final String NAME1 = "name1";
   final String NAME2 = "name2";
   final String NAME3 = "name3";
@@ -316,7 +319,7 @@ class ExpressionDependencyCollectorTest {
             new EqualTo((Expression) expression1, (Expression) expression2),
             field(NAME3, exprId3),
             field("name4", exprId4));
-    Alias res = alias(exprId5, "res", ifExpr);
+    Alias res = alias(exprId5, ALIAS_NAME, ifExpr);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
@@ -397,7 +400,7 @@ class ExpressionDependencyCollectorTest {
             new EqualTo((Expression) expression1, (Expression) expression2),
             expression3,
             new Add(expression3, new Literal(1, IntegerType$.MODULE$)));
-    Alias res = alias(exprId5, "res", ifExpr);
+    Alias res = alias(exprId5, ALIAS_NAME, ifExpr);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
@@ -421,7 +424,7 @@ class ExpressionDependencyCollectorTest {
                     ScalaConversionUtils.toScalaTuple(
                         (Expression) expression1, (Expression) expression2))),
             ScalaConversionUtils.toScalaOption((Expression) field(NAME3, exprId3)));
-    Alias res = alias(exprId4, "res", caseWhen);
+    Alias res = alias(exprId4, ALIAS_NAME, caseWhen);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
@@ -441,7 +444,7 @@ class ExpressionDependencyCollectorTest {
             field(NAME3, exprId3),
             new Sha1(field("name4", exprId4)));
 
-    Alias res = alias(exprId5, "name5", ifExpr);
+    Alias res = alias(exprId5, ALIAS_NAME, ifExpr);
 
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
@@ -488,6 +491,26 @@ class ExpressionDependencyCollectorTest {
         .addDependency(rootAliasExprId, exprId1, TransformationInfo.aggregation());
     verify(builder, times(1))
         .addDependency(rootAliasExprId, exprId2, TransformationInfo.aggregation());
+  }
+
+  @Test
+  void testCollectCoalesceExpressions() {
+    Coalesce coalesceExpr =
+        new Coalesce(getExpressionSeq((Expression) expression1, (Expression) expression2));
+    Alias res = alias(exprId3, ALIAS_NAME, coalesceExpr);
+    Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
+    LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
+    ExpressionDependencyCollector.collect(context, plan);
+
+    verify(builder, times(1))
+        .addDependency(
+            exprId3, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+    verify(builder, times(1))
+        .addDependency(
+            exprId3, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+    verify(builder, times(1)).addDependency(exprId3, exprId1, TransformationInfo.identity());
+    verify(builder, times(1)).addDependency(exprId3, exprId2, TransformationInfo.identity());
+    verifyNoMoreInteractions(builder);
   }
 
   private static Seq<NamedExpression> getNamedExpressionSeq(NamedExpression... expressions) {

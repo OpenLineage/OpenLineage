@@ -42,6 +42,21 @@ class DataQualityMetricsInputDatasetFacet(InputDatasetFacet):
     fileCount: int | None = attr.field(default=None)  # noqa: N815
     """The number of files evaluated"""
 
+    lastUpdated: str | None = attr.field(default=None)  # noqa: N815
+    """The last time the dataset was changed"""
+
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-2/DataQualityMetricsInputDatasetFacet.json#/$defs/DataQualityMetricsInputDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-0-3/DataQualityMetricsInputDatasetFacet.json#/$defs/DataQualityMetricsInputDatasetFacet"
+
+    @lastUpdated.validator
+    def lastupdated_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        from dateutil import parser
+
+        parser.isoparse(value)
+        if "t" not in value.lower():
+            # make sure date-time contains time
+            msg = f"Parsed date-time has to contain time: {value}"
+            raise ValueError(msg)

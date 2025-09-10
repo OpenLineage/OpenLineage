@@ -55,7 +55,7 @@ This is used evaluate which inputs influenced certain output and what kind of in
 ### Expression dependency collection process
   
 For each node in `LogicalPlan` the `ExpressionDependencyCollector` attempts to extract the column lineage information based on its type.
-First it goes through `ColumnLineageVisitors` to check if any applies to current node, if so then it extract dependencies from them.
+First it goes through `ColumnLineageVisitors` to check if any applies to current node, if so then it extracts dependencies from them.
 Next if the node is `LogicalRelation` and relation type is `JDBCRelation`, the sql-parser extracts lineage data from query string itself.
 
 :::warning
@@ -72,7 +72,7 @@ so they need to be treated differently than normal dependencies.
 For each of those nodes the new `ExprId` is created to represent "all outputs", all its dependencies will be of `INDIRECT` type.
 
 For each of the `expressions` the collector tries to go through it and possible children expressions and add them to `exprDependencies` map with appropriate transformation type and `masking` flag.
-Most of the expressions represent `DIRECT` transformation, only exceptions are `If` and `CaseWhen` which contain condition expressions.
+Most of the expressions represent `DIRECT` transformation, only exceptions are `If`, `CaseWhen` and `Coalesce` which contain condition expressions.
 
 ### Facet building process
 

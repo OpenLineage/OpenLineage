@@ -9,19 +9,39 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+/**
+ * Represents the lineage of a column, tracking the relationship between a descendant column
+ * and its source columns in SQL queries.
+ */
 public class ColumnLineage {
   private final ColumnMeta descendant;
   private final List<ColumnMeta> lineage;
 
+  /**
+   * Creates a new ColumnLineage instance.
+   *
+   * @param descendant the column that is derived from other columns
+   * @param lineage the list of source columns that contribute to the descendant column
+   */
   public ColumnLineage(ColumnMeta descendant, List<ColumnMeta> lineage) {
     this.descendant = descendant;
     this.lineage = lineage;
   }
 
+  /**
+   * Returns the descendant column metadata.
+   *
+   * @return the column that is derived from other columns
+   */
   public ColumnMeta descendant() {
     return descendant;
   }
 
+  /**
+   * Returns the lineage of source columns.
+   *
+   * @return the list of source columns that contribute to the descendant column
+   */
   public List<ColumnMeta> lineage() {
     return lineage;
   }

@@ -9,8 +9,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalBuilder;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.sql.ColumnMeta;
 import java.util.Collections;
@@ -39,6 +42,9 @@ import org.jetbrains.annotations.NotNull;
 @Slf4j
 public class ColumnLevelLineageBuilder {
 
+  private static final Integer COMPUTED_DEPENDENCY_HARD_LIMIT = 1000000;
+  private static final Integer RETURNED_INPUT_FIELD_LIMIT = 100000;
+
   private Map<ExprId, Set<Dependency>> exprDependencies = new HashMap<>();
   private List<ExprId> datasetDependencies = new LinkedList<>();
   @Getter private Map<ExprId, Set<Input>> inputs = new HashMap<>();
@@ -46,6 +52,10 @@ public class ColumnLevelLineageBuilder {
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
   private final OpenLineage.SchemaDatasetFacet schema;
   private final OpenLineageContext context;
+
+  private final Map<ExprId, Dependency> commonDependencies = new HashMap<>();
+
+  private int dependenciesAdded;
 
   public ColumnLevelLineageBuilder(
       @NonNull final OpenLineage.SchemaDatasetFacet schema,
@@ -87,16 +97,28 @@ public class ColumnLevelLineageBuilder {
    * @param inputExprId
    */
   public void addDependency(ExprId outputExprId, ExprId inputExprId) {
-    exprDependencies
-        .computeIfAbsent(outputExprId, k -> new HashSet<>())
-        .add(new Dependency(inputExprId, TransformationInfo.identity()));
+    addDependency(outputExprId, inputExprId, TransformationInfo.identity());
   }
 
   public void addDependency(
       ExprId outputExprId, ExprId inputExprId, TransformationInfo transformationInfo) {
-    exprDependencies
-        .computeIfAbsent(outputExprId, k -> new HashSet<>())
-        .add(new Dependency(inputExprId, transformationInfo));
+    if (dependenciesAdded > COMPUTED_DEPENDENCY_HARD_LIMIT) {
+      // do nothing -> hard limit of allowed dependencies reached
+      return;
+    }
+    dependenciesAdded++;
+
+    Dependency dependency = commonDependencies.get(inputExprId);
+
+    if (dependency != null && transformationInfo.equals(dependency.getTransformationInfo())) {
+      // no need to create new dependency object
+    } else {
+      // store dependency in common dependencies
+      dependency = new Dependency(inputExprId, transformationInfo);
+      commonDependencies.put(inputExprId, dependency);
+    }
+
+    exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(dependency);
   }
 
   public void addDatasetDependency(ExprId outputExprId) {
@@ -162,9 +184,34 @@ public class ColumnLevelLineageBuilder {
     List<TransformedInput> datasetDependencyInputs =
         datasetLineageEnabled ? Collections.emptyList() : datasetDependencyInputs();
 
-    schema.getFields().stream()
-        .map(field -> Pair.of(field, getInputsUsedFor(field.getName())))
-        .filter(pair -> !pair.getRight().isEmpty())
+    if (dependenciesAdded >= COMPUTED_DEPENDENCY_HARD_LIMIT) {
+      log.warn(
+          "Field dependency amount exceeded allowed hard limit of {}. Returning empty column lineage.",
+          COMPUTED_DEPENDENCY_HARD_LIMIT);
+      return fieldsBuilder.build();
+    }
+
+    List<Pair<SchemaDatasetFacetFields, List<TransformedInput>>> collected =
+        schema.getFields().stream()
+            .map(field -> Pair.of(field, getInputsUsedFor(field.getName())))
+            .filter(pair -> !pair.getRight().isEmpty())
+            .collect(Collectors.toList());
+
+    Integer fieldsDependencies =
+        collected.stream().map(Pair::getRight).map(List::size).reduce(0, Integer::sum);
+
+    if (fieldsDependencies > RETURNED_INPUT_FIELD_LIMIT) {
+      // don't return input fields
+      log.warn(
+          "Amount of input fields exceeds {}. Returning empty column lineage.",
+          RETURNED_INPUT_FIELD_LIMIT);
+      return fieldsBuilder.build();
+    }
+
+    ColumnLineageDatasetFacetFieldsAdditionalBuilder additionalBuilder =
+        context.getOpenLineage().newColumnLineageDatasetFacetFieldsAdditionalBuilder();
+
+    collected.stream()
         .map(
             pair ->
                 Pair.of(pair.getLeft(), facetInputFields(pair.getRight(), datasetDependencyInputs)))
@@ -172,11 +219,7 @@ public class ColumnLevelLineageBuilder {
             pair ->
                 fieldsBuilder.put(
                     pair.getLeft().getName(),
-                    context
-                        .getOpenLineage()
-                        .newColumnLineageDatasetFacetFieldsAdditionalBuilder()
-                        .inputFields(pair.getRight())
-                        .build()));
+                    additionalBuilder.inputFields(pair.getRight()).build()));
 
     return fieldsBuilder.build();
   }

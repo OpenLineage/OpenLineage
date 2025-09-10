@@ -8,7 +8,7 @@ import os
 
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.transport.transport import Config, Transport, TransportFactory
-from openlineage.client.utils import try_import_from_string
+from openlineage.client.utils import import_from_string
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class DefaultTransportFactory(TransportFactory):
         transport_class_type_or_str = self.transports.get(transport_type, transport_type)
 
         if isinstance(transport_class_type_or_str, str):
-            transport_class = try_import_from_string(transport_class_type_or_str)
+            transport_class = import_from_string(transport_class_type_or_str)
         else:
             transport_class = transport_class_type_or_str
         if not inspect.isclass(transport_class) or not issubclass(transport_class, Transport):
@@ -71,7 +71,7 @@ class DefaultTransportFactory(TransportFactory):
         config_class = transport_class.config_class
 
         if isinstance(config_class, str):
-            config_class = try_import_from_string(config_class)
+            config_class = import_from_string(config_class)
         if not inspect.isclass(config_class) or not issubclass(config_class, Config):
             msg = f"Config {config_class} has to be class, and subclass of Config"
             raise TypeError(msg)

@@ -4,17 +4,17 @@
 */
 package io.openlineage.hive.parsing;
 
-import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.CONDITIONAL;
-import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.FILTER;
-import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.GROUP_BY;
-import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.JOIN;
-import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.SORT;
-import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.WINDOW;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.CONDITIONAL;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.FILTER;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.GROUP_BY;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.JOIN;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.SORT;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.hive.InMemoryHiveTestBase;
 import io.openlineage.hive.hooks.OutputCLL;
-import io.openlineage.hive.hooks.TransformationInfo;
 import java.util.Arrays;
 import java.util.HashSet;
 import org.apache.hadoop.hive.ql.udf.UDFAcos;

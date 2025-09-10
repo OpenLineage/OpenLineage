@@ -220,10 +220,10 @@ class SparkScalaContainerTest {
     final Network network = newNetwork();
     final String className = "io.openlineage.spark.streaming.Kafka2KafkaJob";
     final DockerImageName kafkaDockerImageName =
-        DockerImageName.parse("docker.io/bitnami/kafka:3.4.1");
+        DockerImageName.parse("docker.io/bitnamilegacy/kafka:3.4.1");
 
     GenericContainer zookeeperContainer =
-        new GenericContainer(DockerImageName.parse("docker.io/bitnami/zookeeper:3.7"))
+        new GenericContainer(DockerImageName.parse("docker.io/bitnamilegacy/zookeeper:3.7"))
             .withEnv("ALLOW_ANONYMOUS_LOGIN", "yes")
             .withEnv("ZOO_AUTOPURGE_INTERVAL", "1")
             .withNetwork(network)

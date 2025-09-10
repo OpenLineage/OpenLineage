@@ -37,7 +37,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 public class SparkTestUtils {
   static final String SPARK_3_OR_ABOVE = "^[3-9].*";
-  static final String SPARK_VERSION = "spark.version";
+  public static final String SPARK_VERSION = "spark.version";
   static final String SPARK_3_3_AND_ABOVE = "^3.[3-5].*|^[4-9].*";
 
   @Getter
@@ -81,13 +81,11 @@ public class SparkTestUtils {
   }
 
   static SparkSession createSparkSession(Integer httpServerPort, String appName) {
-    String userDirProperty = System.getProperty("user.dir");
-    Path userDirPath = Paths.get(userDirProperty);
+    Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
     UUID testUuid = UUID.randomUUID();
 
-    Path derbySystemHome = userDirPath.resolve("tmp").resolve("derby").resolve(testUuid.toString());
-    Path sparkSqlWarehouse =
-        userDirPath.resolve("tmp").resolve("spark-sql-warehouse").resolve(testUuid.toString());
+    Path derbySystemHome = tmpDir.resolve("derby").resolve(testUuid.toString());
+    Path sparkSqlWarehouse = tmpDir.resolve("spark-sql-warehouse").resolve(testUuid.toString());
 
     return SparkSession.builder()
         .appName(appName)
