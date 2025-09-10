@@ -46,7 +46,7 @@ def _refresh_cache_loop():
     This is the only place where the Airflow Variable is queried.
     """
     global _is_disabled_cached
-    log.info("Starting OpenLineage runtime-disable cache refresh loop.")
+    log.debug("Starting OpenLineage runtime-disable cache refresh loop.")
     while not _stop_event.is_set():
         try:
             from airflow.models.variable import Variable
@@ -57,13 +57,13 @@ def _refresh_cache_loop():
 
                 with _cache_lock:
                     if _is_disabled_cached != is_disabled:
-                        log.info(f"OpenLineage runtime disabled status changed to: {is_disabled}")
+                        log.debug(f"OpenLineage runtime disabled status changed to: {is_disabled}")
                         _is_disabled_cached = is_disabled
         except Exception as e:
             log.error("Failed to refresh OpenLineage runtime-disable cache: %s", e, exc_info=True)
 
         _stop_event.wait(timeout=_CACHE_TTL_SECONDS)
-    log.info("Exiting OpenLineage runtime-disable cache refresh loop.")
+    log.debug("Exiting OpenLineage runtime-disable cache refresh loop.")
 
 
 if TYPE_CHECKING:
@@ -307,7 +307,7 @@ def before_stopping(component):
 
     # Stop the background caching thread
     if _cache_thread:
-        log.info("Stopping OpenLineage runtime-disable cache thread.")
+        log.debug("Stopping OpenLineage runtime-disable cache thread.")
         _stop_event.set()
         _cache_thread.join(timeout=5)
         _cache_thread = None
