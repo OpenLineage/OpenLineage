@@ -96,18 +96,6 @@ When enabled, the library will:
 
 ## Configuration
 
-The OpenLineage integration can be disabled at startup. This is useful for temporarily turning off metadata collection for debugging or in specific environments. The configuration is checked in the following order of precedence:
-
-1.  **Native Airflow Provider:** If the `apache-airflow-providers-openlineage` package is installed, this plugin will be automatically disabled to prevent conflicts.
-2.  **`OPENLINEAGE_DISABLED` Environment Variable:** If this environment variable is set to `true`, the integration will be disabled. This acts as a master switch.
-3.  **`openlineage.disabled` Airflow Variable:** If neither of the above conditions is met, the plugin will check for an Airflow Variable named `openlineage.disabled`. If this variable is set to `true`, the integration will be disabled.
-
-To use the Airflow Variable, create a new Variable in the Airflow UI (**Admin -> Variables**) with:
-- **Key**: `openlineage.disabled`
-- **Value**: `true`
-
-Changes to the `OPENLINEAGE_DISABLED` environment variable or the `openlineage.disabled` Airflow Variable require a restart of the Airflow Scheduler and Workers to take effect.
-
 ### `HTTP` Backend Environment Variables
 
 `openlineage-airflow` uses the OpenLineage client to push data to OpenLineage backend.
@@ -217,10 +205,10 @@ validation_operators:
       - name: update_data_docs
         action:
           class_name: UpdateDataDocsAction
-      - name: openlineage
-        action:
-          class_name: OpenLineageValidationAction
-          module_name: openlineage.common.provider.great_expectations.action
++     - name: openlineage
++       action:
++         class_name: OpenLineageValidationAction
++         module_name: openlineage.common.provider.great_expectations.action
       # - name: send_slack_notification_on_validation_result
       #   action:
       #     class_name: SlackNotificationAction
