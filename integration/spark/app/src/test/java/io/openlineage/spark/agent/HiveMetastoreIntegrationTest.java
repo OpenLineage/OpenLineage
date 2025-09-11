@@ -6,6 +6,8 @@
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
+import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
@@ -21,11 +23,14 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -54,7 +59,16 @@ class HiveMetastoreIntegrationTest {
   public static void setup() throws IOException {
     FileUtils.deleteDirectory(new File("/tmp/hive-metastore/"));
     mockServer = MockServerUtils.createAndConfigureMockServer(MOCKSERVER_PORT);
+  }
 
+  @AfterAll
+  public static void afterAll() {
+    MockServerUtils.stopMockServer(mockServer);
+  }
+
+  @BeforeEach
+  void beforeEach() {
+    MockServerUtils.clearRequests(mockServer);
     spark =
         SparkSession.builder()
             .master("local[*]")
@@ -114,6 +128,26 @@ class HiveMetastoreIntegrationTest {
                   && expectedMetadataUri.equals(catalogFacet.getMetadataUri())
                   && expectedWarehouseUri.equals(catalogFacet.getWarehouseUri());
             });
+  }
+
+  @Test
+  void testSaveAsTable() {
+    spark.sql("create database if not exists hive3");
+    spark.sql("DROP TABLE IF EXISTS hive3.table1");
+    spark.sql("DROP TABLE IF EXISTS hive3.table2");
+
+    Dataset<Row> df =
+        spark.createDataFrame(
+            singletonList(RowFactory.create("New York")),
+            new StructType().add("city", DataTypes.StringType, true));
+    df.write().mode("overwrite").saveAsTable("hive3.table1");
+
+    spark.read().table("hive3.table1").write().mode("overwrite").saveAsTable("hive3.table2");
+
+    verifyEvents(
+        mockServer,
+        "hiveCreateDataSourceAsSelectCommandStartEvent.json",
+        "hiveCreateDataSourceAsSelectCommandCompleteEvent.json");
   }
 
   private Dataset<Row> createTempDataset(int rows) {
