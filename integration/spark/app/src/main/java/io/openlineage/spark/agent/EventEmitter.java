@@ -71,7 +71,7 @@ public class EventEmitter {
             .transport(new TransportFactory(config.getTransportConfig()).build())
             .disableFacets(disabledFacets.toArray(new String[0]))
             .build();
-    this.applicationJobName = applicationJobName;
+    this.applicationJobName = this.overriddenAppName.orElse(applicationJobName);
     this.applicationRunId = UUIDUtils.generateNewUUID();
   }
 
