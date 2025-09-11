@@ -8,7 +8,7 @@ requires = [
 name = "openlineage-python"
 version = "1.38.0"
 description = "OpenLineage Python Client"
-license = { file = "../../../license" }
+license = { file = "../../LICENSE" }
 readme = "README.md"
 keywords = [
   "openlineage",
