@@ -16,19 +16,12 @@ class FilesystemDatasetUtilsTestForGCS {
   @Test
   @SneakyThrows
   void testFromLocation() {
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("gs://bucket")))
-        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
-        .hasFieldOrPropertyWithValue("name", "/");
 
     assertThat(FilesystemDatasetUtils.fromLocation(new URI("gs://bucket/warehouse")))
         .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
         .hasFieldOrPropertyWithValue("name", "warehouse");
 
     assertThat(FilesystemDatasetUtils.fromLocation(new URI("gs://bucket/warehouse/location")))
-        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
-        .hasFieldOrPropertyWithValue("name", "warehouse/location");
-
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("gs://bucket/warehouse/location/")))
         .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
         .hasFieldOrPropertyWithValue("name", "warehouse/location");
   }

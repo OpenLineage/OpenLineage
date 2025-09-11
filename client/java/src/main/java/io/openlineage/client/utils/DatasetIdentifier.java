@@ -5,6 +5,7 @@
 
 package io.openlineage.client.utils;
 
+import io.openlineage.client.dataset.Naming;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.Value;
@@ -29,6 +30,18 @@ public class DatasetIdentifier {
   public DatasetIdentifier(String name, String namespace, List<Symlink> symlinks) {
     this.name = name;
     this.namespace = namespace;
+    this.symlinks = symlinks;
+  }
+
+  public DatasetIdentifier(Naming.DatasetNaming naming) {
+    this.name = naming.getName();
+    this.namespace = naming.getNamespace();
+    this.symlinks = new LinkedList<>();
+  }
+
+  public DatasetIdentifier(Naming.DatasetNaming naming, List<Symlink> symlinks) {
+    this.name = naming.getName();
+    this.namespace = naming.getNamespace();
     this.symlinks = symlinks;
   }
 

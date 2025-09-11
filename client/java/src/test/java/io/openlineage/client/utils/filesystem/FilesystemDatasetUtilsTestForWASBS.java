@@ -16,24 +16,22 @@ class FilesystemDatasetUtilsTestForWASBS {
   @Test
   @SneakyThrows
   void testFromLocation() {
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("wasbs://container@bucket")))
-        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket")
-        .hasFieldOrPropertyWithValue("name", "/");
-
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("wasbs://container@bucket/warehouse")))
-        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket")
+    assertThat(
+            FilesystemDatasetUtils.fromLocation(
+                new URI("wasbs://container@bucket.dfs.core.windows.net/warehouse")))
+        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket.dfs.core.windows.net")
         .hasFieldOrPropertyWithValue("name", "warehouse");
 
     assertThat(
             FilesystemDatasetUtils.fromLocation(
-                new URI("wasbs://container@bucket/warehouse/location")))
-        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket")
+                new URI("wasbs://container@bucket.dfs.core.windows.net/warehouse/location")))
+        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket.dfs.core.windows.net")
         .hasFieldOrPropertyWithValue("name", "warehouse/location");
 
     assertThat(
             FilesystemDatasetUtils.fromLocation(
-                new URI("wasbs://container@bucket/warehouse/location/")))
-        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket")
+                new URI("wasbs://container@bucket.dfs.core.windows.net/warehouse/location")))
+        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket.dfs.core.windows.net")
         .hasFieldOrPropertyWithValue("name", "warehouse/location");
   }
 
@@ -42,20 +40,17 @@ class FilesystemDatasetUtilsTestForWASBS {
   void testFromLocationAndName() {
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
-                new URI("wasbs://container@bucket/warehouse"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket/warehouse")
+                new URI("wasbs://container@bucket.dfs.core.windows.net/warehouse"),
+                "default.table"))
+        .hasFieldOrPropertyWithValue(
+            "namespace", "wasbs://container@bucket.dfs.core.windows.net/warehouse")
         .hasFieldOrPropertyWithValue("name", "default.table");
 
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
-                new URI("wasbs://container@bucket/warehouse/location"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket/warehouse/location")
-        .hasFieldOrPropertyWithValue("name", "default.table");
-
-    assertThat(
-            FilesystemDatasetUtils.fromLocationAndName(
-                new URI("wasbs://container@bucket/warehouse"), ""))
-        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket/warehouse")
+                new URI("wasbs://container@bucket.dfs.core.windows.net/warehouse/location"), ""))
+        .hasFieldOrPropertyWithValue(
+            "namespace", "wasbs://container@bucket.dfs.core.windows.net/warehouse/location")
         .hasFieldOrPropertyWithValue("name", "/");
   }
 

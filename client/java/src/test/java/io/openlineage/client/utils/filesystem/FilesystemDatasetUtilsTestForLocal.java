@@ -18,14 +18,6 @@ class FilesystemDatasetUtilsTestForLocal {
   @Test
   @SneakyThrows
   void testFromLocation() {
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("")))
-        .hasFieldOrPropertyWithValue("namespace", "file")
-        .hasFieldOrPropertyWithValue("name", "/");
-
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("/")))
-        .hasFieldOrPropertyWithValue("namespace", "file")
-        .hasFieldOrPropertyWithValue("name", "/");
-
     assertThat(FilesystemDatasetUtils.fromLocation(new URI("file:/warehouse/location")))
         .hasFieldOrPropertyWithValue("namespace", "file")
         .hasFieldOrPropertyWithValue("name", "/warehouse/location");

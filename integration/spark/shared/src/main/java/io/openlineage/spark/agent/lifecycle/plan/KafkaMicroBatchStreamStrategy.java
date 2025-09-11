@@ -6,8 +6,10 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.dataset.Naming;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -79,11 +81,13 @@ public final class KafkaMicroBatchStreamStrategy extends StreamStrategy {
 
   private List<InputDataset> generateInputDatasets(
       Optional<String> bootstrapServers, Collection<String> topics) {
-    String namespace = KafkaBootstrapServerResolver.resolve(bootstrapServers);
+    URI namespace = KafkaBootstrapServerResolver.resolve(bootstrapServers);
 
     List<InputDataset> datasets = new ArrayList<>();
     for (String topic : topics) {
-      InputDataset dataset = datasetFactory.getDataset(topic, namespace, schema);
+      Naming.Kafka name =
+          new Naming.Kafka(namespace.getHost(), Integer.toString(namespace.getPort()), topic);
+      InputDataset dataset = datasetFactory.getDataset(name, schema);
       datasets.add(dataset);
     }
     return datasets;

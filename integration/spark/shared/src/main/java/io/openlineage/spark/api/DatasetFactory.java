@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
+import io.openlineage.client.dataset.Naming;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
@@ -157,6 +158,19 @@ public abstract class DatasetFactory<D extends Dataset> {
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema));
 
     return datasetBuilder(name, namespace, facetsBuilder).build();
+  }
+
+  public D getDataset(Naming.DatasetNaming datasetNaming, StructType schema) {
+    DatasetCompositeFacetsBuilder facetsBuilder = createCompositeFacetBuilder();
+    facetsBuilder
+        .getFacets()
+        .dataSource(
+            PlanUtils.datasourceFacet(
+                context.getOpenLineage(), namespaceResolver.resolve(datasetNaming.getNamespace())))
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema));
+
+    return datasetBuilder(datasetNaming.getName(), datasetNaming.getNamespace(), facetsBuilder)
+        .build();
   }
 
   /**

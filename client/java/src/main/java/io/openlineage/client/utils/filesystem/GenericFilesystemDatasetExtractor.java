@@ -5,7 +5,7 @@
 
 package io.openlineage.client.utils.filesystem;
 
-import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.dataset.Naming;
 import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;
@@ -19,14 +19,14 @@ public class GenericFilesystemDatasetExtractor implements FilesystemDatasetExtra
 
   @Override
   @SneakyThrows
-  public DatasetIdentifier extract(URI location) {
+  public Naming.DatasetNaming extract(URI location) {
     URI namespace = new URI(location.getScheme(), location.getAuthority(), "/", null, null);
     String name = location.getPath();
-    return extract(namespace, name);
+    return extractWarehouseDatasetNaming(namespace, name);
   }
 
   @Override
-  public DatasetIdentifier extract(URI location, String rawName) {
+  public Naming.DatasetNaming extractWarehouseDatasetNaming(URI location, String rawName) {
     String namespace =
         Optional.of(location.toString())
             .map(FilesystemUriSanitizer::removeLastSlash)
@@ -38,6 +38,16 @@ public class GenericFilesystemDatasetExtractor implements FilesystemDatasetExtra
             .map(FilesystemUriSanitizer::removeLastSlash)
             .map(FilesystemUriSanitizer::nonEmptyPath)
             .get();
-    return new DatasetIdentifier(name, namespace);
+    return new Naming.DatasetNaming() {
+      @Override
+      public String getNamespace() {
+        return namespace;
+      }
+
+      @Override
+      public String getName() {
+        return name;
+      }
+    };
   }
 }

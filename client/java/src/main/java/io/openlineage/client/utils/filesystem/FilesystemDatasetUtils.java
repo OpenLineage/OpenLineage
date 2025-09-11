@@ -12,9 +12,9 @@ import lombok.SneakyThrows;
 public class FilesystemDatasetUtils {
   private static final FilesystemDatasetExtractor[] extractors = {
     new LocalFilesystemDatasetExtractor(),
-    new ObjectStorageDatasetExtractor("s3"),
-    new ObjectStorageDatasetExtractor("gs"),
-    new ObjectStorageDatasetExtractor("wasbs")
+    new ObjectStorageDatasetExtractor.S3NameExtractor(),
+    new ObjectStorageDatasetExtractor.GCSNameExtractor(),
+    new ObjectStorageDatasetExtractor.WasbsNameExtractor()
   };
 
   private static FilesystemDatasetExtractor getExtractor(URI location) {
@@ -34,7 +34,7 @@ public class FilesystemDatasetUtils {
    */
   public static DatasetIdentifier fromLocation(URI location) {
     FilesystemDatasetExtractor extractor = getExtractor(location);
-    return extractor.extract(location);
+    return new DatasetIdentifier(extractor.extract(location));
   }
 
   /**
@@ -46,7 +46,7 @@ public class FilesystemDatasetUtils {
    */
   public static DatasetIdentifier fromLocationAndName(URI location, String name) {
     FilesystemDatasetExtractor extractor = getExtractor(location);
-    return extractor.extract(location, name);
+    return new DatasetIdentifier(extractor.extractWarehouseDatasetNaming(location, name));
   }
 
   /**

@@ -6,9 +6,11 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.dataset.Naming;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -79,12 +81,13 @@ public final class WriteToDataSourceV2Visitor
     StructType schemaOpt = proxy.getSchema();
 
     Optional<String> bootstrapServersOpt = proxy.getBootstrapServers();
-    String namespace = KafkaBootstrapServerResolver.resolve(bootstrapServersOpt);
+    URI namespace = KafkaBootstrapServerResolver.resolve(bootstrapServersOpt);
 
     if (topicOpt.isPresent() && bootstrapServersOpt.isPresent()) {
       String topic = topicOpt.get();
-
-      OutputDataset dataset = outputDataset().getDataset(topic, namespace, schemaOpt);
+      Naming.Kafka name =
+          new Naming.Kafka(namespace.getHost(), Integer.toString(namespace.getPort()), topic);
+      OutputDataset dataset = outputDataset().getDataset(name, schemaOpt);
       return Collections.singletonList(dataset);
     } else {
       String topicPresent =

@@ -5,9 +5,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 
-import static io.openlineage.spark.agent.util.PathUtils.GLUE_TABLE_PREFIX;
 import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler.CATALOG_IMPL;
 
+import io.openlineage.client.dataset.Naming;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.AwsUtils;
 import java.util.Map;
@@ -32,9 +32,18 @@ class GlueCatalogTypeHandler extends BaseCatalogTypeHandler {
   DatasetIdentifier getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table) {
     SparkContext sparkContext = session.sparkContext();
-    Optional<String> arn =
-        AwsUtils.getGlueArn(sparkContext.getConf(), sparkContext.hadoopConfiguration());
-    return arn.map(s -> new DatasetIdentifier(GLUE_TABLE_PREFIX + table.replace(".", "/"), s))
-        .orElse(null);
+    int expectedParts = 2;
+    String[] splitTable = table.split("\\.", expectedParts);
+    if (splitTable.length != expectedParts) {
+      throw new IllegalArgumentException(
+          "Invalid table format. Expected 'database.table', got: " + table);
+    }
+    Optional<Naming.AWSGlue> arn =
+        AwsUtils.getGlueName(
+            sparkContext.getConf(),
+            sparkContext.hadoopConfiguration(),
+            splitTable[0],
+            splitTable[1]);
+    return arn.map(DatasetIdentifier::new).orElse(null);
   }
 }
