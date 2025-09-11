@@ -193,7 +193,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
-    log.debug("Posting event for stage submitted {}: {}", executionId, OpenLineageClientUtils.toJson(event));
+    log.debug(
+        "Posting event for stage submitted {}: {}",
+        executionId,
+        OpenLineageClientUtils.toJson(event));
     eventEmitter.emit(event);
   }
 
@@ -223,7 +226,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
-    log.debug("Posting event for stage completed {}: {}", executionId, OpenLineageClientUtils.toJson(event));
+    log.debug(
+        "Posting event for stage completed {}: {}",
+        executionId,
+        OpenLineageClientUtils.toJson(event));
     eventEmitter.emit(event);
   }
 
