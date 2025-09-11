@@ -368,6 +368,10 @@ public class TypeResolver {
       return type;
     }
 
+    /**
+     * If a field is a constant value, then String value is returned.
+     * @return
+     */
     public Optional<String> getConstantValue() {
       return field.getConstValue();
     }

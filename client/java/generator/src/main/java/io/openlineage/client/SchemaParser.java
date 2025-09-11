@@ -58,6 +58,7 @@ public class SchemaParser {
               Entry<String, JsonNode> field = fieldsJson.next();
               String description = field.getValue().has("description") ? field.getValue().get("description").asText() : null;
               Type fieldType = parse(field.getValue());
+              // check if a field is a const
               if (field.getValue().has("const")) {
                 // only String const are supported
                 fields.add(new Field(field.getKey(), fieldType, description, field.getValue().get("const").asText()));
