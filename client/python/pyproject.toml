@@ -8,6 +8,7 @@ requires = [
 name = "openlineage-python"
 version = "1.38.0"
 description = "OpenLineage Python Client"
+license = { file = "../../../license" }
 readme = "README.md"
 keywords = [
   "openlineage",
@@ -15,6 +16,7 @@ keywords = [
 authors = [{ name = "OpenLineage", email = "info@openlineage.io" }]
 requires-python = ">=3.9"
 classifiers = [
+  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
