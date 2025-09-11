@@ -1,0 +1,26 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+plugins {
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group   = rootProject.group
+version = rootProject.version
+
+repositories { mavenCentral() }
+
+dependencies {
+    implementation 'org.apache.commons:commons-lang3:3.14.0'
+}
+
+shadowJar {
+    enabled = true
+    archiveBaseName = rootProject.name
+    archiveClassifier = 'shaded'
+    zip64 true
+    dependsOn rootProject.tasks.shadowJar
+}
