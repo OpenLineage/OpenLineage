@@ -1,0 +1,76 @@
+{
+  "eventType": "START",
+  "job": {
+    "namespace": "default",
+    "name": "hive_metastore_integration_test.execute_create_hive_table_as_select_command.hive3_table2"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/hive-metastore/hive3.db/table1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "city",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "name": "hive3.table1",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/hive-metastore/hive3.db/table2",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "columnLineage": {
+          "fields": {
+            "city": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/hive-metastore/hive3.db/table1",
+                  "field": "city"
+                }
+              ]
+            }
+          }
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "city",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "name": "hive3.table2",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -57,7 +57,6 @@ class HiveMetastoreIntegrationTest {
 
   @BeforeAll
   public static void setup() throws IOException {
-    FileUtils.deleteDirectory(new File("/tmp/hive-metastore/"));
     mockServer = MockServerUtils.createAndConfigureMockServer(MOCKSERVER_PORT);
   }
 
@@ -67,7 +66,8 @@ class HiveMetastoreIntegrationTest {
   }
 
   @BeforeEach
-  void beforeEach() {
+  void beforeEach() throws IOException {
+    FileUtils.deleteDirectory(new File("/tmp/hive-metastore/"));
     MockServerUtils.clearRequests(mockServer);
     spark =
         SparkSession.builder()
@@ -133,8 +133,6 @@ class HiveMetastoreIntegrationTest {
   @Test
   void testSaveAsTable() {
     spark.sql("create database if not exists hive3");
-    spark.sql("DROP TABLE IF EXISTS hive3.table1");
-    spark.sql("DROP TABLE IF EXISTS hive3.table2");
 
     Dataset<Row> df =
         spark.createDataFrame(
@@ -148,6 +146,24 @@ class HiveMetastoreIntegrationTest {
         mockServer,
         "hiveCreateDataSourceAsSelectCommandStartEvent.json",
         "hiveCreateDataSourceAsSelectCommandCompleteEvent.json");
+  }
+
+  @Test
+  void testCreateHiveTableAsSelect() {
+    spark.sql("create database if not exists hive3");
+
+    Dataset<Row> df =
+        spark.createDataFrame(
+            singletonList(RowFactory.create("New York")),
+            new StructType().add("city", DataTypes.StringType, true));
+    df.write().mode("overwrite").saveAsTable("hive3.table1");
+
+    spark.sql("CREATE TABLE IF NOT EXISTS hive3.table2 using hive AS SELECT * FROM hive3.table1");
+
+    verifyEvents(
+        mockServer,
+        "hiveCreateHiveTableAsSelectCommandStartEvent.json",
+        "hiveCreateHiveTableAsSelectCommandCompleteEvent.json");
   }
 
   private Dataset<Row> createTempDataset(int rows) {
