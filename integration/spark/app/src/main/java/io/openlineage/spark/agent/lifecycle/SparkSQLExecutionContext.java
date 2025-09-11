@@ -109,7 +109,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
-    log.debug("Posting event for start {}: {}", executionId, event);
+    log.debug("Posting event for start {}: {}", executionId, OpenLineageClientUtils.toJson(event));
     eventEmitter.emit(event);
   }
 
@@ -193,7 +193,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
-    log.debug("Posting event for stage submitted {}: {}", executionId, event);
+    log.debug("Posting event for stage submitted {}: {}", executionId, OpenLineageClientUtils.toJson(event));
     eventEmitter.emit(event);
   }
 
@@ -223,7 +223,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
-    log.debug("Posting event for stage completed {}: {}", executionId, event);
+    log.debug("Posting event for stage completed {}: {}", executionId, OpenLineageClientUtils.toJson(event));
     eventEmitter.emit(event);
   }
 
@@ -331,7 +331,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       // clean up metrics on complete only
       JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
     }
-    log.debug("Posting event for end {}: {}", executionId, event);
+    log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
     eventEmitter.emit(event);
   }
 
