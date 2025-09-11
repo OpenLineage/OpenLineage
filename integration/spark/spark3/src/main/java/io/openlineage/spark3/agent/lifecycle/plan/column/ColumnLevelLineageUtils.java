@@ -23,7 +23,9 @@ import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.columnar.InMemoryRelation;
+import org.apache.spark.sql.execution.command.CreateDataSourceTableAsSelectCommand;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
+import org.apache.spark.sql.hive.execution.CreateHiveTableAsSelectCommand;
 
 /**
  * Utility functions for detecting column level lineage within {@link
@@ -101,11 +103,15 @@ public class ColumnLevelLineageUtils {
   }
 
   private static LogicalPlan getAdjustedPlan(OpenLineageContext context) {
-    LogicalPlan logicalPlan = context.getQueryExecution().get().optimizedPlan();
+    LogicalPlan logicalPlan = context.getOptimizedPlan();
 
     LogicalPlan plan;
     if (logicalPlan instanceof SaveIntoDataSourceCommand) {
       plan = ((SaveIntoDataSourceCommand) logicalPlan).query();
+    } else if (logicalPlan instanceof CreateDataSourceTableAsSelectCommand) {
+      plan = ((CreateDataSourceTableAsSelectCommand) logicalPlan).query();
+    } else if (logicalPlan instanceof CreateHiveTableAsSelectCommand) {
+      plan = ((CreateHiveTableAsSelectCommand) logicalPlan).query();
     } else {
       plan = logicalPlan;
     }
