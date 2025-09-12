@@ -20,6 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -365,6 +366,14 @@ public class TypeResolver {
 
     public ResolvedType getType() {
       return type;
+    }
+
+    /**
+     * If a field is a constant value, then String value is returned.
+     * @return
+     */
+    public Optional<String> getConstantValue() {
+      return field.getConstValue();
     }
 
     @Override

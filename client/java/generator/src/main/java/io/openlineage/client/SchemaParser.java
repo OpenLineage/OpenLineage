@@ -5,10 +5,12 @@
 
 package io.openlineage.client;
 
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -28,6 +30,12 @@ public class SchemaParser {
       } else if (typeJson.has("$ref")) {
         String pointer = typeJson.get("$ref").asText();
         return new RefType(pointer);
+      } else if (typeJson.has("const")) {
+        if (!typeJson.get("const").getNodeType().equals(JsonNodeType.STRING)) {
+          throw new RuntimeException("Invalid schema, const should be string, given" + typeJson.get("const").getNodeType());
+        }
+        return new PrimitiveType("string", null);
+
       } else if (typeJson.has("type")) {
         String typeName = typeJson.get("type").asText();
         if (typeName.equals("string") && typeJson.has("enum")) {
@@ -48,9 +56,15 @@ public class SchemaParser {
             JsonNode properties = typeJson.get("properties");
             for (Iterator<Entry<String, JsonNode>> fieldsJson = properties.fields(); fieldsJson.hasNext(); ) {
               Entry<String, JsonNode> field = fieldsJson.next();
-              Type fieldType = parse(field.getValue());
               String description = field.getValue().has("description") ? field.getValue().get("description").asText() : null;
-              fields.add(new Field(field.getKey(), fieldType, description));
+              Type fieldType = parse(field.getValue());
+              // check if a field is a const
+              if (field.getValue().has("const")) {
+                // only String const are supported
+                fields.add(new Field(field.getKey(), fieldType, description, field.getValue().get("const").asText()));
+              } else {
+                fields.add(new Field(field.getKey(), fieldType, description));
+              }
             }
           }
           if (typeJson.has("additionalProperties")) {
@@ -347,12 +361,23 @@ public class SchemaParser {
     private String name;
     private Type type;
     private String description;
+    // const field in json schema, always required as String
+    private Optional<String> constantValue;
 
     public Field(String name, Type type, String description) {
       super();
       this.name = name;
       this.type = type;
       this.description = description;
+      this.constantValue = Optional.empty();
+    }
+
+    public Field(String name, Type type, String description, String constantValue) {
+      super();
+      this.name = name;
+      this.type = type;
+      this.description = description;
+      this.constantValue = Optional.of(constantValue);
     }
 
     public String getName() {
@@ -367,9 +392,13 @@ public class SchemaParser {
       return description;
     }
 
+    public Optional<String> getConstValue() {
+      return constantValue;
+    }
+
     @Override
     public String toString() {
-      return "Field{name: " + name + ", type: " + type + "}";
+      return "Field{name: " + name + ", type: " + type + ", description: " + description + ", constantValue: " + constantValue + "}";
     }
 
     @Override
@@ -381,12 +410,12 @@ public class SchemaParser {
         return false;
       }
       Field field = (Field) o;
-      return name.equals(field.name) && type.equals(field.type);
+      return name.equals(field.name) && type.equals(field.type) && description.equals(field.description) && Objects.equals(constantValue, field.constantValue);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(name, type);
+      return Objects.hash(name, type, description, constantValue);
     }
   }
 

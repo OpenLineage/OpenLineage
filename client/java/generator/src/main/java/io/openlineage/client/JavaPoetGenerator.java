@@ -13,6 +13,7 @@ import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 
+import io.openlineage.client.SchemaParser.PrimitiveType;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -24,6 +25,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.lang.model.element.Modifier;
@@ -204,6 +206,15 @@ public class JavaPoetGenerator {
       public void onDeleted(ResolvedField f) {
         // deleted is undefined by default
         constructor.addCode("this._deleted = null;\n");
+      }
+
+      /**
+       * Constant should be set in the constructor but not passed as a constructor arg
+       * @param f
+       */
+      @Override
+      public void onConstantField(ResolvedField f) {
+        constructor.addCode("this.$N = \"$N\";\n", f.getName(), f.getConstantValue().get());
       }
 
       @Override
@@ -439,6 +450,7 @@ public class JavaPoetGenerator {
     default void onSchemaURL(ResolvedField f) {}
     default void onDeleted(ResolvedField f) {}
     void onField(ResolvedField f);
+    default void onConstantField(ResolvedField f) {}
   }
 
   private void handleField(ResolvedField f, ResolvedFieldHandler h) {
@@ -448,6 +460,8 @@ public class JavaPoetGenerator {
       h.onProducer(f);
     } else if (isADeletedField(f)) {
       h.onDeleted(f);
+    } else if (f.getConstantValue().isPresent()) {
+      h.onConstantField(f);
     } else {
       h.onField(f);
     }
@@ -481,6 +495,11 @@ public class JavaPoetGenerator {
           .addModifiers(ABSTRACT, PUBLIC)
           .build();
       interfaceBuilder.addMethod(getter);
+
+      if (f.getConstantValue().isPresent()) {
+        // skip builder for constants
+        continue;
+      }
 
       if (isADeletedField(f)) {
         // add isDeleted() method in addition to get_deleted()
