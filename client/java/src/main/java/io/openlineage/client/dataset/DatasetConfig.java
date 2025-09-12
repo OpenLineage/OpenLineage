@@ -25,8 +25,22 @@ public class DatasetConfig implements MergeConfig<DatasetConfig> {
   @JsonProperty("namespaceResolvers")
   private Map<String, DatasetNamespaceResolverConfig> namespaceResolvers;
 
+  // TODO: decide on default values
+  @Getter
+  @Setter
+  @JsonProperty("trimAtKeyValueDirs")
+  private Boolean trimAtKeyValueDirs;
+
+  @Getter
+  @Setter
+  @JsonProperty("trimAtLooseDateDetected")
+  private Boolean trimAtLooseDateDetected;
+
   @Override
   public DatasetConfig mergeWithNonNull(DatasetConfig other) {
-    return new DatasetConfig(mergePropertyWith(namespaceResolvers, other.namespaceResolvers));
+    return new DatasetConfig(
+        mergePropertyWith(namespaceResolvers, other.namespaceResolvers),
+        mergePropertyWith(trimAtKeyValueDirs, other.trimAtKeyValueDirs),
+        mergePropertyWith(trimAtLooseDateDetected, other.trimAtLooseDateDetected));
   }
 }

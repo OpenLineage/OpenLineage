@@ -28,6 +28,9 @@ public class SchemaParser {
       } else if (typeJson.has("$ref")) {
         String pointer = typeJson.get("$ref").asText();
         return new RefType(pointer);
+      } else if (typeJson.has("const")) {
+        // TODO: support const
+        return new PrimitiveType("string", null);
       } else if (typeJson.has("type")) {
         String typeName = typeJson.get("type").asText();
         if (typeName.equals("string") && typeJson.has("enum")) {
