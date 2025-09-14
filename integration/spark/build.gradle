@@ -45,7 +45,11 @@ dependencies {
 
 task sourceJar(type: Jar) {
     archiveClassifier = 'sources'
-    from sourceSets.main.allJava
+    subprojects.each { subproj ->
+        subproj.plugins.withType(JavaPlugin) {
+            from(subproj.sourceSets.main.allSource)
+        }
+    }
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
