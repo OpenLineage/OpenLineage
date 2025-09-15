@@ -513,11 +513,15 @@ class IcebergHandlerTest {
     when(sparkCatalog.name()).thenReturn("bq_metastore_catalog");
     when(runtimeConfig.getAll())
         .thenReturn(
-            new Map.Map2(
+            new Map.Map4(
                 "spark.sql.catalog.bq_metastore_catalog.catalog-impl",
                 "org.apache.iceberg.gcp.bigquery.BigQueryMetastoreCatalog",
                 "spark.sql.catalog.bq_metastore_catalog.warehouse",
-                "gcs://bucket/path/to/iceberg/warehouse"));
+                "gcs://bucket/path/to/iceberg/warehouse",
+                "spark.sql.catalog.bq_metastore_catalog.gcp.bigquery.project-id",
+                "my-gcp-project",
+                "spark.sql.catalog.bq_metastore_catalog.gcp.bigquery.location",
+                "eu"));
 
     Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
         icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
@@ -529,6 +533,9 @@ class IcebergHandlerTest {
     assertEquals("bigquerymetastore", facet.getType());
     assertEquals("gcs://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
     assertEquals("iceberg", facet.getFramework());
+    assertThat(facet.getCatalogProperties().getAdditionalProperties())
+        .hasFieldOrPropertyWithValue("gcp_location", "eu")
+        .hasFieldOrPropertyWithValue("gcp_project_id", "my-gcp-project");
   }
 
   @Test

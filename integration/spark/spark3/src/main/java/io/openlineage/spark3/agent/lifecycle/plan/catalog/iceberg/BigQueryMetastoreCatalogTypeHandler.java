@@ -11,6 +11,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
@@ -48,5 +49,13 @@ class BigQueryMetastoreCatalogTypeHandler extends BaseCatalogTypeHandler {
     pathComponents.addAll(Arrays.asList(namespace));
     pathComponents.add(identifier.name());
     return new Path(warehouseLocation, String.join(Path.SEPARATOR, pathComponents));
+  }
+
+  @Override
+  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+    Map<String, String> properties = new HashMap<>();
+    properties.put("gcp_project_id", catalogConf.get("gcp.bigquery.project-id"));
+    properties.put("gcp_location", catalogConf.get("gcp.bigquery.location"));
+    return properties;
   }
 }
