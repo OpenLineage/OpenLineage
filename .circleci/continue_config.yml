@@ -1283,10 +1283,10 @@ jobs:
       - run:
           name: Generate cache key
           command: .circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-      - restore_cache:
-          name: Restore pre-commit cache
-          keys:
-            - v1.1-prek-deps-{{ checksum ".pre-commit-config.yaml" }}
+      # - restore_cache:
+      #     name: Restore pre-commit cache
+      #     keys:
+      #       - v1.0-prek-deps-{{ checksum ".pre-commit-config.yaml" }}
       - restore_cache:
           name: Restore pmd cache
           keys:
@@ -1303,15 +1303,15 @@ jobs:
           command: |
             python -m venv venv
             . venv/bin/activate
-            pip3 install prek==0.2.0
+            pip3 install prek==0.1.6
             # Install the hooks now so that they'll be cached
             prek install-hooks
 
-      - save_cache:
-          paths:
-            - ~/.cache/prek
-          key: v1.1-prek-deps-{{ checksum ".pre-commit-config.yaml" }}
-          name: Save pre-commit cache
+      # - save_cache:
+      #     paths:
+      #       - ~/.cache/prek
+      #     key: v1.0-prek-deps-{{ checksum ".pre-commit-config.yaml" }}
+      #     name: Save pre-commit cache
 
       - run:
           name: Run prek
