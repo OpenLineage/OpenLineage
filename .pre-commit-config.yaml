@@ -101,8 +101,9 @@ repos:
       - id: forbid-attr-s
         name: Check for @attr.s
         description: "Checks if @attr.s is used instead of desired @attr.define"
-        language: pygrep
-        entry: "@(attr\\.s|s)(\\s|\\n|\\()"
+        language: system
+        entry:
+          bash -c 'grep -n -E "@attr\.s" "$@" && exit 1 || rc=$?; if [ $rc -eq 1 ]; then exit 0; else exit $rc; fi' --
         files: "\\.(py|md)$"
         # Exclude tests directories and deprecated modules that can use @attr.s
         exclude: |
@@ -114,8 +115,10 @@ repos:
       - id: check-python-generated-imports
         name: Check python imports from generated modules
         description: "Checks if objects are correctly imported in python from event_v2 and facet_v2 modules"
-        language: pygrep
-        entry: "from openlineage.client.generated"
+        language: system
+        entry:
+          bash -c 'grep -n -E "from openlineage\.client\.generated" "$@" && exit 1 || rc=$?; if [ $rc -eq 1 ]; then exit
+          0; else exit $rc; fi' --
         files: "\\.py$"
         # Exclude internal modules that must import this way
         exclude: |
