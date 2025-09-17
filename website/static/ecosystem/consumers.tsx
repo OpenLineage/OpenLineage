@@ -154,4 +154,13 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://www.collibra.com/products/data-lineage",
     org_url: "https://www.collibra.com/",
   },
+  {
+    image: "pentaho_data_catalog.png",
+    org: "Pentaho",
+    full_name: "Pentaho Data Catalog",
+    description:
+      "Pentaho Data Catalog gives you a single source of truth that provides the trusted data for core operations and AI.",
+    docs_url: "https://pentaho.com/products/pentaho-data-catalog/",
+    org_url: "https://pentaho.com/",
+  },
 ];
