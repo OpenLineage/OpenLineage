@@ -308,15 +308,15 @@ class OpenLineageClient:
         """
         Create HTTP transport from legacy environment variables
         """
-        # Start with basic config from legacy environment variables
-        config_dict = {
+        config_dict: dict[str, Any] = {
             "url": os.environ["OPENLINEAGE_URL"],
-            "auth": {
-                "type": "api_key",
-                "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
-            },
             "endpoint": os.environ.get("OPENLINEAGE_ENDPOINT", "api/v1/lineage"),
         }
+        if api_key := os.environ.get("OPENLINEAGE_API_KEY"):
+            config_dict["auth"] = {
+                "type": "api_key",
+                "apiKey": api_key,
+            }
         return HttpTransport(HttpConfig.from_dict(config_dict))
 
     @staticmethod
