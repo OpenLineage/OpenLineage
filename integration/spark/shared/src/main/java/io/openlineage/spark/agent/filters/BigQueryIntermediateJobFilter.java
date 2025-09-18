@@ -35,7 +35,10 @@ public class BigQueryIntermediateJobFilter implements EventFilter {
             .map(Path::toString)
             .orElse("");
 
-    // TODO handle the case when `persistentGcsPath` is set
+    // it would be more coherent to check temporaryGcsBucket/persistentGcsPath options
+    // but these props are not available inside InsertIntoHadoopFsRelationCommand if they were set
+    // via DataFrame ops vs SparkConf ops, ie:
+    // df.write.option("temporaryGcsBucket", ...)
     // https://github.com/GoogleCloudDataproc/spark-bigquery-connector/blob/399e1c6df5d0532c03be06968eacef506e57d914/spark-bigquery-connector-common/src/main/java/com/google/cloud/spark/bigquery/SparkBigQueryUtil.java#L150
     if (path.startsWith("gs://") && path.contains(".spark-bigquery")) {
       // If the output path is a GCS or BigQuery path, we assume it's an indirect job.
