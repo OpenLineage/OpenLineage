@@ -35,12 +35,14 @@ public class BigQueryIntermediateJobFilter implements EventFilter {
             .map(Path::toString)
             .orElse("");
 
-    if (!path.startsWith("gs://") || !path.contains(".spark-bigquery-local")) {
+    // TODO handle the case when `persistentGcsPath` is set
+    // https://github.com/GoogleCloudDataproc/spark-bigquery-connector/blob/399e1c6df5d0532c03be06968eacef506e57d914/spark-bigquery-connector-common/src/main/java/com/google/cloud/spark/bigquery/SparkBigQueryUtil.java#L150
+    if (path.startsWith("gs://") && path.contains(".spark-bigquery")) {
       // If the output path is a GCS or BigQuery path, we assume it's an indirect job.
-      return false;
+      return endsWithValidUuid(path);
     }
 
-    return endsWithValidUuid(path);
+    return false;
   }
 
   private boolean endsWithValidUuid(String path) {
