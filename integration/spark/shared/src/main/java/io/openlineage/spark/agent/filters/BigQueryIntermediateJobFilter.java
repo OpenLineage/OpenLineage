@@ -7,10 +7,14 @@ package io.openlineage.spark.agent.filters;
 
 import static io.openlineage.spark.agent.filters.EventFilterUtils.getLogicalPlan;
 
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
 
@@ -35,11 +39,27 @@ public class BigQueryIntermediateJobFilter implements EventFilter {
             .map(Path::toString)
             .orElse("");
 
-    // TODO handle the case when `persistentGcsPath` is set
-    // https://github.com/GoogleCloudDataproc/spark-bigquery-connector/blob/399e1c6df5d0532c03be06968eacef506e57d914/spark-bigquery-connector-common/src/main/java/com/google/cloud/spark/bigquery/SparkBigQueryUtil.java#L150
-    if (path.startsWith("gs://") && path.contains(".spark-bigquery")) {
-      // If the output path is a GCS or BigQuery path, we assume it's an indirect job.
-      return endsWithValidUuid(path);
+    // check if either temporaryGcsBucket or persistentGcsBucket is set in SparkConf
+    Optional<String> gcsBucket =
+        context
+            .getSparkContext()
+            .map(SparkContext::getConf)
+            .flatMap(
+                conf ->
+                    Stream.of(
+                            conf.getOption("temporaryGcsBucket"),
+                            conf.getOption("persistentGcsBucket"))
+                        .map(ScalaConversionUtils::asJavaOptional)
+                        .filter(Optional::isPresent)
+                        .findFirst()
+                        .orElse(Optional.empty()));
+
+    if (gcsBucket.isPresent()) {
+      String fqdn = String.format("gs://%s", gcsBucket.get());
+      // If the output path is a GCS BigQuery path, we assume it's an indirect job.
+      if (path.startsWith(fqdn)) {
+        return endsWithValidUuid(path);
+      }
     }
 
     return false;
