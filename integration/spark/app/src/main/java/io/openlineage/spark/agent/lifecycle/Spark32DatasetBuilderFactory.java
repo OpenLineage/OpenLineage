@@ -19,6 +19,7 @@ import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceCatalogExtractor;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnEndDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnStartDatasetBuilder;
@@ -57,6 +58,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
     DatasetFactory<OpenLineage.InputDataset> datasetFactory = DatasetFactory.input(context);
     Builder builder =
         ImmutableList.<PartialFunction<Object, List<InputDataset>>>builder()
+            .add(new CreateReplaceCatalogExtractor(context))
             .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
             .add(new InMemoryRelationInputDatasetBuilder(context))
             .add(new CommandPlanVisitor(context))

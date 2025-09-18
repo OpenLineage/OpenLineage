@@ -7,19 +7,30 @@ package io.openlineage.spark.agent.lifecycle;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.ViewInputDatasetBuilder;
 import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnEndDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnStartDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnEndInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnStartInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1InputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1OutputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
+import io.openlineage.spark33.agent.lifecycle.plan.CreateReplaceCatalogExtractor;
 import io.openlineage.spark33.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
 import java.util.Collection;
@@ -30,6 +41,31 @@ import scala.PartialFunction;
 @Slf4j
 public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
     implements DatasetBuilderFactory {
+
+  @Override
+  public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>> getInputBuilders(
+      OpenLineageContext context) {
+    DatasetFactory<OpenLineage.InputDataset> datasetFactory = DatasetFactory.input(context);
+    ImmutableList.Builder builder =
+        ImmutableList.<PartialFunction<Object, List<OpenLineage.InputDataset>>>builder()
+            .add(new CreateReplaceCatalogExtractor(context))
+            .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
+            .add(new InMemoryRelationInputDatasetBuilder(context))
+            .add(new CommandPlanVisitor(context))
+            .add(new DataSourceV2ScanRelationOnStartInputDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2ScanRelationOnEndInputDatasetBuilder(context, datasetFactory))
+            .add(new SubqueryAliasInputDatasetBuilder(context))
+            .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
+            .add(new ViewInputDatasetBuilder(context))
+            .add(new DataSourceV2RelationInputOnStartDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2RelationInputOnEndDatasetBuilder(context, datasetFactory));
+
+    if (DeltaUtils.hasMergeIntoCommandClass()) {
+      builder.add(new MergeIntoCommandInputDatasetBuilder(context));
+    }
+
+    return builder.build();
+  }
 
   @Override
   public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
