@@ -155,7 +155,7 @@ export const Consumers: Array<Partner> = [
     org_url: "https://www.collibra.com/",
   },
   {
-    image: "pentaho_data_catalog.png",
+    image: "pentaho_data_catalog.svg",
     org: "Pentaho",
     full_name: "Pentaho Data Catalog",
     description:
