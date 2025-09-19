@@ -6,7 +6,6 @@ import gzip
 import http.client as http_client
 import inspect
 import logging
-import warnings
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
@@ -45,12 +44,10 @@ class HttpCompression(Enum):
 class ApiKeyTokenProvider(TokenProvider):
     def __init__(self, config: dict[str, str]) -> None:
         super().__init__(config)
-        try:
-            self.api_key = config["api_key"]
-            msg = "'api_key' option is deprecated, please use 'apiKey'"
-            warnings.warn(msg, DeprecationWarning, stacklevel=2)
-        except KeyError:
-            self.api_key = config["apiKey"]
+        self.api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
+        if not self.api_key:
+            msg = "apiKey is required for HTTP Transport when auth type is `api_key`."
+            raise KeyError(msg)
 
     def get_bearer(self) -> str | None:
         return f"Bearer {self.api_key}"
