@@ -225,7 +225,7 @@ services:
     restart: always
 
   postgres:
-    image: bitnami/postgresql:12.1.0
+    image: bitnamilegacy/postgresql:12.1.0
     networks:
       - app_net
     ports:
