@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -177,6 +178,57 @@ public class JavaPoetGenerator {
     }
   }
 
+  private MethodSpec equalsMethod(ObjectResolvedType type) {
+    Builder equals = MethodSpec.methodBuilder("equals");
+    equals.addAnnotation(Override.class);
+    equals.returns(TypeName.BOOLEAN);
+    equals.addModifiers(PUBLIC);
+    List<String> fields = new ArrayList<>();
+    handleProperties(type, new ResolvedFieldHandler() {
+
+      @Override
+      public void onDeleted(ResolvedField f) {
+        fields.add(f.getName());
+      }
+
+      @Override
+      public void onField(ResolvedField f) {
+        fields.add(f.getName());
+      }
+    });
+    equals.addParameter(TypeName.OBJECT, "o");
+    equals.addCode("if (this == o) return true;\n");
+    equals.addCode("if (o == null || getClass() != o.getClass()) return false;\n");
+    equals.addCode("$N that = ($N) o;\n", type.getName(), type.getName());
+    fields.forEach(f ->
+        equals.addCode("if (!$T.equals($N, that.$N)) return false;\n", Objects.class, f, f));
+    equals.addCode("return true;");
+
+    return equals.build();
+  }
+
+  private MethodSpec hashCodeMethod(ObjectResolvedType type) {
+    Builder hashCode = MethodSpec.methodBuilder("hashCode");
+    hashCode.addAnnotation(Override.class);
+    hashCode.returns(TypeName.INT);
+    hashCode.addModifiers(PUBLIC);
+    List<String> fields = new ArrayList<>();
+    handleProperties(type, new ResolvedFieldHandler() {
+
+      @Override
+      public void onDeleted(ResolvedField f) {
+       fields.add(f.getName());
+      }
+
+      @Override
+      public void onField(ResolvedField f) {
+        fields.add(f.getName());
+      }
+    });
+    hashCode.addCode("return $T.hash($N);\n", Objects.class, String.join(", ", fields));
+    return hashCode.build();
+  }
+
   private MethodSpec modelConstructor(ObjectResolvedType type) {
     Builder constructor = MethodSpec.constructorBuilder();
     if (type.getName().equals("CustomFacet") || server) {
@@ -306,6 +358,8 @@ public class JavaPoetGenerator {
     modelClassBuilder.addAnnotation(jsonPropertyOrder.build());
     MethodSpec modelConstructor = modelConstructor(type);
     modelClassBuilder.addMethod(modelConstructor);
+    modelClassBuilder.addMethod(equalsMethod(type));
+    modelClassBuilder.addMethod(hashCodeMethod(type));
     return modelClassBuilder.build();
   }
 
