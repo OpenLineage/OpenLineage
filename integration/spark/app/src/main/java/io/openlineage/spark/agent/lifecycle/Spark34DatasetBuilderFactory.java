@@ -34,6 +34,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuild
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
+import io.openlineage.spark33.agent.lifecycle.plan.CreateReplaceCatalogExtractor;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.WriteIcebergDeltaDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.WriteToMicroBatchDataSourceV1DatasetBuilder;
@@ -57,6 +58,7 @@ public class Spark34DatasetBuilderFactory extends Spark32DatasetBuilderFactory
     DatasetFactory<OpenLineage.InputDataset> datasetFactory = DatasetFactory.input(context);
     Builder builder =
         ImmutableList.<PartialFunction<Object, List<InputDataset>>>builder()
+            .add(new CreateReplaceCatalogExtractor(context))
             .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
             .add(new InMemoryRelationInputDatasetBuilder(context))
             .add(new CommandPlanVisitor(context))

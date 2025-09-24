@@ -1,0 +1,93 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "delta-namespace",
+    "name": "delta_integration_test.atomic_create_table_as_select.default_tbl2"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/tbl1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "storage": {
+          "storageLayer": "delta",
+          "fileFormat": "parquet"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        },
+        "catalog": {
+          "framework": "delta",
+          "type": "delta",
+          "name": "spark_catalog",
+          "source": "spark"
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.tbl1",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/tbl2",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "storage": {
+          "storageLayer": "delta",
+          "fileFormat": "parquet"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        },
+        "catalog": {
+          "framework": "delta",
+          "type": "delta",
+          "name": "spark_catalog",
+          "source": "spark"
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.tbl2",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -6,9 +6,12 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
+import io.openlineage.spark3.agent.utils.TableCatalogStorage;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -36,5 +39,14 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
   @Override
   protected Optional<String> getDatasetVersion(LogicalRelation x) {
     return DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(x);
+  }
+
+  @Override
+  protected void addCatalogFacet(DatasetCompositeFacetsBuilder facetsBuilder) {
+    TableCatalogStorage.get(context.getJobName())
+        .ifPresent(
+            tc ->
+                CatalogUtils3.addStorageAndCatalogFacets(
+                    context, tc.getTableCatalog(), tc.getTableProperties(), facetsBuilder));
   }
 }

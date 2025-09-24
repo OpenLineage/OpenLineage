@@ -137,6 +137,29 @@ class SparkDeltaIntegrationTest {
   }
 
   @Test
+  void testCatalogFacetForCTASDelta() {
+    clearTables("temp", "tbl1", "tbl2");
+
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", LongType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+
+    dataset.createOrReplaceTempView("temp");
+    spark.sql("CREATE TABLE tbl1 USING delta LOCATION '/tmp/delta/tbl1' AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE tbl2 USING delta LOCATION '/tmp/delta/tbl2' AS SELECT * FROM tbl1");
+
+    verifyEvents(mockServer, "pysparkDeltaCTASCatalogStart.json");
+    verifyEvents(mockServer, "pysparkDeltaCTASCatalogComplete.json");
+  }
+
+  @Test
   void testFilteringDeltaEvents() throws IOException {
     FileUtils.deleteDirectory(new File("/tmp/delta/delta_filter_temp"));
     FileUtils.deleteDirectory(new File("/tmp/delta/delta_filter_t1"));
