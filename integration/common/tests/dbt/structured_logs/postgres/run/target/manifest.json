@@ -422,7 +422,7 @@
         },
         "access":"protected"
       },
-      "tags":[ ],
+      "tags":[ "addthistag" ],
       "description":"",
       "columns":{
         "customer_id":{

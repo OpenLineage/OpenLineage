@@ -56,6 +56,15 @@
         },
         "dbt_run": {
           "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
+        },
+        "tags": {
+          "tags": [
+            {
+              "key": "addthistag",
+              "value": "true",
+              "source": "DBT"
+            }
+          ]
         }
       }
     },
@@ -670,6 +679,15 @@
         },
         "dbt_run": {
           "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
+        },
+        "tags": {
+          "tags": [
+            {
+              "key": "addthistag",
+              "value": "true",
+              "source": "DBT"
+            }
+          ]
         }
       }
     },

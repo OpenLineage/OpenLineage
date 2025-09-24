@@ -16,6 +16,7 @@ from openlineage.client.facet_v2 import (
     InputDatasetFacet,
     JobFacet,
     OutputDatasetFacet,
+    RunFacet,
     column_lineage_dataset,
     data_quality_assertions_dataset,
     datasource_dataset,
@@ -26,6 +27,7 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
     schema_dataset,
     sql_job,
+    tags_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
@@ -305,6 +307,12 @@ class DbtArtifactProcessor:
             if sql:
                 job_facets["sql"] = sql_job.SQLJobFacet(query=sql, dialect=self.extract_dialect())
 
+            run_facets: Dict[str, RunFacet] = {}
+            if tags := output_node.get("tags", None):
+                run_facets["tags"] = tags_run.TagsRunFacet(
+                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
+                )
+
             output_dataset = self.node_to_output_dataset(
                 ModelNode(
                     output_node,
@@ -325,7 +333,7 @@ class DbtArtifactProcessor:
                     run["status"],
                     started_at,
                     completed_at,
-                    self.get_run(run_id=run_id, query_id=query_id),
+                    self.get_run(run_id=run_id, query_id=query_id, run_facets=run_facets),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [self.node_to_dataset(node, has_facets=True) for node in inputs],
                     output_dataset,
@@ -371,6 +379,12 @@ class DbtArtifactProcessor:
                 )
             }
 
+            run_facets: Dict[str, RunFacet] = {}
+            if tags := node.get("tags", None):
+                run_facets["tags"] = tags_run.TagsRunFacet(
+                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
+                )
+
             run_id = str(generate_new_uuid())
             dataset_facets: Dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
             events.add(
@@ -378,7 +392,7 @@ class DbtArtifactProcessor:
                     "success",
                     started_at,
                     completed_at,
-                    self.get_run(run_id=run_id),
+                    self.get_run(run_id=run_id, run_facets=run_facets),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [
                         InputDataset(
@@ -713,12 +727,19 @@ class DbtArtifactProcessor:
             return None
         return self.adapter_type.value.lower()
 
-    def get_run(self, run_id: str, query_id: Optional[str] = None) -> Run:
-        run_facets = {
-            **self.dbt_version_facet(),
-            **self.dbt_run_run_facet(),
-            **self.processing_engine_facet(),
-        }
+    def get_run(
+        self, run_id: str, query_id: Optional[str] = None, run_facets: Optional[dict[str, Any]] = None
+    ) -> Run:
+        if run_facets is None:
+            run_facets = {}
+
+        run_facets.update(
+            {
+                **self.dbt_version_facet(),
+                **self.dbt_run_run_facet(),
+                **self.processing_engine_facet(),
+            }
+        )
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
