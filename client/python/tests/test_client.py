@@ -1605,3 +1605,58 @@ def test_client_transport_from_env_var_composite_with_user_config_non_composite(
     assert transport.url == "http://user.com"
     assert transport.endpoint == "api/v1/lineage"
     assert transport.compression == HttpCompression.GZIP
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "api_key",
+        "OPENLINEAGE__TRANSPORT__AUTH__APIKEY": "secret1",
+    },
+)
+def test_client_http_transport_from_env_vars_with_separate_api_key_lowercase(recwarn):
+    user_config = {}
+    transport = OpenLineageClient(config=user_config).transport
+    assert not recwarn
+    assert transport.kind == "http"
+    assert transport.url == "http://example.com"
+    assert transport.config.auth.api_key == "secret1"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "api_key",
+        "OPENLINEAGE__TRANSPORT__AUTH__API_KEY": "secret1",
+    },
+)
+def test_client_http_transport_from_env_vars_with_separate_api_key_snakecase(recwarn):
+    user_config = {}
+    transport = OpenLineageClient(config=user_config).transport
+    assert not recwarn
+    assert transport.kind == "http"
+    assert transport.url == "http://example.com"
+    assert transport.config.auth.api_key == "secret1"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "api_key",
+        "OPENLINEAGE__TRANSPORT__AUTH__API_KEY": "secret1",
+        "OPENLINEAGE__TRANSPORT__AUTH__APIKEY": "secret2",
+    },
+)
+def test_client_http_transport_from_env_vars_with_separate_api_key_precedence(recwarn):
+    user_config = {}
+    transport = OpenLineageClient(config=user_config).transport
+    assert not recwarn
+    assert transport.kind == "http"
+    assert transport.url == "http://example.com"
+    assert transport.config.auth.api_key == "secret2"
