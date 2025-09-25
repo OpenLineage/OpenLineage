@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -33,6 +34,9 @@ import org.apache.spark.sql.hive.execution.CreateHiveTableAsSelectCommand;
  */
 @Slf4j
 public class ColumnLevelLineageUtils {
+
+  private static final String CREATE_HIVE_TABLE_AS_SELECT_COMMAND =
+      "org.apache.spark.sql.hive.execution.CreateHiveTableAsSelectCommand";
 
   public static Optional<OpenLineage.ColumnLineageDatasetFacet> buildColumnLineageDatasetFacet(
       SparkListenerEvent event,
@@ -110,7 +114,7 @@ public class ColumnLevelLineageUtils {
       plan = ((SaveIntoDataSourceCommand) logicalPlan).query();
     } else if (logicalPlan instanceof CreateDataSourceTableAsSelectCommand) {
       plan = ((CreateDataSourceTableAsSelectCommand) logicalPlan).query();
-    } else if (logicalPlan instanceof CreateHiveTableAsSelectCommand) {
+    } else if (PlanUtils.safeIsInstanceOf(logicalPlan, CREATE_HIVE_TABLE_AS_SELECT_COMMAND)) {
       plan = ((CreateHiveTableAsSelectCommand) logicalPlan).query();
     } else {
       plan = logicalPlan;
