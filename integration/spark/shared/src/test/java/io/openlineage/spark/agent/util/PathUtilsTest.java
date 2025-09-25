@@ -7,8 +7,7 @@ package io.openlineage.spark.agent.util;
 
 import static io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
@@ -27,6 +26,7 @@ import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import org.mockito.MockedStatic;
 import scala.Option;
 
 @Slf4j
@@ -165,6 +165,37 @@ class PathUtilsTest {
         .hasFieldOrPropertyWithValue("name", "database.table")
         .hasFieldOrPropertyWithValue("namespace", "hive://10.1.0.1:9084")
         .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+  }
+
+  @Test
+  void testFromCatalogTableWithHiveMetastoreOnS3() throws URISyntaxException {
+    sparkConf.set("spark.sql.catalogImplementation", "hive");
+    sparkConf.set("spark.sql.hive.metastore.uris", "thrift://10.1.0.1:9083");
+
+    try (MockedStatic<AwsAccountIdFetcher> mocked = mockStatic(AwsAccountIdFetcher.class)) {
+      mocked.when(AwsAccountIdFetcher::getAccountId).thenReturn("999999999999");
+
+      when(catalogTable.provider()).thenReturn(Option.apply("hive"));
+      when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+      TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+      when(catalogTable.identifier()).thenReturn(tableIdentifier);
+      when(tableIdentifier.database()).thenReturn(Option.apply("database"));
+      when(tableIdentifier.table()).thenReturn("table");
+      when(catalogStorageFormat.locationUri())
+          .thenReturn(Option.apply(new URI("s3://bucket/warehouse/table")));
+
+      DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+
+      assertThat(datasetIdentifier)
+          .hasFieldOrPropertyWithValue("name", "warehouse/table")
+          .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+
+      assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+      assertThat(datasetIdentifier.getSymlinks().get(0))
+          .hasFieldOrPropertyWithValue("name", "database.table")
+          .hasFieldOrPropertyWithValue("namespace", "hive://10.1.0.1:9083")
+          .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+    }
   }
 
   @Test
