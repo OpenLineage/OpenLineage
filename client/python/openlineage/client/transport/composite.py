@@ -147,7 +147,7 @@ class CompositeTransport(Transport):
             )
             raise RuntimeError(msg)
 
-        log.info(
+        log.debug(
             "CompositeTransport: finished emitting OpenLineage events;"
             " %s transports failed,  %s transports succeeded",
             _failure_count,

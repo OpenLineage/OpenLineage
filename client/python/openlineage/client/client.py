@@ -510,7 +510,8 @@ class OpenLineageClient:
         for user_tag in user_tags:
             if user_tag.key in facet_tag_keys:
                 facet_tag_key = facet_tag_keys[user_tag.key]
-                log.info("Overriding integration-supplied tag `%s` with user-supplied tag", facet_tag_key)
+                if user_tag.source == "USER":
+                    log.info("Overriding integration-supplied tag `%s` with user-supplied tag", facet_tag_key)
                 user_tag.key = facet_tag_key
 
         all_tags = keep_tags + user_tags
