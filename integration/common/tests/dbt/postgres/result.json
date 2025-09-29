@@ -32,6 +32,22 @@
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
           "invocation_id": "1269f08d-da04-4fbd-8207-1ddc9110cb1b"
+        },
+        "tags": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsRunFacet.json#/$defs/TagsRunFacet",
+          "tags": [
+            {
+              "key": "postgres",
+              "value": "true",
+              "source": "DBT"
+            },
+            {
+              "key": "test",
+              "value": "true",
+              "source": "DBT"
+            }
+          ]
         }
       }
     },
@@ -598,6 +614,22 @@
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
           "invocation_id": "1269f08d-da04-4fbd-8207-1ddc9110cb1b"
+        },
+        "tags": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsRunFacet.json#/$defs/TagsRunFacet",
+          "tags": [
+            {
+              "key": "postgres",
+              "value": "true",
+              "source": "DBT"
+            },
+            {
+              "key": "test",
+              "value": "true",
+              "source": "DBT"
+            }
+          ]
         }
       }
     },
