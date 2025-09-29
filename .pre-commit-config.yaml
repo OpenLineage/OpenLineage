@@ -66,10 +66,10 @@ repos:
       - id: ruff
         name: ruff-lint
         args: [--fix]
-        files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dagster/|^integration/dbt/|^integration/spark/|^integration/sql/
+        files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dbt/|^integration/spark/|^integration/sql/
       - id: ruff-format
         name: ruff-format
-        files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dagster/|^integration/dbt/|^integration/spark/|^integration/sql/
+        files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dbt/|^integration/spark/|^integration/sql/
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:

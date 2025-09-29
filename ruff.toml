@@ -3,8 +3,7 @@ target-version = "py39"
 namespace-packages = [
     "client/openlineage/client",
     "integration/airflow/openlineage/airflow",
-    "integration/common/openlineage/common",
-    "integration/dagster/openlineage/dagster"
+    "integration/common/openlineage/common"
 ]
 
 [lint]
