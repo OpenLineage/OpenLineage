@@ -5456,7 +5456,7 @@
     "outputs": [
       {
         "namespace": "postgres://postgres:5432",
-        "name": "postgres.public_dbt_test__audit.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned",
+        "name": "postgres.public_dbt_test__audit.accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58",
         "facets": {
           "dataSource": {
             "name": "postgres://postgres:5432",
@@ -5722,7 +5722,7 @@
     "outputs": [
       {
         "namespace": "postgres://postgres:5432",
-        "name": "postgres.public_dbt_test__audit.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned",
+        "name": "postgres.public_dbt_test__audit.accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58",
         "facets": {
           "dataSource": {
             "name": "postgres://postgres:5432",
@@ -6485,7 +6485,7 @@
     "outputs": [
       {
         "namespace": "postgres://postgres:5432",
-        "name": "postgres.public_dbt_test__audit.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card",
+        "name": "postgres.public_dbt_test__audit.accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef",
         "facets": {
           "dataSource": {
             "name": "postgres://postgres:5432",
@@ -6751,7 +6751,7 @@
     "outputs": [
       {
         "namespace": "postgres://postgres:5432",
-        "name": "postgres.public_dbt_test__audit.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card",
+        "name": "postgres.public_dbt_test__audit.accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef",
         "facets": {
           "dataSource": {
             "name": "postgres://postgres:5432",

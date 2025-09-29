@@ -1,0 +1,118 @@
+[
+  {
+    "eventType": "START",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "run": { "runId": "{{ any(result) }}" }
+        },
+        "dbt_version": {
+          "version": "{{ any(result) }}"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "{{ any(result) }}",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b8513ee2-6c1f-44ed-a13d-3fc35ef81004"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "random-gcp-project.dbt_test1.dbt_test.test_model"
+    },
+    "inputs": [
+      {
+        "namespace": "bigquery",
+        "name": "random-gcp-project.dbt_test1.source_table"
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "bigquery",
+        "name": "random-gcp-project.dbt_test1.test_model"
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "run": { "runId": "{{ any(result) }}" }
+        },
+        "dbt_version": {
+          "version": "{{ any(result) }}"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "{{ any(result) }}",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b8513ee2-6c1f-44ed-a13d-3fc35ef81004"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "random-gcp-project.dbt_test1.dbt_test.test_model",
+      "facets": {
+        "sql": {
+          "query": "select *\nfrom `random-gcp-project`.`dbt_test1`.`source_table`\nwhere id = 1",
+          "dialect": "bigquery"
+        },
+        "jobType": {
+          "jobType": "MODEL",
+          "integration": "DBT",
+          "processingType": "BATCH"
+        }
+      }
+    },
+    "inputs": [
+      {
+        "namespace": "bigquery",
+        "name": "random-gcp-project.dbt_test1.source_table",
+        "facets": {
+          "dataSource": {
+            "name": "bigquery",
+            "uri": "bigquery"
+          },
+          "documentation": {
+            "description": "A source table"
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "bigquery",
+        "name": "random-gcp-project.dbt_test1.test_model_alias",
+        "facets": {
+          "dataSource": {
+            "name": "bigquery",
+            "uri": "bigquery"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "id"
+              }
+            ]
+          },
+          "documentation": {
+            "description": "A starter dbt model"
+          }
+        }
+      }
+    ]
+  }
+]

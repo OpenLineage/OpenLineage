@@ -75,6 +75,9 @@ class UnsupportedDbtCommand(Exception):
 
 @attr.define
 class ModelNode:
+    # in reality Literal["model", "test", "snapshot", "source", "seed"]
+    # but way too much work to convince mypy that it's true
+    type: str
     metadata_node: Dict
     catalog_node: Optional[Dict] = None
 
@@ -263,15 +266,17 @@ class DbtArtifactProcessor:
                 if node.startswith("model."):
                     inputs.append(
                         ModelNode(
-                            nodes[node],
-                            get_from_nullable_chain(context.catalog, ["nodes", node]),
+                            type="model",
+                            metadata_node=nodes[node],
+                            catalog_node=get_from_nullable_chain(context.catalog, ["nodes", node]),
                         )
                     )
                 elif node.startswith("source."):
                     inputs.append(
                         ModelNode(
-                            context.manifest["sources"][node],
-                            get_from_nullable_chain(context.catalog, ["sources", node]),
+                            type="source",
+                            metadata_node=context.manifest["sources"][node],
+                            catalog_node=get_from_nullable_chain(context.catalog, ["sources", node]),
                         )
                     )
 
@@ -315,8 +320,9 @@ class DbtArtifactProcessor:
 
             output_dataset = self.node_to_output_dataset(
                 ModelNode(
-                    output_node,
-                    get_from_nullable_chain(context.catalog, ["nodes", run["unique_id"]]),
+                    type=jobType.lower(),
+                    metadata_node=output_node,
+                    catalog_node=get_from_nullable_chain(context.catalog, ["nodes", run["unique_id"]]),
                 ),
                 has_facets=True,
                 adapter_response=run.get("adapter_response", None),
@@ -351,7 +357,11 @@ class DbtArtifactProcessor:
         events = DbtEvents()
         manifest_nodes = {**context.manifest["nodes"], **context.manifest["sources"]}
         for name, node in manifest_nodes.items():
-            if not name.startswith("model.") and not name.startswith("source."):
+            if name.startswith("model."):
+                node_type = "model"
+            elif name.startswith("source."):
+                node_type = "source"
+            else:
                 continue
             if len(assertions[name]) == 0:
                 continue
@@ -361,7 +371,7 @@ class DbtArtifactProcessor:
             )
 
             namespace, name, _, _ = self.extract_dataset_data(
-                ModelNode(node), assertion_facet, has_facets=False
+                ModelNode(type=node_type, metadata_node=node), assertion_facet, has_facets=False
             )
 
             job_name = self._format_dataset_name(
@@ -612,12 +622,16 @@ class DbtArtifactProcessor:
                 facets["schema"] = schema_dataset.SchemaDatasetFacet(fields=fields)
         else:
             facets = {}
+        if node.type == "source":
+            table = node.metadata_node["name"]
+        else:
+            table = node.metadata_node["alias"]
         return (
             self.dataset_namespace,
             self._format_dataset_name(
                 node.metadata_node["database"],
                 node.metadata_node["schema"],
-                node.metadata_node["name"],
+                table,
             ),
             facets,
             input_facets,

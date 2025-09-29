@@ -822,10 +822,16 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         """
         Builds a ModelNode of a given node_id
         """
-        all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
-        manifest_node = all_nodes[node_id]
+        if node_id in self.compiled_manifest["nodes"]:
+            node_type = "model"
+            manifest_node = self.compiled_manifest["nodes"][node_id]
+        elif node_id in self.compiled_manifest["sources"]:
+            node_type = "source"
+            manifest_node = self.compiled_manifest["sources"][node_id]
+        else:
+            raise RuntimeError(f"{node_id} not found in nodes or sources")
         catalog_node = get_from_nullable_chain(self.catalog, ["nodes", node_id])
-        return ModelNode(metadata_node=manifest_node, catalog_node=catalog_node)
+        return ModelNode(type=node_type, metadata_node=manifest_node, catalog_node=catalog_node)
 
     @handle_keyerror
     def _get_node_tags(self, node_id: str) -> List[str]:
