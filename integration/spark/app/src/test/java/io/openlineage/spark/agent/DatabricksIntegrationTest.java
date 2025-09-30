@@ -8,6 +8,7 @@ package io.openlineage.spark.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAdditional;
+import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -305,5 +307,38 @@ class DatabricksIntegrationTest {
         .hasFieldOrPropertyWithValue(
             "name", "/user/hive/warehouse/test_db.db/events_" + platformVersion)
         .hasFieldOrPropertyWithValue("field", "event_id");
+  }
+
+  @Test
+  @Disabled("Unity Catalog is not available in the CI environment")
+  // If enabling the test, make sure to provide a valid catalog name both here and in
+  // unity_catalog.py
+  void testUnityCatalog() {
+    String catalogName = "PROVIDE_NAME";
+    assumeClusterRunning();
+
+    List<RunEvent> runEvents = databricks.runScript("unity_catalog.py");
+
+    Optional<RunEvent> completeEvent =
+        runEvents.stream()
+            .filter(
+                s -> s.getJob().getName().contains("atomic_create_table_as_select.default_tbl2"))
+            .filter(s -> s.getEventType().equals(EventType.COMPLETE))
+            .findFirst();
+    assertThat(completeEvent).isPresent();
+
+    verifyCatalogRelatedFacets(completeEvent.get().getInputs().get(0).getFacets(), catalogName);
+    verifyCatalogRelatedFacets(completeEvent.get().getOutputs().get(0).getFacets(), catalogName);
+  }
+
+  private static void verifyCatalogRelatedFacets(DatasetFacets dataset, String catalogName) {
+    assertThat(dataset.getCatalog()).isNotNull();
+    assertThat(dataset.getCatalog().getType()).isEqualTo("unity");
+    assertThat(dataset.getCatalog().getName()).isEqualTo(catalogName);
+
+    assertThat(dataset.getStorage()).isNotNull();
+    assertThat(dataset.getStorage().getStorageLayer()).isEqualTo("unity");
+
+    assertThat(dataset.getSymlinks()).isNotNull();
   }
 }

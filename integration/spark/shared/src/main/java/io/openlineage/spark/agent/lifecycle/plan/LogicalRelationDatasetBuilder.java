@@ -168,6 +168,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         .ifPresent(
             v -> DatasetVersionUtils.buildVersionOutputFacets(context, datasetFacetsBuilder, v));
 
+    addCatalogAndStorageFacets(catalogTable, datasetFacetsBuilder);
     return Collections.singletonList(datasetFactory.getDataset(di, datasetFacetsBuilder));
   }
 
@@ -280,5 +281,10 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
   protected Optional<String> getDatasetVersion(LogicalRelation x) {
     // not implemented
     return Optional.empty();
+  }
+
+  protected void addCatalogAndStorageFacets(
+      CatalogTable catalogTable, DatasetCompositeFacetsBuilder builder) {
+    // not implemented
   }
 }
