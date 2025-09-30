@@ -7,10 +7,12 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
+import java.io.File;
 import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
@@ -80,6 +82,10 @@ public class PathUtils {
       URI hiveUri = prepareHiveUri(metastoreUri.get());
       String tableName = nameFromTableIdentifier(catalogTable.identifier());
       symlinkDataset = Optional.of(FilesystemDatasetUtils.fromLocationAndName(hiveUri, tableName));
+    } else if (DatabricksUtils.isDatabricksUnityCatalogEnabled(sparkConf)) {
+      String tableName = nameFromTableIdentifier(catalogTable.identifier());
+      String namespace = StringUtils.substringBeforeLast(location.toString(), File.separator);
+      symlinkDataset = Optional.of(new DatasetIdentifier(tableName, namespace));
     } else {
       Optional<URI> warehouseLocation =
           getWarehouseLocation(sparkConf, hadoopConf)
