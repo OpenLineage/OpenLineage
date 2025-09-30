@@ -11,7 +11,7 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceResolver
 import io.openlineage.client.dataset.partition.trimmer.DatasetNameTrimmer;
 import io.openlineage.client.dataset.partition.trimmer.DateTrimmer;
 import io.openlineage.client.dataset.partition.trimmer.KeyValueTrimmer;
-import io.openlineage.client.dataset.partition.trimmer.MultiDirTrimmer;
+import io.openlineage.client.dataset.partition.trimmer.MultiDirDateTrimmer;
 import io.openlineage.client.dataset.partition.trimmer.YearMonthTrimmer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,7 +36,10 @@ public class DatasetConfig implements MergeConfig<DatasetConfig> {
 
   private static final List<DatasetNameTrimmer> DEFAULT_DATASET_NAME_TRIMMERS =
       Arrays.asList(
-          new DateTrimmer(), new KeyValueTrimmer(), new MultiDirTrimmer(), new YearMonthTrimmer());
+          new DateTrimmer(),
+          new KeyValueTrimmer(),
+          new MultiDirDateTrimmer(),
+          new YearMonthTrimmer());
 
   @Getter
   @Setter

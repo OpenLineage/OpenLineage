@@ -8,9 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class MultiDirTrimmerTest {
+class MultiDirDateTrimmerTest {
 
-  MultiDirTrimmer trimmer = new MultiDirTrimmer();
+  MultiDirDateTrimmer trimmer = new MultiDirDateTrimmer();
 
   @Test
   void testTrim() {

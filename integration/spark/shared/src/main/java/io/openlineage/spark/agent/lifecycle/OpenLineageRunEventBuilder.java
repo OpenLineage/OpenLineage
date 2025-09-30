@@ -23,7 +23,7 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
-import io.openlineage.client.dataset.partition.PartitionedDatasetReducer;
+import io.openlineage.client.dataset.partition.DatasetReducer;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
@@ -266,7 +266,7 @@ class OpenLineageRunEventBuilder {
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
     datasets =
-        new PartitionedDatasetReducer(
+        new DatasetReducer(
                 openLineageContext.getOpenLineage(),
                 openLineageContext.getOpenLineageConfig().getDatasetConfig())
             .reduceInputs(datasets);
@@ -353,7 +353,7 @@ class OpenLineageRunEventBuilder {
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
     datasets =
-        new PartitionedDatasetReducer(
+        new DatasetReducer(
                 openLineageContext.getOpenLineage(),
                 openLineageContext.getOpenLineageConfig().getDatasetConfig())
             .reduceOutputs(datasets);

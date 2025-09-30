@@ -17,10 +17,28 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.Getter;
 
+/**
+ * Intermediate data structure to store datasets while being reduced.
+ *
+ * <p>Two datasets can be reduced if they have a common trimmed name and same facets. A logic used
+ * to trim dataset name is defined in the {@link io.openlineage.client.dataset.DatasetConfig} via
+ * collection of dataset trimmers. A default collection of trimmers can be altered with
+ * extraTrimmers or disabledTrimmers settings.
+ *
+ * <p>A reduce operation returns a single dataset with a trimmed name of the reduced datasets and
+ * all the facets of the reduced datasets. Additionally, a returned dataset is enriched with a
+ * subset definition facet containing non-trimmed dataset names of all the datasets that were
+ * reduced.
+ *
+ * <p>Reduce on a single dataset, with dataset name that can't be trimmed, results in an unmodified
+ * dataset. Reduce on a single dataset, with dataset name that can be trimmed, returns a dataset
+ * with a trimmed name and locations' based subset definition facet with a non-trimmed name of a
+ * dataset.
+ */
 class ReducedDataset {
 
-  @Getter private final String trimmedPath;
-  @Getter private final List<String> reducedPaths;
+  @Getter private final String trimmedDatasetName;
+  @Getter private final List<String> nonTrimmedNames;
   @Getter private final Dataset dataset;
   private final Collection<DatasetNameTrimmer> trimmers;
 
@@ -30,27 +48,27 @@ class ReducedDataset {
 
   private ReducedDataset(DatasetConfig config, Dataset dataset) {
     this.trimmers = config.getDatasetNameTrimmers();
-    this.trimmedPath = trimPath(dataset.getName());
-    this.reducedPaths = new ArrayList<>();
-    if (!Objects.equals(trimmedPath, dataset.getName())) {
-      // reduced paths are different from trimmed path -> add it
-      this.reducedPaths.add(dataset.getName());
+    this.trimmedDatasetName = trimDatasetName(dataset.getName());
+    this.nonTrimmedNames = new ArrayList<>();
+    if (!Objects.equals(trimmedDatasetName, dataset.getName())) {
+      // reduced names are different from trimmed name -> add it
+      this.nonTrimmedNames.add(dataset.getName());
     }
     this.dataset = dataset;
   }
 
   /**
-   * Given another dataset, it reduces and merges the two datasets. If the paths of the two datasets
-   * are different, it returns an empty Optional. If the facets of the two datasets are different,
-   * it returns an empty Optional. Otherwise, it merges the two datasets and returns the merged
-   * dataset.
+   * Given another dataset, it reduces two datasets. If the trimmed name of the two datasets are
+   * different, it returns an empty Optional. If the facets of the two datasets are different, it
+   * returns an empty Optional. Otherwise, it returned a dataset with a trimmed name, common facets
+   * and locations' based subset definition facet with all non-trimmed dataset names,
    *
    * @param other the other dataset
-   * @return an empty Optional if the two datasets can't be merged, the merged dataset otherwise
+   * @return an empty Optional if the two datasets can't be reduced, the reduced dataset otherwise
    */
   public Optional<ReducedDataset> reduce(ReducedDataset other) {
-    if (trimmedPath == null || !trimmedPath.equals(other.trimmedPath)) {
-      // null different paths - can't be merged
+    if (trimmedDatasetName == null || !trimmedDatasetName.equals(other.trimmedDatasetName)) {
+      // null different names - can't be reduced
       return Optional.empty();
     }
 
@@ -58,18 +76,18 @@ class ReducedDataset {
       return Optional.empty();
     }
 
-    // merge paths
-    reducedPaths.addAll(other.reducedPaths);
+    // non-trimmed names
+    nonTrimmedNames.addAll(other.nonTrimmedNames);
     return Optional.of(this);
   }
 
   /**
-   * Trims paths based on config
+   * Trims name based on config
    *
    * @return
    */
-  private String trimPath(String path) {
-    String result = path;
+  private String trimDatasetName(String name) {
+    String result = name;
     boolean continueTrimming = true;
 
     while (continueTrimming) {

@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Normalizes if last path is a string represents a year month in an arbitrary format.
+ * Normalizes if last part is a string representing a year month in an arbitrary format.
  *
  * <p>Heuristics: - try to find within a string a year month in any of the defined formats: yyyyMM,
  * yyyy-MM - if not found, return false - remove the identified year month from the string
@@ -28,12 +28,12 @@ public class YearMonthTrimmer implements DatasetNameTrimmer {
 
   @Override
   public boolean canTrim(String name) {
-    String lastPath = getLastPath(name);
+    String lastPart = getLastPart(name);
 
     for (DateTimeFormatter formatter : FORMATTERS) {
       try {
         // parseStrict ensures invalid dates (like 2025-13) fail
-        YearMonth.parse(lastPath, formatter);
+        YearMonth.parse(lastPart, formatter);
         return true;
       } catch (DateTimeParseException e) {
         // do nothing, try next formatter

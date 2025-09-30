@@ -19,10 +19,10 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PartitionedDatasetReducerTest {
+class DatasetReducerTest {
 
   OpenLineage openLineage;
-  PartitionedDatasetReducer reducer;
+  DatasetReducer reducer;
   List<InputDataset> inputs;
   List<OutputDataset> outputs;
 
@@ -40,13 +40,13 @@ class PartitionedDatasetReducerTest {
     outputs.add(outputFactory("/tmp/some/path2"));
     outputs.add(outputFactory("/tmp/some/path3"));
 
-    reducer = new PartitionedDatasetReducer(openLineage, new DatasetConfig());
+    reducer = new DatasetReducer(openLineage, new DatasetConfig());
   }
 
   @Test
   void testConfigIsNull() {
     // merging should be applied, test makes sure no NPE is thrown
-    reducer = new PartitionedDatasetReducer(openLineage, null);
+    reducer = new DatasetReducer(openLineage, null);
 
     assertThat(
             reducer.reduceInputs(inputs).stream()
@@ -107,7 +107,7 @@ class PartitionedDatasetReducerTest {
             "/tmp/some/tested-path/date=20250722/20250721T901Z");
   }
 
-  /** Datasets should not be merged if they have different facets */
+  /** Datasets should not be reduced if they have different facets */
   @Test
   void testFacetsAreDifferent() {
     inputs = new ArrayList<>();
@@ -130,12 +130,12 @@ class PartitionedDatasetReducerTest {
             .inputFacets(openLineage.newInputDatasetInputFacetsBuilder().build())
             .build());
 
-    // should not be merged
+    // should not be reduced
     List<InputDataset> reduceInputs = reducer.reduceInputs(inputs);
     assertThat(reduceInputs).hasSize(2);
   }
 
-  /** Datasets should not be merged if they have different facets */
+  /** Datasets should not be reduced if they have different facets */
   @Test
   void testInputFacetsAreDifferent() {
     inputs = new ArrayList<>();
@@ -159,7 +159,7 @@ class PartitionedDatasetReducerTest {
                     .build())
             .build());
 
-    // should not be merged
+    // should not be reduced
     List<InputDataset> reduceInputs = reducer.reduceInputs(inputs);
     assertThat(reduceInputs).hasSize(2);
   }

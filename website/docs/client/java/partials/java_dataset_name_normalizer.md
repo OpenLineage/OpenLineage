@@ -2,11 +2,11 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 Sometimes, an object storage path used by a job to read or write data does not represent a proper dataset name.  
-To address this, a **dataset name normalizer** can be applied to trim trailing path segments that are not part of the actual dataset name.
+To address this, a **dataset name trimmer** can be applied to trim trailing name segments that are not part of the actual dataset name.
 
 ### How It Works
-- The **trimmed path** becomes the dataset name.
-- The **full, non-trimmed path** is stored in the **subset definition facet** as a `LocationSubsetCondition`.
+- The **trimmed dataset name** becomes the dataset name.
+- The **full, non-trimmed dataset name** is stored in the **subset definition facet** as a `LocationSubsetCondition`.
 
 ### Why It Matters
 This approach is especially useful for input datasets, where multiple paths may point to the same directory.
@@ -14,8 +14,8 @@ This approach is especially useful for input datasets, where multiple paths may 
 - The **subset definition facet** captures all directories read.
 - This reduces the size of OpenLineage events by avoiding duplication, since otherwise each directory would be treated as a separate dataset.
 
-### Dataset Merging in Java Client
-Datasets are merged only if:
+### Reducing Datasets in Java Client
+Datasets are reduced only if:
 1. Their names are trimmed to the same dataset name.
 2. They share identical facets.
 
@@ -27,7 +27,8 @@ By the default, OpenLineage Java client comes with the following trimmers:
 
 The list of the trimmers can be managed by `disabledTrimmers` and `extraTrimmers` configuration parameters.
 
-In most cases, trimmers work on the final directory segment of the path. The trimming process runs iteratively, applying trimmers repeatedly until no additional segments can be removed.
+In most cases, trimmers work on the last directory segment of the dataset name. 
+The trimming process runs iteratively, applying trimmers repeatedly until no additional segments can be removed.
 
 ### Trimmers Configuration
 
@@ -62,8 +63,8 @@ dataset:
 
 #### DateTrimmer
 
-Remove a trailing date partition. It check if the path contains a valid and recognized date pattern.
-Then it checks if the other characters in the path are only numeric and non-numeric `T` and `Z` characters.
+Remove a trailing date partition. It checks if the last part of the dataset name contains a valid and recognized date pattern.
+Then it checks if the other characters in the directory are only numeric and non-numeric `T` and `Z` characters.
 This behaviour assures agility to detect dates beyond the common formats configured in the trimmer.
 
 * `.../20250901/` → trims `/20250901/`
@@ -74,12 +75,12 @@ This behaviour assures agility to detect dates beyond the common formats configu
 
 #### KeyValueTrimmer
 
-Remove one or more trailing key=value partition segments.
+Remove last part of the dataset name if it follows `key=value` pattern.
 
 * `.../dt=2025-09-01/` → trims `/dt=2025-09-01/`
 * `.../hour=05/` → trims `/hour=05/`
 
-#### MultiDirTrimmer
+#### MultiDirDateTrimmer
 
 Trims multiple directories at once if they are valid date or year month.
 

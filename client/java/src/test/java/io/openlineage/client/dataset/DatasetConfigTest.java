@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.dataset.partition.trimmer.DatasetNameTrimmer;
 import io.openlineage.client.dataset.partition.trimmer.DateTrimmer;
-import io.openlineage.client.dataset.partition.trimmer.MultiDirTrimmer;
+import io.openlineage.client.dataset.partition.trimmer.MultiDirDateTrimmer;
 import org.junit.jupiter.api.Test;
 
 class DatasetConfigTest {
@@ -23,7 +23,8 @@ class DatasetConfigTest {
 
   @Test
   void testDisabledTrimmers() {
-    config.setDisabledTrimmers(DateTrimmer.class.getName() + ";" + MultiDirTrimmer.class.getName());
+    config.setDisabledTrimmers(
+        DateTrimmer.class.getName() + ";" + MultiDirDateTrimmer.class.getName());
     assertThat(config.getDatasetNameTrimmers()).hasSize(2);
   }
 

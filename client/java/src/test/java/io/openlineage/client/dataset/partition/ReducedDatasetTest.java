@@ -20,20 +20,20 @@ class ReducedDatasetTest {
   ReducedDataset reducedDataset;
 
   @Test
-  void testTrimPath() {
-    verifyTrimPath("/a/b", "/a/b/2025-01-01/c=1");
-    verifyTrimPath("/a/b", "/a/b/2025-01-01/c=1/d=1");
-    verifyTrimPath("/a/b", "/a/b/2025-01-01/c=1/d=1/20250101T34:34:34.123Z");
-    verifyTrimPath("/a/b", "/a/b/2025-01-01/2025-01-01");
+  void testTrimDatasetName() {
+    verifyTrimDatasetName("/a/b", "/a/b/2025-01-01/c=1");
+    verifyTrimDatasetName("/a/b", "/a/b/2025-01-01/c=1/d=1");
+    verifyTrimDatasetName("/a/b", "/a/b/2025-01-01/c=1/d=1/20250101T34:34:34.123Z");
+    verifyTrimDatasetName("/a/b", "/a/b/2025-01-01/2025-01-01");
 
-    verifyTrimPath("/a/b/c", "/a/b/c");
-    verifyTrimPath("/a/b/2025-01-01/2025-01-01/c", "/a/b/2025-01-01/2025-01-01/c");
-    verifyTrimPath("/a/b/2025T01T01", "/a/b/2025T01T01");
+    verifyTrimDatasetName("/a/b/c", "/a/b/c");
+    verifyTrimDatasetName("/a/b/2025-01-01/2025-01-01/c", "/a/b/2025-01-01/2025-01-01/c");
+    verifyTrimDatasetName("/a/b/2025T01T01", "/a/b/2025T01T01");
   }
 
-  private void verifyTrimPath(String expected, String input) {
+  private void verifyTrimDatasetName(String expected, String input) {
     when(dataset.getName()).thenReturn(input);
     reducedDataset = ReducedDataset.of(config, dataset);
-    assertThat(reducedDataset.getTrimmedPath()).isEqualTo(expected);
+    assertThat(reducedDataset.getTrimmedDatasetName()).isEqualTo(expected);
   }
 }

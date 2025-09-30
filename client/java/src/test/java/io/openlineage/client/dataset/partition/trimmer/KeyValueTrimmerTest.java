@@ -19,6 +19,7 @@ class KeyValueTrimmerTest {
 
     // normalize key=value
     assertThat(trimmer.canTrim("/tmp/key=value")).isTrue();
+    assertThat(trimmer.trim("/tmp/key=value")).isEqualTo("/tmp");
 
     // don't normalize if more than one equality character detected
     assertThat(trimmer.canTrim("/tmp/a=b=c")).isFalse();

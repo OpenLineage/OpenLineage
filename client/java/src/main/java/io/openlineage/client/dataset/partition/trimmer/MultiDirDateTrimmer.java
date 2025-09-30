@@ -11,9 +11,9 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 
 /**
- * Trims directory if last path is a string represents a date in a format /yyyy/MM or /yyyy/MM/dd
+ * Trims directory if last part is a string representing a date in a format /yyyy/MM or /yyyy/MM/dd
  */
-public class MultiDirTrimmer implements DatasetNameTrimmer {
+public class MultiDirDateTrimmer implements DatasetNameTrimmer {
 
   DateTimeFormatter yearMonthFormatter = DateTimeFormatter.ofPattern("yyyyMM");
 
@@ -54,10 +54,10 @@ public class MultiDirTrimmer implements DatasetNameTrimmer {
       return false;
     }
 
-    // get two last paths and verify if they're a year month
-    String lastTwoPaths = dirs[dirs.length - 2] + dirs[dirs.length - 1];
+    // get two last parts and verify if they're a year month
+    String lastTwoParts = dirs[dirs.length - 2] + dirs[dirs.length - 1];
     try {
-      YearMonth.parse(lastTwoPaths, yearMonthFormatter);
+      YearMonth.parse(lastTwoParts, yearMonthFormatter);
       return true;
     } catch (DateTimeParseException e) {
       // do nothing
@@ -72,10 +72,10 @@ public class MultiDirTrimmer implements DatasetNameTrimmer {
       return false;
     }
 
-    // get three last paths and verify if they're a date
-    String lastTwoPaths = dirs[dirs.length - 3] + dirs[dirs.length - 2] + dirs[dirs.length - 1];
+    // get three last parts and verify if they're a date
+    String lastTwoParts = dirs[dirs.length - 3] + dirs[dirs.length - 2] + dirs[dirs.length - 1];
     try {
-      LocalDate.parse(lastTwoPaths, dateFormatter);
+      LocalDate.parse(lastTwoParts, dateFormatter);
       return true;
     } catch (DateTimeParseException e) {
       // do nothing

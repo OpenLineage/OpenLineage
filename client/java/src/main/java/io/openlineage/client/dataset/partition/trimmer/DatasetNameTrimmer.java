@@ -10,7 +10,7 @@ public interface DatasetNameTrimmer {
   String SEPARATOR = "/";
 
   /**
-   * Determines if a last path of a dataset can be trimmed.
+   * Determines if the last part of a dataset can be trimmed.
    *
    * @param name
    * @return
@@ -18,22 +18,22 @@ public interface DatasetNameTrimmer {
   boolean canTrim(String name);
 
   /**
-   * Trims the last path of the dataset name if it can be trimmed.
+   * Trims the last part of the dataset name if it can be trimmed.
    *
    * @param name
    * @return
    */
   default String trim(String name) {
-    return canTrim(name) ? removeLastPath(name) : name;
+    return canTrim(name) ? removeLastPart(name) : name;
   }
 
   /**
-   * Returns the last path of the dataset name.
+   * Returns the last part of the dataset name.
    *
    * @param name
    * @return
    */
-  default String getLastPath(String name) {
+  default String getLastPart(String name) {
     if (name == null || !name.contains(SEPARATOR)) {
       return name;
     }
@@ -41,12 +41,12 @@ public interface DatasetNameTrimmer {
   }
 
   /**
-   * /** Removes the last path from the dataset name.
+   * /** Removes the last part from the dataset name.
    *
    * @param name dataset name
-   * @return dataset name without the last path
+   * @return dataset name without the last part
    */
-  static String removeLastPath(String name) {
+  static String removeLastPart(String name) {
     return name.substring(0, name.lastIndexOf(SEPARATOR));
   }
 }

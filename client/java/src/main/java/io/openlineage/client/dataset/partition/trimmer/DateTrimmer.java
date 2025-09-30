@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Normalizes if last path is a string represents a data in an arbitrary format.
+ * Normalizes if last part is a string representing a data in an arbitrary format.
  *
  * <p>Heuristics: - try to find within a string a date in any of the defined formats: yyyy-MM-dd,
  * dd.MM.yyyy, yyyyMMdd - if not found, return false - remove the identified date from the string -
@@ -37,7 +37,7 @@ public class DateTrimmer implements DatasetNameTrimmer {
 
   @Override
   public boolean canTrim(String name) {
-    String lastDir = getLastPath(name);
+    String lastDir = getLastPart(name);
     for (Entry<String, Pattern> entry : DATE_FORMATS_AND_REGEX_MAP.entrySet()) {
       String format = entry.getKey();
       Pattern pattern = entry.getValue();

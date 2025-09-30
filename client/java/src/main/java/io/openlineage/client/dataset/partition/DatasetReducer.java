@@ -22,20 +22,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * Given a list of datasets, class detects partitions and merges then into a single dataset with a
- * subset definition facet. Currently only path locations are supported.
+ * Class responsible for reducing datasets.
  *
- * <p>If a path ends with key value directories, it is trimmed. If a path ends with directories with
- * a loose value detected, it is trimmed.
+ * <p>Two datasets can be reduced if they have a common trimmed name and same facets. A logic used
+ * to trim dataset name is defined in the {@link io.openlineage.client.dataset.DatasetConfig} via
+ * collection of dataset trimmers. A default collection of trimmers can be altered with
+ * extraTrimmers or disabledTrimmers settings.
  *
- * <p>Trimming options are configurable within {@link io.openlineage.client.dataset.DatasetConfig}
+ * <p>A reduce operation returns a single dataset with a trimmed name of the reduced datasets and
+ * all the facets of the reduced datasets. Additionally, a returned dataset is enriched with a
+ * subset definition facet containing non-trimmed dataset names of all the datasets that were
+ * reduced.
+ *
+ * <p>Reduce on a single dataset, with dataset name that can't be trimmed, results in an unmodified
+ * dataset. Reduce on a single dataset, with dataset name that can be trimmed, returns a dataset
+ * with a trimmed name and locations' based subset definition facet with a non-trimmed name of a
+ * dataset.
  */
-public class PartitionedDatasetReducer {
+public class DatasetReducer {
 
   private final DatasetConfig datasetConfig;
   private final OpenLineage openLineage;
 
-  public PartitionedDatasetReducer(OpenLineage openLineage, DatasetConfig datasetConfig) {
+  public DatasetReducer(OpenLineage openLineage, DatasetConfig datasetConfig) {
     if (datasetConfig == null) {
       this.datasetConfig = new DatasetConfig(Collections.emptyMap(), null, null);
     } else this.datasetConfig = datasetConfig;
@@ -47,7 +56,7 @@ public class PartitionedDatasetReducer {
    * detection and merging rules.
    *
    * @param datasets list of input datasets
-   * @return list of input datasets with partitions merged
+   * @return list of reduced input datasets
    */
   public List<InputDataset> reduceInputs(List<InputDataset> datasets) {
     if (datasetConfig == null) {
@@ -64,20 +73,20 @@ public class PartitionedDatasetReducer {
               InputDataset source = (InputDataset) r.getDataset();
               InputDatasetInputFacetsBuilder facetsBuilder =
                   FacetUtils.toBuilder(openLineage, source.getInputFacets());
-              if (!r.getReducedPaths().isEmpty()) {
+              if (!r.getNonTrimmedNames().isEmpty()) {
                 facetsBuilder.subset(
                     openLineage
                         .newInputSubsetInputDatasetFacetBuilder()
                         .inputCondition(
                             openLineage
                                 .newLocationSubsetConditionBuilder()
-                                .locations(r.getReducedPaths())
+                                .locations(r.getNonTrimmedNames())
                                 .build())
                         .build());
               }
               return openLineage
                   .newInputDatasetBuilder()
-                  .name(r.getTrimmedPath())
+                  .name(r.getTrimmedDatasetName())
                   .namespace(source.getNamespace())
                   .inputFacets(facetsBuilder.build())
                   .facets(source.getFacets())
@@ -91,7 +100,7 @@ public class PartitionedDatasetReducer {
    * detection and merging rules.
    *
    * @param datasets list of output datasets
-   * @return list of output datasets with partitions merged
+   * @return list of reduced output datasets
    */
   public List<OutputDataset> reduceOutputs(List<OutputDataset> datasets) {
     if (datasetConfig == null) {
@@ -111,7 +120,7 @@ public class PartitionedDatasetReducer {
               OutputDataset source = (OutputDataset) r.getDataset();
               OutputDatasetOutputFacetsBuilder facetsBuilder =
                   FacetUtils.toBuilder(openLineage, source.getOutputFacets());
-              if (!r.getReducedPaths().isEmpty()) {
+              if (!r.getNonTrimmedNames().isEmpty()) {
                 facetsBuilder.put(
                     "subset",
                     openLineage
@@ -119,13 +128,13 @@ public class PartitionedDatasetReducer {
                         .outputCondition(
                             openLineage
                                 .newLocationSubsetConditionBuilder()
-                                .locations(r.getReducedPaths())
+                                .locations(r.getNonTrimmedNames())
                                 .build())
                         .build());
               }
               return openLineage
                   .newOutputDatasetBuilder()
-                  .name(r.getTrimmedPath())
+                  .name(r.getTrimmedDatasetName())
                   .namespace(source.getNamespace())
                   .outputFacets(facetsBuilder.build())
                   .facets(source.getFacets())
@@ -140,16 +149,16 @@ public class PartitionedDatasetReducer {
             .map(d -> ReducedDataset.of(datasetConfig, d))
             .collect(
                 Collectors.toMap(
-                    ReducedDataset::getTrimmedPath,
+                    ReducedDataset::getTrimmedDatasetName,
                     d -> new ArrayList<>(Collections.singleton(d)),
                     (l1, l2) -> {
                       l1.addAll(l2);
                       return l1;
                     }));
 
-    // Reducing logic is a bit more complex than just creating map based on trimmed path
-    // If there are datasets with the same trimmed path but different facets, we can't reduce them
-    // So, when having a list of dataset with the same trimmed path, we need to try reducing each
+    // Reducing logic is a bit more complex than just creating map based on trimmed name
+    // If there are datasets with the same trimmed name but different facets, we can't reduce them
+    // So, when having a list of dataset with the same trimmed name, we need to try reducing each
     // one with each other
     List<ReducedDataset> reducedDatasets = new ArrayList<>();
     for (List<ReducedDataset> sameNameList : toReduce.values()) {
