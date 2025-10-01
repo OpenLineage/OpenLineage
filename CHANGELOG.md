@@ -1,9 +1,97 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.37.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.38.0...HEAD)
+
+## [1.38.0](https://github.com/OpenLineage/OpenLineage/compare/1.37.0...1.38.0) - 2025-10-01
+
+### Added
+
+* **Spec: Add subset dataset facets to spec** [`#4008`](https://github.com/OpenLineage/OpenLineage/pull/4008) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Add subset dataset facets to OpenLineage specification for representing dataset relationships.*
+* **Spec: Add DatasetQualityMetricsDatasetFacet** [`#3978`](https://github.com/OpenLineage/OpenLineage/pull/3978) [@heron--](https://github.com/heron--)
+  *Allow attaching dataset quality information outside of InputDatasetFacet.*
+* **Spark: Add support for microbatch source write** [`#4018`](https://github.com/OpenLineage/OpenLineage/pull/4018) [@tnazarew](https://github.com/tnazarew)
+  *Add support for Spark structured streaming microbatch source write operations.*
+* **Spark: Add catalog properties to catalog facet** [`#4016`](https://github.com/OpenLineage/OpenLineage/pull/4016) [@ddebowczyk92](https://github.com/ddebowczyk92)
+  *Add catalog properties support to Spark integration for better catalog metadata tracking.*
+* **Spark: Add GCP project ID and location to BigQuery Metastore catalog properties** [`#4039`](https://github.com/OpenLineage/OpenLineage/pull/4039) [@ddebowczyk92](https://github.com/ddebowczyk92)
+  *Enhance BigQuery integration with GCP project ID and location in catalog properties.*
+* **Spark: Add support for COALESCE transformation** [`#3972`](https://github.com/OpenLineage/OpenLineage/pull/3972) [@kchledowski](https://github.com/kchledowski)
+  *Add support for tracking COALESCE transformations in Spark jobs.*
+* **Spark: Add catalog facet when using vanilla Hive tables** [`#3982`](https://github.com/OpenLineage/OpenLineage/pull/3982) [@ddebowczyk92](https://github.com/ddebowczyk92)
+  *Add catalog facet support for vanilla Hive table operations.*
+* **Spark: Make output statistics available within complete event** [`#4013`](https://github.com/OpenLineage/OpenLineage/pull/4013) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Output statistics now available in complete events for better observability.*
+* **Spark: Add output stats for RDD jobs** [`#3977`](https://github.com/OpenLineage/OpenLineage/pull/3977) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Add output statistics tracking for Spark RDD-based jobs.*
+* **Java: Add equals and hashcode methods into generated classes** [`#4050`](https://github.com/OpenLineage/OpenLineage/pull/4050) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Improve generated model classes with proper equals and hashcode implementations.*
+* **dbt: Capture dbt tags** [`#4022`](https://github.com/OpenLineage/OpenLineage/pull/4022) [@mobuchowski](https://github.com/mobuchowski)
+  *Add support for capturing dbt tags in OpenLineage events.*
+* **dbt: Add dbt Cloud account ID to DbtRunRunFacet** [`#4017`](https://github.com/OpenLineage/OpenLineage/pull/4017) [@mobuchowski](https://github.com/mobuchowski)
+  *Add dbt Cloud account ID tracking to dbt run facets.*
+* **dbt: Update DbtRunRunFacet to add more useful information** [`#3987`](https://github.com/OpenLineage/OpenLineage/pull/3987) [@mobuchowski](https://github.com/mobuchowski)
+  *Enhance DbtRunRunFacet with additional metadata for better observability.*
+* **Python: Add GCP Lineage transport** [`#4006`](https://github.com/OpenLineage/OpenLineage/pull/4006) [@ddebowczyk92](https://github.com/ddebowczyk92)
+  *Add native Google Cloud Platform Lineage transport for Python client.*
+* **Python: Add fsspec support for FileTransport** [`#3983`](https://github.com/OpenLineage/OpenLineage/pull/3983) [@JDarDagran](https://github.com/JDarDagran)
+  *Add fsspec filesystem support to FileTransport for broader filesystem compatibility.*
+* **Python: Add default tags with OL client version** [`#3980`](https://github.com/OpenLineage/OpenLineage/pull/3980) [@kacpermuda](https://github.com/kacpermuda)
+  *Automatically add OpenLineage client version as default tag in events.*
+* **Airflow: Add GCP Composer facets** [`#3986`](https://github.com/OpenLineage/OpenLineage/pull/3986) [@gabrysiaolsz](https://github.com/gabrysiaolsz)
+  *Add GCP Cloud Composer environment metadata facets to Airflow integration.*
+
+### Changed
+
+* **dbt: Use alias when naming datasets** [`#4055`](https://github.com/OpenLineage/OpenLineage/pull/4055) [@mobuchowski](https://github.com/mobuchowski)
+  *Use dbt model aliases when generating dataset names for more accurate lineage.*
+* **Spark: Serialize event to JSON for logging** [`#4029`](https://github.com/OpenLineage/OpenLineage/pull/4029) [@EugeneYushin](https://github.com/EugeneYushin)
+  *Serialize OpenLineage events to JSON format for improved debug logging.*
+* **Spark: Respect overridden appName in EventEmitter** [`#4030`](https://github.com/OpenLineage/OpenLineage/pull/4030) [@EugeneYushin](https://github.com/EugeneYushin)
+  *Properly respect user-overridden application names in event emission.*
+* **Spark: Refactor CLL ExpressionDependencyCollector** [`#4003`](https://github.com/OpenLineage/OpenLineage/pull/4003) [@kchledowski](https://github.com/kchledowski)
+  *Refactor column-level lineage expression dependency collector for better maintainability.*
+* **Spark: Improve logging in IcebergInputStatisticsInputDatasetFacetBuilder** [`#3994`](https://github.com/OpenLineage/OpenLineage/pull/3994) [@JDarDagran](https://github.com/JDarDagran)
+  *Enhance logging for Iceberg input statistics collection.*
+* **Spark: Limit external getFileStatus calls when dealing with lots of S3 objects** [`#3985`](https://github.com/OpenLineage/OpenLineage/pull/3985) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Optimize S3 operations by limiting external getFileStatus calls for large object sets.*
+* **Java/Spark/Hive: Move TransformationInfo to Java client to reuse across integrations** [`#3964`](https://github.com/OpenLineage/OpenLineage/pull/3964) [@kchledowski](https://github.com/kchledowski)
+  *Refactor TransformationInfo into shared Java client for cross-integration reuse.*
+* **Python: Improve logging in AsyncHttpTransport** [`#4026`](https://github.com/OpenLineage/OpenLineage/pull/4026) [@dolfinus](https://github.com/dolfinus)
+  *Enhance logging capabilities in asynchronous HTTP transport.*
+* **Python: Allow type aliases** [`#4000`](https://github.com/OpenLineage/OpenLineage/pull/4000) [@JDarDagran](https://github.com/JDarDagran)
+  *Support Python type aliases in client code generation.*
+* **Python: Fix classes generation for almost identical classes** [`#3997`](https://github.com/OpenLineage/OpenLineage/pull/3997) [@JDarDagran](https://github.com/JDarDagran)
+  *Improve code generation to properly handle nearly identical class definitions.*
+* **Python: Raise errors if custom token provider cannot be loaded** [`#4014`](https://github.com/OpenLineage/OpenLineage/pull/4014) [@dolfinus](https://github.com/dolfinus)
+  *Fail fast with clear errors when custom token providers fail to load.*
+* **Python: Don't silence import errors in DefaultTransportFactory** [`#4015`](https://github.com/OpenLineage/OpenLineage/pull/4015) [@dolfinus](https://github.com/dolfinus)
+  *Improve error visibility by not silencing import errors in transport factory.*
+* **Python: Import from facet_v2 and event_v2 instead of generated modules** [`#3968`](https://github.com/OpenLineage/OpenLineage/pull/3968) [@kacpermuda](https://github.com/kacpermuda)
+  *Update import paths to use versioned facet and event modules.*
+* **Java: Refactor ExecutorService management in OpenLineageClientUtils** [`#4012`](https://github.com/OpenLineage/OpenLineage/pull/4012) [@JDarDagran](https://github.com/JDarDagran)
+  *Improve thread pool management in Java client utilities.*
+* **CI: Replace pre-commit with prek across CI and documentation** [`#3965`](https://github.com/OpenLineage/OpenLineage/pull/3965) [@JDarDagran](https://github.com/JDarDagran)
+  *Migrate from pre-commit to prek for pre-commit hook management.*
 
 ### Fixed
-* **Spark: Fix for TypeNotPresentExceptio/RefreshTableCommand errors in spark 3.0.2** [`#3818`] (https://github.com/OpenLineage/OpenLineage/pull/4002) [@MaciejGajewski](https://github.com/MaciejGajewski)
+
+* **Spark: Fix false Hive Glue detection** [`#4053`](https://github.com/OpenLineage/OpenLineage/pull/4053) [@jsjasonseba](https://github.com/jsjasonseba)
+  *Fix incorrect Glue catalog detection due to always attempting ARN resolution.*
+* **Spark: Fix CLL on hiveless runtimes** [`#4052`](https://github.com/OpenLineage/OpenLineage/pull/4052) [@kchledowski](https://github.com/kchledowski)
+  *Fix column-level lineage failures on Spark runtimes without spark-hive package.*
+* **Spark: Fix missing inputs and CLL on some table creation commands** [`#4031`](https://github.com/OpenLineage/OpenLineage/pull/4031) [@kchledowski](https://github.com/kchledowski)
+  *Fix missing input datasets and column-level lineage for CreateDataSourceTableAsSelect and CreateHiveTableAsSelect commands.*
+* **Spark: Rely on BQ bucket info inside BigQueryIntermediateJobFilter** [`#4044`](https://github.com/OpenLineage/OpenLineage/pull/4044) [@EugeneYushin](https://github.com/EugeneYushin)
+  *Fix BigQuery intermediate job filtering by using bucket configuration.*
+* **Spark: Fix for TypeNotPresentException/RefreshTableCommand errors in Spark 3.0.2** [`#4002`](https://github.com/OpenLineage/OpenLineage/pull/4002) [@MaciejGajewski](https://github.com/MaciejGajewski)
+  *Add additional exception handling for TypeNotPresentException in Spark 3.0.2.*
+* **Python: Fix license field in pyproject.toml when using build module** [`#4034`](https://github.com/OpenLineage/OpenLineage/pull/4034) [@JDarDagran](https://github.com/JDarDagran)
+  *Correct license field specification in Python package metadata.*
+* **Python: Accept both apikey and api_key in token provider** [`#4045`](https://github.com/OpenLineage/OpenLineage/pull/4045) [@kacpermuda](https://github.com/kacpermuda)
+  *Support both naming conventions for API key configuration parameter.*
+* **Java: Fix empty sources jar generation** [`#4037`](https://github.com/OpenLineage/OpenLineage/pull/4037) [@EugeneYushin](https://github.com/EugeneYushin)
+  *Fix build issue causing empty sources JAR files to be generated.*
 
 ## [1.37.0](https://github.com/OpenLineage/OpenLineage/compare/1.36.0...1.37.0) - 2025-08-11
 
