@@ -3,11 +3,11 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +23,7 @@ import scala.collection.Seq;
 
 /** Custom visitor for `MERGE INTO TABLE` implementation of Iceberg provider. */
 @Slf4j
-public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVisitor {
+public class IcebergMergeIntoVisitor implements OperatorVisitor {
 
   // https://github.com/apache/iceberg/blob/apache-iceberg-0.13.1/spark/v3.2/spark-extensions/src/main/scala/org/apache/spark/sql/catalyst/plans/logical/MergeRows.scala
   // https://github.com/apache/iceberg/blob/apache-iceberg-1.3.0/spark/v3.4/spark-extensions/src/main/scala/org/apache/spark/sql/catalyst/plans/logical/MergeRows.scala
@@ -37,16 +37,16 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
   public static final String NOT_MATCHED_OUTPUTS = "notMatchedOutputs";
 
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
+  public boolean isDefinedAt(LogicalPlan operator) {
     return Arrays.asList(MERGE_INTO_CLASS_NAME, MERGE_ROWS_CLASS_NAME)
-        .contains(plan.getClass().getCanonicalName());
+        .contains(operator.getClass().getCanonicalName());
   }
 
   @Override
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-  public void apply(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
     try {
-      String nodeClass = node.getClass().getCanonicalName();
+      String nodeClass = operator.getClass().getCanonicalName();
       if (MERGE_ROWS_CLASS_NAME.equals(nodeClass)) {
         Class mergeRows = Class.forName(MERGE_ROWS_CLASS_NAME);
 
@@ -62,7 +62,7 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
         }
 
         boolean isNewerImplementation =
-            Optional.of((Seq<Seq<Object>>) mergeRows.getMethod(MATCHED_OUTPUTS).invoke(node))
+            Optional.of((Seq<Seq<Object>>) mergeRows.getMethod(MATCHED_OUTPUTS).invoke(operator))
                 .filter(seq -> seq.size() > 0)
                 .map(seq -> seq.apply(0))
                 .filter(seq -> seq.size() > 0)
@@ -77,18 +77,18 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
         if (isNewerImplementation) {
           // newer version
           Seq<Seq<Seq<Expression>>> matched =
-              (Seq<Seq<Seq<Expression>>>) mergeRows.getMethod(MATCHED_OUTPUTS).invoke(node);
+              (Seq<Seq<Seq<Expression>>>) mergeRows.getMethod(MATCHED_OUTPUTS).invoke(operator);
           Seq<Seq<Expression>> notMatched =
-              (Seq<Seq<Expression>>) mergeRows.getMethod(NOT_MATCHED_OUTPUTS).invoke(node);
+              (Seq<Seq<Expression>>) mergeRows.getMethod(NOT_MATCHED_OUTPUTS).invoke(operator);
 
           collect(
-              node.output(),
+              operator.output(),
               fromSeqNestedThreeTimes(matched).get(0),
               fromSeqNestedTwice(notMatched),
               builder);
           if (matched.size() > 1) {
             collect(
-                node.output(),
+                operator.output(),
                 fromSeqNestedThreeTimes(matched).get(1),
                 fromSeqNestedTwice(notMatched),
                 builder);
@@ -96,17 +96,20 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
         } else {
           // older version
           Seq<Seq<Expression>> matched =
-              (Seq<Seq<Expression>>) mergeRows.getMethod(MATCHED_OUTPUTS).invoke(node);
+              (Seq<Seq<Expression>>) mergeRows.getMethod(MATCHED_OUTPUTS).invoke(operator);
           Seq<Seq<Expression>> notMatched =
-              (Seq<Seq<Expression>>) mergeRows.getMethod(NOT_MATCHED_OUTPUTS).invoke(node);
+              (Seq<Seq<Expression>>) mergeRows.getMethod(NOT_MATCHED_OUTPUTS).invoke(operator);
           collect(
-              node.output(), fromSeqNestedTwice(matched), fromSeqNestedTwice(notMatched), builder);
+              operator.output(),
+              fromSeqNestedTwice(matched),
+              fromSeqNestedTwice(notMatched),
+              builder);
         }
       } else if (MERGE_INTO_CLASS_NAME.equals(nodeClass)) {
         Class mergeInto = Class.forName("org.apache.spark.sql.catalyst.plans.logical.MergeInto");
         Class mergeIntoParamsClass =
             Class.forName("org.apache.spark.sql.catalyst.plans.logical.MergeIntoParams");
-        Object mergeIntoParams = mergeInto.getMethod("mergeIntoProcessor").invoke(node);
+        Object mergeIntoParams = mergeInto.getMethod("mergeIntoProcessor").invoke(operator);
 
         Seq<Option<Seq<Expression>>> matched =
             (Seq<Option<Seq<Expression>>>)
@@ -116,7 +119,7 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
                 mergeIntoParamsClass.getMethod(NOT_MATCHED_OUTPUTS).invoke(mergeIntoParams);
 
         collect(
-            node.output(),
+            operator.output(),
             ScalaConversionUtils.<Option<Seq<Expression>>>fromSeq(matched).stream()
                 .filter(Option::isDefined)
                 .map(Option::get)
@@ -153,8 +156,8 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
                   .filter(expr -> expr instanceof NamedExpression)
                   .forEach(
                       expr ->
-                          ExpressionDependencyCollector.traverseExpression(
-                              expr, output[position].exprId(), builder));
+                          ExpressionTraverser.of(expr, output[position].exprId(), builder)
+                              .traverse());
 
               notMatched.stream()
                   .filter(exprs -> exprs.size() > position)
@@ -162,8 +165,8 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
                   .filter(expr -> expr instanceof NamedExpression)
                   .forEach(
                       expr ->
-                          ExpressionDependencyCollector.traverseExpression(
-                              expr, output[position].exprId(), builder));
+                          ExpressionTraverser.of(expr, output[position].exprId(), builder)
+                              .traverse());
             });
   }
 

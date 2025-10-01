@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,9 +26,9 @@ import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
 import org.junit.jupiter.api.Test;
 
-class UnionFieldDependencyCollectorTest {
+class UnionVisitorTest {
 
-  UnionDependencyVisitor visitor = new UnionDependencyVisitor();
+  UnionVisitor visitor = new UnionVisitor();
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
   ExprId exprId1 = mock(ExprId.class);

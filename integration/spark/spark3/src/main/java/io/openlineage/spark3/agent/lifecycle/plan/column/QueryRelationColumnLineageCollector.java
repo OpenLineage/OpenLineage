@@ -5,6 +5,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.sql.ColumnLineage;
@@ -69,13 +70,13 @@ public class QueryRelationColumnLineageCollector {
   }
 
   public static void extractExpressionsFromQuery(
-      ColumnLevelLineageContext context, LogicalPlan node) {
+      ColumnLevelLineageBuilder builder, LogicalPlan node) {
     extractExpressionsFromQuery(
-        context, (DataSourceV2Relation) node, ScalaConversionUtils.fromSeq(node.output()));
+        builder, (DataSourceV2Relation) node, ScalaConversionUtils.fromSeq(node.output()));
   }
 
   public static void extractExpressionsFromQuery(
-      ColumnLevelLineageContext context, DataSourceV2Relation relation, List<Attribute> output) {
+      ColumnLevelLineageBuilder builder, DataSourceV2Relation relation, List<Attribute> output) {
     String namespace = relation.table().properties().get("openlineage.dataset.namespace");
     String query = relation.table().properties().get("openlineage.dataset.query");
     Optional<SqlMeta> optionalSqlMeta =
@@ -86,18 +87,14 @@ public class QueryRelationColumnLineageCollector {
                 .forEach(
                     p -> {
                       ExprId descendantId = getDescendantId(output, p.descendant());
-                      context.getBuilder().addExternalMapping(p.descendant(), descendantId);
+                      builder.addExternalMapping(p.descendant(), descendantId);
 
                       p.lineage()
-                          .forEach(
-                              e ->
-                                  context
-                                      .getBuilder()
-                                      .addExternalMapping(e, NamedExpression.newExprId()));
+                          .forEach(e -> builder.addExternalMapping(e, NamedExpression.newExprId()));
                       if (!p.lineage().isEmpty()) {
                         p.lineage().stream()
-                            .map(context.getBuilder()::getMapping)
-                            .forEach(eid -> context.getBuilder().addDependency(descendantId, eid));
+                            .map(builder::getMapping)
+                            .forEach(eid -> builder.addDependency(descendantId, eid));
                       }
                     }));
   }

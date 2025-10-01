@@ -3,11 +3,11 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,25 +19,25 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Union;
 
 /**
- * Extracts expression dependencies from UNION node in {@link LogicalPlan}. Example query 'SELECT *
- * FROM local.db.t1 UNION SELECT * FROM local.db.t2'. Custom visitor is required because of
- * transpose operation on unioned datasets within Spark's plan:
+ * Extracts expression dependencies from UNION operator in {@link LogicalPlan}. Example query
+ * 'SELECT * FROM local.db.t1 UNION SELECT * FROM local.db.t2'. Custom visitor is required because
+ * of transpose operation on unioned datasets within Spark's plan:
  *
  * @see <a
  *     href="https://github.com/apache/spark/blob/v3.2.1/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/plans/logical/basicLogicalOperators.scala#L306">Spark
  *     code</a>
  */
 @Slf4j
-public class UnionDependencyVisitor implements ExpressionDependencyVisitor {
+public class UnionVisitor implements OperatorVisitor {
 
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
-    return plan instanceof Union;
+  public boolean isDefinedAt(LogicalPlan operator) {
+    return operator instanceof Union;
   }
 
   @Override
-  public void apply(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    Union union = (Union) plan;
+  public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
+    Union union = (Union) operator;
 
     // implement in Java code equivalent to Scala 'children.map(_.output).transpose.map { attrs =>'
     List<LogicalPlan> children = ScalaConversionUtils.<LogicalPlan>fromSeq(union.children());
@@ -56,10 +56,7 @@ public class UnionDependencyVisitor implements ExpressionDependencyVisitor {
               ExprId firstExpr = childrenAttributes.get(0).get(position).exprId();
               IntStream.range(1, children.size())
                   .mapToObj(childIndex -> childrenAttributes.get(childIndex).get(position))
-                  .forEach(
-                      attr ->
-                          ExpressionDependencyCollector.traverseExpression(
-                              attr, firstExpr, builder));
+                  .forEach(attr -> ExpressionTraverser.of(attr, firstExpr, builder).traverse());
             });
   }
 }
