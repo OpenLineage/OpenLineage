@@ -18,7 +18,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -162,22 +161,20 @@ public class DatasetReducer {
     // one with each other
     List<ReducedDataset> reducedDatasets = new ArrayList<>();
     for (List<ReducedDataset> sameNameList : toReduce.values()) {
-      AtomicBoolean reducedSomething = new AtomicBoolean(true);
+      Boolean reducedSomething = true;
 
       // repeat as long as we reduce something
-      while (reducedSomething.get()) {
-        reducedSomething.set(false);
+      while (reducedSomething) {
+        reducedSomething = false;
         ListIterator<ReducedDataset> iterator = sameNameList.listIterator();
         while (iterator.hasNext()) {
           ReducedDataset r1 = iterator.next();
           while (iterator.hasNext()) {
             ReducedDataset r2 = iterator.next();
-            r1.reduce(r2)
-                .ifPresent(
-                    r -> {
-                      iterator.remove();
-                      reducedSomething.set(true);
-                    });
+            if (r1.reduce(r2).isPresent()) {
+              iterator.remove();
+              reducedSomething = true;
+            }
           }
         }
       }

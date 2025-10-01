@@ -37,11 +37,14 @@ public class DateTrimmer implements DatasetNameTrimmer {
 
   @Override
   public boolean canTrim(String name) {
-    String lastDir = getLastPart(name);
+    if (!hasMultipleDirectories(name)) {
+      return false;
+    }
+    String lastPart = getLastPart(name);
     for (Entry<String, Pattern> entry : DATE_FORMATS_AND_REGEX_MAP.entrySet()) {
       String format = entry.getKey();
       Pattern pattern = entry.getValue();
-      Matcher matcher = pattern.matcher(lastDir);
+      Matcher matcher = pattern.matcher(lastPart);
 
       // find all pattern matches
       while (matcher.find()) {
@@ -52,7 +55,7 @@ public class DateTrimmer implements DatasetNameTrimmer {
           LocalDate.parse(candidate, formatter);
 
           // date has been found
-          return lastDir
+          return lastPart
               .replaceFirst(candidate, "")
               .replaceFirst("T", "")
               .replaceFirst("Z", "")

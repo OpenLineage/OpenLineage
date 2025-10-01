@@ -41,6 +41,22 @@ public interface DatasetNameTrimmer {
   }
 
   /**
+   * Checks if a name has more than one part when split by a slash separator.
+   *
+   * @param name
+   * @return
+   */
+  default boolean hasMultipleDirectories(String name) {
+    if (name == null || !name.contains(SEPARATOR)) {
+      return false;
+    }
+    if (name.startsWith("/")) {
+      return name.substring(1).split(SEPARATOR).length > 1;
+    }
+    return name.split(SEPARATOR).length > 1;
+  }
+
+  /**
    * /** Removes the last part from the dataset name.
    *
    * @param name dataset name

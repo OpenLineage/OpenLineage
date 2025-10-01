@@ -24,4 +24,10 @@ class KeyValueTrimmerTest {
     // don't normalize if more than one equality character detected
     assertThat(trimmer.canTrim("/tmp/a=b=c")).isFalse();
   }
+
+  @Test
+  void testDoesNotTrimWholeName() {
+    assertThat(trimmer.canTrim("key=value")).isFalse();
+    assertThat(trimmer.canTrim("/key=value")).isFalse();
+  }
 }

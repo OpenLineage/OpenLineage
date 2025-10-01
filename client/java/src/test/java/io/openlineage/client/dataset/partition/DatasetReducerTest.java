@@ -18,6 +18,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class DatasetReducerTest {
 
@@ -260,5 +262,19 @@ class DatasetReducerTest {
                 .build())
         .inputFacets(openLineage.newInputDatasetInputFacetsBuilder().build())
         .build();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"some_table_20250923", "20250722T0901Z", "202504"})
+  void testDatasetsWhichShouldNotBeTrimmed(String datasetName) {
+    inputs.clear();
+    inputs.add(inputFactory(datasetName));
+
+    List<String> names =
+        reducer.reduceInputs(inputs).stream()
+            .map(InputDataset::getName)
+            .collect(Collectors.toList());
+
+    assertThat(names).containsExactly(datasetName);
   }
 }

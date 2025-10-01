@@ -20,4 +20,10 @@ class YearMontTrimmerTest {
     // this is not a valid year month
     assertThat(trimmer.trim("/tmp/202540")).isEqualTo("/tmp/202540");
   }
+
+  @Test
+  void testDoesNotTrimWholeName() {
+    assertThat(trimmer.canTrim("202507")).isFalse();
+    assertThat(trimmer.canTrim("/202507")).isFalse();
+  }
 }

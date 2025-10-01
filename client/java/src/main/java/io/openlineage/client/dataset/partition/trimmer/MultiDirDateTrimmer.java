@@ -21,7 +21,12 @@ public class MultiDirDateTrimmer implements DatasetNameTrimmer {
 
   @Override
   public boolean canTrim(String name) {
-    String[] dirs = name.split(DatasetNameTrimmer.SEPARATOR);
+    String[] dirs;
+    if (name.startsWith("/")) {
+      dirs = name.substring(1).split(SEPARATOR);
+    } else {
+      dirs = name.split(DatasetNameTrimmer.SEPARATOR);
+    }
     return isMultiDirYearMonth(dirs) || isMultiDirDate(dirs);
   }
 
@@ -50,7 +55,7 @@ public class MultiDirDateTrimmer implements DatasetNameTrimmer {
 
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private boolean isMultiDirYearMonth(String... dirs) {
-    if (dirs.length < 2) {
+    if (dirs.length < 3) {
       return false;
     }
 
@@ -68,14 +73,14 @@ public class MultiDirDateTrimmer implements DatasetNameTrimmer {
 
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private boolean isMultiDirDate(String... dirs) {
-    if (dirs.length < 3) {
+    if (dirs.length < 4) {
       return false;
     }
 
     // get three last parts and verify if they're a date
-    String lastTwoParts = dirs[dirs.length - 3] + dirs[dirs.length - 2] + dirs[dirs.length - 1];
+    String lastThreeParts = dirs[dirs.length - 3] + dirs[dirs.length - 2] + dirs[dirs.length - 1];
     try {
-      LocalDate.parse(lastTwoParts, dateFormatter);
+      LocalDate.parse(lastThreeParts, dateFormatter);
       return true;
     } catch (DateTimeParseException e) {
       // do nothing

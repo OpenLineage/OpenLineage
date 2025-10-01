@@ -28,8 +28,10 @@ public class YearMonthTrimmer implements DatasetNameTrimmer {
 
   @Override
   public boolean canTrim(String name) {
+    if (!hasMultipleDirectories(name)) {
+      return false;
+    }
     String lastPart = getLastPart(name);
-
     for (DateTimeFormatter formatter : FORMATTERS) {
       try {
         // parseStrict ensures invalid dates (like 2025-13) fail

@@ -11,6 +11,9 @@ public class KeyValueTrimmer implements DatasetNameTrimmer {
 
   @Override
   public boolean canTrim(String name) {
+    if (!hasMultipleDirectories(name)) {
+      return false;
+    }
     String lastPart = getLastPart(name);
 
     return lastPart.indexOf(EQUALITY_SIGN) != -1

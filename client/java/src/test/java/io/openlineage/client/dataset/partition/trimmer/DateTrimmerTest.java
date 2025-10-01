@@ -30,4 +30,10 @@ class DateTrimmerTest {
     assertThat(trimmer.canTrim("/tmp/20122321")).isFalse();
     assertThat(trimmer.canTrim("/tmp/dataset_20122321")).isFalse();
   }
+
+  @Test
+  void testDoesNotTrimWholeName() {
+    assertThat(trimmer.canTrim("20250721")).isFalse();
+    assertThat(trimmer.canTrim("/20250721")).isFalse();
+  }
 }
