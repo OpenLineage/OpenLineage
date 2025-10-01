@@ -23,6 +23,7 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
+import io.openlineage.client.dataset.partition.DatasetReducer;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
@@ -264,6 +265,11 @@ class OpenLineageRunEventBuilder {
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
+    datasets =
+        new DatasetReducer(
+                openLineageContext.getOpenLineage(),
+                openLineageContext.getOpenLineageConfig().getDatasetConfig())
+            .reduceInputs(datasets);
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     openLineageContext.getVisitedNodes().clearVisitedNodes();
     if (!datasets.isEmpty()) {
@@ -346,6 +352,11 @@ class OpenLineageRunEventBuilder {
                     .map(Collection::stream)
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
+    datasets =
+        new DatasetReducer(
+                openLineageContext.getOpenLineage(),
+                openLineageContext.getOpenLineageConfig().getDatasetConfig())
+            .reduceOutputs(datasets);
 
     OpenLineage openLineage = openLineageContext.getOpenLineage();
 
