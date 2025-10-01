@@ -16,6 +16,7 @@ class YearMontTrimmerTest {
   void testTrim() {
     assertThat(trimmer.trim("/tmp/202507")).isEqualTo("/tmp");
     assertThat(trimmer.trim("/tmp/2025-07")).isEqualTo("/tmp");
+    assertThat(trimmer.trim("tmp/2025-07")).isEqualTo("tmp");
 
     // this is not a valid year month
     assertThat(trimmer.trim("/tmp/202540")).isEqualTo("/tmp/202540");

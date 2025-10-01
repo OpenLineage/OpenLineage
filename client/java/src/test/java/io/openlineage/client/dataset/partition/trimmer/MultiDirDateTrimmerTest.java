@@ -19,6 +19,7 @@ class MultiDirDateTrimmerTest {
 
     assertThat(trimmer.canTrim("/tmp/2025/07")).isTrue();
     assertThat(trimmer.trim("/tmp/2025/07")).isEqualTo("/tmp");
+    assertThat(trimmer.trim("tmp/2025/07")).isEqualTo("tmp");
 
     assertThat(trimmer.canTrim("/tmp/2025/07/21")).isTrue();
     assertThat(trimmer.trim("/tmp/2025/07/21")).isEqualTo("/tmp");

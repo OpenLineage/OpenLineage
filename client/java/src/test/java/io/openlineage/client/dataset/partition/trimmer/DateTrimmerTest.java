@@ -16,6 +16,7 @@ class DateTrimmerTest {
   void testTrim() {
     assertThat(trimmer.canTrim("/tmp/20250721")).isTrue();
     assertThat(trimmer.trim("/tmp/20250721")).isEqualTo("/tmp");
+    assertThat(trimmer.trim("tmp/20250721")).isEqualTo("tmp");
 
     // non trivial pattern that should be considered date alike
     assertThat(trimmer.canTrim("/tmp/20250722T0901Z")).isTrue();
