@@ -8,7 +8,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "1.38.0"
+__version__ = "1.39.0"
 
 requirements = [
     "tqdm>=4.62.0",
