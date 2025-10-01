@@ -18,7 +18,7 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
-import io.openlineage.sql.SqlMeta;
+import shaded.io.openlineage.sql.SqlMeta;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;

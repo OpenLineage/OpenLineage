@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.sql;
+package shaded.io.openlineage.sql;
 
 import java.util.Arrays;
 import java.util.List;

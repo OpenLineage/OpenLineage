@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.sql;
+package shaded.io.openlineage.sql;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +76,7 @@ public final class OpenLineageSql {
   public static Optional<String> loadError = Optional.empty();
 
   private static void loadNativeLibrary(String libName) throws IOException {
-    String fullName = "io/openlineage/sql/" + libName;
+    String fullName = "shaded/io/openlineage/sql/" + libName;
 
     URL url = OpenLineageSql.class.getResource("/" + fullName);
     if (url == null) {
