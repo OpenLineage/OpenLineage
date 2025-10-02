@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
+import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -20,6 +21,7 @@ import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -182,6 +184,18 @@ class ColumnLevelLineageBuilderTest {
     builder.addInput(exprId, identifier, "a");
 
     assertEquals(1, builder.getInputs().get(exprId).size());
+  }
+
+  @Test
+  void testAddInputAppliesDatasetTrimmingLogic() {
+    ExprId exprId = mock(ExprId.class);
+    DatasetIdentifier identifier = new DatasetIdentifier("/tmp/key=value", "namespace");
+
+    context.getOpenLineageConfig().setDatasetConfig(new DatasetConfig());
+    builder.addInput(exprId, identifier, "a");
+
+    Optional<Input> input = builder.getInputs().get(exprId).stream().findFirst();
+    assertThat(input).get().extracting("datasetIdentifier").extracting("name").isEqualTo("/tmp");
   }
 
   @ParameterizedTest
