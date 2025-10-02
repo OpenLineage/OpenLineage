@@ -31,6 +31,11 @@ public class DatabricksUtils {
     return conf.contains(SPARK_DATABRICKS_WORKSPACE_URL);
   }
 
+  public static boolean isDatabricksUnityCatalogEnabled(SparkConf conf) {
+    return isRunOnDatabricksPlatform(conf)
+        && "true".equals(conf.get("spark.databricks.unityCatalog.enabled", "false"));
+  }
+
   public static Optional<String> getWorkspaceUrl(OpenLineageContext context) {
     return context
         .getSparkSession()

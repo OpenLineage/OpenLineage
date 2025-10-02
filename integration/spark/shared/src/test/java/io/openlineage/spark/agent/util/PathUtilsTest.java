@@ -339,6 +339,37 @@ class PathUtilsTest {
   }
 
   @Test
+  void testFromCatalogWithDatabricksUnityCatalog() throws URISyntaxException {
+    sparkConf.set("spark.databricks.workspaceUrl", "https://databricks-workspace.example.com");
+    sparkConf.set("spark.databricks.unityCatalog.enabled", "true");
+
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
+    when(tableIdentifier.table()).thenReturn("mytable");
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(
+            Option.apply(
+                new URI(
+                    "s3://bucket/5087cc52-ff07-4f8c-9580-0d4a962b4585/tables/1252e580-77ab-4b0c-a1a2-c3ff9acae0a3")));
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue(
+            "name",
+            "5087cc52-ff07-4f8c-9580-0d4a962b4585/tables/1252e580-77ab-4b0c-a1a2-c3ff9acae0a3")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "database.mytable")
+        .hasFieldOrPropertyWithValue(
+            "namespace", "s3://bucket/5087cc52-ff07-4f8c-9580-0d4a962b4585/tables")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+  }
+
+  @Test
   void testFromCatalogWithDefaultStorage() throws URISyntaxException {
     when(catalogStorageFormat.locationUri())
         .thenReturn(Option.apply(new URI("hdfs://namenode:8020/warehouse/database.db/table")));
