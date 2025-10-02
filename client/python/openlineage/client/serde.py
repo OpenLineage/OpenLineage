@@ -4,18 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from enum import Enum
 from typing import Any, cast
 
 import attr
 
 log = logging.getLogger(__name__)
-
-try:
-    import numpy
-except ImportError:
-    log.warning("ImportError occurred when trying to import numpy module.")
 
 
 class Serde:
@@ -39,7 +33,7 @@ class Serde:
             )
 
         # Pandas can use numpy.int64 object
-        if "numpy" in sys.modules and isinstance(obj, numpy.int64):
+        if getattr(getattr(obj, "__class__", None), "__name__", None) == "int64":
             return int(obj)
         return obj
 
