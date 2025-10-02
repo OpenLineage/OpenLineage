@@ -10,6 +10,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.dataset.partition.trimmer.DatasetNameTrimmer;
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -48,7 +49,10 @@ class ReducedDataset {
 
   private ReducedDataset(DatasetConfig config, Dataset dataset) {
     this.trimmers = config.getDatasetNameTrimmers();
-    this.trimmedDatasetName = trimDatasetName(dataset.getName());
+    this.trimmedDatasetName =
+        new DatasetIdentifier(dataset.getName(), dataset.getNamespace())
+            .withTrimmedName(trimmers)
+            .getName();
     this.nonTrimmedNames = new ArrayList<>();
     if (!Objects.equals(trimmedDatasetName, dataset.getName())) {
       // reduced names are different from trimmed name -> add it
@@ -79,29 +83,6 @@ class ReducedDataset {
     // non-trimmed names
     nonTrimmedNames.addAll(other.nonTrimmedNames);
     return Optional.of(this);
-  }
-
-  /**
-   * Trims name based on config
-   *
-   * @return
-   */
-  private String trimDatasetName(String name) {
-    String result = name;
-    boolean continueTrimming = true;
-
-    while (continueTrimming) {
-      continueTrimming = false;
-      for (DatasetNameTrimmer trimmer : trimmers) {
-        if (trimmer.canTrim(result)) {
-          result = trimmer.trim(result);
-          continueTrimming = true;
-        }
-      }
-    }
-
-    // looks like trimmed everything, not intended -> return original
-    return result;
   }
 
   private boolean hasSameFacets(ReducedDataset other) {

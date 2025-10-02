@@ -12,10 +12,14 @@ import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalBuilder;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.dataset.DatasetConfig;
+import io.openlineage.client.dataset.partition.trimmer.DatasetNameTrimmer;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.sql.ColumnMeta;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,7 +77,16 @@ public class ColumnLevelLineageBuilder {
    */
   public void addInput(ExprId exprId, DatasetIdentifier datasetIdentifier, String attributeName) {
     inputs.computeIfAbsent(exprId, k -> new HashSet<>());
-    inputs.get(exprId).add(new Input(datasetIdentifier, attributeName));
+
+    // apply dataset name trimming logic
+    Collection<DatasetNameTrimmer> nameTrimmers =
+        Optional.of(context.getOpenLineageConfig())
+            .map(SparkOpenLineageConfig::getDatasetConfig)
+            .map(DatasetConfig::getDatasetNameTrimmers)
+            .orElse(Collections.emptyList());
+    inputs
+        .get(exprId)
+        .add(new Input(datasetIdentifier.withTrimmedName(nameTrimmers), attributeName));
   }
 
   /**
