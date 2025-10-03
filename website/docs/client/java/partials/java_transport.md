@@ -180,9 +180,10 @@ Anonymous connection:
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpTransport;
+import java.net.URI;
 
 HttpConfig httpConfig = new HttpConfig();
-httpConfig.setUrl("http://localhost:5000");
+httpConfig.setUrl(new URI("http://localhost:5000"));
 
 OpenLineageClient client = OpenLineageClient.builder()
   .transport(
@@ -197,12 +198,13 @@ import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.transports.ApiKeyTokenProvider;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpTransport;
+import java.net.URI;
 
 ApiKeyTokenProvider apiKeyTokenProvider = new ApiKeyTokenProvider();
 apiKeyTokenProvider.setApiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5");
 
 HttpConfig httpConfig = new HttpConfig();
-httpConfig.setUrl("http://localhost:5000");
+httpConfig.setUrl(new URI("http://localhost:5000"));
 httpConfig.setAuth(apiKeyTokenProvider);
 
 OpenLineageClient client = OpenLineageClient.builder()
@@ -220,6 +222,7 @@ import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.transports.ApiKeyTokenProvider;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpTransport;
+import java.net.URI;
 
 Map<String, String> queryParams = Map.of(
     "param0", "value0",
@@ -234,7 +237,7 @@ ApiKeyTokenProvider apiKeyTokenProvider = new ApiKeyTokenProvider();
 apiKeyTokenProvider.setApiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5");
 
 HttpConfig httpConfig = new HttpConfig();
-httpConfig.setUrl("http://localhost:5000");
+httpConfig.setUrl(new URI("http://localhost:5000"));
 httpConfig.setEndpoint("/api/v1/lineage");
 httpConfig.setUrlParams(queryParams);
 httpConfig.setAuth(apiKeyTokenProvider);
@@ -627,9 +630,10 @@ import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.transports.KafkaTransport;
+import java.net.URI;
 
 HttpConfig httpConfig = new HttpConfig();
-httpConfig.setUrl("http://example.com/api");
+httpConfig.setUrl(new URI("http://example.com/api"));
 KafkaConfig kafkaConfig = new KafkaConfig();
 KafkaConfig.setTopicName("openlineage.events");
 KafkaConfig.setMessageKey("some-key");
