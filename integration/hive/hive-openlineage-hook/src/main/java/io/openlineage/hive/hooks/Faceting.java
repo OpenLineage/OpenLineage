@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -293,7 +294,7 @@ public class Faceting {
     return schemaFacet;
   }
 
-  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(
+  public static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(
       OpenLineageContext olContext) {
     return olContext
         .getOpenLineage()
@@ -304,18 +305,18 @@ public class Faceting {
         .build();
   }
 
-  private static HivePropertiesFacet getHivePropertiesFacet(OpenLineageContext olContext) {
+  public static HivePropertiesFacet getHivePropertiesFacet(OpenLineageContext olContext) {
     return new HivePropertiesFacetBuilder(olContext.getHookContext().getConf()).build();
   }
 
-  private static HiveQueryInfoFacet getHiveQueryInfoFacet(OpenLineageContext olContext) {
+  public static HiveQueryInfoFacet getHiveQueryInfoFacet(OpenLineageContext olContext) {
     HookContext hookContext = olContext.getHookContext();
     return new HiveQueryInfoFacet()
         .setQueryId(hookContext.getQueryState().getQueryId())
         .setOperationName(hookContext.getOperationName());
   }
 
-  private static HiveSessionInfoFacet getHiveSessionInfoFacet(OpenLineageContext olContext) {
+  public static HiveSessionInfoFacet getHiveSessionInfoFacet(OpenLineageContext olContext) {
     HookContext hookContext = olContext.getHookContext();
     HiveSessionInfoFacet result =
         new HiveSessionInfoFacet()
@@ -344,6 +345,7 @@ public class Faceting {
             .facets(
                 ol.newRunFacetsBuilder()
                     .processing_engine(getProcessingEngineFacet(olContext))
+                    .parent(getParentRunFacet(olContext))
                     .put("hive_query", getHiveQueryInfoFacet(olContext))
                     .put("hive_session", getHiveSessionInfoFacet(olContext))
                     .put("hive_properties", getHivePropertiesFacet(olContext))
@@ -372,7 +374,27 @@ public class Faceting {
         .build();
   }
 
-  private static OpenLineage.SQLJobFacet getSQLJobFacet(OpenLineageContext olContext) {
+  public static OpenLineage.ParentRunFacet getParentRunFacet(OpenLineageContext olContext) {
+    Optional<UUID> uuid = convertToUUID(olContext.getOpenLineageConfig().getParentRunId());
+    if (!uuid.isPresent()
+        || olContext.getOpenLineageConfig().getParentJobName() == null
+        || olContext.getOpenLineageConfig().getParentJobNamespace() == null) {
+      return null;
+    }
+    return olContext
+        .getOpenLineage()
+        .newParentRunFacetBuilder()
+        .run(olContext.getOpenLineage().newParentRunFacetRun(uuid.get()))
+        .job(
+            olContext
+                .getOpenLineage()
+                .newParentRunFacetJob(
+                    olContext.getOpenLineageConfig().getParentJobNamespace(),
+                    olContext.getOpenLineageConfig().getParentJobName()))
+        .build();
+  }
+
+  public static OpenLineage.SQLJobFacet getSQLJobFacet(OpenLineageContext olContext) {
     return olContext
         .getOpenLineage()
         .newSQLJobFacetBuilder()
@@ -381,7 +403,7 @@ public class Faceting {
         .build();
   }
 
-  private static OpenLineage.JobTypeJobFacet getJobTypeFacet(OpenLineageContext olContext) {
+  public static OpenLineage.JobTypeJobFacet getJobTypeFacet(OpenLineageContext olContext) {
     return olContext
         .getOpenLineage()
         .newJobTypeJobFacetBuilder()
@@ -394,5 +416,13 @@ public class Faceting {
   private static String generateJobName(
       String jobName, List<InputDataset> inputDatasets, List<OutputDataset> outputDatasets) {
     return String.format("%s.%s", jobName.toLowerCase(), outputDatasets.get(0).getName());
+  }
+
+  private static Optional<UUID> convertToUUID(String uuid) {
+    try {
+      return Optional.ofNullable(uuid).map(UUID::fromString);
+    } catch (Exception e) {
+      return Optional.empty();
+    }
   }
 }
