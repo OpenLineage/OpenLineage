@@ -351,7 +351,7 @@ public class Faceting {
 
     List<InputDataset> inputDatasets = getInputDatasets(olContext);
     List<OutputDataset> outputDatasets = getOutputDatasets(olContext, inputDatasets);
-    String jobName = generateJobName(emitter.getJobName(), inputDatasets, outputDatasets);
+    String jobName = generateJobName(emitter.getJobName().getName(), inputDatasets, outputDatasets);
     return ol.newRunEventBuilder()
         .eventType(olContext.getEventType())
         .eventTime(olContext.getEventTime())

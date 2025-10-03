@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.job.Naming;
 import io.openlineage.hive.api.OpenLineageContext;
 import java.util.UUID;
 import lombok.Getter;
@@ -22,7 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 public class EventEmitter implements AutoCloseable {
   private final OpenLineageClient client;
   private final UUID runId;
-  private final String jobName;
+  private final Naming.Hive jobName;
   private final String jobNamespace;
 
   public EventEmitter(OpenLineageContext olContext) {
@@ -30,7 +31,8 @@ public class EventEmitter implements AutoCloseable {
     this.client = Clients.newClient(olContext.getOpenLineageConfig());
     this.runId = generateNewUUID();
     this.jobNamespace = conf.get(HiveOpenLineageConfigParser.NAMESPACE_KEY, "default");
-    this.jobName = conf.get(HiveOpenLineageConfigParser.JOB_NAME_KEY, getJobName(olContext));
+    this.jobName =
+        new Naming.Hive(conf.get(HiveOpenLineageConfigParser.JOB_NAME_KEY, getJobName(olContext)));
   }
 
   public void emit(RunEvent event) {
@@ -43,7 +45,7 @@ public class EventEmitter implements AutoCloseable {
     }
   }
 
-  public static String getJobName(OpenLineageContext olContext) {
+  private static String getJobName(OpenLineageContext olContext) {
     return olContext.getHookContext().getOperationName();
   }
 
