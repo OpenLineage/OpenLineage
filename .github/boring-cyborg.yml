@@ -19,8 +19,6 @@ labelPRBasedOnFilePath:
     - integration/airflow/**/*
   area:integration/common:
     - integration/common/**/*
-  area:integration/dagster:
-    - integration/dagster/**/*
   area:integration/dbt:
     - integration/dbt/**/*
   area:integration/flink:

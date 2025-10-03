@@ -55,7 +55,6 @@ The OpenLineage repository contains integrations with several systems.
 | ----| ------------------ | -------------------- |
 |[Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)| :white_check_mark: | :white_check_mark:<sup>1</sup> |
 |[Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)| :white_check_mark: | :white_check_mark:<sup>2</sup> |
-|[Dagster](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster)| :white_check_mark: | :x: |
 |[dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt) |:white_check_mark: | :white_check_mark: |
 |[Flink](https://github.com/OpenLineage/OpenLineage/tree/main/integration/flink)|:white_check_mark: | :x: |
 

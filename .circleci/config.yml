@@ -14,7 +14,7 @@ parameters:
   integration-type:
     type: enum
     default: "*"
-    enum: ["*", "airflow", "dagster", "dbt", "publish", "python"]
+    enum: ["*", "airflow", "dbt", "publish", "python"]
   databricks-test:
     type: string
     default: "disabled"
@@ -26,7 +26,7 @@ jobs:
   # Determine the modules that have changed and trigger a series of workflow tasks as necessary.
   # We merge multiple workflows from files in the workflows subdirectory based on the changed
   # modules. A single module changed may require tests and builds in multiple downstream modules.
-  # For example, a change to the python client requires building the airflow, common, and dagster
+  # For example, a change to the python client requires building the airflow and common
   # modules. Changing the spec requires building everything.
   # Note that we don't use the path-filtering orb because we require this dynamic combination of
   # workflows. The path-filtering orb will let us set some boolean parameters (e.g., airflow: true),
@@ -35,7 +35,7 @@ jobs:
   # can't create an airflow workflow and a python client workflow and have the airflow workflow
   # depend on the python client workflow if both boolean parameters happen to be true. We could
   # simply make each workflow include its dependencies, but then we'll end up with duplicate steps
-  # (e.g., if the python client changes it triggers the airflow, common, and dagster modules;
+  # (e.g., if the python client changes it triggers the airflow and common modules;
   # including dependencies means that each module would run the python client tests).
   #
   # The workflow files in the subdirectory are yaml files that adhere to the schema of the workflows

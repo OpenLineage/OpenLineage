@@ -62,7 +62,6 @@ The OpenLineage repository contains integrations with several systems.
 - [Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)
 - [Apache Flink](https://github.com/OpenLineage/OpenLineage/tree/main/integration/flink)
 - [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
-- [Dagster](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster)
 - [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
 - [SQL](https://github.com/OpenLineage/OpenLineage/tree/main/integration/sql)
 
