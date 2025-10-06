@@ -144,7 +144,7 @@
   },
   "type": "object",
   "properties": {
-    "iceberg_scan_report": {
+    "iceberg_commit_report": {
       "$ref": "#/$defs/IcebergCommitReportOutputDatasetFacet"
     }
   }
