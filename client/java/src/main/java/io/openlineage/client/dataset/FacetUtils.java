@@ -30,7 +30,7 @@ public class FacetUtils {
     OutputDatasetOutputFacetsBuilder builder = openLineage.newOutputDatasetOutputFacetsBuilder();
     builder
         .outputStatistics(facets.getOutputStatistics())
-        .iceberg_scan_report(facets.getIceberg_scan_report());
+        .iceberg_commit_report(facets.getIceberg_commit_report());
 
     facets.getAdditionalProperties().forEach(builder::put);
 
