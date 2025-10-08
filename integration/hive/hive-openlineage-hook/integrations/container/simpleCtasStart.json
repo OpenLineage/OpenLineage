@@ -1,5 +1,6 @@
 {
-  "eventType": "COMPLETE",
+  "eventTime": "${json-unit.any-string}",
+  "eventType": "START",
   "run": {
     "runId": "${json-unit.any-string}",
     "facets": {
@@ -140,37 +141,7 @@
     {
       "namespace": "hive://localhost:9083",
       "name": "test.result_t",
-      "facets": {
-        "schema": {
-          "fields": [
-            {
-              "name": "type",
-              "type": "int"
-            },
-            {
-              "name": "building",
-              "type": "string"
-            },
-            {
-              "name": "manager",
-              "type": "string"
-            },
-            {
-              "name": "employee",
-              "type": "string"
-            }
-          ]
-        },
-        "symlinks": {
-          "identifiers": [
-            {
-              "namespace": "file",
-              "name": "/opt/hive/data/warehouse/test.db/result_t",
-              "type": "LOCATION"
-            }
-          ]
-        }
-      }
+      "facets": {}
     }
   ]
 }
