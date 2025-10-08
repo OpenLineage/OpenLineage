@@ -1,0 +1,77 @@
+{
+  "eventTime": "${json-unit.any-string}",
+  "eventType": "START",
+  "run": {
+    "runId": "${json-unit.any-string}",
+    "facets": {
+      "processing_engine": {
+        "version": "3.1.3",
+        "name": "hive",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      },
+      "hive_query": {
+        "queryId": "${json-unit.any-string}",
+        "operationName": "CREATETABLE_AS_SELECT"
+      },
+      "hive_session": {
+        "username": "hive",
+        "clientIp": "${json-unit.regex}\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}",
+        "sessionId": "${json-unit.any-string}",
+        "creationTime": "${json-unit.any-string}"
+      },
+      "hive_properties": {
+        "properties": {
+          "hive.query.id": "${json-unit.any-string}",
+          "hive.execution.engine": "mr"
+        }
+      }
+    }
+  },
+  "job": {
+    "namespace": "default",
+    "name": "createtable_as_select.test.xxx",
+    "facets": {
+      "jobType": {
+        "processingType": "BATCH",
+        "integration": "HIVE",
+        "jobType": "QUERY"
+      },
+      "sql": {
+        "query": "CREATE TABLE xxx AS SELECT * FROM t1",
+        "dialect": "hive"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.t1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "int"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/t1",
+              "type": "LOCATION"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.xxx",
+      "facets": {}
+    }
+  ]
+}
