@@ -74,7 +74,48 @@ public class Faceting {
     }
   }
 
-  public static List<InputDataset> getInputDatasets(OpenLineageContext olContext) {
+  public static List<InputDataset> getInputDatasets(OpenLineageContext olContext) throws Exception {
+    if (olContext.getHookContext().getQueryPlan().getOperation() == HiveOperation.LOAD
+        || olContext.getHookContext().getQueryPlan().getOperation() == HiveOperation.IMPORT) {
+      return getIdentityInputDataset(olContext);
+    } else {
+      return getQueryInputs(olContext);
+    }
+  }
+
+  private static List<InputDataset> getIdentityInputDataset(OpenLineageContext olContext)
+      throws Exception {
+    // In case of LOAD, IMPORT operations, there is an assumption
+    // that the input and output have the same schema
+    // because of that we can compensate the lack of schema information in the read entity
+    // in case of file inputs with the schema from the write entity
+    if (olContext.getReadEntities().isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    ReadEntity readEntity = olContext.getReadEntities().iterator().next();
+    DatasetIdentifier datasetIdentifier =
+        FilesystemDatasetUtils.fromLocation(readEntity.getLocation());
+    DatasetFacetsBuilder datasetFacetsBuilder =
+        olContext.getOpenLineage().newDatasetFacetsBuilder();
+    if (!olContext.getWriteEntities().isEmpty()) {
+      datasetFacetsBuilder.schema(
+          getSchemaDatasetFacet(
+              olContext.getOpenLineage(),
+              olContext.getWriteEntities().iterator().next().getTable()));
+    }
+
+    return Collections.singletonList(
+        olContext
+            .getOpenLineage()
+            .newInputDatasetBuilder()
+            .namespace(datasetIdentifier.getNamespace())
+            .name(datasetIdentifier.getName())
+            .facets(datasetFacetsBuilder.build())
+            .build());
+  }
+
+  private static List<InputDataset> getQueryInputs(OpenLineageContext olContext) {
     List<InputDataset> inputs = new ArrayList<>();
     for (ReadEntity input : olContext.getReadEntities()) {
       Entity.Type entityType = input.getType();
@@ -120,7 +161,9 @@ public class Faceting {
   public static List<OutputDataset> getOutputDatasets(
       OpenLineageContext olContext, List<InputDataset> inputDatasets) throws Exception {
     HookContext hookContext = olContext.getHookContext();
-    if (hookContext.getQueryPlan().getOperation() == HiveOperation.EXPORT) {
+    if (hookContext.getQueryPlan().getOperation() == HiveOperation.EXPORT
+        || hookContext.getQueryPlan().getOperation() == HiveOperation.LOAD
+        || hookContext.getQueryPlan().getOperation() == HiveOperation.IMPORT) {
       return getIdentityOutputDataset(olContext, inputDatasets);
     }
     return getQueryOutputDatasets(olContext, inputDatasets, hookContext);
@@ -177,9 +220,19 @@ public class Faceting {
     // both have the same schema and all the columns are have and IDENTITY transformation
     // so we can skip the column lineage analysis.
     // In case of specifying a partition, we put the partitioning field as a FILTER transformation
+    if (olContext.getWriteEntities().isEmpty()) {
+      return Collections.emptyList();
+    }
     WriteEntity writeEntity = olContext.getWriteEntities().iterator().next();
-    DatasetIdentifier datasetIdentifier =
-        FilesystemDatasetUtils.fromLocation(writeEntity.getLocation());
+    DatasetIdentifier datasetIdentifier;
+    if (olContext.getHookContext().getQueryPlan().getOperation() == HiveOperation.EXPORT) {
+      datasetIdentifier = FilesystemDatasetUtils.fromLocation(writeEntity.getLocation());
+    } else {
+      DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(writeEntity.getTable());
+      datasetIdentifier =
+          new DatasetIdentifier(di.getName(), getDatasetNamespace(olContext), di.getSymlinks());
+    }
+
     InputDataset inputDataset = inputDatasets.get(0);
     return Collections.singletonList(
         olContext
@@ -192,6 +245,7 @@ public class Faceting {
                     .getOpenLineage()
                     .newDatasetFacetsBuilder()
                     .schema(inputDataset.getFacets().getSchema())
+                    .symlinks(getSymlinkFacets(olContext.getOpenLineage(), datasetIdentifier))
                     .columnLineage(getIdentityCLL(inputDataset, olContext))
                     .build())
             .build());
@@ -212,24 +266,30 @@ public class Faceting {
                     .build())
         .forEach(f -> cldffb.put(f.getInputFields().get(0).getField(), f));
 
-    ExportWork work =
-        (ExportWork) olContext.getHookContext().getQueryPlan().getRootTasks().get(0).getWork();
     ColumnLineageDatasetFacetBuilder columnLineageDatasetFacetBuilder =
         ol.newColumnLineageDatasetFacetBuilder().fields(cldffb.build());
-    if (work.getTableSpec().getPartSpec() != null && !work.getTableSpec().getPartSpec().isEmpty()) {
-      List<InputField> collect1 =
-          fields.stream()
-              .filter(f -> work.getTableSpec().getPartSpec().containsKey(f.getName()))
-              .map(
-                  f ->
-                      getInputField(
-                          inputDataset,
-                          f,
-                          TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER)))
-              .collect(Collectors.toList());
-      columnLineageDatasetFacetBuilder.dataset(collect1);
-    }
 
+    if (olContext.getHookContext().getQueryPlan().getOperation() == HiveOperation.EXPORT) {
+      // in case of EXPORT there is a possibility if filtering by using PARTITION keyword
+      // so we need to put the partitioning columns in the dataset dependencies with FILTER
+      // transformation
+      ExportWork work =
+          (ExportWork) olContext.getHookContext().getQueryPlan().getRootTasks().get(0).getWork();
+      Map<String, String> partSpec = work.getTableSpec().getPartSpec();
+      if (partSpec != null && !partSpec.isEmpty()) {
+        List<InputField> datasetDependencyInputs =
+            fields.stream()
+                .filter(f -> partSpec.containsKey(f.getName()))
+                .map(
+                    f ->
+                        getInputField(
+                            inputDataset,
+                            f,
+                            TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER)))
+                .collect(Collectors.toList());
+        columnLineageDatasetFacetBuilder.dataset(datasetDependencyInputs);
+      }
+    }
     return columnLineageDatasetFacetBuilder.build();
   }
 
@@ -334,13 +394,11 @@ public class Faceting {
 
   public static InputFieldTransformationsBuilder getInputFieldTransformationsBuilder(
       TransformationInfo transformation) {
-    InputFieldTransformationsBuilder olTransformationBuilder =
-        new InputFieldTransformationsBuilder();
-    olTransformationBuilder.type(transformation.getType().name());
-    olTransformationBuilder.description(transformation.getDescription());
-    olTransformationBuilder.subtype(transformation.getSubType().name());
-    olTransformationBuilder.masking(transformation.getMasking());
-    return olTransformationBuilder;
+    return new InputFieldTransformationsBuilder()
+        .type(transformation.getType().name())
+        .description(transformation.getDescription())
+        .subtype(transformation.getSubType().name())
+        .masking(transformation.getMasking());
   }
 
   public static SymlinksDatasetFacet getSymlinkFacets(OpenLineage ol, DatasetIdentifier di) {
@@ -438,7 +496,8 @@ public class Faceting {
 
     List<InputDataset> inputDatasets = getInputDatasets(olContext);
     List<OutputDataset> outputDatasets = getOutputDatasets(olContext, inputDatasets);
-    String jobName = generateJobName(emitter.getJobName(), outputDatasets);
+    String jobName =
+        generateJobName(emitter.getJobName(), outputDatasets, olContext.getHookContext());
     return ol.newRunEventBuilder()
         .eventType(olContext.getEventType())
         .eventTime(olContext.getEventTime())
@@ -447,7 +506,6 @@ public class Faceting {
             ol.newJobBuilder()
                 .namespace(emitter.getJobNamespace())
                 .name(jobName)
-                // TODO: Add job facets
                 .facets(
                     ol.newJobFacetsBuilder()
                         .sql(getSQLJobFacet(olContext))
@@ -498,7 +556,11 @@ public class Faceting {
         .build();
   }
 
-  private static String generateJobName(String jobName, List<OutputDataset> outputDatasets) {
+  private static String generateJobName(
+      String jobName, List<OutputDataset> outputDatasets, HookContext hookContext) {
+    if (outputDatasets.isEmpty()) {
+      return hackyJobName(jobName, hookContext);
+    }
     return String.format("%s.%s", jobName.toLowerCase(), outputDatasets.get(0).getName());
   }
 
@@ -508,5 +570,41 @@ public class Faceting {
     } catch (Exception e) {
       return Optional.empty();
     }
+  }
+
+  // In the start events for IMPORT operation, the write entity is a database, not a table.
+  // To send a start event we need job name so we extract it directly from the query.
+  // FIXME: this is a hacky solution, we should find a better way to handle this case.
+  private static String hackyJobName(String jobName, HookContext hookContext) {
+    if (hookContext.getQueryPlan().getOperation() == HiveOperation.IMPORT
+        && !hookContext.getOutputs().isEmpty()) {
+      WriteEntity writeEntity = hookContext.getOutputs().iterator().next();
+      if (writeEntity.getType() == Entity.Type.DATABASE) {
+        String trimmedQuery =
+            hookContext.getQueryPlan().getQueryString().trim().replaceAll("\\s+", " ");
+        java.util.regex.Pattern pattern =
+            java.util.regex.Pattern.compile(
+                "(?i)IMPORT\\s+(?:EXTERNAL\\s+)?TABLE\\s+"
+                    + "(?:`?([^`.\\s]+)`?\\.)?`?([^`.\\s]+)`?\\s*(?=FROM|PARTITION)",
+                java.util.regex.Pattern.CASE_INSENSITIVE);
+
+        java.util.regex.Matcher matcher = pattern.matcher(trimmedQuery);
+        if (matcher.find()) {
+          String database =
+              writeEntity.getDatabase() == null
+                  ? matcher.group(1)
+                  : writeEntity.getDatabase().getName();
+          String entityName =
+              database == null
+                  ? matcher.group(2)
+                  : String.format("%s.%s", database, matcher.group(2));
+          return String.format("%s.%s", jobName.toLowerCase(), entityName);
+        }
+      }
+    }
+    throw new IllegalArgumentException(
+        String.format(
+            "Cannot generate job name from query: %s",
+            hookContext.getQueryPlan().getQueryString()));
   }
 }

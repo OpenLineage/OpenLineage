@@ -16,6 +16,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryPlan;
@@ -41,6 +42,8 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
     SUPPORTED_OPERATIONS.add(HiveOperation.QUERY);
     SUPPORTED_OPERATIONS.add(HiveOperation.CREATETABLE_AS_SELECT);
     SUPPORTED_OPERATIONS.add(HiveOperation.EXPORT);
+    SUPPORTED_OPERATIONS.add(HiveOperation.LOAD);
+    SUPPORTED_OPERATIONS.add(HiveOperation.IMPORT);
     SUPPORTED_HOOK_TYPES.add(HookType.POST_EXEC_HOOK);
     SUPPORTED_HOOK_TYPES.add(HookType.PRE_EXEC_HOOK);
     SUPPORTED_HOOK_TYPES.add(HookType.ON_FAILURE_HOOK);
@@ -52,6 +55,9 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
       Entity.Type entityType = readEntity.getType();
       if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
           && !readEntity.isDummy()) {
+        validInputs.add(readEntity);
+      } else if (queryPlan.getOperation() == HiveOperation.LOAD
+          || queryPlan.getOperation() == HiveOperation.IMPORT) {
         validInputs.add(readEntity);
       }
     }
@@ -65,8 +71,7 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
       if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
           && !writeEntity.isDummy()) {
         validOutputs.add(writeEntity);
-      } else if (queryPlan.getOperation() == HiveOperation.EXPORT
-          && (entityType == Entity.Type.LOCAL_DIR || entityType == Entity.Type.DFS_DIR)) {
+      } else if (queryPlan.getOperation() == HiveOperation.EXPORT) {
         validOutputs.add(writeEntity);
       }
     }
@@ -92,22 +97,51 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
     }
   }
 
+  private boolean shouldEmitEvent(
+      HookContext hookContext, Set<ReadEntity> validInputs, Set<WriteEntity> validOutputs) {
+    QueryPlan queryPlan = hookContext.getQueryPlan();
+    if (!SUPPORTED_HOOK_TYPES.contains(hookContext.getHookType())
+        || SessionState.get() == null
+        || hookContext.getIndex() == null
+        || !SUPPORTED_OPERATIONS.contains(queryPlan.getOperation())
+        || queryPlan.isExplain()
+        || queryPlan.getInputs().isEmpty()
+        || queryPlan.getOutputs().isEmpty()) {
+      return false;
+    }
+
+    return isDataModifyingOperation(queryPlan, validInputs, validOutputs);
+  }
+
+  private static boolean isDataModifyingOperation(
+      QueryPlan queryPlan, Set<ReadEntity> validInputs, Set<WriteEntity> validOutputs) {
+    // queries not generationg data changes are not relevant for lineage
+    if (queryPlan.getOperation() == HiveOperation.QUERY
+        || queryPlan.getOperation() == HiveOperation.CREATETABLE_AS_SELECT) {
+      return !validInputs.isEmpty() && !validOutputs.isEmpty();
+    }
+    // EXPORT, LOAD and IMPORT operations always generate data changes
+    return queryPlan.getOperation() == HiveOperation.EXPORT
+        || queryPlan.getOperation() == HiveOperation.LOAD
+        || queryPlan.getOperation() == HiveOperation.IMPORT;
+  }
+
   @Override
   public void run(HookContext hookContext) {
     try {
       QueryPlan queryPlan = hookContext.getQueryPlan();
       Set<ReadEntity> validInputs = getValidInputs(queryPlan);
       Set<WriteEntity> validOutputs = getValidOutputs(queryPlan);
-      if (!SUPPORTED_HOOK_TYPES.contains(hookContext.getHookType())
-          || SessionState.get() == null
-          || hookContext.getIndex() == null
-          || !SUPPORTED_OPERATIONS.contains(queryPlan.getOperation())
-          || queryPlan.isExplain()
-          || queryPlan.getInputs().isEmpty()
-          || queryPlan.getOutputs().isEmpty()
-          || validInputs.isEmpty()
-          || validOutputs.isEmpty()) {
+      if (!shouldEmitEvent(hookContext, validInputs, validOutputs)) {
+        log.debug(
+            "Skipping lineage emission for operation {}, inputs {}, outputs {}",
+            queryPlan.getOperation(),
+            validInputs.stream().map(Entity::getName).collect(Collectors.joining(",")),
+            validOutputs.stream().map(Entity::getName).collect(Collectors.joining(",")));
         return;
+      }
+      if (hookContext.getQueryPlan().getOperation() == HiveOperation.IMPORT) {
+        log.debug("aaaaaa");
       }
       OpenLineage.RunEvent.EventType eventType = getEventType(hookContext);
       OpenLineageContext olContext =
@@ -118,8 +152,8 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
               .hookContext(hookContext)
               .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
               .eventType(eventType)
-              .readEntities(validInputs)
-              .writeEntities(validOutputs)
+              .readEntities(getValidInputs(queryPlan))
+              .writeEntities(getValidOutputs(queryPlan))
               .build();
       try (EventEmitter emitter = new EventEmitter(olContext)) {
         OpenLineage.RunEvent runEvent = Faceting.getRunEvent(emitter, olContext);
