@@ -163,4 +163,12 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://pentaho.com/products/pentaho-data-catalog/",
     org_url: "https://pentaho.com/",
   },
+  {
+    image: "data_rentgen_logo.svg",
+    org: "MWS",
+    full_name: "Data.Rentgen",
+    description: "Data.Rentgen is a DataMotion Lineage service compatible with OpenLineage.",
+    docs_url: "https://data-rentgen.readthedocs.io/",
+    org_url: "https://mws.ru",
+  },
 ];
