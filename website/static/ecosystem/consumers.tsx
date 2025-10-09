@@ -74,13 +74,13 @@ export const Consumers: Array<Partner> = [
     org_url: "https://www.grai.io/",
   },
   {
-    image: "manta_logo_bkgd.svg",
-    org: "Manta",
-    full_name: "Manta",
+    image: "ibm_logo_bkgd.svg",
+    org: "IBM",
+    full_name: "IBM",
     description:
-      "Manta's OpenLineage Scanner uses job facets to ingest OpenLineage metadata and enrich overall enterprise data pipeline analysis.",
-    docs_url: "",
-    org_url: "https://getmanta.com/?utm_source=partner&utm_medium=referral&utm_campaign=OpenLineage",
+      "The OpenLineage integration in IBM watsonx.data intelligence enables importing OpenLineage events by using API or JSON files, allowing users to visualize lineage from both known producers and custom technologies.",
+    docs_url: "https://www.ibm.com/docs/en/watsonx/wdi/saas?topic=lineage-openlineage-integration",
+    org_url: "https://www.ibm.com/products/watsonx-data-intelligence/data-lineage",
   },
   {
     image: "mqz_logo_new.svg",
