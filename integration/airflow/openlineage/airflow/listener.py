@@ -22,6 +22,49 @@ from openlineage.airflow.utils import (
 
 from airflow.listeners import hookimpl
 from airflow.utils import timezone
+from airflow.utils.session import create_session
+
+# --- In-Memory Cache for Runtime Disabling ---
+_is_disabled_cached: Optional[bool] = None
+_cache_lock = threading.Lock()
+_stop_event = threading.Event()
+_cache_thread: Optional[threading.Thread] = None
+_CACHE_TTL_SECONDS: int = 60
+# ---------------------------------------------
+
+
+def _is_disabled() -> bool:
+    """Safely read the cached disabled status."""
+    with _cache_lock:
+        return _is_disabled_cached or False
+
+
+def _refresh_cache_loop():
+    """
+    This function runs in a background thread and periodically refreshes the
+    `_is_disabled_cached` variable from the 'openlineage.disabled' Airflow Variable in the database.
+    This is the only place where the Airflow Variable is queried.
+    """
+    global _is_disabled_cached
+    log.debug("Starting OpenLineage runtime-disable cache refresh loop.")
+    while not _stop_event.is_set():
+        try:
+            from airflow.models.variable import Variable
+
+            with create_session() as session:
+                var = session.query(Variable).filter(Variable.key == "openlineage.disabled").first()
+                is_disabled = var.val.lower() in ("t", "true", "1") if var else False
+
+                with _cache_lock:
+                    if _is_disabled_cached != is_disabled:
+                        log.debug(f"OpenLineage runtime disabled status changed to: {is_disabled}")
+                        _is_disabled_cached = is_disabled
+        except Exception as e:
+            log.error("Failed to refresh OpenLineage runtime-disable cache: %s", e, exc_info=True)
+
+        _stop_event.wait(timeout=_CACHE_TTL_SECONDS)
+    log.debug("Exiting OpenLineage runtime-disable cache refresh loop.")
+
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -95,6 +138,8 @@ def execute(_callable):
 
 @hookimpl
 def on_task_instance_running(previous_state, task_instance: "TaskInstance", session: "Session"):
+    if _is_disabled():
+        return
     if not hasattr(task_instance, "task"):
         log.warning(
             "No task set for TI object task_id: %s - dag_id: %s - run_id %s",
@@ -166,6 +211,8 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
 @hookimpl
 def on_task_instance_success(previous_state, task_instance: "TaskInstance", session):
+    if _is_disabled():
+        return
     log.debug("OpenLineage listener got notification about task instance success")
     task = task_holder.get_task(task_instance) or task_instance.task
     dag = task.dag
@@ -200,6 +247,8 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
 
 @hookimpl
 def on_task_instance_failed(previous_state, task_instance: "TaskInstance", session):
+    if _is_disabled():
+        return
     log.debug("OpenLineage listener got notification about task instance failure")
     task = task_holder.get_task(task_instance) or task_instance.task
     dag = task.dag
@@ -237,21 +286,35 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
 
 @hookimpl
 def on_starting(component):
-    global executor
+    global executor, _cache_thread
     executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="openlineage_")
+
+    if not _cache_thread:
+        _stop_event.clear()
+        _cache_thread = threading.Thread(target=_refresh_cache_loop, daemon=True)
+        _cache_thread.start()
 
 
 @hookimpl
 def before_stopping(component):
+    global _cache_thread
     if executor:
-        # stom accepting new events
+        # Stop accepting new events
         executor.shutdown(wait=False)
-    # block until all pending events are processed
+    # Block until all pending events are processed
     adapter.close()
+
+    if _cache_thread:
+        log.debug("Stopping OpenLineage runtime-disable cache thread.")
+        _stop_event.set()
+        _cache_thread.join(timeout=5)
+        _cache_thread = None
 
 
 @hookimpl
 def on_dag_run_running(dag_run: "DagRun", msg: str):
+    if _is_disabled():
+        return
     if not executor:
         log.error("Executor have not started before `on_dag_run_running`")
         return
@@ -267,6 +330,8 @@ def on_dag_run_running(dag_run: "DagRun", msg: str):
 
 @hookimpl
 def on_dag_run_success(dag_run: "DagRun", msg: str):
+    if _is_disabled():
+        return
     if not executor:
         log.error("Executor have not started before `on_dag_run_success`")
         return
@@ -275,6 +340,8 @@ def on_dag_run_success(dag_run: "DagRun", msg: str):
 
 @hookimpl
 def on_dag_run_failed(dag_run: "DagRun", msg: str):
+    if _is_disabled():
+        return
     if not executor:
         log.error("Executor have not started before `on_dag_run_failed`")
         return
