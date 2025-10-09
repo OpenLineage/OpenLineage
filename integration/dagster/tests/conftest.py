@@ -126,38 +126,94 @@ class DagsterRunLE1_6_9Provider(DagsterRunProvider):
         return dagster_run
 
 
-class DagsterRunLatestProvider(DagsterRunProvider):
-    """Class for provisioning `dagster.DagsterRun` instance for Dagster
-    versioin >= `1.3.3`.
+class DagsterRunLE1_7_xProvider(DagsterRunProvider):  
+    """Class for provisioning `dagster.DagsterRun` instance for Dagster  
+    version >= `1.7.0`, <= `1.7.x`.  
+    """  
+  
+    def get_instance(self, repository_name: str) -> DagsterRun:  
+        from dagster._core.remote_representation.origin import (  
+            RemoteJobOrigin,  
+            RemoteRepositoryOrigin,  
+            InProcessCodeLocationOrigin,  
+        )  
+  
+        dagster_run = DagsterRun(  
+            job_name="test",  
+            execution_plan_snapshot_id="123",  
+            external_job_origin=RemoteJobOrigin(  # 1.7.x uses external_job_origin  
+                repository_origin=RemoteRepositoryOrigin(  
+                    code_location_origin=InProcessCodeLocationOrigin(  
+                        loadable_target_origin=LoadableTargetOrigin(  
+                            python_file="/openlineage/dagster/tests/test_pipelines/repo.py",  
+                        )  
+                    ),  
+                    repository_name=repository_name,  
+                ),  
+                job_name="test",  
+            ),  
+        )  
+        return dagster_run
 
-    If the tests were broken again due to API changes to `dagster.DagsterRun` in a future version,
-    say `x.y.z`. One can identify the previous version of `x.y.z`, say `x.y.y`, and rename this
-    class to `DagsterRunLEx_y_yProvider`. And then implement a brand new `DagsterRunLatestProvider`
-    according to the new API spec.
+class DagsterRunLE1_11_5Provider(DagsterRunProvider): 
+    """Class for provisioning `dagster.DagsterRun` instance for Dagster      
+    version >= `1.8.0`, <= `1.11.5`.  
+    Uses dagster._core.remote_representation.origin  
     """
+    
+    
+    def get_instance(self, repository_name: str) -> DagsterRun:    
+        from dagster._core.remote_representation.origin import (    
+            RemoteJobOrigin,    
+            RemoteRepositoryOrigin,    
+            InProcessCodeLocationOrigin,    
+        )    
+    
+        dagster_run = DagsterRun(    
+            job_name="test",    
+            execution_plan_snapshot_id="123",    
+            remote_job_origin=RemoteJobOrigin(    
+                repository_origin=RemoteRepositoryOrigin(    
+                    code_location_origin=InProcessCodeLocationOrigin(    
+                        loadable_target_origin=LoadableTargetOrigin(    
+                            python_file="/openlineage/dagster/tests/test_pipelines/repo.py",    
+                        )    
+                    ),    
+                    repository_name=repository_name,    
+                ),    
+                job_name="test",    
+            ),    
+        )    
+        return dagster_run
 
-    def get_instance(self, repository_name: str) -> DagsterRun:
-        from dagster.core.remote_representation.origin import (
-            ExternalJobOrigin,
-            ExternalRepositoryOrigin,
-            InProcessCodeLocationOrigin,
-        )
-
-        dagster_run = DagsterRun(
-            job_name="test",
-            execution_plan_snapshot_id="123",
-            external_job_origin=ExternalJobOrigin(
-                external_repository_origin=ExternalRepositoryOrigin(
-                    code_location_origin=InProcessCodeLocationOrigin(
-                        loadable_target_origin=LoadableTargetOrigin(
-                            python_file="/openlineage/dagster/tests/test_pipelines/repo.py",
-                        )
-                    ),
-                    repository_name=repository_name,
-                ),
-                job_name="test",
-            ),
-        )
+class DagsterRunLatestProvider(DagsterRunProvider):  
+    """Class for provisioning `dagster.DagsterRun` instance for Dagster  
+    version >= `1.11.6`.  
+    Uses dagster._core.remote_origin (new path as of 1.11.6)  
+    """  
+      
+    def get_instance(self, repository_name: str) -> DagsterRun:  
+        from dagster._core.remote_origin import (  # NEW import path  
+            RemoteJobOrigin,  
+            RemoteRepositoryOrigin,  
+            InProcessCodeLocationOrigin,  
+        )  
+          
+        dagster_run = DagsterRun(  
+            job_name="test",  
+            execution_plan_snapshot_id="123",  
+            remote_job_origin=RemoteJobOrigin(  # Same attribute name  
+                repository_origin=RemoteRepositoryOrigin(  
+                    code_location_origin=InProcessCodeLocationOrigin(  
+                        loadable_target_origin=LoadableTargetOrigin(  
+                            python_file="/openlineage/dagster/tests/test_pipelines/repo.py",  
+                        )  
+                    ),  
+                    repository_name=repository_name,  
+                ),  
+                job_name="test",  
+            ),  
+        )  
         return dagster_run
 
 
@@ -197,17 +253,21 @@ def _make_dagster_event(event_type: DagsterEventType, pipeline_name: str, step_k
     )
 
 
-def make_pipeline_run_with_external_pipeline_origin(
-    repository_name: str,
-):
-    parsed_dagster_version = Version(DAGSTER_VERSION)
-    dagster_run_provider: DagsterRunProvider = None
-    if not dagster_run_provider and parsed_dagster_version <= Version("1.2.2"):
-        dagster_run_provider = DagsterRunLE1_2_2Provider()
-    if not dagster_run_provider and parsed_dagster_version <= Version("1.3.2"):
-        dagster_run_provider = DagsterRunLE1_3_2Provider()
-    if not dagster_run_provider and parsed_dagster_version <= Version("1.6.9"):
-        dagster_run_provider = DagsterRunLE1_6_9Provider()
-    if not dagster_run_provider:
-        dagster_run_provider = DagsterRunLatestProvider()
+def make_pipeline_run_with_external_pipeline_origin(  
+    repository_name: str,  
+):  
+    parsed_dagster_version = Version(DAGSTER_VERSION)  
+    dagster_run_provider: DagsterRunProvider = None  
+    if not dagster_run_provider and parsed_dagster_version <= Version("1.2.2"):  
+        dagster_run_provider = DagsterRunLE1_2_2Provider()  
+    if not dagster_run_provider and parsed_dagster_version <= Version("1.3.2"):  
+        dagster_run_provider = DagsterRunLE1_3_2Provider()  
+    if not dagster_run_provider and parsed_dagster_version <= Version("1.6.9"):  
+        dagster_run_provider = DagsterRunLE1_6_9Provider()  
+    if not dagster_run_provider and parsed_dagster_version <= Version("1.8.0"):  
+        dagster_run_provider = DagsterRunLE1_7_xProvider()  
+    if not dagster_run_provider and parsed_dagster_version <= Version("1.11.5"):  
+        dagster_run_provider = DagsterRunLE1_11_5Provider()  # Uses dagster._core.remote_representation.origin  
+    if not dagster_run_provider:  
+        dagster_run_provider = DagsterRunLatestProvider()  # Uses dagster._core.remote_origin for 1.11.6+  
     return dagster_run_provider.get_instance(repository_name)

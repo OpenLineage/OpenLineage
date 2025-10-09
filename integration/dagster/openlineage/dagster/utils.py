@@ -52,24 +52,36 @@ def get_event_log_records(
     return sorted(event_records, key=lambda record: record.event_log_entry.timestamp)
 
 
-def get_repository_name(instance: DagsterInstance, pipeline_run_id: str) -> Optional[str]:
-    """Returns an optional repository name
-    :param instance: active instance to get the pipeline run
-    :param pipeline_run_id: run id to look up its run
-    :return: optional repository name
-    """
-    pipeline_run = instance.get_run_by_id(pipeline_run_id)
-    repository_name = None
-    if pipeline_run:
-        # DagsterRun changed attribute name from `external_pipeline_origin` to `external_job_origin`
-        # since 1.3.3
-        ext_pipeline_origin = (
-            pipeline_run.external_pipeline_origin
-            if hasattr(pipeline_run, "external_pipeline_origin")
-            else pipeline_run.external_job_origin
-        )
-        if ext_pipeline_origin:
-            ext_repository_origin = ext_pipeline_origin.external_repository_origin
-            if ext_repository_origin:
-                repository_name = ext_repository_origin.repository_name
+def get_repository_name(instance: DagsterInstance, pipeline_run_id: str) -> Optional[str]:  
+    """Returns an optional repository name  
+    :param instance: active instance to get the pipeline run  
+    :param pipeline_run_id: run id to look up its run  
+    :return: optional repository name  
+    """  
+    pipeline_run = instance.get_run_by_id(pipeline_run_id)  
+    repository_name = None  
+    if pipeline_run:  
+        # DagsterRun changed attribute name from `external_pipeline_origin` to `external_job_origin`  
+        # since 1.3.3, and then to `remote_job_origin` since 1.7.0  
+        if hasattr(pipeline_run, "external_pipeline_origin"):  
+            ext_pipeline_origin = pipeline_run.external_pipeline_origin  
+        elif hasattr(pipeline_run, "external_job_origin"):  
+            ext_pipeline_origin = pipeline_run.external_job_origin  
+        elif hasattr(pipeline_run, "remote_job_origin"):  
+            ext_pipeline_origin = pipeline_run.remote_job_origin  
+        else:  
+            ext_pipeline_origin = None  
+              
+        if ext_pipeline_origin:  
+            # Similarly, the repository origin attribute changed from external_repository_origin  
+            # to repository_origin in newer versions  
+            if hasattr(ext_pipeline_origin, "external_repository_origin"):  
+                ext_repository_origin = ext_pipeline_origin.external_repository_origin  
+            elif hasattr(ext_pipeline_origin, "repository_origin"):  
+                ext_repository_origin = ext_pipeline_origin.repository_origin  
+            else:  
+                ext_repository_origin = None  
+                  
+            if ext_repository_origin:  
+                repository_name = ext_repository_origin.repository_name  
     return repository_name
