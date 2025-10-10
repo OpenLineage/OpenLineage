@@ -67,9 +67,7 @@ public class Faceting {
     // isn't readily available in the read/write entities provided by the hook. So we run an
     // explicit call to the Hive Metastore to retrieve the values.
     if (entity.getTable().getSd().getCols().isEmpty()) {
-      entity.setT(
-          HiveUtils.getTable(
-              conf, entity.getTable().getDbName(), entity.getTable().getTableName()));
+      entity.setT(HiveUtils.getTable(conf, entity.getTable()));
     }
   }
 
@@ -353,7 +351,7 @@ public class Faceting {
 
     List<InputDataset> inputDatasets = getInputDatasets(olContext);
     List<OutputDataset> outputDatasets = getOutputDatasets(olContext, inputDatasets);
-    String jobName = generateJobName(emitter.getJobName(), inputDatasets, outputDatasets);
+    String jobName = generateJobName(emitter.getJobName(), outputDatasets);
     return ol.newRunEventBuilder()
         .eventType(olContext.getEventType())
         .eventTime(olContext.getEventTime())
@@ -413,8 +411,7 @@ public class Faceting {
         .build();
   }
 
-  private static String generateJobName(
-      String jobName, List<InputDataset> inputDatasets, List<OutputDataset> outputDatasets) {
+  private static String generateJobName(String jobName, List<OutputDataset> outputDatasets) {
     return String.format("%s.%s", jobName.toLowerCase(), outputDatasets.get(0).getName());
   }
 
