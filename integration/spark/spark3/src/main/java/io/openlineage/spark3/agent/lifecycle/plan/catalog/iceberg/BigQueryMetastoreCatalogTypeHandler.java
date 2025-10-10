@@ -54,7 +54,11 @@ class BigQueryMetastoreCatalogTypeHandler extends BaseCatalogTypeHandler {
   @Override
   Map<String, String> catalogProperties(Map<String, String> catalogConf) {
     Map<String, String> properties = new HashMap<>();
-    properties.put("gcp_project_id", catalogConf.get("gcp.bigquery.project-id"));
+    String projectId = catalogConf.get("gcp.bigquery.project-id");
+    if (projectId == null || projectId.isEmpty()) {
+      projectId = catalogConf.get("gcp_project");
+    }
+    properties.put("gcp_project_id", projectId);
     properties.put("gcp_location", catalogConf.get("gcp.bigquery.location"));
     return properties;
   }
