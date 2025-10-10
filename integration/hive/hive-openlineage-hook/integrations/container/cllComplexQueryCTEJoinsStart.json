@@ -1,5 +1,6 @@
 {
-  "eventType": "COMPLETE",
+  "eventTime": "${json-unit.any-string}",
+  "eventType": "START",
   "run": {
     "runId": "${json-unit.any-string}",
     "facets": {
@@ -28,7 +29,7 @@
   },
   "job": {
     "namespace": "default",
-    "name": "createtable_as_select.test.result_t",
+    "name": "createtable_as_select.test.xxx",
     "facets": {
       "jobType": {
         "processingType": "BATCH",
@@ -36,7 +37,7 @@
         "jobType": "QUERY"
       },
       "sql": {
-        "query": "create table result_t as\nselect\nteams.type,\nteams.building,\nmanagers.name as manager,\nemployees.name as employee\nfrom teams, managers, employees\nwhere teams.id = managers.team and teams.id = employees.team",
+        "query": "CREATE TABLE xxx AS \nWITH tmp as (SELECT * FROM t1 where b = '1'),\n     tmp2 as (SELECT * FROM t2 where c = 1),\n     tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\nSELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d",
         "dialect": "hive"
       }
     }
@@ -44,21 +45,17 @@
   "inputs": [
     {
       "namespace": "hive://localhost:9083",
-      "name": "test.teams",
+      "name": "test.t2",
       "facets": {
         "schema": {
           "fields": [
             {
-              "name": "id",
+              "name": "a",
               "type": "int"
             },
             {
-              "name": "type",
+              "name": "c",
               "type": "int"
-            },
-            {
-              "name": "building",
-              "type": "string"
             }
           ]
         },
@@ -66,7 +63,7 @@
           "identifiers": [
             {
               "namespace": "file",
-              "name": "/opt/hive/data/warehouse/test.db/teams",
+              "name": "/opt/hive/data/warehouse/test.db/t2",
               "type": "LOCATION"
             }
           ]
@@ -75,20 +72,16 @@
     },
     {
       "namespace": "hive://localhost:9083",
-      "name": "test.employees",
+      "name": "test.t3",
       "facets": {
         "schema": {
           "fields": [
             {
-              "name": "id",
+              "name": "a",
               "type": "int"
             },
             {
-              "name": "name",
-              "type": "string"
-            },
-            {
-              "name": "team",
+              "name": "d",
               "type": "int"
             }
           ]
@@ -97,7 +90,7 @@
           "identifiers": [
             {
               "namespace": "file",
-              "name": "/opt/hive/data/warehouse/test.db/employees",
+              "name": "/opt/hive/data/warehouse/test.db/t3",
               "type": "LOCATION"
             }
           ]
@@ -106,21 +99,17 @@
     },
     {
       "namespace": "hive://localhost:9083",
-      "name": "test.managers",
+      "name": "test.t1",
       "facets": {
         "schema": {
           "fields": [
             {
-              "name": "id",
+              "name": "a",
               "type": "int"
             },
             {
-              "name": "name",
+              "name": "b",
               "type": "string"
-            },
-            {
-              "name": "team",
-              "type": "int"
             }
           ]
         },
@@ -128,7 +117,7 @@
           "identifiers": [
             {
               "namespace": "file",
-              "name": "/opt/hive/data/warehouse/test.db/managers",
+              "name": "/opt/hive/data/warehouse/test.db/t1",
               "type": "LOCATION"
             }
           ]
@@ -139,38 +128,8 @@
   "outputs": [
     {
       "namespace": "hive://localhost:9083",
-      "name": "test.result_t",
-      "facets": {
-        "schema": {
-          "fields": [
-            {
-              "name": "type",
-              "type": "int"
-            },
-            {
-              "name": "building",
-              "type": "string"
-            },
-            {
-              "name": "manager",
-              "type": "string"
-            },
-            {
-              "name": "employee",
-              "type": "string"
-            }
-          ]
-        },
-        "symlinks": {
-          "identifiers": [
-            {
-              "namespace": "file",
-              "name": "/opt/hive/data/warehouse/test.db/result_t",
-              "type": "LOCATION"
-            }
-          ]
-        }
-      }
+      "name": "test.xxx",
+      "facets": {}
     }
   ]
 }

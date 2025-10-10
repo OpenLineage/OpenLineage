@@ -48,6 +48,10 @@
             {
               "name": "a",
               "type": "int"
+            },
+            {
+              "name": "b",
+              "type": "date"
             }
           ]
         },

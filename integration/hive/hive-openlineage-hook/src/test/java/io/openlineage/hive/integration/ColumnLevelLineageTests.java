@@ -7,7 +7,6 @@ package io.openlineage.hive.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
-import io.openlineage.hive.testutils.MockServerTestUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -19,56 +18,59 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
   void selectStar() {
     createManagedHiveTable("t1", "a int, b string");
     runHiveQuery("CREATE TABLE xxx AS SELECT * FROM t1");
-    verifyEvents("cllSelectStar.json");
+    verifyEvents("cllSelectStarStart.json", "cllSelectStarComplete.json");
   }
 
   @Test
   void simpleQueryOnlyIdentity() {
     createManagedHiveTable("t1", "a int");
     runHiveQuery("CREATE TABLE xxx AS SELECT a FROM t1");
-    verifyEvents("cllSimpleQueryOnlyIdentity.json");
+    verifyEvents("cllSimpleQueryOnlyIdentityStart.json", "cllSimpleQueryOnlyIdentityComplete.json");
   }
 
   @Test
   void ifNotExists() {
     createManagedHiveTable("t1", "a int");
     runHiveQuery("CREATE TABLE IF NOT EXISTS xxx AS SELECT a FROM t1");
-    verifyEvents("cllIfNotExists.json");
+    verifyEvents("cllIfNotExistsStart.json", "cllIfNotExistsComplete.json");
   }
 
   @Test
   void partitionedTable() {
     createPartitionedHiveTable("t1", "a int", "b DATE");
     runHiveQuery("CREATE TABLE xxx AS SELECT * FROM t1");
-    verifyEvents("cllPartitionedTable.json");
+    verifyEvents("cllPartitionedTableStart.json", "cllPartitionedTableComplete.json");
   }
 
   @Test
   void simpleQueryOnlyTransform() {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery("CREATE TABLE xxx AS SELECT concat(a, 'test') AS a, a+b as b FROM t1");
-    verifyEvents("cllSimpleQueryOnlyTransform.json");
+    verifyEvents(
+        "cllSimpleQueryOnlyTransformStart.json", "cllSimpleQueryOnlyTransformComplete.json");
   }
 
   @Test
   void dsimpleQueryOnlyAggregation() {
     createManagedHiveTable("t1", "a int");
     runHiveQuery("CREATE TABLE xxx AS SELECT count(a) AS a FROM t1");
-    verifyEvents("cllSimpleQueryOnlyAggregation.json");
+    verifyEvents(
+        "cllSimpleQueryOnlyAggregationStart.json", "cllSimpleQueryOnlyAggregationComplete.json");
   }
 
   @Test
   void simpleQueryIndirect() {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery("CREATE TABLE xxx AS SELECT a FROM t1 WHERE b > 1");
-    verifyEvents("cllSimpleQueryIndirect.json");
+    verifyEvents("cllSimpleQueryIndirectStart.json", "cllSimpleQueryIndirectComplete.json");
   }
 
   @Test
   void simpleQueryMultipleIndirect() {
     createManagedHiveTable("t1", "a int, b int, c int");
     runHiveQuery("CREATE TABLE xxx AS SELECT a, c FROM t1 WHERE b > 1 GROUP BY a, c ORDER BY c");
-    verifyEvents("cllSimpleQueryMultipleIndirect.json");
+    verifyEvents(
+        "cllSimpleQueryMultipleIndirectStart.json", "cllSimpleQueryMultipleIndirectComplete.json");
   }
 
   @Test
@@ -76,7 +78,8 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery(
         "CREATE TABLE xxx AS SELECT a as i, a + 1 as t, sum(b) as a, 2 * sum(b) as ta, 2 * sum(b + 3) as tat FROM t1 GROUP BY a");
-    verifyEvents("cllSimpleQueryPriorityDirect.json");
+    verifyEvents(
+        "cllSimpleQueryPriorityDirectStart.json", "cllSimpleQueryPriorityDirectComplete.json");
   }
 
   @Test
@@ -90,7 +93,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
             + "sum(b) as a, \n"
             + "sha1(string(sum(b))) as ma \n"
             + "FROM t1 GROUP BY a");
-    verifyEvents("cllSimpleQueryMasking.json");
+    verifyEvents("cllSimpleQueryMaskingStart.json", "cllSimpleQueryMaskingComplete.json");
   }
 
   @Test
@@ -98,14 +101,18 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery(
         "CREATE TABLE xxx AS SELECT CASE WHEN b > 1 THEN a ELSE a + b END AS cond FROM t1");
-    verifyEvents("cllSimpleQueryWithCaseWhenConditional.json");
+    verifyEvents(
+        "cllSimpleQueryWithCaseWhenConditionalStart.json",
+        "cllSimpleQueryWithCaseWhenConditionalComplete.json");
   }
 
   @Test
   void simpleQueryWithIfConditional() {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery("CREATE TABLE xxx AS SELECT IF(b > 1, a, a + b) AS cond FROM t1");
-    verifyEvents("cllSimpleQueryWithIfConditional.json");
+    verifyEvents(
+        "cllSimpleQueryWithIfConditionalStart.json",
+        "cllSimpleQueryWithIfConditionalComplete.json");
   }
 
   @Test
@@ -113,7 +120,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
     createManagedHiveTable("t1", "a string");
     runHiveQuery(
         "CREATE TABLE xxx AS SELECT a FROM (SELECT explode(split(a, ' ')) AS a FROM t1) subquery_alias");
-    verifyEvents("cllSimpleQueryExplode.json");
+    verifyEvents("cllSimpleQueryExplodeStart.json", "cllSimpleQueryExplodeComplete.json");
   }
 
   @Test
@@ -122,7 +129,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
     runHiveQuery(
         "CREATE TABLE xxx AS\n"
             + "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c) as rank FROM t1");
-    verifyEvents("cllSimpleQueryRank.json");
+    verifyEvents("cllSimpleQueryRankStart.json", "cllSimpleQueryRankComplete.json");
   }
 
   @Test
@@ -130,7 +137,9 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
     createManagedHiveTable("t1", "a string, b string, c int");
     runHiveQuery(
         "CREATE TABLE xxx AS\nSELECT sum(a) OVER (PARTITION BY b ORDER BY c) AS s FROM t1");
-    verifyEvents("cllSimpleQueryWindowedAggregate.json");
+    verifyEvents(
+        "cllSimpleQueryWindowedAggregateStart.json",
+        "cllSimpleQueryWindowedAggregateComplete.json");
   }
 
   @Test
@@ -139,7 +148,9 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
     runHiveQuery(
         "CREATE TABLE xxx AS\n"
             + "SELECT LAG(a, 3, 0) OVER (PARTITION BY b ORDER BY c) AS l FROM t1");
-    verifyEvents("cllSimpleQueryWindowedTransformation.json");
+    verifyEvents(
+        "cllSimpleQueryWindowedTransformationStart.json",
+        "cllSimpleQueryWindowedTransformationComplete.json");
   }
 
   @Test
@@ -155,7 +166,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
             + "     tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\n"
             + "SELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d");
 
-    verifyEvents("cllComplexQueryCTEJoinsComplete.json");
+    verifyEvents("cllComplexQueryCTEJoinsStart.json", "cllComplexQueryCTEJoinsComplete.json");
   }
 
   @Test
@@ -169,7 +180,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
             + "UNION ALL\n"
             + "SELECT a, c, 'table2' as source\n"
             + "FROM t2");
-    verifyEvents("cllUnionComplete.json");
+    verifyEvents("cllUnionStart.json", "cllUnionComplete.json");
   }
 
   @Test
@@ -185,7 +196,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
     createManagedHiveTable("t1", "a int, b string");
     createManagedHiveTable("t2", "a int, b string");
     runHiveQuery("INSERT INTO t1 SELECT a, concat(b, 'x') FROM t2");
-    verifyEvents("cllSimpleInsertFromTable.json");
+    verifyEvents("cllSimpleInsertFromTableStart.json", "cllSimpleInsertFromTableComplete.json");
   }
 
   @Test
@@ -203,7 +214,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
             "    ON a.id = b.number",
             ")",
             "SELECT id * 10 as id, name FROM c"));
-    verifyEvents("cllCtasWithJoinsComplete.json");
+    verifyEvents("cllCtasWithJoinsStart.json", "cllCtasWithJoinsComplete.json");
   }
 
   @Test
@@ -227,7 +238,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
             "INSERT INTO TABLE t2",
             "  SELECT SUM(id), name",
             "  GROUP BY name;"));
-    verifyEvents("cllMultiInsertsComplete.json");
+    verifyEvents("cllMultiInsertsStart.json", "cllMultiInsertsComplete.json");
   }
 
   @Test
@@ -252,6 +263,6 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
             "ORDER BY",
             "    monTH,",
             "    transacTIONtype"));
-    MockServerTestUtils.verifyEvents(mockServerClient, "cllCaseInsensitivityComplete.json");
+    verifyEvents("cllCaseInsensitivityStart.json", "cllCaseInsensitivityComplete.json");
   }
 }
