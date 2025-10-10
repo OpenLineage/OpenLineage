@@ -120,30 +120,13 @@ public class Faceting {
       OpenLineageContext olContext, List<InputDataset> inputDatasets) throws Exception {
     HookContext hookContext = olContext.getHookContext();
     if (hookContext.getQueryPlan().getOperation() == HiveOperation.EXPORT) {
-      // In case of EXPORT operation there is always a single output and single input
-      // both have the same schema and all the columns are have and IDENTITY transformation
-      // so we can skip the column lineage analysis
-      WriteEntity writeEntity = olContext.getWriteEntities().iterator().next();
-      DatasetIdentifier datasetIdentifier =
-          FilesystemDatasetUtils.fromLocation(writeEntity.getLocation());
-      InputDataset inputDataset = inputDatasets.get(0);
-      List<OutputDataset> outputDatasets =
-          Collections.singletonList(
-              olContext
-                  .getOpenLineage()
-                  .newOutputDatasetBuilder()
-                  .namespace(datasetIdentifier.getNamespace())
-                  .name(datasetIdentifier.getName())
-                  .facets(
-                      olContext
-                          .getOpenLineage()
-                          .newDatasetFacetsBuilder()
-                          .schema(inputDataset.getFacets().getSchema())
-                          .columnLineage(getIdentityCLL(inputDataset, olContext))
-                          .build())
-                  .build());
-      return outputDatasets;
+      return getExportOutputDatasets(olContext, inputDatasets);
     }
+    return getQueryOutputDatasets(olContext, inputDatasets, hookContext);
+  }
+
+  private static List<OutputDataset> getQueryOutputDatasets(
+      OpenLineageContext olContext, List<InputDataset> inputDatasets, HookContext hookContext) {
     SemanticAnalyzer semanticAnalyzer =
         HiveUtils.analyzeQuery(
             hookContext.getConf(),
@@ -187,6 +170,32 @@ public class Faceting {
     return outputs;
   }
 
+  private static List<OutputDataset> getExportOutputDatasets(
+      OpenLineageContext olContext, List<InputDataset> inputDatasets) throws Exception {
+    // In case of EXPORT operation there is always a single output and single input
+    // both have the same schema and all the columns are have and IDENTITY transformation
+    // so we can skip the column lineage analysis.
+    // In case of specifying a partition, we put the partitioning field as a FILTER transformation
+    WriteEntity writeEntity = olContext.getWriteEntities().iterator().next();
+    DatasetIdentifier datasetIdentifier =
+        FilesystemDatasetUtils.fromLocation(writeEntity.getLocation());
+    InputDataset inputDataset = inputDatasets.get(0);
+    return Collections.singletonList(
+        olContext
+            .getOpenLineage()
+            .newOutputDatasetBuilder()
+            .namespace(datasetIdentifier.getNamespace())
+            .name(datasetIdentifier.getName())
+            .facets(
+                olContext
+                    .getOpenLineage()
+                    .newDatasetFacetsBuilder()
+                    .schema(inputDataset.getFacets().getSchema())
+                    .columnLineage(getIdentityCLL(inputDataset, olContext))
+                    .build())
+            .build());
+  }
+
   private static ColumnLineageDatasetFacet getIdentityCLL(
       InputDataset inputDataset, OpenLineageContext olContext) {
     List<SchemaDatasetFacetFields> fields = inputDataset.getFacets().getSchema().getFields();
@@ -198,20 +207,13 @@ public class Faceting {
                 ol.newColumnLineageDatasetFacetFieldsAdditionalBuilder()
                     .inputFields(
                         Collections.singletonList(
-                            new InputFieldBuilder()
-                                .field(f.getName())
-                                .name(inputDataset.getName())
-                                .namespace(inputDataset.getNamespace())
-                                .transformations(
-                                    Collections.singletonList(
-                                        TransformationInfo.identity()
-                                            .toInputFieldsTransformations()))
-                                .build()))
+                            getBuild(inputDataset, f, TransformationInfo.identity())))
                     .build())
         .forEach(f -> cldffb.put(f.getInputFields().get(0).getField(), f));
+
     ExportWork work =
         (ExportWork) olContext.getHookContext().getQueryPlan().getRootTasks().get(0).getWork();
-    ColumnLineageDatasetFacetBuilder fields1 =
+    ColumnLineageDatasetFacetBuilder columnLineageDatasetFacetBuilder =
         ol.newColumnLineageDatasetFacetBuilder().fields(cldffb.build());
     if (work.getTableSpec().getPartSpec() != null && !work.getTableSpec().getPartSpec().isEmpty()) {
       List<InputField> collect1 =
@@ -219,38 +221,27 @@ public class Faceting {
               .filter(f -> work.getTableSpec().getPartSpec().containsKey(f.getName()))
               .map(
                   f ->
-                      new InputFieldBuilder()
-                          .field(f.getName())
-                          .name(inputDataset.getName())
-                          .namespace(inputDataset.getNamespace())
-                          .transformations(
-                              Collections.singletonList(
-                                  TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER)
-                                      .toInputFieldsTransformations()))
-                          .build())
+                      getBuild(
+                          inputDataset,
+                          f,
+                          TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER)))
               .collect(Collectors.toList());
-      fields1.dataset(collect1);
+      columnLineageDatasetFacetBuilder.dataset(collect1);
     }
 
-    return fields1.build();
+    return columnLineageDatasetFacetBuilder.build();
   }
 
-  private static ColumnLineageDatasetFacetFieldsAdditional getBuild(
+  private static InputField getBuild(
       InputDataset inputDataset,
-      OpenLineage ol,
       SchemaDatasetFacetFields f,
       TransformationInfo transformationInfo) {
-    return ol.newColumnLineageDatasetFacetFieldsAdditionalBuilder()
-        .inputFields(
-            Collections.singletonList(
-                new InputFieldBuilder()
-                    .field(f.getName())
-                    .name(inputDataset.getName())
-                    .namespace(inputDataset.getNamespace())
-                    .transformations(
-                        Collections.singletonList(
-                            transformationInfo.toInputFieldsTransformations()))
-                    .build()))
+    return new InputFieldBuilder()
+        .field(f.getName())
+        .name(inputDataset.getName())
+        .namespace(inputDataset.getNamespace())
+        .transformations(
+            Collections.singletonList(transformationInfo.toInputFieldsTransformations()))
         .build();
   }
 
