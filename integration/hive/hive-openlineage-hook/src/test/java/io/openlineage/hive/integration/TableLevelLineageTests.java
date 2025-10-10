@@ -47,15 +47,16 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
     createManagedHiveTable("failure_table", "id int, name string, team int");
     runHiveQuery("INSERT INTO unemployees VALUES(1, 'hello', 1)");
     Assertions.assertThatThrownBy(
-            () -> runHiveQuery(
-                String.join(
-                    "\n",
-                    "INSERT INTO failure_table",
-                    "SELECT",
-                    "    id,",
-                    "    name,",
-                    "    ASSERT_TRUE(team != 1) as team", // This will fail for team=1
-                    "FROM unemployees")))
+            () ->
+                runHiveQuery(
+                    String.join(
+                        "\n",
+                        "INSERT INTO failure_table",
+                        "SELECT",
+                        "    id,",
+                        "    name,",
+                        "    ASSERT_TRUE(team != 1) as team", // This will fail for team=1
+                        "FROM unemployees")))
         .hasMessageContainingAll("Error while processing statement: FAILED");
     // Check that lineage was still produced
     //        List<OpenLineage.RunEvent> emitted =

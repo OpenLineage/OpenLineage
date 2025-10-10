@@ -26,7 +26,6 @@ import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.session.HiveSession;
 import org.apache.hive.service.cli.session.HiveSessionHook;
 import org.apache.hive.service.cli.session.HiveSessionHookContext;
