@@ -23,7 +23,7 @@ ext {
 
 dependencies {
     implementation "com.google.cloud.datalineage:producerclient-java8:1.0.0"
-    implementation "com.google.cloud:google-cloud-datalineage:0.67.0"
+    implementation "com.google.cloud:google-cloud-datalineage:0.68.0"
 }
 
 apply from: '../transports.build.gradle'
