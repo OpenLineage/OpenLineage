@@ -83,6 +83,15 @@ export const Consumers: Array<Partner> = [
     org_url: "https://www.ibm.com/products/watsonx-data-intelligence/data-lineage",
   },
   {
+    image: "ilum_logo.svg",
+    org: "ILUM",
+    full_name: "ILUM",
+    description:
+      "ILUM is a Kubernetes-native data platform/lakehouse that consumes OpenLineage events from Spark, Airflow, and SQL engines to build end-to-end data lineage, versioned datasets, and governance-ready metadata across cloud and on-prem.",
+    docs_url: "https://ilum.cloud/docs/",
+    org_url: "https://ilum.cloud/",
+  },
+  {
     image: "mqz_logo_new.svg",
     org: "Marquez",
     full_name: "Marquez",
