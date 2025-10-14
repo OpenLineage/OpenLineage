@@ -26,7 +26,6 @@ import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.hive.service.cli.session.HiveSession;
 import org.apache.hive.service.cli.session.HiveSessionHook;
 import org.apache.hive.service.cli.session.HiveSessionHookContext;
@@ -42,6 +41,7 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
     SUPPORTED_OPERATIONS.add(HiveOperation.QUERY);
     SUPPORTED_OPERATIONS.add(HiveOperation.CREATETABLE_AS_SELECT);
     SUPPORTED_HOOK_TYPES.add(HookType.POST_EXEC_HOOK);
+    SUPPORTED_HOOK_TYPES.add(HookType.PRE_EXEC_HOOK);
     SUPPORTED_HOOK_TYPES.add(HookType.ON_FAILURE_HOOK);
   }
 
@@ -72,7 +72,7 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
   // This method exists only to record session creation timestamp.
   // See https://github.com/OpenLineage/OpenLineage/issues/3784
   @Override
-  public void run(HiveSessionHookContext sessionHookContext) throws HiveSQLException {
+  public void run(HiveSessionHookContext sessionHookContext) {
     try {
       HiveConf conf = sessionHookContext.getSessionConf();
       if (sessionHookContext instanceof HiveSessionHookContextImpl) {
@@ -89,7 +89,7 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
   }
 
   @Override
-  public void run(HookContext hookContext) throws Exception {
+  public void run(HookContext hookContext) {
     try {
       QueryPlan queryPlan = hookContext.getQueryPlan();
       Set<ReadEntity> validInputs = getValidInputs(queryPlan);
@@ -105,14 +105,7 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
           || validOutputs.isEmpty()) {
         return;
       }
-      OpenLineage.RunEvent.EventType eventType;
-      if (hookContext.getHookType() == HookType.POST_EXEC_HOOK) {
-        // It is a successful query
-        eventType = OpenLineage.RunEvent.EventType.COMPLETE;
-      } else { // HookType.ON_FAILURE_HOOK
-        // It is a failed query
-        eventType = OpenLineage.RunEvent.EventType.FAIL;
-      }
+      OpenLineage.RunEvent.EventType eventType = getEventType(hookContext);
       OpenLineageContext olContext =
           OpenLineageContext.builder()
               .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
@@ -132,5 +125,19 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
       // Don't let the query fail. Just log the error.
       log.error("Error occurred during lineage creation:", e);
     }
+  }
+
+  private static OpenLineage.RunEvent.EventType getEventType(HookContext hookContext) {
+    OpenLineage.RunEvent.EventType eventType;
+    if (hookContext.getHookType() == HookType.PRE_EXEC_HOOK) {
+      eventType = OpenLineage.RunEvent.EventType.START;
+    } else if (hookContext.getHookType() == HookType.POST_EXEC_HOOK) {
+      // It is a successful query
+      eventType = OpenLineage.RunEvent.EventType.COMPLETE;
+    } else { // HookType.ON_FAILURE_HOOK
+      // It is a failed query
+      eventType = OpenLineage.RunEvent.EventType.FAIL;
+    }
+    return eventType;
   }
 }
