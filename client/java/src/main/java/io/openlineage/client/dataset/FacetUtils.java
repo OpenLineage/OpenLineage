@@ -18,7 +18,7 @@ public class FacetUtils {
         .dataQualityAssertions(facets.getDataQualityAssertions())
         .dataQualityMetrics(facets.getDataQualityMetrics())
         .inputStatistics(facets.getInputStatistics())
-        .iceberg_scan_report(facets.getIceberg_scan_report());
+        .icebergScanReport(facets.getIcebergScanReport());
 
     facets.getAdditionalProperties().forEach(builder::put);
 
@@ -30,7 +30,7 @@ public class FacetUtils {
     OutputDatasetOutputFacetsBuilder builder = openLineage.newOutputDatasetOutputFacetsBuilder();
     builder
         .outputStatistics(facets.getOutputStatistics())
-        .iceberg_commit_report(facets.getIceberg_commit_report());
+        .icebergCommitReport(facets.getIcebergCommitReport());
 
     facets.getAdditionalProperties().forEach(builder::put);
 

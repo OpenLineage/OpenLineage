@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/IcebergScanReportInputDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-1/IcebergScanReportInputDatasetFacet.json",
   "$defs": {
     "IcebergScanReportInputDatasetFacet": {
       "allOf": [
@@ -111,7 +111,7 @@
   },
   "type": "object",
   "properties": {
-    "iceberg_scan_report": {
+    "icebergScanReport": {
       "$ref": "#/$defs/IcebergScanReportInputDatasetFacet"
     }
   }
