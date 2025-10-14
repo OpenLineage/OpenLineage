@@ -619,7 +619,7 @@ class IcebergHandlerTest {
   }
 
   @Test
-  void testGetBigQueryMetastoreCatalogDataWithAlternateProjectKey() {
+  void testGetBigQueryMetastoreLegacyCatalogData() {
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
     when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
@@ -634,7 +634,7 @@ class IcebergHandlerTest {
                 "gcs://bucket/path/to/iceberg/warehouse",
                 "spark.sql.catalog.bq_metastore_catalog.gcp_project",
                 "my-gcp-project",
-                "spark.sql.catalog.bq_metastore_catalog.gcp.bigquery.location",
+                "spark.sql.catalog.bq_metastore_catalog.gcp_location",
                 "eu"));
 
     Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =

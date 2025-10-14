@@ -54,12 +54,26 @@ class BigQueryMetastoreCatalogTypeHandler extends BaseCatalogTypeHandler {
   @Override
   Map<String, String> catalogProperties(Map<String, String> catalogConf) {
     Map<String, String> properties = new HashMap<>();
-    String projectId = catalogConf.get("gcp.bigquery.project-id");
-    if (projectId == null || projectId.isEmpty()) {
-      projectId = catalogConf.get("gcp_project");
-    }
-    properties.put("gcp_project_id", projectId);
-    properties.put("gcp_location", catalogConf.get("gcp.bigquery.location"));
+
+    // Backward compatibility: prefer official Iceberg keys, fall back to Google's legacy keys
+    // TODO: Remove fallback to legacy keys once migration period is complete
+    properties.put(
+        "gcp_project_id",
+        getConfigValueWithFallback(catalogConf, "gcp.bigquery.project-id", "gcp_project"));
+    properties.put(
+        "gcp_location",
+        getConfigValueWithFallback(catalogConf, "gcp.bigquery.location", "gcp_location"));
+
     return properties;
+  }
+
+  private String getConfigValueWithFallback(
+      Map<String, String> config, String key, String fallbackKey) {
+    String value = config.get(key);
+    if (value == null || value.trim().isEmpty()) {
+      value = config.get(fallbackKey);
+    }
+
+    return (value != null && !value.trim().isEmpty()) ? value.trim() : null;
   }
 }
