@@ -24,7 +24,6 @@ public class HiveContainerTestUtils {
 
   static final DockerImageName HIVE_IMAGE =
       DockerImageName.parse("quay.io/openlineage/hive").withTag("3.1.3");
-  //        DockerImageName.parse("quay.io/openlineagee/hive-debug").withTag("3.1.3");
 
   public static GenericContainer<?> makeHiveContainer(Network network) {
     GenericContainer<?> container =
@@ -33,12 +32,7 @@ public class HiveContainerTestUtils {
             .withNetworkAliases("hiveserver2")
             .withEnv("SERVICE_NAME", "hiveserver2")
             .withExposedPorts(10000, 10002)
-            //            .withExposedPorts(10000, 10002, 5005)
-            .withEnv("HIVE_SERVER2_THRIFT_PORT", "10000")
-        //                    .withEnv("ENABLE_DEBUG", "true")
-        //                    .withEnv("DEBUG_PORT", "5005")
-        ;
-    //        container.setPortBindings(Collections.singletonList("50050:5005"));
+            .withEnv("HIVE_SERVER2_THRIFT_PORT", "10000");
     mountPath(
         container,
         HOST_BUILD_DIR.resolve("libs").resolve(HOOK_JAR),
