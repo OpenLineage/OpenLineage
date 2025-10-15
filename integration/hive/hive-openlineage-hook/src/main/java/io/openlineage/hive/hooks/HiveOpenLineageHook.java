@@ -40,6 +40,7 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
   static {
     SUPPORTED_OPERATIONS.add(HiveOperation.QUERY);
     SUPPORTED_OPERATIONS.add(HiveOperation.CREATETABLE_AS_SELECT);
+    SUPPORTED_OPERATIONS.add(HiveOperation.EXPORT);
     SUPPORTED_HOOK_TYPES.add(HookType.POST_EXEC_HOOK);
     SUPPORTED_HOOK_TYPES.add(HookType.PRE_EXEC_HOOK);
     SUPPORTED_HOOK_TYPES.add(HookType.ON_FAILURE_HOOK);
@@ -63,6 +64,9 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
       Entity.Type entityType = writeEntity.getType();
       if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
           && !writeEntity.isDummy()) {
+        validOutputs.add(writeEntity);
+      } else if (queryPlan.getOperation() == HiveOperation.EXPORT
+          && (entityType == Entity.Type.LOCAL_DIR || entityType == Entity.Type.DFS_DIR)) {
         validOutputs.add(writeEntity);
       }
     }

@@ -195,7 +195,7 @@ class FacetingTest {
   @Test
   void testGetSchemaDatasetFacet() {
     Table table = mock(Table.class);
-    when(table.getCols())
+    when(table.getAllCols())
         .thenReturn(Collections.singletonList(new FieldSchema("col1", "string", "First column")));
 
     SchemaDatasetFacet result = Faceting.getSchemaDatasetFacet(openLineage, table);
