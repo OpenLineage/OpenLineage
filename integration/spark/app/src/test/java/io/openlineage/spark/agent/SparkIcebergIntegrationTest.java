@@ -14,6 +14,8 @@ import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
+import io.openlineage.client.OpenLineage.IcebergCommitReportOutputDatasetFacet;
+import io.openlineage.client.OpenLineage.IcebergScanReportInputDatasetFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.InputDatasetInputFacets;
 import io.openlineage.client.OpenLineage.InputStatisticsInputDatasetFacet;
@@ -46,8 +48,6 @@ import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
-import org.assertj.core.api.AbstractObjectAssert;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -588,12 +588,9 @@ class SparkIcebergIntegrationTest {
             events.stream()
                 .flatMap(e -> e.getInputs().stream())
                 .filter(e -> e.getName().endsWith("stats_source1"))
-                .filter(e -> e.getInputFacets() != null)
-                .map(i -> i.getInputFacets())
+                .map(InputDataset::getInputFacets)
                 .filter(Objects::nonNull)
-                .map(i -> i.getAdditionalProperties())
-                .filter(Objects::nonNull)
-                .filter(f -> f.containsKey("icebergScanReport"))
+                .map(InputDatasetInputFacets::getIcebergScanReport)
                 .filter(Objects::nonNull)
                 .findFirst())
         .isPresent();
@@ -643,42 +640,23 @@ class SparkIcebergIntegrationTest {
             .collect(Collectors.toList());
 
     // get scan report facet
-    AbstractObjectAssert<?, ?> icebergScanReport =
-        assertThat(inputFacets.stream())
-            .map(l -> l.getAdditionalProperties())
-            .filteredOn(Objects::nonNull)
-            .filteredOn(e -> e.containsKey("icebergScanReport"))
-            .isNotEmpty()
-            .map(e -> e.get("icebergScanReport"))
-            .map(
-                e -> {
-                  log.info(
-                      "Additional properties from {} {}",
-                      e.getClass(),
-                      OpenLineageClientUtils.toJson(e));
-                  return e.getAdditionalProperties();
-                })
-            .singleElement();
+    Optional<IcebergScanReportInputDatasetFacet> icebergScanReport =
+        inputFacets.stream()
+            .map(InputDatasetInputFacets::getIcebergScanReport)
+            .filter(Objects::nonNull)
+            .findFirst();
 
-    icebergScanReport
-        .extracting("filterDescription", "projectedFieldNames")
-        .doesNotContainNull()
-        .contains("", new ArrayList<>(Arrays.asList("a", "b")));
+    assertThat(icebergScanReport).isPresent();
+    assertThat(icebergScanReport.get().getFilterDescription()).isEqualTo("");
+    assertThat(icebergScanReport.get().getProjectedFieldNames())
+        .isEqualTo(new ArrayList<>(Arrays.asList("a", "b")));
+    assertThat(icebergScanReport.get().getSnapshotId().longValue()).isGreaterThan(0L);
+    assertThat(icebergScanReport.get().getScanMetrics().getResultDataFiles().longValue())
+        .isEqualTo(1);
+    assertThat(icebergScanReport.get().getScanMetrics().getTotalDataManifests().longValue())
+        .isEqualTo(1);
 
-    icebergScanReport
-        .extracting("snapshotId")
-        .asInstanceOf(InstanceOfAssertFactories.LONG)
-        .isGreaterThan(0);
-
-    icebergScanReport
-        .extracting("scanMetrics")
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
-        .containsEntry("resultDataFiles", 1)
-        .containsEntry("totalDataManifests", 1);
-
-    icebergScanReport
-        .extracting("metadata")
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
+    assertThat(icebergScanReport.get().getMetadata().getAdditionalProperties())
         .containsEntry("engine-name", "spark");
   }
 
@@ -708,16 +686,14 @@ class SparkIcebergIntegrationTest {
             .collect(Collectors.toList());
 
     // get scan report facet
-    AbstractObjectAssert<?, ?> icebergScanReport1 =
-        assertThat(inputFacets1.stream())
-            .map(l -> l.getAdditionalProperties())
-            .filteredOn(e -> e.containsKey("icebergScanReport"))
-            .map(e -> e.get("icebergScanReport"))
-            .map(e -> e.getAdditionalProperties())
-            .singleElement();
+    Optional<IcebergScanReportInputDatasetFacet> icebergScanReport1 =
+        inputFacets1.stream()
+            .map(InputDatasetInputFacets::getIcebergScanReport)
+            .filter(Objects::nonNull)
+            .findFirst();
 
-    icebergScanReport1
-        .extracting("projectedFieldNames")
+    assertThat(icebergScanReport1).isPresent();
+    assertThat(icebergScanReport1.get().getProjectedFieldNames())
         .isEqualTo(new ArrayList<>(Collections.singletonList("a")));
 
     List<InputDatasetInputFacets> inputFacets2 =
@@ -728,16 +704,14 @@ class SparkIcebergIntegrationTest {
             .collect(Collectors.toList());
 
     // get scan report facet
-    AbstractObjectAssert<?, ?> icebergScanReport2 =
-        assertThat(inputFacets2.stream())
-            .map(l -> l.getAdditionalProperties())
-            .filteredOn(e -> e.containsKey("icebergScanReport"))
-            .map(e -> e.get("icebergScanReport"))
-            .map(e -> e.getAdditionalProperties())
-            .singleElement();
+    Optional<IcebergScanReportInputDatasetFacet> icebergScanReport2 =
+        inputFacets2.stream()
+            .map(InputDatasetInputFacets::getIcebergScanReport)
+            .filter(Objects::nonNull)
+            .findFirst();
 
-    icebergScanReport2
-        .extracting("projectedFieldNames")
+    assertThat(icebergScanReport2).isPresent();
+    assertThat(icebergScanReport2.get().getProjectedFieldNames())
         .isEqualTo(new ArrayList<>(Collections.singletonList("b")));
   }
 
@@ -769,43 +743,24 @@ class SparkIcebergIntegrationTest {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
-    AbstractObjectAssert<?, ?> icebergCommitReport =
-        assertThat(outputFacets.stream())
-            .map(l -> l.getAdditionalProperties())
-            .filteredOn(Objects::nonNull)
-            .filteredOn(e -> e.containsKey("icebergCommitReport"))
-            .isNotEmpty()
-            .map(e -> e.get("icebergCommitReport"))
-            .map(
-                e -> {
-                  log.info(
-                      "Additional properties from {} {}",
-                      e.getClass(),
-                      OpenLineageClientUtils.toJson(e.getAdditionalProperties()));
-                  return e.getAdditionalProperties();
-                })
-            .singleElement();
+    Optional<IcebergCommitReportOutputDatasetFacet> icebergCommitReport =
+        outputFacets.stream()
+            .map(OutputDatasetOutputFacets::getIcebergCommitReport)
+            .filter(Objects::nonNull)
+            .findFirst();
 
-    icebergCommitReport
-        .extracting("operation", "sequenceNumber")
-        .doesNotContainNull()
-        .contains("append", 2);
+    assertThat(icebergCommitReport).isPresent();
+    assertThat(icebergCommitReport.get().getOperation()).isEqualTo("append");
+    assertThat(icebergCommitReport.get().getSequenceNumber().longValue()).isEqualTo(2L);
+    assertThat(icebergCommitReport.get().getSnapshotId().longValue()).isGreaterThan(0L);
 
-    icebergCommitReport
-        .extracting("snapshotId")
-        .asInstanceOf(InstanceOfAssertFactories.LONG)
-        .isGreaterThan(0);
-
-    icebergCommitReport
-        .extracting("metadata")
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
+    assertThat(icebergCommitReport.get().getMetadata().getAdditionalProperties())
         .containsEntry("engine-name", "spark");
 
-    icebergCommitReport
-        .extracting("commitMetrics")
-        .asInstanceOf(InstanceOfAssertFactories.MAP)
-        .containsEntry("addedRecords", 1)
-        .containsEntry("addedDataFiles", 1);
+    assertThat(icebergCommitReport.get().getCommitMetrics().getAddedRecords().longValue())
+        .isEqualTo(1L);
+    assertThat(icebergCommitReport.get().getCommitMetrics().getAddedDataFiles().longValue())
+        .isEqualTo(1L);
   }
 
   private void clearTables(String... tables) {
