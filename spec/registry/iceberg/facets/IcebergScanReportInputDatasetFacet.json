@@ -14,7 +14,7 @@
               "description": "Snapshot ID of the iceberg table",
               "type": "number"
             },
-            "filter": {
+            "filterDescription": {
               "description": "Filter used to scan the iceberg table",
               "type": "string"
             },
