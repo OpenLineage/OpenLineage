@@ -18,6 +18,7 @@ from openlineage.client.event_v2 import RunEvent as RunEventV2
 from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http import HttpCompression, TokenProvider, create_token_provider
+from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
 
@@ -155,16 +156,7 @@ class AsyncHttpConfig(Config):
     # Async configuration fields (flattened from AsyncConfig)
     max_queue_size: int = attr.field(default=10000)
     max_concurrent_requests: int = attr.field(default=100)
-    retry: dict[str, Any] = attr.field(
-        default={
-            "total": 5,
-            "read": 5,
-            "connect": 5,
-            "backoff_factor": 0.3,
-            "status_forcelist": [500, 502, 503, 504],
-            "allowed_methods": ["HEAD", "POST"],
-        }
-    )
+    retry: dict[str, Any] = attr.field(default=DEFAULT_RETRY_CONFIG)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> AsyncHttpConfig:
@@ -176,6 +168,11 @@ class AsyncHttpConfig(Config):
         compression = specified_dict.get("compression")
         if compression:
             specified_dict["compression"] = HttpCompression(compression)
+
+        # Merge retry config with defaults to preserve unspecified values
+        if "retry" in specified_dict:
+            specified_dict["retry"] = {**DEFAULT_RETRY_CONFIG, **specified_dict["retry"]}
+
         return cls(**specified_dict)
 
 

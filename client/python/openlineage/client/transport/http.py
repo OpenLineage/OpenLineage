@@ -13,6 +13,7 @@ from urllib.parse import urljoin
 import attr
 import urllib3.util
 from openlineage.client.serde import Serde
+from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields, import_from_string
 from requests import Session
@@ -96,16 +97,7 @@ class HttpConfig(Config):
     # custom headers support
     custom_headers: dict[str, str] = attr.field(factory=dict)
     # retry settings
-    retry: dict[str, Any] = attr.field(
-        default={
-            "total": 5,
-            "read": 5,
-            "connect": 5,
-            "backoff_factor": 0.3,
-            "status_forcelist": [500, 502, 503, 504],
-            "allowed_methods": ["HEAD", "POST"],
-        }
-    )
+    retry: dict[str, Any] = attr.field(default=DEFAULT_RETRY_CONFIG)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> HttpConfig:
@@ -117,6 +109,11 @@ class HttpConfig(Config):
         compression = specified_dict.get("compression")
         if compression:
             specified_dict["compression"] = HttpCompression(compression)
+
+        # Merge retry config with defaults to preserve unspecified values
+        if "retry" in specified_dict:
+            specified_dict["retry"] = {**DEFAULT_RETRY_CONFIG, **specified_dict["retry"]}
+
         return cls(**specified_dict)
 
     @classmethod

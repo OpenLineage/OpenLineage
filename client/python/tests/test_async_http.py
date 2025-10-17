@@ -68,6 +68,70 @@ class TestAsyncHttpConfig:
         assert config.max_queue_size == 2000
         assert config.max_concurrent_requests == 25
 
+    def test_async_http_retry_config_merges_with_defaults(self):
+        """Test that partial retry config is merged with defaults, not replaced"""
+        config = AsyncHttpConfig.from_dict(
+            {
+                "type": "async_http",
+                "url": "http://backend:5000",
+                "retry": {
+                    "total": 10,
+                },
+            },
+        )
+
+        # User-specified value should be applied
+        assert config.retry["total"] == 10
+
+        # Default values should be preserved
+        assert config.retry["read"] == 5
+        assert config.retry["connect"] == 5
+        assert config.retry["backoff_factor"] == 0.3
+        assert config.retry["status_forcelist"] == [500, 502, 503, 504]
+        assert config.retry["allowed_methods"] == ["HEAD", "POST"]
+
+    def test_async_http_retry_config_overrides_defaults(self):
+        """Test that all retry config values can be overridden"""
+        config = AsyncHttpConfig.from_dict(
+            {
+                "type": "async_http",
+                "url": "http://backend:5000",
+                "retry": {
+                    "total": 10,
+                    "read": 3,
+                    "connect": 2,
+                    "backoff_factor": 1.0,
+                    "status_forcelist": [500, 503],
+                    "allowed_methods": ["POST"],
+                },
+            },
+        )
+
+        # All user-specified values should be applied
+        assert config.retry["total"] == 10
+        assert config.retry["read"] == 3
+        assert config.retry["connect"] == 2
+        assert config.retry["backoff_factor"] == 1.0
+        assert config.retry["status_forcelist"] == [500, 503]
+        assert config.retry["allowed_methods"] == ["POST"]
+
+    def test_async_http_retry_config_no_retry_specified(self):
+        """Test that default retry config is used when retry is not specified"""
+        config = AsyncHttpConfig.from_dict(
+            {
+                "type": "async_http",
+                "url": "http://backend:5000",
+            },
+        )
+
+        # Default values should be present
+        assert config.retry["total"] == 5
+        assert config.retry["read"] == 5
+        assert config.retry["connect"] == 5
+        assert config.retry["backoff_factor"] == 0.3
+        assert config.retry["status_forcelist"] == [500, 502, 503, 504]
+        assert config.retry["allowed_methods"] == ["HEAD", "POST"]
+
 
 class TestAsyncHttpTransport:
     def test_async_http_transport_initialization(self):
