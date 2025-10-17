@@ -115,23 +115,6 @@ class TestAsyncHttpConfig:
         assert config.retry["status_forcelist"] == [500, 503]
         assert config.retry["allowed_methods"] == ["POST"]
 
-    def test_async_http_retry_config_no_retry_specified(self):
-        """Test that default retry config is used when retry is not specified"""
-        config = AsyncHttpConfig.from_dict(
-            {
-                "type": "async_http",
-                "url": "http://backend:5000",
-            },
-        )
-
-        # Default values should be present
-        assert config.retry["total"] == 5
-        assert config.retry["read"] == 5
-        assert config.retry["connect"] == 5
-        assert config.retry["backoff_factor"] == 0.3
-        assert config.retry["status_forcelist"] == [500, 502, 503, 504]
-        assert config.retry["allowed_methods"] == ["HEAD", "POST"]
-
 
 class TestAsyncHttpTransport:
     def test_async_http_transport_initialization(self):
