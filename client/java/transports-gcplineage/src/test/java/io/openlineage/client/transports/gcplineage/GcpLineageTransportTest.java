@@ -5,6 +5,8 @@
 package io.openlineage.client.transports.gcplineage;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,6 +26,8 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
 import java.net.URI;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 class GcpLineageTransportTest {
@@ -105,6 +109,36 @@ class GcpLineageTransportTest {
     when(async.processOpenLineageRunEvent(request)).thenThrow(AsyncTaskException.class);
 
     assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
+  }
+
+  @Test
+  void flushWithSyncClientReturnsTrue() throws Exception {
+    SyncLineageProducerClient syncClient = mock(SyncLineageProducerClient.class);
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
+    config.setProjectId("my-project");
+    config.setLocation("us");
+
+    GcpLineageTransport transport = new GcpLineageTransport(
+        new GcpLineageTransport.ProducerClientWrapper(config, syncClient));
+
+    // Sync client should always return true (no pending operations)
+    assertTrue(transport.flush());
+    assertTrue(transport.flush(10));
+  }
+
+  @Test
+  void flushWithAsyncClientAndNoPendingOperations() throws Exception {
+    AsyncLineageProducerClient asyncClient = mock(AsyncLineageProducerClient.class);
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
+    config.setProjectId("my-project");
+    config.setLocation("us");
+
+    GcpLineageTransport transport = new GcpLineageTransport(
+        new GcpLineageTransport.ProducerClientWrapper(config, asyncClient));
+
+    // No pending operations should return true immediately
+    assertTrue(transport.flush());
+    assertTrue(transport.flush(1));
   }
 
   public static OpenLineage.RunEvent runEvent() {
