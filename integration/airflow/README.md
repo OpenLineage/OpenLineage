@@ -96,6 +96,32 @@ When enabled, the library will:
 
 ## Configuration
 
+### Disabling the Integration
+
+The OpenLineage integration can be disabled in two ways, which are evaluated in order.
+
+#### 1. At Startup (Requires Restart)
+
+These checks are performed only once when the Airflow Scheduler and Workers start up. Changing them requires a restart.
+
+The integration will be **disabled at startup** if either of the following are true:
+- **The Native Airflow Provider is Installed:** If the `apache-airflow-providers-openlineage` package is found, this plugin is automatically disabled to prevent conflicts.
+- **`OPENLINEAGE_DISABLED` is `true`:** If this environment variable is set to `true`, the integration is disabled. This acts as a master "kill switch."
+
+---
+
+#### 2. At Runtime (Dynamic, No Restart Required)
+
+If the integration is not disabled at startup, you can still toggle it on and off dynamically.
+
+- **`openlineage.disabled` Airflow Variable:** The integration will periodically check for an Airflow Variable named `openlineage.disabled`. If this variable is set to `true`, the integration will stop emitting events for all subsequent DAG and task runs.
+
+To use this feature, create a new Variable in the Airflow UI (**Admin -> Variables**) with:
+- **Key**: `openlineage.disabled`
+- **Value**: `true`
+
+**Important:** To ensure stability, this check is performed by a background process every 60 seconds. This means there may be a delay of up to one minute from when you change the variable to when the integration's behavior changes. This does **not** require an Airflow restart.
+
 ### `HTTP` Backend Environment Variables
 
 `openlineage-airflow` uses the OpenLineage client to push data to OpenLineage backend.
@@ -205,10 +231,10 @@ validation_operators:
       - name: update_data_docs
         action:
           class_name: UpdateDataDocsAction
-+     - name: openlineage
-+       action:
-+         class_name: OpenLineageValidationAction
-+         module_name: openlineage.common.provider.great_expectations.action
+      - name: openlineage
+        action:
+          class_name: OpenLineageValidationAction
+          module_name: openlineage.common.provider.great_expectations.action
       # - name: send_slack_notification_on_validation_result
       #   action:
       #     class_name: SlackNotificationAction
