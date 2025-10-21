@@ -7,15 +7,14 @@ from unittest.mock import MagicMock
 
 import pytest
 import pytz
-from openlineage.airflow.utils import try_import_from_string
-from openlineage.client.uuid import generate_new_uuid
-from packaging.version import Version
-from pytest_mock import MockerFixture
-
 from airflow.models import DAG, TaskInstance
 from airflow.utils import timezone
 from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
+from openlineage.airflow.utils import try_import_from_string
+from openlineage.client.uuid import generate_new_uuid
+from packaging.version import Version
+from pytest_mock import MockerFixture
 
 DbtCloudRunJobOperator = try_import_from_string(
     "airflow.providers.dbt.cloud.operators.dbt.DbtCloudRunJobOperator"

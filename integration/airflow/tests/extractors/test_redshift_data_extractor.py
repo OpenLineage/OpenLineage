@@ -11,6 +11,11 @@ from unittest.mock import PropertyMock
 
 import pytest
 import pytz
+from airflow.models import DAG, TaskInstance
+from airflow.providers.amazon.aws.operators.redshift_data import RedshiftDataOperator
+from airflow.utils import timezone
+from airflow.utils.state import State
+from airflow.version import version as AIRFLOW_VERSION
 from openlineage.airflow.extractors.redshift_data_extractor import RedshiftDataExtractor
 from openlineage.client.facet_v2 import (
     error_message_run,
@@ -21,14 +26,8 @@ from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 from packaging.version import Version
 
-from airflow.models import DAG, TaskInstance
-from airflow.providers.amazon.aws.operators.redshift_data import RedshiftDataOperator
-from airflow.utils import timezone
-from airflow.utils.state import State
-from airflow.version import version as AIRFLOW_VERSION
-
 CONN_ID = "food_delivery_db"
-CONN_URI = "redshift://user:pass@redshift-cluster-name.id.region.redshift.amazonaws.com:5439" "/food_delivery"
+CONN_URI = "redshift://user:pass@redshift-cluster-name.id.region.redshift.amazonaws.com:5439/food_delivery"
 CONN_URI_WITHOUT_USERPASS = (
     "redshift://redshift-cluster-name.id.region.redshift.amazonaws.com:5439/food_delivery"
 )
@@ -168,9 +167,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         Version(AIRFLOW_VERSION) >= Version("2.5.0"),
         reason="Airflow >= 2.5.0",
     )
-    @mock.patch(
-        "airflow.providers.amazon.aws.operators.redshift_data." "RedshiftDataOperator.wait_for_results"
-    )
+    @mock.patch("airflow.providers.amazon.aws.operators.redshift_data.RedshiftDataOperator.wait_for_results")
     @mock.patch(
         "airflow.providers.amazon.aws.operators.redshift_data.RedshiftDataOperator.hook",
         new_callable=PropertyMock,

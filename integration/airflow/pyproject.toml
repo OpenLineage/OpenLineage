@@ -1,3 +1,89 @@
+[build-system]
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "openlineage-airflow"
+version = "1.40.0"
+description = "OpenLineage integration with Airflow"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "OpenLineage"}]
+keywords = ["openlineage"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "attrs>=20.0",
+    "openlineage-integration-common==1.40.0",
+    "openlineage_sql==1.40.0",
+    "openlineage-python==1.40.0",
+]
+
+[project.optional-dependencies]
+airflow = [
+    "apache-airflow>=2.5.2,<2.8",
+    "apache-airflow-providers-postgres>=2.0.0,<=5.4.0",
+    "apache-airflow-providers-mysql>=2.0.0,<=4.0.2",
+    "apache-airflow-providers-trino>=3.1.0,<=4.3.2",
+    "apache-airflow-providers-snowflake>=2.1.0,<=4.0.4",
+    "apache-airflow-providers-google>=5.0.0,<=8.11.0",
+    "apache-airflow-providers-amazon>=3.1.1,<=7.3.0",
+    "apache-airflow-providers-sftp>=2.1.1,<=4.2.4",
+    "apache-airflow-providers-ssh>=2.1.0,<=3.5.0",
+    "apache-airflow-providers-ftp>=3.3.0,<=3.3.1",
+    "apache-airflow-providers-dbt-cloud>=1.0.0,<=3.1.0",
+    "airflow-provider-great-expectations>=0.1.5,<=0.2.6",
+    "great-expectations>=0.15.0,<1.0.0",
+    "notebook>=6.0.0,<7.4.0",
+    "protobuf>=3.20,<3.21",
+]
+dev = [
+    "aiohttp",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "mock",
+    "SQLAlchemy",
+    "Flask-SQLAlchemy",
+    "snowflake-connector-python",
+    "mypy",
+    "tox",
+    "tox-uv",
+    "types-PyYAML",
+    "types-paramiko",
+    "types-python-dateutil",
+    "types-requests",
+    "pandas",
+    "boto3",
+    "paramiko"
+]
+
+[project.urls]
+Homepage = "https://openlineage.io/"
+Source = "https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow"
+
+[project.entry-points."airflow.plugins"]
+OpenLineagePlugin = "openlineage.airflow.plugin:OpenLineagePlugin"
+
+[tool.uv.sources]
+openlineage-integration-common = { path = "../common", editable = true }
+openlineage_sql = { path = "../sql/iface-py", editable = true }
+openlineage-python = { path = "../../client/python", editable = true }
+
+[tool.uv.build-backend]
+module-name = "openlineage"
+namespace = true
+
 [tool.ruff]
 line-length = 110
 lint.select = [
@@ -7,6 +93,74 @@ lint.select = [
     "I001"
 ]
 target-version = "py39"
-lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/airflow"]
+
+[tool.pytest.ini_options]
+addopts = "-p no:warnings"
+
+[tool.mypy]
+ignore_missing_imports = true
+disable_error_code = "attr-defined"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+requires = tox-uv
+env_list = py39-airflow-2.5.2,py39-airflow-2.6.1
+skip_missing_interpreters = true
+
+[testenv]
+runner = uv-venv-runner
+description = run tests with Airflow version matrix
+skip_install = true
+package = editable
+deps =
+    pytest>=7.0,<8.0
+    pytest-cov>=4.0
+    pytest-mock>=3.0
+    pluggy>=1.0,<2.0
+    airflow-2.5.2: apache-airflow==2.5.2
+    airflow-2.6.1: apache-airflow==2.6.1
+set_env =
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN = sqlite:///{envdir}/airflow.db
+    AIRFLOW_HOME = {envdir}
+    PYTHONPATH = {toxinidir}
+    airflow-2.5.2: AIRFLOW_VERSION = 2.5.2
+    airflow-2.6.1: AIRFLOW_VERSION = 2.6.1
+    UV_PROJECT_ENVIRONMENT={envdir}
+allowlist_externals = bash
+commands_pre =
+      # Sync the project with dev dependencies (includes test deps, openlineage-integration-common as editable, and openlineage-airflow itself)
+      uv sync --python {env_python} --frozen --inexact --extra dev
+      # Install Airflow with constraints to get correct transitive dependencies (e.g., pendulum)
+      uv pip install --constraints https://raw.githubusercontent.com/apache/airflow/constraints-{env:AIRFLOW_VERSION}/constraints-3.9.txt apache-airflow=={env:AIRFLOW_VERSION} pytest>=7.0,<8.0 pytest-cov>=4.0 pytest-mock>=3.0 pluggy>=1.0,<2.0
+      # Install google-cloud packages with deps (they need proto-plus and grpc-google-iam-v1)
+      uv pip install "google-cloud-secret-manager>=2.0.0,<3.0" "google-cloud-bigquery>=3.0.0,<4.0" "pandas-gbq>=0.19.0,<1.0"
+      # Install providers with --no-deps to avoid pulling incompatible dependencies
+      uv pip install --no-deps "google-api-core>=2.0.0,<3.0" "google-api-python-client>=2.0.0,<3.0" "google-auth>=2.0.0,<3.0" "google-auth-httplib2>=0.1.0,<1.0" "httplib2>=0.19.0,<1.0" "uritemplate>=3.0.0,<5.0" "google-resumable-media>=2.0.0,<3.0" "googleapis-common-protos>=1.56.0,<2.0" "google-cloud-core>=2.0.0,<3.0" "google-cloud-storage>=2.0.0,<3.0" "grpcio>=1.44.0,<2.0" "protobuf>=3.20.0,<5.0" "psycopg2-binary>=2.9.0,<3.0" "redshift-connector>=2.0.0,<3.0" "scramp>=1.4.0,<2.0" "pysftp>=0.2.9,<0.3.0" "paramiko>=2.0.0,<3.0" "sshtunnel>=0.4.0,<1.0" "snowflake-sqlalchemy>=1.4.0,<2.0" "apache-airflow-providers-amazon>=3.1.1,<6.0" "apache-airflow-providers-google>=5.0.0,<8.0" "apache-airflow-providers-postgres>=2.0.0,<5.0" "apache-airflow-providers-mysql>=2.0.0,<4.0" "apache-airflow-providers-snowflake>=2.1.0,<4.0" "apache-airflow-providers-sftp>=2.1.1,<4.0" "apache-airflow-providers-ssh>=2.1.0,<3.0" "apache-airflow-providers-ftp>=3.3.0,<3.4" "apache-airflow-providers-trino>=3.1.0,<4.0" "apache-airflow-providers-dbt-cloud>=1.0.0,<3.0"
+commands =
+    bash -ec "if [[ ! -f $0/airflow.db ]]; then airflow db reset -y; fi" {envdir}
+    pytest --cov=src/openlineage --junitxml=test-results/junit.xml tests/
+    coverage xml
+"""
+
+[tool.bumpversion]
+current_version = "1.40.0"
+commit = false
+tag = false
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<rc>.*)"
+serialize = [
+    "{major}.{minor}.{patch}{rc}",
+    "{major}.{minor}.{patch}"
+]
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "openlineage/airflow/version.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""

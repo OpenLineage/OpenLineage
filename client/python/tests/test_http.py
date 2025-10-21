@@ -591,8 +591,9 @@ class TestHttpMock:
         transport = HttpTransport(config)
         mock_event = MagicMock()
 
-        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'), patch(
-            "gzip.compress", return_value=b"compressed_data"
+        with (
+            patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'),
+            patch("gzip.compress", return_value=b"compressed_data"),
         ):
             transport.emit(mock_event)
 

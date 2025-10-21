@@ -3,6 +3,7 @@
 
 import copy
 import json
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -16,6 +17,8 @@ from openlineage.common.provider.bigquery import (
     BigQueryStatisticsDatasetFacet,
 )
 
+CURRENT_DIR = str(Path(__file__).absolute().parent)
+
 
 def read_file_json(file):
     with open(file=file) as f:
@@ -26,8 +29,8 @@ class TableMock(MagicMock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.inputs = [
-            read_file_json("tests/bigquery/table_details.json"),
-            read_file_json("tests/bigquery/out_table_details.json"),
+            read_file_json(CURRENT_DIR + "/table_details.json"),
+            read_file_json(CURRENT_DIR + "/out_table_details.json"),
         ]
 
     @property
@@ -36,7 +39,7 @@ class TableMock(MagicMock):
 
 
 def test_bq_job_information():
-    job_details = read_file_json("tests/bigquery/job_details.json")
+    job_details = read_file_json(CURRENT_DIR + "/job_details.json")
     client = MagicMock()
     client.get_job.return_value._properties = job_details
 
@@ -79,8 +82,8 @@ def test_bq_job_information():
 
 
 def test_bq_script_job_information():
-    script_job_details = read_file_json("tests/bigquery/script_job_details.json")
-    query_job_details = read_file_json("tests/bigquery/job_details.json")
+    script_job_details = read_file_json(CURRENT_DIR + "/script_job_details.json")
+    query_job_details = read_file_json(CURRENT_DIR + "/job_details.json")
     client = MagicMock()
     client.get_job.side_effect = [
         MagicMock(_properties=script_job_details),

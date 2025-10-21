@@ -3,9 +3,8 @@
 
 from urllib.parse import parse_qs, urlparse
 
-from openlineage.airflow.extractors.base import BaseExtractor
-
 from airflow.models import Connection
+from openlineage.airflow.extractors.base import BaseExtractor
 
 AIRFLOW_CONN_ID = "test_db"
 AIRFLOW_CONN_URI = "postgres://localhost:5432/testdb"

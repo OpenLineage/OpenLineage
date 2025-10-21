@@ -7,7 +7,7 @@
 #
 # Requirements:
 #   * You're on the 'main' branch
-#   * You've installed 'bump2version'
+#   * You've installed 'bump-my-version'
 #
 # Usage: $ ./new-version.sh --release-version RELEASE_VERSION --next-version NEXT_VERSION
 
@@ -48,11 +48,11 @@ usage() {
 # new_version are the same
 function update_py_version_if_needed() {
   # shellcheck disable=SC2086,SC2046
-  export $(bump2version manual --new-version $1 --allow-dirty --list --dry-run | grep version | xargs)
+  export $(uv run bump-my-version show --format "{current_version}" | sed 's/^/current_version=/')
   # shellcheck disable=SC2154
-  if [ "$new_version" != "$current_version" ]; then
+  if [ "$1" != "$current_version" ]; then
     # shellcheck disable=SC2086
-    bump2version manual --new-version $1 --allow-dirty
+    uv run bump-my-version bump --new-version $1
   fi
 }
 
@@ -65,9 +65,9 @@ readonly SEMVER_REGEX="^[0-9]+(\.[0-9]+){2}((-rc\.[0-9]+)?(-SNAPSHOT)?)$" # X.Y.
 project_root=$(git rev-parse --show-toplevel)
 cd "${project_root}/"
 
-# Verify bump2version is installed
-if [[ ! $(type -P bump2version) ]]; then
-  echo "bump2version not installed! Please see https://github.com/c4urself/bump2version#installation"
+# Verify bump-my-version is installed
+if [[ ! $(uv run which bump-my-version) ]]; then
+  echo "bump-my-version not installed! Please see https://github.com/callowayproject/bump-my-version#installation"
   exit 1;
 fi
 
@@ -165,7 +165,7 @@ git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
 # (6) Prepare next development version
 PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/sql/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${NEXT_VERSION}" --allow-dirty)
+  (cd "${PYTHON_MODULE}" && uv run bump-my-version bump --new-version "${NEXT_VERSION}")
 done
 
 # Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing

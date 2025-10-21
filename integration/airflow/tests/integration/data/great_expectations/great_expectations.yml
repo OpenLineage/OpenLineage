@@ -10,25 +10,46 @@
 # It is auto-generated and usually does not need to be changed.
 config_version: 2.0
 
+# Datasources tell Great Expectations where your data lives and how to get it.
 datasources:
   file__data:
-    class_name: PandasDatasource
-    module_name: great_expectations.datasource
-    data_asset_type:
-      module_name: great_expectations.dataset
-      class_name: PandasDataset
+    class_name: Datasource
+    execution_engine:
+      class_name: PandasExecutionEngine
+    data_connectors:
+      default_inferred_data_connector_name:
+        class_name: InferredAssetFilesystemDataConnector
+        base_directory: /opt/data/great_expectations/data
+        default_regex:
+          pattern: (.*\.csv)
+          group_names:
+            - data_asset_name
+      default_runtime_data_connector_name:
+        class_name: RuntimeDataConnector
+        batch_identifiers:
+          - default_identifier_name
+
   sqlite__data:
-    class_name: SqlAlchemyDatasource
-    module_name: great_expectations.datasource
-    credentials:
-      url: sqlite:////opt/data/great_expectations/data/sqlite.data
-    data_asset_type:
-      module_name:
-      class_name: SqlAlchemyDataset
+    class_name: Datasource
+    execution_engine:
+      class_name: SqlAlchemyExecutionEngine
+      connection_string: sqlite:////opt/data/great_expectations/data/sqlite.data
+    data_connectors:
+      default_runtime_data_connector_name:
+        class_name: RuntimeDataConnector
+        batch_identifiers:
+          - default_identifier_name
+      default_inferred_data_connector_name:
+        class_name: InferredAssetSqlDataConnector
+        include_schema_name: true
+        introspection_directives:
+          schema_name: main
+
 config_variables_file_path: uncommitted/config_variables.yml
 
 plugins_directory: plugins/
 
+# Legacy validation operators kept for backwards compatibility
 validation_operators:
   ol_operator:
     class_name: ActionListValidationOperator
@@ -69,5 +90,14 @@ evaluation_parameter_store_name: evaluation_parameter_store
 anonymous_usage_statistics:
   enabled: false
   data_context_id: 28fc8bae-abab-abab-abab-b0270ea34e7d
+
 notebooks:
+
 data_docs_sites:
+  local_site:
+    class_name: SiteBuilder
+    store_backend:
+      class_name: TupleFilesystemStoreBackend
+      base_directory: uncommitted/data_docs/local_site/
+    site_index_builder:
+      class_name: DefaultSiteIndexBuilder
