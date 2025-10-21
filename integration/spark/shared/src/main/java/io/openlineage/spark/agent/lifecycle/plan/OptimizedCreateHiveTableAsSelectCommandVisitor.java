@@ -39,8 +39,9 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
           .getClassLoader()
           .loadClass("org.apache.spark.sql.hive.execution.OptimizedCreateHiveTableAsSelectCommand");
       return true;
-    } catch (Exception e) {
-      // swallow- we don't care
+    } catch (NoClassDefFoundError | Exception e) {
+      // If class does not exist or it's loading fails for some reason, we handle that failure by
+      // returning false
     }
     return false;
   }
