@@ -19,12 +19,12 @@ tox -l
 ```
 that should list:
 ```
-py3-airflow-2.5.2
-py3-airflow-2.6.1
+py39-airflow-2.5.2
+py39-airflow-2.6.1
 ```
 Then you can run tests in chosen environment, e.g.:
 ```
-tox -e py3-airflow-2.5.2
+tox -e py39-airflow-2.5.2
 ```
 `setup.cfg` contains tox-related configuration. By default `tox` command runs:
 1. `flake8` linting

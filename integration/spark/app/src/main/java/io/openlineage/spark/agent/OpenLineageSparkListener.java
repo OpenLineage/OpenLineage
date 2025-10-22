@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -79,8 +80,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private final String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
-  private final boolean isDisabled;
-
   /**
    * Id of the last active job. Has to be stored within the listener, as some jobs use both
    * RddExecutionContext and SparkSQLExecutionContext. jobId is required for to collect job metrics
@@ -89,12 +88,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private Optional<Integer> activeJobId = Optional.empty();
 
   @SuppressWarnings("PMD")
-  private SparkConf conf;
+  @Getter // Getter is extremely useful when monitoring or instrumenting OpenLineage from another
+  // listener.
+  public SparkConf conf;
 
   public OpenLineageSparkListener(SparkConf conf) {
     super();
     this.conf = Objects.requireNonNull(conf).clone();
-    isDisabled = checkIfDisabled();
   }
 
   // called in tests before SparkSession is created,
@@ -118,7 +118,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     if (event instanceof SparkListenerSQLExecutionStart) {
@@ -176,7 +176,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     log.debug("onJobStart called [{}].", jobStart);
@@ -238,7 +238,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     log.debug("onJobEnd called [{}].", jobEnd);
@@ -255,7 +255,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
-    if (isDisabled || sparkVersion.startsWith("2")) {
+    if (checkIfDisabled() || sparkVersion.startsWith("2")) {
       return;
     }
     log.debug("onTaskEnd called [{}].", taskEnd);
@@ -297,7 +297,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     log.debug("onApplicationEnd called [{}].", applicationEnd);
@@ -326,7 +326,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     log.debug("onApplicationStart called [{}].", applicationStart);
@@ -425,6 +425,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
                             Tag.of("openlineage.spark.disabled.facets", disabledFacets))));
   }
 
+  /**
+   * Shouldn't be used in the constructor because of possible ClassLoader issues
+   *
+   * @return boolean
+   */
   private boolean checkIfDisabled() {
     String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
     boolean isDisabledFromConf =

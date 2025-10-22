@@ -21,7 +21,14 @@ import lombok.ToString;
 @ToString
 public class HiveOpenLineageConfig extends OpenLineageConfig<HiveOpenLineageConfig> {
 
+  private String parentRunId;
+  private String parentJobName;
+  private String parentJobNamespace;
+
   public HiveOpenLineageConfig(
+      String parentRunId,
+      String parentJobName,
+      String parentJobNamespace,
       TransportConfig transportConfig,
       FacetsConfig facetsConfig,
       DatasetConfig datasetConfig,
@@ -42,6 +49,9 @@ public class HiveOpenLineageConfig extends OpenLineageConfig<HiveOpenLineageConf
   @Override
   public HiveOpenLineageConfig mergeWithNonNull(HiveOpenLineageConfig other) {
     return new HiveOpenLineageConfig(
+        mergePropertyWith(parentRunId, other.parentRunId),
+        mergePropertyWith(parentJobName, other.parentJobName),
+        mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
         mergePropertyWith(transportConfig, other.transportConfig),
         mergePropertyWith(facetsConfig, other.facetsConfig),
         mergePropertyWith(datasetConfig, other.datasetConfig),

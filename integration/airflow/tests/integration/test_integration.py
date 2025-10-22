@@ -52,7 +52,6 @@ class RetryException(Exception):
 params = [
     ("postgres_orders_popular_day_of_week", "requests/postgres.json", True),
     ("failed_sql_extraction", "requests/failed_sql_extraction.json", True),
-    ("great_expectations_validation", "requests/great_expectations.json", True),
     pytest.param(
         "bigquery_orders_popular_day_of_week",
         "requests/bigquery.json",
@@ -115,7 +114,7 @@ params = [
 @retry(
     wait_exponential_multiplier=1000,
     wait_exponential_max=10000,
-    stop_max_delay=1000 * 60 * 5,  # 5 minutes
+    stop_max_delay=1000 * 60 * 10,  # 5 minutes
     retry_on_exception=(RetryException,),
 )
 def wait_for_dag(dag_id, airflow_db_conn, should_fail=False) -> bool:

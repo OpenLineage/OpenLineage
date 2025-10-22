@@ -1,14 +1,11 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = [
-  "hatchling>=1.27.0",
-]
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
 
 [project]
 name = "openlineage-python"
 version = "1.40.0"
 description = "OpenLineage Python Client"
-license-files.globs = ["LICENSE",]
 readme = "README.md"
 keywords = [
   "openlineage",
@@ -73,10 +70,19 @@ optional-dependencies.generator = [
   "click",
   "datamodel-code-generator==0.33.0"
 ]
+optional-dependencies.dev = [
+  "mypy",
+  "types-PyYAML",
+  "types-python-dateutil",
+  "types-requests"
+]
 
-[tool.hatch.build]
-exclude = [".idea", ".ruff_cache", ".gitignore", "setup.cfg"]
-targets.wheel = {packages = ["openlineage"]}
+[dependency-groups]
+dev = [
+    "bump-my-version>=0.10.0",
+    "ruff>=0.12.2",
+]
+
 
 [tool.coverage]
 html.show_contexts = true
@@ -103,9 +109,20 @@ overrides = [
 ] } ]
 strict = true
 pretty = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "src"
+exclude = [
+  "tests/.*",
+  ".*/tests/.*",
+]
 
 [project.scripts]
 ol-generate-code = "openlineage.client.generator.cli:main"
+
+[tool.uv.build-backend]
+module-name = "openlineage"
+namespace = true
 
 [tool.ruff]
 line-length = 110
@@ -115,7 +132,7 @@ lint.select = [
     "W",
     "I001"
 ]
-lint.ignore-init-module-imports = true
+target-version = "py39"
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/client"]
 
@@ -132,10 +149,59 @@ filterwarnings = [
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "-ra"
+    "-ra",
+    "--ignore=tests/integration/test_server/"
 ]
 
-[dependency-groups]
-dev = [
-    "ruff>=0.12.2",
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+requires = tox-uv
+env_list = py39,py310,py311,py312,py313
+skip_missing_interpreters = true
+
+[testenv]
+description = run the unit tests with pytest under {basepython}
+package = wheel
+wheel_build_env = .pkg
+extras = kafka,msk-iam,test,generator,fsspec
+set_env =
+    COVERAGE_FILE = {toxworkdir}/.coverage.{envname}
+    COVERAGE_PROCESS_START = {toxinidir}/pyproject.toml
+    _COVERAGE_SRC = {envsitepackagesdir}/sphinx_argparse_cli
+commands =
+    pytest {tty:--color=yes} {posargs: \
+      --cov openlineage --cov {toxinidir}{/}tests \
+      --junitxml {toxworkdir}{/}junit.{envname}.xml \
+      --cov-config=pyproject.toml --no-cov-on-fail --cov-report term-missing:skip-covered --cov-context=test \
+      --cov-report html:{envtmpdir}{/}htmlcov --cov-report xml:{toxworkdir}{/}coverage.{envname}.xml \
+      tests}
+
+[testenv:dev]
+description = generate a DEV environment
+package = editable
+extras = kafka,msk-iam,test
+commands =
+    python -m pip list --format=columns
+    python -c 'import sys; print(sys.executable)'
+"""
+
+[tool.bumpversion]
+current_version = "1.40.0"
+commit = false
+tag = false
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<rc>.*)"
+serialize = [
+    "{major}.{minor}.{patch}{rc}",
+    "{major}.{minor}.{patch}"
 ]
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "src/openlineage/client/constants.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""

@@ -3,39 +3,80 @@ title: Setup a development environment
 sidebar_position: 1
 ---
 
-There are four Python OpenLineage packages that you can install locally when setting up a development environment.<br />
-Two of them: [openlineage-integration-common](https://pypi.org/project/openlineage-integration-common/) and [openlineage-airflow](https://pypi.org/project/openlineage-airflow/) have dependency on [openlineage-python](https://pypi.org/project/openlineage-python/) client and [openlineage-sql](https://pypi.org/project/openlineage-sql/).
+There are four Python OpenLineage packages that you can install locally when setting up a development environment:<br />
+[openlineage-python](https://pypi.org/project/openlineage-python/) (client), [openlineage-sql](https://pypi.org/project/openlineage-sql/), [openlineage-integration-common](https://pypi.org/project/openlineage-integration-common/), and [openlineage-airflow](https://pypi.org/project/openlineage-airflow/).
 
-Typically, you first need to build `openlineage-sql` locally (see [README](https://github.com/OpenLineage/OpenLineage/blob/main/integration/sql/README.md)). After each release you have to repeat this step in order to bump local version of the package.
+The repository uses [UV](https://docs.astral.sh/uv/) for Python dependency management with path-based dependencies, where each integration is a standalone project with isolated dependencies.
 
-To install Openlineage Common & Python Client integration you need to run pip install command with a link to local directory:
+## Prerequisites
+
+Install UV if you haven't already:
 
 ```bash
-$ python -m pip install -e .[dev]
+$ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
-In zsh:
+
+## Quick Start with Makefile
+
+The repository includes a Makefile to simplify the development environment setup:
+
 ```bash
-$ python -m pip install -e .\[dev\]
+# View all available commands
+$ make help
+
+# Setup all Python integrations at once
+$ make setup-all
+
+# Or setup specific integrations
+$ make setup-client      # Python client
+$ make setup-common      # Integration common library
+$ make setup-airflow     # Airflow integration
+$ make setup-dbt         # dbt integration
+
+# Run tests
+$ make test-all          # Test all integrations
+$ make test-client       # Test specific integration
+
+# Run linting and type checking
+$ make lint-all          # Run all linting
+$ make fix-format        # Auto-fix formatting issues
+
+# Check status of your setup
+$ make status
+
+# Clean all virtual environments
+$ make clean
 ```
 
-To make Airflow integration setup easier you can use run following command in package directory:
+## Manual Setup
+
+If you prefer to set up integrations manually:
+
 ```bash
-$ pip install -r dev-requirements.txt
+# Python client
+$ cd client/python
+$ uv sync --extra dev --extra test
+
+# Integration common
+$ cd integration/common
+$ uv sync --extra dev
+
+# Airflow integration
+$ cd integration/airflow
+$ uv sync --extra dev --extra airflow
+
+# dbt integration
+$ cd integration/dbt
+$ uv sync --extra dev
 ```
-This should install all needed integrations locally.
 
-### Docker Compose development environment
-There is also possibility to create local Docker-based development environment that has OpenLineage libraries setup along with Airflow and some helpful services.
-To do that you should run `run-dev-airflow.sh` script located [here](https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow/scripts/run-dev-airflow.sh).
+## How Path-Based Dependencies Work
 
-The script uses the same Docker Compose files as [integration tests](./tests/airflow.md#integration-tests). Two main differences are:
-* it runs in non-blocking way
-* it mounts OpenLineage Python packages as editable and mounted to Airflow containers. This allows to change code and test it live without need to rebuild whole environment.
+The repository uses path-based dependencies instead of a UV workspace because each integration has potentially conflicting dependencies. Each integration is a standalone project with its own isolated virtual environment.
 
+Each integration automatically installs its dependencies from local directories in editable mode:
+- Airflow integration depends on `client`, `common`, and `sql` packages
+- dbt integration depends on `common` package
+- Common integration depends on `client` and `sql` packages
 
-When using above script, you can add the `-i` flag or `--attach-integration` flag.
-This can be helpful when you need to run arbitrary integration tests during development. For example, the following command run in the integration container...
-```bash
-python -m pytest test_integration.py::test_integration[great_expectations_validation-requests/great_expectations.json]
-```
-...runs a single test which you can repeat after changes in code.
+UV handles these path-based dependencies automatically, so changes in one package are immediately reflected in dependent packages without reinstallation.

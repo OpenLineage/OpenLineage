@@ -29,6 +29,9 @@ public class HiveOpenLineageConfigParser {
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
   public static final String NAMESPACE_KEY = CONF_PREFIX + "namespace";
   public static final String JOB_NAME_KEY = CONF_PREFIX + "job.name";
+  public static final String HIVE_CONF_PARENT_JOB_NAME = CONF_PREFIX + "job.parentJobName";
+  public static final String HIVE_CONF_PARENT_JOB_NAMESPACE = CONF_PREFIX + "parentJobNamespace";
+  public static final String HIVE_CONF_PARENT_RUN_ID = CONF_PREFIX + "job.parentRunId";
   public static final String DATASET_LINEAGE_ENABLED_KEY = CONF_PREFIX + "datasetLineageEnabled";
 
   private static final ObjectMapper JSON = new ObjectMapper();

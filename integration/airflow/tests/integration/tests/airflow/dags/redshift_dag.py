@@ -49,7 +49,6 @@ with DAG(
         cluster_identifier="redshift-cluster-1",
         sql=REDSHIFT_QUERY,
         poll_interval=POLL_INTERVAL,
-        await_result=True,
         region="eu-west-2",
     )
     # [END howto_operator_redshift_data]

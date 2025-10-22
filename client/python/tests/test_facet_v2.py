@@ -127,9 +127,10 @@ def test_full_core_event_serializes_properly(mock_http_session_class) -> None:
             facet_init(self)
             self._schemaURL = "http://test.schema.url"
 
-    with mock.patch.object(
-        BaseFacet, "__attrs_post_init__", autospec=True, side_effect=set_test_schemaURL
-    ), mock.patch.object(BaseEvent, "__attrs_post_init__", autospec=True, side_effect=set_test_schemaURL):
+    with (
+        mock.patch.object(BaseFacet, "__attrs_post_init__", autospec=True, side_effect=set_test_schemaURL),
+        mock.patch.object(BaseEvent, "__attrs_post_init__", autospec=True, side_effect=set_test_schemaURL),
+    ):
         event = RunEvent(
             eventType=RunState.COMPLETE,
             eventTime="2020-12-28T19:51:01.641Z",

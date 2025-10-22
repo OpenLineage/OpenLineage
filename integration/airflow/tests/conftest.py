@@ -31,9 +31,8 @@ def dagbag():
     os.environ["MARQUEZ_NAMESPACE"] = "test-marquez"
 
     import airflow.utils.db as db_utils
-    from airflow import settings
 
-    db_utils.resetdb(settings.RBAC)
+    db_utils.resetdb()
     from airflow.models import DagBag
 
     dagbag = DagBag(include_examples=False)

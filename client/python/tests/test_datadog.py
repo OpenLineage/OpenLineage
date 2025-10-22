@@ -642,8 +642,9 @@ class TestDatadogTransportMethods:
         """Test _should_use_async_transport method directly."""
         config = DatadogConfig.from_dict({"apiKey": "test-key", "site": "datadoghq.com"})
 
-        with patch("openlineage.client.transport.datadog.HttpTransport"), patch(
-            "openlineage.client.transport.datadog.AsyncHttpTransport"
+        with (
+            patch("openlineage.client.transport.datadog.HttpTransport"),
+            patch("openlineage.client.transport.datadog.AsyncHttpTransport"),
         ):
             transport = DatadogTransport(config)
 
