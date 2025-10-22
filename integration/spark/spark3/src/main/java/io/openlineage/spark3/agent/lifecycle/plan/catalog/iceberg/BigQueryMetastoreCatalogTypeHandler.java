@@ -63,21 +63,11 @@ class BigQueryMetastoreCatalogTypeHandler extends BaseCatalogTypeHandler {
     // https://github.com/apache/iceberg/blob/911a486b0eb8f55c2a44c5aa7fe62c2ca23b1d75/bigquery/src/main/java/org/apache/iceberg/gcp/bigquery/BigQueryMetastoreCatalog.java#L62
     properties.put(
         "gcp_project_id",
-        getConfigValueWithFallback(catalogConf, "gcp.bigquery.project-id", "gcp_project"));
+        catalogConf.getOrDefault("gcp.bigquery.project-id", catalogConf.get("gcp_project")));
     properties.put(
         "gcp_location",
-        getConfigValueWithFallback(catalogConf, "gcp.bigquery.location", "gcp_location"));
+        catalogConf.getOrDefault("gcp.bigquery.location", catalogConf.get("gcp_location")));
 
     return properties;
-  }
-
-  private String getConfigValueWithFallback(
-      Map<String, String> config, String key, String fallbackKey) {
-    String value = config.get(key);
-    if (value == null || value.trim().isEmpty()) {
-      value = config.get(fallbackKey);
-    }
-
-    return (value != null && !value.trim().isEmpty()) ? value.trim() : null;
   }
 }
