@@ -171,3 +171,479 @@ This is a COMPLETE event with dataset facet of Database table.
   "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
 }
 ```
+
+### Job-to-Job lineage - ETL Job with several tasks
+
+This example shows how to represent an ETL Job consisting of several tasks. This example combines couple of facets to document the data lineage: 
+- using [Parent Run Facet](https://openlineage.io/docs/spec/facets/run-facets/parent_run) to document the relation between the ETL job and individual taks of the job (both the job and the individual tasks are documented by distinct OpenLineage events)
+- using [Dataset Type Facet](https://openlineage.io/docs/spec/facets/dataset-facets/type) to indicate, that the intermediate datasets produced by individual tasks of the ETL job are temporary, and consumers of the OpenLineage event can choose not to represent them (and draw the lineage directly to the next task instead). 
+- using [Column Level Lineage Facet](https://openlineage.io/docs/spec/facets/dataset-facets/column_lineage_facet) to document column-level lineage not only between the ETL job and the input/output datasets, but also the detailed transformations on the level of individual steps of the ETL job
+
+![Example ETL Job](example-etl-job-tasks-temporary-datasets.png)
+
+The OpenLineage payloads are using the following best practices: 
+
+- For [Dataset Type Facet](https://openlineage.io/docs/spec/facets/dataset-facets/type), the values `datasetType:= JOB_OUTPUT`, `subType:= TEMPORARY` are used to mark the temporary datasets. 
+- The namespace of the temporary dataset is the same as the namespace of the Job that creates it. 
+- The name of the temporary dataset is based on the Job name and the name of the output of the parent job (if any). As a fallback, it can be based on the Job name and an index suffix can be added to accommodate Jobs with multiple outputs.
+
+COMPLETE event for `Load task`
+```json
+{
+    "eventTime": "2025-10-24T15:08:00.001+10:00",
+    "eventType": "COMPLETE",
+    "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "job": {
+        "namespace": "<job_namespace>",
+        "name": "<job_name>.Load task",
+        "facets": {
+            "jobType": {
+                "processingType": "BATCH",
+                "integration": "example",
+                "jobType": "ingest_data",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+                "_schemaURL": "https://openlineage.io/spec/facets/2-0-2/JobTypeJobFacet.json"
+            },
+            "documentation": {
+                "_producer": "https://some.producer.com/version/1.0",
+                "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/DocumentationJobFacet.json",
+                "description": "Ingest data from Data Source.",
+                "contentType": "text/markdown"
+            }
+        }
+    },
+    "run": {
+        "runId": "...",
+        "facets": {
+            "parent": {
+                "job": {
+                    "namespace": "<job_namespace>",
+                    "name": "<job_name>"
+                },
+                "run": {
+                    "runId": "<job_run_id>"
+                }
+            }
+        }
+    },
+    "inputs": [
+        {
+            "namespace": "test://example1.com:443/myDir",
+            "name": "Dataset1",
+            "facets": {
+                "schema": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
+                    "fields": [
+                        {
+                            "name": "ColumnA",
+                            "type": "string"
+                        },
+                        {
+                            "name": "ColumnB",
+                            "type": "string"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": [
+        {
+            "namespace": "test://example3.com:443/myDir",
+            "name": "Dataset3.Load task",
+            "facets": {
+                "datasetType": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DatasetTypeDatasetFacet.json",
+                    "datasetType": "JOB_OUTPUT",
+                    "subType": "TEMPORARY"
+                },
+                "schema": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
+                    "fields": [
+                        {
+                            "name": "_0",
+                            "type": "string"
+                        },
+                        {
+                            "name": "_1",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "columnLineage": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json",
+                    "fields": {
+                        "_0": {
+                            "inputFields": [
+                                {
+                                    "namespace": "test://example1.com:443/myDir",
+                                    "name": "Dataset1",
+                                    "field": "ColumnA",
+                                    "transformations": [
+                                        {
+                                            "type": "DIRECT",
+                                            "subtype": "IDENTITY",
+                                            "description": "",
+                                            "masking": false
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "_1": {
+                            "inputFields": [
+                                {
+                                    "namespace": "test://example1.com:443/myDir",
+                                    "name": "Dataset1",
+                                    "field": "ColumnB",
+                                    "transformations": [
+                                        {
+                                            "type": "DIRECT",
+                                            "subtype": "IDENTITY",
+                                            "description": "",
+                                            "masking": false
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
+```
+
+COMPLETE event for `Transform task`
+```json
+{
+    "eventTime": "2025-10-24T15:08:00.001+10:00",
+    "eventType": "COMPLETE",
+    "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "job": {
+        "namespace": "<job_namespace>",
+        "name": "<job_name>.Transform task",
+        "facets": {
+            "jobType": {
+                "processingType": "BATCH",
+                "integration": "example",
+                "jobType": "transform_task",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+                "_schemaURL": "https://openlineage.io/spec/facets/2-0-2/JobTypeJobFacet.json"
+            },
+            "documentation": {
+                "_producer": "https://some.producer.com/version/1.0",
+                "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/DocumentationJobFacet.json",
+                "description": "Transforms input columns using defined business logic.",
+                "contentType": "text/markdown"
+            }
+        }
+    },
+    "run": {
+        "runId": "...",
+        "facets": {
+            "parent": {
+                "job": {
+                    "namespace": "<job_namespace>",
+                    "name": "<job_name>"
+                },
+                "run": {
+                    "runId": "<job_run_id>"
+                }
+            }
+        }
+    },
+    "inputs": [
+        {
+            "namespace": "test://example3.com:443/myDir",
+            "name": "Dataset3.Load task",
+            "facets": {
+                "datasetType": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DatasetTypeDatasetFacet.json",
+                    "datasetType": "JOB_OUTPUT",
+                    "subType": "TEMPORARY"
+                },
+                "schema": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
+                    "fields": [
+                        {
+                            "name": "_0",
+                            "type": "string"
+                        },
+                        {
+                            "name": "_1",
+                            "type": "string"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": [
+        {
+            "namespace": "test://example3.com:443/myDir",
+            "name": "Dataset3.Transform task",
+            "facets": {
+                "datasetType": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DatasetTypeDatasetFacet.json",
+                    "datasetType": "JOB_OUTPUT",
+                    "subType": "TEMPORARY"
+                },
+                "schema": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
+                    "fields": [
+                        {
+                            "name": "_0",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "columnLineage": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json",
+                    "fields": {
+                        "_0": {
+                            "inputFields": [
+                                {
+                                    "namespace": "<job_namespace>",
+                                    "name": "<job_name>.Load task",
+                                    "field": "_0",
+                                    "transformations": [
+                                        {
+                                            "type": "DIRECT",
+                                            "subtype": "IDENTITY",
+                                            "description": "",
+                                            "masking": false
+                                        }
+                                    ]
+                                },
+                                {
+                                    "namespace": "<job_namespace>",
+                                    "name": "<job_name>.Load task",
+                                    "field": "_1",
+                                    "transformations": [
+                                        {
+                                            "type": "DIRECT",
+                                            "subtype": "IDENTITY",
+                                            "description": "",
+                                            "masking": false
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
+```
+
+COMPLETE event for `Write task`
+```json
+{
+    "eventTime": "2025-10-24T15:08:00.001+10:00",
+    "eventType": "COMPLETE",
+    "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "job": {
+        "namespace": "<job_namespace>",
+        "name": "<job_name>.Write task",
+        "facets": {
+            "jobType": {
+                "processingType": "BATCH",
+                "integration": "example",
+                "jobType": "write_task",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+                "_schemaURL": "https://openlineage.io/spec/facets/2-0-2/JobTypeJobFacet.json"
+            },
+            "documentation": {
+                "_producer": "https://some.producer.com/version/1.0",
+                "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/DocumentationJobFacet.json",
+                "description": "Writes data into an output dataset.",
+                "contentType": "text/markdown"
+            }
+        }
+    },
+    "run": {
+        "runId": "...",
+        "facets": {
+            "parent": {
+                "job": {
+                    "namespace": "<job_namespace>",
+                    "name": "<job_name>"
+                },
+                "run": {
+                    "runId": "<job_run_id>"
+                }
+            }
+        }
+    },
+    "inputs": [
+        {
+            "namespace": "test://example3.com:443/myDir",
+            "name": "Dataset3.Transform task",
+            "facets": {
+                "datasetType": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DatasetTypeDatasetFacet.json",
+                    "datasetType": "JOB_OUTPUT",
+                    "subType": "TEMPORARY"
+                },
+                "schema": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
+                    "fields": [
+                        {
+                            "name": "_0",
+                            "type": "string"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": [
+        {
+            "namespace": "test://example3.com:443/myDir",
+            "name": "Dataset3",
+            "facets": {
+                "schema": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
+                    "fields": [
+                        {
+                            "name": "_0",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "columnLineage": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json",
+                    "fields": {
+                        "ColumnC": {
+                            "inputFields": [
+                                {
+                                    "namespace": "<job_namespace>",
+                                    "name": "<job_name>.Write task",
+                                    "field": "_0",
+                                    "transformations": [
+                                        {
+                                            "type": "DIRECT",
+                                            "subtype": "IDENTITY",
+                                            "description": "",
+                                            "masking": false
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
+```
+
+COMPLETE event for the parent `ETL job`
+```json
+{
+    "eventTime": "2025-10-24T15:08:00.001+10:00",
+    "eventType": "COMPLETE",
+    "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "job": {
+        "namespace": "<job_namespace>",
+        "name": "<job_name>"
+    },
+    "run": {
+        "runId": "<job_run_id>"
+    },
+    "inputs": [
+        {
+            "namespace": "test://example1.com:443/myDir",
+            "name": "Dataset1",
+            "facets": {
+                "schema": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
+                    "fields": [
+                        {
+                            "name": "ColumnA",
+                            "type": "string"
+                        },
+                        {
+                            "name": "ColumnB",
+                            "type": "string"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": [
+        {
+            "namespace": "test://example3.com:443/myDir",
+            "name": "Dataset3",
+            "facets": {
+                "schema": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
+                    "fields": [
+                        {
+                            "name": "ColumnC",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "columnLineage": {
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json",
+                    "fields": {
+                        "ColumnC": {
+                            "inputFields": [
+                                {
+                                    "namespace": "test://example1.com:443/myDir",
+                                    "name": "Dataset1",
+                                    "field": "ColumnA",
+                                    "transformations": [
+                                        {
+                                            "type": "DIRECT",
+                                            "subtype": "IDENTITY",
+                                            "description": "",
+                                            "masking": false
+                                        }
+                                    ]
+                                },
+                                {
+                                    "namespace": "test://example1.com:443/myDir",
+                                    "name": "Dataset1",
+                                    "field": "ColumnB",
+                                    "transformations": [
+                                        {
+                                            "type": "DIRECT",
+                                            "subtype": "IDENTITY",
+                                            "description": "",
+                                            "masking": false
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
+```

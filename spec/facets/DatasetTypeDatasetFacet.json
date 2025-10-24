@@ -11,12 +11,12 @@
           "type": "object",
           "properties": {
             "datasetType": {
-              "description": "Dataset type, for example: FILE|STREAM|MODEL|TABLE|VIEW.",
+              "description": "Dataset type, for example: TABLE|VIEW|FILE|TOPIC|STREAM|MODEL|JOB_OUTPUT.",
               "type": "string",
               "example": "FILE"
             },
             "subType": {
-              "description": "Optional sub-type within the dataset type (e.g., BEST VALIDATION under MODEL CHECKPOINT).",
+              "description": "Optional sub-type within the dataset type (e.g., MATERIALIZED, EXTERNAL, TEMPORARY).",
               "type": "string"
             }
           },
