@@ -152,4 +152,72 @@ public class SnowflakeRelationVisitorTest {
 
     assertEquals("snowflake_db.snowflake_schema.some_table", ds.getName());
   }
+
+  @Test
+  void testApplyDbTableWithQuotedIdentifiers() {
+    // Setup with quoted identifiers for database, schema, and table
+    when(relation.params().sfDatabase()).thenReturn("\"poc\"");
+    when(relation.params().sfSchema()).thenReturn("\"poc_perf_data\"");
+    when(relation.params().sfFullURL())
+        .thenReturn(
+            "https://microsoftpartner-eastus2account.east-us-2.azure.snowflakecomputing.com");
+
+    // Create schema with quoted field names
+    when(relation.schema())
+        .thenReturn(
+            new StructType(
+                new StructField[] {
+                  new StructField("\"report_date\"", StringType$.MODULE$, false, null),
+                  new StructField("\"model_portfolio\"", StringType$.MODULE$, false, null)
+                }));
+
+    TableName tableName = mock(TableName.class, RETURNS_DEEP_STUBS);
+    when(tableName.toString()).thenReturn("\"attributes_daily_view\"");
+
+    Option<TableName> table = Option.apply(tableName);
+    when(relation.params().table()).thenReturn(table);
+
+    OpenLineageContext openLineageContext =
+        OpenLineageContext.builder()
+            .sparkSession(session)
+            .sparkContext(session.sparkContext())
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
+            .vendors(Vendors.getVendors())
+            .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(new SparkOpenLineageConfig())
+            .build();
+
+    SnowflakeRelationVisitor visitor =
+        new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
+
+    LogicalRelation lr =
+        new LogicalRelation(
+            relation,
+            ScalaConversionUtils.fromList(
+                Collections.singletonList(
+                    new AttributeReference(
+                        FIELD_NAME,
+                        StringType$.MODULE$,
+                        false,
+                        null,
+                        ExprId.apply(1L),
+                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
+            Option.empty(),
+            false);
+
+    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+
+    OpenLineage.Dataset ds = datasets.get(0);
+
+    // Verify namespace is correctly parsed (account identifier only)
+    assertEquals("snowflake://microsoftpartner-eastus2account", ds.getNamespace());
+
+    // Verify dataset name has quotes stripped
+    assertEquals("poc.poc_perf_data.attributes_daily_view", ds.getName());
+
+    // Verify schema field names have quotes stripped
+    assertEquals("report_date", ds.getFacets().getSchema().getFields().get(0).getName());
+    assertEquals("model_portfolio", ds.getFacets().getSchema().getFields().get(1).getName());
+  }
 }
