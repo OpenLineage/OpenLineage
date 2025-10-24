@@ -179,6 +179,49 @@ class PostgresJDBCSparkQueryTest {
             });
   }
 
+  @Test
+  void testPostgresJDBCWithJoinInDbtableOption() throws IOException, InterruptedException {
+    HttpServer server = createHttpServer(handler);
+    PostgreSQLTestContainer postgres = startPostgresContainer();
+
+    SparkSession spark =
+        createSparkSession(
+            server.getAddress().getPort(), "testPostgresJDBCWithJoinInDbtableOption");
+
+    spark
+        .read()
+        .format("jdbc")
+        .option("url", postgres.getPostgres().getJdbcUrl())
+        .option("driver", "org.postgresql.Driver")
+        .option("dbtable", "authors a JOIN orders o ON a.author_id = o.order_author_id")
+        .option("user", postgres.getPostgres().getUsername())
+        .option("password", postgres.getPostgres().getPassword())
+        .load()
+        .show();
+
+    postgres.stop();
+    spark.stop();
+
+    List<OpenLineage.RunEvent> runEvents =
+        handler.getEvents("test_postgres_jdbc_with_join_in_dbtable_option").stream()
+            .filter(event -> !event.getInputs().isEmpty())
+            .collect(Collectors.toList());
+
+    assertThat(runEvents).hasSizeGreaterThanOrEqualTo(1);
+
+    runEvents.stream()
+        .map(OpenLineage.RunEvent::getInputs)
+        .forEach(
+            inputs -> {
+              assertThat(inputs).hasSizeGreaterThanOrEqualTo(2);
+              List<String> names =
+                  inputs.stream().map(OpenLineage.Dataset::getName).collect(Collectors.toList());
+
+              assertThat(names)
+                  .containsExactlyInAnyOrder("openlineage.authors", "openlineage.orders");
+            });
+  }
+
   @EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
   @SneakyThrows
   @ParameterizedTest
@@ -288,6 +331,14 @@ class PostgresJDBCSparkQueryTest {
         "-d",
         "openlineage",
         "-c",
+        "CREATE TABLE orders (order_author_id INT, order_id INT);");
+    postgres.execInContainer(
+        "psql",
+        "-U",
+        "openlineage",
+        "-d",
+        "openlineage",
+        "-c",
         "INSERT INTO books (author_id, book_id) VALUES (1, 10);");
     postgres.execInContainer(
         "psql",
@@ -305,6 +356,14 @@ class PostgresJDBCSparkQueryTest {
         "openlineage",
         "-c",
         "INSERT INTO books (author_id, book_id) VALUES (3, 30);");
+    postgres.execInContainer(
+        "psql",
+        "-U",
+        "openlineage",
+        "-d",
+        "openlineage",
+        "-c",
+        "INSERT INTO orders (order_author_id, order_id) VALUES (1, 100);");
     postgres.execInContainer(
         "psql",
         "-U",
