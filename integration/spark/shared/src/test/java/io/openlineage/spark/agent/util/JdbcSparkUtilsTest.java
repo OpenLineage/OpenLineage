@@ -33,6 +33,7 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class JdbcSparkUtilsTest {
   private static final String DEFAULT_URL = "jdbc:postgresql://localhost:5432/testdb";
   private final JDBCRelation relation = mock(JDBCRelation.class);
@@ -54,7 +55,7 @@ class JdbcSparkUtilsTest {
     assertColumnLineage(result, testCase.expectedColumnLineages);
   }
 
-  public static Collection<TestCase> testCases() {
+  private static Collection<TestCase> testCases() {
     return Arrays.asList(
         TestCase.builder()
             .dbtable("users")
