@@ -46,6 +46,7 @@ A dataset, or `table`, is organized according to a producer, namespace, database
 | S3                            | Blob Storage                         | `s3://{bucket name}`                                                                                                               | `{object key}`                                                               |
 | WASBS (Azure Blob Storage)    | Blob Storage                         | `wasbs://{container name}@{service name}.dfs.core.windows.net`                                                                     | `{object key}`                                                               |
 | PubSub                        | Distributed event streaming platform | `pubsub`                                                                                                                           | `topic:{projectId}:{topicId}` or `subscription:{projectId}:{subscriptionId}` |
+| In memory                     | In-memory (temporary datasets) with no persistance backend  | `inmemory://`                                                       | `{temporary dataset name or ID}` | 
 
 
 
