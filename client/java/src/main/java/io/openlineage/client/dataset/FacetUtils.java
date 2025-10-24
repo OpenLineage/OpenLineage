@@ -14,6 +14,9 @@ public class FacetUtils {
   public static InputDatasetInputFacetsBuilder toBuilder(
       OpenLineage openLineage, OpenLineage.InputDatasetInputFacets facets) {
     InputDatasetInputFacetsBuilder builder = openLineage.newInputDatasetInputFacetsBuilder();
+
+    if (facets == null) return builder;
+
     builder
         .dataQualityAssertions(facets.getDataQualityAssertions())
         .dataQualityMetrics(facets.getDataQualityMetrics())
@@ -28,6 +31,9 @@ public class FacetUtils {
   public static OutputDatasetOutputFacetsBuilder toBuilder(
       OpenLineage openLineage, OpenLineage.OutputDatasetOutputFacets facets) {
     OutputDatasetOutputFacetsBuilder builder = openLineage.newOutputDatasetOutputFacetsBuilder();
+
+    if (facets == null) return builder;
+
     builder
         .outputStatistics(facets.getOutputStatistics())
         .icebergCommitReport(facets.getIcebergCommitReport());

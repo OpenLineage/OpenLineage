@@ -23,6 +23,7 @@ import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.builder.SparkJobDetailsFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
+import io.openlineage.spark.agent.util.DatasetReducerUtils;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -216,13 +217,6 @@ class RddExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     log.debug("start SparkListenerJobStart {}", jobStart);
-    if (outputs.isEmpty()) {
-      // Oftentimes SparkListener is triggered for actions which do not contain any meaningful
-      // lineage data and are useless in the context of lineage graph. We assume this occurs
-      // for RDD operations which have no output dataset
-      log.info("Output RDDs are empty: skipping sending OpenLineage event");
-      return;
-    }
     OpenLineage.RunEvent event =
         olContext
             .getOpenLineage()
@@ -412,12 +406,14 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected List<OpenLineage.OutputDataset> buildOutputs(List<URI> outputs) {
-    return outputs.stream()
-        .map(
-            d ->
-                buildOutputDataset(
-                    d, outputs.size() == 1)) // output statistics only for single output
-        .collect(Collectors.toList());
+    return DatasetReducerUtils.outputs(
+        olContext,
+        outputs.stream()
+            .map(
+                d ->
+                    buildOutputDataset(
+                        d, outputs.size() == 1)) // output statistics only for single output
+            .collect(Collectors.toList()));
   }
 
   protected OpenLineage.InputDataset buildInputDataset(URI uri) {
@@ -481,7 +477,8 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected List<OpenLineage.InputDataset> buildInputs(List<URI> inputs) {
-    return inputs.stream().map(this::buildInputDataset).collect(Collectors.toList());
+    return DatasetReducerUtils.inputs(
+        olContext, inputs.stream().map(this::buildInputDataset).collect(Collectors.toList()));
   }
 
   protected List<URI> findOutputs(RDD<?> rdd, JobConf jobConf) {
@@ -490,6 +487,7 @@ class RddExecutionContext implements ExecutionContext {
     if (outputPath != null) {
       return Collections.singletonList(outputPath.toUri());
     }
+
     log.debug("Output path is null");
     return Collections.emptyList();
   }
@@ -521,12 +519,6 @@ class RddExecutionContext implements ExecutionContext {
       } catch (IOException exception) {
         exception.printStackTrace(System.out);
       }
-    }
-
-    if (path == null) {
-      // use PlanUtils approach instead
-      path =
-          PlanUtils.findRDDPaths(Collections.singletonList(rdd)).stream().findFirst().orElse(null);
     }
 
     return path;

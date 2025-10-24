@@ -27,7 +27,8 @@ data = glueContext.create_dynamic_frame.from_options(
 # to filter records by Provider State and Provider City
 filtered = data.filter(f=lambda x: x["name"] in ["Sally"] and x["location"]["state"] in ["WY"])
 
-# filter.save()
+filtered.count()  # this should create OL event with inputs from dynamic frame
+filtered.toDF().write.mode("overwrite").json("/tmp/glue-test-job")  # this saves Dataframe
 
 # Compare record counts
 print("Unfiltered record count: ", data.count())

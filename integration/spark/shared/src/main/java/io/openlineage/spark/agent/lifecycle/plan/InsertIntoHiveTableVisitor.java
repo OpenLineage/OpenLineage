@@ -96,6 +96,6 @@ public class InsertIntoHiveTableVisitor
     return context
         .getSparkSession()
         .map(session -> PathUtils.fromCatalogTable(plan.table(), session))
-        .map(table -> trimPath(table.getName()));
+        .map(table -> trimPath(context, table.getName()));
   }
 }

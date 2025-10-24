@@ -256,7 +256,7 @@ public class SaveIntoDataSourceCommandVisitor
   public Optional<String> jobNameSuffix(SaveIntoDataSourceCommand command) {
     if (command.dataSource().getClass().getName().contains("DeltaDataSource")
         && command.options().contains("path")) {
-      return Optional.of(trimPath(command.options().get("path").get()));
+      return Optional.of(trimPath(context, command.options().get("path").get()));
     } else if (KustoRelationVisitor.isKustoSource(command.dataSource())) {
       return Optional.ofNullable(command.options().get("kustotable"))
           .filter(Option::isDefined)

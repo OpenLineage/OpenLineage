@@ -45,6 +45,6 @@ public class SubqueryAliasOutputDatasetBuilder
 
   @Override
   public Optional<String> jobNameSuffix(SubqueryAlias x) {
-    return Optional.of(trimPath(x.alias()));
+    return Optional.of(trimPath(context, x.alias()));
   }
 }

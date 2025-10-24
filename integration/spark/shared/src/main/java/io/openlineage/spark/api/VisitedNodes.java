@@ -72,6 +72,6 @@ public class VisitedNodes {
    * @return true if the node has been visited for the event, false otherwise
    */
   public boolean alreadyVisited(SparkListenerEvent event, LogicalPlan logicalPlan) {
-    return alreadyVisited(event, logicalPlan.semanticHash());
+    return logicalPlan != null && alreadyVisited(event, logicalPlan.semanticHash());
   }
 }

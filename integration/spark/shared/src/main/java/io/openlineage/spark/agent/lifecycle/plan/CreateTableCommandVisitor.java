@@ -59,6 +59,6 @@ public class CreateTableCommandVisitor
     return context
         .getSparkSession()
         .map(session -> PathUtils.fromCatalogTable(command.table(), session))
-        .map(table -> trimPath(table.getName()));
+        .map(table -> trimPath(context, table.getName()));
   }
 }

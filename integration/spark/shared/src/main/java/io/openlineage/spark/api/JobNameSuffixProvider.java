@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.api;
 
+import io.openlineage.spark.agent.util.DatasetReducerUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Optional;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -37,10 +38,12 @@ public interface JobNameSuffixProvider<P extends LogicalPlan> {
   }
 
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-  default String trimPath(String path) {
-    if (path.lastIndexOf("/") > 0) {
+  default String trimPath(OpenLineageContext context, String path) {
+    // normalize path before trimming
+    String trimmedPath = DatasetReducerUtils.trimDatasetName(context, path);
+    if (trimmedPath.lastIndexOf("/") > 0) {
       // is path
-      String[] parts = path.split("/");
+      String[] parts = trimmedPath.split("/");
       if (parts.length >= 2) {
         // concat two last elements of the path
         return parts[parts.length - 2] + SUFFIX_DELIMITER + parts[parts.length - 1];
@@ -50,7 +53,7 @@ public interface JobNameSuffixProvider<P extends LogicalPlan> {
       }
     } else {
       // is something else
-      return path;
+      return trimmedPath;
     }
   }
 }
