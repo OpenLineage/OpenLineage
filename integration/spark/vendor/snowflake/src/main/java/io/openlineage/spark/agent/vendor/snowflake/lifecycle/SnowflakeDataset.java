@@ -30,7 +30,7 @@ public class SnowflakeDataset {
       StructType schema) {
 
     final String namespace =
-        String.format("%s%s", SNOWFLAKE_PREFIX, sfFullURL.replace("https://", ""));
+        String.format("%s%s", SNOWFLAKE_PREFIX, parseAccountIdentifier(sfFullURL));
     final String tableName;
     // https://docs.snowflake.com/en/user-guide/spark-connector-use#moving-data-from-snowflake-to-spark
     // > Specify one of the following options for the table data to be read:
@@ -52,5 +52,40 @@ public class SnowflakeDataset {
           "Unable to discover Snowflake table property - neither \"dbtable\" nor \"query\" option present");
     }
     return Collections.emptyList();
+  }
+
+  /**
+   * Parses the Snowflake full URL to extract the account identifier according to OpenLineage naming
+   * specification.
+   *
+   * <p>Snowflake URLs follow the format:
+   * https://&lt;account_identifier&gt;.&lt;region&gt;.&lt;cloud&gt;.snowflakecomputing.com
+   *
+   * <p>The account identifier can be: - orgname-accountname (preferred format) - account_locator
+   * (legacy format)
+   *
+   * <p>This method extracts only the account identifier part, stripping the region, cloud provider,
+   * and domain suffix to comply with OpenLineage naming: snowflake://&lt;account_identifier&gt;
+   *
+   * @param sfFullURL The full Snowflake URL
+   * @return The account identifier (organization-account or account locator)
+   */
+  static String parseAccountIdentifier(String sfFullURL) {
+    String url = sfFullURL;
+
+    // Remove protocol if present
+    if (url.startsWith("https://")) {
+      url = url.substring(8);
+    } else if (url.startsWith("http://")) {
+      url = url.substring(7);
+    }
+
+    // Extract account identifier (first segment before the first dot)
+    int firstDotIndex = url.indexOf('.');
+    if (firstDotIndex > 0) {
+      return url.substring(0, firstDotIndex);
+    }
+
+    return url;
   }
 }
