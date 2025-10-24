@@ -60,7 +60,8 @@ public class SnowflakeRelationVisitorTest {
                 new StructField[] {new StructField("name", StringType$.MODULE$, false, null)})));
 
     when(relation.params().sfFullURL())
-        .thenReturn("https://microsoft_partner.east-us-2.azure.snowflakecomputing.com");
+        .thenReturn(
+            "https://microsoftpartner-eastus2account.east-us-2.azure.snowflakecomputing.com");
   }
 
   @Test
@@ -104,8 +105,7 @@ public class SnowflakeRelationVisitorTest {
 
     OpenLineage.Dataset ds = datasets.get(0);
 
-    assertEquals(
-        "snowflake://microsoft_partner.east-us-2.azure.snowflakecomputing.com", ds.getNamespace());
+    assertEquals("snowflake://microsoftpartner-eastus2account", ds.getNamespace());
 
     assertEquals("snowflake_db.snowflake_schema.table", ds.getName());
   }
@@ -148,8 +148,7 @@ public class SnowflakeRelationVisitorTest {
 
     OpenLineage.Dataset ds = datasets.get(0);
 
-    assertEquals(
-        "snowflake://microsoft_partner.east-us-2.azure.snowflakecomputing.com", ds.getNamespace());
+    assertEquals("snowflake://microsoftpartner-eastus2account", ds.getNamespace());
 
     assertEquals("snowflake_db.snowflake_schema.some_table", ds.getName());
   }
