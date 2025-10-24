@@ -93,9 +93,7 @@ class JdbcSparkUtilsTest {
             .dbtable("users AS u")
             .schema(
                 new StructType().add("id", DataTypes.IntegerType).add("name", DataTypes.StringType))
-            .expectedInputTable("users AS u")
-            .expectedColumnLineage(columnLineage("users AS u.id"))
-            .expectedColumnLineage(columnLineage("users AS u.name"))
+            .expectedInputTable("users")
             .build(),
         TestCase.builder()
             .dbtable("users u JOIN orders o ON u.id = o.user_id")
@@ -105,12 +103,8 @@ class JdbcSparkUtilsTest {
                     .add("name", DataTypes.StringType) // users.name
                     .add("user_id", DataTypes.IntegerType) // orders.user_id
                     .add("total", DataTypes.IntegerType)) // orders.total
-            .expectedInputTable("users u JOIN orders o ON u.id = o.user_id")
-            .expectedColumnLineage(columnLineage("users u JOIN orders o ON u.id = o.user_id.id"))
-            .expectedColumnLineage(columnLineage("users u JOIN orders o ON u.id = o.user_id.name"))
-            .expectedColumnLineage(
-                columnLineage("users u JOIN orders o ON u.id = o.user_id.user_id"))
-            .expectedColumnLineage(columnLineage("users u JOIN orders o ON u.id = o.user_id.total"))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
             .build(),
         TestCase.builder()
             .dbtable("public.users")
