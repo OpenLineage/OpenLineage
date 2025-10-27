@@ -5,6 +5,22 @@
 
 import org.apache.tools.ant.filters.ReplaceTokens
 
+configurations.all {
+  resolutionStrategy {
+    // prefer the fixed Netty version for any io.netty artifacts
+    eachDependency { details ->
+      if (details.requested.group == 'io.netty') {
+        details.useVersion '4.1.125.Final'
+      }
+    }
+    // also explicitly force key modules (helps older Gradle versions)
+    force 'io.netty:netty-codec:4.1.125.Final',
+          'io.netty:netty-handler:4.1.125.Final',
+          'io.netty:netty-buffer:4.1.125.Final',
+          'io.netty:netty-common:4.1.125.Final'
+  }
+}
+
 plugins {
     id("java-library")
     id("com.github.johnrengelman.shadow")
