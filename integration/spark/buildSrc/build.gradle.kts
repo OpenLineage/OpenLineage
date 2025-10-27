@@ -1,3 +1,19 @@
+configurations.all {
+  resolutionStrategy {
+    eachDependency {
+      if (requested.group == "io.netty") {
+        useVersion("4.1.125.Final")
+      }
+    }
+    force(
+      "io.netty:netty-codec:4.1.125.Final",
+      "io.netty:netty-handler:4.1.125.Final",
+      "io.netty:netty-buffer:4.1.125.Final",
+      "io.netty:netty-common:4.1.125.Final"
+    )
+  }
+}
+
 plugins {
     `kotlin-dsl`
     kotlin("plugin.serialization") version "2.1.10"
