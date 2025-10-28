@@ -9,8 +9,8 @@ info:
 paths:
   /lineage:
     post:
-      summary: Send an event related to the state of a run
-      description: Updates a run state for a job.
+      summary: Send an event related to the state of a run, job, or a dataset
+      description: Updates a state of a run, job, or a dataset. 
       operationId: postRunEvent
       tags:
         - OpenLineage
@@ -25,3 +25,24 @@ paths:
       responses:
         "200":
           description: OK
+  /lineage/batch:
+    post:
+      summary: Send a batch of events related to the state of a run, job, or a dataset
+      description: A batch of events with updates of a state of a run, job, or a dataset. 
+      operationId: postEventBatch
+      tags:
+        - OpenLineage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                oneOf:
+                  - $ref: "OpenLineage.json#/$defs/RunEvent"
+                  - $ref: "OpenLineage.json#/$defs/DatasetEvent"
+                  - $ref: "OpenLineage.json#/$defs/JobEvent"
+      responses:
+        "200":
+          description: OK        
