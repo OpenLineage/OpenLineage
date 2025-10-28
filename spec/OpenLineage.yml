@@ -9,8 +9,8 @@ info:
 paths:
   /lineage:
     post:
-      summary: Send an event related to the state of a run
-      description: Updates a run state for a job.
+      summary: Send an event related to the state of a run, job, or a dataset
+      description: Updates a state of a run, job, or a dataset.
       operationId: postRunEvent
       tags:
         - OpenLineage
@@ -25,3 +25,79 @@ paths:
       responses:
         "200":
           description: OK
+  /lineage/batch:
+    post:
+      summary: Send a batch of events related to the state of a run, job, or a dataset
+      description: A batch of events with updates of a state of a run, job, or a dataset.
+      operationId: postEventBatch
+      tags:
+        - OpenLineage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                oneOf:
+                  - $ref: "OpenLineage.json#/$defs/RunEvent"
+                  - $ref: "OpenLineage.json#/$defs/DatasetEvent"
+                  - $ref: "OpenLineage.json#/$defs/JobEvent"
+      responses:
+        "204":
+          description: OK response - batch was received
+        "200":
+          description: OK response - batch was received, response body contains processing details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - success
+                      - partial_success
+                    description: Indicates that some events failed to process
+                  summary:
+                    type: object
+                    properties:
+                      received:
+                        type: integer
+                        example: 10
+                      successful:
+                        type: integer
+                        example: 6
+                      failed:
+                        type: integer
+                        example: 4
+                      retriable:
+                        type: integer
+                        example: 2
+                      non_retriable:
+                        type: integer
+                        example: 2
+                    required:
+                      - received
+                      - successful
+                      - failed
+                  failed_events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                          example: 0
+                        reason:
+                          type: string
+                          description:
+                            "Failure reason (example values: Unsupported event type, Unsupported facets, Server error,
+                            Timeout)"
+                          example: "Unsupported event type, Unsupported facets, Server error, Timeout"
+                        retriable:
+                          type: boolean
+                          example: true
+                required:
+                  - status
+                  - summary
