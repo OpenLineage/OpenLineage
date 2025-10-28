@@ -73,6 +73,17 @@ class JdbcSparkUtilsTest {
             .expectedColumnLineage(columnLineage("users.id"))
             .build(),
         TestCase.builder()
+            .dbtable(
+                "(SELECT id\n"
+                    + "FROM users\n"
+                    + "WHERE active = 1)\n"
+                    + "AS t") // multiline dbtable
+            .schema(
+                new StructType().add("id", DataTypes.IntegerType).add("name", DataTypes.StringType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
             .dbtable("(SELECT id FROM public.users WHERE active = 1) AS t")
             .schema(
                 new StructType().add("id", DataTypes.IntegerType).add("name", DataTypes.StringType))

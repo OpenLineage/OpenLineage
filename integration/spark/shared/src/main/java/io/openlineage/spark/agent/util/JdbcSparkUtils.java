@@ -160,7 +160,7 @@ public class JdbcSparkUtils {
   private static boolean dbtableIsJustATableName(String dbtable) {
     // If there are no whitespaces between characters, we can assume this is a table name
     // in form of `table_name` or `schema_name.table_name`
-    return !dbtable.matches(".*\\S\\s+\\S.*");
+    return !dbtable.matches("(?s).*\\S\\s+\\S.*");
   }
 
   private static String extractDialectFromJdbcUrl(String jdbcUrl) {
