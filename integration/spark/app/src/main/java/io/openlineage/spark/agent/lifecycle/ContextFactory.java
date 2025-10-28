@@ -93,6 +93,12 @@ public class ContextFactory {
       log.error("Query execution is null: can't emit event for executionId {}", executionId);
       return Optional.empty();
     }
+
+    // DEBUG: Log optimized logical plan
+    log.info("===== OPTIMIZED LOGICAL PLAN for executionId {} =====", executionId);
+    log.info("{}", queryExecution.optimizedPlan().treeString());
+    log.info("===== END OPTIMIZED LOGICAL PLAN =====");
+
     SparkSession sparkSession = Spark4CompatUtils.getSparkSession(queryExecution);
     OpenLineageContext olContext =
         OpenLineageContext.builder()

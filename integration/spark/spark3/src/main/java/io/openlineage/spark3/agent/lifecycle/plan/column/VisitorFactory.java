@@ -16,6 +16,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.Aggre
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.CreateTableAsSelectVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.DataSourceV2RelationVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.DistinctVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.ExpandVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.FilterVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.GenerateVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.IcebergMergeIntoVisitor;
@@ -43,6 +44,7 @@ class VisitorFactory {
             new io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.WindowVisitor(),
             new DataSourceV2RelationVisitor(),
             new UnionVisitor(),
+            new ExpandVisitor(),
             new IcebergMergeIntoVisitor()));
   }
 

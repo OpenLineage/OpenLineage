@@ -13,6 +13,7 @@ include 'spark40'
 include 'shared'
 include 'app'
 include 'scala-fixtures'
+include 'visitor-analyzer'
 
 include 'snowflake'
 project(":snowflake").projectDir = file("./vendor/snowflake")

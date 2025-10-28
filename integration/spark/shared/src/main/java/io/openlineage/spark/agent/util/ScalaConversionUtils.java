@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -114,6 +115,24 @@ public class ScalaConversionUtils {
    */
   public static <T> List<T> fromSeq(scala.collection.Seq<T> seq) {
     return JavaConverters.bufferAsJavaListConverter(seq.<T>toBuffer()).asJava();
+  }
+
+  /**
+   * Convert a {@link Seq<Seq>} to a Java {@link List<List>}.
+   *
+   * @param seq
+   * @param <T>
+   * @return
+   */
+  public static <T> List<List<T>> fromSeqSeq(
+      scala.collection.Seq<? extends scala.collection.Seq<T>> seq) {
+    List<? extends scala.collection.Seq<T>> st =
+        JavaConverters.bufferAsJavaListConverter(seq.<scala.collection.Seq<T>>toBuffer()).asJava();
+    List<List<T>> result = new ArrayList<>(st.size());
+    for (scala.collection.Seq<T> tSeq : st) {
+      result.add(fromSeq(tSeq));
+    }
+    return result;
   }
 
   /**
