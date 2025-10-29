@@ -617,4 +617,38 @@ class IcebergHandlerTest {
     assertThat(facet.getCatalogProperties().getAdditionalProperties())
         .hasFieldOrPropertyWithValue("gcp_project_id", "some_gcp_project_id");
   }
+
+  @Test
+  void testGetBigQueryMetastoreLegacyCatalogData() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn("bq_metastore_catalog");
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map4(
+                "spark.sql.catalog.bq_metastore_catalog.catalog-impl",
+                "org.apache.iceberg.gcp.bigquery.BigQueryMetastoreCatalog",
+                "spark.sql.catalog.bq_metastore_catalog.warehouse",
+                "gcs://bucket/path/to/iceberg/warehouse",
+                "spark.sql.catalog.bq_metastore_catalog.gcp_project",
+                "my-gcp-project",
+                "spark.sql.catalog.bq_metastore_catalog.gcp_location",
+                "eu"));
+
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
+
+    assertEquals("bq_metastore_catalog", facet.getName());
+    assertEquals("bigquerymetastore", facet.getType());
+    assertEquals("gcs://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
+    assertEquals("iceberg", facet.getFramework());
+    assertThat(facet.getCatalogProperties().getAdditionalProperties())
+        .hasFieldOrPropertyWithValue("gcp_location", "eu")
+        .hasFieldOrPropertyWithValue("gcp_project_id", "my-gcp-project");
+  }
 }
