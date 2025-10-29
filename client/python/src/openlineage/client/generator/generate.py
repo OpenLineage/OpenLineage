@@ -22,17 +22,18 @@ from base import (  # type: ignore[import-not-found]
 
 # locations definitions
 FILE_LOCATION = pathlib.Path(__file__).resolve().parent
-PYTHON_CLIENT_LOCATION = FILE_LOCATION.parent.parent.parent.parent
-BASE_LOCATION = PYTHON_CLIENT_LOCATION.parent.parent
-BASE_SPEC_LOCATION = BASE_LOCATION / "spec" / "OpenLineage.json"
-FACETS_SPEC_LOCATION = BASE_LOCATION / "spec" / "facets"
-DEFAULT_OUTPUT_LOCATION = PYTHON_CLIENT_LOCATION / "openlineage" / "client" / "generated"
+PYTHON_CLIENT_DIR_LOCATION = FILE_LOCATION.parent.parent.parent.parent
+PYTHON_CLIENT_SRC_LOCATION = PYTHON_CLIENT_DIR_LOCATION / "src" / "openlineage" / "client"
+REPO_ROOT_LOCATION = PYTHON_CLIENT_DIR_LOCATION.parent.parent
+BASE_SPEC_LOCATION = REPO_ROOT_LOCATION / "spec" / "OpenLineage.json"
+FACETS_SPEC_LOCATION = REPO_ROOT_LOCATION / "spec" / "facets"
+DEFAULT_OUTPUT_LOCATION = PYTHON_CLIENT_SRC_LOCATION / "generated"
 TEMPLATES_LOCATION = FILE_LOCATION / "templates"
 
 HEADER = (FILE_LOCATION / "header.py").resolve().read_text()
 
 # structures to customize code generation
-REDACT_FIELDS = yaml.safe_load((PYTHON_CLIENT_LOCATION / "redact_fields.yml").read_text())
+REDACT_FIELDS = yaml.safe_load((PYTHON_CLIENT_DIR_LOCATION / "redact_fields.yml").read_text())
 
 
 def get_redact_fields(module_name: str) -> dict[str, dict[str, list[str]]]:
@@ -50,7 +51,7 @@ def generate_facet_v2_module(module_location: pathlib.Path) -> None:
     output = jinja2.Environment(autoescape=True).from_string(facet_v2_template).render(facets_modules=modules)
     format_and_save_output(
         output=output,
-        location=PYTHON_CLIENT_LOCATION / "openlineage" / "client" / "facet_v2.py",
+        location=PYTHON_CLIENT_SRC_LOCATION / "facet_v2.py",
         header=HEADER,
     )
 
@@ -93,6 +94,9 @@ def main(output_location: pathlib.Path) -> None:
                 header=HEADER,
             )
 
+    # Add empty init file to output directory
+    with open(output_location / "__init__.py", "w") as init_file:
+        init_file.write(HEADER)
     generate_facet_v2_module(DEFAULT_OUTPUT_LOCATION)
 
 
