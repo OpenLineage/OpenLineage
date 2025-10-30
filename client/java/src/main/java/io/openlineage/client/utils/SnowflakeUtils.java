@@ -84,4 +84,36 @@ public class SnowflakeUtils {
       return url;
     }
   }
+
+  /**
+   * Strips surrounding double quotes from Snowflake identifiers if present.
+   *
+   * <p>In Snowflake and other SQL databases, double quotes are used as delimiters to preserve case
+   * sensitivity or allow special characters in identifiers. The quotes are not part of the actual
+   * identifier name and should be removed for normalized dataset and column names.
+   *
+   * <p>Examples:
+   *
+   * <ul>
+   *   <li>"MyTable" → MyTable
+   *   <li>"my_database" → my_database
+   *   <li>normal_table → normal_table (no change)
+   *   <li>"" → (empty string)
+   *   <li>" → " (single quote, not stripped)
+   * </ul>
+   *
+   * @param identifier The identifier that may have surrounding quotes
+   * @return The identifier with surrounding quotes removed if present
+   */
+  public static String stripQuotes(String identifier) {
+    if (identifier == null || identifier.length() < 2) {
+      return identifier;
+    }
+
+    if (identifier.startsWith("\"") && identifier.endsWith("\"")) {
+      return identifier.substring(1, identifier.length() - 1);
+    }
+
+    return identifier;
+  }
 }
