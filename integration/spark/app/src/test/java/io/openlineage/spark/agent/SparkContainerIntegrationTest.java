@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableMap;
+import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.Run;
@@ -340,6 +341,27 @@ class SparkContainerIntegrationTest {
     String regex = "^((?!(spark_unknown|spark.logicalPlan|dataSource)).)*$";
 
     mockServerClient.verify(request().withPath("/api/v1/lineage").withBody(new RegexBody(regex)));
+  }
+
+  @Test
+  @SneakyThrows
+  void testRddRepartition() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "tesInputOnlyRdd", "spark_input_only_rdd.py");
+
+    List<RunEvent> events =
+        Arrays.stream(
+                mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+            .filter(e -> e.getJob().getName().contains("map_partitions"))
+            .collect(Collectors.toList());
+
+    // there should be no outputs in all the events
+    assertThat(events.stream().flatMap(e -> e.getOutputs().stream())).isEmpty();
+
+    // input should point only to a known input
+    assertThat(events.stream().flatMap(e -> e.getInputs().stream()).map(InputDataset::getName))
+        .containsExactly("/tmp/input_rdd");
   }
 
   @Test

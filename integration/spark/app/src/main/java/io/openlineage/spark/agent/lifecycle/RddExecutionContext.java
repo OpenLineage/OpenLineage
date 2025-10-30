@@ -72,6 +72,7 @@ class RddExecutionContext implements ExecutionContext {
   private static final String SPARK_PROCESSING_TYPE_BATCH = "BATCH";
   private static final String SPARK_PROCESSING_TYPE_STREAMING = "STREAMING";
   private static final String SPARK_JOB_TYPE = "RDD_JOB";
+  private static final Integer MAX_JOB_NAME_LENGTH = 100;
 
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
@@ -195,6 +196,9 @@ class RddExecutionContext implements ExecutionContext {
       dependencyNames.add(nameRDD(d.rdd()));
     }
     String dependencyName = Strings.join(dependencyNames, "_");
+    if (dependencyName != null && dependencyName.length() > MAX_JOB_NAME_LENGTH) {
+      dependencyName = dependencyName.substring(0, MAX_JOB_NAME_LENGTH);
+    }
     if (!dependencyName.startsWith(rddName)) {
       return rddName + "_" + dependencyName;
     } else {
