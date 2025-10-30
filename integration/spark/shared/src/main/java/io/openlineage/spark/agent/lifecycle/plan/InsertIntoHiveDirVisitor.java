@@ -79,6 +79,6 @@ public class InsertIntoHiveDirVisitor
   @Override
   public Optional<String> jobNameSuffix(InsertIntoHiveDirCommand command) {
     return ScalaConversionUtils.asJavaOptional(command.storage().locationUri())
-        .map(uri -> trimPath(PathUtils.fromURI(uri).getName()));
+        .map(uri -> trimPath(context, PathUtils.fromURI(uri).getName()));
   }
 }

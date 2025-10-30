@@ -54,7 +54,7 @@ public class InsertIntoHadoopFsRelationVisitor
 
   @Override
   public Optional<String> jobNameSuffix(InsertIntoHadoopFsRelationCommand command) {
-    return getDatasetIdentifier(command).map(di -> trimPath(di.getName()));
+    return getDatasetIdentifier(command).map(di -> trimPath(context, di.getName()));
   }
 
   private Optional<DatasetIdentifier> getDatasetIdentifier(

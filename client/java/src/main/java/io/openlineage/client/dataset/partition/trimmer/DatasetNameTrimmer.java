@@ -5,6 +5,8 @@
 
 package io.openlineage.client.dataset.partition.trimmer;
 
+import org.apache.commons.lang3.StringUtils;
+
 public interface DatasetNameTrimmer {
 
   String SEPARATOR = "/";
@@ -37,7 +39,9 @@ public interface DatasetNameTrimmer {
     if (name == null || !name.contains(SEPARATOR)) {
       return name;
     }
-    return name.substring(name.lastIndexOf(SEPARATOR)).replaceAll(SEPARATOR, "");
+    String nameWithoutTrailingSlash = StringUtils.stripEnd(name, "/");
+    return name.substring(nameWithoutTrailingSlash.lastIndexOf(SEPARATOR))
+        .replaceAll(SEPARATOR, "");
   }
 
   /**

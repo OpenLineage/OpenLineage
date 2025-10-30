@@ -299,6 +299,7 @@ class SparkGenericIntegrationTest {
             .filter(e -> e.getInputFacets() != null)
             .map(InputDataset::getInputFacets)
             .map(InputDatasetInputFacets::getInputStatistics)
+            .filter(Objects::nonNull)
             .findAny();
 
     assertThat(inputStatistics1).isPresent();
