@@ -33,7 +33,8 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import scala.Option;
 
 @Slf4j
@@ -58,13 +59,16 @@ public class SnowflakeRelationVisitorTest {
         .thenReturn(
             (new StructType(
                 new StructField[] {new StructField("name", StringType$.MODULE$, false, null)})));
-
-    when(relation.params().sfFullURL())
-        .thenReturn("https://microsoft_partner.east-us-2.azure.snowflakecomputing.com");
   }
 
-  @Test
-  void testApplyDbTable() {
+  @ParameterizedTest()
+  @CsvSource({
+    "https://microsoft_partner.east-us-2.azure.snowflakecomputing.com,snowflake://microsoft_partner.east-us-2.azure",
+    "https://orgname-accountname.snowflakecomputing.com,snowflake://orgname-accountname",
+  })
+  void testApplyDbTable(String fullUrl, String namespace) {
+    when(relation.params().sfFullURL()).thenReturn(fullUrl);
+
     TableName tableName = mock(TableName.class, RETURNS_DEEP_STUBS);
     when(tableName.toString()).thenReturn("table");
 
@@ -104,14 +108,19 @@ public class SnowflakeRelationVisitorTest {
 
     OpenLineage.Dataset ds = datasets.get(0);
 
-    assertEquals(
-        "snowflake://microsoft_partner.east-us-2.azure.snowflakecomputing.com", ds.getNamespace());
+    assertEquals(namespace, ds.getNamespace());
 
     assertEquals("snowflake_db.snowflake_schema.table", ds.getName());
   }
 
-  @Test
-  void testApplyQuery() {
+  @ParameterizedTest()
+  @CsvSource({
+    "https://microsoft_partner.east-us-2.azure.snowflakecomputing.com,snowflake://microsoft_partner.east-us-2.azure",
+    "https://orgname-accountname.snowflakecomputing.com,snowflake://orgname-accountname",
+  })
+  void testApplyQuery(String fullUrl, String namespace) {
+    when(relation.params().sfFullURL()).thenReturn(fullUrl);
+
     when(relation.params().table()).thenReturn(Option.empty());
     when(relation.params().query()).thenReturn(Option.apply("select * from some_table"));
 
@@ -148,8 +157,7 @@ public class SnowflakeRelationVisitorTest {
 
     OpenLineage.Dataset ds = datasets.get(0);
 
-    assertEquals(
-        "snowflake://microsoft_partner.east-us-2.azure.snowflakecomputing.com", ds.getNamespace());
+    assertEquals(namespace, ds.getNamespace());
 
     assertEquals("snowflake_db.snowflake_schema.some_table", ds.getName());
   }

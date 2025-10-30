@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.vendor.snowflake.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.SnowflakeUtils;
 import io.openlineage.spark.agent.util.SqlUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import java.util.Collections;
@@ -30,7 +31,7 @@ public class SnowflakeDataset {
       StructType schema) {
 
     final String namespace =
-        String.format("%s%s", SNOWFLAKE_PREFIX, sfFullURL.replace("https://", ""));
+        String.format("%s%s", SNOWFLAKE_PREFIX, SnowflakeUtils.parseAccountIdentifier(sfFullURL));
     final String tableName;
     // https://docs.snowflake.com/en/user-guide/spark-connector-use#moving-data-from-snowflake-to-spark
     // > Specify one of the following options for the table data to be read:

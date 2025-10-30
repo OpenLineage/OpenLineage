@@ -5,34 +5,43 @@ from urllib.parse import quote, urlparse, urlunparse
 
 
 def fix_account_name(name: str) -> str:
-    if not any(word in name for word in ["-", "_"]):
-        # If there is neither '-' nor '_' in the name, we append `.us-west-1.aws`
-        return f"{name}.us-west-1.aws"
+    """
+    Normalize Snowflake account name according to OpenLineage specification.
 
-    if "." in name:
-        # Logic for account locator with dots remains unchanged
-        spl = name.split(".")
-        if len(spl) == 1:
-            account = spl[0]
-            region, cloud = "us-west-1", "aws"
-        elif len(spl) == 2:
-            account, region = spl
-            cloud = "aws"
-        else:
-            account, region, cloud = spl
-        return f"{account}.{region}.{cloud}"
+    Snowflake supports two formats:
+    1. Organization-account format (preferred): orgname-accountname
+       - Never includes region or cloud in the identifier
+       - Example: myorg-myaccount
 
-    # Check for existing accounts with cloud names
-    if cloud := next((c for c in ["aws", "gcp", "azure"] if c in name), ""):
-        parts = name.split(cloud)
-        account = parts[0].strip("-_.")
+    2. Account locator format (legacy): accountlocator[.region[.cloud]]
+       - Examples:
+         - xy12345 → xy12345.us-west-1.aws (AWS US West Oregon default)
+         - xy12345.us-east-1 → xy12345.us-east-1.aws (aws default)
+         - xy12345.us-east-2.aws → xy12345.us-east-2.aws
+         - xy12345.east-us-2.azure → xy12345.east-us-2.azure
+    """
+    # Split by dots to analyze the structure
+    parts = name.split(".")
 
-        if not (region := parts[1].strip("-_.").replace("_", "-")):
-            return name
-        return f"{account}.{region}.{cloud}"
+    # First part is the account identifier
+    account_part = parts[0]
 
-    # Default case, return the original name
-    return name
+    # Check if it's organization-account format (contains hyphen)
+    # Organization-account format never has region/cloud info
+    if "-" in account_part:
+        # Organization-account format - return as-is
+        return account_part
+
+    # Account locator format - need to include region and cloud
+    if len(parts) == 1:
+        # Just account locator, add default region and cloud (AWS US West Oregon)
+        return f"{account_part}.us-west-1.aws"
+    elif len(parts) == 2:
+        # account_locator.region, add default cloud (aws)
+        return f"{account_part}.{parts[1]}.aws"
+    else:
+        # Full format: account_locator.region.cloud
+        return name
 
 
 def fix_snowflake_sqlalchemy_uri(uri: str) -> str:
