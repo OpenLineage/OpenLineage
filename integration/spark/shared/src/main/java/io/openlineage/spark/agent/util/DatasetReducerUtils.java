@@ -14,7 +14,6 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,8 +39,8 @@ public class DatasetReducerUtils {
     Collection<DatasetNameTrimmer> nameTrimmers =
         Optional.of(context.getOpenLineageConfig())
             .map(SparkOpenLineageConfig::getDatasetConfig)
-            .map(DatasetConfig::getDatasetNameTrimmers)
-            .orElse(Collections.emptyList());
+            .orElse(DatasetConfig.defaultConfig())
+            .getDatasetNameTrimmers();
 
     return datasetIdentifier.withTrimmedName(nameTrimmers);
   }
@@ -51,8 +50,8 @@ public class DatasetReducerUtils {
     Collection<DatasetNameTrimmer> nameTrimmers =
         Optional.of(context.getOpenLineageConfig())
             .map(SparkOpenLineageConfig::getDatasetConfig)
-            .map(DatasetConfig::getDatasetNameTrimmers)
-            .orElse(Collections.emptyList());
+            .orElse(DatasetConfig.defaultConfig())
+            .getDatasetNameTrimmers();
 
     return new DatasetIdentifier(datasetName, "").withTrimmedName(nameTrimmers).getName();
   }
