@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -22,6 +24,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.spark.SparkContext;
@@ -87,10 +90,11 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSpec()).thenReturn(tableSpec);
     when(logicalPlan.tableSchema()).thenReturn(schema);
-    when(logicalPlan.writeOptions()).thenReturn(new HashMap<>());
+    when(logicalPlan.writeOptions())
+        .thenReturn(
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
     verifyApply(
         (LogicalPlan) logicalPlan,
-        commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
 
@@ -103,7 +107,6 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     verifyApply(
         (LogicalPlan) logicalPlan,
-        commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
@@ -114,10 +117,11 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSpec()).thenReturn(tableSpec);
     when(logicalPlan.tableSchema()).thenReturn(schema);
-    when(logicalPlan.writeOptions()).thenReturn(new HashMap<>());
+    when(logicalPlan.writeOptions())
+        .thenReturn(
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
     verifyApply(
         (LogicalPlan) logicalPlan,
-        commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
@@ -130,7 +134,6 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     verifyApply(
         (LogicalPlan) logicalPlan,
-        commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
 
@@ -204,15 +207,11 @@ class CreateReplaceDatasetBuilderTest {
 
   private void verifyApply(
       LogicalPlan logicalPlan,
-      Map<String, String> tableProperties,
       OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
-              openLineageContext,
-              catalog,
-              tableName,
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              eq(openLineageContext), eq(catalog), eq(tableName), anyMap()))
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -235,13 +234,12 @@ class CreateReplaceDatasetBuilderTest {
       when(logicalPlan.tableName()).thenReturn(tableName);
       when(logicalPlan.tableSpec()).thenReturn(tableSpec);
       when(logicalPlan.tableSchema()).thenReturn(schema);
-      when(logicalPlan.writeOptions()).thenReturn(new HashMap<>());
+      when(logicalPlan.writeOptions())
+          .thenReturn(
+              ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
 
       when(PlanUtils3.getDatasetIdentifier(
-              openLineageContext,
-              catalog,
-              tableName,
-              ScalaConversionUtils.<String, String>fromMap(tableSpec.properties())))
+              eq(openLineageContext), eq(catalog), eq(tableName), anyMap()))
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets =
