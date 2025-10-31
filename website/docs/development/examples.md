@@ -175,7 +175,7 @@ This is a COMPLETE event with dataset facet of Database table.
 ### Job-to-Job lineage - ETL Job with several tasks
 
 This example shows how to represent an ETL Job consisting of several tasks. This example combines couple of facets to document the data lineage: 
-- using [Parent Run Facet](https://openlineage.io/docs/spec/facets/run-facets/parent_run) to document the relation between the ETL job and individual taks of the job (both the job and the individual tasks are documented by distinct OpenLineage events)
+- using [Parent Run Facet](https://openlineage.io/docs/spec/facets/run-facets/parent_run) to document the relation between the ETL job and individual tasks of the job (both the job and the individual tasks are documented by distinct OpenLineage events)
 - using [Dataset Type Facet](https://openlineage.io/docs/spec/facets/dataset-facets/type) to indicate, that the intermediate datasets produced by individual tasks of the ETL job are temporary, and consumers of the OpenLineage event can choose not to represent them (and draw the lineage directly to the next task instead). 
 - using [Column Level Lineage Facet](https://openlineage.io/docs/spec/facets/dataset-facets/column_lineage_facet) to document column-level lineage not only between the ETL job and the input/output datasets, but also the detailed transformations on the level of individual steps of the ETL job
 
@@ -185,7 +185,7 @@ The OpenLineage payloads are using the following best practices:
 
 - For [Dataset Type Facet](https://openlineage.io/docs/spec/facets/dataset-facets/type), the values `datasetType:= JOB_OUTPUT`, `subType:= TEMPORARY` are used to mark the temporary datasets. 
 - The namespace of the temporary dataset should follow standard [naming conventions](https://openlineage.io/docs/spec/naming/) and reflect where is the temporary dataset stored. If it is in-memory only, `inmemory://` can be used. 
-- The name of the temporary dataset can be constructed in various ways, below are couple of proposed approaches: 
+- The name of the temporary dataset can be constructed in various ways, below are a couple of proposed approaches: 
    - If the temporary dataset is named/identifiable, it's name or ID should be used 
    - If the temporary dataset doesn't have any name or ID, the name can be constructuded as the Job name with an index or the name of the downstream non-temporary dataset as a suffix (to accommodate Jobs with multiple outputs).
 
