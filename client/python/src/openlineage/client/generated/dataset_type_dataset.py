@@ -21,4 +21,4 @@ class DatasetTypeDatasetFacet(DatasetFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-1-0/DatasetTypeDatasetFacet.json#/$defs/DatasetTypeDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-0-1/DatasetTypeDatasetFacet.json#/$defs/DatasetTypeDatasetFacet"
