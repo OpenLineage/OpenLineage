@@ -18,6 +18,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -91,7 +92,7 @@ public class CreateReplaceOutputDatasetBuilder
   protected List<OpenLineage.OutputDataset> apply(
       SparkListenerEvent event, CreateTableAsSelect plan) {
     Map<String, String> tableProperties =
-        ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties());
+        new HashMap(ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()));
     tableProperties.putAll(ScalaConversionUtils.<String, String>fromMap(plan.writeOptions()));
     return callCatalogMethod(plan.name())
         .map(
@@ -123,7 +124,7 @@ public class CreateReplaceOutputDatasetBuilder
   protected List<OpenLineage.OutputDataset> apply(
       SparkListenerEvent event, ReplaceTableAsSelect plan) {
     Map<String, String> tableProperties =
-        ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties());
+        new HashMap(ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()));
     tableProperties.putAll(ScalaConversionUtils.<String, String>fromMap(plan.writeOptions()));
     return callCatalogMethod(plan.name())
         .map(
