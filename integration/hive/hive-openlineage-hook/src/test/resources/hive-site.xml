@@ -65,6 +65,10 @@
         <name>hive.exec.failure.hooks</name>
         <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
     </property>
+<!--    <property>-->
+<!--        <name>hive.openlineage.transport.type</name>-->
+<!--        <value>console</value>-->
+<!--    </property>-->
     <property>
         <name>hive.openlineage.transport.type</name>
         <value>http</value>
