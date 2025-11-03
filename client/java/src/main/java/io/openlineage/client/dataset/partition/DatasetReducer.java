@@ -45,7 +45,7 @@ public class DatasetReducer {
 
   public DatasetReducer(OpenLineage openLineage, DatasetConfig datasetConfig) {
     if (datasetConfig == null) {
-      this.datasetConfig = new DatasetConfig(Collections.emptyMap(), null, null);
+      this.datasetConfig = DatasetConfig.defaultConfig();
     } else this.datasetConfig = datasetConfig;
     this.openLineage = openLineage;
   }
