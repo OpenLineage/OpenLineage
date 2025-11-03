@@ -105,4 +105,42 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
         "EXPORT TABLE partitioned_export_source PARTITION(year=2023) TO '/tmp/export_partition_test'");
     verifyEvents("partitionedExportStart.json", "partitionedExportComplete.json");
   }
+
+  @Test
+  public void testSimpleLoad() {
+    createManagedHiveTable("load_target", "id int, name string, value double");
+    // First create a data file to load from
+    runHiveQuery("INSERT INTO load_target VALUES (1, 'test1', 10.5), (2, 'test2', 20.7)");
+    runHiveQuery("INSERT OVERWRITE LOCAL DIRECTORY '/tmp/load_data' SELECT * FROM load_target");
+    // Clear the target table
+    runHiveQuery("TRUNCATE TABLE load_target");
+    // Now perform the LOAD operation
+    runHiveQuery("LOAD DATA LOCAL INPATH '/tmp/load_data' INTO TABLE load_target");
+    verifyEvents("loadStart.json", "loadComplete.json");
+  }
+
+  @Test
+  public void testLoadToPartition() {
+    createPartitionedHiveTable(
+        "partitioned_load_target", "id int, name string, value double", "year int");
+    // Create source data file
+    runHiveQuery(
+        "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/load_partition_data' SELECT 1, 'test1', 10.5 UNION ALL SELECT 2, 'test2', 20.7");
+    // Load data into specific partition
+    runHiveQuery(
+        "LOAD DATA LOCAL INPATH '/tmp/load_partition_data' INTO TABLE partitioned_load_target PARTITION(year=2023)");
+    verifyEvents("loadToPartitionStart.json", "loadToPartitionComplete.json");
+  }
+
+  @Test
+  public void testSimpleImport() {
+    // First create and export a table to have data to import
+    createManagedHiveTable("export_for_import", "id int, name string, value double");
+    runHiveQuery("INSERT INTO export_for_import VALUES (1, 'test1', 10.5), (2, 'test2', 20.7)");
+    runHiveQuery("EXPORT TABLE export_for_import TO '/tmp/export_for_import';");
+
+    // Now import the exported data into a new table
+    runHiveQuery("IMPORT TABLE imported_table FROM '/tmp/export_for_import'");
+    verifyEvents("importStart.json", "importComplete.json");
+  }
 }
