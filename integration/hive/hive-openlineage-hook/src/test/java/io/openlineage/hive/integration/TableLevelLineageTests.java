@@ -47,17 +47,16 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
     createManagedHiveTable("failure_table", "id int, name string, team int");
     runHiveQuery("INSERT INTO unemployees VALUES(1, 'hello', 1)");
     Assertions.assertThatThrownBy(
-            () -> {
-              runHiveQuery(
-                  String.join(
-                      "\n",
-                      "INSERT INTO failure_table",
-                      "SELECT",
-                      "    id,",
-                      "    name,",
-                      "    ASSERT_TRUE(team != 1) as team", // This will fail for team=1
-                      "FROM unemployees"));
-            })
+            () ->
+                runHiveQuery(
+                    String.join(
+                        "\n",
+                        "INSERT INTO failure_table",
+                        "SELECT",
+                        "    id,",
+                        "    name,",
+                        "    ASSERT_TRUE(team != 1) as team", // This will fail for team=1
+                        "FROM unemployees")))
         .hasMessageContainingAll("Error while processing statement: FAILED");
     // Check that lineage was still produced
     //        List<OpenLineage.RunEvent> emitted =
@@ -83,6 +82,27 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
             "employees.name as employee",
             "from teams, managers, employees",
             "where teams.id = managers.team and teams.id = employees.team"));
-    verifyEvents("simpleCtasComplete.json");
+    verifyEvents("simpleCtasStart.json", "simpleCtasComplete.json");
+  }
+
+  @Test
+  public void testSimpleExport() {
+    createManagedHiveTable("export_source", "id int, name string, value double");
+    runHiveQuery("INSERT INTO export_source VALUES (1, 'test1', 10.5), (2, 'test2', 20.7)");
+    runHiveQuery("EXPORT TABLE export_source TO '/tmp/export_test'");
+    verifyEvents("simpleExportStart.json", "simpleExportComplete.json");
+  }
+
+  @Test
+  public void testPartitionedExport() {
+    createPartitionedHiveTable(
+        "partitioned_export_source", "id int, name string, value double", "year int");
+    runHiveQuery(
+        "INSERT INTO partitioned_export_source PARTITION(year=2023) VALUES (1, 'test1', 10.5), (2, 'test2', 20.7)");
+    runHiveQuery(
+        "INSERT INTO partitioned_export_source PARTITION(year=2024) VALUES (3, 'test3', 30.9), (4, 'test4', 40.1)");
+    runHiveQuery(
+        "EXPORT TABLE partitioned_export_source PARTITION(year=2023) TO '/tmp/export_partition_test'");
+    verifyEvents("partitionedExportStart.json", "partitionedExportComplete.json");
   }
 }

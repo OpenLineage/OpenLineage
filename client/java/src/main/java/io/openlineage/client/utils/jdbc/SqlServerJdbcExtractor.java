@@ -17,19 +17,21 @@ public class SqlServerJdbcExtractor implements JdbcExtractor {
   // https://learn.microsoft.com/en-us/sql/connect/jdbc/building-the-connection-url?view=sql-server-ver16
 
   private static final String SCHEME = "sqlserver";
+  private static final String JTDS_SCHEME_PREFIX = "jtds:";
   private static final String SERVICE_PROPERTY = "servername";
   private static final String PORT_PROPERTY = "portnumber";
-  private static final String INSTANCE_PROPERTY = "instancename";
+  private static final String INSTANCE_PROPERTY = "instance";
+  private static final String INSTANCE_NAME_PROPERTY = "instancename";
   private static final String DATABASE_NAME_PROPERTY = "databasename";
   private static final String DATABASE_PROPERTY = "database";
 
   private static final Pattern URL =
       Pattern.compile(
-          "(?:\\w+)://(?<host>[\\w\\d\\.-]+)?(?:\\\\)?(?<instance>[\\w]+)?(?::)?(?<port>\\d+)?(?<params>.*)");
+          "(?:[\\w:]+)://(?<host>[\\w\\d\\.-]+)?(?<instance>\\\\[\\w]+)?(?<port>:\\d+)?(?<database>/[\\w]+)?(?<params>;.*)?");
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {
-    return jdbcUri.toLowerCase(Locale.ROOT).startsWith(SCHEME);
+    return jdbcUri.toLowerCase(Locale.ROOT).replace(JTDS_SCHEME_PREFIX, "").startsWith(SCHEME);
   }
 
   @Override
@@ -47,11 +49,15 @@ public class SqlServerJdbcExtractor implements JdbcExtractor {
     }
 
     if (matcher.group("port") != null) {
-      finalProperties.setProperty(PORT_PROPERTY, matcher.group("port"));
+      finalProperties.setProperty(PORT_PROPERTY, matcher.group("port").replace(":", ""));
     }
 
     if (matcher.group("instance") != null) {
-      finalProperties.setProperty(INSTANCE_PROPERTY, matcher.group("instance"));
+      finalProperties.setProperty(INSTANCE_PROPERTY, matcher.group("instance").replace("\\", ""));
+    }
+
+    if (matcher.group("database") != null) {
+      finalProperties.setProperty(DATABASE_PROPERTY, matcher.group("database").replace("/", ""));
     }
 
     String[] urlParams =
@@ -94,7 +100,12 @@ public class SqlServerJdbcExtractor implements JdbcExtractor {
       authority = host;
     }
 
-    Optional<String> instance = Optional.ofNullable(finalProperties.getProperty(INSTANCE_PROPERTY));
+    Optional<String> instance =
+        Optional.ofNullable(finalProperties.getProperty(INSTANCE_PROPERTY))
+            .map(Optional::of)
+            .orElseGet(
+                () -> Optional.ofNullable(finalProperties.getProperty(INSTANCE_NAME_PROPERTY)));
+
     Optional<String> database =
         Optional.ofNullable(finalProperties.getProperty(DATABASE_NAME_PROPERTY))
             .map(Optional::of)

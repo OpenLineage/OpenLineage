@@ -19,15 +19,16 @@ public class CosmosHandler implements RelationHandler {
     try {
       CosmosHandler.class.getClassLoader().loadClass(COSMOS_CATALOG_NAME);
       return true;
-    } catch (Exception e) {
-      // swallow- we don't care
+    } catch (NoClassDefFoundError | Exception e) {
+      // If class does not exist or it's loading fails for some reason, we handle that failure by
+      // returning false
     }
     try {
       Thread.currentThread().getContextClassLoader().loadClass(COSMOS_CATALOG_NAME);
       return true;
-    } catch (Exception e) {
-      // swallow- we don't care
-
+    } catch (NoClassDefFoundError | Exception e) {
+      // If class does not exist or it's loading fails for some reason, we handle that failure by
+      // returning false
     }
     return false;
   }

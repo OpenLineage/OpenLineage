@@ -141,8 +141,8 @@ class JarComparator:
     def decompile_class_file(self, class_file: Path) -> Optional[list[str]]:
         """Decompile .class file using javap if available."""
         try:
-            result = subprocess.run(
-                ["javap", "-c", "-p", str(class_file)],  # noqa: S603,S607
+            result = subprocess.run(  # noqa: S603
+                ["javap", "-c", "-p", str(class_file)],  # noqa: S607
                 capture_output=True,
                 text=True,
                 timeout=30,

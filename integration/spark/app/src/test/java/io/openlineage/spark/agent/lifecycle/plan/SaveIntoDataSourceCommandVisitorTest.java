@@ -21,6 +21,7 @@ import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrap
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -74,6 +75,7 @@ class SaveIntoDataSourceCommandVisitorTest {
     when(context.getSparkExtensionVisitorWrapper()).thenReturn(wrapper);
     when(sparkSession.sqlContext()).thenReturn(sqlContext);
     when(command.options()).thenReturn(options);
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
   }
 
   @Test

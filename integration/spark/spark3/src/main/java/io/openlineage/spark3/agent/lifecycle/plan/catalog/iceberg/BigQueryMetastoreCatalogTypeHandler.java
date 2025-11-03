@@ -54,8 +54,20 @@ class BigQueryMetastoreCatalogTypeHandler extends BaseCatalogTypeHandler {
   @Override
   Map<String, String> catalogProperties(Map<String, String> catalogConf) {
     Map<String, String> properties = new HashMap<>();
-    properties.put("gcp_project_id", catalogConf.get("gcp.bigquery.project-id"));
-    properties.put("gcp_location", catalogConf.get("gcp.bigquery.location"));
+
+    // Backward compatibility: prefer official Iceberg keys, fall back to Google's legacy keys
+    // TODO: Google plans on using Iceberg Runtime with BigQuery Metastore support instead of their
+    //  own implementation. Remove fallback once migration period is complete.
+    //  Google docs: https://cloud.google.com/bigquery/docs/configure-blms#configure-with-dataproc
+    //  Iceberg code:
+    // https://github.com/apache/iceberg/blob/911a486b0eb8f55c2a44c5aa7fe62c2ca23b1d75/bigquery/src/main/java/org/apache/iceberg/gcp/bigquery/BigQueryMetastoreCatalog.java#L62
+    properties.put(
+        "gcp_project_id",
+        catalogConf.getOrDefault("gcp.bigquery.project-id", catalogConf.get("gcp_project")));
+    properties.put(
+        "gcp_location",
+        catalogConf.getOrDefault("gcp.bigquery.location", catalogConf.get("gcp_location")));
+
     return properties;
   }
 }

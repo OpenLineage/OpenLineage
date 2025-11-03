@@ -1,6 +1,34 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.38.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.39.0...HEAD)
+
+## [1.39.0](https://github.com/OpenLineage/OpenLineage/compare/1.38.0...1.39.0)
+
+### Added
+
+* **Spark: Normalize dataset names with configurable trimmers** [`#3996`](https://github.com/OpenLineage/OpenLineage/pull/3996) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Add configurable dataset name normalization with support for date patterns, key-value pairs, and S3 location detection to enable proper dataset subsetting.*
+* **Spark: Add missing facets in inputs for Databricks Unity Catalog** [`#4057`](https://github.com/OpenLineage/OpenLineage/pull/4057) [@kchledowski](https://github.com/kchledowski)
+  *Add missing input symlink facets for Databricks Unity Catalog tables.*
+
+### Changed
+
+* **Spark: Refactor tests for dependency collector** [`#4058`](https://github.com/OpenLineage/OpenLineage/pull/4058) [@kchledowski](https://github.com/kchledowski)
+  *Refactor column-level lineage dependency collector tests for better organization and maintainability.*
+
+### Fixed
+
+* **Spec: Fix typo in iceberg commit report facet spec file** [`#4069`](https://github.com/OpenLineage/OpenLineage/pull/4069) [@fm100](https://github.com/fm100)
+  *Fix typo in IcebergCommitReportOutputDatasetFacet property name.*
+* **Spark: Fix dataset trimming for CLL inputs** [`#4061`](https://github.com/OpenLineage/OpenLineage/pull/4061) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Fix dataset name trimming for column-level lineage inputs.*
+* **Python: Remove numpy import** [`#4062`](https://github.com/OpenLineage/OpenLineage/pull/4062) [@kacpermuda](https://github.com/kacpermuda)
+  *Remove unnecessary numpy import from Python client.*
+
+### Removed
+
+* **Dagster: Remove Dagster integration** [`#3844`](https://github.com/OpenLineage/OpenLineage/pull/3844) [@kacpermuda](https://github.com/kacpermuda)
+  *Remove Dagster integration from the repository.*
 
 ## [1.38.0](https://github.com/OpenLineage/OpenLineage/compare/1.37.0...1.38.0) - 2025-10-01
 

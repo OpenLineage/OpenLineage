@@ -24,6 +24,7 @@ import io.openlineage.client.OpenLineage.SymlinksDatasetFacet;
 import io.openlineage.client.OpenLineage.SymlinksDatasetFacetIdentifiers;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.TransformationInfo;
+import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
 import io.openlineage.hive.client.HiveOpenLineageConfigParser;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -56,6 +58,8 @@ import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
+import org.apache.hadoop.hive.ql.plan.ExportWork;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hive.common.util.HiveVersionInfo;
 
 @Slf4j
@@ -66,9 +70,7 @@ public class Faceting {
     // isn't readily available in the read/write entities provided by the hook. So we run an
     // explicit call to the Hive Metastore to retrieve the values.
     if (entity.getTable().getSd().getCols().isEmpty()) {
-      entity.setT(
-          HiveUtils.getTable(
-              conf, entity.getTable().getDbName(), entity.getTable().getTableName()));
+      entity.setT(HiveUtils.getTable(conf, entity.getTable()));
     }
   }
 
@@ -116,8 +118,16 @@ public class Faceting {
   }
 
   public static List<OutputDataset> getOutputDatasets(
-      OpenLineageContext olContext, List<InputDataset> inputDatasets) {
+      OpenLineageContext olContext, List<InputDataset> inputDatasets) throws Exception {
     HookContext hookContext = olContext.getHookContext();
+    if (hookContext.getQueryPlan().getOperation() == HiveOperation.EXPORT) {
+      return getIdentityOutputDataset(olContext, inputDatasets);
+    }
+    return getQueryOutputDatasets(olContext, inputDatasets, hookContext);
+  }
+
+  private static List<OutputDataset> getQueryOutputDatasets(
+      OpenLineageContext olContext, List<InputDataset> inputDatasets, HookContext hookContext) {
     SemanticAnalyzer semanticAnalyzer =
         HiveUtils.analyzeQuery(
             hookContext.getConf(),
@@ -159,6 +169,81 @@ public class Faceting {
       }
     }
     return outputs;
+  }
+
+  private static List<OutputDataset> getIdentityOutputDataset(
+      OpenLineageContext olContext, List<InputDataset> inputDatasets) throws Exception {
+    // In case of EXPORT operation there is always a single output and single input
+    // both have the same schema and all the columns are have and IDENTITY transformation
+    // so we can skip the column lineage analysis.
+    // In case of specifying a partition, we put the partitioning field as a FILTER transformation
+    WriteEntity writeEntity = olContext.getWriteEntities().iterator().next();
+    DatasetIdentifier datasetIdentifier =
+        FilesystemDatasetUtils.fromLocation(writeEntity.getLocation());
+    InputDataset inputDataset = inputDatasets.get(0);
+    return Collections.singletonList(
+        olContext
+            .getOpenLineage()
+            .newOutputDatasetBuilder()
+            .namespace(datasetIdentifier.getNamespace())
+            .name(datasetIdentifier.getName())
+            .facets(
+                olContext
+                    .getOpenLineage()
+                    .newDatasetFacetsBuilder()
+                    .schema(inputDataset.getFacets().getSchema())
+                    .columnLineage(getIdentityCLL(inputDataset, olContext))
+                    .build())
+            .build());
+  }
+
+  private static ColumnLineageDatasetFacet getIdentityCLL(
+      InputDataset inputDataset, OpenLineageContext olContext) {
+    List<SchemaDatasetFacetFields> fields = inputDataset.getFacets().getSchema().getFields();
+    OpenLineage ol = olContext.getOpenLineage();
+    ColumnLineageDatasetFacetFieldsBuilder cldffb = ol.newColumnLineageDatasetFacetFieldsBuilder();
+    fields.stream()
+        .map(
+            f ->
+                ol.newColumnLineageDatasetFacetFieldsAdditionalBuilder()
+                    .inputFields(
+                        Collections.singletonList(
+                            getInputField(inputDataset, f, TransformationInfo.identity())))
+                    .build())
+        .forEach(f -> cldffb.put(f.getInputFields().get(0).getField(), f));
+
+    ExportWork work =
+        (ExportWork) olContext.getHookContext().getQueryPlan().getRootTasks().get(0).getWork();
+    ColumnLineageDatasetFacetBuilder columnLineageDatasetFacetBuilder =
+        ol.newColumnLineageDatasetFacetBuilder().fields(cldffb.build());
+    if (work.getTableSpec().getPartSpec() != null && !work.getTableSpec().getPartSpec().isEmpty()) {
+      List<InputField> collect1 =
+          fields.stream()
+              .filter(f -> work.getTableSpec().getPartSpec().containsKey(f.getName()))
+              .map(
+                  f ->
+                      getInputField(
+                          inputDataset,
+                          f,
+                          TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER)))
+              .collect(Collectors.toList());
+      columnLineageDatasetFacetBuilder.dataset(collect1);
+    }
+
+    return columnLineageDatasetFacetBuilder.build();
+  }
+
+  private static InputField getInputField(
+      InputDataset inputDataset,
+      SchemaDatasetFacetFields f,
+      TransformationInfo transformationInfo) {
+    return new InputFieldBuilder()
+        .field(f.getName())
+        .name(inputDataset.getName())
+        .namespace(inputDataset.getNamespace())
+        .transformations(
+            Collections.singletonList(transformationInfo.toInputFieldsTransformations()))
+        .build();
   }
 
   public static InputDataset getInputDataset(Table table, List<InputDataset> inputDatasets) {
@@ -276,7 +361,7 @@ public class Faceting {
   }
 
   public static SchemaDatasetFacet getSchemaDatasetFacet(OpenLineage ol, Table table) {
-    List<FieldSchema> columns = table.getCols();
+    List<FieldSchema> columns = table.getAllCols();
     SchemaDatasetFacet schemaFacet = null;
     if (columns != null && !columns.isEmpty()) {
       List<SchemaDatasetFacetFields> fields = new ArrayList<>();
@@ -293,7 +378,7 @@ public class Faceting {
     return schemaFacet;
   }
 
-  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(
+  public static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(
       OpenLineageContext olContext) {
     return olContext
         .getOpenLineage()
@@ -304,18 +389,18 @@ public class Faceting {
         .build();
   }
 
-  private static HivePropertiesFacet getHivePropertiesFacet(OpenLineageContext olContext) {
+  public static HivePropertiesFacet getHivePropertiesFacet(OpenLineageContext olContext) {
     return new HivePropertiesFacetBuilder(olContext.getHookContext().getConf()).build();
   }
 
-  private static HiveQueryInfoFacet getHiveQueryInfoFacet(OpenLineageContext olContext) {
+  public static HiveQueryInfoFacet getHiveQueryInfoFacet(OpenLineageContext olContext) {
     HookContext hookContext = olContext.getHookContext();
     return new HiveQueryInfoFacet()
         .setQueryId(hookContext.getQueryState().getQueryId())
         .setOperationName(hookContext.getOperationName());
   }
 
-  private static HiveSessionInfoFacet getHiveSessionInfoFacet(OpenLineageContext olContext) {
+  public static HiveSessionInfoFacet getHiveSessionInfoFacet(OpenLineageContext olContext) {
     HookContext hookContext = olContext.getHookContext();
     HiveSessionInfoFacet result =
         new HiveSessionInfoFacet()
@@ -336,7 +421,8 @@ public class Faceting {
     return result;
   }
 
-  public static RunEvent getRunEvent(EventEmitter emitter, OpenLineageContext olContext) {
+  public static RunEvent getRunEvent(EventEmitter emitter, OpenLineageContext olContext)
+      throws Exception {
     OpenLineage ol = olContext.getOpenLineage();
     RunBuilder runBuilder =
         ol.newRunBuilder()
@@ -344,6 +430,7 @@ public class Faceting {
             .facets(
                 ol.newRunFacetsBuilder()
                     .processing_engine(getProcessingEngineFacet(olContext))
+                    .parent(getParentRunFacet(olContext))
                     .put("hive_query", getHiveQueryInfoFacet(olContext))
                     .put("hive_session", getHiveSessionInfoFacet(olContext))
                     .put("hive_properties", getHivePropertiesFacet(olContext))
@@ -351,7 +438,7 @@ public class Faceting {
 
     List<InputDataset> inputDatasets = getInputDatasets(olContext);
     List<OutputDataset> outputDatasets = getOutputDatasets(olContext, inputDatasets);
-    String jobName = generateJobName(emitter.getJobName(), inputDatasets, outputDatasets);
+    String jobName = generateJobName(emitter.getJobName(), outputDatasets);
     return ol.newRunEventBuilder()
         .eventType(olContext.getEventType())
         .eventTime(olContext.getEventTime())
@@ -372,7 +459,27 @@ public class Faceting {
         .build();
   }
 
-  private static OpenLineage.SQLJobFacet getSQLJobFacet(OpenLineageContext olContext) {
+  public static OpenLineage.ParentRunFacet getParentRunFacet(OpenLineageContext olContext) {
+    Optional<UUID> uuid = convertToUUID(olContext.getOpenLineageConfig().getParentRunId());
+    if (!uuid.isPresent()
+        || olContext.getOpenLineageConfig().getParentJobName() == null
+        || olContext.getOpenLineageConfig().getParentJobNamespace() == null) {
+      return null;
+    }
+    return olContext
+        .getOpenLineage()
+        .newParentRunFacetBuilder()
+        .run(olContext.getOpenLineage().newParentRunFacetRun(uuid.get()))
+        .job(
+            olContext
+                .getOpenLineage()
+                .newParentRunFacetJob(
+                    olContext.getOpenLineageConfig().getParentJobNamespace(),
+                    olContext.getOpenLineageConfig().getParentJobName()))
+        .build();
+  }
+
+  public static OpenLineage.SQLJobFacet getSQLJobFacet(OpenLineageContext olContext) {
     return olContext
         .getOpenLineage()
         .newSQLJobFacetBuilder()
@@ -381,7 +488,7 @@ public class Faceting {
         .build();
   }
 
-  private static OpenLineage.JobTypeJobFacet getJobTypeFacet(OpenLineageContext olContext) {
+  public static OpenLineage.JobTypeJobFacet getJobTypeFacet(OpenLineageContext olContext) {
     return olContext
         .getOpenLineage()
         .newJobTypeJobFacetBuilder()
@@ -391,8 +498,15 @@ public class Faceting {
         .build();
   }
 
-  private static String generateJobName(
-      String jobName, List<InputDataset> inputDatasets, List<OutputDataset> outputDatasets) {
+  private static String generateJobName(String jobName, List<OutputDataset> outputDatasets) {
     return String.format("%s.%s", jobName.toLowerCase(), outputDatasets.get(0).getName());
+  }
+
+  private static Optional<UUID> convertToUUID(String uuid) {
+    try {
+      return Optional.ofNullable(uuid).map(UUID::fromString);
+    } catch (Exception e) {
+      return Optional.empty();
+    }
   }
 }

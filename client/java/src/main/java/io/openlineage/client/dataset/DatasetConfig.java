@@ -15,6 +15,7 @@ import io.openlineage.client.dataset.partition.trimmer.MultiDirDateTrimmer;
 import io.openlineage.client.dataset.partition.trimmer.YearMonthTrimmer;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,10 @@ public class DatasetConfig implements MergeConfig<DatasetConfig> {
   @Getter
   @JsonProperty("extraTrimmers")
   private String extraTrimmers;
+
+  public static DatasetConfig defaultConfig() {
+    return new DatasetConfig(Collections.emptyMap(), null, null);
+  }
 
   @Override
   public DatasetConfig mergeWithNonNull(DatasetConfig other) {

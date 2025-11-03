@@ -270,7 +270,13 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
-    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(4);
+    OpenLineage.RunEvent completeEvent =
+        lineageEvent.getAllValues().stream()
+            .filter(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
+            .filter(e -> !e.getInputs().isEmpty())
+            .filter(e -> !e.getOutputs().isEmpty())
+            .findAny()
+            .get();
     assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     assertThat(completeEvent.getInputs())
         .first()
@@ -378,21 +384,26 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(4)).emit(lineageEvent.capture());
-    OpenLineage.RunEvent event =
+    OpenLineage.RunEvent eventWithInput =
         lineageEvent.getAllValues().stream()
             .filter(ev -> ev.getInputs() != null && !ev.getInputs().isEmpty())
+            .findFirst()
+            .get();
+    OpenLineage.RunEvent eventWithOutput =
+        lineageEvent.getAllValues().stream()
+            .filter(ev -> ev.getOutputs() != null && !ev.getOutputs().isEmpty())
             .findFirst()
             .get();
 
     assertThat(lineageEvent.getAllValues().get(lineageEvent.getAllValues().size() - 1))
         .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
 
-    assertThat(event.getInputs())
+    assertThat(eventWithInput.getInputs())
         .first()
         .hasFieldOrPropertyWithValue(NAME, testFile.getParent().toString())
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
     String warehouseDir = spark.sqlContext().getConf("spark.sql.warehouse.dir");
-    assertThat(event.getOutputs())
+    assertThat(eventWithOutput.getOutputs())
         .first()
         .hasFieldOrPropertyWithValue(
             NAME,

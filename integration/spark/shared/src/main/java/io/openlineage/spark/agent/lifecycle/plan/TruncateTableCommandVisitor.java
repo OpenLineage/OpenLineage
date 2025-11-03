@@ -73,6 +73,6 @@ public class TruncateTableCommandVisitor
     CatalogTable table = tableOpt.get();
     DatasetIdentifier datasetIdentifier =
         PathUtils.fromCatalogTable(table, context.getSparkSession().get());
-    return Optional.of(trimPath(datasetIdentifier.getName()));
+    return Optional.of(trimPath(context, datasetIdentifier.getName()));
   }
 }

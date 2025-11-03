@@ -29,6 +29,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import lombok.NonNull;
+import lombok.ToString;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -53,6 +54,7 @@ import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.Timeout;
 
 @Slf4j
+@ToString
 public final class HttpTransport extends Transport {
   private static final String API_V1 = "/api/v1";
 

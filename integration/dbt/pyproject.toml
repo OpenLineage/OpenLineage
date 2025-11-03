@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
 
 [project]
 name = "openlineage-dbt"
-version = "1.39.0"
+version = "1.40.0"
 description = "OpenLineage integration with dbt"
 readme = "README.md"
 authors = [{name = "OpenLineage"}]
@@ -12,12 +12,12 @@ requires-python = ">=3.9"
 keywords = ["openlineage"]
 dependencies = [
     "tqdm>=4.62.0",
-    "openlineage-integration-common==1.39.0",
+    "openlineage-integration-common==1.40.0",
     "dbt-core>=1.0.0",
 ]
 
 [project.optional-dependencies]
-tests = [
+dev = [
     "pytest>=7.0.0",
     "pytest-cov", 
     "pytest-xdist>=2.5.0",
@@ -27,24 +27,25 @@ tests = [
     "python-dateutil",
     "requests>=2.25.0",
     "docker>=6.0.0",
+    "mypy"
 ]
-dev = ["openlineage-dbt[tests]"]
 
 [project.scripts]
 dbt-ol = "openlineage.dbt:main"
 
-[tool.setuptools.packages.find]
-include = ["openlineage.*"]
+[tool.uv.sources]
+openlineage-integration-common = { path = "../common", editable = true }
 
-[tool.setuptools.package-data]
-"*" = ["*"]
+[tool.uv.build-backend]
+module-name = "openlineage"
+namespace = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short -p no:warnings"
 pythonpath = "."
 
 [tool.ruff]
@@ -56,6 +57,28 @@ lint.select = [
     "I001"
 ]
 target-version = "py39"
-lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/common"]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.bumpversion]
+current_version = "1.40.0"
+commit = false
+tag = false
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<rc>.*)"
+serialize = [
+    "{major}.{minor}.{patch}{rc}",
+    "{major}.{minor}.{patch}"
+]
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "openlineage-integration-common=={current_version}"
+replace = "openlineage-integration-common=={new_version}"

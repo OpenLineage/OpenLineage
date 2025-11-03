@@ -8,7 +8,7 @@ from collections import namedtuple
 import yaml
 
 PARENT_LOCATION = pathlib.Path(__file__).resolve().parent.parent
-MODULES_LOCATION = PARENT_LOCATION / "client" / "python" / "openlineage" / "client" / "generated"
+MODULES_LOCATION = PARENT_LOCATION / "client" / "python" / "src" / "openlineage" / "client" / "generated"
 REDACT_FIELDS_YAML = PARENT_LOCATION / "client" / "python" / "redact_fields.yml"
 REDACT_FIELDS = yaml.safe_load(REDACT_FIELDS_YAML.read_text())
 MissingClass = namedtuple("MissingClass", "module_name class_name")
@@ -42,8 +42,9 @@ if __name__ == "__main__":
                 not_found.append(MissingClass(module_name, clazz))
     if not_found:
         missing_str = "\n\t".join([f"module: {c.module_name}, class: {c.class_name}" for c in not_found])
-        msg = (f"Following classes are missing in {REDACT_FIELDS_YAML}. "
-               "Even if no redactions are needed, please put the class with empty list:\n\t"
-               f"{missing_str}"
+        msg = (
+            f"Following classes are missing in {REDACT_FIELDS_YAML}. "
+            "Even if no redactions are needed, please put the class with empty list:\n\t"
+            f"{missing_str}"
         )
         raise SystemExit(msg)

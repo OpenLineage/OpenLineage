@@ -5,14 +5,13 @@ from unittest import mock
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+from airflow import DAG
+from airflow.models import Connection
 from openlineage.airflow.extractors.redshift_sql_extractor import RedshiftSQLExtractor
 from openlineage.airflow.utils import get_connection, is_airflow_version_enough
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
-
-from airflow import DAG
-from airflow.models import Connection
 
 if not is_airflow_version_enough("2.6.0"):
     from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
@@ -20,7 +19,7 @@ from airflow.utils.dates import days_ago
 from airflow.utils.session import create_session
 
 CONN_ID = "food_delivery_db"
-CONN_URI = "redshift://user:pass@redshift-cluster-name.id.region.redshift.amazonaws.com:5439" "/food_delivery"
+CONN_URI = "redshift://user:pass@redshift-cluster-name.id.region.redshift.amazonaws.com:5439/food_delivery"
 CONN_URI_WITHOUT_USERPASS = (
     "redshift://redshift-cluster-name.id.region.redshift.amazonaws.com:5439/food_delivery"
 )

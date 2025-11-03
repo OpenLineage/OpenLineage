@@ -1,3 +1,108 @@
+[build-system]
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "openlineage-integration-common"
+version = "1.40.0"
+description = "OpenLineage common python library for integrations"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "OpenLineage"}]
+keywords = ["openlineage"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "attrs>=19.3.0",
+    "openlineage-python",
+    "openlineage_sql",
+    "pyyaml>=5.3.1",
+]
+
+[project.optional-dependencies]
+bigquery = [
+    "google-api-core>=1.26.3",
+    "google-auth>=1.30.0",
+    "google-cloud-bigquery>=3,<4.0.0",
+    "google-cloud-core>=1.6.0",
+    "google-crc32c>=1.1.2",
+]
+dbt = []  # left for backcompat
+great_expectations = [
+    "great_expectations>=1.0.0",
+    "sqlalchemy>=1.3.24,<2.0.0",
+]
+redshift = ["boto3>=1.15.0"]
+dev = [
+    "google-api-core>=1.26.3",
+    "google-auth>=1.30.0",
+    "google-cloud-bigquery>=3,<4.0.0",
+    "google-cloud-core>=1.6.0",
+    "google-crc32c>=1.1.2",
+    "great_expectations>=1.0.0",
+    "sqlalchemy>=1.3.24,<2.0.0",
+    "boto3>=1.15.0",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "mock",
+    "pandas",
+    "jinja2",
+    "python-dateutil",
+    "mypy>=0.960",
+    "types-python-dateutil",
+    "types-PyYAML",
+    "ruff"
+]
+dev_no_parser = [
+    "google-api-core>=1.26.3",
+    "google-auth>=1.30.0",
+    "google-cloud-bigquery>=3,<4.0.0",
+    "google-cloud-core>=1.6.0",
+    "google-crc32c>=1.1.2",
+    "great_expectations>=1.0.0",
+    "sqlalchemy>=1.3.24,<2.0.0",
+    "boto3>=1.15.0",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "mock",
+    "pandas",
+    "jinja2",
+    "python-dateutil",
+    "mypy>=0.960",
+    "types-python-dateutil",
+    "types-PyYAML",
+]
+
+[project.urls]
+Homepage = "https://openlineage.io/"
+Source = "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common"
+
+[tool.uv.sources]
+openlineage-python = { path = "../../client/python", editable = true }
+openlineage_sql = { path = "../sql/iface-py", editable = true }
+
+[tool.uv.build-backend]
+module-name = "openlineage"
+namespace = true
+
+[tool.mypy]
+ignore_missing_imports = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "src"
+
 [tool.ruff]
 line-length = 110
 lint.select = [
@@ -7,7 +112,6 @@ lint.select = [
     "I001"
 ]
 target-version = "py39"
-lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/common"]
 
@@ -15,6 +119,50 @@ namespace-packages = ["openlineage/common"]
 # suspending GreatExpectations from tests
 addopts = "-p no:warnings --ignore=tests/great_expectations"
 
-[tool.hatch.build]
-exclude = [".idea", ".ruff_cache", ".gitignore", "setup.cfg"]
-targets.wheel = {packages = ["openlineage"]}
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+requires = tox-uv
+env_list = py3-common-dbt-1.0,py3-common-dbt-1.3
+skip_missing_interpreters = true
+
+[testenv]
+description = run tests with dbt version matrix
+package = editable
+extras = dbt,tests
+deps =
+    dbt-1.0: dbt-core>=1.0,<1.3
+    dbt-1.3: dbt-core>=1.3
+    typing_extensions>=4.11.0
+    pytest
+    pytest-cov
+    pytest-mock
+commands =
+    pytest -vv --cov=src/openlineage --junitxml=test-results/junit.xml {posargs}
+    coverage xml
+"""
+
+[tool.bumpversion]
+current_version = "1.40.0"
+commit = false
+tag = false
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<rc>.*)"
+serialize = [
+    "{major}.{minor}.{patch}{rc}",
+    "{major}.{minor}.{patch}"
+]
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "src/openlineage/common/__init__.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "src/openlineage/common/provider/dbt/utils.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""

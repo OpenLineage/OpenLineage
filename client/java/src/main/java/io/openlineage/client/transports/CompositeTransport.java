@@ -17,9 +17,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@ToString
 public class CompositeTransport extends Transport {
 
   private final CompositeConfig config;
@@ -94,6 +96,7 @@ public class CompositeTransport extends Transport {
                     f.get();
                   } catch (InterruptedException | ExecutionException e) {
                     // do nothing, continue with the next transport
+                    log.warn("One of the composite transports failed with: {}", e.getMessage());
                   }
                 });
       } catch (InterruptedException e) {

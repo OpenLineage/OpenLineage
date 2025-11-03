@@ -400,8 +400,9 @@ def test_transform_transport_from_env_vars_emits(mock_post):
     transport = OpenLineageClient().transport
     mock_event = MagicMock()
 
-    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'), patch(
-        "gzip.compress", return_value=b"compressed_data"
+    with (
+        patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'),
+        patch("gzip.compress", return_value=b"compressed_data"),
     ):
         transport.emit(mock_event)
 

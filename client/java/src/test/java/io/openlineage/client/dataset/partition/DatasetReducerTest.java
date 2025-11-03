@@ -277,4 +277,14 @@ class DatasetReducerTest {
 
     assertThat(names).containsExactly(datasetName);
   }
+
+  @Test
+  void testTrimWithSlashAtTheEnd() {
+    inputs.add(inputFactory("/tmp/some/tested-path/20250721/20250722T901Z/key=value/"));
+    Optional<InputDataset> input =
+        reducer.reduceInputs(inputs).stream()
+            .filter(i -> i.getName().endsWith("tested-path"))
+            .findFirst();
+    assertThat(input).get().extracting("name").isEqualTo("/tmp/some/tested-path");
+  }
 }

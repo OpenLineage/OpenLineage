@@ -61,7 +61,7 @@ repos:
         files: ^client/python/
         exclude: ^.*\.cfg$
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.2
+    rev: v0.12.3
     hooks:
       - id: ruff
         name: ruff-lint
@@ -109,8 +109,8 @@ repos:
         exclude: |
           (?x)^(
             .*tests.* |
-            client/python/openlineage/client/facet\.py |
-            client/python/openlineage/client/run\.py
+            client/python/src/openlineage/client/facet\.py |
+            client/python/src/openlineage/client/run\.py
           )$
       - id: check-python-generated-imports
         name: Check python imports from generated modules
@@ -123,10 +123,10 @@ repos:
         # Exclude internal modules that must import this way
         exclude: |
           (?x)^(
-            client/python/openlineage/client/generated/.* |
-            client/python/openlineage/client/facet_v2\.py |
-            client/python/openlineage/client/event_v2\.py |
-            client/python/openlineage/client/generator/base\.py |
+            client/python/src/openlineage/client/generated/.* |
+            client/python/src/openlineage/client/facet_v2\.py |
+            client/python/src/openlineage/client/event_v2\.py |
+            client/python/src/openlineage/client/generator/base\.py |
             client/python/tests/generator/test_base\.py
           )$
       - id: prettier
@@ -156,11 +156,35 @@ repos:
       - id: generate_facets
         name: Generate OpenLineage facets for Python client.
         language: python
-        entry: python ./client/python/openlineage/client/generator/generate.py
-        files: ^spec/.*\.json$|^client/python/facets\.py$|^client/python/openlineage/client/generator
+        entry: python ./client/python/src/openlineage/client/generator/generate.py
+        files: ^spec/.*\.json$|^client/python/src/openlineage/client/facet.*\.py$|^client/python/src/openlineage/client/event_v2\.py$|^client/python/src/openlineage/client/generat.*|^client/python/redact_fields\.yml$
         exclude: ^spec/tests/.*$
         pass_filenames: false
         additional_dependencies: ["ruff==0.12.10", "click", "datamodel-code-generator==0.33.0"]
+      - id: mypy-client-python
+        name: mypy type check - Python client
+        language: system
+        entry: bash -c 'cd client/python && uv sync --extra dev && uv run mypy --explicit-package-bases src'
+        files: ^client/python/src/.*\.py$
+        pass_filenames: false
+      - id: mypy-integration-common
+        name: mypy type check - Integration common
+        language: system
+        entry: bash -c 'cd integration/common && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
+        files: ^integration/common/src/.*\.py$
+        pass_filenames: false
+      - id: mypy-integration-airflow
+        name: mypy type check - Airflow integration
+        language: system
+        entry: bash -c 'cd integration/airflow && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
+        files: ^integration/airflow/src/.*\.py$|^integration/airflow/openlineage/.*\.py$
+        pass_filenames: false
+      - id: mypy-integration-dbt
+        name: mypy type check - dbt integration
+        language: system
+        entry: bash -c 'cd integration/dbt && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
+        files: ^integration/dbt/src/.*\.py$|^integration/dbt/openlineage/.*\.py$
+        pass_filenames: false
       - id: check_facets_redactions
         name: Check if all Facets have redacted fields defined
         language: python
