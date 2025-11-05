@@ -273,9 +273,9 @@ class OpenLineageRunEventBuilder {
       Map<String, InputDatasetFacet> inputFacetsMap = new HashMap<>();
       nodes.forEach(
           event -> inputDatasetFacetBuilders.forEach(fn -> fn.accept(event, inputFacetsMap::put)));
-      Map<String, DatasetFacets> datasetFacetsMap = new HashMap<>();
+      Map<String, DatasetFacet> datasetFacetsMap = new HashMap<>();
       nodes.forEach(
-          event -> inputDatasetFacetBuilders.forEach(fn -> fn.accept(event, inputFacetsMap::put)));
+          event -> datasetFacetBuilders.forEach(fn -> fn.accept(event, datasetFacetsMap::put)));
       return datasets.stream()
           .map(
               ds ->
