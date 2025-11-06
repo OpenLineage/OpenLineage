@@ -13,13 +13,18 @@ from openlineage.client.utils import RedactMixin
 @attr.define
 class Assertion(RedactMixin):
     assertion: str
-    """Type of expectation test that dataset is subjected to"""
+    """
+    Type of expectation test that dataset is subjected to
 
+    Example: not_null
+    """
     success: bool
     column: str | None = attr.field(default=None)
     """
     Column that expectation is testing. It should match the name provided in SchemaDatasetFacet. If
     column field is empty, then expectation refers to whole dataset.
+
+    Example: id
     """
     _skip_redact: ClassVar[list[str]] = ["column"]
 

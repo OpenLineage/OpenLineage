@@ -10,10 +10,17 @@ from openlineage.client.generated.base import DatasetFacet
 @attr.define
 class DocumentationDatasetFacet(DatasetFacet):
     description: str
-    """The description of the dataset."""
+    """
+    The description of the dataset.
 
+    Example: canonical representation of entity Foo
+    """
     contentType: str | None = attr.field(default=None)  # noqa: N815
-    """MIME type of the description field content."""
+    """
+    MIME type of the description field content.
+
+    Example: application/json, text/markdown
+    """
 
     @staticmethod
     def _get_schema() -> str:

@@ -21,16 +21,26 @@ class TagsDatasetFacet(DatasetFacet):
 @attr.define
 class TagsDatasetFacetFields(RedactMixin):
     key: str
-    """Key that identifies the tag"""
+    """
+    Key that identifies the tag
 
+    Example: pii
+    """
     value: str
-    """The value of the field"""
+    """
+    The value of the field
 
+    Example: true|@user1|production
+    """
     source: str | None = attr.field(default=None)
     """The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc."""
 
     field: str | None = attr.field(default=None)
-    """Identifies the field in a dataset if a tag applies to one"""
+    """
+    Identifies the field in a dataset if a tag applies to one
+
+    Example: email_address
+    """
 
     @staticmethod
     def _get_schema() -> str:

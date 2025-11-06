@@ -142,6 +142,7 @@ def parse_and_generate(
             base_class="openlineage.client.utils.RedactMixin",
             class_name="ClassToBeSkipped",
             use_field_description=True,
+            field_extra_keys={"example"},
             use_double_quotes=True,
             keep_model_order=True,
             custom_template_dir=TEMPLATES_LOCATION,

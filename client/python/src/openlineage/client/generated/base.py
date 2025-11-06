@@ -126,11 +126,17 @@ class BaseFacet(RedactMixin):
 @attr.define
 class Dataset(RedactMixin):
     namespace: str
-    """The namespace containing that dataset"""
+    """
+    The namespace containing that dataset
 
+    Example: my-datasource-namespace
+    """
     name: str
-    """The unique name for that dataset within that namespace"""
+    """
+    The unique name for that dataset within that namespace
 
+    Example: instance.schema.table
+    """
     facets: dict[str, DatasetFacet] | None = attr.field(factory=dict, kw_only=True)
     """The facets for this dataset"""
 
@@ -203,11 +209,17 @@ class InputDatasetFacet(BaseFacet):
 @attr.define
 class Job(RedactMixin):
     namespace: str
-    """The namespace containing that job"""
+    """
+    The namespace containing that job
 
+    Example: my-scheduler-namespace
+    """
     name: str
-    """The unique name for that job within that namespace"""
+    """
+    The unique name for that job within that namespace
 
+    Example: myjob.mytask
+    """
     facets: dict[str, JobFacet] | None = attr.field(factory=dict)
     """The job facets."""
 
@@ -297,6 +309,8 @@ class RunEvent(BaseEvent):
     the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE,
     ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run.
     For example to send additional metadata after the run is complete
+
+    Example: START|RUNNING|COMPLETE|ABORT|FAIL|OTHER
     """
     inputs: list[InputDataset] | None = attr.field(factory=list)
     """The set of **input** datasets."""

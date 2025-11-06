@@ -15,11 +15,15 @@ class NominalTimeRunFacet(RunFacet):
     """
     An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time
     (included) of the run. AKA the schedule time
+
+    Example: 2020-12-17T03:00:00.000Z
     """
     nominalEndTime: str | None = attr.field(default=None)  # noqa: N815
     """
     An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time
     (excluded) of the run. (Should be the nominal start time of the next run)
+
+    Example: 2020-12-17T04:00:00.000Z
     """
     _additional_skip_redact: ClassVar[list[str]] = ["nominalStartTime", "nominalEndTime"]
 

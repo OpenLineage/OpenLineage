@@ -21,13 +21,23 @@ class TagsRunFacet(RunFacet):
 @attr.define
 class TagsRunFacetFields(RedactMixin):
     key: str
-    """Key that identifies the tag"""
+    """
+    Key that identifies the tag
 
+    Example: pii
+    """
     value: str
-    """The value of the field"""
+    """
+    The value of the field
 
+    Example: true|@user1|production
+    """
     source: str | None = attr.field(default=None)
-    """The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc."""
+    """
+    The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc.
+
+    Example: SPARK
+    """
 
     @staticmethod
     def _get_schema() -> str:

@@ -10,7 +10,10 @@ from openlineage.client.generated.base import JobFacet
 @attr.define
 class SQLJobFacet(JobFacet):
     query: str
+    """Example: SELECT * FROM foo"""
+
     dialect: str | None = attr.field(default=None)
+    """Example: snowflake"""
 
     @staticmethod
     def _get_schema() -> str:

@@ -17,7 +17,11 @@ class Identifier(RedactMixin):
     """The dataset name"""
 
     type: str  # noqa: A003
-    """Identifier type"""
+    """
+    Identifier type
+
+    Example: table
+    """
 
 
 @attr.define
