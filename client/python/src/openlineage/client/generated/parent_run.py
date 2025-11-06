@@ -13,10 +13,17 @@ from openlineage.client.utils import RedactMixin
 @attr.define
 class Job(RedactMixin):
     namespace: str
-    """The namespace containing that job"""
+    """
+    The namespace containing that job
 
+    Example: my-scheduler-namespace
+    """
     name: str
-    """The unique name for that job within that namespace"""
+    """
+    The unique name for that job within that namespace
+
+    Example: myjob.mytask
+    """
 
 
 @attr.define
@@ -57,11 +64,17 @@ class Root(RedactMixin):
 @attr.define
 class RootJob(RedactMixin):
     namespace: str
-    """The namespace containing root job"""
+    """
+    The namespace containing root job
 
+    Example: my-scheduler-namespace
+    """
     name: str
-    """The unique name containing root job within that namespace"""
+    """
+    The unique name containing root job within that namespace
 
+    Example: myjob.mytask
+    """
     _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
 
     @staticmethod

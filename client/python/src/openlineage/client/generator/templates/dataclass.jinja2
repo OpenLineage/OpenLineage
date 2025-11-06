@@ -102,15 +102,24 @@ class {{ class_name }}:
         and ("_" not in field.name[1:] or "_" == field.name[0]) -%}  # noqa: N815 {% endif %}
     {#- skip A003 rule -#}
     {%- if field.name in ['type', 'sum', 'min', 'max', 'bytes'] -%}  # noqa: A003 {% endif %}
-    {#- add field docstring wrapped and indented -#}
-    {%- if field.docstring %}
-    {%- if field.docstring | length > 100 %}
+    {#- add field docstring (with optional examples) wrapped and indented -#}
+    {%- set field_example = field.extras.example if field.extras and field.extras.example else None -%}
+    {%- if field.docstring or field_example %}
+        {%- set combined_doc = field.docstring if field.docstring else '' -%}
+        {%- if field_example -%}
+            {%- if combined_doc -%}
+                {%- set combined_doc = combined_doc + '\n\nExample: ' + field_example | string -%}
+            {%- else -%}
+                {%- set combined_doc = 'Example: ' + field_example | string -%}
+            {%- endif -%}
+        {%- endif -%}
+        {%- if combined_doc | length > 100 or '\n' in combined_doc %}
     """
-    {{ field.docstring | wordwrap(100) | indent(4)}}
+    {{ combined_doc | wordwrap(100) | indent(4)}}
     """
-    {%- else %}
-    """{{ field.docstring }}"""
-    {% endif -%}
+        {%- else %}
+    """{{ combined_doc }}"""
+        {% endif -%}
     {%- endif %}
     {%- if not module.name -%}
     {%- set module.name = camel_to_snake(

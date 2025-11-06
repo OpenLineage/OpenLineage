@@ -12,8 +12,11 @@ from openlineage.client.generated.base import DatasetFacet
 @attr.define
 class DatasetTypeDatasetFacet(DatasetFacet):
     datasetType: str  # noqa: N815
-    """Dataset type, for example: TABLE|VIEW|FILE|TOPIC|STREAM|MODEL|JOB_OUTPUT."""
+    """
+    Dataset type, for example: TABLE|VIEW|FILE|TOPIC|STREAM|MODEL|JOB_OUTPUT.
 
+    Example: FILE
+    """
     subType: str | None = attr.field(default=None)  # noqa: N815
     """Optional sub-type within the dataset type (e.g., MATERIALIZED, EXTERNAL, TEMPORARY)."""
 

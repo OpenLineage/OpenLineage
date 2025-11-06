@@ -22,8 +22,11 @@ class BinarySubsetCondition(RedactMixin):
     left: BaseSubsetCondition
     right: BaseSubsetCondition
     operator: str
-    """Allowed values: 'AND' or 'OR'"""
+    """
+    Allowed values: 'AND' or 'OR'
 
+    Example: AND
+    """
     type: str = "binary"  # noqa: A003
 
     @staticmethod
@@ -36,8 +39,11 @@ class CompareSubsetCondition(RedactMixin):
     left: FieldBaseCompareExpression | LiteralCompareExpression
     right: FieldBaseCompareExpression | LiteralCompareExpression
     comparison: str
-    """Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN', 'LESS_EQUAL_THAN'"""
+    """
+    Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN', 'LESS_EQUAL_THAN'
 
+    Example: EQUAL
+    """
     type: str = "compare"  # noqa: A003
 
     @staticmethod

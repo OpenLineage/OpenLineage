@@ -13,7 +13,11 @@ class DocumentationJobFacet(JobFacet):
     """The description of the job."""
 
     contentType: str | None = attr.field(default=None)  # noqa: N815
-    """MIME type of the description field content."""
+    """
+    MIME type of the description field content.
+
+    Example: application/json, text/markdown
+    """
 
     @staticmethod
     def _get_schema() -> str:

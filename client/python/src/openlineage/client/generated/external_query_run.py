@@ -10,10 +10,17 @@ from openlineage.client.generated.base import RunFacet
 @attr.define
 class ExternalQueryRunFacet(RunFacet):
     externalQueryId: str  # noqa: N815
-    """Identifier for the external system"""
+    """
+    Identifier for the external system
 
+    Example: my-project-1234:US.bquijob_123x456_123y123z123c
+    """
     source: str
-    """source of the external query"""
+    """
+    source of the external query
+
+    Example: bigquery
+    """
 
     @staticmethod
     def _get_schema() -> str:

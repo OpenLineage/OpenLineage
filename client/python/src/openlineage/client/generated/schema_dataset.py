@@ -21,11 +21,17 @@ class SchemaDatasetFacet(DatasetFacet):
 @attr.define
 class SchemaDatasetFacetFields(RedactMixin):
     name: str
-    """The name of the field."""
+    """
+    The name of the field.
 
+    Example: column1
+    """
     type: str | None = attr.field(default=None)  # noqa: A003
-    """The type of the field."""
+    """
+    The type of the field.
 
+    Example: VARCHAR|INT|...
+    """
     description: str | None = attr.field(default=None)
     """The description of the field."""
 
