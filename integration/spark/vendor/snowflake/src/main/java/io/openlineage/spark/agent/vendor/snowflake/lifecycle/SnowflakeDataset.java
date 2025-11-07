@@ -59,7 +59,8 @@ public class SnowflakeDataset {
           "snowflake",
           namespace,
           stripQuotes(sfDatabase),
-          stripQuotes(sfSchema));
+          stripQuotes(sfSchema),
+          normalizedSchema);
     } else {
       logger.warn(
           "Unable to discover Snowflake table property - neither \"dbtable\" nor \"query\" option present");
