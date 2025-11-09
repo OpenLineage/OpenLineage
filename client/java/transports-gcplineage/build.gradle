@@ -14,7 +14,7 @@ plugins {
     id 'com.diffplug.spotless' version '7.0.2'
     id "com.gradleup.shadow" version "9.2.2"
     id "pmd"
-    id "io.freefair.lombok" version "9.0.0"
+    id "io.freefair.lombok" version "9.1.0"
 }
 
 ext {
@@ -23,7 +23,7 @@ ext {
 
 dependencies {
     implementation "com.google.cloud.datalineage:producerclient-java8:1.0.0"
-    implementation "com.google.cloud:google-cloud-datalineage:0.67.0"
+    implementation "com.google.cloud:google-cloud-datalineage:0.70.0"
 }
 
 apply from: '../transports.build.gradle'
