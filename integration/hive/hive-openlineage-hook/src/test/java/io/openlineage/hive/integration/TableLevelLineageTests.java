@@ -7,6 +7,9 @@ package io.openlineage.hive.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.hive.testutils.MockServerTestUtils;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -64,6 +67,18 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
     //        assertThat(emitted).size().isEqualTo(1);
     //
     // assertThat(emitted.get(0).getEventType()).isEqualTo(OpenLineage.RunEvent.EventType.FAIL);
+  }
+
+  @Test
+  public void testRunEventsHaveSameRunId() {
+    createManagedHiveTable("employees", "id int, name string, team int");
+    runHiveQuery("create table result_t as select * from employees");
+
+    List<RunEvent> emitted = MockServerTestUtils.getEventsEmitted(mockServerClient);
+    assertThat(emitted).hasSize(2);
+    assertThat(emitted.get(0).getEventType()).isEqualTo(RunEvent.EventType.START);
+    assertThat(emitted.get(1).getEventType()).isEqualTo(RunEvent.EventType.COMPLETE);
+    assertThat(emitted.get(0).getRun().getRunId()).isEqualTo(emitted.get(1).getRun().getRunId());
   }
 
   @Test
