@@ -173,6 +173,7 @@ class GcpLineageTransportTest {
         .run(run)
         .build();
   }
+
   @SuppressWarnings({"PMD.AvoidAccessibilityAlteration"})
   private <T, V> V getValue(String fieldName, Class<T> clazz, T object)
       throws NoSuchFieldException, IllegalAccessException {
