@@ -22,6 +22,7 @@ ext {
     projectDescription = "S3 OpenLineage transport library"
     s3MockVersion = "4.10.0"
     testcontainersVersion = "2.0.1"
+    awssdkVersion = "2.38.4"
 }
 
 sourceSets {
@@ -36,10 +37,10 @@ sourceSets {
 
 dependencies {
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    implementation(platform("software.amazon.awssdk:bom:2.38.2"))
-    implementation("software.amazon.awssdk:auth")
-    implementation("software.amazon.awssdk:s3")
-    implementation("software.amazon.awssdk:url-connection-client")
+    implementation(platform("software.amazon.awssdk:bom:${awssdkVersion}"))
+    implementation("software.amazon.awssdk:auth:${awssdkVersion}")
+    implementation("software.amazon.awssdk:s3:${awssdkVersion}")
+    implementation("software.amazon.awssdk:url-connection-client:${awssdkVersion}")
 
     testImplementation("com.adobe.testing:s3mock-testcontainers:${s3MockVersion}")
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
