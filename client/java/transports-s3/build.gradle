@@ -43,7 +43,7 @@ dependencies {
 
     testImplementation("com.adobe.testing:s3mock-testcontainers:${s3MockVersion}")
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
-    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:${testcontainersVersion}")
 }
 
 shadowJar {
