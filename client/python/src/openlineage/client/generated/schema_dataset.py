@@ -15,7 +15,7 @@ class SchemaDatasetFacet(DatasetFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet"
 
 
 @attr.define
@@ -35,11 +35,17 @@ class SchemaDatasetFacetFields(RedactMixin):
     description: str | None = attr.field(default=None)
     """The description of the field."""
 
+    ordinal_position: int | None = attr.field(default=None)
+    """
+    The ordinal position of the field in the schema (1-indexed).
+
+    Example: 1
+    """
     fields: list[SchemaDatasetFacetFields] | None = attr.field(factory=list)
     """Nested struct fields."""
 
     @staticmethod
     def _get_schema() -> str:
         return (
-            "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacetFields"
+            "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacetFields"
         )

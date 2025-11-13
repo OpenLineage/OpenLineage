@@ -39,7 +39,7 @@ class KafkaSourceVisitorTest {
   SchemaDatasetFacet schema =
       openLineage.newSchemaDatasetFacet(
           Collections.singletonList(
-              openLineage.newSchemaDatasetFacetFields("a", "long", null, null)));
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type("long").build()));
 
   @BeforeEach
   @SneakyThrows
