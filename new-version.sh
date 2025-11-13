@@ -7,7 +7,8 @@
 #
 # Requirements:
 #   * You're on the 'main' branch
-#   * You've installed 'bump-my-version'
+#   * You have the following dependencies installed: git, uv, bump-my-version
+#     (The script will check for these and provide installation instructions if missing)
 #
 # Usage: $ ./new-version.sh --release-version RELEASE_VERSION --next-version NEXT_VERSION
 
@@ -61,15 +62,96 @@ readonly SEMVER_REGEX="^[0-9]+(\.[0-9]+){2}((-rc\.[0-9]+)?(-SNAPSHOT)?)$" # X.Y.
                                                                           # X.Y.Z-rc.*-SNAPSHOT
                                                                           # X.Y.Z-SNAPSHOT
 
+# Detect OS for installation instructions
+detect_os() {
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "macos"
+  elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    echo "linux"
+  else
+    echo "unknown"
+  fi
+}
+
+# Check for required dependencies
+check_dependencies() {
+  local missing_deps=()
+  local os_type
+  os_type=$(detect_os)
+
+  # Check for git
+  if ! command -v git &> /dev/null; then
+    missing_deps+=("git")
+  fi
+
+  # Check for uv
+  if ! command -v uv &> /dev/null; then
+    missing_deps+=("uv")
+  fi
+
+  # Check for bump-my-version (via uv)
+  if command -v uv &> /dev/null; then
+    if ! uv run which bump-my-version &> /dev/null; then
+      missing_deps+=("bump-my-version")
+    fi
+  fi
+
+  # If dependencies are missing, print installation instructions
+  if [ ${#missing_deps[@]} -gt 0 ]; then
+    echo "Error: Missing required dependencies: ${missing_deps[*]}"
+    echo
+    echo "Please install the missing dependencies:"
+    echo
+
+    for dep in "${missing_deps[@]}"; do
+      case $dep in
+        git)
+          if [[ "$os_type" == "macos" ]]; then
+            echo "  git:"
+            echo "    • Using Homebrew: brew install git"
+            echo "    • Or install Xcode Command Line Tools: xcode-select --install"
+          elif [[ "$os_type" == "linux" ]]; then
+            echo "  git:"
+            echo "    • Debian/Ubuntu: sudo apt-get install git"
+            echo "    • Fedora/RHEL: sudo dnf install git"
+            echo "    • Arch: sudo pacman -S git"
+          fi
+          echo
+          ;;
+        uv)
+          if [[ "$os_type" == "macos" ]]; then
+            echo "  uv:"
+            echo "    • Using Homebrew: brew install uv"
+            echo "    • Or using curl: curl -LsSf https://astral.sh/uv/install.sh | sh"
+          elif [[ "$os_type" == "linux" ]]; then
+            echo "  uv:"
+            echo "    • Using curl: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            echo "    • Or download from: https://github.com/astral-sh/uv/releases"
+          fi
+          echo "    • Documentation: https://docs.astral.sh/uv/getting-started/installation/"
+          echo
+          ;;
+        bump-my-version)
+          echo "  bump-my-version:"
+          echo "    • Install via uv (recommended): uv tool install bump-my-version"
+          echo "    • Or install via pip: pip install bump-my-version"
+          echo "    • Documentation: https://github.com/callowayproject/bump-my-version#installation"
+          echo
+          ;;
+      esac
+    done
+
+    exit 1
+  fi
+}
+
+# Verify all required dependencies are installed
+check_dependencies
+
 # Change working directory to project root
 project_root=$(git rev-parse --show-toplevel)
 cd "${project_root}/"
 
-# Verify bump-my-version is installed
-if [[ ! $(uv run which bump-my-version) ]]; then
-  echo "bump-my-version not installed! Please see https://github.com/callowayproject/bump-my-version#installation"
-  exit 1;
-fi
 
 if [[ $# -eq 0 ]] ; then
   usage
