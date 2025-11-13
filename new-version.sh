@@ -48,11 +48,11 @@ usage() {
 # new_version are the same
 function update_py_version_if_needed() {
   # shellcheck disable=SC2086,SC2046
-  export $(uv run bump-my-version show --format "{current_version}" | sed 's/^/current_version=/')
+  current_version=$(uv run bump-my-version show --config-file pyproject.toml --format json current_version | grep -o '"current_version": "[^"]*"' | cut -d'"' -f4)
   # shellcheck disable=SC2154
   if [ "$1" != "$current_version" ]; then
     # shellcheck disable=SC2086
-    uv run bump-my-version bump --new-version $1
+    uv run bump-my-version bump --config-file pyproject.toml --new-version $1
   fi
 }
 
@@ -131,7 +131,7 @@ fi
 # the same version as what was expected the last time we released. E.g., if the next expected
 # release was a patch version, but a new minor version is being released, we need to update to the
 # actual release version prior to committing/tagging
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/sql/)
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/sql/iface-py)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
   (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
 done
@@ -163,9 +163,9 @@ git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
 
 # (6) Prepare next development version
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/sql/)
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/sql/iface-py/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && uv run bump-my-version bump --new-version "${NEXT_VERSION}")
+  (cd "${PYTHON_MODULE}" && uv run bump-my-version bump --config-file pyproject.toml --new-version "${NEXT_VERSION}")
 done
 
 # Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
