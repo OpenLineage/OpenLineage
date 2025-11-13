@@ -126,6 +126,19 @@
       redact_fields: []
     - class_name: ExtractionErrorRunFacet
       redact_fields: []
+- module: job_dependencies_run
+  classes:
+    - class_name: JobDependenciesRunFacet
+      redact_fields: []
+    - class_name: JobIdentifier
+      redact_fields:
+        - namespace
+        - name
+    - class_name: RunIdentifier
+      redact_fields:
+        - runId
+    - class_name: JobDependency
+      redact_fields: []
 - module: job_type_job
   classes:
     - class_name: JobTypeJobFacet
