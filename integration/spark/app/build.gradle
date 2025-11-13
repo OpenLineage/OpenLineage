@@ -31,6 +31,7 @@ ext {
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.5'
     testcontainersVersion = '1.20.5'
+    awssdkVersion = '2.38.4'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
@@ -137,10 +138,10 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.30.29"))
-    testImplementation("software.amazon.awssdk:auth")
-    testImplementation("software.amazon.awssdk:emr")
-    testImplementation("software.amazon.awssdk:s3")
+    testImplementation(platform("software.amazon.awssdk:bom:${awssdkVersion}"))
+    testImplementation("software.amazon.awssdk:auth:${awssdkVersion}")
+    testImplementation("software.amazon.awssdk:emr:${awssdkVersion}")
+    testImplementation("software.amazon.awssdk:s3:${awssdkVersion}")
 
     testImplementation("org.mock-server:mockserver-netty:5.14.0:shaded") {
         exclude group: 'com.google.guava', module: 'guava'
