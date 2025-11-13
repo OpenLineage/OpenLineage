@@ -158,11 +158,6 @@ search = "version = \"{current_version}\""
 replace = "version = \"{new_version}\""
 
 [[tool.bumpversion.files]]
-filename = "src/openlineage/common/__init__.py"
-search = "__version__ = \"{current_version}\""
-replace = "__version__ = \"{new_version}\""
-
-[[tool.bumpversion.files]]
 filename = "src/openlineage/common/provider/dbt/utils.py"
 search = "__version__ = \"{current_version}\""
 replace = "__version__ = \"{new_version}\""
