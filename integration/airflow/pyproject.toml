@@ -156,11 +156,6 @@ serialize = [
 ]
 
 [[tool.bumpversion.files]]
-filename = "pyproject.toml"
-search = "version = \"{current_version}\""
-replace = "version = \"{new_version}\""
-
-[[tool.bumpversion.files]]
 filename = "src/openlineage/airflow/version.py"
 search = "__version__ = \"{current_version}\""
 replace = "__version__ = \"{new_version}\""

@@ -75,10 +75,5 @@ serialize = [
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
-search = "version = \"{current_version}\""
-replace = "version = \"{new_version}\""
-
-[[tool.bumpversion.files]]
-filename = "pyproject.toml"
 search = "openlineage-integration-common=={current_version}"
 replace = "openlineage-integration-common=={new_version}"

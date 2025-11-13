@@ -53,7 +53,7 @@ function update_py_version_if_needed() {
   # shellcheck disable=SC2154
   if [ "$1" != "$current_version" ]; then
     # shellcheck disable=SC2086
-    uv run bump-my-version bump minor --new-version $1 --config-file pyproject.toml
+    uv run bump-my-version bump minor --new-version $1 --config-file pyproject.toml --allow-dirty
   fi
 }
 
@@ -246,7 +246,7 @@ git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
 
 # (6) Prepare next development version
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && uv run bump-my-version bump minor --new-version "${NEXT_VERSION}" --config-file pyproject.toml)
+  (cd "${PYTHON_MODULE}" && uv run bump-my-version bump minor --new-version "${NEXT_VERSION}" --config-file pyproject.toml --allow-dirty)
 done
 
 # Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
