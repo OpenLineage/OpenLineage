@@ -37,7 +37,8 @@ class JarVerificationPlugin : Plugin<Project> {
                     "io.openlineage.sql",
                     "io.micrometer.core",
                     "io.micrometer.common",
-                    "io.micrometer.observation"
+                    "io.micrometer.observation",
+                    "org.jspecify.annotations"
                 ))
                 highestMajorClassVersionAllowed.set(52)
             }
