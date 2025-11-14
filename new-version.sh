@@ -44,6 +44,39 @@ usage() {
   exit 1
 }
 
+# Determine the bump type (major, minor, or patch) based on version comparison
+# Arguments: current_version new_version
+# Returns: "major", "minor", or "patch"
+function determine_bump_type() {
+  local current="$1"
+  local new="$2"
+
+  # Strip any suffixes like -SNAPSHOT, -rc.X for comparison
+  local current_base
+  local new_base
+  current_base=$(echo "$current" | sed -E 's/(-rc\.[0-9]+)?(-SNAPSHOT)?$//')
+  new_base=$(echo "$new" | sed -E 's/(-rc\.[0-9]+)?(-SNAPSHOT)?$//')
+
+  # Parse version components
+  local current_major current_minor current_patch
+  local new_major new_minor new_patch
+
+  IFS='.' read -r current_major current_minor current_patch <<< "$current_base"
+  IFS='.' read -r new_major new_minor new_patch <<< "$new_base"
+
+  # Determine bump type
+  if [ "$new_major" != "$current_major" ]; then
+    echo "major"
+  elif [ "$new_minor" != "$current_minor" ]; then
+    echo "minor"
+  elif [ "$new_patch" != "$current_patch" ]; then
+    echo "patch"
+  else
+    echo "error: current and new versions are the same: $current vs $new" >&2
+    return 1
+  fi
+}
+
 # Update the python package version only if the current_version is different from the new_version
 # We do this check because bumpversion screws up the search/replace if the current_version and
 # new_version are the same
@@ -52,8 +85,10 @@ function update_py_version_if_needed() {
   current_version=$(uv run bump-my-version show --config-file pyproject.toml --format json current_version | grep -o '"current_version": "[^"]*"' | cut -d'"' -f4)
   # shellcheck disable=SC2154
   if [ "$1" != "$current_version" ]; then
+    # Determine the appropriate bump type
+    bump_type=$(determine_bump_type "$current_version" "$1")
     # shellcheck disable=SC2086
-    uv run bump-my-version bump minor --new-version $1 --config-file pyproject.toml --allow-dirty
+    uv run bump-my-version bump "$bump_type" --new-version $1 --config-file pyproject.toml --allow-dirty
   fi
 }
 
@@ -245,8 +280,10 @@ git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
 
 # (6) Prepare next development version
+# Determine bump type based on release version and next version
+NEXT_BUMP_TYPE=$(determine_bump_type "${PYTHON_RELEASE_VERSION}" "${NEXT_VERSION}")
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && uv run bump-my-version bump minor --new-version "${NEXT_VERSION}" --config-file pyproject.toml --allow-dirty)
+  (cd "${PYTHON_MODULE}" && uv run bump-my-version bump "${NEXT_BUMP_TYPE}" --new-version "${NEXT_VERSION}" --config-file pyproject.toml --allow-dirty)
 done
 
 # Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
