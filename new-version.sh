@@ -41,6 +41,7 @@ usage() {
   echo
   title "FLAGS:"
   echo "  -p, --no-push     local changes are not automatically pushed to the remote repository"
+  echo "  -d, --dry-run     show what would be changed without making any actual changes"
   exit 1
 }
 
@@ -53,7 +54,11 @@ function update_py_version_if_needed() {
   # shellcheck disable=SC2154
   if [ "$1" != "$current_version" ]; then
     # shellcheck disable=SC2086
-    uv run bump-my-version bump minor --new-version $1 --config-file pyproject.toml --allow-dirty
+    if [[ "${DRY_RUN}" == "true" ]]; then
+      uv run bump-my-version bump "$bump_type" --new-version $1 --config-file pyproject.toml --allow-dirty --dry-run --verbose
+    else
+      uv run bump-my-version bump "$bump_type" --new-version $1 --config-file pyproject.toml --allow-dirty
+    fi
   fi
 }
 
@@ -158,6 +163,7 @@ if [[ $# -eq 0 ]] ; then
 fi
 
 PUSH="true"
+DRY_RUN="false"
 while [ $# -gt 0 ]; do
   case $1 in
     -r|--release-version)
@@ -171,6 +177,9 @@ while [ $# -gt 0 ]; do
     -p|--no-push)
        PUSH="false"
        ;;
+    -d|--dry-run)
+       DRY_RUN="true"
+       ;;
     -h|--help)
        usage
        ;;
@@ -181,13 +190,13 @@ while [ $# -gt 0 ]; do
 done
 
 branch=$(git symbolic-ref --short HEAD)
-if [[ "${branch}" != "main" ]]; then
+if [[ "${branch}" != "main" ]] && [[ "${DRY_RUN}" != "true" ]]; then
   echo "error: you may only release on 'main'!"
   exit 1;
 fi
 
 # Ensure no unstaged changes are present in working directory
-if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]] && [[ "${DRY_RUN}" != "true" ]]; then
   echo "error: you have unstaged changes in your working directory!"
   exit 1;
 fi
@@ -214,11 +223,59 @@ fi
 # release was a patch version, but a new minor version is being released, we need to update to the
 # actual release version prior to committing/tagging
 PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/sql/iface-py/)
+
+if [[ "${DRY_RUN}" == "true" ]]; then
+  echo "=== DRY RUN: Would bump Python modules to ${PYTHON_RELEASE_VERSION} ==="
+fi
+
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "  - ${PYTHON_MODULE}"
+  fi
   (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
 done
 
 # (2) Bump java module versions
+if [[ "${DRY_RUN}" == "true" ]]; then
+  echo ""
+  echo "=== DRY RUN: Would bump Java/Gradle modules to ${RELEASE_VERSION} ==="
+  echo "  - client/java/gradle.properties"
+  echo "  - integration/sql/iface-java/gradle.properties"
+  echo "  - integration/spark/gradle.properties"
+  echo "  - integration/spark-extension-interfaces/gradle.properties"
+  echo "  - integration/flink/gradle.properties"
+  echo "  - integration/flink/examples/flink1-test-apps/gradle.properties"
+  echo "  - integration/flink/examples/flink2-test-apps/gradle.properties"
+  echo "  - integration/hive/gradle.properties"
+  echo "  - integration/hive/hive-openlineage-hook/src/main/resources/io/openlineage/hive/client/version.properties"
+  # Skip actual changes in dry-run
+  echo ""
+  echo "=== DRY RUN: Would update documentation ==="
+  echo "  - integration/spark/README.md"
+  echo "  - integration/flink/README.md"
+  echo "  - client/java/README.md"
+  echo ""
+  echo "=== DRY RUN: Would create commit: 'Prepare for release ${RELEASE_VERSION}' ==="
+  echo "=== DRY RUN: Would create tag: '${RELEASE_VERSION}' ==="
+  echo ""
+  echo "=== DRY RUN: Would bump Python modules to ${NEXT_VERSION} for next development version ==="
+  for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+    echo "  - ${PYTHON_MODULE}"
+  done
+  echo ""
+  echo "=== DRY RUN: Would bump Java/Gradle modules to ${NEXT_VERSION}-SNAPSHOT ==="
+  echo ""
+  echo "=== DRY RUN: Would create commit: 'Prepare next development version ${NEXT_VERSION}-SNAPSHOT' ==="
+  if [[ "${PUSH}" == "true" ]]; then
+    echo "=== DRY RUN: Would push to origin: main and tag ${RELEASE_VERSION} ==="
+  else
+    echo "=== DRY RUN: Would NOT push (--no-push flag set) ==="
+  fi
+  echo ""
+  echo "DONE (dry run)"
+  exit 0
+fi
+
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/sql/iface-java/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
