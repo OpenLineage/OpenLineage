@@ -118,7 +118,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
-    if (checkIfDisabled()) {
+    if (isOpenLineageDisabled()) {
       return;
     }
     if (event instanceof SparkListenerSQLExecutionStart) {
@@ -176,7 +176,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
-    if (checkIfDisabled()) {
+    if (isRddDisabled()) {
       return;
     }
     log.debug("onJobStart called [{}].", jobStart);
@@ -238,7 +238,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
-    if (checkIfDisabled()) {
+    if (isRddDisabled()) {
       return;
     }
     log.debug("onJobEnd called [{}].", jobEnd);
@@ -255,7 +255,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
-    if (checkIfDisabled() || sparkVersion.startsWith("2")) {
+    if (isOpenLineageDisabled() || sparkVersion.startsWith("2")) {
       return;
     }
     log.debug("onTaskEnd called [{}].", taskEnd);
@@ -297,7 +297,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
-    if (checkIfDisabled()) {
+    if (isOpenLineageDisabled()) {
       return;
     }
     log.debug("onApplicationEnd called [{}].", applicationEnd);
@@ -326,7 +326,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
-    if (checkIfDisabled()) {
+    if (isOpenLineageDisabled()) {
       return;
     }
     log.debug("onApplicationStart called [{}].", applicationStart);
@@ -430,10 +430,15 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    *
    * @return boolean
    */
-  private boolean checkIfDisabled() {
+  private boolean isOpenLineageDisabled() {
     String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
     boolean isDisabledFromConf =
         conf != null && conf.getBoolean("spark.openlineage.disabled", false);
     return Boolean.parseBoolean(isDisabled) || isDisabledFromConf;
+  }
+
+  private boolean isRddDisabled() {
+    boolean isDisabled = conf != null && conf.getBoolean("spark.openlineage.rdd.disabled", false);
+    return isOpenLineageDisabled() || isDisabled;
   }
 }

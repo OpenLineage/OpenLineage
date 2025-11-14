@@ -246,4 +246,19 @@ class OpenLineageSparkListenerTest {
 
     verify(emitter, never()).emit(any());
   }
+
+  @Test
+  void testDisableRDDLineageBySparkConf() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set("spark.openlineage.rdd.disabled", "true");
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    OpenLineageSparkListener.overrideDefaultFactoryForTests(
+        new StaticExecutionContextFactory(
+            emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
+
+    SparkListenerJobStart event = mock(SparkListenerJobStart.class);
+    listener.onJobStart(event);
+
+    verify(emitter, never()).emit(any());
+  }
 }
