@@ -1,6 +1,14 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.40.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.40.1...HEAD)
+
+
+## [1.40.1](https://github.com/OpenLineage/OpenLineage/compare/1.40.0...1.40.1)
+
+### Fixed
+
+* **Python: re-add missing __version__ variables in top of releaseable modules** [`#4135`](https://github.com/OpenLineage/OpenLineage/pull/4135) [@mobuchowski](https://github.com/mobuchowski)
+  *Fixes breaking change in version 1.40.0.*
 
 ## [1.40.0](https://github.com/OpenLineage/OpenLineage/compare/1.39.0...1.40.0)
 
