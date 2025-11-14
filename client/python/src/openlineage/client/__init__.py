@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
+from openlineage.client.constants import __version__
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -17,4 +18,4 @@ def set_producer(producer: str) -> None:
     set_producer_v2(producer)
 
 
-__all__ = ["OpenLineageClient", "OpenLineageClientOptions", "set_producer"]
+__all__ = ["OpenLineageClient", "OpenLineageClientOptions", "set_producer", "__version__"]

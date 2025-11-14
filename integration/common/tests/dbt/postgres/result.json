@@ -78,7 +78,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "customer_id"
@@ -153,7 +153,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "order_id"
@@ -231,7 +231,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "payment_id"
@@ -300,7 +300,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "customer_id"
@@ -321,7 +321,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "order_id"
@@ -345,7 +345,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "payment_id"
@@ -371,7 +371,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "non_empty_column",
@@ -482,7 +482,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "order_id"
@@ -506,7 +506,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "payment_id"
@@ -532,7 +532,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "order_id",
@@ -660,7 +660,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "customer_id"
@@ -735,7 +735,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "order_id"
@@ -813,7 +813,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "payment_id"
@@ -882,7 +882,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "customer_id"
@@ -903,7 +903,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "order_id"
@@ -927,7 +927,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "payment_id"
@@ -953,7 +953,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "non_empty_column",
@@ -1059,7 +1059,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "order_id"
@@ -1083,7 +1083,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "payment_id"
@@ -1109,7 +1109,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [
               {
                 "name": "order_id",
