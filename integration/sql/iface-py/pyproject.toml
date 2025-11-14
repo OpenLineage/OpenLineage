@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "openlineage_sql"
-version = "1.40.1"
+version = "1.41.0"
 description = "Python interface for the Rust OpenLineage lineage extraction library"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 [tool.bumpversion]
-current_version = "1.40.1"
+current_version = "1.41.0"
 commit = false
 tag = false
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<rc>.*)"
