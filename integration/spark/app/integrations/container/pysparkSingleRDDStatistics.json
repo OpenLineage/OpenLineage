@@ -1,0 +1,26 @@
+{
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/rdd_input",
+      "inputFacets": {
+        "inputStatistics": {
+          "rowCount": 4,
+          "size": "${json-unit.any-number}"
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/rdd_output",
+      "outputFacets": {
+        "outputStatistics": {
+          "rowCount": 4,
+          "size": "${json-unit.any-number}"
+        }
+      }
+    }
+  ]
+}

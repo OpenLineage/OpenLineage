@@ -9,6 +9,8 @@ import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputDatasetBuilder;
+import io.openlineage.client.OpenLineage.InputStatisticsInputDatasetFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetBuilder;
 import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
@@ -45,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -227,8 +230,8 @@ class RddExecutionContext implements ExecutionContext {
             .newRunEventBuilder()
             .eventTime(toZonedTime(jobStart.time()))
             .eventType(OpenLineage.RunEvent.EventType.START)
-            .inputs(buildInputs(inputs))
-            .outputs(buildOutputs(outputs))
+            .inputs(buildInputs(inputs, false))
+            .outputs(buildOutputs(outputs, false))
             .run(
                 olContext
                     .getOpenLineage()
@@ -255,8 +258,8 @@ class RddExecutionContext implements ExecutionContext {
       return;
     }
 
-    List<InputDataset> inputDatasets = buildInputs(inputs);
-    List<OutputDataset> outputDatasets = buildOutputs(outputs);
+    List<InputDataset> inputDatasets = buildInputs(inputs, true);
+    List<OutputDataset> outputDatasets = buildOutputs(outputs, true);
     RunFacetsBuilder runFacetsBuilder =
         buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd);
 
@@ -409,25 +412,38 @@ class RddExecutionContext implements ExecutionContext {
         .build();
   }
 
-  protected List<OpenLineage.OutputDataset> buildOutputs(List<URI> outputs) {
+  protected List<OpenLineage.OutputDataset> buildOutputs(
+      List<URI> outputs, boolean withOutputStatistics) {
     return DatasetReducerUtils.outputs(
         olContext,
         outputs.stream()
             .map(
                 d ->
                     buildOutputDataset(
-                        d, outputs.size() == 1)) // output statistics only for single output
+                        d,
+                        withOutputStatistics
+                            && outputs.size() == 1)) // output statistics only for single output
             .collect(Collectors.toList()));
   }
 
-  protected OpenLineage.InputDataset buildInputDataset(URI uri) {
+  protected OpenLineage.InputDataset buildInputDataset(URI uri, boolean withInputStatistics) {
     DatasetIdentifier di = PathUtils.fromURI(uri);
-    return olContext
-        .getOpenLineage()
-        .newInputDatasetBuilder()
-        .name(di.getName())
-        .namespace(di.getNamespace())
-        .build();
+
+    InputDatasetBuilder builder = olContext.getOpenLineage().newInputDatasetBuilder();
+    log.debug("building inputs withInputStatistics={}", withInputStatistics);
+    if (withInputStatistics) {
+      getInputStatisticsFacet()
+          .ifPresent(
+              f ->
+                  builder.inputFacets(
+                      olContext
+                          .getOpenLineage()
+                          .newInputDatasetInputFacetsBuilder()
+                          .inputStatistics(f)
+                          .build()));
+    }
+
+    return builder.name(di.getName()).namespace(di.getNamespace()).build();
   }
 
   protected OpenLineage.OutputDataset buildOutputDataset(URI uri, boolean withOutputStatistics) {
@@ -438,11 +454,12 @@ class RddExecutionContext implements ExecutionContext {
       getOutputStatisticsFacet()
           .ifPresent(
               f ->
-                  olContext
-                      .getOpenLineage()
-                      .newOutputDatasetOutputFacetsBuilder()
-                      .outputStatistics(f)
-                      .build());
+                  builder.outputFacets(
+                      olContext
+                          .getOpenLineage()
+                          .newOutputDatasetOutputFacetsBuilder()
+                          .outputStatistics(f)
+                          .build()));
     }
 
     return builder.name(di.getName()).namespace(di.getNamespace()).build();
@@ -455,13 +472,11 @@ class RddExecutionContext implements ExecutionContext {
     }
 
     JobMetricsHolder jobMetricsHolder = JobMetricsHolder.getInstance();
-    Map<Metric, Number> metrics = jobMetricsHolder.pollMetrics(activeJobId);
-
-    if (!metrics.containsKey(JobMetricsHolder.Metric.WRITE_BYTES)
-        && !metrics.containsKey(JobMetricsHolder.Metric.WRITE_RECORDS)) {
+    if (!jobMetricsHolder.containsWriteMetrics(activeJobId)) {
       log.warn("No write metrics found in job {}", activeJobId);
       return Optional.empty();
     }
+    Map<Metric, Number> metrics = jobMetricsHolder.pollMetrics(activeJobId);
 
     return Optional.of(
         olContext
@@ -480,9 +495,41 @@ class RddExecutionContext implements ExecutionContext {
             .build());
   }
 
-  protected List<OpenLineage.InputDataset> buildInputs(List<URI> inputs) {
+  private Optional<InputStatisticsInputDatasetFacet> getInputStatisticsFacet() {
+    if (!olContext.getActiveJobId().isPresent()) {
+      log.warn("No active jobId found in context");
+      return Optional.empty();
+    }
+
+    JobMetricsHolder jobMetricsHolder = JobMetricsHolder.getInstance();
+    if (!jobMetricsHolder.containsReadMetrics(activeJobId)) {
+      log.warn("No read metrics found in job {}", activeJobId);
+      return Optional.empty();
+    }
+    Map<Metric, Number> metrics = jobMetricsHolder.pollMetrics(activeJobId);
+
+    return Optional.of(
+        olContext
+            .getOpenLineage()
+            .newInputStatisticsInputDatasetFacetBuilder()
+            .rowCount(
+                Optional.of(metrics.get(JobMetricsHolder.Metric.READ_RECORDS))
+                    .map(Number::longValue)
+                    .orElse(null))
+            .size(
+                Optional.of(metrics.get(JobMetricsHolder.Metric.READ_BYTES))
+                    .map(Number::longValue)
+                    .orElse(null))
+            .build());
+  }
+
+  protected List<OpenLineage.InputDataset> buildInputs(
+      List<URI> inputs, boolean withInputStatistics) {
     return DatasetReducerUtils.inputs(
-        olContext, inputs.stream().map(this::buildInputDataset).collect(Collectors.toList()));
+        olContext,
+        inputs.stream()
+            .map(d -> buildInputDataset(d, withInputStatistics && inputs.size() == 1))
+            .collect(Collectors.toList()));
   }
 
   protected List<URI> findOutputs(RDD<?> rdd, JobConf jobConf) {
@@ -499,7 +546,10 @@ class RddExecutionContext implements ExecutionContext {
   protected List<URI> findInputs(Set<RDD<?>> rdds) {
     log.debug("find Inputs within RddExecutionContext {}", rdds);
     return PlanUtils.findRDDPaths(rdds.stream().collect(Collectors.toList())).stream()
+        .filter(Objects::nonNull)
+        .filter(p -> !p.toString().isEmpty())
         .map(path -> path.toUri())
+        .distinct()
         .collect(Collectors.toList());
   }
 

@@ -46,10 +46,9 @@ public class OutputStatisticsOutputDatasetFacetBuilder
       return;
     }
 
-    Map<JobMetricsHolder.Metric, Number> metrics =
-        jobMetricsHolder.pollMetrics(context.getActiveJobId().get());
-    if (metrics.containsKey(JobMetricsHolder.Metric.WRITE_BYTES)
-        || metrics.containsKey(JobMetricsHolder.Metric.WRITE_RECORDS)) {
+    if (jobMetricsHolder.containsWriteMetrics(context.getActiveJobId().get())) {
+      Map<JobMetricsHolder.Metric, Number> metrics =
+          jobMetricsHolder.pollMetrics(context.getActiveJobId().get());
       consumer.accept(
           "outputStatistics",
           context

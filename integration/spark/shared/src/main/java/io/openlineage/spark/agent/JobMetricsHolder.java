@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerTaskEnd;
@@ -44,7 +45,10 @@ public class JobMetricsHolder {
   JobMetricsHolder() {}
 
   public void addJobStages(int jobId, Set<Integer> stages) {
-    log.debug("JobMetricsHolder addStage for jobId {}", jobId);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "JobMetricsHolder addStage for jobId {} stages {}", jobId, StringUtils.join(stages, ","));
+    }
     if (stages != null) {
       jobStages.put(jobId, stages);
     }
@@ -73,8 +77,24 @@ public class JobMetricsHolder {
     return jobMetrics.get(jobId);
   }
 
+  public boolean containsWriteMetrics(int jobId) {
+    Map<Metric, Number> metrics = pollMetrics(jobId);
+    long records = metrics.getOrDefault(Metric.WRITE_RECORDS, 0).longValue();
+    long bytes = metrics.getOrDefault(Metric.WRITE_BYTES, 0).longValue();
+
+    return records + bytes > 0;
+  }
+
+  public boolean containsReadMetrics(int jobId) {
+    Map<Metric, Number> metrics = pollMetrics(jobId);
+    long records = metrics.getOrDefault(Metric.READ_RECORDS, 0).longValue();
+    long bytes = metrics.getOrDefault(Metric.READ_BYTES, 0).longValue();
+
+    return records + bytes > 0;
+  }
+
   private Map<Metric, Number> computeJobMetricsAndClearTemporaryResults(int jobId) {
-    return Optional.ofNullable(jobStages.remove(jobId))
+    return Optional.ofNullable(jobStages.get(jobId))
         .map(
             stages ->
                 stages.stream()
@@ -82,7 +102,7 @@ public class JobMetricsHolder {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList()))
         .filter(l -> !l.isEmpty())
-        .map(this::mapOutputMetrics)
+        .map(this::mapMetrics)
         .orElse(Collections.emptyMap());
   }
 
@@ -100,7 +120,7 @@ public class JobMetricsHolder {
     stageMetrics.clear();
   }
 
-  private Map<Metric, Number> mapOutputMetrics(List<TaskMetricsAggregate> jobMetrics) {
+  private Map<Metric, Number> mapMetrics(List<TaskMetricsAggregate> jobMetrics) {
     Map<Metric, Number> result = new EnumMap<>(Metric.class);
 
     for (TaskMetricsAggregate aggregate : jobMetrics) {
@@ -117,12 +137,20 @@ public class JobMetricsHolder {
             Metric.FILES_WRITTEN,
             aggregate.getFilesWritten(),
             (m, b) -> m.longValue() + b.longValue());
+        result.merge(
+            Metric.READ_BYTES, aggregate.getBytesRead(), (m, b) -> m.longValue() + b.longValue());
+        result.merge(
+            Metric.READ_RECORDS,
+            aggregate.getRecordsRead(),
+            (m, b) -> m.longValue() + b.longValue());
       }
     }
 
     if (result.get(Metric.WRITE_BYTES).longValue() == 0
-        && result.get(Metric.WRITE_RECORDS).longValue() == 0) {
-      // no output metrics, return empty map
+        && result.get(Metric.WRITE_RECORDS).longValue() == 0
+        && result.get(Metric.READ_BYTES).longValue() == 0
+        && result.get(Metric.READ_RECORDS).longValue() == 0) {
+      // no metrics, return empty map
       return Collections.emptyMap();
     }
 
@@ -154,7 +182,9 @@ public class JobMetricsHolder {
   public enum Metric {
     WRITE_BYTES,
     WRITE_RECORDS,
-    FILES_WRITTEN
+    FILES_WRITTEN,
+    READ_BYTES,
+    READ_RECORDS,
   }
 
   @VisibleForTesting
@@ -162,6 +192,8 @@ public class JobMetricsHolder {
   private static class TaskMetricsAggregate {
     private long bytesWritten;
     private long recordsWritten;
+    private long bytesRead;
+    private long recordsRead;
 
     /** estimated based on amount of tasks with bytesWritten > 0 */
     private long filesWritten;
@@ -170,11 +202,17 @@ public class JobMetricsHolder {
       this.bytesWritten = taskMetrics.outputMetrics().bytesWritten();
       this.recordsWritten = taskMetrics.outputMetrics().recordsWritten();
       this.filesWritten = taskMetrics.outputMetrics().bytesWritten() > 0 ? 1 : 0;
+
+      this.bytesRead = taskMetrics.inputMetrics().bytesRead();
+      this.recordsRead = taskMetrics.inputMetrics().recordsRead();
     }
 
     public void add(TaskMetrics taskMetrics) {
       this.bytesWritten += taskMetrics.outputMetrics().bytesWritten();
       this.recordsWritten += taskMetrics.outputMetrics().recordsWritten();
+
+      this.bytesRead += taskMetrics.inputMetrics().bytesRead();
+      this.recordsRead += taskMetrics.inputMetrics().recordsRead();
 
       if (taskMetrics.outputMetrics().bytesWritten() > 0) {
         filesWritten += 1;
