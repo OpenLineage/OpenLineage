@@ -21,8 +21,8 @@ plugins {
 ext {
     projectDescription = "S3 OpenLineage transport library"
     s3MockVersion = "4.10.0"
-    testcontainersVersion = "2.0.1"
-    awssdkVersion = "2.38.4"
+    testcontainersVersion = "2.0.2"
+    awssdkVersion = "2.38.7"
 }
 
 sourceSets {
