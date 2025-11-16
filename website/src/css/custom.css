@@ -40,12 +40,18 @@
   --ifm-color-primary-light: #89b1c6;
   --ifm-color-primary-lighter: #93b8cb;
   --ifm-color-primary-lightest: #b2ccda;
+  body { background-color: #000000; };
+  .bg-bg { background-color: #000000; };
+  .bg-bgalt { background-color: #000000; };
+  .integration-list { background-color: #000000; };
+  .table-of-contents { background-color: #000000; };
+  html.docs-doc-page body { background-color: #000000; }
 }
 
 body {
   font-family: "Didact Gothic", sans-serif;
   font-size: 18px;
-  background-color: white;
+  background-color: #FFFFFF;
   width: 100%;
 }
 
@@ -66,7 +72,7 @@ a {
 }
 
 .bg-bg {
-  background-color: white;
+  background-color: #FFFFFF;
 }
 
 .bg-bgalt {
@@ -271,6 +277,11 @@ h5,
 h6 {
   @apply text-color-2 my-8;
 }
+esign
+How OpenLineage Benefits the Ecosystem
+Scope
+Core model
+Spec
 
 article div h1 {
   @apply text-5xl;
@@ -399,7 +410,7 @@ article div pre {
   width: 90%;
   margin: auto;
   margin-top: 30px;
-  background-color: #fff;
+  background-color: #FFFFFF;
 }
 
 .integration-list td {
@@ -421,7 +432,7 @@ article div pre {
   padding: 10px 0;
   margin: 10px 0px 10px 20px;
   float: right;
-  background-color: #fff;
+  background-color: #FFFFFF;
 }
 
 .table-of-contents ol {
@@ -489,10 +500,6 @@ h6 {
 
 img[src*="#full-width"] {
   width: 100%;
-}
-
-html.docs-doc-page body {
-  background-color: white;
 }
 
 .pagination {
