@@ -58,6 +58,9 @@
   html.docs-doc-page body {
     background-color: #000000;
   }
+  code {
+    background-color: #333333;
+  }
 }
 
 body {
