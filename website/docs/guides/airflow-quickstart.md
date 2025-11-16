@@ -11,15 +11,15 @@ In this tutorial, you'll configure Apache Airflow® to send OpenLineage events t
 ### Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Get and start Marquez](#get-marquez)
-3. [Configure Apache Airflow to send OpenLineage events to Marquez](#configure-airflow)
+2. [Get and start Marquez](#get-and-start-marquez)
+3. [Configure Apache Airflow to send OpenLineage events to Marquez](#configure-airflow-to-send-openlineage-events-to-marquez)
 4. [Write Airflow DAGs](#write-airflow-dags)
-5. [View Collected Lineage in Marquez](#view-collected-metadata)
+5. [View Collected Lineage in Marquez](#view-collected-lineage-in-marquez)
 6. [Troubleshoot a Failing DAG with Marquez](#troubleshoot-a-failing-dag-with-marquez)
 7. [Next Steps](#next-steps)
 8. [Feedback?](#feedback)
 
-## Prerequisites {#prerequisites}
+## Prerequisites
 
 Before you begin, make sure you have installed:
 
@@ -32,7 +32,7 @@ For an easy path to installing and running Airflow locally for development purpo
 
 :::
 
-## Get and start Marquez {#get-marquez}
+## Get and start Marquez
 
 1. Create a directory for Marquez. Then, check out the Marquez source code by running:
 
@@ -81,7 +81,7 @@ For an easy path to installing and running Airflow locally for development purpo
     - view run-level metadata of current and previous job runs, enabling you to see the latest status of a job and the update history of a dataset.
     - get a high-level view of resource usage, allowing you to see trends in your operations.
 
-## Configure Airflow to send OpenLineage events to Marquez {#configure-airflow}
+## Configure Airflow to send OpenLineage events to Marquez
 
 1. To configure Airflow to emit OpenLineage events to Marquez, you need to modify your local Airflow environment and add a dependency. First, define an OpenLineage transport. One way you can do this is by using an environment variable. To use `http` and send events to the Marquez API running locally on port `5000`, run:
 
@@ -329,11 +329,11 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
     ![](./docs/sum-history.png)
 
-## Next Steps {#next-steps}
+## Next Steps
 
 * Review the Marquez [HTTP API](https://marquezproject.github.io/marquez/openapi.html) used to collect Airflow DAG metadata and learn how to build your own integrations using OpenLineage.
 * Take a look at the [`openlineage-spark`](https://openlineage.io/docs/integrations/spark/) integration that can be used with Airflow.
 
-## Feedback? {#feedback}
+## Feedback?
 
 What did you think of this guide? Let us know in the [OpenLineage Slack](https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w) or the [Marquez Slack](https://join.slack.com/t/marquezproject/shared_invite/zt-2iylxasbq-GG_zXNcJdNrhC9uUMr3B7A). You can also propose changes directly by [opening a pull request](https://github.com/MarquezProject/marquez/blob/main/CONTRIBUTING.md#submitting-a-pull-request).

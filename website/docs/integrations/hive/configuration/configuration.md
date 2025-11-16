@@ -8,9 +8,9 @@ It uses built-in Hive configuration mechanisms. The most important part of the c
 
 Your options are:
 
-1. [Setting the properties directly in SQL](#setting-the-properties-directly-in-SQL).
+1. [Setting the properties directly in SQL](#setting-the-properties-directly-in-sql).
 2. [Using `--hiveconf` options with the CLI](#using---hiveconf-options-with-the-cli).
-3. [Adding properties to the `hive-site.xml` file](#adding-properties-to-the-hive--site.xml-file).
+3. [Adding properties to the `hive-site.xml` file](#adding-properties-to-the-hive-site-file).
 
 #### Setting the properties directly in SQL
 You can set properties in SQL session with
@@ -51,7 +51,9 @@ gcloud dataproc jobs submit hive \
 ```
 :::
 
-#### Adding properties to the `hive-site.xml` file
+#### Adding properties to the `hive-site` file
+
+`hive-site.xml`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -85,4 +87,3 @@ gcloud dataproc jobs submit hive \
     ...
 </configuration>
 ```
-
