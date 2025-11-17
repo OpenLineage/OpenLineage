@@ -10,7 +10,7 @@ The OpenLineage Java is a SDK for Java programming language that users can use t
 The core data structures currently offered by the client are the `RunEvent`, `RunState`, `Run`, `Job`, `Dataset`, 
 and `Transport` classes, along with various `Facets` that can come under run, job, and dataset.
 
-There are various transports that the library provides that carry the lineage events into various target endpoints (e.g. HTTP).
+There are various [transports](https://openlineage.io/docs/client/java/configuration#transports) that the library provides that carry the lineage events into various target endpoints (e.g. HTTP).
 
 You can also use the Java client to create your own custom integrations.
 
