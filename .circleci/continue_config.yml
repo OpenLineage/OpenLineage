@@ -1292,14 +1292,17 @@ jobs:
     # Build Openlineage website to make sure npm packages match
     working_directory: ~/openlineage/website
     docker:
-      - image: cimg/node:22.7.0
+      - image: cimg/node:24.11.1
     resource_class: large
     steps:
       - *checkout_project_root
       - run:
+          name: Enable Corepack
+          command: corepack enable
+      - run:
           name: Install Dependencies
           command: |
-            yarn install --frozen-lockfile
+            yarn install --immutable
             yarn build
 
   always_run:

@@ -35,7 +35,7 @@ mkdir -p runner
 mkdir -p scenarios
 ```
 
-The process of adding scenarios is described in [New Producer Scenario](#new-producer-scenario)
+The process of adding scenarios is described in [New Producer Scenario](new_producer_scenario.md)
 
 ## Step 4: Define Maintainers
 
