@@ -292,7 +292,8 @@ h5,
 h6 {
   @apply text-color-2 my-8;
 }
-esign How OpenLineage Benefits the Ecosystem Scope Core model Spec article div h1 {
+
+div h1 {
   @apply text-5xl;
 }
 
