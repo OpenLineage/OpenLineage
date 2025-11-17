@@ -41,25 +41,25 @@
   --ifm-color-primary-lighter: #93b8cb;
   --ifm-color-primary-lightest: #b2ccda;
   body {
-    background-color: #000000;
+    background-color: #0000;
   }
   .bg-bg {
-    background-color: #000000;
+    background-color: #0000 !important;
   }
   .bg-bgalt {
-    background-color: #000000;
+    background-color: #0000 !important;
   }
   .integration-list {
-    background-color: #000000;
+    background-color: #0000 !important;
   }
   .table-of-contents {
-    background-color: #000000;
+    background-color: #0000 !important;
   }
   html.docs-doc-page body {
-    background-color: #000000;
+    background-color: #0000 !important;
   }
   code {
-    background-color: #333333;
+    background-color: #333333 !important;
   }
 }
 
