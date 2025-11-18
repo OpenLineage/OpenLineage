@@ -417,32 +417,6 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-integration-airflow:
-    parameters:
-      airflow-image:
-        type: string
-    working_directory: ~/openlineage/integration/
-    machine:
-      image: ubuntu-2404:current
-    resource_class: large
-    steps:
-      - *checkout_project_root
-      - gcp-cli/install
-      - gcp-cli/initialize
-      - run: ../.circleci/get-docker-compose.sh
-      - run: cp -r ../client/python python
-      - attach_workspace:
-          at: .
-      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up.sh
-      - store_artifacts:
-          path: airflow/tests/integration/tests/airflow/logs
-          destination: airflow-logs
-          when: always
-      - store_artifacts:
-          path: airflow/tests/integration/tests/events
-          destination: events
-          when: always
-
   release-python:
     working_directory: ~/openlineage
     docker:

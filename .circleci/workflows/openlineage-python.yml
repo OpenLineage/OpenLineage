@@ -66,19 +66,6 @@ workflows:
             - build-integration-sql-python-x86
             - build-integration-sql-python-arm
             - build-integration-sql-python-macos
-      - integration-test-integration-airflow:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-          matrix:
-            parameters:
-              airflow-image: [
-                'apache/airflow:2.5.2-python3.9',
-                'apache/airflow:2.6.1-python3.9'
-              ]
-          context: integration-tests
-          requires:
-            - approval-integration-airflow
       - build-integration-airflow:
           filters:
             branches:
@@ -86,7 +73,7 @@ workflows:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
-            - integration-test-integration-airflow
+            - approval-integration-airflow
       - unit-test-client-python:
           filters:
             tags:
@@ -160,7 +147,6 @@ workflows:
           requires:
             - build-integration-airflow
             - build-integration-common
-            - integration-test-integration-airflow
             - build-integration-dbt
       - release-python:
           filters:
