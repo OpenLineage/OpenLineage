@@ -23,7 +23,12 @@ from openlineage.client.facet_v2 import (
     tags_run,
 )
 from openlineage.client.uuid import generate_new_uuid
-from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
+from openlineage.common.provider.dbt.facets import (
+    DbtNodeJobFacet,
+    DbtRunRunFacet,
+    DbtVersionRunFacet,
+    ParentRunMetadata,
+)
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.common.provider.dbt.processor import (
     ModelNode,
@@ -341,13 +346,21 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             )
 
         job_name = self._get_job_name(event)
+        node_metadata = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
                 jobType=get_job_type(event),
                 integration="DBT",
                 processingType="BATCH",
                 producer=self.producer,
-            )
+            ),
+            "dbt_node": DbtNodeJobFacet(
+                original_file_path=node_metadata.get("original_file_path"),
+                database=node_metadata.get("database"),
+                schema=node_metadata.get("schema"),
+                alias=node_metadata.get("alias"),
+                unique_id=node_metadata.get("unique_id"),
+            ),
         }
 
         inputs = [
@@ -393,13 +406,21 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             )
 
         job_name = self._get_job_name(event)
+        node_metadata = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
                 jobType=get_job_type(event),
                 integration="DBT",
                 processingType="BATCH",
                 producer=self.producer,
-            )
+            ),
+            "dbt_node": DbtNodeJobFacet(
+                original_file_path=node_metadata.get("original_file_path"),
+                database=node_metadata.get("database"),
+                schema=node_metadata.get("schema"),
+                alias=node_metadata.get("alias"),
+                unique_id=node_metadata.get("unique_id"),
+            ),
         }
 
         event_type = RunState.OTHER
@@ -795,7 +816,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                             "Failed to remove log file: %s. Leftover logs can consume disk space.",
                             self.dbt_log_file_path,
                         )
-            self.dbt_command_return_code = process.returncode
+            # process.returncode can be None if the process hasn't terminated properly
+            self.dbt_command_return_code = process.returncode if process.returncode is not None else -1
 
     def _open_dbt_log_file(self):
         """

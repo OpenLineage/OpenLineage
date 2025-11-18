@@ -30,7 +30,12 @@ from openlineage.client.facet_v2 import (
     tags_run,
 )
 from openlineage.client.uuid import generate_new_uuid
-from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
+from openlineage.common.provider.dbt.facets import (
+    DbtNodeJobFacet,
+    DbtRunRunFacet,
+    DbtVersionRunFacet,
+    ParentRunMetadata,
+)
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 from openlineage.common.provider.snowflake import fix_account_name
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
@@ -306,7 +311,14 @@ class DbtArtifactProcessor:
                     integration="DBT",
                     processingType="BATCH",
                     producer=self.producer,
-                )
+                ),
+                "dbt_node": DbtNodeJobFacet(
+                    original_file_path=output_node.get("original_file_path"),
+                    database=output_node.get("database"),
+                    schema=output_node.get("schema"),
+                    alias=output_node.get("alias"),
+                    unique_id=output_node.get("unique_id"),
+                ),
             }
             if sql:
                 job_facets["sql"] = sql_job.SQLJobFacet(query=sql, dialect=self.extract_dialect())
@@ -385,7 +397,14 @@ class DbtArtifactProcessor:
                     integration="DBT",
                     processingType="BATCH",
                     producer=self.producer,
-                )
+                ),
+                "dbt_node": DbtNodeJobFacet(
+                    original_file_path=node.get("original_file_path"),
+                    database=node.get("database"),
+                    schema=node.get("schema"),
+                    alias=node.get("alias"),
+                    unique_id=node.get("unique_id"),
+                ),
             }
 
             run_facets: Dict[str, RunFacet] = {}

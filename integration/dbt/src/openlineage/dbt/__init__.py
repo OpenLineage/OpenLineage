@@ -250,8 +250,9 @@ def consume_structured_logs(
         client.close(timeout=30)
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
-    logger.info("Underlying dbt execution returned %d", processor.dbt_command_return_code)
-    return processor.dbt_command_return_code
+    return_code = processor.dbt_command_return_code if processor.dbt_command_return_code is not None else -1
+    logger.info("Underlying dbt execution returned %d", return_code)
+    return return_code
 
 
 def consume_local_artifacts(
