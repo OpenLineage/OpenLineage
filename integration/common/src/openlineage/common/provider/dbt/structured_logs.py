@@ -816,7 +816,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                             "Failed to remove log file: %s. Leftover logs can consume disk space.",
                             self.dbt_log_file_path,
                         )
-            self.dbt_command_return_code = process.returncode
+            # process.returncode can be None if the process hasn't terminated properly
+            self.dbt_command_return_code = process.returncode if process.returncode is not None else -1
 
     def _open_dbt_log_file(self):
         """

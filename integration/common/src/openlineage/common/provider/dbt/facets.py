@@ -63,6 +63,16 @@ class DbtRunRunFacet(BaseFacet):
 
 @attr.define
 class DbtNodeJobFacet(JobFacet):
+    """Job facet containing dbt node metadata.
+
+    This facet embeds information from the dbt manifest schema, specifically from the node
+    properties as defined in the dbt manifest specification:
+    https://schemas.getdbt.com/dbt/manifest/v12/index.html#nodes_additionalProperties
+
+    The fields in this facet correspond to properties found in dbt manifest nodes, providing
+    context about the dbt model/node being executed.
+    """
+
     original_file_path: Optional[str] = attr.field(default=None)
     database: Optional[str] = attr.field(default=None)
     schema: Optional[str] = attr.field(default=None)
