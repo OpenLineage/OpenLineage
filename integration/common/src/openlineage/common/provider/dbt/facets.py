@@ -6,6 +6,7 @@ from typing import Optional
 import attr
 from openlineage.client.facet_v2 import (
     BaseFacet,
+    JobFacet,
     parent_run,
 )
 from openlineage.common.schema import GITHUB_LOCATION  # type: ignore[attr-defined]
@@ -58,3 +59,16 @@ class DbtRunRunFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "dbt-run-run-facet.json"
+
+
+@attr.define
+class DbtNodeJobFacet(JobFacet):
+    original_file_path: Optional[str] = attr.field(default=None)
+    database: Optional[str] = attr.field(default=None)
+    schema: Optional[str] = attr.field(default=None)
+    alias: Optional[str] = attr.field(default=None)
+    unique_id: Optional[str] = attr.field(default=None)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return GITHUB_LOCATION + "dbt-node-job-facet.json"

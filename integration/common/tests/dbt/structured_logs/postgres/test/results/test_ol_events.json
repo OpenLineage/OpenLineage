@@ -1353,6 +1353,13 @@
           "processingType": "BATCH",
           "integration": "DBT",
           "jobType": "TEST"
+        },
+        "dbt_node": {
+          "original_file_path": "models/schema.yml",
+          "unique_id": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
+          "database": "postgres",
+          "schema": "public_dbt_test__audit",
+          "alias": "unique_customers_customer_id"
         }
       }
     },
@@ -1640,6 +1647,13 @@
           "processingType": "BATCH",
           "integration": "DBT",
           "jobType": "TEST"
+        },
+        "dbt_node": {
+          "original_file_path": "models/schema.yml",
+          "unique_id": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
+          "database": "postgres",
+          "schema": "public_dbt_test__audit",
+          "alias": "unique_customers_customer_id"
         }
       }
     },

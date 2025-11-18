@@ -3018,6 +3018,13 @@
           "processingType": "BATCH",
           "integration": "DBT",
           "jobType": "MODEL"
+        },
+        "dbt_node": {
+          "unique_id": "model.jaffle_shop.orders",
+          "database": "postgres",
+          "schema": "public",
+          "alias": "orders",
+          "original_file_path": "models/orders.sql"
         }
       }
     },
@@ -3709,6 +3716,13 @@
           "processingType": "BATCH",
           "integration": "DBT",
           "jobType": "MODEL"
+        },
+        "dbt_node": {
+          "unique_id": "model.jaffle_shop.orders",
+          "database": "postgres",
+          "schema": "public",
+          "alias": "orders",
+          "original_file_path": "models/orders.sql"
         }
       }
     },
