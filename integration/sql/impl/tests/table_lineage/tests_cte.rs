@@ -50,7 +50,7 @@ fn parse_bugged_cte() {
         meta.errors.first().unwrap(),
         &ExtractionError {
             index: 0,
-            message: "Expected: ), found: user_id at Line: 3, Column: 20".to_string(),
+            message: "Expected: ), found: ( at Line: 3, Column: 34".to_string(),
             origin_statement: sql.to_string(),
         }
     );
