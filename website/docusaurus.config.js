@@ -189,6 +189,9 @@ const config = {
 
   scripts: [
     {
+      src: "/js/gtag-fallback.js",
+    },
+    {
       src: "https://plausible.io/js/script.js",
       defer: true,
       "data-domain": "openlineage.io",

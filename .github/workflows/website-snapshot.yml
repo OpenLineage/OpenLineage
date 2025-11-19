@@ -25,9 +25,11 @@ jobs:
           token:  ${{ secrets.ACTIONS_GITHUB_TOKEN }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: "npm"
-          cache-dependency-path: source/website/package-lock.json
+          node-version: 24
+          cache: "yarn"
+          cache-dependency-path: source/website/yarn.lock
+      - name: Enable Corepack
+        run: corepack enable
       - uses: actions/setup-java@v4
         with:
           distribution: 'corretto'
@@ -53,7 +55,7 @@ jobs:
       - name: Install dependencies
         run:  |
           cd source/website
-          yarn install --frozen-lockfile
+          yarn install --immutable
       - name: Generate openapi
         run: |
           SPEC_DIR="$(pwd)/source/website/static/spec"

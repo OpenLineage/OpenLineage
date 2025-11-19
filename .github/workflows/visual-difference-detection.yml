@@ -48,11 +48,13 @@ jobs:
         with:
           ref: main
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: current
+          node-version: 24
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
       - name: Install Playwright browsers
         run: yarn playwright install --with-deps chromium
       - name: Build the website
@@ -86,11 +88,13 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: current
+          node-version: 24
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
       - name: Install Playwright browsers
         run: yarn playwright install --with-deps chromium
       - name: Build the website
