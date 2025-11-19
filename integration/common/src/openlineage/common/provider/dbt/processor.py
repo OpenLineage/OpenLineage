@@ -24,6 +24,7 @@ from openlineage.client.facet_v2 import (
     external_query_run,
     job_type_job,
     output_statistics_output_dataset,
+    ownership_dataset,
     processing_engine_run,
     schema_dataset,
     sql_job,
@@ -638,6 +639,11 @@ class DbtArtifactProcessor:
                 fields = self.extract_metadata_fields(node.metadata_node["columns"].values())
             if fields:
                 facets["schema"] = schema_dataset.SchemaDatasetFacet(fields=fields)
+
+            if owner := get_from_nullable_chain(node.metadata_node, ["meta", "owner"]):
+                facets["ownership"] = ownership_dataset.OwnershipDatasetFacet(
+                    owners=[ownership_dataset.Owner(name=owner)]
+                )
         else:
             facets = {}
         if node.type == "source":
