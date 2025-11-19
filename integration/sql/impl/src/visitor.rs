@@ -6,9 +6,11 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    AlterTableOperation, Expr, FromTable, Function, FunctionArg, FunctionArgExpr,
-    FunctionArguments, Ident, ObjectName, Query, Select, SelectItem, SetExpr, Statement, Table,
-    TableFactor, TableFunctionArgs, Use, Value, WindowSpec, WindowType, With,
+    AccessExpr, AlterTableOperation, CreateTableLikeKind, Expr, FromTable, Function, FunctionArg,
+    FunctionArgExpr, FunctionArguments, Ident, ObjectName, ObjectNamePart, Query,
+    RenameTableNameKind, Select, SelectItem, SetExpr, Statement, Subscript, Table, TableFactor,
+    TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec,
+    WindowType, With,
 };
 use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
@@ -56,20 +58,13 @@ impl Visit for TableFactor {
             } => {
                 // Check if table name is provided using IDENTIFIER function,
                 // use it if found and valid, otherwise keep the current name
-                let effective_name =
-                    if is_identifier_function_used_to_provide_table_name(name, args, context) {
-                        if let Some(table_name) = get_table_name_from_identifier_function(args) {
-                            table_name
-                        } else {
-                            // Exit if table provided using identifier func but couldn't parse it
-                            return Ok(());
-                        }
-                    } else {
-                        name.clone()
-                    };
+                let effective_name = match resolve_effective_table_name(name, args, context) {
+                    Some(table_name) => table_name,
+                    None => return Ok(()), // Exit if couldn't parse identifier function
+                };
 
                 let table = DbTableMeta::new(
-                    effective_name.clone().0,
+                    convert_to_idents(&effective_name),
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
@@ -79,15 +74,15 @@ impl Visit for TableFactor {
                 }
 
                 if !context.is_main() {
-                    context.add_table_dependency(effective_name.clone().0);
+                    context.add_table_dependency(convert_to_idents(&effective_name));
                 }
 
                 if context.is_main() && !context.has_alias(effective_name.to_string()) {
-                    context.add_input(effective_name.clone().0);
+                    context.add_input(convert_to_idents(&effective_name));
                 }
 
                 if context.is_main() && context.has_alias(effective_name.to_string()) {
-                    context.mark_table_as_used(effective_name.clone().0);
+                    context.mark_table_as_used(convert_to_idents(&effective_name));
                 }
 
                 Ok(())
@@ -175,19 +170,16 @@ impl Visit for Expr {
             Expr::Case {
                 operand,
                 conditions,
-                results,
                 else_result,
+                ..
             } => {
                 if let Some(expr) = operand {
                     expr.visit(context)?;
                 }
 
-                for condition in conditions {
-                    condition.visit(context)?;
-                }
-
-                for result in results {
-                    result.visit(context)?;
+                for case_when in conditions {
+                    case_when.condition.visit(context)?;
+                    case_when.result.visit(context)?;
                 }
 
                 if let Some(expr) = else_result {
@@ -239,6 +231,7 @@ impl Visit for Expr {
                 left,
                 compare_op: _,
                 right,
+                ..
             }
             | Expr::AllOp {
                 left,
@@ -346,10 +339,30 @@ impl Visit for Expr {
             Expr::Nested(expr) => {
                 expr.visit(context)?;
             }
-            Expr::MapAccess { column, keys } => {
-                column.visit(context)?;
-                for key in keys {
-                    key.key.visit(context)?;
+            Expr::CompoundFieldAccess { root, access_chain } => {
+                root.visit(context)?;
+                for access_expr in access_chain {
+                    match access_expr {
+                        AccessExpr::Dot(expr) => expr.visit(context)?,
+                        AccessExpr::Subscript(subscript) => match subscript {
+                            Subscript::Index { index } => index.visit(context)?,
+                            Subscript::Slice {
+                                lower_bound,
+                                upper_bound,
+                                stride,
+                            } => {
+                                if let Some(lower) = lower_bound {
+                                    lower.visit(context)?;
+                                }
+                                if let Some(upper) = upper_bound {
+                                    upper.visit(context)?;
+                                }
+                                if let Some(stride_expr) = stride {
+                                    stride_expr.visit(context)?;
+                                }
+                            }
+                        },
+                    }
                 }
             }
             Expr::Exists { subquery, .. } => {
@@ -374,9 +387,6 @@ impl Visit for Expr {
             }
             Expr::JsonAccess { value, path: _ } => {
                 value.visit(context)?;
-            }
-            Expr::CompositeAccess { expr, .. } => {
-                expr.visit(context)?;
             }
             Expr::IsDistinctFrom(left, right) | Expr::IsNotDistinctFrom(left, right) => {
                 left.visit(context)?;
@@ -417,6 +427,11 @@ impl Visit for FunctionArg {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
             FunctionArg::Named {
+                name: _,
+                arg,
+                operator: _,
+            }
+            | FunctionArg::ExprNamed {
                 name: _,
                 arg,
                 operator: _,
@@ -464,7 +479,7 @@ impl Visit for Select {
             let t = self.from.first().unwrap();
             if let TableFactor::Table { name, alias, .. } = &t.relation {
                 let table = DbTableMeta::new(
-                    name.clone().0,
+                    convert_to_idents(name),
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
@@ -521,7 +536,7 @@ impl Visit for Select {
         context.set_column_context(None);
 
         if let Some(into) = &self.into {
-            context.add_output(into.name.clone().0)
+            context.add_output(convert_to_idents(&into.name))
         }
 
         context.set_table_context(None);
@@ -550,6 +565,8 @@ impl Visit for SetExpr {
             }
             SetExpr::Table(table) => table.visit(context),
             SetExpr::Update(stmt) => stmt.visit(context),
+            SetExpr::Delete(stmt) => stmt.visit(context),
+            SetExpr::Merge(stmt) => stmt.visit(context),
         }
     }
 }
@@ -598,7 +615,14 @@ impl Visit for Statement {
                 if let Some(src) = &insert.source {
                     src.visit(context)?;
                 }
-                context.add_output(insert.table_name.clone().0);
+                match &insert.table {
+                    TableObject::TableName(name) => {
+                        context.add_output(convert_to_idents(name));
+                    }
+                    TableObject::TableFunction(func) => {
+                        func.visit(context)?;
+                    }
+                }
             }
             Statement::Merge { table, source, .. } => {
                 if let Some(table_name) = get_table_name_from_table_factor(table, &*context) {
@@ -611,17 +635,22 @@ impl Visit for Statement {
                     query.visit(context)?;
                 }
                 if let Some(like_table) = &ct.like {
-                    context.add_input(like_table.clone().0);
+                    match like_table {
+                        CreateTableLikeKind::Parenthesized(ctl)
+                        | CreateTableLikeKind::Plain(ctl) => {
+                            context.add_input(convert_to_idents(&ctl.name))
+                        }
+                    };
                 }
                 if let Some(clone) = &ct.clone {
-                    context.add_input(clone.clone().0);
+                    context.add_input(convert_to_idents(clone));
                 }
 
-                context.add_output(ct.name.clone().0);
+                context.add_output(convert_to_idents(&ct.name));
             }
             Statement::CreateView { name, query, .. } => {
                 query.visit(context)?;
-                context.add_output(name.clone().0);
+                context.add_output(convert_to_idents(name));
             }
             Statement::CreateStage {
                 name, stage_params, ..
@@ -633,7 +662,7 @@ impl Visit for Statement {
                         true,
                     );
                 }
-                context.add_non_table_output(name.clone().0, false, true);
+                context.add_non_table_output(convert_to_idents(name), false, true);
             }
             Statement::Update {
                 table,
@@ -646,10 +675,17 @@ impl Visit for Statement {
                     context.add_output(name);
                 }
 
-                if let Some(src) = from {
-                    src.relation.visit(context)?;
-                    for join in &src.joins {
-                        join.relation.visit(context)?;
+                if let Some(from) = from {
+                    match from {
+                        UpdateTableFromKind::BeforeSet(tables)
+                        | UpdateTableFromKind::AfterSet(tables) => {
+                            for table_with_joins in tables {
+                                table_with_joins.relation.visit(context)?;
+                                for join in &table_with_joins.joins {
+                                    join.relation.visit(context)?;
+                                }
+                            }
+                        }
                     }
                 }
                 if let Some(expr) = selection {
@@ -663,22 +699,28 @@ impl Visit for Statement {
                 operations,
                 location: _,
                 on_cluster: _,
+                ..
             } => {
                 for operation in operations {
                     match operation {
                         AlterTableOperation::SwapWith { table_name } => {
                             // both table names are inputs and outputs of the swap operation
-                            context.add_input(table_name.clone().0);
-                            context.add_input(name.clone().0);
+                            context.add_input(convert_to_idents(table_name));
+                            context.add_input(convert_to_idents(name));
 
-                            context.add_output(table_name.clone().0);
-                            context.add_output(name.clone().0);
+                            context.add_output(convert_to_idents(table_name));
+                            context.add_output(convert_to_idents(name));
                         }
                         AlterTableOperation::RenameTable { table_name } => {
-                            context.add_input(name.clone().0);
-                            context.add_output(table_name.clone().0);
+                            context.add_input(convert_to_idents(name));
+                            match table_name {
+                                RenameTableNameKind::As(new_name)
+                                | RenameTableNameKind::To(new_name) => {
+                                    context.add_output(convert_to_idents(new_name))
+                                }
+                            };
                         }
-                        _ => context.add_output(name.clone().0),
+                        _ => context.add_output(convert_to_idents(name)),
                     }
                 }
             }
@@ -715,29 +757,35 @@ impl Visit for Statement {
                     expr.visit(context)?;
                 }
             }
-            Statement::Truncate { table_name, .. } => context.add_output(table_name.clone().0),
-            Statement::Drop { names, .. } => {
-                for name in names {
-                    context.add_output(name.clone().0)
+            Statement::Truncate { table_names, .. } => {
+                for table in table_names {
+                    context.add_output(convert_to_idents(&table.name))
                 }
             }
-            Statement::CopyIntoSnowflake {
-                into, from_stage, ..
-            } => {
-                context.add_output(into.clone().0);
-                if from_stage.to_string().contains("gcs://")
-                    || from_stage.to_string().contains("s3://")
-                    || from_stage.to_string().contains("azure://")
-                {
-                    context.add_non_table_input(
-                        vec![Ident::new(from_stage.to_string().replace(['\"', '\''], ""))], // just unquoted location URL with,
-                        true,
-                        true,
-                    );
-                } else {
-                    // Stage
-                    context.add_non_table_input(from_stage.clone().0, true, true);
-                };
+            Statement::Drop { names, .. } => {
+                for name in names {
+                    context.add_output(convert_to_idents(name))
+                }
+            }
+            Statement::CopyIntoSnowflake { into, from_obj, .. } => {
+                context.add_output(convert_to_idents(into));
+                if let Some(from_object) = from_obj {
+                    if from_object.to_string().contains("gcs://")
+                        || from_object.to_string().contains("s3://")
+                        || from_object.to_string().contains("azure://")
+                    {
+                        context.add_non_table_input(
+                            vec![Ident::new(
+                                from_object.to_string().replace(['\"', '\''], ""),
+                            )], // just unquoted location URL with,
+                            true,
+                            true,
+                        );
+                    } else {
+                        // Stage
+                        context.add_non_table_input(convert_to_idents(from_object), true, true);
+                    };
+                }
             }
             Statement::Use(use_enum) => {
                 // We expect either one id (USE [...] foo;) or two ids (USE [...] foo.bar;)
@@ -813,50 +861,86 @@ impl Visit for Table {
 
 fn get_table_name_from_table_factor(table: &TableFactor, context: &Context) -> Option<Vec<Ident>> {
     if let TableFactor::Table { name, args, .. } = table {
-        if is_identifier_function_used_to_provide_table_name(name, args, context) {
-            get_table_name_from_identifier_function(args).map(|table_name| table_name.clone().0)
-        } else {
-            Some(name.clone().0)
-        }
+        resolve_effective_table_name(name, args, context)
+            .map(|table_name| convert_to_idents(&table_name))
     } else {
         None
     }
 }
 
-fn is_identifier_function_used_to_provide_table_name(
+fn resolve_effective_table_name(
     name: &ObjectName,
     args: &Option<TableFunctionArgs>,
     context: &Context,
-) -> bool {
-    (context.dialect().as_base().is::<DatabricksDialect>()
-        || context.dialect().as_base().is::<SnowflakeDialect>()
-        || context.dialect().as_base().is::<MsSqlDialect>())
-        && name.0.first().unwrap().value.to_lowercase() == "identifier"
-        && args.is_some()
+) -> Option<ObjectName> {
+    if context.dialect().as_base().is::<DatabricksDialect>()
+        || context.dialect().as_base().is::<MsSqlDialect>()
+    {
+        let is_identifier_function = name
+            .0
+            .first()
+            .map(|part| match part {
+                ObjectNamePart::Function(_) => false,
+                ObjectNamePart::Identifier(ident) => ident.value.to_lowercase() == "identifier",
+            })
+            .unwrap_or(false);
+
+        if !is_identifier_function {
+            return Some(name.clone());
+        }
+        let args = args.as_ref()?; // Return None if there are no args
+        if args.args.len() != 1 {
+            return None; // Return None if the length is not 1, we do not support it yet
+        }
+        get_table_name_from_identifier_function_args(&args.args)
+    } else if context.dialect().as_base().is::<SnowflakeDialect>() {
+        name.0.first().and_then(|part| match part {
+            ObjectNamePart::Function(f) => {
+                if f.name.value.to_lowercase() == "identifier" {
+                    get_table_name_from_identifier_function_args(&f.args)
+                } else {
+                    Some(name.clone())
+                }
+            }
+            ObjectNamePart::Identifier(_) => Some(name.clone()),
+        })
+    } else {
+        Some(name.clone())
+    }
 }
 
-fn get_table_name_from_identifier_function(args: &Option<TableFunctionArgs>) -> Option<ObjectName> {
-    let args = args.as_ref()?; // Return None if there are no args
-    if args.args.len() != 1 {
-        return None; // Return None if the length is not 1, we do not support it yet
-    }
+fn get_table_name_from_identifier_function_args(args: &[FunctionArg]) -> Option<ObjectName> {
+    let arg = args.first()?; // Return None if empty
 
-    match &args.args[0] {
+    match arg {
         FunctionArg::Unnamed(FunctionArgExpr::Expr(expr)) => match expr {
-            Expr::Identifier(ident) => Some(ObjectName(vec![ident.clone()])),
-            Expr::Value(Value::SingleQuotedString(ident)) => {
-                Some(ObjectName(vec![Ident::new(ident.to_string())]))
-            }
+            Expr::Identifier(ident) => Some(ObjectName::from(vec![ident.clone()])),
+            Expr::Value(ValueWithSpan {
+                value: Value::SingleQuotedString(ident),
+                span: _,
+            }) => Some(ObjectName::from(vec![Ident::new(ident.to_string())])),
             _ => None,
         },
         _ => None,
     }
 }
 
+fn convert_to_idents(object_name: &ObjectName) -> Vec<Ident> {
+    object_name
+        .0
+        .iter()
+        .map(|part| match part {
+            ObjectNamePart::Identifier(ident) => ident.clone(),
+            ObjectNamePart::Function(f) => f.name.clone(),
+        })
+        .collect()
+}
+
 pub fn extract_up_to_two_ident_values(
     object_name: &ObjectName,
 ) -> (Option<String>, Option<String>) {
-    let mut idents_iter = object_name.0.iter();
+    let idents = convert_to_idents(object_name);
+    let mut idents_iter = idents.iter();
 
     let first_value = idents_iter.next().map(|ident| ident.value.clone());
     let second_value = idents_iter.next().map(|ident| ident.value.clone());
@@ -866,7 +950,7 @@ pub fn extract_up_to_two_ident_values(
 
 #[test]
 fn test_extract_up_to_two_ident_values_one_ident() {
-    let object_name = ObjectName(vec![Ident::new("first")]);
+    let object_name = ObjectName::from(vec![Ident::new("first")]);
     assert_eq!(
         extract_up_to_two_ident_values(&object_name),
         (Some("first".to_string()), None)
@@ -875,7 +959,7 @@ fn test_extract_up_to_two_ident_values_one_ident() {
 
 #[test]
 fn test_extract_up_to_two_ident_values_one_ident_with_quotes() {
-    let object_name = ObjectName(vec![Ident::with_quote('`', "first")]);
+    let object_name = ObjectName::from(vec![Ident::with_quote('`', "first")]);
     assert_eq!(
         extract_up_to_two_ident_values(&object_name),
         (Some("first".to_string()), None)
@@ -884,7 +968,7 @@ fn test_extract_up_to_two_ident_values_one_ident_with_quotes() {
 
 #[test]
 fn test_extract_up_to_two_ident_values_two_idents() {
-    let object_name = ObjectName(vec![Ident::new("first"), Ident::with_quote('`', "second")]);
+    let object_name = ObjectName::from(vec![Ident::new("first"), Ident::with_quote('`', "second")]);
     assert_eq!(
         extract_up_to_two_ident_values(&object_name),
         (Some("first".to_string()), Some("second".to_string()))
@@ -893,7 +977,7 @@ fn test_extract_up_to_two_ident_values_two_idents() {
 
 #[test]
 fn test_extract_up_to_two_ident_values_three_idents() {
-    let object_name = ObjectName(vec![
+    let object_name = ObjectName::from(vec![
         Ident::new("first"),
         Ident::with_quote('`', "second"),
         Ident::new("third"),
