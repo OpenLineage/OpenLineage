@@ -159,8 +159,12 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
           .map(BaseRelation::sizeInBytes)
           .ifPresent(
               size -> {
-                statsBuilder.size(size);
-                datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
+                // https://github.com/apache/spark/blob/v3.5.7/sql/catalyst/src/main/scala/org/apache/spark/sql/internal/SQLConf.scala#L2565
+                // https://github.com/apache/spark/blob/v3.5.7/sql/core/src/main/scala/org/apache/spark/sql/sources/interfaces.scala#L209
+                if (size < Long.MAX_VALUE) {
+                  statsBuilder.size(size);
+                  datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
+                }
               });
     }
 
