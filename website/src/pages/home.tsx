@@ -3,6 +3,33 @@ import Layout from "@theme/Layout";
 import { Button } from "../components/ui";
 import Footer from "../components/footer";
 import { ArrowRight, Calendar, Slack, Inbox, GitHub } from "react-feather";
+import { motion } from "motion/react";
+import { useAnimationFrame } from "motion/react";
+
+const UseAnimationFrame = () => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useAnimationFrame((t) => {
+    if (!ref.current) return;
+
+    const rotate = Math.sin(t / 10000) * 200;
+    const y = (1 + Math.sin(t / 1000)) * -50;
+    ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg)`;
+  });
+
+  return (
+    <div className="container">
+      <div className="cube" ref={ref}>
+        <div className="side front" />
+        <div className="side left" />
+        <div className="side right" />
+        <div className="side top" />
+        <div className="side bottom" />
+        <div className="side back" />
+      </div>
+    </div>
+  );
+};
 
 export default function Main(): JSX.Element {
   const seoTitle = "Home";
@@ -24,7 +51,6 @@ export default function Main(): JSX.Element {
 
 const Wall = ({ twoColumnWall = false, capitalizeTitleOnHome = false }) => {
   const wall = useRef(null);
-  const titleImage = "img/background.svg";
   const [state, changeState] = useState({
     loaded: false,
     supportsBlend: false,
@@ -42,43 +68,36 @@ const Wall = ({ twoColumnWall = false, capitalizeTitleOnHome = false }) => {
     }
   }, [state.loaded]);
 
-  let spanAttrs: Partial<{ style: unknown }> = {};
-
-  if (!twoColumnWall && titleImage) {
-    spanAttrs.style = {
-      backgroundImage: `url('${titleImage}')`,
-      height: "35em",
-      backgroundRepeat: "no-repeat",
-      backgroundPosition: "center",
-      backgroundSize: "cover",
-    };
-  }
-
   const innerComponents = (
     <React.Fragment>
-      <div className="title">
-        <h1 className={`text-6xl relative mt-20 lg:text-7xl ${capitalizeTitleOnHome ? "uppercase" : ""}`}>
-          OpenLineage
-        </h1>
+      <div className="animated-wall">
+        <UseAnimationFrame />
       </div>
-      <p className="text-lg lg:text-xl text-color-3 uppercase pt-4 lg:pt-0">
-        An open framework for data lineage collection and analysis
-      </p>
-      <p className="text-base text-color-4 boxed lg:text-lg mt-4">
-        Data lineage is the foundation for a new generation of powerful, context-aware data tools and best practices.
-        OpenLineage enables consistent collection of lineage metadata, creating a deeper understanding of how data is
-        produced and used.
-      </p>
-      <span className="py-5">
-        <Button title="Quickstart" to="/getting-started" type="link" iconRight={<ArrowRight />} />
-        <Button
-          title="Slack"
-          to="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
-          type="link"
-          iconRight={<Slack />}
-        />
-        <Button title="GitHub" to="https://github.com/OpenLineage" type="link" iconRight={<GitHub />} />
-      </span>
+      <div className="wall-text">
+        <div className="title">
+          <h1 className={`text-6xl relative mt-20 lg:text-7xl ${capitalizeTitleOnHome ? "uppercase" : ""}`}>
+            OpenLineage
+          </h1>
+        </div>
+        <p className="text-lg lg:text-xl text-color-3 uppercase pt-4 lg:pt-0">
+          An open framework for data lineage collection and analysis
+        </p>
+        <p id="hero-descrip" className="text-base text-color-4 boxed lg:text-lg mt-4">
+          Data lineage is the foundation for a new generation of powerful, context-aware data tools and best practices.
+          OpenLineage enables consistent collection of lineage metadata, creating a deeper understanding of how data is
+          produced and used.
+        </p>
+        <span className="py-5">
+          <Button title="Quickstart" to="/getting-started" type="link" iconRight={<ArrowRight />} />
+          <Button
+            title="Slack"
+            to="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
+            type="link"
+            iconRight={<Slack />}
+          />
+          <Button title="GitHub" to="https://github.com/OpenLineage" type="link" iconRight={<GitHub />} />
+        </span>
+      </div>
     </React.Fragment>
   );
 
@@ -102,7 +121,7 @@ const Wall = ({ twoColumnWall = false, capitalizeTitleOnHome = false }) => {
   }
 
   return (
-    <div className="wall flex flex-col justify-center items-center text-center mb-12" {...spanAttrs} ref={wall}>
+    <div className="wall flex flex-col justify-center items-center text-center mb-12" ref={wall}>
       {innerComponents}
     </div>
   );

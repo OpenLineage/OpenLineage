@@ -61,6 +61,27 @@
   code {
     background-color: #333333;
   }
+  .back {
+    background-color: #000;
+  }
+  .left {
+    background-color: #000;
+  }
+  .top {
+    background-color: #000;
+  }
+  .bottom {
+    background-color: #000;
+  }
+  .text-base text-color-4 boxed lg:text-lg mt-4 {
+    color: #fff;
+  }
+  .wall-text > .title > h1 {
+    color: #fff;
+  }
+  #hero-descrip {
+    color: #fff;
+  }
 }
 
 body {
@@ -68,6 +89,64 @@ body {
   font-size: 18px;
   background-color: #fff;
   width: 100%;
+}
+
+.animated-wall {
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.container {
+  perspective: 25px;
+  width: 100%;
+  height: 600px;
+  overflow: hidden;
+}
+
+.cube {
+  width: 100%;
+  height: 400px;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.side {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgb(28, 30, 33);
+  opacity: 0.5;
+}
+
+.front {
+  transform: rotateY(0deg) translateZ(100px);
+  background-color: rgb(242, 101, 34);
+}
+.right {
+  transform: rotateY(90deg) translateZ(100px);
+  background-color: rgb(116, 164, 188);
+}
+.back {
+  transform: rotateY(180deg) translateZ(100px);
+  background-color: #fff;
+}
+.left {
+  transform: rotateY(-90deg) translateZ(100px);
+  background-color: #fff;
+}
+.top {
+  transform: rotateX(90deg) translateZ(100px);
+  background-color: #fff;
+}
+.bottom {
+  transform: rotateX(-90deg) translateZ(100px);
+  background-color: #fff;
+}
+
+.wall-text {
+  z-index: 10;
+  position: absolute;
 }
 
 p {
