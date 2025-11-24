@@ -8,17 +8,28 @@ import { useAnimationFrame } from "motion/react";
 
 const UseAnimationFrame = () => {
   const ref = useRef<HTMLDivElement>(null);
+  const [animationStatus, setAnimationStatus] = useState({
+    execute: true,
+  });
+
+  const handleClick = () => {
+    setAnimationStatus({ execute: false });
+  };
 
   useAnimationFrame((t) => {
-    if (!ref.current) return;
-
-    const rotate = Math.sin(t / 10000) * 200;
-    const y = (1 + Math.sin(t / 1000)) * -50;
-    ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg)`;
+    if (ref.current && animationStatus.execute) {
+      const rotate = Math.sin(t / 10000) * 200;
+      ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg)`;
+    }
   });
 
   return (
     <div className="container">
+      <div className="animation-switch">
+        <button className="animationBtn" onClick={handleClick}>
+          X
+        </button>
+      </div>
       <div className="cube" ref={ref}>
         <div className="side front" />
         <div className="side left" />

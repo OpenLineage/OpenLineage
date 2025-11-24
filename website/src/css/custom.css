@@ -82,6 +82,9 @@
   #hero-descrip {
     color: #fff;
   }
+  .animationBtn {
+    color: #fff;
+  }
 }
 
 body {
@@ -91,8 +94,12 @@ body {
   width: 100%;
 }
 
-#__docusaurus_skipToContent_fallback > div > div.wall {
-  width: 100% !important;
+.animation-switch {
+  z-index: 100;
+  position: absolute;
+  margin-top: 10px;
+  margin-left: 97%;
+  color: #000;
 }
 
 .animated-wall {
