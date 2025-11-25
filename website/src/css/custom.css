@@ -62,13 +62,13 @@
     background-color: #333333;
   }
   .back {
-    background-color: #000;
+    background-color: #74a4bc;
   }
   .left {
-    background-color: #000;
+    background-color: #6d2807;
   }
   .top {
-    background-color: #000;
+    background-color: #491a04;
   }
   .bottom {
     background-color: #000;
@@ -82,8 +82,32 @@
   #hero-descrip {
     color: #fff;
   }
-  .animationBtn {
+  .animation-switch {
     color: #fff;
+  }
+}
+
+@media (min-width: 997px) {
+  .animated-wall > .container {
+    max-width: 1199px;
+  }
+}
+
+@media (min-width: 1199px) {
+  .animated-wall > .container {
+    max-width: 1279px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .animated-wall > .container {
+    max-width: 2599px;
+  }
+}
+
+@media (min-width: 2600px) {
+  .animated-wall > .container {
+    max-width: 2600px;
   }
 }
 
@@ -102,19 +126,21 @@ body {
   color: #000;
 }
 
+.animationBtn {
+  color: #000;
+}
+
 .animated-wall {
   z-index: 0;
   width: 100%;
   height: 100%;
+  justify-items: center;
 }
 
 .animated-wall > .container {
   max-width: 2545px;
-}
-
-.container {
   perspective: 25px;
-  width: 100%;
+  width: 99%;
   height: 600px;
   overflow: hidden;
 }
@@ -144,15 +170,15 @@ body {
 }
 .back {
   transform: rotateY(180deg) translateZ(100px);
-  background-color: #fff;
+  background-color: #74a4bc;
 }
 .left {
   transform: rotateY(-90deg) translateZ(100px);
-  background-color: #fff;
+  background-color: #6d2807;
 }
 .top {
   transform: rotateX(90deg) translateZ(100px);
-  background-color: #fff;
+  background-color: #491a04;
 }
 .bottom {
   transform: rotateX(-90deg) translateZ(100px);

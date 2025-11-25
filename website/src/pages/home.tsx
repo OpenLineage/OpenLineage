@@ -26,9 +26,7 @@ const UseAnimationFrame = () => {
   return (
     <div className="container">
       <div className="animation-switch">
-        <button className="animationBtn" onClick={handleClick}>
-          X
-        </button>
+        <button onClick={handleClick}>X</button>
       </div>
       <div className="cube" ref={ref}>
         <div className="side front" />
