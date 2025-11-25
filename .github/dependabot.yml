@@ -27,6 +27,8 @@ updates:
     # supported intervals: daily, weekly, monthly
       interval: "weekly"
       day: "sunday"
+    cooldown:
+      default-days: 7
     labels:
       - "dependabot"
     ignore:
@@ -43,6 +45,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
+    cooldown:
+      default-days: 7
     labels:
       - "dependabot"
     ignore:
@@ -57,6 +61,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
+    cooldown:
+      default-days: 7
     labels:
       - "dependabot"
     ignore:
@@ -76,6 +82,8 @@ updates:
 
   - package-ecosystem: "pip"
     directory: "client/python"
+    cooldown:
+      default-days: 7
     schedule:
       interval: "weekly"
       day: "sunday"
@@ -91,6 +99,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
+    cooldown:
+      default-days: 7
     labels:
       - "dependabot"
     ignore:
@@ -106,6 +116,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
+    cooldown:
+      default-days: 7
     labels:
       - "dependabot"
     ignore:
@@ -120,6 +132,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
+    cooldown:
+      default-days: 7
     labels:
       - "dependabot"
     groups:
@@ -131,6 +145,8 @@ updates:
     directory: "integration/sql"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     labels:
       - "dependabot"
     groups:
