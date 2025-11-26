@@ -1,3 +1,12 @@
+# Status: Package is no longer maintained !
+
+For Airflow 2.7+ use the `apache-airflow-providers-openlineage` 
+[package](https://airflow.apache.org/docs/apache-airflow-providers-openlineage).
+
+This package can still be used with Airflow versions prior to 2.7, but it is no longer maintained. 
+It will not receive ANY bug fixes, security updates or new features.
+
+
 # OpenLineage Airflow Integration
 
 A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openlineage.io) for automatic metadata collection.
