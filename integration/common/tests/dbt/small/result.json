@@ -110,6 +110,13 @@
           },
           "documentation": {
             "description": "A starter dbt model"
+          },
+          "ownership": {
+            "owners": [
+              {
+                "name": "data_team"
+              }
+            ]
           }
         }
       }
