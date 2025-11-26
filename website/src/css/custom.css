@@ -76,7 +76,7 @@
   .text-base text-color-4 boxed lg:text-lg mt-4 {
     color: #fff;
   }
-  .wall-text > .title > h1 {
+  .text-6xl.relative.mt-20.lg:text-7l {
     color: #fff;
   }
   #hero-descrip {
@@ -283,7 +283,7 @@ code .token-line {
   @apply w-full;
 }
 
-.title h1 {
+.text-6xl.relative.mt-20.lg:text-7l {
   color: #000;
 }
 
