@@ -198,7 +198,7 @@ repos:
         files: ^spec/
         exclude: ".*tests.*"
         entry: .pre_commit/run-spec-snapshot.sh
-        pass_filenames: false
+        pass_filenames: true
       - id: pmd-client-java
         name: pmd-client-java
         description: "Runs the PMD static code analyzer - Java client."

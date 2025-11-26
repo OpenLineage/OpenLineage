@@ -8,18 +8,34 @@
 # Initialize CHANGE_DONE to 0 (no changes detected by default)
 CHANGE_DONE=0
 
+# If arguments are passed, use them; otherwise, use git diff
+if [ "$#" -gt 0 ]; then
+  FILES=("$@")
+else
+  FILES=($(git diff --name-only origin/main -- 'spec/OpenLineage.json' 'spec/facets/*.json' 'spec/OpenLineage.yml'))
+fi
+
 # Use process substitution to avoid subshell problem
-while read -r LINE; do
+for LINE in "${FILES[@]}"; do
   # Ignore registry files
   if [[ $LINE =~ registry.json ]]; then
     continue
   fi
 
-  # Extract target file name from $id field in spec files using jq
-  URL=$(jq -r '.["$id"]' < "$LINE")
+  # Only process .json files or OpenLineage.yml
+  if [[ ! $LINE =~ \.json$ ]] && [[ $LINE != "spec/OpenLineage.yml" ]]; then
+    continue
+  fi
 
-  # Extract target location in website repo
-  LOC="website/static/${URL#*//*/}"
+  if [[ $LINE == "spec/OpenLineage.yml" ]]; then
+    LOC="website/static/spec/OpenLineage.yml"
+  else
+    # Extract target file name from $id field in spec files using jq
+    URL=$(jq -r '.["$id"]' < "$LINE")
+
+    # Extract target location in website repo
+    LOC="website/static/${URL#*//*/}"
+  fi
   LOC_DIR="${LOC%/*}"
 
   # Create dir if necessary, and copy files
@@ -42,7 +58,7 @@ while read -r LINE; do
     echo "Change detected in $LINE: $LOC is untracked"
     CHANGE_DONE=1  # Mark as change detected
   fi
-done < <(git diff --name-only origin/main -- 'spec/OpenLineage.json' 'spec/facets/*.json' 'spec/OpenLineage.yml')
+done
 
 # Exit with the value of CHANGE_DONE (0 if no changes, 1 if there were changes)
 exit $CHANGE_DONE
