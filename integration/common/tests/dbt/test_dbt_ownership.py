@@ -7,9 +7,11 @@ from unittest.mock import MagicMock
 # Mock openlineage_sql before importing processor
 sys.modules["openlineage_sql"] = MagicMock()
 
-import unittest
-from openlineage.client.facet_v2 import ownership_dataset
-from openlineage.common.provider.dbt.processor import DbtArtifactProcessor, ModelNode
+import unittest  # noqa: E402
+
+from openlineage.client.facet_v2 import ownership_dataset  # noqa: E402
+from openlineage.common.provider.dbt.processor import DbtArtifactProcessor, ModelNode  # noqa: E402
+
 
 class TestDbtOwnership(unittest.TestCase):
     def setUp(self):
@@ -31,9 +33,9 @@ class TestDbtOwnership(unittest.TestCase):
                 "meta": {"owner": "data_team"},
             },
         )
-        
+
         dataset = self.processor.node_to_output_dataset(node, has_facets=True)
-        
+
         self.assertIn("ownership", dataset.facets)
         ownership_facet = dataset.facets["ownership"]
         self.assertIsInstance(ownership_facet, ownership_dataset.OwnershipDatasetFacet)
@@ -53,10 +55,11 @@ class TestDbtOwnership(unittest.TestCase):
                 "meta": {},
             },
         )
-        
+
         dataset = self.processor.node_to_output_dataset(node, has_facets=True)
-        
+
         self.assertNotIn("ownership", dataset.facets)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
