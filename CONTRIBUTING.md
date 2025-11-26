@@ -32,12 +32,15 @@ agrees with the [Developer Certificate of Origin (DCO)](why-the-dco.md).
 To ensure your pull request is accepted, follow these guidelines:
 
 * All changes should be accompanied by tests
+* Relevant documentation should be updated.
 * Do your best to have a [well-formed commit message](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html) for your change
-  * Do your best to have a [well-formed](https://frontside.com/blog/2020-04-15-7-reasons-for-good-pull-request-descriptions) pull request description for your change
+* Do your best to have a [well-formed pull request description](https://frontside.com/blog/2020-04-15-7-reasons-for-good-pull-request-descriptions) for your change
 * [Keep diffs small](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and self-contained
-* If your change fixes a bug, please [link the issue](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
+* If your change relates to an issue, please [link it](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
 * Your pull request title should be of the form `component: name`, where `component` is the part of openlineage repo that your PR changes. For example: `flink: add Iceberg source visitor`
 * Review tags added by a bot after PR creation, they should indicate parts of the repository that your PR refers to
+* Changes to the core OpenLineage model or facets require prior discussion and must be versioned according to [SchemaVer](https://docs.snowplowanalytics.com/docs/pipeline-components-and-applications/iglu/common-architecture/schemaver)
+* License [header](https://github.com/OpenLineage/OpenLineage/tree/main/.github/header_templates.md) must be present in all files.
 
 ### Branching
 
