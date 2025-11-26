@@ -21,8 +21,9 @@ import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClientSettings;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.Struct;
+import datalineage.shaded.com.google.common.util.concurrent.MoreExecutors;
+import datalineage.shaded.org.threeten.bp.Duration;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
@@ -159,6 +160,9 @@ public class GcpLineageTransport extends Transport {
         GcpLineageTransportConfig config) throws IOException {
       AsyncLineageProducerClientSettings.Builder builder =
           AsyncLineageProducerClientSettings.newBuilder();
+      if (config.getGracefulShutdownDuration() != null) {
+        builder.setGracefulShutdownDuration(Duration.parse(config.getGracefulShutdownDuration()));
+      }
       return createSettings(config, builder).build();
     }
 

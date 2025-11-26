@@ -34,6 +34,8 @@ public class GcpLineageTransportConfig
 
   @Getter @Setter private @Nullable Mode mode;
 
+  @Getter @Setter private @Nullable String gracefulShutdownDuration;
+
   @Override
   public GcpLineageTransportConfig mergeWithNonNull(GcpLineageTransportConfig other) {
     return new GcpLineageTransportConfig(
@@ -41,6 +43,7 @@ public class GcpLineageTransportConfig
         mergePropertyWith(projectId, other.projectId),
         mergePropertyWith(credentialsFile, other.credentialsFile),
         mergePropertyWith(location, other.location),
-        mergePropertyWith(mode, other.mode));
+        mergePropertyWith(mode, other.mode),
+        mergePropertyWith(gracefulShutdownDuration, other.gracefulShutdownDuration));
   }
 }
