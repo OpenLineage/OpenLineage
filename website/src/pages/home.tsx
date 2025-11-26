@@ -88,7 +88,7 @@ const Wall = ({ twoColumnWall = false, capitalizeTitleOnHome = false }) => {
             OpenLineage
           </h1>
         </div>
-        <p className="text-lg lg:text-xl text-color-3 uppercase pt-4 lg:pt-0">
+        <p id="hero-short-descrip" className="text-lg lg:text-xl text-color-3 uppercase pt-4 lg:pt-0">
           An open framework for data lineage collection and analysis
         </p>
         <p id="hero-descrip" className="text-base text-color-4 boxed lg:text-lg mt-4">
