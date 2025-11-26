@@ -18,8 +18,9 @@ const UseAnimationFrame = () => {
 
   useAnimationFrame((t) => {
     if (ref.current && animationStatus.execute) {
-      const rotate = Math.sin(t / 10000) * 10;
-      ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg)`;
+      const rotate = Math.sin(t / 10000) * 100;
+      // ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg)`;
+      ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg) rotateZ(${rotate * 0.5}deg)`;
     }
   });
 
