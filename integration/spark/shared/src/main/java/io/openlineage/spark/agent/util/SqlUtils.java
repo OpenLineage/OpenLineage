@@ -52,28 +52,6 @@ public class SqlUtils {
         .orElse(Collections.emptyList());
   }
 
-  public static <D extends OpenLineage.Dataset> List<D> getDatasets(
-      DatasetFactory<D> datasetFactory,
-      String sql,
-      String dialect,
-      String namespace,
-      String database,
-      String databaseSchema,
-      StructType tableSchema) {
-    Optional<SqlMeta> sqlMeta = OpenLineageSql.parse(Collections.singletonList(sql), dialect);
-    if (!sqlMeta.isPresent()) {
-      return Collections.emptyList();
-    }
-
-    return createDatasets(
-        datasetFactory,
-        sqlMeta.get(),
-        tableSchema,
-        dbtm ->
-            new DatasetIdentifier(
-                getName(database, databaseSchema, dbtm.qualifiedName()), namespace));
-  }
-
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private static String getName(String defaultDatabase, String defaultSchema, String parsedName) {
     // database and schema from parser have priority over default ones

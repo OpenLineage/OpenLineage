@@ -9,6 +9,7 @@ import static io.openlineage.client.utils.SnowflakeUtils.parseAccountIdentifier;
 import static io.openlineage.client.utils.SnowflakeUtils.stripQuotes;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 import static io.openlineage.spark.agent.vendor.snowflake.Constants.SNOWFLAKE_PREFIX;
+import static io.openlineage.spark.agent.vendor.snowflake.SnowflakeTable.getQualifiedName;
 import static java.util.Arrays.stream;
 
 import io.openlineage.client.utils.DatasetIdentifier;
@@ -107,17 +108,9 @@ class SnowflakeColumnLineageVisitorDelegate {
   private boolean matchesDatasetName(DbTableMeta table, DatasetIdentifier di) {
     return context
         .getNamespaceResolver()
-        .resolve(new DatasetIdentifier(buildQualifiedName(table), namespace))
+        .resolve(new DatasetIdentifier(getQualifiedName(database, schema, table), namespace))
         .getName()
         .equals(di.getName());
-  }
-
-  private String buildQualifiedName(DbTableMeta table) {
-    String tableDatabase = table.database() != null ? table.database() : database;
-    String tableSchema = table.schema() != null ? table.schema() : schema;
-    return String.format(
-        "%s.%s.%s",
-        stripQuotes(tableDatabase), stripQuotes(tableSchema), stripQuotes(table.name()));
   }
 
   private List<DatasetIdentifier> extractDatasetIdentifiers(SqlMeta sqlMeta) {
@@ -130,7 +123,9 @@ class SnowflakeColumnLineageVisitorDelegate {
             table ->
                 context
                     .getNamespaceResolver()
-                    .resolve(new DatasetIdentifier(buildQualifiedName(table), namespace)))
+                    .resolve(
+                        new DatasetIdentifier(
+                            getQualifiedName(database, schema, table), namespace)))
         .collect(Collectors.toList());
   }
 
