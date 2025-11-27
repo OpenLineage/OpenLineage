@@ -14,6 +14,7 @@ import static java.util.Arrays.stream;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.util.SqlCollector;
 import io.openlineage.sql.ColumnLineage;
 import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
@@ -22,15 +23,12 @@ import io.openlineage.sql.SqlMeta;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import net.snowflake.spark.snowflake.Parameters.MergedParameters;
 import net.snowflake.spark.snowflake.SnowflakeRelation;
 import net.snowflake.spark.snowflake.TableName;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
-import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 
 @Slf4j
 class SnowflakeColumnLineageVisitorDelegate {
@@ -39,15 +37,13 @@ class SnowflakeColumnLineageVisitorDelegate {
   private final String database;
   private final String schema;
   private final ColumnLevelLineageContext context;
-  private final List<DatasetIdentifier> datasetIdentifiers;
-  private final List<Attribute> attributes;
+  private final SqlCollector sqlCollector;
 
   public SnowflakeColumnLineageVisitorDelegate(
       ColumnLevelLineageContext context,
       SnowflakeRelation snowflakeRelation,
       List<Attribute> attributes) {
     this.context = context;
-    this.attributes = attributes;
 
     MergedParameters params = snowflakeRelation.params();
     this.database = stripQuotes(params.sfDatabase());
@@ -55,7 +51,9 @@ class SnowflakeColumnLineageVisitorDelegate {
     this.namespace = SNOWFLAKE_PREFIX + parseAccountIdentifier(params.sfFullURL());
 
     this.sqlMeta = extractQueryFromSnowflake(snowflakeRelation).orElse(null);
-    this.datasetIdentifiers = extractDatasetIdentifiers(this.sqlMeta);
+    this.sqlCollector =
+        new SqlCollector(
+            this.context, this.sqlMeta, extractDatasetIdentifiers(this.sqlMeta), attributes);
   }
 
   public boolean isDefinedAt() {
@@ -63,54 +61,13 @@ class SnowflakeColumnLineageVisitorDelegate {
   }
 
   public void collectInputs() {
-    List<ColumnLineage> columnLineages = sqlMeta.columnLineage();
-    Set<ColumnMeta> inputs =
-        columnLineages.stream().flatMap(cl -> cl.lineage().stream()).collect(Collectors.toSet());
-    columnLineages.forEach(cl -> inputs.remove(cl.descendant()));
-
-    datasetIdentifiers.forEach(
-        di ->
-            inputs.stream()
-                .filter(cm -> cm.origin().isPresent() && matchesDatasetName(cm.origin().get(), di))
-                .forEach(
-                    cm ->
-                        context
-                            .getBuilder()
-                            .addInput(context.getBuilder().getMapping(cm), di, cm.name())));
+    sqlCollector.collectInputs(
+        dbTableMeta ->
+            new DatasetIdentifier(getQualifiedName(database, schema, dbTableMeta), namespace));
   }
 
   public void collectExpressionDependencies() {
-    sqlMeta
-        .columnLineage()
-        .forEach(
-            p -> {
-              ExprId descendantId = getDescendantId(attributes, p.descendant());
-              context.getBuilder().addExternalMapping(p.descendant(), descendantId);
-              p.lineage()
-                  .forEach(
-                      e -> context.getBuilder().addExternalMapping(e, NamedExpression.newExprId()));
-              if (!p.lineage().isEmpty()) {
-                p.lineage().stream()
-                    .map(context.getBuilder()::getMapping)
-                    .forEach(eid -> context.getBuilder().addDependency(descendantId, eid));
-              }
-            });
-  }
-
-  private ExprId getDescendantId(List<Attribute> output, ColumnMeta column) {
-    return output.stream()
-        .filter(e -> e.name().equals(column.name()))
-        .map(NamedExpression::exprId)
-        .findFirst()
-        .orElseGet(NamedExpression::newExprId);
-  }
-
-  private boolean matchesDatasetName(DbTableMeta table, DatasetIdentifier di) {
-    return context
-        .getNamespaceResolver()
-        .resolve(new DatasetIdentifier(getQualifiedName(database, schema, table), namespace))
-        .getName()
-        .equals(di.getName());
+    sqlCollector.collectExpressionDependencies();
   }
 
   private List<DatasetIdentifier> extractDatasetIdentifiers(SqlMeta sqlMeta) {
