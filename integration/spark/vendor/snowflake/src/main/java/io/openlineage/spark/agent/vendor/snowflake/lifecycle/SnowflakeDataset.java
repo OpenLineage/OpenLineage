@@ -6,11 +6,16 @@
 package io.openlineage.spark.agent.vendor.snowflake.lifecycle;
 
 import static io.openlineage.client.utils.SnowflakeUtils.stripQuotes;
+import static io.openlineage.spark.agent.vendor.snowflake.SnowflakeTable.getQualifiedName;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.SnowflakeUtils;
 import io.openlineage.spark.agent.util.SqlUtils;
+import io.openlineage.spark.agent.vendor.snowflake.Constants;
 import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.sql.OpenLineageSql;
+import io.openlineage.sql.SqlMeta;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -21,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SnowflakeDataset {
-  public static final String SNOWFLAKE_PREFIX = "snowflake://";
 
   private static final Logger logger = LoggerFactory.getLogger(SnowflakeDataset.class);
 
@@ -35,8 +39,8 @@ public class SnowflakeDataset {
       StructType schema) {
 
     final String namespace =
-        String.format("%s%s", SNOWFLAKE_PREFIX, SnowflakeUtils.parseAccountIdentifier(sfFullURL));
-    final String tableName;
+        String.format(
+            "%s%s", Constants.SNOWFLAKE_PREFIX, SnowflakeUtils.parseAccountIdentifier(sfFullURL));
     // https://docs.snowflake.com/en/user-guide/spark-connector-use#moving-data-from-snowflake-to-spark
     // > Specify one of the following options for the table data to be read:
     // >    - `dbtable`: The name of the table to be read. All columns and records are retrieved
@@ -47,19 +51,20 @@ public class SnowflakeDataset {
     // An improvement could be put the query string in the `DatasetFacets`
     StructType normalizedSchema = stripQuotesFromSchema(schema);
     if (dbtable.isPresent()) {
-      tableName = dbtable.get();
-      String name =
-          String.format(
-              "%s.%s.%s", stripQuotes(sfDatabase), stripQuotes(sfSchema), stripQuotes(tableName));
+      String name = getQualifiedName(sfDatabase, sfSchema, dbtable.get());
       return Collections.singletonList(factory.getDataset(name, namespace, normalizedSchema));
     } else if (query.isPresent()) {
-      return SqlUtils.getDatasets(
+      Optional<SqlMeta> sqlMeta =
+          OpenLineageSql.parse(Collections.singletonList(query.get()), "snowflake");
+      if (!sqlMeta.isPresent()) {
+        return Collections.emptyList();
+      }
+
+      return SqlUtils.createDatasets(
           factory,
-          query.get(),
-          "snowflake",
-          namespace,
-          stripQuotes(sfDatabase),
-          stripQuotes(sfSchema));
+          sqlMeta.get(),
+          normalizedSchema,
+          dbtm -> new DatasetIdentifier(getQualifiedName(sfDatabase, sfSchema, dbtm), namespace));
     } else {
       logger.warn(
           "Unable to discover Snowflake table property - neither \"dbtable\" nor \"query\" option present");

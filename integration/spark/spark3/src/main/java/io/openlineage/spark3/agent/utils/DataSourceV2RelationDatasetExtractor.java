@@ -5,7 +5,7 @@
 
 package io.openlineage.spark3.agent.utils;
 
-import static io.openlineage.spark.agent.util.JdbcSparkUtils.generateSchemaFromSqlMeta;
+import static io.openlineage.spark.agent.util.SqlUtils.generateSchemaFromSqlMeta;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
