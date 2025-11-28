@@ -165,6 +165,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   public static class FilterConfig {
     private final List<String> allowedSparkNodes = new ArrayList<>();
     private final List<String> deniedSparkNodes = new ArrayList<>();
+    private final Boolean rddEventsDisabled = false;
   }
 
   @Override
