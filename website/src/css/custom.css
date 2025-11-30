@@ -82,6 +82,9 @@
   .wall-text #hero-descrip {
     color: #fff;
   }
+  .wall-text #hero-short-descrip {
+    color: #fff;
+  }
   .animation-switch {
     color: #fff;
   }
@@ -147,7 +150,7 @@ body {
 
 .cube {
   width: 100%;
-  height: 400px;
+  height: 800px;
   position: relative;
   transform-style: preserve-3d;
 }
@@ -177,8 +180,8 @@ body {
   background-color: rgb(116, 164, 188);
 }
 .top {
-  transform: rotateX(90deg) translateZ(100px);
-  background-color: #fff;
+  transform: rotateX(-90deg) translateZ(100px);
+  background-color: #74a4bc;
 }
 .bottom {
   transform: rotateX(-90deg) translateZ(100px);
@@ -197,6 +200,7 @@ body {
 
 .wall-text #hero-short-descrip {
   font-weight: bold;
+  color: #111;
 }
 
 p {

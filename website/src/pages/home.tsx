@@ -19,14 +19,13 @@ const UseAnimationFrame = () => {
   useAnimationFrame((t) => {
     if (ref.current && animationStatus.execute) {
       const rotate = Math.sin(t / 10000) * 100;
-      // ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg)`;
       ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg) rotateZ(${rotate * 0.5}deg)`;
     }
   });
 
   return (
     <div className="container">
-      <div className="animation-switch">
+      <div className="animation-switch" style={{ display: !animationStatus.execute ? "none" : "inherit" }}>
         <button onClick={handleClick}>X</button>
       </div>
       <div className="cube" ref={ref}>
