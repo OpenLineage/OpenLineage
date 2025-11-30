@@ -61,6 +61,57 @@
   code {
     background-color: #333333;
   }
+  .back {
+    background-color: #74a4bc;
+  }
+  .left {
+    background-color: #6d2807;
+  }
+  .top {
+    background-color: #491a04;
+  }
+  .bottom {
+    background-color: #000;
+  }
+  .text-base text-color-4 boxed lg:text-lg mt-4 {
+    color: #fff;
+  }
+  .text-6xl.relative.mt-20.lg:text-7l {
+    color: #fff;
+  }
+  .wall-text #hero-descrip {
+    color: #fff;
+  }
+  .wall-text #hero-short-descrip {
+    color: #fff;
+  }
+  .animation-switch {
+    color: #fff;
+  }
+}
+
+@media (min-width: 997px) {
+  .animated-wall > .container {
+    max-width: 1199px;
+  }
+}
+
+@media (min-width: 1199px) {
+  .animated-wall > .container {
+    max-width: 1279px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .animated-wall > .container {
+    max-width: 2599px;
+  }
+}
+
+@media (min-width: 2600px) {
+  .animated-wall > .container {
+    max-width: 2600px;
+  }
 }
 
 body {
@@ -68,6 +119,88 @@ body {
   font-size: 18px;
   background-color: #fff;
   width: 100%;
+}
+
+.animation-switch {
+  z-index: 100;
+  position: absolute;
+  margin-top: 10px;
+  margin-left: 97%;
+  color: #000;
+}
+
+.animationBtn {
+  color: #000;
+}
+
+.animated-wall {
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  justify-items: center;
+}
+
+.animated-wall > .container {
+  max-width: 2545px;
+  perspective: 25px;
+  width: 99%;
+  height: 600px;
+  overflow: hidden;
+}
+
+.cube {
+  width: 100%;
+  height: 800px;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.side {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgb(28, 30, 33);
+  opacity: 0.5;
+}
+
+.front {
+  transform: rotateY(0deg) translateZ(100px);
+  background-color: rgb(242, 101, 34);
+}
+.right {
+  transform: rotateY(90deg) translateZ(100px);
+  background-color: rgb(242, 101, 34);
+}
+.back {
+  transform: rotateY(180deg) translateZ(100px);
+  background-color: rgb(116, 164, 188);
+}
+.left {
+  transform: rotateY(-90deg) translateZ(100px);
+  background-color: rgb(116, 164, 188);
+}
+.top {
+  transform: rotateX(-90deg) translateZ(100px);
+  background-color: #74a4bc;
+}
+.bottom {
+  transform: rotateX(-90deg) translateZ(100px);
+  background-color: #fff;
+}
+
+.wall-text {
+  z-index: 10;
+  position: absolute;
+}
+
+.wall-text #hero-descrip {
+  color: #000;
+  font-weight: bold;
+}
+
+.wall-text #hero-short-descrip {
+  font-weight: bold;
+  color: #111;
 }
 
 p {
@@ -163,8 +296,8 @@ code .token-line {
   @apply w-full;
 }
 
-.title h1 {
-  @apply text-color-1;
+.text-6xl.relative.mt-20.lg:text-7l {
+  color: #000;
 }
 
 .btn {
