@@ -36,7 +36,7 @@ public class NameNormalizer {
         normalizedAccents
             .replaceAll("([a-z])([A-Z])", "$1 $2")
             .replaceAll("(?<!^)([A-Z])([a-z])", " $1$2")
-            .replaceAll("(\\d)(?=\\D)", "$1 ");
+            .replaceAll("(\\d)([A-Z])", "$1 $2");
     /*
     Now we replace non-letters with underscores and make everything lowercase.
      */

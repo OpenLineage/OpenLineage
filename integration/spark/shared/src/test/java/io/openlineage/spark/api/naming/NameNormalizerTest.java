@@ -42,7 +42,7 @@ class NameNormalizerTest {
         NameNormalizer.normalize("foreignLetters ąśé•¶€ are supported"));
     assertEquals("but_to_a_degree", NameNormalizer.normalize("but to a degree 这是一个例子"));
     assertEquals(
-        "323_digits123_should45_be_also34_fine89",
+        "323digits123_should45_be_also34_fine89",
         NameNormalizer.normalize("323digits123Should45BE_ALSO34 fine89"));
 
     assertEquals("a_test_application", NameNormalizer.normalize("A Test Application"));
@@ -52,5 +52,9 @@ class NameNormalizerTest {
     assertEquals(
         "test_with_a_single_letter_between_words",
         NameNormalizer.normalize("Test With a Single LetterBetweenWords"));
+
+    assertEquals(
+        "c9acd38e_71d4_4a61_89d5_fd4ff842bf79_0",
+        NameNormalizer.normalize("c9acd38e_71d4_4a61_89d5_fd4ff842bf79_0"));
   }
 }
