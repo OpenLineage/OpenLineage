@@ -9,10 +9,12 @@ import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
 import io.openlineage.spark.agent.util.GravitinoUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 
+@Slf4j
 public class GravitinoIcebergHandler extends IcebergHandler {
 
   private GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.getInstance();
@@ -27,8 +29,24 @@ public class GravitinoIcebergHandler extends IcebergHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
+    String originalCatalogName = tableCatalog.name();
     String metalake = provider.getMetalakeName();
-    String catalogName = provider.getGravitinoCatalog(tableCatalog.name());
+    String catalogName = provider.getGravitinoCatalog(originalCatalogName);
+    
+    if (!originalCatalogName.equals(catalogName)) {
+      log.debug(
+          "Iceberg catalog name mapped: {} -> {} for identifier {}",
+          originalCatalogName,
+          catalogName,
+          identifier);
+    } else {
+      log.debug(
+          "Resolving Iceberg dataset identifier for catalog={}, identifier={}, metalake={}",
+          catalogName,
+          identifier,
+          metalake);
+    }
+    
     return GravitinoUtils.getGravitinoDatasetIdentifier(
         metalake, catalogName, tableCatalog.defaultNamespace(), identifier);
   }
