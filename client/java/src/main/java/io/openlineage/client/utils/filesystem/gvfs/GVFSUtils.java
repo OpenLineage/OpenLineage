@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 
 public class GVFSUtils {
 
+  private static final String PATH_SEPARATOR = "/";
+  private static final int MIN_GVFS_PATH_PARTS = 3;
+
   public static boolean isGVFS(URI uri) {
     return GVFSFilesystemDatasetExtractor.SCHEME.equalsIgnoreCase(uri.getScheme());
   }
@@ -61,32 +64,32 @@ public class GVFSUtils {
 
   public static String getGVFSIdentifierName(URI uri) {
     String path = uri.getPath();
-    if (path.startsWith("/")) {
+    if (path.startsWith(PATH_SEPARATOR)) {
       path = path.substring(1);
     }
-    String[] parts = path.split("/");
-    if (parts.length < 3) {
+    String[] parts = path.split(PATH_SEPARATOR);
+    if (parts.length < MIN_GVFS_PATH_PARTS) {
       throw new IllegalArgumentException("Invalid GVFS path," + path);
     }
-    return Arrays.stream(parts).limit(3).collect(Collectors.joining("."));
+    return Arrays.stream(parts).limit(MIN_GVFS_PATH_PARTS).collect(Collectors.joining("."));
   }
 
   public static String getGVFSLocation(URI uri) {
     String path = uri.getPath();
-    if (path.startsWith("/")) {
+    if (path.startsWith(PATH_SEPARATOR)) {
       path = path.substring(1);
     }
-    String[] parts = path.split("/");
-    if (parts.length < 3) {
+    String[] parts = path.split(PATH_SEPARATOR);
+    if (parts.length < MIN_GVFS_PATH_PARTS) {
       throw new IllegalArgumentException("Invalid GVFS path," + path);
-    } else if (parts.length == 3) {
-      return "/";
+    } else if (parts.length == MIN_GVFS_PATH_PARTS) {
+      return PATH_SEPARATOR;
     }
 
     String end = "";
-    if (path.endsWith("/")) {
-      end = "/";
+    if (path.endsWith(PATH_SEPARATOR)) {
+      end = PATH_SEPARATOR;
     }
-    return "/" + Arrays.stream(parts).skip(3).collect(Collectors.joining("/")) + end;
+    return PATH_SEPARATOR + Arrays.stream(parts).skip(MIN_GVFS_PATH_PARTS).collect(Collectors.joining(PATH_SEPARATOR)) + end;
   }
 }

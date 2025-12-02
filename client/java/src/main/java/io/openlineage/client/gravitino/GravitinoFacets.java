@@ -54,11 +54,17 @@ public class GravitinoFacets {
     @JsonCreator
     private LocationDatasetFacet(
         @JsonProperty("_producer") URI _producer, @JsonProperty("location") String location) {
-      this._producer = _producer;
-      this._schemaURL =
+      this(
+          _producer,
           URI.create(
-              "https://raw.githubusercontent.com/datastrato/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet");
-      this._deleted = null;
+              "https://raw.githubusercontent.com/datastrato/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet"),
+          location);
+    }
+
+    private LocationDatasetFacet(URI _producer, URI _schemaURL, String location) {
+      this._producer = _producer;
+      this._schemaURL = _schemaURL;
+      this._deleted = Boolean.FALSE;
       this.location = location;
       this.additionalProperties = new LinkedHashMap<>();
     }
