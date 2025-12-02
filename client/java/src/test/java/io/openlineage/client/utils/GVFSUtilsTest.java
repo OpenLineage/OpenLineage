@@ -6,7 +6,7 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class GVFSUtilsTest {
+class GVFSUtilsTest {
 
   @Test
   @SneakyThrows
