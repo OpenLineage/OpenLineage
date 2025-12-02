@@ -11,18 +11,14 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
-import io.openlineage.sql.ColumnLineage;
+import io.openlineage.spark.agent.util.SqlCollector;
 import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
 import io.openlineage.sql.SqlMeta;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
-import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 
@@ -35,6 +31,7 @@ public class JdbcColumnLineageVisitorDelegate {
   private final ColumnLevelLineageContext context;
   private final List<DatasetIdentifier> datasetIdentifiers;
   private final List<Attribute> attributes;
+  private final SqlCollector sqlCollector;
 
   public JdbcColumnLineageVisitorDelegate(
       ColumnLevelLineageContext context, JDBCRelation relation, List<Attribute> attributes) {
@@ -44,6 +41,8 @@ public class JdbcColumnLineageVisitorDelegate {
     sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation).orElse(null);
     jdbcOptions = relation.jdbcOptions();
     datasetIdentifiers = extractDatasetIdentifier(context, relation);
+    this.sqlCollector =
+        new SqlCollector(this.context, this.sqlMeta, datasetIdentifiers, attributes);
   }
 
   public boolean isDefinedAt() {
@@ -52,49 +51,14 @@ public class JdbcColumnLineageVisitorDelegate {
 
   public void collectInputs() {
     extractInputsFromSimpleWildcardSelect();
-    List<ColumnLineage> columnLineages = sqlMeta.columnLineage();
-    Set<ColumnMeta> inputs =
-        columnLineages.stream().flatMap(cl -> cl.lineage().stream()).collect(Collectors.toSet());
-    columnLineages.forEach(cl -> inputs.remove(cl.descendant()));
-    datasetIdentifiers.forEach(
-        di ->
-            inputs.stream()
-                .filter(
-                    cm ->
-                        cm.origin().isPresent()
-                            && context
-                                .getNamespaceResolver()
-                                .resolve(
-                                    JdbcDatasetUtils.getDatasetIdentifier(
-                                        jdbcUrl,
-                                        cm.origin().get().name(),
-                                        jdbcOptions.asConnectionProperties()))
-                                .getName()
-                                .equals(di.getName()))
-                .forEach(
-                    cm ->
-                        context
-                            .getBuilder()
-                            .addInput(context.getBuilder().getMapping(cm), di, cm.name())));
+    sqlCollector.collectInputs(
+        dbTableMeta ->
+            JdbcDatasetUtils.getDatasetIdentifier(
+                jdbcUrl, dbTableMeta.name(), jdbcOptions.asConnectionProperties()));
   }
 
   public void collectExpressionDependencies() {
-    sqlMeta
-        .columnLineage()
-        .forEach(
-            p -> {
-              ExprId descendantId = getDescendantId(attributes, p.descendant());
-              context.getBuilder().addExternalMapping(p.descendant(), descendantId);
-
-              p.lineage()
-                  .forEach(
-                      e -> context.getBuilder().addExternalMapping(e, NamedExpression.newExprId()));
-              if (!p.lineage().isEmpty()) {
-                p.lineage().stream()
-                    .map(context.getBuilder()::getMapping)
-                    .forEach(eid -> context.getBuilder().addDependency(descendantId, eid));
-              }
-            });
+    sqlCollector.collectExpressionDependencies();
   }
 
   private void extractInputsFromSimpleWildcardSelect() {
@@ -128,13 +92,5 @@ public class JdbcColumnLineageVisitorDelegate {
                           .getBuilder()
                           .addInput(context.getBuilder().getMapping(cm), di, cm.name());
                     }));
-  }
-
-  private ExprId getDescendantId(List<Attribute> output, ColumnMeta column) {
-    return output.stream()
-        .filter(e -> e.name().equals(column.name()))
-        .map(NamedExpression::exprId)
-        .findFirst()
-        .orElseGet(NamedExpression::newExprId);
   }
 }
