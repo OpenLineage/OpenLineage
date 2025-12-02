@@ -21,6 +21,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
 
   public static final String useGravitinoConfigKey = "spark.sql.gravitino.useGravitinoIdentifier";
   public static final String catalogMappingConfigKey = "spark.sql.gravitino.catalogMappings";
+  private static final int CATALOG_MAPPING_PARTS = 2;
 
   @Override
   public boolean isAvailable() {
@@ -60,7 +61,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
         .forEach(
             item -> {
               String[] kv = item.split(":");
-              if (kv.length == 2) {
+              if (kv.length == CATALOG_MAPPING_PARTS) {
                 catalogMaps.put(kv[0].trim(), kv[1].trim());
               }
             });
