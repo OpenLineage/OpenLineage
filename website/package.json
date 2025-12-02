@@ -35,6 +35,7 @@
     "docusaurus-lunr-search": "^3.5.0",
     "lodash": "^4.17.21",
     "lunr": "^2.3.9",
+    "motion": "^12.23.24",
     "postcss": "^8.4.38",
     "prism-react-renderer": "^2.4.0",
     "react": "^18.3.1",
