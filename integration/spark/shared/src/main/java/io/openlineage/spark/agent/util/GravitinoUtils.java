@@ -6,9 +6,11 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.connector.catalog.Identifier;
 
+@Slf4j
 public class GravitinoUtils {
   private static final String DEFAULT_CATALOG_NAME = "spark_catalog";
   private static final String DEFAULT_DATABASE_NAME = "default";
@@ -17,6 +19,7 @@ public class GravitinoUtils {
   public static DatasetIdentifier getGravitinoDatasetIdentifier(URI uri) {
     GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.getInstance();
     String metalake = provider.getMetalakeName();
+    log.debug("Creating Gravitino dataset identifier from URI: {} with metalake: {}", uri, metalake);
     return new DatasetIdentifier(uri.toString(), metalake);
   }
 
@@ -29,6 +32,12 @@ public class GravitinoUtils {
     if (!identifier.database().isEmpty()) {
       database = new String[] {identifier.database().get()};
     }
+    log.debug(
+        "Creating Gravitino dataset identifier from TableIdentifier: {}.{} with catalog: {}, metalake: {}",
+        database[0],
+        identifier.table(),
+        catalogName,
+        metalake);
     return getGravitinoDatasetIdentifier(metalake, catalogName, database, identifier.table());
   }
 
@@ -49,6 +58,10 @@ public class GravitinoUtils {
         Stream.concat(
                 Stream.concat(Stream.of(catalogName), Arrays.stream(nameSpace)), Stream.of(name))
             .collect(Collectors.joining("."));
+    log.debug(
+        "Generated Gravitino dataset identifier: namespace={}, name={}",
+        metalake,
+        datasetName);
     return new DatasetIdentifier(datasetName, metalake);
   }
 }
