@@ -53,11 +53,19 @@ public class GravitinoHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    return GravitinoUtils.getGravitinoDatasetIdentifier(
-        getGravitinoMetalakeName(),
-        tableCatalog.name(),
-        tableCatalog.defaultNamespace(),
-        identifier);
+    try {
+      String metalakeName = getGravitinoMetalakeName();
+      log.debug(
+          "Resolving Gravitino dataset identifier for catalog={}, identifier={}, metalake={}",
+          tableCatalog.name(),
+          identifier,
+          metalakeName);
+      return GravitinoUtils.getGravitinoDatasetIdentifier(
+          metalakeName, tableCatalog.name(), tableCatalog.defaultNamespace(), identifier);
+    } catch (IllegalStateException e) {
+      log.error("Failed to get Gravitino metalake configuration: {}", e.getMessage());
+      throw e;
+    }
   }
 
   @Override

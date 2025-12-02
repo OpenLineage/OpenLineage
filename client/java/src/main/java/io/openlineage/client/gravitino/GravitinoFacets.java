@@ -19,8 +19,7 @@ public class GravitinoFacets {
   static {
     try {
       producer =
-          new URI(
-              "https://github.com/datastrato/OpenLineage/tree/1.30.0-SNAPSHOT/integration/spark");
+          new URI("https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark");
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
@@ -57,7 +56,7 @@ public class GravitinoFacets {
       this(
           _producer,
           URI.create(
-              "https://raw.githubusercontent.com/datastrato/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet"),
+              "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet"),
           location);
     }
 

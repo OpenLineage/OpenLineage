@@ -7,7 +7,9 @@ package io.openlineage.client.utils.gravitino;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class GravitinoInfoProviderImpl {
   private GravitinoInfo gravitinoInfo;
   private List<GravitinoInfoProvider> providers = Arrays.asList(new SparkGravitinoInfoProvider());
@@ -39,7 +41,11 @@ public class GravitinoInfoProviderImpl {
   public String getMetalakeName() {
     Optional<String> metalake = getGravitinoInfo().getMetalake();
     if (!metalake.isPresent()) {
-      throw new RuntimeException("Couldn't get Gravitino metalake");
+      throw new IllegalStateException(
+          "Gravitino metalake configuration not found. "
+              + "Please set either 'spark.sql.gravitino.metalake' (for Gravitino connector) "
+              + "or 'spark.hadoop.fs.gravitino.client.metalake' (for GVFS filesystem) "
+              + "in your Spark configuration.");
     }
     return metalake.get();
   }
@@ -58,9 +64,16 @@ public class GravitinoInfoProviderImpl {
   private GravitinoInfo doGetGravitinoInfo() {
     for (GravitinoInfoProvider provider : providers) {
       if (provider.isAvailable()) {
-        return provider.getGravitinoInfo();
+        GravitinoInfo info = provider.getGravitinoInfo();
+        log.info(
+            "Loaded Gravitino configuration: metalake={}, useGravitinoIdentifier={}, catalogMappings={}",
+            info.getMetalake().orElse("not set"),
+            info.isUseGravitinoIdentifier(),
+            info.getCatalogMapping());
+        return info;
       }
     }
-    throw new IllegalStateException("Could not find Gravitino info");
+    throw new IllegalStateException(
+        "Could not find Gravitino info provider. Ensure Spark is available in the classpath.");
   }
 }

@@ -12,15 +12,33 @@ import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Provider for Gravitino configuration from Spark session. Reads Gravitino-specific configuration
+ * from Spark's runtime configuration using reflection to avoid direct Spark dependencies.
+ */
 public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
 
   private static final String SPARK_SESSION_CLASS_NAME = "org.apache.spark.sql.SparkSession";
   private static final String SPARK_RUN_CONFIG_CLASS_NAME = "org.apache.spark.sql.RuntimeConfig";
+
+  /** Configuration key for Gravitino metalake name used by GVFS filesystem */
   public static final String metalakeConfigKeyForFS = "spark.hadoop.fs.gravitino.client.metalake";
+
+  /** Configuration key for Gravitino metalake name used by Gravitino Spark connector */
   public static final String metalakeConfigKeyForConnector = "spark.sql.gravitino.metalake";
 
+  /**
+   * Configuration key to control whether to use Gravitino identifier format. Default: true when
+   * not set
+   */
   public static final String useGravitinoConfigKey = "spark.sql.gravitino.useGravitinoIdentifier";
+
+  /**
+   * Configuration key for catalog name mappings. Format:
+   * "spark_catalog1:gravitino_catalog1,spark_catalog2:gravitino_catalog2"
+   */
   public static final String catalogMappingConfigKey = "spark.sql.gravitino.catalogMappings";
+
   private static final int CATALOG_MAPPING_PARTS = 2;
 
   @Override
@@ -42,14 +60,26 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
         .build();
   }
 
+  /**
+   * Determines whether to use Gravitino identifier format for lineage.
+   *
+   * @return true if Gravitino identifiers should be used (default), false otherwise
+   */
   private boolean getUseGravitinoIdentifier() {
     String useGravitino = getSparkConfigValue(useGravitinoConfigKey);
     if (StringUtils.isBlank(useGravitino)) {
-      return true;
+      return true; // Default to true when not configured
     }
     return Boolean.valueOf(useGravitino);
   }
 
+  /**
+   * Parses catalog name mappings from Spark configuration. Mappings allow translating Spark
+   * catalog names to Gravitino catalog names.
+   *
+   * @return Map of Spark catalog name to Gravitino catalog name, empty if not configured
+   * @throws IllegalArgumentException if mapping format is invalid
+   */
   private Map<String, String> getCatalogMapping() {
     String catalogMapping = getSparkConfigValue(catalogMappingConfigKey);
     if (StringUtils.isBlank(catalogMapping)) {
@@ -62,12 +92,29 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
             item -> {
               String[] kv = item.split(":");
               if (kv.length == CATALOG_MAPPING_PARTS) {
-                catalogMaps.put(kv[0].trim(), kv[1].trim());
+                String key = kv[0].trim();
+                String value = kv[1].trim();
+                if (!key.isEmpty() && !value.isEmpty()) {
+                  catalogMaps.put(key, value);
+                }
+              } else if (!item.trim().isEmpty()) {
+                throw new IllegalArgumentException(
+                    String.format(
+                        "Invalid catalog mapping format: '%s'. "
+                            + "Expected format: 'catalog1:gravitino1,catalog2:gravitino2'. "
+                            + "Each mapping must be in 'key:value' format.",
+                        item.trim()));
               }
             });
     return catalogMaps;
   }
 
+  /**
+   * Retrieves the Gravitino metalake name from Spark configuration. Checks connector configuration
+   * first, then falls back to filesystem configuration.
+   *
+   * @return Optional containing metalake name if found, empty otherwise
+   */
   private Optional<String> getMetalake() {
     try {
       return Optional.ofNullable(tryGetMetalake());
@@ -76,14 +123,28 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     }
   }
 
+  /**
+   * Attempts to get metalake name, checking connector config first, then filesystem config.
+   *
+   * @return metalake name or null if not found
+   */
   private String tryGetMetalake() {
+    // Connector config takes precedence
     String metalake = getSparkConfigValue(metalakeConfigKeyForConnector);
     if (metalake != null) {
       return metalake;
     }
+    // Fall back to filesystem config
     return getSparkConfigValue(metalakeConfigKeyForFS);
   }
 
+  /**
+   * Retrieves a configuration value from the active Spark session using reflection. This approach
+   * avoids direct Spark dependencies in the client module.
+   *
+   * @param configKey the Spark configuration key to retrieve
+   * @return the configuration value, or null if not set
+   */
   @SneakyThrows
   private String getSparkConfigValue(String configKey) {
     Class<?> sparkSessionClass = Class.forName(SPARK_SESSION_CLASS_NAME);
@@ -96,7 +157,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     Method confMethod = sparkSessionClass.getMethod("conf");
     Object sparkConfInstance = confMethod.invoke(sparkSessionInstance);
 
-    // config.get(metalakeConfigKey, null)
+    // config.get(configKey, null)
     Class<?> runConfigClass = Class.forName(SPARK_RUN_CONFIG_CLASS_NAME);
     Method getMethod = runConfigClass.getMethod("get", String.class, String.class);
     return (String) getMethod.invoke(sparkConfInstance, configKey, null);
