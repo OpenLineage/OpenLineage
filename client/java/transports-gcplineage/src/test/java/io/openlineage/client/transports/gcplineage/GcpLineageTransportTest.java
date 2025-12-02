@@ -32,6 +32,10 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.util.Base64;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -143,7 +147,7 @@ class GcpLineageTransportTest {
 
   @Test
   void testAsyncClientWithInvalidGracefulShutdownDuration(@TempDir Path tempDir)
-      throws IOException {
+      throws IOException, GeneralSecurityException {
     // Initialize config programmatically with invalid duration
     Path path = createMockCredentialsFile(tempDir);
     GcpLineageTransportConfig config = new GcpLineageTransportConfig();
@@ -190,13 +194,24 @@ class GcpLineageTransportTest {
    * @return Path to the created mock credentials file
    * @throws IOException if file creation fails
    */
-  private Path createMockCredentialsFile(Path tempDir) throws IOException {
+  private Path createMockCredentialsFile(Path tempDir)
+      throws IOException, GeneralSecurityException {
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+    keyGen.initialize(2048);
+    PrivateKey privateKey = keyGen.generateKeyPair().getPrivate();
+    String pemBody =
+        Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(privateKey.getEncoded());
+    String mockedPrivateKey =
+        "-----BEGIN PRIVATE KEY-----\n" + pemBody + "\n-----END PRIVATE KEY-----\n";
+    String mockedEscapedPrivateKey = mockedPrivateKey.replace("\n", "\\n");
     String mockCredentials =
         "{\n"
             + "  \"type\": \"service_account\",\n"
             + "  \"project_id\": \"mock-project-id\",\n"
             + "  \"private_key_id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n"
-            + "  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDCoz063WtcAljx\\nMaNw+2XNfDSPFOlj4iG+8ZeA94gGOv2DAY4h2s4gGhHixl0T0A0T+kxCwoVtnpu8\\naCbklDpN2thjodd/gEL49crxS6O1lbIx8C0ibbX+qnaD9Q3jYJ3jU+fDEJJQ/fah\\ndTsncRrSwXY4FtmOPjObexY2xW3J+56tszf4fYdSgfPdDZVkRD3D2jMVYxoi4kku\\nnU11CNKAqsm5WETpId8hUhkJRe5kqAVl9tJ4yAQWS3M8HUfgtRsHEpLF2jPGq685\\ntuy4OUwTJsIriIRiUkr96UE1ms6dBQoM9hJeGPJOuGyn0kJ9bBPrG75uK8XDaNDI\\nsFJ+YqTRAgMBAAECggEABbBTaE8wvCJkBUr/aZ5zJFUvsJvtSuZN9j+AA1WSWReC\\n0uZY6h+c4mfNqndILQC136ZA9w2isKCiI+f964V4zIh/RrcOnxPwM8L52DqwB7HL\\nC0lKdCpbuEx/AJuykaFpJhB1HL+YAtnhNOdeKmeZ4YL2Q4nVUKbeaoUUVx3X/sDw\\n5r9lo73WxW0ckYRF4hzICzhaTo28FuH/X0mWdAfAXcdB4EY5uHoMs+ZPTbwGqbwe\\nPXfNXs38lC/bwZWb3bSAP2zHAZJ1OqU6iATvDdB2pIQX40UZ+Ujp9bZKmfUmSX63\\nEnSeTh7dNmGZDiKRFeR50q7CsroTRl33zzvUvguhQQKBgQD209RcJSM3/dWLjPya\\nHIzyKIAx6j9+gsjW27Y/0FyPNJ97Mn1J86HoEekzR/LLUvhkQIrqO6STdIt5TCoF\\nhHqbYFPus1m43F5fgR5AEJAqgI9wUCLRuQqUnNQNNAVt3CKN5K2/4j/a59rh5HJg\\nMPPt9c8tgTFkjccn9S2xU5iiMQKBgQDI1WSuszqY0q+y786UrsFt8Z+0sfCD5JAU\\nmSUDsFAic6IuMkdT4hF3lylQpmf5xD+ptfHSDag3lcZut88Irgzut4tX/RmT+zXW\\nPqi4QYtSAaYTGdcuWMl/8rmVog0CqgxgHPSa6nL7nRKAk8qfV3JzwKsqy+8grmCz\\nfHOw9MHkoQKBgQCzhWolAtXUuYgBka9/n1hcIFzs8QTxTMoqi27IhxFrDskX36cE\\njHCry6sjIydR/qyurcrbhjmzDccLl/vQO4S5UZx6NnQBYjY5nD2WNvXEE/E/rOlG\\nRCGP6WjJmZaBSuTO8w30S+hJnOyz82XE1JX18xyWaiq0ifHZ/BcZrEWNYQKBgQCL\\nQcSNisOv4i9ocPYajM6dMLTf855lph/t2H8c/q2iJfIn/D8PQCuCdDN2s9xXCShn\\nwjyKvWOOH3G3pgaN6zoWcPjTKzIINWGQTGRrVy+GzpPcnMdjYLdf2+upgPNqjIUG\\nRC2sGbNfGvwQYepW8Kjw8ID/rOcED0YITtxdsGmd4QKBgHTgpiODyMkYdxFXgeDg\\n/qjhP5Jj5BEAHOIJ5E/ZubVpfaVqQQEVN9NjVIrT8UtxHPdnmi/yOHktTr9YSxqd\\n+6cBhSL0hv0+Nsr/+PdJEIo4Mw8nmx1Y8hljzFSeRL+eAnZGgD3mRxzS2TES5EIw\\nVr7mQM5JOlE8jknFvhyxBiSf\\n-----END PRIVATE KEY-----\\n\",\n"
+            + "  \"private_key\": \""
+            + mockedEscapedPrivateKey
+            + "\",\n"
             + "  \"client_email\": \"mock-email@gcp-open-lineage-testing.iam.gserviceaccount.com\",\n"
             + "  \"client_id\": \"101011010101111111001\",\n"
             + "  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\n"

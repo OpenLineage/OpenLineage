@@ -29,7 +29,7 @@ dependencies {
 }
 
 shadowJar {
-    relocate 'datalineage.shaded', 'io.openlineage.client.shaded'
+    relocate 'datalineage.shaded', 'io.openlineage.client.shaded.datalineage.shaded'
     relocate 'com.google.cloud', 'io.openlineage.client.shaded.com.google.cloud'
     relocate 'com.google.api', 'io.openlineage.client.shaded.com.google.api'
     relocate 'com.google.auth', 'io.openlineage.client.shaded.com.google.auth'
