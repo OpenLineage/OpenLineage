@@ -25,7 +25,14 @@ public class GVFSFilesystemDatasetExtractor implements FilesystemDatasetExtracto
   @Override
   public DatasetIdentifier extract(URI location) {
     String name = GVFSUtils.getGVFSIdentifierName(location);
-    return new DatasetIdentifier(name, metalakeProvider.getMetalakeName());
+    String namespace;
+    try {
+      namespace = metalakeProvider.getMetalakeName();
+    } catch (IllegalStateException e) {
+      // Fallback to default namespace when Gravitino is not available (e.g., in tests)
+      namespace = GVFS_NAMESPACE_NAME;
+    }
+    return new DatasetIdentifier(name, namespace);
   }
 
   @Override

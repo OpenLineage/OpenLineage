@@ -30,8 +30,8 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
   public static final String metalakeConfigKeyForConnector = "spark.sql.gravitino.metalake";
 
   /**
-   * Configuration key to control whether to use Gravitino identifier format. Default: true when
-   * not set
+   * Configuration key to control whether to use Gravitino identifier format. Default: true when not
+   * set
    */
   public static final String useGravitinoConfigKey = "spark.sql.gravitino.useGravitinoIdentifier";
 
@@ -50,7 +50,9 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
       log.debug("SparkSession class found, Gravitino info provider is available");
       return true;
     } catch (ClassNotFoundException e) {
-      log.debug("SparkSession class not found, Gravitino info provider is not available: {}", e.getMessage());
+      log.debug(
+          "SparkSession class not found, Gravitino info provider is not available: {}",
+          e.getMessage());
       return false;
     }
   }
@@ -81,8 +83,8 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
   }
 
   /**
-   * Parses catalog name mappings from Spark configuration. Mappings allow translating Spark
-   * catalog names to Gravitino catalog names.
+   * Parses catalog name mappings from Spark configuration. Mappings allow translating Spark catalog
+   * names to Gravitino catalog names.
    *
    * @return Map of Spark catalog name to Gravitino catalog name, empty if not configured
    * @throws IllegalArgumentException if mapping format is invalid
@@ -96,8 +98,6 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
 
     log.debug("Parsing catalog mappings from configuration: {}", catalogMapping);
     Map<String, String> catalogMaps = new HashMap<>();
-    int validMappings = 0;
-    int skippedMappings = 0;
 
     Arrays.stream(catalogMapping.split(","))
         .forEach(
@@ -150,16 +150,25 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     // Connector config takes precedence
     String metalake = getSparkConfigValue(metalakeConfigKeyForConnector);
     if (metalake != null) {
-      log.debug("Found metalake from connector configuration '{}': {}", metalakeConfigKeyForConnector, metalake);
+      log.debug(
+          "Found metalake from connector configuration '{}': {}",
+          metalakeConfigKeyForConnector,
+          metalake);
       return metalake;
     }
-    
+
     // Fall back to filesystem config
     metalake = getSparkConfigValue(metalakeConfigKeyForFS);
     if (metalake != null) {
-      log.debug("Found metalake from filesystem configuration '{}': {}", metalakeConfigKeyForFS, metalake);
+      log.debug(
+          "Found metalake from filesystem configuration '{}': {}",
+          metalakeConfigKeyForFS,
+          metalake);
     } else {
-      log.warn("Metalake not found in either '{}' or '{}'", metalakeConfigKeyForConnector, metalakeConfigKeyForFS);
+      log.warn(
+          "Metalake not found in either '{}' or '{}'",
+          metalakeConfigKeyForConnector,
+          metalakeConfigKeyForFS);
     }
     return metalake;
   }
@@ -174,7 +183,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
   @SneakyThrows
   private String getSparkConfigValue(String configKey) {
     log.trace("Reading Spark configuration key: {}", configKey);
-    
+
     Class<?> sparkSessionClass = Class.forName(SPARK_SESSION_CLASS_NAME);
 
     // SparkSession s = SparkSession.active()
@@ -189,7 +198,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     Class<?> runConfigClass = Class.forName(SPARK_RUN_CONFIG_CLASS_NAME);
     Method getMethod = runConfigClass.getMethod("get", String.class, String.class);
     String value = (String) getMethod.invoke(sparkConfInstance, configKey, null);
-    
+
     log.trace("Configuration '{}' = {}", configKey, value != null ? value : "<not set>");
     return value;
   }
