@@ -24,7 +24,8 @@ public class GravitinoUtils {
   public static DatasetIdentifier getGravitinoDatasetIdentifier(URI uri) {
     GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.getInstance();
     String metalake = provider.getMetalakeName();
-    log.debug("Creating Gravitino dataset identifier from URI: {} with metalake: {}", uri, metalake);
+    log.debug(
+        "Creating Gravitino dataset identifier from URI: {} with metalake: {}", uri, metalake);
     return new DatasetIdentifier(uri.toString(), metalake);
   }
 
@@ -64,9 +65,7 @@ public class GravitinoUtils {
                 Stream.concat(Stream.of(catalogName), Arrays.stream(nameSpace)), Stream.of(name))
             .collect(Collectors.joining("."));
     log.debug(
-        "Generated Gravitino dataset identifier: namespace={}, name={}",
-        metalake,
-        datasetName);
+        "Generated Gravitino dataset identifier: namespace={}, name={}", metalake, datasetName);
     return new DatasetIdentifier(datasetName, metalake);
   }
 }

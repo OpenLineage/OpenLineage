@@ -7,9 +7,9 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
-import java.io.File;
 import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
 import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
+import java.io.File;
 import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.HashMap;
 import lombok.SneakyThrows;
@@ -30,6 +31,8 @@ class GravitinoIcebergHandlerTest {
 
   @BeforeEach
   void setUp() {
+    // Clear the cached Gravitino configuration before each test
+    GravitinoInfoProviderImpl.getInstance().clearCache();
     context = mock(OpenLineageContext.class);
     gravitinoIcebergHandler = new GravitinoIcebergHandler(context);
     sparkSession = mock(SparkSession.class);
