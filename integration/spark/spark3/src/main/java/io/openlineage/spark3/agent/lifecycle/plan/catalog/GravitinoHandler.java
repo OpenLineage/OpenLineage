@@ -8,7 +8,6 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
 import io.openlineage.spark.agent.util.GravitinoUtils;
-import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +21,9 @@ public class GravitinoHandler implements CatalogHandler {
 
   private static final String gravitinoCatalogClassName =
       "org.apache.gravitino.spark.connector.catalog.BaseCatalog";
-  private final OpenLineageContext context;
   private final GravitinoInfoProviderImpl provider;
 
-  public GravitinoHandler(OpenLineageContext context) {
-    this.context = context;
+  public GravitinoHandler() {
     this.provider = GravitinoInfoProviderImpl.getInstance();
   }
 

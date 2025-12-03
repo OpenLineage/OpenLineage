@@ -31,7 +31,7 @@ public class CatalogUtils3 {
             new DeltaHandler(context),
             new DatabricksDeltaHandler(context),
             new DatabricksUnityV2Handler(context),
-            new GravitinoHandler(context),
+            new GravitinoHandler(),
             new V2SessionCatalogHandler());
     List<CatalogHandler> handlers = new LinkedList<>(commonHandlers);
     if (GravitinoInfoProviderImpl.getInstance().useGravitinoIdentifier()) {
