@@ -25,10 +25,12 @@ ext {
     awssdkVersion = "2.39.2"
 }
 
-buildConfig {
-    sourceSets.test {
-        // We should use the same version of dependency and Docker image
-        buildConfigField(String, "S3_MOCK_VERSION", s3MockVersion)
+sourceSets {
+    test {
+        buildConfig {
+            // We should use the same version of dependency and Docker image
+            buildConfigField(String, "S3_MOCK_VERSION", s3MockVersion)
+        }
     }
 }
 
