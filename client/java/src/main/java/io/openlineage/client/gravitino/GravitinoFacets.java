@@ -18,8 +18,7 @@ public class GravitinoFacets {
 
   static {
     try {
-      producer =
-          new URI("https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark");
+      producer = new URI("https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark");
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }

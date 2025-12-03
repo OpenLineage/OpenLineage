@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class GVFSUtils {
 
   private static final String PATH_SEPARATOR = "/";
+
   /** Minimum number of path components required: catalog, schema, fileset */
   private static final int MIN_GVFS_PATH_PARTS = 3;
 
