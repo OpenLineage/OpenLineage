@@ -2,6 +2,8 @@
 
 Get started with OpenLineage and Apache Gravitino in 5 minutes.
 
+> **Important:** To use Gravitino integration with OpenLineage, you **must** set `spark.openlineage.dataset.useGravitinoIdentifier=true`. Without this configuration, Gravitino identifiers will not be used in lineage events (default is `false`).
+
 ## Step 1: Add Dependencies
 
 Add the required JARs to your Spark application:
@@ -32,6 +34,9 @@ spark.sql.catalog.gravitino_catalog.gravitino.catalog=iceberg_catalog
 spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener
 spark.openlineage.transport.type=http
 spark.openlineage.transport.url=http://openlineage-backend:5000
+
+# Enable Gravitino dataset identifiers (REQUIRED for Gravitino integration)
+spark.openlineage.dataset.useGravitinoIdentifier=true
 ```
 
 ## Step 3: Run Your Spark Job
@@ -92,6 +97,7 @@ Expected output structure:
 
 ```properties
 spark.sql.gravitino.metalake=production
+spark.openlineage.dataset.useGravitinoIdentifier=true
 
 # Iceberg catalog
 spark.sql.catalog.iceberg_prod=org.apache.gravitino.spark.connector.catalog.GravitinoCatalog
@@ -106,6 +112,7 @@ spark.sql.catalog.postgres_prod.gravitino.catalog=postgres
 
 ```properties
 spark.sql.gravitino.metalake=production
+spark.openlineage.dataset.useGravitinoIdentifier=true
 spark.hadoop.fs.gravitino.client.metalake=production
 spark.hadoop.fs.gravitino.client.uri=http://gravitino-server:8090
 spark.hadoop.fs.gvfs.impl=org.apache.gravitino.filesystem.hadoop.GravitinoVirtualFileSystem
@@ -120,6 +127,7 @@ val df = spark.read.parquet("gvfs://fileset/catalog/schema/my_fileset/")
 
 ```properties
 spark.sql.gravitino.metalake=production
+spark.openlineage.dataset.useGravitinoIdentifier=true
 spark.sql.gravitino.catalogMappings=dev_iceberg:prod_iceberg,dev_postgres:prod_postgres
 ```
 
@@ -131,6 +139,7 @@ spark.sql.gravitino.catalogMappings=dev_iceberg:prod_iceberg,dev_postgres:prod_p
 1. OpenLineage listener is registered: `spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener`
 2. Transport URL is correct: `spark.openlineage.transport.url=http://openlineage-backend:5000`
 3. Gravitino metalake is configured: `spark.sql.gravitino.metalake=my_metalake`
+4. **Gravitino identifiers are enabled:** `spark.openlineage.dataset.useGravitinoIdentifier=true` (REQUIRED)
 
 ### Issue: "Gravitino metalake configuration not found"
 

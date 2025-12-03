@@ -15,7 +15,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class SparkGravitinoInfoProviderTest {
+class SparkGravitinoInfoProviderTest {
+
+  private static final String LOCAL_MASTER = "local[*]";
+  private static final String TEST_APP_NAME = "test";
+  private static final String CATALOG3 = "catalog3";
 
   @BeforeAll
   @SneakyThrows
@@ -33,12 +37,12 @@ public class SparkGravitinoInfoProviderTest {
 
   @SneakyThrows
   @Test
-  public void testGetMetalakeName() {
+  void testGetMetalakeName() {
     GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
 
     SparkSession.builder()
-        .master("local[*]")
-        .appName("test")
+        .master(LOCAL_MASTER)
+        .appName(TEST_APP_NAME)
         .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "metalake_name")
         .getOrCreate();
     Assertions.assertEquals("metalake_name", provider.getMetalakeName());
@@ -46,8 +50,8 @@ public class SparkGravitinoInfoProviderTest {
     provider = GravitinoInfoProviderImpl.newInstanceForTest();
     cleanUpExistingSession();
     SparkSession.builder()
-        .master("local[*]")
-        .appName("test")
+        .master(LOCAL_MASTER)
+        .appName(TEST_APP_NAME)
         .config(SparkGravitinoInfoProvider.metalakeConfigKeyForFS, "metalake_name2")
         .getOrCreate();
     Assertions.assertEquals("metalake_name2", provider.getMetalakeName());
@@ -55,8 +59,8 @@ public class SparkGravitinoInfoProviderTest {
     provider = GravitinoInfoProviderImpl.newInstanceForTest();
     cleanUpExistingSession();
     SparkSession.builder()
-        .master("local[*]")
-        .appName("test")
+        .master(LOCAL_MASTER)
+        .appName(TEST_APP_NAME)
         .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "metalake_name3")
         .config(SparkGravitinoInfoProvider.metalakeConfigKeyForFS, "metalake_name4")
         .getOrCreate();
@@ -64,18 +68,18 @@ public class SparkGravitinoInfoProviderTest {
 
     GravitinoInfoProviderImpl provider2 = GravitinoInfoProviderImpl.newInstanceForTest();
     cleanUpExistingSession();
-    SparkSession.builder().master("local[*]").appName("test").getOrCreate();
+    SparkSession.builder().master(LOCAL_MASTER).appName(TEST_APP_NAME).getOrCreate();
     Assertions.assertThrowsExactly(RuntimeException.class, () -> provider2.getMetalakeName());
   }
 
   @SneakyThrows
   @Test
-  public void testGetCatalogName() {
+  void testGetCatalogName() {
     GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
 
     SparkSession.builder()
-        .master("local[*]")
-        .appName("test")
+        .master(LOCAL_MASTER)
+        .appName(TEST_APP_NAME)
         .config(
             SparkGravitinoInfoProvider.catalogMappingConfigKey,
             "catalog1:gravitino1,catalog2:gravitino2")
@@ -83,42 +87,42 @@ public class SparkGravitinoInfoProviderTest {
 
     Assertions.assertEquals("gravitino1", provider.getGravitinoCatalog("catalog1"));
     Assertions.assertEquals("gravitino2", provider.getGravitinoCatalog("catalog2"));
-    Assertions.assertEquals("catalog3", provider.getGravitinoCatalog("catalog3"));
+    Assertions.assertEquals(CATALOG3, provider.getGravitinoCatalog(CATALOG3));
 
     provider = GravitinoInfoProviderImpl.newInstanceForTest();
     cleanUpExistingSession();
 
-    SparkSession.builder().master("local[*]").appName("test").getOrCreate();
+    SparkSession.builder().master(LOCAL_MASTER).appName(TEST_APP_NAME).getOrCreate();
 
     Assertions.assertEquals("catalog1", provider.getGravitinoCatalog("catalog1"));
     Assertions.assertEquals("catalog2", provider.getGravitinoCatalog("catalog2"));
-    Assertions.assertEquals("catalog3", provider.getGravitinoCatalog("catalog3"));
+    Assertions.assertEquals(CATALOG3, provider.getGravitinoCatalog(CATALOG3));
   }
 
   @SneakyThrows
   @Test
-  public void testUseGravitinoIdentifier() {
+  void testUseGravitinoIdentifier() {
     GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
     SparkSession.builder()
-        .master("local[*]")
-        .appName("test")
+        .master(LOCAL_MASTER)
+        .appName(TEST_APP_NAME)
         .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
         .getOrCreate();
-    Assertions.assertEquals(true, provider.useGravitinoIdentifier());
+    Assertions.assertTrue(provider.useGravitinoIdentifier());
 
     provider = GravitinoInfoProviderImpl.newInstanceForTest();
     cleanUpExistingSession();
-    SparkSession.builder().master("local[*]").appName("test2").getOrCreate();
-    Assertions.assertEquals(false, provider.useGravitinoIdentifier());
+    SparkSession.builder().master(LOCAL_MASTER).appName("test2").getOrCreate();
+    Assertions.assertFalse(provider.useGravitinoIdentifier());
 
     provider = GravitinoInfoProviderImpl.newInstanceForTest();
     cleanUpExistingSession();
     SparkSession.builder()
-        .master("local[*]")
-        .appName("test")
+        .master(LOCAL_MASTER)
+        .appName(TEST_APP_NAME)
         .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "false")
         .getOrCreate();
-    Assertions.assertEquals(false, provider.useGravitinoIdentifier());
+    Assertions.assertFalse(provider.useGravitinoIdentifier());
   }
 
   private static void cleanUpExistingSession() {
