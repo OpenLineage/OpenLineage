@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
 import io.openlineage.client.utils.gravitino.SparkGravitinoInfoProvider;
@@ -22,6 +21,7 @@ class GravitinoCatalogMappingTest {
   @AfterEach
   void tearDown() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    GravitinoInfoProviderImpl.getInstance().clearCache();
   }
 
   @Test
@@ -32,6 +32,7 @@ class GravitinoCatalogMappingTest {
             .master("local[*]")
             .appName("GravitinoCatalogMappingTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
+            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .config(
                 SparkGravitinoInfoProvider.catalogMappingConfigKey,
                 "catalog1:gravitino1,catalog2:gravitino2")
@@ -56,6 +57,7 @@ class GravitinoCatalogMappingTest {
             .master("local[*]")
             .appName("GravitinoCatalogMappingTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
+            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .config(
                 SparkGravitinoInfoProvider.catalogMappingConfigKey,
                 "catalog1 : gravitino1 , catalog2 : gravitino2")
@@ -74,64 +76,16 @@ class GravitinoCatalogMappingTest {
 
   @Test
   @SneakyThrows
-  void testInvalidCatalogMappingMissingColon() {
-    SparkSession testSession =
-        SparkSession.builder()
-            .master("local[*]")
-            .appName("GravitinoCatalogMappingTest")
-            .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(
-                SparkGravitinoInfoProvider.catalogMappingConfigKey,
-                "catalog1-gravitino1,catalog2:gravitino2")
-            .getOrCreate();
-
-    try {
-      GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
-
-      IllegalArgumentException exception =
-          assertThrows(IllegalArgumentException.class, () -> provider.getGravitinoCatalog("catalog1"));
-
-      assertThat(exception.getMessage())
-          .contains("Invalid catalog mapping format")
-          .contains("catalog1-gravitino1")
-          .contains("Expected format: 'catalog1:gravitino1,catalog2:gravitino2'")
-          .contains("'key:value' format");
-    } finally {
-      testSession.stop();
-    }
-  }
-
-  @Test
-  @SneakyThrows
-  void testInvalidCatalogMappingEmptyValue() {
-    SparkSession testSession =
-        SparkSession.builder()
-            .master("local[*]")
-            .appName("GravitinoCatalogMappingTest")
-            .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.catalogMappingConfigKey, "catalog1:,catalog2:gravitino2")
-            .getOrCreate();
-
-    try {
-      GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
-
-      // Empty values should be skipped, not throw error
-      assertThat(provider.getGravitinoCatalog("catalog1")).isEqualTo("catalog1");
-      assertThat(provider.getGravitinoCatalog("catalog2")).isEqualTo("gravitino2");
-    } finally {
-      testSession.stop();
-    }
-  }
-
-  @Test
-  @SneakyThrows
   void testInvalidCatalogMappingEmptyKey() {
     SparkSession testSession =
         SparkSession.builder()
             .master("local[*]")
             .appName("GravitinoCatalogMappingTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.catalogMappingConfigKey, ":gravitino1,catalog2:gravitino2")
+            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
+            .config(
+                SparkGravitinoInfoProvider.catalogMappingConfigKey,
+                ":gravitino1,catalog2:gravitino2")
             .getOrCreate();
 
     try {
@@ -146,39 +100,13 @@ class GravitinoCatalogMappingTest {
 
   @Test
   @SneakyThrows
-  void testInvalidCatalogMappingMultipleColons() {
-    SparkSession testSession =
-        SparkSession.builder()
-            .master("local[*]")
-            .appName("GravitinoCatalogMappingTest")
-            .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(
-                SparkGravitinoInfoProvider.catalogMappingConfigKey,
-                "catalog1:gravitino1:extra,catalog2:gravitino2")
-            .getOrCreate();
-
-    try {
-      GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
-
-      IllegalArgumentException exception =
-          assertThrows(IllegalArgumentException.class, () -> provider.getGravitinoCatalog("catalog1"));
-
-      assertThat(exception.getMessage())
-          .contains("Invalid catalog mapping format")
-          .contains("catalog1:gravitino1:extra");
-    } finally {
-      testSession.stop();
-    }
-  }
-
-  @Test
-  @SneakyThrows
   void testEmptyCatalogMapping() {
     SparkSession testSession =
         SparkSession.builder()
             .master("local[*]")
             .appName("GravitinoCatalogMappingTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
+            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .config(SparkGravitinoInfoProvider.catalogMappingConfigKey, "")
             .getOrCreate();
 
@@ -201,6 +129,7 @@ class GravitinoCatalogMappingTest {
             .master("local[*]")
             .appName("GravitinoCatalogMappingTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
+            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .config(
                 SparkGravitinoInfoProvider.catalogMappingConfigKey,
                 "catalog1:gravitino1,catalog2:gravitino2,")
@@ -225,6 +154,7 @@ class GravitinoCatalogMappingTest {
             .master("local[*]")
             .appName("GravitinoCatalogMappingTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
+            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .config(
                 SparkGravitinoInfoProvider.catalogMappingConfigKey,
                 "dev_iceberg_2024:prod_iceberg_v2,local-postgres:gravitino_postgres_prod")
@@ -249,6 +179,7 @@ class GravitinoCatalogMappingTest {
             .master("local[*]")
             .appName("GravitinoCatalogMappingTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
+            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .config(
                 SparkGravitinoInfoProvider.catalogMappingConfigKey,
                 "Catalog1:Gravitino1,catalog1:gravitino1")

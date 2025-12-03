@@ -59,7 +59,7 @@ public class GravitinoInfoProviderImpl {
   public String getMetalakeName() {
     Optional<String> metalake = getGravitinoInfo().getMetalake();
     if (!metalake.isPresent()) {
-      throw new IllegalStateException(
+      throw new RuntimeException(
           "Gravitino metalake configuration not found. "
               + "Please set either 'spark.sql.gravitino.metalake' (for Gravitino connector) "
               + "or 'spark.hadoop.fs.gravitino.client.metalake' (for GVFS filesystem) "
@@ -105,18 +105,26 @@ public class GravitinoInfoProviderImpl {
 
     for (GravitinoInfoProvider provider : providers) {
       log.debug("Checking provider: {}", provider.getClass().getSimpleName());
-      if (provider.isAvailable()) {
+      try {
+        if (provider.isAvailable()) {
+          log.debug(
+              "Provider {} is available, loading configuration",
+              provider.getClass().getSimpleName());
+          GravitinoInfo info = provider.getGravitinoInfo();
+          log.info(
+              "Loaded Gravitino configuration: metalake={}, useGravitinoIdentifier={}, catalogMappings={}",
+              info.getMetalake().orElse("not set"),
+              info.isUseGravitinoIdentifier(),
+              info.getCatalogMapping());
+          return info;
+        } else {
+          log.debug("Provider {} is not available", provider.getClass().getSimpleName());
+        }
+      } catch (Exception e) {
         log.debug(
-            "Provider {} is available, loading configuration", provider.getClass().getSimpleName());
-        GravitinoInfo info = provider.getGravitinoInfo();
-        log.info(
-            "Loaded Gravitino configuration: metalake={}, useGravitinoIdentifier={}, catalogMappings={}",
-            info.getMetalake().orElse("not set"),
-            info.isUseGravitinoIdentifier(),
-            info.getCatalogMapping());
-        return info;
-      } else {
-        log.debug("Provider {} is not available", provider.getClass().getSimpleName());
+            "Provider {} failed to load configuration: {}",
+            provider.getClass().getSimpleName(),
+            e.getMessage());
       }
     }
 
@@ -129,7 +137,7 @@ public class GravitinoInfoProviderImpl {
    * Clears the cached configuration. This method is primarily for testing purposes to allow
    * reloading configuration between tests.
    */
-  void clearCache() {
+  public void clearCache() {
     synchronized (this) {
       log.debug("Clearing cached Gravitino configuration");
       gravitinoInfo = Optional.empty();

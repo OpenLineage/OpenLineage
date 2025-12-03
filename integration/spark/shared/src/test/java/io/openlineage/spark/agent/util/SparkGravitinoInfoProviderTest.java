@@ -27,6 +27,8 @@ public class SparkGravitinoInfoProviderTest {
   @SneakyThrows
   public static void afterAll() {
     cleanUpExistingSession();
+    // Clear the singleton cache to avoid affecting other tests
+    GravitinoInfoProviderImpl.getInstance().clearCache();
   }
 
   @SneakyThrows
