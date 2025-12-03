@@ -124,8 +124,7 @@ class GravitinoHandlerTest {
 
       assertThat(datasetIdentifier)
           .hasFieldOrPropertyWithValue("namespace", "prod_metalake")
-          .hasFieldOrPropertyWithValue(
-              "name", "iceberg_catalog.level1.level2.level3.nested_table");
+          .hasFieldOrPropertyWithValue("name", "iceberg_catalog.level1.level2.level3.nested_table");
     } finally {
       testSession.stop();
       org.apache.spark.sql.SparkSession$.MODULE$.cleanupAnyExistingSession();

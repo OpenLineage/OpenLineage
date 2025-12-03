@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
@@ -32,7 +32,7 @@ public class GravitinoJDBCHandler extends JdbcHandler {
     String originalCatalogName = tableCatalog.name();
     String metalake = provider.getMetalakeName();
     String catalogName = provider.getGravitinoCatalog(originalCatalogName);
-    
+
     if (!originalCatalogName.equals(catalogName)) {
       log.debug(
           "JDBC catalog name mapped: {} -> {} for identifier {}",
@@ -46,7 +46,7 @@ public class GravitinoJDBCHandler extends JdbcHandler {
           identifier,
           metalake);
     }
-    
+
     return GravitinoUtils.getGravitinoDatasetIdentifier(
         metalake, catalogName, tableCatalog.defaultNamespace(), identifier);
   }
