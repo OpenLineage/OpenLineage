@@ -69,13 +69,13 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
   /**
    * Determines whether to use Gravitino identifier format for lineage.
    *
-   * @return true if Gravitino identifiers should be used (default), false otherwise
+   * @return true if Gravitino identifiers should be used, false otherwise (default)
    */
   private boolean getUseGravitinoIdentifier() {
     String useGravitino = getSparkConfigValue(useGravitinoConfigKey);
     if (StringUtils.isBlank(useGravitino)) {
-      log.debug("Configuration '{}' not set, defaulting to true", useGravitinoConfigKey);
-      return true; // Default to true when not configured
+      log.debug("Configuration '{}' not set, defaulting to false", useGravitinoConfigKey);
+      return false; // Default to false when not configured
     }
     boolean result = Boolean.valueOf(useGravitino);
     log.debug("Configuration '{}' = {}", useGravitinoConfigKey, result);
