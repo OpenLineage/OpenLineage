@@ -63,9 +63,9 @@
 					"quote": null,
 					"tags": []
 				}
-			},
-			"meta": {},
-			"docs": {
+		},
+		"meta": {"owner": "data_team"},
+		"docs": {
 				"show": true
 			},
 			"patch_path": "dbt_test://models/example/schema.yml",

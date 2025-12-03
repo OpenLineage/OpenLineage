@@ -34,6 +34,7 @@ public class CatalogDatasetFacetUtils {
                   context
                       .getOpenLineage()
                       .newCatalogDatasetFacetBuilder()
+                      .name("default")
                       .framework("hive")
                       .type("hive")
                       .source("spark");
