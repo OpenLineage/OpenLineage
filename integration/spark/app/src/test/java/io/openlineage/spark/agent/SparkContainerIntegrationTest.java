@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
@@ -194,6 +195,19 @@ class SparkContainerIntegrationTest {
         "pysparkHiveCompleteEvent.json",
         "pysparkHiveSelectStartEvent.json",
         "pysparkHiveSelectEndEvent.json");
+  }
+
+  @Test
+  void testPysparkSQLHiveFailureTest() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testPysparkSQLHiveFailureTest",
+        "spark_hive_failing.py");
+    List<RunEvent> eventsEmitted = getEventsEmitted(mockServerClient);
+    assertThat(eventsEmitted.size() == 2);
+    assertThat(eventsEmitted.get(0).getEventType()).isEqualTo(EventType.START);
+    assertThat(eventsEmitted.get(1).getEventType()).isEqualTo(EventType.COMPLETE);
   }
 
   @Test

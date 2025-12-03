@@ -162,4 +162,20 @@ public class MockServerUtils {
         .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
         .collect(Collectors.toList());
   }
+
+  public static List<RunEvent> getEventsEmitted(MockServerClient mockServer) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                Arrays.stream(
+                        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+                    .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+                    .findAny()
+                    .isPresent());
+
+    return Arrays.stream(mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+        .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+        .collect(Collectors.toList());
+  }
 }
