@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/JobRunParametersFacet.json",
+  "$defs": {
+    "JobRunParameterFields": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Unique identifier for the property.",
+          "example": "airflow.dagRun.external_trigger"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the property.",
+          "example": "External trigger"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation of the property."
+        },
+        "value": {
+          "type": ["string", "number", "boolean", "object", "array", "null"],
+          "description": "Value of the property; can be any JSON type.",
+          "example": false
+        }
+      },
+      "required": ["key"],
+      "additionalProperties": false
+    },
+    "JobRunParametersFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "parameters": {
+              "description": "The parameters passed to the Job at runtime",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/JobRunParameterFields"
+              }
+            }
+          }
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "jobRunParameters": {
+      "$ref": "#/$defs/JobRunParametersFacet"
+    }
+  }
+}
