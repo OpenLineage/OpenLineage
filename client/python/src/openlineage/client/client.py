@@ -342,7 +342,7 @@ class OpenLineageClient:
                 k.startswith(f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}")
                 for k in os.environ
             ):
-                log.info(
+                log.debug(
                     "%s already found in environment variables, skipping aliasing OPENLINEAGE_URL",
                     default_transport_name,
                 )
