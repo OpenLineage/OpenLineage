@@ -44,9 +44,10 @@ class Serde:
         return cast("dict[Any, Any]", cls.remove_nulls_and_enums(obj))
 
     @classmethod
-    def to_json(cls, obj: Any) -> str:
+    def to_json(cls, obj: Any, **kwargs: Any) -> str:
         return json.dumps(
             cls.to_dict(obj),
             sort_keys=True,
             default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>",
+            **kwargs,
         )

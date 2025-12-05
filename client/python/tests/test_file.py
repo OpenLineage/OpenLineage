@@ -500,7 +500,7 @@ def test_file_transport_get_file_path_with_timestamp(mock_dt):
     config = FileConfig(log_file_path=base_path, append=False)
     transport = FileTransport(config)
 
-    file_path = transport._get_file_path()
+    file_path = transport._get_file_path(None)
     assert file_path == f"{base_path}-20230815-143052.123456.json"
 
 
@@ -512,7 +512,7 @@ def test_file_transport_get_file_path_with_append():
     config = FileConfig(log_file_path=base_path, append=True)
     transport = FileTransport(config)
 
-    file_path = transport._get_file_path()
+    file_path = transport._get_file_path(None)
     assert file_path == base_path
 
 
@@ -584,3 +584,248 @@ def test_file_transport_uses_local_handler_for_local_paths(mock_fsspec):
     assert os.path.exists(local_path)
     with open(local_path, "r") as f:
         assert f.read() == "test content"
+
+
+@mock.patch("openlineage.client.transport.file.datetime")
+def test_file_transport_debug_mode_run_event_filename(mock_dt):
+    """Test that debug mode creates filename with timestamp, job name, and event type for RunEvent."""
+    mock_dt.now().strftime.return_value = "250115T143052.123456"
+
+    log_dir = tempfile.TemporaryDirectory()
+    base_path = join(log_dir.name, "logtest")
+
+    config = FileConfig(log_file_path=base_path, debug_mode=True)
+    transport = FileTransport(config)
+
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="test-namespace", name="my-test-job"),
+        producer="prod",
+    )
+
+    file_path = transport._get_file_path(event)
+    expected_path = f"{base_path}-250115T143052.123456-my-test-job-START.json"
+    assert file_path == expected_path
+
+
+@mock.patch("openlineage.client.transport.file.datetime")
+def test_file_transport_debug_mode_job_event_filename(mock_dt):
+    """Test that debug mode creates filename with timestamp and job name for JobEvent (no event type)."""
+    from openlineage.client.run import JobEvent
+
+    mock_dt.now().strftime.return_value = "250115T143052.123456"
+
+    log_dir = tempfile.TemporaryDirectory()
+    base_path = join(log_dir.name, "logtest")
+
+    config = FileConfig(log_file_path=base_path, debug_mode=True)
+    transport = FileTransport(config)
+
+    event = JobEvent(
+        eventTime=datetime.datetime.now().isoformat(),
+        producer="prod",
+        schemaURL="https://openlineage.io/spec/1-0-5/OpenLineage.json",
+        job=Job(namespace="test-namespace", name="my-job"),
+    )
+
+    file_path = transport._get_file_path(event)
+    expected_path = f"{base_path}-250115T143052.123456-my-job-unknown_event_type.json"
+    assert file_path == expected_path
+
+
+@mock.patch("openlineage.client.transport.file.datetime")
+def test_file_transport_debug_mode_dataset_event_filename(mock_dt):
+    """Test that debug mode creates filename with timestamp and dataset name for DatasetEvent."""
+    from openlineage.client.run import Dataset, DatasetEvent
+
+    mock_dt.now().strftime.return_value = "250115T143052.123456"
+
+    log_dir = tempfile.TemporaryDirectory()
+    base_path = join(log_dir.name, "logtest")
+
+    config = FileConfig(log_file_path=base_path, debug_mode=True)
+    transport = FileTransport(config)
+
+    event = DatasetEvent(
+        eventTime=datetime.datetime.now().isoformat(),
+        producer="prod",
+        schemaURL="https://openlineage.io/spec/1-0-5/OpenLineage.json",
+        dataset=Dataset(namespace="test-namespace", name="my-dataset"),
+    )
+
+    file_path = transport._get_file_path(event)
+    expected_path = f"{base_path}-250115T143052.123456-my-dataset-unknown_event_type.json"
+    assert file_path == expected_path
+
+
+@mock.patch("openlineage.client.transport.file.datetime")
+@pytest.mark.parametrize(
+    "job_name,expected_sanitized",
+    [
+        ("my-job", "my-job"),  # Hyphen allowed
+        ("my.job", "my.job"),  # Dot allowed
+        ("my_job", "my_job"),  # Underscore allowed
+        ("my/job", "my__job"),  # Slash replaced with __
+        ("my:job", "my__job"),  # Colon replaced with __
+        ("my job", "my__job"),  # Space replaced with __
+        ("my@job", "my__job"),  # @ replaced with __
+        ("my#job", "my__job"),  # # replaced with __
+        ("my-job.name", "my-job.name"),  # Multiple allowed chars
+        ("my/job:name", "my__job__name"),  # Multiple special chars
+        ("my123job", "my123job"),  # Alphanumeric preserved
+        ("my-job_name.test", "my-job_name.test"),  # All allowed chars
+    ],
+)
+def test_file_transport_debug_mode_job_name_sanitization(mock_dt, job_name, expected_sanitized):
+    """Test that debug mode sanitizes job names with various special characters."""
+    mock_dt.now().strftime.return_value = "250115T143052.123456"
+
+    log_dir = tempfile.TemporaryDirectory()
+    base_path = join(log_dir.name, "logtest")
+
+    config = FileConfig(log_file_path=base_path, debug_mode=True)
+    transport = FileTransport(config)
+
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="test-namespace", name=job_name),
+        producer="prod",
+    )
+
+    file_path = transport._get_file_path(event)
+    expected_path = f"{base_path}-250115T143052.123456-{expected_sanitized}-START.json"
+    assert file_path == expected_path
+
+
+@mock.patch("openlineage.client.transport.file.datetime")
+@pytest.mark.parametrize(
+    "event_type,expected_type_str",
+    [
+        (RunState.START, "START"),
+        (RunState.COMPLETE, "COMPLETE"),
+        (RunState.FAIL, "FAIL"),
+        (RunState.ABORT, "ABORT"),
+        (RunState.RUNNING, "RUNNING"),
+        (RunState.OTHER, "OTHER"),
+    ],
+)
+def test_file_transport_debug_mode_different_event_types(mock_dt, event_type, expected_type_str):
+    """Test that debug mode handles different RunState event types correctly."""
+    mock_dt.now().strftime.return_value = "250115T143052.123456"
+
+    log_dir = tempfile.TemporaryDirectory()
+    base_path = join(log_dir.name, "logtest")
+
+    config = FileConfig(log_file_path=base_path, debug_mode=True)
+    transport = FileTransport(config)
+
+    event = RunEvent(
+        eventType=event_type,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="test-namespace", name="test-job"),
+        producer="prod",
+    )
+
+    file_path = transport._get_file_path(event)
+    expected_path = f"{base_path}-250115T143052.123456-test-job-{expected_type_str}.json"
+    assert file_path == expected_path
+
+
+def test_file_transport_debug_mode_json_prettified():
+    """Test that debug mode outputs prettified (indented) JSON."""
+    log_file = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    log_file.close()
+
+    config = FileConfig(log_file_path=log_file.name, debug_mode=True, append=True)
+    transport = FileTransport(config)
+
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="test-namespace", name="test-job"),
+        producer="prod",
+    )
+
+    with mock.patch("openlineage.client.transport.file.Serde.to_json") as mock_to_json:
+        mock_to_json.return_value = '{"test": "json"}'
+        transport.emit(event)
+
+        # Verify Serde.to_json was called with indent=2 for prettification
+        mock_to_json.assert_called_once()
+        call_args = mock_to_json.call_args
+        assert call_args[1].get("indent") == 2
+
+    os.remove(log_file.name)
+
+
+def test_file_transport_debug_mode_json_not_prettified_when_disabled():
+    """Test that non-debug mode outputs compact JSON."""
+    log_file = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    log_file.close()
+
+    config = FileConfig(log_file_path=log_file.name, debug_mode=False, append=True)
+    transport = FileTransport(config)
+
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="test-namespace", name="test-job"),
+        producer="prod",
+    )
+
+    with mock.patch("openlineage.client.transport.file.Serde.to_json") as mock_to_json:
+        mock_to_json.return_value = '{"test": "json"}'
+        transport.emit(event)
+
+        # Verify Serde.to_json was called without indent parameter
+        mock_to_json.assert_called_once()
+        call_args = mock_to_json.call_args
+        assert "indent" not in call_args[1] or call_args[1].get("indent") is None
+
+    os.remove(log_file.name)
+
+
+@mock.patch("openlineage.client.transport.file.datetime")
+def test_file_transport_debug_mode_append_ignores_debug_filename(mock_dt):
+    """Test that debug mode does not affect filename when append mode is enabled."""
+    mock_dt.now().strftime.return_value = "250115T143052"
+
+    log_dir = tempfile.TemporaryDirectory()
+    base_path = join(log_dir.name, "logtest")
+
+    config = FileConfig(log_file_path=base_path, debug_mode=True, append=True)
+    transport = FileTransport(config)
+
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="test-namespace", name="my-test-job"),
+        producer="prod",
+    )
+
+    file_path = transport._get_file_path(event)
+    # In append mode, should return base path regardless of debug mode
+    assert file_path == base_path
+
+
+def test_file_config_from_dict_with_debug_mode():
+    """Test that FileConfig.from_dict correctly handles debug_mode parameter."""
+    log_dir = tempfile.TemporaryDirectory()
+    file_path = join(log_dir.name, "logtest")
+
+    config = FileConfig.from_dict(params={"log_file_path": file_path, "debug_mode": True})
+    assert config.debug_mode is True
+
+    config = FileConfig.from_dict(params={"log_file_path": file_path, "debug_mode": False})
+    assert config.debug_mode is False
+
+    config = FileConfig.from_dict(params={"log_file_path": file_path})
+    assert config.debug_mode is False  # default
