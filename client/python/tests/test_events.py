@@ -259,3 +259,27 @@ def test_job_event() -> None:
     )
 
     assert Serde.to_json(job_event) == get_sorted_json("serde_example_job_event.json")
+
+
+def test_serde_to_json_kwargs_passed() -> None:
+    """Test that kwargs are correctly passed through to json.dumps in Serde.to_json."""
+    from unittest.mock import ANY, patch
+
+    test_obj = ListOfStrings(values=["test"])
+
+    with patch("openlineage.client.serde.json.dumps") as mock_dumps:
+        mock_dumps.return_value = '{"test": "value"}'
+
+        # Call with various kwargs
+        Serde.to_json(test_obj, indent=2, separators=(",", ":"), ensure_ascii=False)
+
+        # Verify json.dumps was called with the dict and exact kwargs
+        # First arg is the dict from to_dict, then kwargs
+        mock_dumps.assert_called_once_with(
+            {"values": ["test"]},  # The dict from Serde.to_dict
+            sort_keys=True,
+            default=ANY,  # Lambda function, use ANY to match
+            indent=2,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )

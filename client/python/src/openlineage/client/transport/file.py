@@ -47,6 +47,13 @@ class FileConfig(Config):
             - Factory function path (e.g., "mymodule.get_filesystem")
             - Instance attribute path (e.g., "mymodule.fs_instance")
         fs_kwargs (dict): Keyword arguments for constructing/calling the filesystem provider.
+        debug_mode (bool): Enable debug mode (default: False). Only effective when append=False. When enabled:
+            - Filenames include short timestamp (2-digit year), job/dataset name sanitized, and event type.
+              For RunEvent: uses job name and event type (e.g., START, COMPLETE).
+              For JobEvent: uses job name with "unknown_event_type" as event type.
+              For DatasetEvent: uses dataset name with "unknown_event_type" as event type.
+              Example: "log_file_path/ol-250115T143052.123456-my_job.name-START.json"
+            - JSON output is prettified with indentation for easier reading
     """
 
     log_file_path: str
@@ -57,6 +64,7 @@ class FileConfig(Config):
     filesystem: str | None = None
     # Keyword arguments for constructing/calling the filesystem provider
     fs_kwargs: dict[str, Any] | None = None
+    debug_mode: bool = False
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> FileConfig:
@@ -70,6 +78,7 @@ class FileConfig(Config):
             storage_options=params.get("storage_options"),
             filesystem=params.get("filesystem"),
             fs_kwargs=params.get("fs_kwargs"),
+            debug_mode=params.get("debug_mode", False),
         )
 
         # Validate configuration
@@ -195,23 +204,45 @@ class FileTransport(Transport):
         else:
             return LocalFileHandler()
 
-    def _get_file_path(self) -> str:
+    def _get_file_path(self, event: Event) -> str:
         """Get the file path, adding timestamp if not in append mode."""
         if self.config.append:
             return self.config.log_file_path
-        else:
+        if not self.config.debug_mode:
             time_str = datetime.now().strftime("%Y%m%d-%H%M%S.%f")
             return f"{self.config.log_file_path}-{time_str}.json"
 
+        # Debug mode
+        time_str = datetime.now().strftime("%y%m%dT%H%M%S.%f")
+
+        # Extract job name if present
+        job_name = "unknown_job_name"
+        if hasattr(event, "job") and hasattr(event.job, "name"):
+            job_name = event.job.name
+        elif hasattr(event, "dataset") and hasattr(event.dataset, "name"):
+            # DatasetEvent doesn't have job, use dataset name
+            job_name = event.dataset.name
+
+        # Extract event type if present (only RunEvent has it)
+        event_type = "unknown_event_type"
+        if hasattr(event, "eventType"):
+            event_type = event.eventType.value if hasattr(event.eventType, "value") else str(event.eventType)  # type: ignore[union-attr]
+
+        # Sanitize names for filesystem (replace problematic characters)
+        job_name_safe = "".join(c if c.isalnum() or c in ("_", ".", "-") else "__" for c in job_name)
+
+        return f"{self.config.log_file_path}-{time_str}-{job_name_safe}-{event_type}.json"
+
     def emit(self, event: Event) -> None:
-        log_file_path = self._get_file_path()
+        log_file_path = self._get_file_path(event)
         mode = "a" if self.config.append else "w"
 
         log.debug("Openlineage event will be emitted to file: `%s`", log_file_path)
 
         try:
             with self._file_handler.open_file(log_file_path, mode) as f:
-                f.write(Serde.to_json(event) + "\n")
+                kwargs = {"indent": 2} if self.config.debug_mode else {}
+                f.write(Serde.to_json(event, **kwargs) + "\n")
         except (PermissionError, io.UnsupportedOperation) as error:
             # If we lack write permissions or file is opened in wrong mode
             msg = f"Log file `{log_file_path}` is not writeable"
