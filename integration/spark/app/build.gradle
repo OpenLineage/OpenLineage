@@ -17,7 +17,7 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id "org.gradle.test-retry" version "1.6.2"
+    id "org.gradle.test-retry" version "1.6.4"
 }
 
 ext {
@@ -25,19 +25,19 @@ ext {
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
-    assertjVersion = '3.27.3'
-    bigqueryVersion = '0.42.2'
-    junit5Version = '5.11.4'
+    assertjVersion = '3.27.6'
+    bigqueryVersion = '0.43.1'
+    junit5Version = '6.0.1'
     mockitoVersion = '4.11.0'
-    postgresqlVersion = '42.7.5'
-    testcontainersVersion = '1.20.5'
-    awssdkVersion = '2.38.4'
+    postgresqlVersion = '42.7.8'
+    testcontainersVersion = '2.0.2'
+    awssdkVersion = '2.39.5'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
             testDir      : project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.14.4'
+    micrometerVersion = '1.16.0'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -104,7 +104,7 @@ dependencies {
     implementation(project(path: ":iceberg"))
     implementation(project(path: ":gcp"))
 
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.2")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.5.1")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
@@ -121,13 +121,13 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.49.1.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.51.0.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:mockserver")
     testImplementation("org.testcontainers:kafka")
-    testImplementation("commons-beanutils:commons-beanutils:1.10.1")
+    testImplementation("commons-beanutils:commons-beanutils:1.11.0")
     testImplementation("org.awaitility:awaitility:4.3.0")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
@@ -156,7 +156,7 @@ dependencies {
     testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.16")
-    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.24.3"))
+    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.25.2"))
     testRuntimeOnly("org.apache.logging.log4j:log4j-api")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core")
     testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
