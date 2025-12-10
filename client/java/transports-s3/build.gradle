@@ -34,10 +34,6 @@ sourceSets {
     }
 }
 
-tasks.named('compileTestJava') {
-    dependsOn tasks.named('generateTestBuildConfigClasses')
-}
-
 dependencies {
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
     implementation(platform("software.amazon.awssdk:bom:${awssdkVersion}"))
