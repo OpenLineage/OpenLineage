@@ -91,9 +91,9 @@ class SparkRddGenericIntegrationTest {
     assertThat(
             events.stream()
                 .filter(event -> RunEvent.EventType.COMPLETE.equals(event.getEventType()))
-                .filter(event -> event.getJob().getName().contains("insert_into_hadoop_fs"))
+                .filter(event -> event.getJob().getName().endsWith(".test_data_final_output"))
                 .collect(Collectors.toSet()))
-        .hasSize(2);
+        .hasSize(1);
   }
 
   @Test
@@ -126,9 +126,9 @@ class SparkRddGenericIntegrationTest {
     assertThat(
             events.stream()
                 .filter(event -> RunEvent.EventType.COMPLETE.equals(event.getEventType()))
-                .filter(event -> event.getJob().getName().contains("insert_into_hadoop_fs"))
+                .filter(event -> event.getJob().getName().endsWith(".test_data_final_output"))
                 .collect(Collectors.toSet()))
-        .hasSize(2);
+        .hasSize(1);
   }
 
   private static void setupSparkSession() {
