@@ -4,6 +4,8 @@
 */
 package io.openlineage.client.transports.gcplineage;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -17,14 +19,26 @@ import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRespons
 import com.google.cloud.datalineage.producerclient.helpers.OpenLineageHelper;
 import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClient;
+import datalineage.shaded.org.threeten.bp.Duration;
+import datalineage.shaded.org.threeten.bp.format.DateTimeParseException;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.util.Base64;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class GcpLineageTransportTest {
 
@@ -107,6 +121,49 @@ class GcpLineageTransportTest {
     assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
   }
 
+  @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
+  @Test
+  void testAsyncClientWithGracefulShutdownDuration(@TempDir Path tempDir) throws Exception {
+    Path path = createMockCredentialsFile(tempDir);
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
+    config.setProjectId("test-project");
+    config.setLocation("asia-southeast1");
+    config.setMode(GcpLineageTransportConfig.Mode.ASYNC);
+    config.setGracefulShutdownDuration("PT1H30M45S");
+    config.setCredentialsFile(path.toString());
+
+    GcpLineageTransport gcpLineageTransport = new GcpLineageTransport(config);
+    GcpLineageTransport.ProducerClientWrapper wrapper =
+        getValue("producerClientWrapper", GcpLineageTransport.class, gcpLineageTransport);
+    AsyncLineageProducerClient client =
+        getValue("asyncLineageClient", GcpLineageTransport.ProducerClientWrapper.class, wrapper);
+    Duration actualDuration =
+        getValue("gracefulShutdownDuration", AsyncLineageProducerClient.class, client);
+
+    Duration expectedDuration = Duration.ofHours(1).plusMinutes(30).plusSeconds(45);
+    assertEquals(expectedDuration, actualDuration);
+    assertNotNull(wrapper);
+  }
+
+  @Test
+  void testAsyncClientWithInvalidGracefulShutdownDuration(@TempDir Path tempDir)
+      throws IOException, GeneralSecurityException {
+    // Initialize config programmatically with invalid duration
+    Path path = createMockCredentialsFile(tempDir);
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
+    config.setProjectId("test-project");
+    config.setLocation("us-central1");
+    config.setMode(GcpLineageTransportConfig.Mode.ASYNC);
+    config.setGracefulShutdownDuration("invalid-duration");
+    config.setCredentialsFile(path.toString());
+
+    assertThrows(
+        DateTimeParseException.class,
+        () -> {
+          new GcpLineageTransport.ProducerClientWrapper(config);
+        });
+  }
+
   public static OpenLineage.RunEvent runEvent() {
     OpenLineage.Job job =
         new OpenLineage.JobBuilder().namespace("test-namespace").name("test-job").build();
@@ -119,5 +176,53 @@ class GcpLineageTransportTest {
         .job(job)
         .run(run)
         .build();
+  }
+
+  @SuppressWarnings({"PMD.AvoidAccessibilityAlteration"})
+  private <T, V> V getValue(String fieldName, Class<T> clazz, T object)
+      throws NoSuchFieldException, IllegalAccessException {
+    Field clientField = clazz.getDeclaredField(fieldName);
+    clientField.setAccessible(true);
+    return (V) clientField.get(object);
+  }
+
+  /**
+   * Creates a mock GCP service account credentials file for testing purposes. This file contains
+   * fake credentials that won't trigger GitHub's secret scanning.
+   *
+   * @param tempDir temporary directory provided by JUnit
+   * @return Path to the created mock credentials file
+   * @throws IOException if file creation fails
+   */
+  private Path createMockCredentialsFile(Path tempDir)
+      throws IOException, GeneralSecurityException {
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+    keyGen.initialize(2048);
+    PrivateKey privateKey = keyGen.generateKeyPair().getPrivate();
+    String pemBody =
+        Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(privateKey.getEncoded());
+    String mockedPrivateKey =
+        "-----BEGIN PRIVATE KEY-----\n" + pemBody + "\n-----END PRIVATE KEY-----\n";
+    String mockedEscapedPrivateKey = mockedPrivateKey.replace("\n", "\\n");
+    String mockCredentials =
+        "{\n"
+            + "  \"type\": \"service_account\",\n"
+            + "  \"project_id\": \"mock-project-id\",\n"
+            + "  \"private_key_id\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n"
+            + "  \"private_key\": \""
+            + mockedEscapedPrivateKey
+            + "\",\n"
+            + "  \"client_email\": \"mock-email@gcp-open-lineage-testing.iam.gserviceaccount.com\",\n"
+            + "  \"client_id\": \"101011010101111111001\",\n"
+            + "  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\n"
+            + "  \"token_uri\": \"https://oauth2.googleapis.com/token\",\n"
+            + "  \"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\n"
+            + "  \"client_x509_cert_url\": \"https://www.googleapis.com/robot/v1/metadata/x509/mock-email%40gcp-open-lineage-testing.iam.gserviceaccount.com\",\n"
+            + "  \"universe_domain\": \"googleapis.com\"\n"
+            + "}";
+
+    Path credentialsFile = tempDir.resolve("mock-credentials.json");
+    Files.write(credentialsFile, mockCredentials.getBytes(StandardCharsets.UTF_8));
+    return credentialsFile;
   }
 }
