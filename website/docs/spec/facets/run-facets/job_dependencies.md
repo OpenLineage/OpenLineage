@@ -87,6 +87,10 @@ Example:
           },
           "run": {
             "runId": "7070ca59-60e0-4dbe-a1f5-4ee0c3a3195c"
+          },
+          "airflow": {
+              "dagrun_id": "some_dagrun_id",
+              "another_important_info": "123"
           }
         },
         {
@@ -107,4 +111,4 @@ Example:
 }
 ```
 
-The facet specification can be found [here](https://openlineage.io/spec/facets/1-0-0/JobDependenciesRunFacet.json).
+The facet specification can be found [here](https://openlineage.io/spec/facets/1-0-1/JobDependenciesRunFacet.json).
