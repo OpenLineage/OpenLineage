@@ -237,9 +237,10 @@ class OpenLineageRunEventBuilder {
         .getQueryExecution()
         .ifPresent(
             qe -> {
-              if (log.isDebugEnabled()) {
-                log.debug("Traversing optimized plan {}", qe.optimizedPlan().toJSON());
-                log.debug("Physical plan executed {}", qe.executedPlan().toJSON());
+              if (openLineageContext.getOpenLineageConfig().getDebugConfig() != null
+                  && openLineageContext.getOpenLineageConfig().getDebugConfig().isLogPlanAsJson()) {
+                log.info("Traversing optimized plan {}", qe.optimizedPlan().toJSON());
+                log.info("Physical plan executed {}", qe.executedPlan().toJSON());
               }
             });
     if (log.isDebugEnabled()) {
