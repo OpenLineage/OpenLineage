@@ -53,6 +53,7 @@ dependencies {
         exclude group: "org.apache.spark:spark-catalyst_${scala}"
     }
 
+    testImplementation(project(path: ":spark3"))
     testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
