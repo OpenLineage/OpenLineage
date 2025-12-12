@@ -95,7 +95,8 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
                   } catch (Exception e) {
                     log.error(
                         "Can't invoke 'isDefinedAt' method on {} class instance",
-                        objectAndMethod.left.getClass().getCanonicalName());
+                        objectAndMethod.left.getClass().getCanonicalName(),
+                        e);
                   }
                   return false;
                 });
@@ -131,7 +132,8 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
         } catch (Exception e) {
           log.warn(
               "Can't invoke apply method on {} class instance",
-              objectAndMethod.left.getClass().getCanonicalName());
+              objectAndMethod.left.getClass().getCanonicalName(),
+              e);
         }
       }
     }
@@ -191,7 +193,8 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
         } catch (Exception e) {
           log.error(
               "Can't invoke apply method on {} class instance",
-              objectAndMethod.left.getClass().getCanonicalName());
+              objectAndMethod.left.getClass().getCanonicalName(),
+              e);
         }
       }
     }
