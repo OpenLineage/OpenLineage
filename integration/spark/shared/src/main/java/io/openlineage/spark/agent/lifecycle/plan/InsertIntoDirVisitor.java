@@ -52,7 +52,7 @@ public class InsertIntoDirVisitor
 
               if (GVFSUtils.isGVFS(uri)) {
                 outputDataset =
-                    GVFSUtils.injectGVFSFacets(context.getOpenLineage(), outputDataset, uri);
+                    GVFSUtils.createGVFSOutputDataset(context.getOpenLineage(), outputDataset, uri);
               }
 
               return Collections.singletonList(outputDataset);

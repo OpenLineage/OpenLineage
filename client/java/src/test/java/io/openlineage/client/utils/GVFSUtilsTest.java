@@ -214,4 +214,42 @@ class GVFSUtilsTest {
     String location = GVFSUtils.getGVFSLocation(new URI("gvfs://fileset/cat/sch/fil"));
     Assertions.assertEquals("/", location);
   }
+
+  @Test
+  @SneakyThrows
+  void testCreateGVFSDatasetIdentifier() {
+    URI gvfsUri = new URI("gvfs://fileset/catalog_name/schema_name/fileset_name/data/2024/01/");
+    
+    DatasetIdentifier identifier = GVFSUtils.createGVFSDatasetIdentifier(gvfsUri);
+    
+    // Verify basic properties
+    Assertions.assertEquals("catalog_name.schema_name.fileset_name", identifier.getName());
+    Assertions.assertEquals("__GVFS_NAMESPACE", identifier.getNamespace());
+    
+    // Verify symlink
+    Assertions.assertEquals(1, identifier.getSymlinks().size());
+    DatasetIdentifier.Symlink symlink = identifier.getSymlinks().get(0);
+    Assertions.assertEquals("catalog_name.schema_name.fileset_name", symlink.getName());
+    Assertions.assertEquals("gvfs://fileset/data/2024/01/", symlink.getNamespace());
+    Assertions.assertEquals(DatasetIdentifier.SymlinkType.LOCATION, symlink.getType());
+  }
+
+  @Test
+  @SneakyThrows
+  void testCreateGVFSDatasetIdentifierMinimalPath() {
+    URI gvfsUri = new URI("gvfs://fileset/cat/sch/fil");
+    
+    DatasetIdentifier identifier = GVFSUtils.createGVFSDatasetIdentifier(gvfsUri);
+    
+    // Verify basic properties
+    Assertions.assertEquals("cat.sch.fil", identifier.getName());
+    Assertions.assertEquals("__GVFS_NAMESPACE", identifier.getNamespace());
+    
+    // Verify symlink
+    Assertions.assertEquals(1, identifier.getSymlinks().size());
+    DatasetIdentifier.Symlink symlink = identifier.getSymlinks().get(0);
+    Assertions.assertEquals("cat.sch.fil", symlink.getName());
+    Assertions.assertEquals("gvfs://fileset/", symlink.getNamespace());
+    Assertions.assertEquals(DatasetIdentifier.SymlinkType.LOCATION, symlink.getType());
+  }
 }

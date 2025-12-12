@@ -197,7 +197,10 @@ public abstract class DatasetFactory<D extends Dataset> {
                 namespaceResolver.resolve(datasetIdentifier.getNamespace())));
 
     if (GVFSUtils.isGVFS(outputPath)) {
-      GVFSUtils.injectGVFSFacets(context.getOpenLineage(), datasetFacetsBuilder, outputPath);
+      // Use GVFS-specific DatasetIdentifier with symlinks instead of custom facets
+      datasetIdentifier = GVFSUtils.createGVFSDatasetIdentifier(outputPath);
+      // Add GVFS data type facet
+      datasetFacetsBuilder.getFacets().datasetType(context.getOpenLineage().newDatasetTypeDatasetFacet("Fileset", ""));
     }
 
     return getDataset(datasetIdentifier, datasetFacetsBuilder);
@@ -222,7 +225,10 @@ public abstract class DatasetFactory<D extends Dataset> {
                 context.getOpenLineage(), namespaceResolver.resolve(namespace)));
     DatasetIdentifier datasetIdentifier = PathUtils.fromURI(outputPath);
     if (GVFSUtils.isGVFS(outputPath)) {
-      GVFSUtils.injectGVFSFacets(context.getOpenLineage(), facetsBuilder, outputPath);
+      // Use GVFS-specific DatasetIdentifier with symlinks instead of custom facets
+      datasetIdentifier = GVFSUtils.createGVFSDatasetIdentifier(outputPath);
+      // Add GVFS data type facet
+      facetsBuilder.getFacets().datasetType(context.getOpenLineage().newDatasetTypeDatasetFacet("Fileset", ""));
     }
     return getDataset(datasetIdentifier, facetsBuilder);
   }

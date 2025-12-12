@@ -48,7 +48,7 @@ public class InsertIntoDataSourceDirVisitor
     }
 
     if (GVFSUtils.isGVFS(location)) {
-      outputDataset = GVFSUtils.injectGVFSFacets(context.getOpenLineage(), outputDataset, location);
+      outputDataset = GVFSUtils.createGVFSOutputDataset(context.getOpenLineage(), outputDataset, location);
     }
 
     return Collections.singletonList(outputDataset);
