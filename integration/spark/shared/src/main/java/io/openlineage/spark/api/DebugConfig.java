@@ -33,6 +33,9 @@ public class DebugConfig {
 
   @JsonProperty Integer payloadSizeLimitInKilobytes;
 
+  @JsonProperty("logPlanAsJson")
+  boolean logPlanAsJson;
+
   public boolean isSmartDebugActive(boolean hasDetectedInputs, boolean hasDetectedOutputs) {
     if (!smartEnabled) {
       return false;
