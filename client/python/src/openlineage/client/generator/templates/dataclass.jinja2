@@ -161,7 +161,7 @@ class {{ class_name }}:
 {%- endif -%}
 {#- add additional properties method -#}
 {%- if additionalProperties == True %}
-    def with_additional_properties(self, **kwargs: dict[str, Any]) -> "{{ class_name }}":
+    def with_additional_properties(self, **kwargs: Any) -> "{{ class_name }}":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 

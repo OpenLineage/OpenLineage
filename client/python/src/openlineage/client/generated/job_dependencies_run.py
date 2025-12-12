@@ -61,7 +61,7 @@ class JobDependency(RedactMixin):
     Example: EXECUTE_EVERY_TIME|EXECUTE_ON_SUCCESS|EXECUTE_ON_FAILURE
     """
 
-    def with_additional_properties(self, **kwargs: dict[str, Any]) -> "JobDependency":
+    def with_additional_properties(self, **kwargs: Any) -> "JobDependency":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 

@@ -38,7 +38,7 @@ class Fields(RedactMixin):
     original data available (like a hash of PII for example)
     """
 
-    def with_additional_properties(self, **kwargs: dict[str, Any]) -> "Fields":
+    def with_additional_properties(self, **kwargs: Any) -> "Fields":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 
@@ -75,7 +75,7 @@ class InputField(RedactMixin):
     transformations: list[Transformation] | None = attr.field(factory=list)
     _skip_redact: ClassVar[list[str]] = ["namespace", "name", "field"]
 
-    def with_additional_properties(self, **kwargs: dict[str, Any]) -> "InputField":
+    def with_additional_properties(self, **kwargs: Any) -> "InputField":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 
@@ -116,7 +116,7 @@ class Transformation(RedactMixin):
 
     _skip_redact: ClassVar[list[str]] = ["type", "subtype", "masking"]
 
-    def with_additional_properties(self, **kwargs: dict[str, Any]) -> "Transformation":
+    def with_additional_properties(self, **kwargs: Any) -> "Transformation":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 
