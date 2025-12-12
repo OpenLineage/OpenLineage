@@ -13,7 +13,7 @@ labelPRBasedOnFilePath:
     - dev/**/*
     - .github/**/*
   area:documentation:
-    - doc/*
+    - doc/**/*
     - "*.md"
   area:integration/airflow:
     - integration/airflow/**/*
@@ -35,6 +35,8 @@ labelPRBasedOnFilePath:
     - spec/**/*
   area:tests:
     - "**/*test*"
+  area:website:
+    - website/**/*
   kind:proposal:
     - proposals/**/*
   language:java:
@@ -47,6 +49,15 @@ labelPRBasedOnFilePath:
   language:scala:
     - "*.scala"
     - "*.sc"
+  skip-changelog:
+    - website/**/*
+    - proposals/**/*
+    - doc/**/*
+    - "*.md"
+    - dev/**/*
+    - .github/**/*
+    - .circleci/**/*
+    - .pre_commit/**/*
 
 ##### Greetings ########################################################################################################
 # Comment to be posted to welcome users when they open their first PR
