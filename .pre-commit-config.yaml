@@ -92,11 +92,11 @@ repos:
   - repo: local
     hooks:
       - id: check-version-files
-        name: Check version file paths in new-version.sh
-        description: "Verifies that file paths in new-version.sh exist and are only defined in that file"
+        name: Check version file paths in release.sh
+        description: "Verifies that file paths in release.sh exist and are only defined in that file"
         language: script
         entry: .pre_commit/check_version_update_path.sh
-        files: new-version\.sh$|\.gradle$|gradle\.properties$|README\.md$|version\.properties$
+        files: release\.sh$|\.gradle$|gradle\.properties$|README\.md$|version\.properties$
         pass_filenames: false
       - id: forbid-attr-s
         name: Check for @attr.s

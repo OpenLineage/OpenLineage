@@ -10,7 +10,7 @@
 #   * You have the following dependencies installed: git, uv, bump-my-version
 #     (The script will check for these and provide installation instructions if missing)
 #
-# Usage: $ ./new-version.sh --release-version RELEASE_VERSION --next-version NEXT_VERSION
+# Usage: $ ./release.sh --release-version RELEASE_VERSION --next-version NEXT_VERSION
 
 set -e
 
@@ -24,16 +24,16 @@ usage() {
   echo
   title "EXAMPLES:"
   echo "  # Bump version ('-SNAPSHOT' will automatically be appended to '0.0.2')"
-  echo "  $ ./new-version.sh -r 0.0.1 -n 0.0.2"
+  echo "  $ ./release.sh -r 0.0.1 -n 0.0.2"
   echo
   echo "  # Bump version (with '-SNAPSHOT' already appended to '0.0.2')"
-  echo "  $ ./new-version.sh -r 0.0.1 -n 0.0.2-SNAPSHOT"
+  echo "  $ ./release.sh -r 0.0.1 -n 0.0.2-SNAPSHOT"
   echo
   echo "  # Bump release candidate"
-  echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2"
+  echo "  $ ./release.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2"
   echo
   echo "  # Bump release candidate without push"
-  echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 -p"
+  echo "  $ ./release.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 -p"
   echo
   title "ARGUMENTS:"
   echo "  -r, --release-version string     the release version (ex: X.Y.Z, X.Y.Z-rc.*)"
@@ -225,6 +225,25 @@ fi
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
   echo "error: you have unstaged changes in your working directory!"
   exit 1;
+fi
+
+# Ensure we're on the latest main with no local changes
+git fetch origin main
+if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+  echo "error: your local 'main' branch is not up to date with 'origin/main'!"
+  echo "Please run: git reset --hard origin/main"
+  exit 1;
+fi
+
+# Ensure there is no existing remote or local tag with the release version
+git fetch --tags origin
+if git ls-remote --tags origin "${RELEASE_VERSION}" | grep -q .; then
+  echo "error: Remote tag '${RELEASE_VERSION}' already exists on origin."
+  exit 1
+fi
+if git rev-parse -q --verify "refs/tags/${RELEASE_VERSION}" >/dev/null; then
+  echo "Removing existing local tag '${RELEASE_VERSION}'..."
+  git tag -d "${RELEASE_VERSION}"
 fi
 
 # Ensure valid versions
