@@ -22,8 +22,23 @@ ext {
 }
 
 dependencies {
-    implementation "com.google.cloud.datalineage:producerclient-java8:1.0.0"
-    implementation "com.google.cloud:google-cloud-datalineage:0.72.0"
+    compileOnly('com.google.code.findbugs:jsr305:3.0.2')
+    implementation("com.google.cloud.datalineage:producerclient:1.1.0")
+
+    testImplementation("com.google.cloud.datalineage:producerclient:1.1.0")
+}
+
+shadowJar {
+    relocate 'datalineage.shaded', 'io.openlineage.client.shaded.datalineage.shaded'
+    relocate 'com.google.cloud', 'io.openlineage.client.shaded.com.google.cloud'
+    relocate 'com.google.api', 'io.openlineage.client.shaded.com.google.api'
+    relocate 'com.google.auth', 'io.openlineage.client.shaded.com.google.auth'
+    relocate 'com.google.protobuf', 'io.openlineage.client.shaded.com.google.protobuf'
+
+    relocate 'META-INF/native/libdatalineage_shaded_io_grpc_netty_shaded_netty', 'META-INF/native/libio_openlineage_client_io_grpc_netty_shaded_netty'
+    relocate 'META-INF/native/datalineage_shaded_io_grpc_netty_shaded_netty', 'META-INF/native/io_openlineage_client_io_grpc_netty_shaded_netty'
+
+    mergeServiceFiles()
 }
 
 apply from: '../transports.build.gradle'
