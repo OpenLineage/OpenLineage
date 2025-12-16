@@ -17,8 +17,6 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 
 @Slf4j
 public class GravitinoUtils {
-  private static final String DEFAULT_CATALOG_NAME = "spark_catalog";
-  private static final String DEFAULT_DATABASE_NAME = "default";
 
   // For datasource v1, like parquet
   public static DatasetIdentifier getGravitinoDatasetIdentifier(URI uri) {
@@ -29,22 +27,27 @@ public class GravitinoUtils {
     return new DatasetIdentifier(uri.toString(), metalake);
   }
 
-  // For createTableLike and hive catalogTable
-  public static DatasetIdentifier getGravitinoDatasetIdentifier(TableIdentifier identifier) {
+
+  // For datasource v1 with TableIdentifier
+  public static DatasetIdentifier getGravitinoDatasetIdentifier(TableIdentifier tableIdentifier) {
     GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.getInstance();
     String metalake = provider.getMetalakeName();
-    String catalogName = provider.getGravitinoCatalog(DEFAULT_CATALOG_NAME);
-    String[] database = {DEFAULT_DATABASE_NAME};
-    if (!identifier.database().isEmpty()) {
-      database = new String[] {identifier.database().get()};
-    }
+    
+    // Build the dataset name from catalog, database, and table
+    String catalogName = "spark_catalog"; // Default catalog for Spark
+    
+    // Check if there's a catalog mapping configured
+    catalogName = provider.getGravitinoCatalog(catalogName);
+    
+    String database = tableIdentifier.database().isDefined() ? tableIdentifier.database().get() : "default";
+    String tableName = tableIdentifier.table();
+    
+    String datasetName = catalogName + "." + database + "." + tableName;
+    
     log.debug(
-        "Creating Gravitino dataset identifier from TableIdentifier: {}.{} with catalog: {}, metalake: {}",
-        database[0],
-        identifier.table(),
-        catalogName,
-        metalake);
-    return getGravitinoDatasetIdentifier(metalake, catalogName, database, identifier.table());
+        "Creating Gravitino dataset identifier from TableIdentifier: {} with metalake: {}", 
+        datasetName, metalake);
+    return new DatasetIdentifier(datasetName, metalake);
   }
 
   // For datasource v2

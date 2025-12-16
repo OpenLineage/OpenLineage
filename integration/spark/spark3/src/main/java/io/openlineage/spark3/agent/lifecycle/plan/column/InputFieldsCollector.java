@@ -146,7 +146,7 @@ public class InputFieldsCollector {
         || node instanceof ExternalRDD) {
       // skip without warning
     } else if (node instanceof LeafNode) {
-      log.info("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());
+      log.warn("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());
     }
 
     return Collections.emptyList();
