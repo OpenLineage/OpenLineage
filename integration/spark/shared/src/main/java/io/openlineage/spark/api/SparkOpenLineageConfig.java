@@ -44,6 +44,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private String rootParentJobNamespace;
   private String rootParentRunId;
   private String overriddenAppName;
+  private String overriddenApplicationRunId;
   private String testExtensionProvider;
   private JobNameConfig jobName;
 
@@ -71,6 +72,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String rootParentJobNamespace,
       String rootParentRunId,
       String overriddenAppName,
+      String overriddenApplicationRunId,
       String testExtensionProvider,
       JobNameConfig jobName,
       JobConfig job,
@@ -92,6 +94,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.rootParentJobNamespace = rootParentJobNamespace;
     this.rootParentRunId = rootParentRunId;
     this.overriddenAppName = overriddenAppName;
+    this.overriddenApplicationRunId = overriddenApplicationRunId;
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
     this.columnLineageConfig = columnLineageConfig;
@@ -178,6 +181,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(rootParentJobNamespace, other.rootParentJobNamespace),
         mergePropertyWith(rootParentRunId, other.rootParentRunId),
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
+        mergePropertyWith(overriddenApplicationRunId, other.overriddenApplicationRunId),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),
         mergePropertyWith(jobConfig, other.jobConfig),
