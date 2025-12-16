@@ -267,7 +267,7 @@ fi
 # the same version as what was expected the last time we released. E.g., if the next expected
 # release was a patch version, but a new minor version is being released, we need to update to the
 # actual release version prior to committing/tagging
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/sql/iface-py/)
+PYTHON_MODULES=(client/python/ integration/common/ integration/dbt/ integration/sql/iface-py/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
   (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
 done
