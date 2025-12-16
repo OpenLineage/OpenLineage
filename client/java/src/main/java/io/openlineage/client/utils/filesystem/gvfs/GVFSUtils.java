@@ -10,11 +10,9 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.gravitino.GravitinoFacets;
 import io.openlineage.client.gravitino.GravitinoFacets.LocationDatasetFacet;
-import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.GVFSFilesystemDatasetExtractor;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -32,85 +30,6 @@ public class GVFSUtils {
     return GVFSFilesystemDatasetExtractor.SCHEME.equalsIgnoreCase(uri.getScheme());
   }
 
-  /**
-   * Creates a DatasetIdentifier with GVFS symlink for the given GVFS URI.
-   * This method should be used instead of injectGVFSFacets to follow the standard symlink pattern.
-   *
-   * @param uri GVFS URI in format: gvfs://fileset/catalog/schema/fileset[/subpath]
-   * @return DatasetIdentifier with GVFS symlink
-   */
-  public static DatasetIdentifier createGVFSDatasetIdentifier(URI uri) {
-    String identifierName = getGVFSIdentifierName(uri);
-    String location = getGVFSLocation(uri);
-    
-    // Create symlink pointing to the GVFS fileset location
-    DatasetIdentifier.Symlink gvfsSymlink = new DatasetIdentifier.Symlink(
-        identifierName, 
-        uri.getScheme() + "://" + uri.getHost() + location,
-        DatasetIdentifier.SymlinkType.LOCATION
-    );
-    
-    return new DatasetIdentifier(identifierName, GVFSFilesystemDatasetExtractor.GVFS_NAMESPACE_NAME, List.of(gvfsSymlink));
-  }
-
-  /**
-   * Creates an OutputDataset with GVFS symlink for the given GVFS URI.
-   * This method should be used instead of injectGVFSFacets(OutputDataset) to follow the standard symlink pattern.
-   *
-   * @param openLineage OpenLineage instance
-   * @param outputDataset Original OutputDataset
-   * @param location GVFS URI
-   * @return OutputDataset with GVFS symlink
-   */
-  public static OutputDataset createGVFSOutputDataset(
-      OpenLineage openLineage, OutputDataset outputDataset, URI location) {
-    
-    DatasetIdentifier gvfsIdentifier = createGVFSDatasetIdentifier(location);
-    
-    DatasetFacets datasetFacets = outputDataset.getFacets();
-    DatasetCompositeFacetsBuilder builder = new DatasetCompositeFacetsBuilder(openLineage);
-    builder
-        .getFacets()
-        .columnLineage(datasetFacets.getColumnLineage())
-        .dataSource(datasetFacets.getDataSource())
-        .tags(datasetFacets.getTags())
-        .documentation(datasetFacets.getDocumentation())
-        .lifecycleStateChange(datasetFacets.getLifecycleStateChange())
-        .ownership(datasetFacets.getOwnership())
-        .schema(datasetFacets.getSchema())
-        .storage(datasetFacets.getStorage())
-        .datasetType(openLineage.newDatasetTypeDatasetFacet("Fileset", ""));
-
-    // Add symlinks facet
-    if (!gvfsIdentifier.getSymlinks().isEmpty()) {
-      List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinks =
-          gvfsIdentifier.getSymlinks().stream()
-              .map(
-                  symlink ->
-                      openLineage
-                          .newSymlinksDatasetFacetIdentifiersBuilder()
-                          .name(symlink.getName())
-                          .namespace(symlink.getNamespace())
-                          .type(symlink.getType().toString())
-                          .build())
-              .collect(Collectors.toList());
-
-      builder.getFacets().symlinks(openLineage.newSymlinksDatasetFacet(symlinks));
-    }
-
-    return openLineage
-        .newOutputDatasetBuilder()
-        .name(gvfsIdentifier.getName())
-        .namespace(gvfsIdentifier.getNamespace())
-        .facets(builder.getFacets().build())
-        .outputFacets(outputDataset.getOutputFacets())
-        .build();
-  }
-
-  /**
-   * @deprecated Use createGVFSDatasetIdentifier instead. This method will be removed in a future version.
-   */
-  @Deprecated
   public static void injectGVFSFacets(
       OpenLineage openLineage, DatasetCompositeFacetsBuilder builder, URI location) {
     // add GVFS data type
@@ -121,10 +40,6 @@ public class GVFSUtils {
     builder.getFacets().put("fileset-location", locationDatasetFacet);
   }
 
-  /**
-   * @deprecated Use createGVFSOutputDataset instead. This method will be removed in a future version.
-   */
-  @Deprecated
   public static OutputDataset injectGVFSFacets(
       OpenLineage openLineage, OutputDataset outputDataset, URI location) {
 
