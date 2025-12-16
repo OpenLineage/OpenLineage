@@ -49,15 +49,6 @@ labelPRBasedOnFilePath:
   language:scala:
     - "*.scala"
     - "*.sc"
-  skip-changelog:
-    - website/**/*
-    - proposals/**/*
-    - doc/**/*
-    - "*.md"
-    - dev/**/*
-    - .github/**/*
-    - .circleci/**/*
-    - .pre_commit/**/*
 
 ##### Greetings ########################################################################################################
 # Comment to be posted to welcome users when they open their first PR
