@@ -7,7 +7,6 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
-import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
 import java.io.File;
 import java.net.URI;
 import java.util.Optional;

@@ -27,26 +27,27 @@ public class GravitinoUtils {
     return new DatasetIdentifier(uri.toString(), metalake);
   }
 
-
   // For datasource v1 with TableIdentifier
   public static DatasetIdentifier getGravitinoDatasetIdentifier(TableIdentifier tableIdentifier) {
     GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.getInstance();
     String metalake = provider.getMetalakeName();
-    
+
     // Build the dataset name from catalog, database, and table
     String catalogName = "spark_catalog"; // Default catalog for Spark
-    
+
     // Check if there's a catalog mapping configured
     catalogName = provider.getGravitinoCatalog(catalogName);
-    
-    String database = tableIdentifier.database().isDefined() ? tableIdentifier.database().get() : "default";
+
+    String database =
+        tableIdentifier.database().isDefined() ? tableIdentifier.database().get() : "default";
     String tableName = tableIdentifier.table();
-    
+
     String datasetName = catalogName + "." + database + "." + tableName;
-    
+
     log.debug(
-        "Creating Gravitino dataset identifier from TableIdentifier: {} with metalake: {}", 
-        datasetName, metalake);
+        "Creating Gravitino dataset identifier from TableIdentifier: {} with metalake: {}",
+        datasetName,
+        metalake);
     return new DatasetIdentifier(datasetName, metalake);
   }
 

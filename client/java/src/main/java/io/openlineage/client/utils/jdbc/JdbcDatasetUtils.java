@@ -5,13 +5,12 @@
 
 package io.openlineage.client.utils.jdbc;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import io.openlineage.client.utils.DatasetIdentifier;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
