@@ -1454,6 +1454,7 @@ The `AmazonDataZoneTransport` requires `boto3` package to be additionally instal
 
 - `type` - string, must be `"amazon_datazone_api"`. Required.
 - `domainId` - string, specifies the DataZone / SageMaker Unified Studio domain id. The lineage events will be then sent to the following domain. Required.
+- `region` - string. When provided, the DataZone client will be configured to use this specific region. If endpointOverride is also provided, this value is not used. Optional, default: None (uses AWS SDK default region resolution).
 - `endpointOverride` - string, overrides the default HTTP endpoint for Amazon DataZone client.
   Default value will be set by AWS SDK to [following endpoints](https://docs.aws.amazon.com/general/latest/gr/datazone.html#datazone_region) based on the region.
   Optional, default: None
