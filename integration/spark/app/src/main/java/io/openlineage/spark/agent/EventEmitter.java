@@ -74,7 +74,8 @@ public class EventEmitter {
             .disableFacets(disabledFacets.toArray(new String[0]))
             .build();
     this.applicationJobName = this.overriddenAppName.orElse(applicationJobName);
-    this.applicationRunId = this.overriddenApplicationRunId.orElse(UUIDUtils.generateNewUUID());
+    this.applicationRunId =
+        this.overriddenApplicationRunId.map(UUID::fromString).orElse(UUIDUtils.generateNewUUID());
   }
 
   public void emit(OpenLineage.RunEvent event) {
