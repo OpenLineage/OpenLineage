@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.stream.StreamSupport;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -32,34 +31,31 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
   private GravitinoInfoProviderImpl() {}
 
   /**
-   * Loads all available GravitinoInfoProvider implementations using ServiceLoader.
-   * This allows different modules (like Spark integration) to provide their own implementations
-   * without creating direct dependencies.
+   * Loads all available GravitinoInfoProvider implementations using ServiceLoader. This allows
+   * different modules (like Spark integration) to provide their own implementations without
+   * creating direct dependencies.
    *
    * @return List of available providers
    */
   private static List<GravitinoInfoProvider> loadProviders() {
     ServiceLoader<GravitinoInfoProvider> loader = ServiceLoader.load(GravitinoInfoProvider.class);
     List<GravitinoInfoProvider> providers = new ArrayList<>();
-    
+
     StreamSupport.stream(loader.spliterator(), false)
-        .forEach(provider -> {
-          log.debug("Discovered GravitinoInfoProvider: {}", provider.getClass().getName());
-          providers.add(provider);
-        });
-    
+        .forEach(
+            provider -> {
+              log.debug("Discovered GravitinoInfoProvider: {}", provider.getClass().getName());
+              providers.add(provider);
+            });
+
     if (providers.isEmpty()) {
       log.warn("No GravitinoInfoProvider implementations found via ServiceLoader");
     } else {
       log.debug("Loaded {} GravitinoInfoProvider implementations", providers.size());
     }
-    
+
     return providers;
   }
-
-
-
-
 
   public String getMetalakeName() {
     Optional<String> metalake = getGravitinoInfoInternal().getMetalake();
@@ -137,8 +133,7 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
               provider.getClass().getSimpleName());
           GravitinoInfo info = provider.getGravitinoInfo();
           log.info(
-              "Loaded Gravitino configuration: metalake={}",
-              info.getMetalake().orElse("not set"));
+              "Loaded Gravitino configuration: metalake={}", info.getMetalake().orElse("not set"));
           return info;
         } else {
           log.debug("Provider {} is not available", provider.getClass().getSimpleName());

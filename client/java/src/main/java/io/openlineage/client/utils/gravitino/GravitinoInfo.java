@@ -5,7 +5,6 @@
 package io.openlineage.client.utils.gravitino;
 
 import java.util.Optional;
-
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,4 +12,5 @@ import lombok.Getter;
 @Getter
 public class GravitinoInfo {
   private Optional<String> metalake;
+  private Optional<String> uri;
 }

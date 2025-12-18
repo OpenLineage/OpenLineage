@@ -26,6 +26,9 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
   /** Configuration key for Gravitino metalake name used by Gravitino Spark connector */
   public static final String metalakeConfigKeyForConnector = "spark.sql.gravitino.metalake";
 
+  /** Configuration key for Gravitino URI used by Gravitino Spark connector */
+  public static final String uriConfigKey = "spark.sql.gravitino.uri";
+
 
 
 
@@ -59,8 +62,9 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     // Check if any Gravitino configuration is present
     boolean hasMetalakeConfig = getSparkConfigValue(session, metalakeConfigKeyForConnector) != null 
         || getSparkConfigValue(session, metalakeConfigKeyForFS) != null;
+    boolean hasUriConfig = getSparkConfigValue(session, uriConfigKey) != null;
     
-    boolean available = hasMetalakeConfig;
+    boolean available = hasMetalakeConfig || hasUriConfig;
     
     if (available) {
       log.debug("Active Spark session found with Gravitino configuration");
@@ -81,6 +85,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     SparkSession session = sessionOpt.get();
     return GravitinoInfo.builder()
         .metalake(getMetalake(session))
+        .uri(getUri(session))
         .build();
   }
 
@@ -119,6 +124,23 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
           "Metalake not found in either '{}' or '{}'",
           metalakeConfigKeyForConnector,
           metalakeConfigKeyForFS);
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Retrieves the Gravitino URI from Spark configuration.
+   *
+   * @param session the active Spark session
+   * @return Optional containing URI if found, empty otherwise
+   */
+  private Optional<String> getUri(SparkSession session) {
+    String uri = getSparkConfigValue(session, uriConfigKey);
+    if (uri != null) {
+      log.debug("Found URI from configuration '{}': {}", uriConfigKey, uri);
+      return Optional.of(uri);
+    } else {
+      log.debug("URI not found in configuration '{}'", uriConfigKey);
       return Optional.empty();
     }
   }
