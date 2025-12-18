@@ -69,20 +69,7 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
     }
   }
 
-  public String getGravitinoCatalog(String originCatalogName) {
-    try {
-      String mappedName =
-          getGravitinoInfoInternal().getCatalogMapping().getOrDefault(originCatalogName, originCatalogName);
-      if (!originCatalogName.equals(mappedName)) {
-        log.trace("Catalog name mapped: {} -> {}", originCatalogName, mappedName);
-      }
-      return mappedName;
-    } catch (IllegalStateException e) {
-      // Gravitino not available, return original name
-      log.trace("Gravitino not available, returning original catalog name: {}", originCatalogName);
-      return originCatalogName;
-    }
-  }
+
 
   public String getMetalakeName() {
     Optional<String> metalake = getGravitinoInfoInternal().getMetalake();

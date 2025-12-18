@@ -72,32 +72,7 @@ class SparkGravitinoInfoProviderTest {
     Assertions.assertThrowsExactly(RuntimeException.class, () -> provider2.getMetalakeName());
   }
 
-  @SneakyThrows
-  @Test
-  void testGetCatalogName() {
-    GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
 
-    SparkSession.builder()
-        .master(LOCAL_MASTER)
-        .appName(TEST_APP_NAME)
-        .config(
-            SparkGravitinoInfoProvider.catalogMappingConfigKey,
-            "catalog1:gravitino1,catalog2:gravitino2")
-        .getOrCreate();
-
-    Assertions.assertEquals("gravitino1", provider.getGravitinoCatalog("catalog1"));
-    Assertions.assertEquals("gravitino2", provider.getGravitinoCatalog("catalog2"));
-    Assertions.assertEquals(CATALOG3, provider.getGravitinoCatalog(CATALOG3));
-
-    provider = GravitinoInfoProviderImpl.newInstanceForTest();
-    cleanUpExistingSession();
-
-    SparkSession.builder().master(LOCAL_MASTER).appName(TEST_APP_NAME).getOrCreate();
-
-    Assertions.assertEquals("catalog1", provider.getGravitinoCatalog("catalog1"));
-    Assertions.assertEquals("catalog2", provider.getGravitinoCatalog("catalog2"));
-    Assertions.assertEquals(CATALOG3, provider.getGravitinoCatalog(CATALOG3));
-  }
 
   @SneakyThrows
   @Test

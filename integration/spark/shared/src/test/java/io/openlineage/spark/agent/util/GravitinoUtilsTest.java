@@ -102,33 +102,7 @@ class GravitinoUtilsTest {
     }
   }
 
-  @Test
-  @SneakyThrows
-  void testGetGravitinoDatasetIdentifierFromTableIdentifierWithCatalogMapping() {
-    SparkSession testSession =
-        SparkSession.builder()
-            .master("local[*]")
-            .appName("GravitinoUtilsTest")
-            .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
-            .config(
-                SparkGravitinoInfoProvider.catalogMappingConfigKey, "spark_catalog:gravitino_hive")
-            .getOrCreate();
 
-    try {
-      TableIdentifier tableIdentifier = new TableIdentifier("orders", scala.Option.apply("sales"));
-
-      DatasetIdentifier datasetIdentifier =
-          GravitinoUtils.getGravitinoDatasetIdentifier(tableIdentifier);
-
-      // spark_catalog should be mapped to gravitino_hive
-      assertThat(datasetIdentifier)
-          .hasFieldOrPropertyWithValue("namespace", "test_metalake")
-          .hasFieldOrPropertyWithValue("name", "gravitino_hive.sales.orders");
-    } finally {
-      testSession.stop();
-    }
-  }
 
   @Test
   @SneakyThrows

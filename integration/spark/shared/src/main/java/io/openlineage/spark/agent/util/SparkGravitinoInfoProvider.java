@@ -6,9 +6,7 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import io.openlineage.client.utils.gravitino.GravitinoInfoProvider;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.sql.SparkSession;
@@ -34,13 +32,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
    */
   public static final String useGravitinoConfigKey = "spark.sql.gravitino.useGravitinoIdentifier";
 
-  /**
-   * Configuration key for catalog name mappings. Format:
-   * "spark_catalog1:gravitino_catalog1,spark_catalog2:gravitino_catalog2"
-   */
-  public static final String catalogMappingConfigKey = "spark.sql.gravitino.catalogMappings";
 
-  private static final int CATALOG_MAPPING_PARTS = 2;
 
   @Override
   public boolean isAvailable() {
@@ -72,9 +64,8 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     boolean hasMetalakeConfig = getSparkConfigValue(session, metalakeConfigKeyForConnector) != null 
         || getSparkConfigValue(session, metalakeConfigKeyForFS) != null;
     boolean hasGravitinoConfig = getSparkConfigValue(session, useGravitinoConfigKey) != null;
-    boolean hasCatalogMapping = getSparkConfigValue(session, catalogMappingConfigKey) != null;
     
-    boolean available = hasMetalakeConfig || hasGravitinoConfig || hasCatalogMapping;
+    boolean available = hasMetalakeConfig || hasGravitinoConfig;
     
     if (available) {
       log.debug("Active Spark session found with Gravitino configuration");
@@ -95,7 +86,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     SparkSession session = sessionOpt.get();
     return GravitinoInfo.builder()
         .useGravitinoIdentifier(getUseGravitinoIdentifier(session))
-        .catalogMapping(getCatalogMapping(session))
+        .catalogMapping(Collections.emptyMap())
         .metalake(getMetalake(session))
         .build();
   }
@@ -117,51 +108,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     return result;
   }
 
-  /**
-   * Parses catalog name mappings from Spark configuration. Mappings allow translating Spark catalog
-   * names to Gravitino catalog names.
-   *
-   * @param session the active Spark session
-   * @return Map of Spark catalog name to Gravitino catalog name, empty if not configured
-   * @throws IllegalArgumentException if mapping format is invalid
-   */
-  private Map<String, String> getCatalogMapping(SparkSession session) {
-    String catalogMapping = getSparkConfigValue(session, catalogMappingConfigKey);
-    if (StringUtils.isBlank(catalogMapping)) {
-      log.debug("No catalog mappings configured");
-      return new HashMap<>();
-    }
 
-    log.debug("Parsing catalog mappings from configuration: {}", catalogMapping);
-    Map<String, String> catalogMaps = new HashMap<>();
-
-    Arrays.stream(catalogMapping.split(","))
-        .forEach(
-            item -> {
-              String[] kv = item.split(":");
-              if (kv.length == CATALOG_MAPPING_PARTS) {
-                String key = kv[0].trim();
-                String value = kv[1].trim();
-                if (!key.isEmpty() && !value.isEmpty()) {
-                  catalogMaps.put(key, value);
-                  log.debug("Added catalog mapping: {} -> {}", key, value);
-                } else {
-                  log.warn("Skipping catalog mapping with empty key or value: '{}'", item.trim());
-                }
-              } else if (!item.trim().isEmpty()) {
-                log.error("Invalid catalog mapping format: '{}'", item.trim());
-                throw new IllegalArgumentException(
-                    String.format(
-                        "Invalid catalog mapping format: '%s'. "
-                            + "Expected format: 'catalog1:gravitino1,catalog2:gravitino2'. "
-                            + "Each mapping must be in 'key:value' format.",
-                        item.trim()));
-              }
-            });
-
-    log.info("Loaded {} catalog mappings: {}", catalogMaps.size(), catalogMaps);
-    return catalogMaps;
-  }
 
   /**
    * Retrieves the Gravitino metalake name from Spark configuration. Checks connector configuration

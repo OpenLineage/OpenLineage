@@ -11,12 +11,13 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.connector.catalog.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class GravitinoUtils {
+  private static final Logger log = LoggerFactory.getLogger(GravitinoUtils.class);
 
   // For datasource v1, like parquet
   public static DatasetIdentifier getGravitinoDatasetIdentifier(URI uri) {
@@ -34,9 +35,6 @@ public class GravitinoUtils {
 
     // Build the dataset name from catalog, database, and table
     String catalogName = "spark_catalog"; // Default catalog for Spark
-
-    // Check if there's a catalog mapping configured
-    catalogName = provider.getGravitinoCatalog(catalogName);
 
     String database =
         tableIdentifier.database().isDefined() ? tableIdentifier.database().get() : "default";
