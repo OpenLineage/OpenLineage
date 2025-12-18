@@ -57,17 +57,7 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
     return providers;
   }
 
-  public boolean useGravitinoIdentifier() {
-    try {
-      boolean result = getGravitinoInfoInternal().isUseGravitinoIdentifier();
-      log.trace("useGravitinoIdentifier() = {}", result);
-      return result;
-    } catch (IllegalStateException e) {
-      // Gravitino not available, default to false
-      log.trace("Gravitino not available, useGravitinoIdentifier() = false");
-      return false;
-    }
-  }
+
 
 
 
@@ -147,10 +137,8 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
               provider.getClass().getSimpleName());
           GravitinoInfo info = provider.getGravitinoInfo();
           log.info(
-              "Loaded Gravitino configuration: metalake={}, useGravitinoIdentifier={}, catalogMappings={}",
-              info.getMetalake().orElse("not set"),
-              info.isUseGravitinoIdentifier(),
-              info.getCatalogMapping());
+              "Loaded Gravitino configuration: metalake={}",
+              info.getMetalake().orElse("not set"));
           return info;
         } else {
           log.debug("Provider {} is not available", provider.getClass().getSimpleName());

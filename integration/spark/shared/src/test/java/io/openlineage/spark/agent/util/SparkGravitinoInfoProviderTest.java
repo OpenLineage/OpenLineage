@@ -74,31 +74,7 @@ class SparkGravitinoInfoProviderTest {
 
 
 
-  @SneakyThrows
-  @Test
-  void testUseGravitinoIdentifier() {
-    GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
-    SparkSession.builder()
-        .master(LOCAL_MASTER)
-        .appName(TEST_APP_NAME)
-        .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
-        .getOrCreate();
-    Assertions.assertTrue(provider.useGravitinoIdentifier());
 
-    provider = GravitinoInfoProviderImpl.newInstanceForTest();
-    cleanUpExistingSession();
-    SparkSession.builder().master(LOCAL_MASTER).appName("test2").getOrCreate();
-    Assertions.assertFalse(provider.useGravitinoIdentifier());
-
-    provider = GravitinoInfoProviderImpl.newInstanceForTest();
-    cleanUpExistingSession();
-    SparkSession.builder()
-        .master(LOCAL_MASTER)
-        .appName(TEST_APP_NAME)
-        .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "false")
-        .getOrCreate();
-    Assertions.assertFalse(provider.useGravitinoIdentifier());
-  }
 
   private static void cleanUpExistingSession() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();

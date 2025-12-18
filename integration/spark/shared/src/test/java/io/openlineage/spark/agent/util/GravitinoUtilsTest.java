@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
-import io.openlineage.spark.agent.util.SparkGravitinoInfoProvider;
 import java.net.URI;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
@@ -36,7 +35,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {
@@ -60,7 +58,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {
@@ -85,7 +82,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {
@@ -112,7 +108,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {
@@ -141,7 +136,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {
@@ -171,7 +165,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {
@@ -200,7 +193,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "prod_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {
@@ -230,7 +222,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {
@@ -254,7 +245,6 @@ class GravitinoUtilsTest {
             .master("local[*]")
             .appName("GravitinoUtilsTest")
             .config(SparkGravitinoInfoProvider.metalakeConfigKeyForConnector, "test_metalake")
-            .config(SparkGravitinoInfoProvider.useGravitinoConfigKey, "true")
             .getOrCreate();
 
     try {

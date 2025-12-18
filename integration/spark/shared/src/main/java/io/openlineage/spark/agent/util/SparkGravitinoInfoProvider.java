@@ -26,11 +26,7 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
   /** Configuration key for Gravitino metalake name used by Gravitino Spark connector */
   public static final String metalakeConfigKeyForConnector = "spark.sql.gravitino.metalake";
 
-  /**
-   * Configuration key to control whether to use Gravitino identifier format. Default: true when not
-   * set
-   */
-  public static final String useGravitinoConfigKey = "spark.sql.gravitino.useGravitinoIdentifier";
+
 
 
 
@@ -63,9 +59,8 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     // Check if any Gravitino configuration is present
     boolean hasMetalakeConfig = getSparkConfigValue(session, metalakeConfigKeyForConnector) != null 
         || getSparkConfigValue(session, metalakeConfigKeyForFS) != null;
-    boolean hasGravitinoConfig = getSparkConfigValue(session, useGravitinoConfigKey) != null;
     
-    boolean available = hasMetalakeConfig || hasGravitinoConfig;
+    boolean available = hasMetalakeConfig;
     
     if (available) {
       log.debug("Active Spark session found with Gravitino configuration");
@@ -85,28 +80,11 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     
     SparkSession session = sessionOpt.get();
     return GravitinoInfo.builder()
-        .useGravitinoIdentifier(getUseGravitinoIdentifier(session))
-        .catalogMapping(Collections.emptyMap())
         .metalake(getMetalake(session))
         .build();
   }
 
-  /**
-   * Determines whether to use Gravitino identifier format for lineage.
-   *
-   * @param session the active Spark session
-   * @return true if Gravitino identifiers should be used, false otherwise (default)
-   */
-  private boolean getUseGravitinoIdentifier(SparkSession session) {
-    String useGravitino = getSparkConfigValue(session, useGravitinoConfigKey);
-    if (StringUtils.isBlank(useGravitino)) {
-      log.debug("Configuration '{}' not set, defaulting to false", useGravitinoConfigKey);
-      return false; // Default to false when not configured
-    }
-    boolean result = Boolean.valueOf(useGravitino);
-    log.debug("Configuration '{}' = {}", useGravitinoConfigKey, result);
-    return result;
-  }
+
 
 
 

@@ -4,8 +4,8 @@
 */
 package io.openlineage.client.utils.gravitino;
 
-import java.util.Map;
 import java.util.Optional;
+
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,6 +13,4 @@ import lombok.Getter;
 @Getter
 public class GravitinoInfo {
   private Optional<String> metalake;
-  private Map<String, String> catalogMapping;
-  private boolean useGravitinoIdentifier;
 }
