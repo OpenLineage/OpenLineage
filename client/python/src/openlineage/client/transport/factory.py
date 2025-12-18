@@ -65,7 +65,10 @@ class DefaultTransportFactory(TransportFactory):
         else:
             transport_class = transport_class_type_or_str
         if not inspect.isclass(transport_class) or not issubclass(transport_class, Transport):
-            msg = f"Transport {transport_class} has to be class, and subclass of Transport"
+            msg = (
+                f"Transport named {transport_name}: {transport_class} has to be class, "
+                f"and subclass of Transport"
+            )
             raise TypeError(msg)
 
         config_class = transport_class.config_class

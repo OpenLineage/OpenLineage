@@ -46,7 +46,7 @@ class ArgumentParserTest {
   private static final String ROOT_PARENT_JOB_NAMESPACE = "root-namespace";
   private static final String ROOT_PARENT_RUN_ID = "ea445b5c-1a1a-2b2b-3c3c-01c7c52b6e54";
   private static final String APP_NAME = "test";
-  private static final UUID APP_RUN_ID = UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54");
+  private static final String APP_RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
   private static final String ENDPOINT = "api/v1/lineage";
   private static final String AUTH_TYPE = "api_key";
   private static final String API_KEY = "random_token";
