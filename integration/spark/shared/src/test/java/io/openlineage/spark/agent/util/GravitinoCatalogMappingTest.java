@@ -5,15 +5,14 @@
 
 package io.openlineage.spark.agent.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
-import io.openlineage.client.utils.gravitino.SparkGravitinoInfoProvider;
-import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
+import lombok.SneakyThrows;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class GravitinoCatalogMappingTest {

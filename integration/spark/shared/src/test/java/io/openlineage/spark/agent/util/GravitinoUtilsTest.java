@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
-import io.openlineage.client.utils.gravitino.SparkGravitinoInfoProvider;
+import io.openlineage.spark.agent.util.SparkGravitinoInfoProvider;
 import java.net.URI;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
