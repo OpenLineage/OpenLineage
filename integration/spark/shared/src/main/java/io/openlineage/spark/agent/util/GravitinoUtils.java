@@ -6,12 +6,9 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
