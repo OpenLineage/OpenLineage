@@ -4,16 +4,18 @@
 */
 package io.openlineage.client.utils.gravitino;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.stream.StreamSupport;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class GravitinoInfoProviderImpl {
+public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
   private volatile Optional<GravitinoInfo> gravitinoInfo = Optional.empty();
-  private final List<GravitinoInfoProvider> providers =
-      Arrays.asList(new SparkGravitinoInfoProvider());
+  private final List<GravitinoInfoProvider> providers = loadProviders();
 
   private static class Holder {
     private static final GravitinoInfoProviderImpl INSTANCE = new GravitinoInfoProviderImpl();
@@ -29,9 +31,35 @@ public class GravitinoInfoProviderImpl {
 
   private GravitinoInfoProviderImpl() {}
 
+  /**
+   * Loads all available GravitinoInfoProvider implementations using ServiceLoader.
+   * This allows different modules (like Spark integration) to provide their own implementations
+   * without creating direct dependencies.
+   *
+   * @return List of available providers
+   */
+  private static List<GravitinoInfoProvider> loadProviders() {
+    ServiceLoader<GravitinoInfoProvider> loader = ServiceLoader.load(GravitinoInfoProvider.class);
+    List<GravitinoInfoProvider> providers = new ArrayList<>();
+    
+    StreamSupport.stream(loader.spliterator(), false)
+        .forEach(provider -> {
+          log.debug("Discovered GravitinoInfoProvider: {}", provider.getClass().getName());
+          providers.add(provider);
+        });
+    
+    if (providers.isEmpty()) {
+      log.warn("No GravitinoInfoProvider implementations found via ServiceLoader");
+    } else {
+      log.debug("Loaded {} GravitinoInfoProvider implementations", providers.size());
+    }
+    
+    return providers;
+  }
+
   public boolean useGravitinoIdentifier() {
     try {
-      boolean result = getGravitinoInfo().isUseGravitinoIdentifier();
+      boolean result = getGravitinoInfoInternal().isUseGravitinoIdentifier();
       log.trace("useGravitinoIdentifier() = {}", result);
       return result;
     } catch (IllegalStateException e) {
@@ -44,7 +72,7 @@ public class GravitinoInfoProviderImpl {
   public String getGravitinoCatalog(String originCatalogName) {
     try {
       String mappedName =
-          getGravitinoInfo().getCatalogMapping().getOrDefault(originCatalogName, originCatalogName);
+          getGravitinoInfoInternal().getCatalogMapping().getOrDefault(originCatalogName, originCatalogName);
       if (!originCatalogName.equals(mappedName)) {
         log.trace("Catalog name mapped: {} -> {}", originCatalogName, mappedName);
       }
@@ -57,7 +85,7 @@ public class GravitinoInfoProviderImpl {
   }
 
   public String getMetalakeName() {
-    Optional<String> metalake = getGravitinoInfo().getMetalake();
+    Optional<String> metalake = getGravitinoInfoInternal().getMetalake();
     if (!metalake.isPresent()) {
       throw new RuntimeException(
           "Gravitino metalake configuration not found. "
@@ -68,6 +96,26 @@ public class GravitinoInfoProviderImpl {
     return metalake.get();
   }
 
+  @Override
+  public boolean isAvailable() {
+    try {
+      for (GravitinoInfoProvider provider : providers) {
+        if (provider.isAvailable()) {
+          return true;
+        }
+      }
+      return false;
+    } catch (Exception e) {
+      log.debug("Error checking Gravitino availability: {}", e.getMessage());
+      return false;
+    }
+  }
+
+  @Override
+  public GravitinoInfo getGravitinoInfo() {
+    return getGravitinoInfoInternal();
+  }
+
   /**
    * Gets Gravitino configuration info with caching. Configuration is loaded once and cached for the
    * lifetime of the provider instance. Uses double-checked locking for thread-safe lazy
@@ -75,7 +123,7 @@ public class GravitinoInfoProviderImpl {
    *
    * @return cached GravitinoInfo instance
    */
-  private GravitinoInfo getGravitinoInfo() {
+  private GravitinoInfo getGravitinoInfoInternal() {
     // First check without synchronization for performance
     if (gravitinoInfo.isPresent()) {
       log.trace("Returning cached Gravitino configuration");
