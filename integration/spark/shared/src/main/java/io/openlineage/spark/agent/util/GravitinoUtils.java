@@ -19,36 +19,6 @@ import org.slf4j.LoggerFactory;
 public class GravitinoUtils {
   private static final Logger log = LoggerFactory.getLogger(GravitinoUtils.class);
 
-  // For datasource v1, like parquet
-  public static DatasetIdentifier getGravitinoDatasetIdentifier(URI uri) {
-    GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.getInstance();
-    String metalake = provider.getMetalakeName();
-    log.debug(
-        "Creating Gravitino dataset identifier from URI: {} with metalake: {}", uri, metalake);
-    return new DatasetIdentifier(uri.toString(), metalake);
-  }
-
-  // For datasource v1 with TableIdentifier
-  public static DatasetIdentifier getGravitinoDatasetIdentifier(TableIdentifier tableIdentifier) {
-    GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.getInstance();
-    String metalake = provider.getMetalakeName();
-
-    // Build the dataset name from catalog, database, and table
-    String catalogName = "spark_catalog"; // Default catalog for Spark
-
-    String database =
-        tableIdentifier.database().isDefined() ? tableIdentifier.database().get() : "default";
-    String tableName = tableIdentifier.table();
-
-    String datasetName = catalogName + "." + database + "." + tableName;
-
-    log.debug(
-        "Creating Gravitino dataset identifier from TableIdentifier: {} with metalake: {}",
-        datasetName,
-        metalake);
-    return new DatasetIdentifier(datasetName, metalake);
-  }
-
   // For datasource v2
   public static DatasetIdentifier getGravitinoDatasetIdentifier(
       String metalake, String catalogName, String[] defaultNameSpace, Identifier identifier) {
