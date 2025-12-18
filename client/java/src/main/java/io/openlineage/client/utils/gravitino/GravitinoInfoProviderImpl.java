@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.stream.StreamSupport;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -148,8 +147,7 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
     }
 
     log.error("No available Gravitino info provider found");
-    throw new IllegalStateException(
-        "Could not find Gravitino info provider.");
+    throw new IllegalStateException("Could not find Gravitino info provider.");
   }
 
   /**

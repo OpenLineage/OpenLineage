@@ -6,9 +6,7 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import io.openlineage.client.utils.gravitino.GravitinoInfoProvider;
-import java.util.Collections;
 import java.util.Optional;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,10 +27,6 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
   /** Configuration key for Gravitino URI used by Gravitino Spark connector */
   public static final String uriConfigKey = "spark.sql.gravitino.uri";
 
-
-
-
-
   @Override
   public boolean isAvailable() {
     try {
@@ -46,32 +40,33 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
 
   /**
    * Checks if there's an active Spark session with at least one Gravitino configuration key set.
-   * 
+   *
    * @return true if Spark session is active and has Gravitino config, false otherwise
    */
   private boolean hasActiveSparkSessionWithGravitinoConfig() {
     Optional<SparkSession> sessionOpt = SparkSessionUtils.activeSession();
-    
+
     if (!sessionOpt.isPresent()) {
       log.debug("No active Spark session found");
       return false;
     }
-    
+
     SparkSession session = sessionOpt.get();
-    
+
     // Check if any Gravitino configuration is present
-    boolean hasMetalakeConfig = getSparkConfigValue(session, metalakeConfigKeyForConnector) != null 
-        || getSparkConfigValue(session, metalakeConfigKeyForFS) != null;
+    boolean hasMetalakeConfig =
+        getSparkConfigValue(session, metalakeConfigKeyForConnector) != null
+            || getSparkConfigValue(session, metalakeConfigKeyForFS) != null;
     boolean hasUriConfig = getSparkConfigValue(session, uriConfigKey) != null;
-    
+
     boolean available = hasMetalakeConfig || hasUriConfig;
-    
+
     if (available) {
       log.debug("Active Spark session found with Gravitino configuration");
     } else {
       log.debug("Active Spark session found but no Gravitino configuration detected");
     }
-    
+
     return available;
   }
 
@@ -81,17 +76,10 @@ public class SparkGravitinoInfoProvider implements GravitinoInfoProvider {
     if (!sessionOpt.isPresent()) {
       throw new IllegalStateException("No active Spark session found");
     }
-    
+
     SparkSession session = sessionOpt.get();
-    return GravitinoInfo.builder()
-        .metalake(getMetalake(session))
-        .uri(getUri(session))
-        .build();
+    return GravitinoInfo.builder().metalake(getMetalake(session)).uri(getUri(session)).build();
   }
-
-
-
-
 
   /**
    * Retrieves the Gravitino metalake name from Spark configuration. Checks connector configuration

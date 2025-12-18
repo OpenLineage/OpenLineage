@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
-import io.openlineage.spark.agent.util.SparkGravitinoInfoProvider;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
@@ -71,10 +70,6 @@ class SparkGravitinoInfoProviderTest {
     SparkSession.builder().master(LOCAL_MASTER).appName(TEST_APP_NAME).getOrCreate();
     Assertions.assertThrowsExactly(RuntimeException.class, () -> provider2.getMetalakeName());
   }
-
-
-
-
 
   private static void cleanUpExistingSession() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
