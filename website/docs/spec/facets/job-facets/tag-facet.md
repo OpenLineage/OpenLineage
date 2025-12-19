@@ -4,7 +4,8 @@ sidebar_position: 7
 
 # Tags Job Facet
 
-The facet contains the tags associated with the job.
+The facet contains the tags associated with the job. Use to attach custom key-value tags so downstream tools can filter, group, or enrich lineage.
+
 
 Example:
 
