@@ -15,6 +15,7 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 import org.apache.spark.Dependency;
 import org.apache.spark.rdd.HadoopRDD;
+import org.apache.spark.rdd.NewHadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.StageInfo;
@@ -74,9 +75,7 @@ public class Rdds {
                 .map(Dependency::rdd)
                 .collect(Collectors.toList()));
       }
-      if (cur instanceof HadoopRDD) {
-        ret.add(cur);
-      } else if (cur instanceof FileScanRDD) {
+      if (isFileLikeRDD(cur)) {
         ret.add(cur);
       }
     }
@@ -84,8 +83,10 @@ public class Rdds {
   }
 
   public static List<RDD<?>> findFileLikeRdds(Set<RDD<?>> rdds) {
-    return rdds.stream()
-        .filter(r -> r instanceof HadoopRDD || r instanceof FileScanRDD)
-        .collect(Collectors.toList());
+    return rdds.stream().filter(Rdds::isFileLikeRDD).collect(Collectors.toList());
+  }
+
+  private static boolean isFileLikeRDD(RDD<?> rdd) {
+    return rdd instanceof HadoopRDD || rdd instanceof NewHadoopRDD || rdd instanceof FileScanRDD;
   }
 }
