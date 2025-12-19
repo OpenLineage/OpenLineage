@@ -8,7 +8,7 @@ package io.openlineage.client.utils.filesystem;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
 import io.openlineage.client.utils.gravitino.GravitinoInfo;
-import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
+import io.openlineage.client.utils.gravitino.GravitinoInfoManager;
 import java.net.URI;
 import java.util.Optional;
 
@@ -16,8 +16,7 @@ public class GVFSFilesystemDatasetExtractor extends GenericFilesystemDatasetExtr
   public static final String SCHEME = "gvfs";
   public static final String GVFS_NAMESPACE_NAME = "__GVFS_NAMESPACE";
 
-  private final GravitinoInfoProviderImpl metalakeProvider =
-      GravitinoInfoProviderImpl.getInstance();
+  private final GravitinoInfoManager gravitinoInfoManager = GravitinoInfoManager.getInstance();
 
   @Override
   public boolean isDefinedAt(URI location) {
@@ -46,7 +45,7 @@ public class GVFSFilesystemDatasetExtractor extends GenericFilesystemDatasetExtr
    */
   private DatasetIdentifier addGravitinoSymlink(DatasetIdentifier datasetIdentifier, URI location) {
     try {
-      GravitinoInfo gravitinoInfo = metalakeProvider.getGravitinoInfo();
+      GravitinoInfo gravitinoInfo = gravitinoInfoManager.getGravitinoInfo();
       Optional<String> gravitinoUri = gravitinoInfo.getUri();
       Optional<String> metalake = gravitinoInfo.getMetalake();
 

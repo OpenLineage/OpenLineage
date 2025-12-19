@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.gravitino.GravitinoInfo;
-import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
+import io.openlineage.client.utils.gravitino.GravitinoInfoManager;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
@@ -24,7 +24,7 @@ class GravitinoUtilsTest {
   @AfterEach
   void tearDown() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
-    GravitinoInfoProviderImpl.getInstance().clearCache();
+    GravitinoInfoManager.getInstance().clearCache();
   }
 
   @Test

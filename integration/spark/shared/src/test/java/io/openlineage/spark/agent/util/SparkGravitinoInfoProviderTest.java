@@ -5,7 +5,7 @@
 
 package io.openlineage.spark.agent.util;
 
-import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
+import io.openlineage.client.utils.gravitino.GravitinoInfoManager;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
@@ -30,13 +30,13 @@ class SparkGravitinoInfoProviderTest {
   public static void afterAll() {
     cleanUpExistingSession();
     // Clear the singleton cache to avoid affecting other tests
-    GravitinoInfoProviderImpl.getInstance().clearCache();
+    GravitinoInfoManager.getInstance().clearCache();
   }
 
   @SneakyThrows
   @Test
   void testGetMetalakeName() {
-    GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.newInstanceForTest();
+    GravitinoInfoManager provider = GravitinoInfoManager.newInstanceForTest();
 
     SparkSession.builder()
         .master(LOCAL_MASTER)
@@ -45,7 +45,7 @@ class SparkGravitinoInfoProviderTest {
         .getOrCreate();
     Assertions.assertEquals("metalake_name", provider.getMetalakeName());
 
-    provider = GravitinoInfoProviderImpl.newInstanceForTest();
+    provider = GravitinoInfoManager.newInstanceForTest();
     cleanUpExistingSession();
     SparkSession.builder()
         .master(LOCAL_MASTER)
@@ -54,7 +54,7 @@ class SparkGravitinoInfoProviderTest {
         .getOrCreate();
     Assertions.assertEquals("metalake_name2", provider.getMetalakeName());
 
-    provider = GravitinoInfoProviderImpl.newInstanceForTest();
+    provider = GravitinoInfoManager.newInstanceForTest();
     cleanUpExistingSession();
     SparkSession.builder()
         .master(LOCAL_MASTER)
@@ -64,7 +64,7 @@ class SparkGravitinoInfoProviderTest {
         .getOrCreate();
     Assertions.assertEquals("metalake_name3", provider.getMetalakeName());
 
-    GravitinoInfoProviderImpl provider2 = GravitinoInfoProviderImpl.newInstanceForTest();
+    GravitinoInfoManager provider2 = GravitinoInfoManager.newInstanceForTest();
     cleanUpExistingSession();
     SparkSession.builder().master(LOCAL_MASTER).appName(TEST_APP_NAME).getOrCreate();
     Assertions.assertThrowsExactly(IllegalStateException.class, () -> provider2.getMetalakeName());

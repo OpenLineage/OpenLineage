@@ -12,23 +12,23 @@ import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
+public class GravitinoInfoManager {
   private volatile Optional<GravitinoInfo> gravitinoInfo = Optional.empty();
   private final List<GravitinoInfoProvider> providers = loadProviders();
 
   private static class Holder {
-    private static final GravitinoInfoProviderImpl INSTANCE = new GravitinoInfoProviderImpl();
+    private static final GravitinoInfoManager INSTANCE = new GravitinoInfoManager();
   }
 
-  public static GravitinoInfoProviderImpl getInstance() {
+  public static GravitinoInfoManager getInstance() {
     return Holder.INSTANCE;
   }
 
-  public static GravitinoInfoProviderImpl newInstanceForTest() {
-    return new GravitinoInfoProviderImpl();
+  public static GravitinoInfoManager newInstanceForTest() {
+    return new GravitinoInfoManager();
   }
 
-  private GravitinoInfoProviderImpl() {}
+  private GravitinoInfoManager() {}
 
   /**
    * Loads all available GravitinoInfoProvider implementations using ServiceLoader. This allows
@@ -58,7 +58,7 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
   }
 
   public String getMetalakeName() {
-    Optional<String> metalake = getGravitinoInfoInternal().getMetalake();
+    Optional<String> metalake = getGravitinoInfo().getMetalake();
     if (!metalake.isPresent()) {
       throw new RuntimeException(
           "Gravitino metalake configuration not found. "
@@ -69,7 +69,6 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
     return metalake.get();
   }
 
-  @Override
   public boolean isAvailable() {
     try {
       for (GravitinoInfoProvider provider : providers) {
@@ -84,14 +83,13 @@ public class GravitinoInfoProviderImpl implements GravitinoInfoProvider {
     }
   }
 
-  @Override
   public GravitinoInfo getGravitinoInfo() {
     return getGravitinoInfoInternal();
   }
 
   /**
    * Gets Gravitino configuration info with caching. Configuration is loaded once and cached for the
-   * lifetime of the provider instance. Uses double-checked locking for thread-safe lazy
+   * lifetime of the manager instance. Uses double-checked locking for thread-safe lazy
    * initialization.
    *
    * @return cached GravitinoInfo instance
