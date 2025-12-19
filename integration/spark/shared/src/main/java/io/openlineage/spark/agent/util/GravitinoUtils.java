@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -18,23 +19,39 @@ public class GravitinoUtils {
 
   // For datasource v2
   public static DatasetIdentifier getGravitinoDatasetIdentifier(
-      String metalake, String catalogName, String[] defaultNameSpace, Identifier identifier) {
+      GravitinoInfo gravitinoInfo,
+      String catalogName,
+      String[] defaultNameSpace,
+      Identifier identifier) {
     String[] gravitinoNameSpace = identifier.namespace();
     if (gravitinoNameSpace == null || gravitinoNameSpace.length == 0) {
       gravitinoNameSpace = defaultNameSpace;
     }
     return getGravitinoDatasetIdentifier(
-        metalake, catalogName, gravitinoNameSpace, identifier.name());
+        gravitinoInfo, catalogName, gravitinoNameSpace, identifier.name());
   }
 
   private static DatasetIdentifier getGravitinoDatasetIdentifier(
-      String metalake, String catalogName, String[] nameSpace, String name) {
+      GravitinoInfo gravitinoInfo, String catalogName, String[] nameSpace, String name) {
     String datasetName =
         Stream.concat(
                 Stream.concat(Stream.of(catalogName), Arrays.stream(nameSpace)), Stream.of(name))
             .collect(Collectors.joining("."));
+
+    String metalake =
+        gravitinoInfo
+            .getMetalake()
+            .orElseThrow(
+                () -> new IllegalArgumentException("Metalake is required in GravitinoInfo"));
+    String uri =
+        gravitinoInfo
+            .getUri()
+            .orElseThrow(() -> new IllegalArgumentException("URI is required in GravitinoInfo"));
+
+    String namespace = uri + "/api/metalakes/" + metalake;
+
     log.debug(
-        "Generated Gravitino dataset identifier: namespace={}, name={}", metalake, datasetName);
-    return new DatasetIdentifier(datasetName, metalake);
+        "Generated Gravitino dataset identifier: namespace={}, name={}", namespace, datasetName);
+    return new DatasetIdentifier(datasetName, namespace);
   }
 }

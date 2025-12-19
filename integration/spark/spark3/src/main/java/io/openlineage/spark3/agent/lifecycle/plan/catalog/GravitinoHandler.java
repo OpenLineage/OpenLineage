@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
 import io.openlineage.spark.agent.util.GravitinoUtils;
 import java.util.Map;
@@ -51,16 +52,16 @@ public class GravitinoHandler implements CatalogHandler {
       Identifier identifier,
       Map<String, String> properties) {
     try {
-      String metalakeName = getGravitinoMetalakeName();
+      GravitinoInfo gravitinoInfo = provider.getGravitinoInfo();
       log.debug(
           "Resolving Gravitino dataset identifier for catalog={}, identifier={}, metalake={}",
           tableCatalog.name(),
           identifier,
-          metalakeName);
+          gravitinoInfo.getMetalake().orElse("unknown"));
       return GravitinoUtils.getGravitinoDatasetIdentifier(
-          metalakeName, tableCatalog.name(), tableCatalog.defaultNamespace(), identifier);
+          gravitinoInfo, tableCatalog.name(), tableCatalog.defaultNamespace(), identifier);
     } catch (IllegalStateException e) {
-      log.error("Failed to get Gravitino metalake configuration: {}", e.getMessage());
+      log.error("Failed to get Gravitino configuration: {}", e.getMessage());
       throw e;
     }
   }
@@ -68,9 +69,5 @@ public class GravitinoHandler implements CatalogHandler {
   @Override
   public String getName() {
     return "gravitino";
-  }
-
-  private String getGravitinoMetalakeName() {
-    return provider.getMetalakeName();
   }
 }
