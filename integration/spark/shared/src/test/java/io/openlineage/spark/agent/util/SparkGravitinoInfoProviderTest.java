@@ -68,7 +68,7 @@ class SparkGravitinoInfoProviderTest {
     GravitinoInfoProviderImpl provider2 = GravitinoInfoProviderImpl.newInstanceForTest();
     cleanUpExistingSession();
     SparkSession.builder().master(LOCAL_MASTER).appName(TEST_APP_NAME).getOrCreate();
-    Assertions.assertThrowsExactly(RuntimeException.class, () -> provider2.getMetalakeName());
+    Assertions.assertThrowsExactly(IllegalStateException.class, () -> provider2.getMetalakeName());
   }
 
   private static void cleanUpExistingSession() {
