@@ -18,7 +18,6 @@ class SparkGravitinoInfoProviderTest {
 
   private static final String LOCAL_MASTER = "local[*]";
   private static final String TEST_APP_NAME = "test";
-  private static final String CATALOG3 = "catalog3";
 
   @BeforeAll
   @SneakyThrows
