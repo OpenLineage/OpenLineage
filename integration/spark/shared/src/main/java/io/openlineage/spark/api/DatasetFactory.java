@@ -17,7 +17,6 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark.agent.util.DatasetVersionUtils;
@@ -196,10 +195,6 @@ public abstract class DatasetFactory<D extends Dataset> {
                 context.getOpenLineage(),
                 namespaceResolver.resolve(datasetIdentifier.getNamespace())));
 
-    if (GVFSUtils.isGVFS(outputPath)) {
-      GVFSUtils.injectGVFSFacets(context.getOpenLineage(), datasetFacetsBuilder, outputPath);
-    }
-
     return getDataset(datasetIdentifier, datasetFacetsBuilder);
   }
 
@@ -221,9 +216,6 @@ public abstract class DatasetFactory<D extends Dataset> {
             PlanUtils.datasourceFacet(
                 context.getOpenLineage(), namespaceResolver.resolve(namespace)));
     DatasetIdentifier datasetIdentifier = PathUtils.fromURI(outputPath);
-    if (GVFSUtils.isGVFS(outputPath)) {
-      GVFSUtils.injectGVFSFacets(context.getOpenLineage(), facetsBuilder, outputPath);
-    }
     return getDataset(datasetIdentifier, facetsBuilder);
   }
 

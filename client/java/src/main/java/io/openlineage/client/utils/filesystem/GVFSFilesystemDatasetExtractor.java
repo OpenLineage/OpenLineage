@@ -7,10 +7,12 @@ package io.openlineage.client.utils.filesystem;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
+import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
 import java.net.URI;
+import java.util.Optional;
 
-public class GVFSFilesystemDatasetExtractor implements FilesystemDatasetExtractor {
+public class GVFSFilesystemDatasetExtractor extends GenericFilesystemDatasetExtractor {
   public static final String SCHEME = "gvfs";
   public static final String GVFS_NAMESPACE_NAME = "__GVFS_NAMESPACE";
 
@@ -24,19 +26,42 @@ public class GVFSFilesystemDatasetExtractor implements FilesystemDatasetExtracto
 
   @Override
   public DatasetIdentifier extract(URI location) {
-    String name = GVFSUtils.getGVFSIdentifierName(location);
-    String namespace;
-    try {
-      namespace = metalakeProvider.getMetalakeName();
-    } catch (IllegalStateException e) {
-      // Fallback to default namespace when Gravitino is not available (e.g., in tests)
-      namespace = GVFS_NAMESPACE_NAME;
-    }
-    return new DatasetIdentifier(name, namespace);
+    DatasetIdentifier parentResult = super.extract(location);
+    return addGravitinoSymlink(parentResult, location);
   }
 
   @Override
   public DatasetIdentifier extract(URI location, String rawName) {
-    return extract(location);
+    DatasetIdentifier parentResult = super.extract(location, rawName);
+    return addGravitinoSymlink(parentResult, location);
+  }
+
+  /**
+   * Adds Gravitino-specific symlink information to a DatasetIdentifier.
+   *
+   * @param datasetIdentifier the dataset identifier to enhance
+   * @param location the GVFS URI location
+   * @return the enhanced dataset identifier with symlink (or original if Gravitino info
+   *     unavailable)
+   */
+  private DatasetIdentifier addGravitinoSymlink(DatasetIdentifier datasetIdentifier, URI location) {
+    try {
+      GravitinoInfo gravitinoInfo = metalakeProvider.getGravitinoInfo();
+      Optional<String> gravitinoUri = gravitinoInfo.getUri();
+      Optional<String> metalake = gravitinoInfo.getMetalake();
+
+      if (gravitinoUri.isPresent() && metalake.isPresent()) {
+        String symlinkNamespace = gravitinoUri.get() + "/api/metalakes/" + metalake.get();
+        String symlinkName = GVFSUtils.getGVFSIdentifierName(location);
+
+        datasetIdentifier.withSymlink(
+            symlinkName, symlinkNamespace, DatasetIdentifier.SymlinkType.LOCATION);
+      }
+    } catch (Exception e) {
+      // Fallback gracefully if Gravitino info is not available
+      // The dataset identifier will be returned without the symlink
+    }
+
+    return datasetIdentifier;
   }
 }

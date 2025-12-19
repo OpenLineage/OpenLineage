@@ -7,11 +7,9 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -49,14 +47,6 @@ public class InsertIntoHadoopFsRelationVisitor
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
     } else {
       outputDataset = outputDataset().getDataset(di.get(), command.query().schema());
-    }
-
-    if (!command.catalogTable().isDefined()) {
-      URI location = command.outputPath().toUri();
-      if (GVFSUtils.isGVFS(location)) {
-        outputDataset =
-            GVFSUtils.injectGVFSFacets(context.getOpenLineage(), outputDataset, location);
-      }
     }
 
     return Collections.singletonList(outputDataset);
