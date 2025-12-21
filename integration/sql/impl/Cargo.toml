@@ -14,4 +14,4 @@ crate-type = ["rlib"]
 [dependencies]
 anyhow = {workspace = true}
 
-sqlparser = "=0.59.0"
+sqlparser = "=0.60.0"
