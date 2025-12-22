@@ -283,11 +283,11 @@ class RemovePathPatternUtilsTest {
     OpenLineage.ColumnLineageDatasetFacet columnLineageFacet = 
         buildSampleColumnLineageFacet(includeDatasetInputFields, usePathsWithPatterns);
     
-    OpenLineage.DatasetFacets datasetFacets = openLineage.newDatasetFacetsBuilder()
-        .columnLineage(columnLineageFacet)
-        .build();
+    OpenLineage.DatasetFacets datasetFacets = 
+        openLineage.newDatasetFacetsBuilder().columnLineage(columnLineageFacet).build();
         
-    return openLineage.newOutputDatasetBuilder()
+    return openLineage
+        .newOutputDatasetBuilder()
         .name(datasetName)
         .namespace("ns")
         .facets(datasetFacets)
