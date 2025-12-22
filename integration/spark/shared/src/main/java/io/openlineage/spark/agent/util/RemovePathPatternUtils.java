@@ -5,10 +5,19 @@
 
 package io.openlineage.spark.agent.util;
 
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAdditional;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsBuilder;
+import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputField;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -33,13 +42,16 @@ public class RemovePathPatternUtils {
                     .map(
                         dataset -> {
                           String newName = removePath(pattern, dataset.getName());
-                          if (newName != dataset.getName()) {
+                          DatasetFacets newFacets =
+                              removePathFromFacets(pattern, dataset.getFacets(), context);
+                          if (!Objects.equals(newName, dataset.getName())
+                              || newFacets != dataset.getFacets()) {
                             return context
                                 .getOpenLineage()
                                 .newOutputDatasetBuilder()
-                                .name(removePath(pattern, dataset.getName()))
+                                .name(newName)
                                 .namespace(dataset.getNamespace())
-                                .facets(dataset.getFacets())
+                                .facets(newFacets)
                                 .outputFacets(dataset.getOutputFacets())
                                 .build();
                           } else {
@@ -59,7 +71,7 @@ public class RemovePathPatternUtils {
                     .map(
                         dataset -> {
                           String newName = removePath(pattern, dataset.getName());
-                          if (newName != dataset.getName()) {
+                          if (!Objects.equals(newName, dataset.getName())) {
                             return context
                                 .getOpenLineage()
                                 .newInputDatasetBuilder()
@@ -74,6 +86,88 @@ public class RemovePathPatternUtils {
                         })
                     .collect(Collectors.toList()))
         .orElse(outputs);
+  }
+
+  private static DatasetFacets removePathFromFacets(
+      Pattern pattern, DatasetFacets facets, OpenLineageContext context) {
+    if (facets == null || facets.getColumnLineage() == null) {
+      return facets;
+    }
+
+    ColumnLineageDatasetFacet originalFacet = facets.getColumnLineage();
+    List<InputField> newDataset = processInputFields(pattern, originalFacet.getDataset(), context);
+    ColumnLineageDatasetFacetFields newFields =
+        processFieldMappings(pattern, originalFacet.getFields(), context);
+
+    if (newDataset != originalFacet.getDataset() || newFields != originalFacet.getFields()) {
+      return DatasetFacetsUtils.copyToBuilder(context, facets)
+          .columnLineage(
+              context.getOpenLineage().newColumnLineageDatasetFacet(newFields, newDataset))
+          .build();
+    }
+    return facets;
+  }
+
+  private static List<InputField> processInputFields(
+      Pattern pattern, List<InputField> inputFields, OpenLineageContext context) {
+    if (inputFields == null || inputFields.isEmpty()) {
+      return inputFields;
+    }
+
+    List<InputField> processedFields = new ArrayList<>();
+    boolean hasChanges = false;
+
+    for (InputField field : inputFields) {
+      String processedName = removePath(pattern, field.getName());
+      if (!processedName.equals(field.getName())) {
+        processedFields.add(
+            context
+                .getOpenLineage()
+                .newInputFieldBuilder()
+                .namespace(field.getNamespace())
+                .name(processedName)
+                .field(field.getField())
+                .transformations(field.getTransformations())
+                .build());
+        hasChanges = true;
+      } else {
+        processedFields.add(field);
+      }
+    }
+    return hasChanges ? processedFields : inputFields;
+  }
+
+  private static ColumnLineageDatasetFacetFields processFieldMappings(
+      Pattern pattern, ColumnLineageDatasetFacetFields fields, OpenLineageContext context) {
+    if (fields == null || fields.getAdditionalProperties().isEmpty()) {
+      return fields;
+    }
+
+    ColumnLineageDatasetFacetFieldsBuilder builder =
+        context.getOpenLineage().newColumnLineageDatasetFacetFieldsBuilder();
+    boolean hasChanges = false;
+
+    for (Map.Entry<String, ColumnLineageDatasetFacetFieldsAdditional> entry :
+        fields.getAdditionalProperties().entrySet()) {
+      ColumnLineageDatasetFacetFieldsAdditional original = entry.getValue();
+      List<InputField> processedInputFields =
+          processInputFields(pattern, original.getInputFields(), context);
+
+      if (processedInputFields != original.getInputFields()) {
+        builder.put(
+            entry.getKey(),
+            context
+                .getOpenLineage()
+                .newColumnLineageDatasetFacetFieldsAdditional(
+                    processedInputFields,
+                    original.getTransformationDescription(),
+                    original.getTransformationType()));
+        hasChanges = true;
+      } else {
+        builder.put(entry.getKey(), original);
+      }
+    }
+    return hasChanges ? builder.build() : fields;
   }
 
   private static Optional<Pattern> getPattern(OpenLineageContext context) {
