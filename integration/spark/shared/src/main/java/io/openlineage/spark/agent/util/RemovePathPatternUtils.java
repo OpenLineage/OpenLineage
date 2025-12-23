@@ -45,7 +45,7 @@ public class RemovePathPatternUtils {
                           DatasetFacets newFacets =
                               removePathFromFacets(pattern, dataset.getFacets(), context);
                           if (!Objects.equals(newName, dataset.getName())
-                              || newFacets != dataset.getFacets()) {
+                              || !Objects.equals(newFacets, dataset.getFacets())) {
                             return context
                                 .getOpenLineage()
                                 .newOutputDatasetBuilder()
@@ -99,7 +99,8 @@ public class RemovePathPatternUtils {
     ColumnLineageDatasetFacetFields newFields =
         processFieldMappings(pattern, originalFacet.getFields(), context);
 
-    if (newDataset != originalFacet.getDataset() || newFields != originalFacet.getFields()) {
+    if (!Objects.equals(newDataset, originalFacet.getDataset())
+        || !Objects.equals(newFields, originalFacet.getFields())) {
       return DatasetFacetsUtils.copyToBuilder(context, facets)
           .columnLineage(
               context.getOpenLineage().newColumnLineageDatasetFacet(newFields, newDataset))
@@ -134,6 +135,7 @@ public class RemovePathPatternUtils {
         processedFields.add(field);
       }
     }
+
     return hasChanges ? processedFields : inputFields;
   }
 
@@ -153,7 +155,7 @@ public class RemovePathPatternUtils {
       List<InputField> processedInputFields =
           processInputFields(pattern, original.getInputFields(), context);
 
-      if (processedInputFields != original.getInputFields()) {
+      if (!Objects.equals(processedInputFields, original.getInputFields())) {
         builder.put(
             entry.getKey(),
             context
@@ -167,6 +169,7 @@ public class RemovePathPatternUtils {
         builder.put(entry.getKey(), original);
       }
     }
+
     return hasChanges ? builder.build() : fields;
   }
 
