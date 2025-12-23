@@ -18,7 +18,6 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -152,33 +151,36 @@ class RemovePathPatternUtilsTest {
     when(conf.get(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))
         .thenReturn("(.*)(?<remove>\\/.*\\/.*\\/.*)");
 
-    OutputDataset outputDataset = buildSampleOutputDatasetWithColumnLineage(
-        TEST_PATH_OUTPUT + TEST_PATH_SUFFIX, 
-        true,  // includeDatasetInputFields  
-        true   // usePathsWithPatterns
-    );
+    OutputDataset outputDataset =
+        buildSampleOutputDatasetWithColumnLineage(
+            TEST_PATH_OUTPUT + TEST_PATH_SUFFIX,
+            true, // includeDatasetInputFields
+            true // usePathsWithPatterns
+            );
 
     List<OutputDataset> outputs = Arrays.asList(outputDataset);
-    List<OutputDataset> modifiedOutputs = RemovePathPatternUtils.removeOutputsPathPattern(context, outputs);
+    List<OutputDataset> modifiedOutputs =
+        RemovePathPatternUtils.removeOutputsPathPattern(context, outputs);
 
     assertThat(modifiedOutputs).hasSize(1);
     OutputDataset result = modifiedOutputs.get(0);
-    
+
     // Verify dataset name pattern removal
     assertThat(result.getName()).isEqualTo(TEST_PATH_OUTPUT);
-    
+
     // Verify column lineage facet processing
     OpenLineage.ColumnLineageDatasetFacet resultFacet = result.getFacets().getColumnLineage();
-    
+
     // Verify dataset-level InputField pattern removal
     assertThat(resultFacet.getDataset()).hasSize(1);
     assertThat(resultFacet.getDataset().get(0).getName()).isEqualTo(TEST_PATH_SOURCE);
-    
+
     // Verify field-level InputField pattern removal
-    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional resultFieldAdditional = 
+    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional resultFieldAdditional =
         resultFacet.getFields().getAdditionalProperties().get("output_field");
     assertThat(resultFieldAdditional.getInputFields()).hasSize(2);
-    assertThat(resultFieldAdditional.getInputFields().get(0).getName()).isEqualTo(TEST_PATH_CUSTOMERS);
+    assertThat(resultFieldAdditional.getInputFields().get(0).getName())
+        .isEqualTo(TEST_PATH_CUSTOMERS);
     assertThat(resultFieldAdditional.getInputFields().get(1).getName()).isEqualTo(TEST_PATH_ORDERS);
   }
 
@@ -188,31 +190,34 @@ class RemovePathPatternUtilsTest {
     when(conf.get(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))
         .thenReturn("(.*)(?<remove>\\/.*\\/.*\\/.*)");
 
-    OutputDataset outputDataset = buildSampleOutputDatasetWithColumnLineage(
-        TEST_PATH_OUTPUT + TEST_PATH_SUFFIX, 
-        false,  // includeDatasetInputFields  
-        true   // usePathsWithPatterns
-    );
+    OutputDataset outputDataset =
+        buildSampleOutputDatasetWithColumnLineage(
+            TEST_PATH_OUTPUT + TEST_PATH_SUFFIX,
+            false, // includeDatasetInputFields
+            true // usePathsWithPatterns
+            );
 
     List<OutputDataset> outputs = Arrays.asList(outputDataset);
-    List<OutputDataset> modifiedOutputs = RemovePathPatternUtils.removeOutputsPathPattern(context, outputs);
+    List<OutputDataset> modifiedOutputs =
+        RemovePathPatternUtils.removeOutputsPathPattern(context, outputs);
 
     assertThat(modifiedOutputs).hasSize(1);
     OutputDataset result = modifiedOutputs.get(0);
-    
+
     // Verify dataset name pattern removal
     assertThat(result.getName()).isEqualTo(TEST_PATH_OUTPUT);
-        
+
     // Verify only field-level InputField pattern removal
     OpenLineage.ColumnLineageDatasetFacet resultFacet = result.getFacets().getColumnLineage();
     assertThat(resultFacet.getDataset()).isEmpty();
-    
-    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional resultFieldAdditional = 
+
+    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional resultFieldAdditional =
         resultFacet.getFields().getAdditionalProperties().get("output_field");
     assertThat(resultFieldAdditional.getInputFields()).hasSize(2);
-    assertThat(resultFieldAdditional.getInputFields().get(0).getName()).isEqualTo(TEST_PATH_CUSTOMERS);
+    assertThat(resultFieldAdditional.getInputFields().get(0).getName())
+        .isEqualTo(TEST_PATH_CUSTOMERS);
     assertThat(resultFieldAdditional.getInputFields().get(1).getName()).isEqualTo(TEST_PATH_ORDERS);
-  }  
+  }
 
   @Test
   void testRemoveOutputsPathPatternWithColumnLineageNoPatternMatch() {
@@ -220,77 +225,96 @@ class RemovePathPatternUtilsTest {
     when(conf.get(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))
         .thenReturn("(.*)(?<remove>\\/.*\\/.*\\/.*)");
 
-    OutputDataset outputDataset = buildSampleOutputDatasetWithColumnLineage(
-        TEST_PATH_OUTPUT, 
-        true,  // includeDatasetInputFields  
-        false  // no path patterns - won't match
-    );
+    OutputDataset outputDataset =
+        buildSampleOutputDatasetWithColumnLineage(
+            TEST_PATH_OUTPUT,
+            true, // includeDatasetInputFields
+            false // no path patterns - won't match
+            );
 
     List<OutputDataset> outputs = Arrays.asList(outputDataset);
-    List<OutputDataset> modifiedOutputs = RemovePathPatternUtils.removeOutputsPathPattern(context, outputs);
+    List<OutputDataset> modifiedOutputs =
+        RemovePathPatternUtils.removeOutputsPathPattern(context, outputs);
 
     assertThat(modifiedOutputs).hasSize(1);
     OutputDataset result = modifiedOutputs.get(0);
-    
+
     // Verify dataset name unchanged (no pattern match)
     assertThat(result.getName()).isEqualTo(TEST_PATH_OUTPUT);
-    
+
     // Verify column lineage facet unchanged (no pattern match)
     OpenLineage.ColumnLineageDatasetFacet resultFacet = result.getFacets().getColumnLineage();
-    
+
     assertThat(resultFacet.getDataset()).hasSize(1);
     assertThat(resultFacet.getDataset().get(0).getName()).isEqualTo(TEST_PATH_SOURCE);
-    
-    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional resultFieldAdditional = 
+
+    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional resultFieldAdditional =
         resultFacet.getFields().getAdditionalProperties().get("output_field");
     assertThat(resultFieldAdditional.getInputFields()).hasSize(2);
-    assertThat(resultFieldAdditional.getInputFields().get(0).getName()).isEqualTo(TEST_PATH_CUSTOMERS);
+    assertThat(resultFieldAdditional.getInputFields().get(0).getName())
+        .isEqualTo(TEST_PATH_CUSTOMERS);
     assertThat(resultFieldAdditional.getInputFields().get(1).getName()).isEqualTo(TEST_PATH_ORDERS);
   }
 
   private OpenLineage.ColumnLineageDatasetFacet buildSampleColumnLineageFacet(
-      boolean includeDatasetInputFields,
-      boolean usePathsWithPatterns) {
-    
+      boolean includeDatasetInputFields, boolean usePathsWithPatterns) {
+
     String pathSuffix = usePathsWithPatterns ? TEST_PATH_SUFFIX : "";
-    
+
     // Build field mappings
     OpenLineage.ColumnLineageDatasetFacetFields fields;
-    OpenLineage.InputField inputField1 = openLineage.newInputFieldBuilder().namespace("ns").name(TEST_PATH_CUSTOMERS + pathSuffix).field("customer_id").build();
-    OpenLineage.InputField inputField2 = openLineage.newInputFieldBuilder().namespace("ns").name(TEST_PATH_ORDERS + pathSuffix).field("order_id").build();
-    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional fieldAdditional = 
+    OpenLineage.InputField inputField1 =
+        openLineage
+            .newInputFieldBuilder()
+            .namespace("ns")
+            .name(TEST_PATH_CUSTOMERS + pathSuffix)
+            .field("customer_id")
+            .build();
+    OpenLineage.InputField inputField2 =
+        openLineage
+            .newInputFieldBuilder()
+            .namespace("ns")
+            .name(TEST_PATH_ORDERS + pathSuffix)
+            .field("order_id")
+            .build();
+    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional fieldAdditional =
         openLineage.newColumnLineageDatasetFacetFieldsAdditional(
             Arrays.asList(inputField1, inputField2), "Direct mapping", "IDENTITY");
-    fields = openLineage.newColumnLineageDatasetFacetFieldsBuilder()
-        .put("output_field", fieldAdditional)
-        .build();
-    
+    fields =
+        openLineage
+            .newColumnLineageDatasetFacetFieldsBuilder()
+            .put("output_field", fieldAdditional)
+            .build();
+
     // Build dataset input fields
     List<OpenLineage.InputField> datasetInputFields = new ArrayList();
     if (includeDatasetInputFields) {
-      OpenLineage.InputField datasetInputField = openLineage.newInputFieldBuilder().namespace("ns").name(TEST_PATH_SOURCE + pathSuffix).field("source_field").build();
+      OpenLineage.InputField datasetInputField =
+          openLineage
+              .newInputFieldBuilder()
+              .namespace("ns")
+              .name(TEST_PATH_SOURCE + pathSuffix)
+              .field("source_field")
+              .build();
       datasetInputFields = Arrays.asList(datasetInputField);
-    } 
-    
+    }
+
     return openLineage.newColumnLineageDatasetFacet(fields, datasetInputFields);
   }
 
   private OutputDataset buildSampleOutputDatasetWithColumnLineage(
-      String datasetName,
-      boolean includeDatasetInputFields,
-      boolean usePathsWithPatterns) {
-    
-    OpenLineage.ColumnLineageDatasetFacet columnLineageFacet = 
+      String datasetName, boolean includeDatasetInputFields, boolean usePathsWithPatterns) {
+
+    OpenLineage.ColumnLineageDatasetFacet columnLineageFacet =
         buildSampleColumnLineageFacet(includeDatasetInputFields, usePathsWithPatterns);
-    
-    OpenLineage.DatasetFacets datasetFacets = 
+    OpenLineage.DatasetFacets datasetFacets =
         openLineage.newDatasetFacetsBuilder().columnLineage(columnLineageFacet).build();
-        
+
     return openLineage
         .newOutputDatasetBuilder()
         .name(datasetName)
         .namespace("ns")
         .facets(datasetFacets)
         .build();
-  }  
+  }
 }
