@@ -29,10 +29,6 @@ setup-common: ## Setup integration common library
 	@echo "$(BLUE)Setting up integration common...$(NC)"
 	cd integration/common && uv sync --extra dev --active
 
-setup-airflow: ## Setup Airflow integration (with airflow-compatible deps)
-	@echo "$(BLUE)Setting up Airflow integration...$(NC)"
-	cd integration/airflow && uv sync --extra airflow --extra dev  --active
-
 setup-dbt: ## Setup dbt integration
 	@echo "$(BLUE)Setting up dbt integration...$(NC)"
 	cd integration/dbt && uv sync --extra dev --active
@@ -45,7 +41,6 @@ test-all: ## Run all tests
 	@echo "$(BLUE)Running all tests...$(NC)"
 	@$(MAKE) test-client
 	@$(MAKE) test-common
-	@$(MAKE) test-airflow
 	@$(MAKE) test-dbt
 	@echo "$(GREEN)✅ All tests completed!$(NC)"
 
@@ -58,11 +53,6 @@ test-common: ## Test integration common library
 	@echo "$(BLUE)Testing integration common...$(NC)"
 	@$(MAKE) setup-common
 	cd integration/common && uv run pytest tests/
-
-test-airflow: ## Test Airflow integration
-	@echo "$(BLUE)Testing Airflow integration...$(NC)"
-	@$(MAKE) setup-airflow
-	cd integration/airflow && uv run pytest -vv tests/
 
 test-dbt: ## Test dbt integration
 	@echo "$(BLUE)Testing dbt integration...$(NC)"
@@ -88,7 +78,6 @@ lint-types: ## Run mypy type checking per integration
 	@echo "$(BLUE)Running mypy type checking...$(NC)"
 	cd client/python && uv run mypy src/
 	cd integration/common && uv run mypy src/
-	cd integration/airflow && uv run mypy src/ --ignore-missing-imports
 	cd integration/dbt && uv run mypy src/ --ignore-missing-imports
 
 fix-format: ## Auto-fix formatting issues
@@ -99,11 +88,6 @@ fix-format: ## Auto-fix formatting issues
 # =============================================================================
 # Development Shortcuts
 # =============================================================================
-
-airflow: ## Enter Airflow integration directory
-	@echo "$(GREEN)💨 Switching to Airflow integration$(NC)"
-	@echo "Run: cd integration/airflow && uv sync --extra airflow --extra tests"
-	@cd integration/airflow && bash
 
 dbt: ## Enter dbt integration directory
 	@echo "$(GREEN)🔧 Switching to dbt integration$(NC)"
@@ -125,15 +109,8 @@ status: ## Show status of all integrations
 	if [ -d "client/python/.venv" ]; then echo "$(GREEN)✅ Ready$(NC)"; else echo "$(RED)❌ Not setup$(NC)"; fi
 	@echo -n "Common: "; \
 	if [ -d "integration/common/.venv" ]; then echo "$(GREEN)✅ Ready$(NC)"; else echo "$(RED)❌ Not setup$(NC)"; fi
-	@echo -n "Airflow: "; \
-	if [ -d "integration/airflow/.venv" ]; then echo "$(GREEN)✅ Ready$(NC)"; else echo "$(RED)❌ Not setup$(NC)"; fi
 	@echo -n "dbt: "; \
 	if [ -d "integration/dbt/.venv" ]; then echo "$(GREEN)✅ Ready$(NC)"; else echo "$(RED)❌ Not setup$(NC)"; fi
-
-deps: ## Show dependency versions (for debugging conflicts)
-	@echo "$(BLUE)Dependency Versions:$(NC)"
-	@echo "$(YELLOW)Airflow protobuf:$(NC)"
-	@cd integration/airflow && uv run python -c "import protobuf; print(f'  protobuf: {protobuf.__version__}')" 2>/dev/null || echo "  Not installed"
 
 # =============================================================================
 # Utility Commands
@@ -143,7 +120,6 @@ clean: ## Clean all virtual environments and caches
 	@echo "$(YELLOW)Cleaning virtual environments and caches...$(NC)"
 	rm -rf client/python/.venv
 	rm -rf integration/common/.venv
-	rm -rf integration/airflow/.venv
 	rm -rf integration/dbt/.venv
 	uv cache clean
 	@echo "$(GREEN)✅ Cleanup completed!$(NC)"

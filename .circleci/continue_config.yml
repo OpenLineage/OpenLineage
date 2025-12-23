@@ -18,7 +18,7 @@ parameters:
   integration-type:
     type: enum
     default: "*"
-    enum: [ "*", "airflow", "dbt", "publish", "python" ]
+    enum: [ "*", "dbt", "publish", "python" ]
 
 checkout_project_root:
   &checkout_project_root # Override checkout path to project root (see: https://circleci.com/docs/2.0/configuration-reference/#checkout)
@@ -371,43 +371,6 @@ jobs:
     steps:
       - *checkout_project_root
       - install_uv_python
-      - run: |
-          uv sync --extra dev 
-          uv build --wheel
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./dist/*.whl
-            - ./dist/*.tar.gz
-
-  unit-test-integration-airflow:
-    parameters:
-      install_parser:
-        type: boolean
-      airflow-version:
-        type: string
-    working_directory: ~/openlineage/integration/airflow
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - *checkout_project_root
-      - install_uv_python
-      - run: |
-          uv sync --extra dev
-          uv run mypy --install-types --non-interactive --ignore-missing-imports src
-          uv run tox -e py39-<< parameters.airflow-version >>
-      - store_test_results:
-          path: test-results
-      - run: bash <(curl -s https://codecov.io/bash)
-
-  build-integration-airflow:
-    working_directory: ~/openlineage/integration/airflow
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - *checkout_project_root
-      - install_uv_python:
-          py_env: "3.9"
       - run: |
           uv sync --extra dev 
           uv build --wheel

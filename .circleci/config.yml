@@ -14,7 +14,7 @@ parameters:
   integration-type:
     type: enum
     default: "*"
-    enum: ["*", "airflow", "dbt", "publish", "python"]
+    enum: ["*", "dbt", "publish", "python"]
   databricks-test:
     type: string
     default: "disabled"
@@ -26,7 +26,7 @@ jobs:
   # Determine the modules that have changed and trigger a series of workflow tasks as necessary.
   # We merge multiple workflows from files in the workflows subdirectory based on the changed
   # modules. A single module changed may require tests and builds in multiple downstream modules.
-  # For example, a change to the python client requires building the airflow and common
+  # For example, a change to the python client requires building common
   # modules. Changing the spec requires building everything.
   # Note that we don't use the path-filtering orb because we require this dynamic combination of
   # workflows. The path-filtering orb will let us set some boolean parameters (e.g., airflow: true),

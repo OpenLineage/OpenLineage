@@ -15,8 +15,6 @@ labelPRBasedOnFilePath:
   area:documentation:
     - doc/**/*
     - "*.md"
-  area:integration/airflow:
-    - integration/airflow/**/*
   area:integration/common:
     - integration/common/**/*
   area:integration/dbt:

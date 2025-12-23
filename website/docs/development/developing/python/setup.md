@@ -4,7 +4,7 @@ sidebar_position: 1
 ---
 
 There are four Python OpenLineage packages that you can install locally when setting up a development environment:<br />
-[openlineage-python](https://pypi.org/project/openlineage-python/) (client), [openlineage-sql](https://pypi.org/project/openlineage-sql/), [openlineage-integration-common](https://pypi.org/project/openlineage-integration-common/), and [openlineage-airflow](https://pypi.org/project/openlineage-airflow/).
+[openlineage-python](https://pypi.org/project/openlineage-python/) (client), [openlineage-sql](https://pypi.org/project/openlineage-sql/) and [openlineage-integration-common](https://pypi.org/project/openlineage-integration-common/).
 
 The repository uses [UV](https://docs.astral.sh/uv/) for Python dependency management with path-based dependencies, where each integration is a standalone project with isolated dependencies.
 
@@ -30,7 +30,6 @@ $ make setup-all
 # Or setup specific integrations
 $ make setup-client      # Python client
 $ make setup-common      # Integration common library
-$ make setup-airflow     # Airflow integration
 $ make setup-dbt         # dbt integration
 
 # Run tests
@@ -61,10 +60,6 @@ $ uv sync --extra dev --extra test
 $ cd integration/common
 $ uv sync --extra dev
 
-# Airflow integration
-$ cd integration/airflow
-$ uv sync --extra dev --extra airflow
-
 # dbt integration
 $ cd integration/dbt
 $ uv sync --extra dev
@@ -75,7 +70,6 @@ $ uv sync --extra dev
 The repository uses path-based dependencies instead of a UV workspace because each integration has potentially conflicting dependencies. Each integration is a standalone project with its own isolated virtual environment.
 
 Each integration automatically installs its dependencies from local directories in editable mode:
-- Airflow integration depends on `client`, `common`, and `sql` packages
 - dbt integration depends on `common` package
 - Common integration depends on `client` and `sql` packages
 
