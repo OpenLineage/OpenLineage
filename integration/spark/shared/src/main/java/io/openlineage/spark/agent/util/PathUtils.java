@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
+import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import java.io.File;
 import java.net.URI;
 import java.util.Optional;
@@ -33,7 +34,18 @@ public class PathUtils {
   }
 
   public static DatasetIdentifier fromURI(URI location) {
-    return FilesystemDatasetUtils.fromLocation(location);
+    // Set Gravitino context in ThreadLocal for cross-module access
+    Optional<GravitinoInfo> gravitinoInfo = getGravitinoInfoFromSpark();
+    if (gravitinoInfo.isPresent()) {
+      io.openlineage.client.utils.gravitino.GravitinoContext.setContext(gravitinoInfo.get());
+    }
+
+    try {
+      return FilesystemDatasetUtils.fromLocation(location);
+    } finally {
+      // Always clear context to prevent memory leaks
+      io.openlineage.client.utils.gravitino.GravitinoContext.clearContext();
+    }
   }
 
   /**
@@ -194,5 +206,28 @@ public class PathUtils {
     }
 
     return name;
+  }
+
+  /**
+   * Gets Gravitino configuration from the active Spark session if available. This method provides
+   * cross-module configuration discovery by directly accessing Spark configuration from the
+   * integration layer.
+   *
+   * @return Optional containing GravitinoInfo if Spark session is active with Gravitino config
+   */
+  private static Optional<GravitinoInfo> getGravitinoInfoFromSpark() {
+    try {
+      SparkGravitinoInfoProvider provider = new SparkGravitinoInfoProvider();
+      if (provider.isAvailable()) {
+        log.debug("Found active Spark session with Gravitino configuration");
+        return Optional.of(provider.getGravitinoInfo());
+      } else {
+        log.debug("No active Spark session with Gravitino configuration found");
+        return Optional.empty();
+      }
+    } catch (Exception e) {
+      log.debug("Failed to get Gravitino info from Spark context: {}", e.getMessage());
+      return Optional.empty();
+    }
   }
 }

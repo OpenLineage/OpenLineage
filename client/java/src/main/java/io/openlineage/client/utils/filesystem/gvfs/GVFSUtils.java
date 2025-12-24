@@ -5,15 +5,20 @@
 package io.openlineage.client.utils.filesystem.gvfs;
 
 import io.openlineage.client.utils.filesystem.GVFSFilesystemDatasetExtractor;
+import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for handling Gravitino Virtual File System (GVFS) paths and facets. GVFS paths
  * follow the format: gvfs://fileset/catalog/schema/fileset[/subpath]
  */
 public class GVFSUtils {
+  private static final Logger log = LoggerFactory.getLogger(GVFSUtils.class);
 
   private static final String PATH_SEPARATOR = "/";
 
@@ -32,7 +37,7 @@ public class GVFSUtils {
    * @return dataset identifier in format: catalog.schema.fileset
    * @throws IllegalArgumentException if the path doesn't contain required components
    */
-  public static String getGVFSIdentifierName(URI uri) {
+  public static String getFilesetName(URI uri) {
     String path = uri.getPath();
     if (path.startsWith(PATH_SEPARATOR)) {
       path = path.substring(1);
@@ -81,5 +86,27 @@ public class GVFSUtils {
     return PATH_SEPARATOR
         + Arrays.stream(parts).skip(MIN_GVFS_PATH_PARTS).collect(Collectors.joining(PATH_SEPARATOR))
         + end;
+  }
+
+  /**
+   * Gets the Gravitino namespace if available.
+   *
+   * @param gravitinoInfo the Gravitino information containing URI and metalake
+   * @return Optional Gravitino namespace, or empty if unavailable
+   */
+  public static Optional<String> getGravitinoNamespace(GravitinoInfo gravitinoInfo) {
+    try {
+      Optional<String> gravitinoUri = gravitinoInfo.getUri();
+      Optional<String> metalake = gravitinoInfo.getMetalake();
+
+      if (gravitinoUri.isPresent() && metalake.isPresent()) {
+        return Optional.of(gravitinoUri.get() + "/api/metalakes/" + metalake.get());
+      }
+    } catch (Exception e) {
+      // Fallback gracefully if Gravitino info is not available
+      log.debug("Failed to get Gravitino namespace", e);
+    }
+
+    return Optional.empty();
   }
 }

@@ -11,10 +11,10 @@ import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import io.openlineage.client.utils.gravitino.GravitinoInfoManager;
 import java.net.URI;
 import java.util.Optional;
+import lombok.SneakyThrows;
 
-public class GVFSFilesystemDatasetExtractor extends GenericFilesystemDatasetExtractor {
+public class GVFSFilesystemDatasetExtractor implements FilesystemDatasetExtractor {
   public static final String SCHEME = "gvfs";
-  public static final String GVFS_NAMESPACE_NAME = "__GVFS_NAMESPACE";
 
   private final GravitinoInfoManager gravitinoInfoManager = GravitinoInfoManager.getInstance();
 
@@ -24,43 +24,47 @@ public class GVFSFilesystemDatasetExtractor extends GenericFilesystemDatasetExtr
   }
 
   @Override
+  @SneakyThrows
   public DatasetIdentifier extract(URI location) {
-    DatasetIdentifier parentResult = super.extract(location);
-    return addGravitinoSymlink(parentResult, location);
+    String namespace =
+        getGravitinoNamespace()
+            .orElse(
+                new URI(location.getScheme(), location.getAuthority(), null, null, null)
+                    .toString());
+    String name = location.getPath();
+    return new DatasetIdentifier(
+        FilesystemUriSanitizer.nonEmptyPath(name),
+        FilesystemUriSanitizer.removeLastSlash(namespace));
   }
 
   @Override
+  @SneakyThrows
   public DatasetIdentifier extract(URI location, String rawName) {
-    DatasetIdentifier parentResult = super.extract(location, rawName);
-    return addGravitinoSymlink(parentResult, location);
+    URI fixedLocation = new URI(SCHEME, location.getAuthority(), location.getPath(), null, null);
+    String namespace =
+        getGravitinoNamespace()
+            .orElse(FilesystemUriSanitizer.removeLastSlash(fixedLocation.toString()));
+    String name =
+        Optional.of(rawName)
+            .map(FilesystemUriSanitizer::removeFirstSlash)
+            .map(FilesystemUriSanitizer::removeLastSlash)
+            .map(FilesystemUriSanitizer::nonEmptyPath)
+            .get();
+    return new DatasetIdentifier(name, namespace);
   }
 
   /**
-   * Adds Gravitino-specific symlink information to a DatasetIdentifier.
+   * Gets the Gravitino namespace if available.
    *
-   * @param datasetIdentifier the dataset identifier to enhance
-   * @param location the GVFS URI location
-   * @return the enhanced dataset identifier with symlink (or original if Gravitino info
-   *     unavailable)
+   * @return Optional Gravitino namespace, or empty if unavailable
    */
-  private DatasetIdentifier addGravitinoSymlink(DatasetIdentifier datasetIdentifier, URI location) {
+  private Optional<String> getGravitinoNamespace() {
     try {
       GravitinoInfo gravitinoInfo = gravitinoInfoManager.getGravitinoInfo();
-      Optional<String> gravitinoUri = gravitinoInfo.getUri();
-      Optional<String> metalake = gravitinoInfo.getMetalake();
-
-      if (gravitinoUri.isPresent() && metalake.isPresent()) {
-        String symlinkNamespace = gravitinoUri.get() + "/api/metalakes/" + metalake.get();
-        String symlinkName = GVFSUtils.getGVFSIdentifierName(location);
-
-        datasetIdentifier.withSymlink(
-            symlinkName, symlinkNamespace, DatasetIdentifier.SymlinkType.LOCATION);
-      }
+      return GVFSUtils.getGravitinoNamespace(gravitinoInfo);
     } catch (Exception e) {
       // Fallback gracefully if Gravitino info is not available
-      // The dataset identifier will be returned without the symlink
+      return Optional.empty();
     }
-
-    return datasetIdentifier;
   }
 }
