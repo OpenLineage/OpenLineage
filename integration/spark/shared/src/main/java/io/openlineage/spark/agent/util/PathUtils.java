@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
+import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
 import io.openlineage.client.utils.gravitino.GravitinoInfo;
 import java.io.File;
 import java.net.URI;
@@ -34,10 +35,12 @@ public class PathUtils {
   }
 
   public static DatasetIdentifier fromURI(URI location) {
-    // Set Gravitino context in ThreadLocal for cross-module access
-    Optional<GravitinoInfo> gravitinoInfo = getGravitinoInfoFromSpark();
-    if (gravitinoInfo.isPresent()) {
-      io.openlineage.client.utils.gravitino.GravitinoContext.setContext(gravitinoInfo.get());
+    // Set Gravitino context in ThreadLocal for cross-module access only for GVFS paths
+    if (GVFSUtils.isGVFS(location)) {
+      Optional<GravitinoInfo> gravitinoInfo = getGravitinoInfoFromSpark();
+      if (gravitinoInfo.isPresent()) {
+        io.openlineage.client.utils.gravitino.GravitinoContext.setContext(gravitinoInfo.get());
+      }
     }
 
     try {

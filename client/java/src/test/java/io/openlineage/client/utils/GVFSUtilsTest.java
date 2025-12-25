@@ -44,31 +44,33 @@ class GVFSUtilsTest {
 
   @Test
   @SneakyThrows
-  void testGetGVFSLocation() {
+  void testGetGVFSLocationSubpath() {
     String location =
-        GVFSUtils.getGVFSLocation(
+        GVFSUtils.getGVFSLocationSubpath(
             new URI("gvfs://fileset/catalog_name/schema_name/fileset_name/a/b/c"));
     Assertions.assertEquals("/a/b/c", location);
 
     location =
-        GVFSUtils.getGVFSLocation(
+        GVFSUtils.getGVFSLocationSubpath(
             new URI("gvfs://fileset/catalog_name/schema_name/fileset_name/a/b/c/"));
     Assertions.assertEquals("/a/b/c/", location);
 
     location =
-        GVFSUtils.getGVFSLocation(new URI("gvfs://fileset/catalog_name/schema_name/fileset_name/"));
+        GVFSUtils.getGVFSLocationSubpath(
+            new URI("gvfs://fileset/catalog_name/schema_name/fileset_name/"));
     Assertions.assertEquals("/", location);
 
     location =
-        GVFSUtils.getGVFSLocation(new URI("gvfs://fileset/catalog_name/schema_name/fileset_name"));
+        GVFSUtils.getGVFSLocationSubpath(
+            new URI("gvfs://fileset/catalog_name/schema_name/fileset_name"));
     Assertions.assertEquals("/", location);
   }
 
   @Test
   @SneakyThrows
-  void testGetGVFSLocationWithDeepPath() {
+  void testGetGVFSLocationSubpathWithDeepPath() {
     String location =
-        GVFSUtils.getGVFSLocation(
+        GVFSUtils.getGVFSLocationSubpath(
             new URI(
                 "gvfs://fileset/catalog/schema/fileset/year=2024/month=01/day=15/data.parquet"));
     Assertions.assertEquals("/year=2024/month=01/day=15/data.parquet", location);
@@ -78,7 +80,7 @@ class GVFSUtilsTest {
   @SneakyThrows
   void testGetGVFSLocationWithSpecialCharacters() {
     String location =
-        GVFSUtils.getGVFSLocation(
+        GVFSUtils.getGVFSLocationSubpath(
             new URI(
                 "gvfs://fileset/catalog/schema/fileset/path_with_underscore/file-with-dash.txt"));
     Assertions.assertEquals("/path_with_underscore/file-with-dash.txt", location);
@@ -86,26 +88,28 @@ class GVFSUtilsTest {
 
   @Test
   @SneakyThrows
-  void testGetFilesetName() {
+  void testGetFilesetFullName() {
     String name =
-        GVFSUtils.getFilesetName(
+        GVFSUtils.getFilesetFullName(
             new URI("gvfs://fileset/catalog_name/schema_name/fileset_name/a/b/c"));
     Assertions.assertEquals("catalog_name.schema_name.fileset_name", name);
 
     name =
-        GVFSUtils.getFilesetName(new URI("gvfs://fileset/catalog_name/schema_name/fileset_name/"));
+        GVFSUtils.getFilesetFullName(
+            new URI("gvfs://fileset/catalog_name/schema_name/fileset_name/"));
     Assertions.assertEquals("catalog_name.schema_name.fileset_name", name);
 
     name =
-        GVFSUtils.getFilesetName(new URI("gvfs://fileset/catalog_name/schema_name/fileset_name"));
+        GVFSUtils.getFilesetFullName(
+            new URI("gvfs://fileset/catalog_name/schema_name/fileset_name"));
     Assertions.assertEquals("catalog_name.schema_name.fileset_name", name);
   }
 
   @Test
   @SneakyThrows
-  void testGetFilesetNameWithComplexNames() {
+  void testGetFilesetFullNameWithComplexNames() {
     String name =
-        GVFSUtils.getFilesetName(
+        GVFSUtils.getFilesetFullName(
             new URI("gvfs://fileset/prod_catalog_2024/analytics_v2/user_events_fileset/data/"));
     Assertions.assertEquals("prod_catalog_2024.analytics_v2.user_events_fileset", name);
   }
@@ -117,7 +121,8 @@ class GVFSUtilsTest {
     URI invalidUri = new URI("gvfs://fileset/catalog/schema");
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> GVFSUtils.getFilesetName(invalidUri));
+        assertThrows(
+            IllegalArgumentException.class, () -> GVFSUtils.getFilesetFullName(invalidUri));
 
     assertThat(exception.getMessage())
         .contains("Invalid GVFS path")
@@ -133,7 +138,8 @@ class GVFSUtilsTest {
     URI invalidUri = new URI("gvfs://fileset/catalog");
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> GVFSUtils.getFilesetName(invalidUri));
+        assertThrows(
+            IllegalArgumentException.class, () -> GVFSUtils.getFilesetFullName(invalidUri));
 
     assertThat(exception.getMessage())
         .contains("Invalid GVFS path")
@@ -148,7 +154,8 @@ class GVFSUtilsTest {
     URI invalidUri = new URI("gvfs://fileset/");
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> GVFSUtils.getFilesetName(invalidUri));
+        assertThrows(
+            IllegalArgumentException.class, () -> GVFSUtils.getFilesetFullName(invalidUri));
 
     assertThat(exception.getMessage()).contains("Invalid GVFS path");
   }
@@ -160,7 +167,8 @@ class GVFSUtilsTest {
     URI invalidUri = new URI("gvfs://fileset/catalog/schema");
 
     IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> GVFSUtils.getGVFSLocation(invalidUri));
+        assertThrows(
+            IllegalArgumentException.class, () -> GVFSUtils.getGVFSLocationSubpath(invalidUri));
 
     assertThat(exception.getMessage())
         .contains("Invalid GVFS path")
@@ -171,7 +179,8 @@ class GVFSUtilsTest {
   @SneakyThrows
   void testGVFSPathWithNumbers() {
     String name =
-        GVFSUtils.getFilesetName(new URI("gvfs://fileset/catalog123/schema456/fileset789/data/"));
+        GVFSUtils.getFilesetFullName(
+            new URI("gvfs://fileset/catalog123/schema456/fileset789/data/"));
     Assertions.assertEquals("catalog123.schema456.fileset789", name);
   }
 
@@ -179,7 +188,7 @@ class GVFSUtilsTest {
   @SneakyThrows
   void testGVFSPathWithHyphensAndUnderscores() {
     String name =
-        GVFSUtils.getFilesetName(
+        GVFSUtils.getFilesetFullName(
             new URI("gvfs://fileset/my-catalog/my_schema/my-fileset_v2/data/"));
     Assertions.assertEquals("my-catalog.my_schema.my-fileset_v2", name);
   }
@@ -189,12 +198,14 @@ class GVFSUtilsTest {
   void testGVFSLocationPreservesTrailingSlash() {
     // With trailing slash
     String location1 =
-        GVFSUtils.getGVFSLocation(new URI("gvfs://fileset/catalog/schema/fileset/data/2024/"));
+        GVFSUtils.getGVFSLocationSubpath(
+            new URI("gvfs://fileset/catalog/schema/fileset/data/2024/"));
     Assertions.assertEquals("/data/2024/", location1);
 
     // Without trailing slash
     String location2 =
-        GVFSUtils.getGVFSLocation(new URI("gvfs://fileset/catalog/schema/fileset/data/2024"));
+        GVFSUtils.getGVFSLocationSubpath(
+            new URI("gvfs://fileset/catalog/schema/fileset/data/2024"));
     Assertions.assertEquals("/data/2024", location2);
   }
 
@@ -202,10 +213,10 @@ class GVFSUtilsTest {
   @SneakyThrows
   void testGVFSPathWithMinimalComponents() {
     // Exactly 3 components - minimum valid path
-    String name = GVFSUtils.getFilesetName(new URI("gvfs://fileset/cat/sch/fil"));
+    String name = GVFSUtils.getFilesetFullName(new URI("gvfs://fileset/cat/sch/fil"));
     Assertions.assertEquals("cat.sch.fil", name);
 
-    String location = GVFSUtils.getGVFSLocation(new URI("gvfs://fileset/cat/sch/fil"));
+    String location = GVFSUtils.getGVFSLocationSubpath(new URI("gvfs://fileset/cat/sch/fil"));
     Assertions.assertEquals("/", location);
   }
 }

@@ -10,7 +10,7 @@ Quick Links:
  * [Configuration](https://openlineage.io/docs/integrations/spark/configuration/usage)
  * [Quickstart](https://openlineage.io/docs/integrations/spark/quickstart/quickstart_local)
  * [Column-Level Lineage](https://openlineage.io/docs/integrations/spark/spark_column_lineage)
- * [Apache Gravitino Integration](GRAVITINO.md) | [Quick Start](GRAVITINO_QUICKSTART.md)
+ * [Apache Gravitino Integration](https://openlineage.io/docs/integrations/spark/quickstart_gravitino)
  * [Extending](https://openlineage.io/docs/integrations/spark/extending)
  * [Development](https://openlineage.io/docs/development/developing/spark/setup)
 

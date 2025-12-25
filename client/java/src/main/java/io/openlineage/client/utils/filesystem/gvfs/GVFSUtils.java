@@ -37,7 +37,7 @@ public class GVFSUtils {
    * @return dataset identifier in format: catalog.schema.fileset
    * @throws IllegalArgumentException if the path doesn't contain required components
    */
-  public static String getFilesetName(URI uri) {
+  public static String getFilesetFullName(URI uri) {
     String path = uri.getPath();
     if (path.startsWith(PATH_SEPARATOR)) {
       path = path.substring(1);
@@ -62,7 +62,7 @@ public class GVFSUtils {
    * @return the location path within the fileset (e.g., "/data/2024/01/"), or "/" if no subpath
    * @throws IllegalArgumentException if the path doesn't contain required components
    */
-  public static String getGVFSLocation(URI uri) {
+  public static String getGVFSLocationSubpath(URI uri) {
     String path = uri.getPath();
     if (path.startsWith(PATH_SEPARATOR)) {
       path = path.substring(1);
