@@ -5,6 +5,10 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -127,21 +131,21 @@ public class AwsUtils {
    * cluster mode where environment variables may not be propagated.
    */
   private static Optional<String> getRegionFromEc2Metadata() {
+    HttpURLConnection tokenConnection = null;
+    HttpURLConnection connection = null;
     try {
       String tokenUrl = "http://169.254.169.254/latest/api/token";
-      java.net.URL url = new java.net.URL(tokenUrl);
-      java.net.HttpURLConnection tokenConnection =
-          (java.net.HttpURLConnection) url.openConnection();
+      URL url = new URL(tokenUrl);
+      tokenConnection = (HttpURLConnection) url.openConnection();
       tokenConnection.setRequestMethod("PUT");
       tokenConnection.setRequestProperty("X-aws-ec2-metadata-token-ttl-seconds", "21600");
       tokenConnection.setConnectTimeout(2000);
       tokenConnection.setReadTimeout(2000);
 
       String token = null;
-      if (tokenConnection.getResponseCode() == java.net.HttpURLConnection.HTTP_OK) {
-        try (java.io.BufferedReader reader =
-            new java.io.BufferedReader(
-                new java.io.InputStreamReader(tokenConnection.getInputStream()))) {
+      if (tokenConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+        try (BufferedReader reader =
+            new BufferedReader(new InputStreamReader(tokenConnection.getInputStream()))) {
           token = reader.readLine();
         }
       }
@@ -151,17 +155,16 @@ public class AwsUtils {
       }
 
       String metadataUrl = "http://169.254.169.254/latest/meta-data/placement/region";
-      url = new java.net.URL(metadataUrl);
-      java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+      url = new URL(metadataUrl);
+      connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("GET");
       connection.setRequestProperty("X-aws-ec2-metadata-token", token);
       connection.setConnectTimeout(2000);
       connection.setReadTimeout(2000);
 
-      if (connection.getResponseCode() == java.net.HttpURLConnection.HTTP_OK) {
-        try (java.io.BufferedReader reader =
-            new java.io.BufferedReader(
-                new java.io.InputStreamReader(connection.getInputStream()))) {
+      if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+        try (BufferedReader reader =
+            new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
           String region = reader.readLine();
           if (region != null && !region.trim().isEmpty()) {
             return Optional.of(region.trim());
@@ -170,6 +173,13 @@ public class AwsUtils {
       }
     } catch (Exception e) {
       log.debug("Could not retrieve region from EC2 metadata service: {}", e.getMessage());
+    } finally {
+      if (tokenConnection != null) {
+        tokenConnection.disconnect();
+      }
+      if (connection != null) {
+        connection.disconnect();
+      }
     }
 
     return Optional.empty();
