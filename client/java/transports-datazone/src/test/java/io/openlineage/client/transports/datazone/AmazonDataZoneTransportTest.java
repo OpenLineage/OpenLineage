@@ -84,6 +84,16 @@ class AmazonDataZoneTransportTests {
   }
 
   @Test
+  void transportFactoryCreatesAmazonDataZoneTransportWithRegion() {
+    AmazonDataZoneConfig config = new AmazonDataZoneConfig();
+    config.setDomainId(DATAZONE_DOMAIN_ID);
+    config.setRegion("us-west-2");
+    TransportFactory transportFactory = new TransportFactory(config);
+
+    assertTrue(transportFactory.build() instanceof AmazonDataZoneTransport);
+  }
+
+  @Test
   void dataZoneTransportRaisesExceptionWhenDomainIdNotProvided() {
     AmazonDataZoneConfig config = new AmazonDataZoneConfig();
 

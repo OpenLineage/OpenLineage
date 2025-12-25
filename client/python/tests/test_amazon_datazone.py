@@ -133,3 +133,83 @@ def test_setup_datazone_raises_when_boto3_corrupted(mocker: MockerFixture) -> No
 
     with pytest.raises(ImportError):
         AmazonDataZoneTransport(config)
+
+
+def test_use_region_if_provided(domain_id: str, mocker: MockerFixture) -> None:
+    """Test that region is used when provided"""
+    mock_client = mocker.patch("boto3.client")
+    config = AmazonDataZoneConfig(domain_id=domain_id, region="us-west-2")
+
+    AmazonDataZoneTransport(config)
+
+    mock_client.assert_called_once_with("datazone", region_name="us-west-2")
+
+
+def test_no_region_when_not_provided(domain_id: str, mocker: MockerFixture) -> None:
+    """Test that no region parameter is passed when region is not provided"""
+    mock_client = mocker.patch("boto3.client")
+    config = AmazonDataZoneConfig(domain_id=domain_id)
+
+    AmazonDataZoneTransport(config)
+
+    mock_client.assert_called_once_with("datazone")
+
+
+def test_endpoint_override_with_region(domain_id: str, mocker: MockerFixture) -> None:
+    """Test that endpointOverride takes precedence over region"""
+    mock_client = mocker.patch("boto3.client")
+    config = AmazonDataZoneConfig(
+        domain_id=domain_id, region="us-east-1", endpoint_override="https://datazone.us-east-1.api.aws"
+    )
+
+    AmazonDataZoneTransport(config)
+
+    # endpointOverride should take precedence, region should be ignored
+    mock_client.assert_called_once_with("datazone", endpoint_url="https://datazone.us-east-1.api.aws")
+
+
+def test_endpoint_override_without_region(domain_id: str, mocker: MockerFixture) -> None:
+    """Test that endpointOverride is used without region"""
+    mock_client = mocker.patch("boto3.client")
+    config = AmazonDataZoneConfig(domain_id=domain_id, endpoint_override="https://datazone.us-east-1.api.aws")
+
+    AmazonDataZoneTransport(config)
+
+    mock_client.assert_called_once_with("datazone", endpoint_url="https://datazone.us-east-1.api.aws")
+
+
+def test_config_from_dict_with_region() -> None:
+    """Test that AmazonDataZoneConfig.from_dict correctly parses region"""
+    config_dict = {"domainId": "dzd-test-domain", "region": "eu-west-1"}
+
+    config = AmazonDataZoneConfig.from_dict(config_dict)
+
+    assert config.domain_id == "dzd-test-domain"
+    assert config.region == "eu-west-1"
+    assert config.endpoint_override is None
+
+
+def test_config_from_dict_with_all_parameters() -> None:
+    """Test that AmazonDataZoneConfig.from_dict correctly parses all parameters"""
+    config_dict = {
+        "domainId": "dzd-test-domain",
+        "region": "ap-southeast-2",
+        "endpointOverride": "https://datazone.us-east-1.api.aws",
+    }
+
+    config = AmazonDataZoneConfig.from_dict(config_dict)
+
+    assert config.domain_id == "dzd-test-domain"
+    assert config.region == "ap-southeast-2"
+    assert config.endpoint_override == "https://datazone.us-east-1.api.aws"
+
+
+def test_config_from_dict_without_region() -> None:
+    """Test that AmazonDataZoneConfig.from_dict works without region"""
+    config_dict = {"domainId": "dzd-test-domain", "endpointOverride": "https://datazone.us-east-1.api.aws"}
+
+    config = AmazonDataZoneConfig.from_dict(config_dict)
+
+    assert config.domain_id == "dzd-test-domain"
+    assert config.region is None
+    assert config.endpoint_override == "https://datazone.us-east-1.api.aws"
