@@ -138,7 +138,7 @@ public class AwsUtils {
       tokenConnection.setReadTimeout(2000);
 
       String token = null;
-      if (tokenConnection.getResponseCode() == 200) {
+      if (tokenConnection.getResponseCode() == java.net.HttpURLConnection.HTTP_OK) {
         try (java.io.BufferedReader reader =
             new java.io.BufferedReader(
                 new java.io.InputStreamReader(tokenConnection.getInputStream()))) {
@@ -158,7 +158,7 @@ public class AwsUtils {
       connection.setConnectTimeout(2000);
       connection.setReadTimeout(2000);
 
-      if (connection.getResponseCode() == 200) {
+      if (connection.getResponseCode() == java.net.HttpURLConnection.HTTP_OK) {
         try (java.io.BufferedReader reader =
             new java.io.BufferedReader(
                 new java.io.InputStreamReader(connection.getInputStream()))) {
