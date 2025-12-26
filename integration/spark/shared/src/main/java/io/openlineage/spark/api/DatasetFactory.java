@@ -215,8 +215,8 @@ public abstract class DatasetFactory<D extends Dataset> {
         .dataSource(
             PlanUtils.datasourceFacet(
                 context.getOpenLineage(), namespaceResolver.resolve(namespace)));
-
-    return getDataset(PathUtils.fromURI(outputPath), facetsBuilder);
+    DatasetIdentifier datasetIdentifier = PathUtils.fromURI(outputPath);
+    return getDataset(datasetIdentifier, facetsBuilder);
   }
 
   /**
