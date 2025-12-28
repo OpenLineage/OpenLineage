@@ -24,13 +24,13 @@ ext {
     compileflinkVersion = project.getProperty('flink.flink2.version')
     testedflinkVersion = project.getProperty('flink.version')
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
-    assertjVersion = '3.27.3'
+    assertjVersion = '3.27.6'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.11.4'
-    lombokVersion = '1.18.36'
-    scalaLibraryVersion = '2.12.7'
+    junit5Version = '6.0.1'
+    lombokVersion = '1.18.42'
+    scalaLibraryVersion = '2.13.18'
     mockitoVersion = '5.14.1'
-    testcontainersVersion = '1.20.4'
+    testcontainersVersion = '1.21.4'
 }
 
 
@@ -41,7 +41,7 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "org.apache.flink:flink-core:$compileflinkVersion"
     compileOnly "org.apache.flink:flink-runtime:$compileflinkVersion"
-    compileOnly 'org.apache.flink:flink-connector-kafka:4.0.0-2.0'
+    compileOnly 'org.apache.flink:flink-connector-kafka:4.0.1-2.0'
     compileOnly "org.apache.flink:flink-table-planner_2.12:$compileflinkVersion"
     compileOnly "org.apache.flink:flink-avro:$compileflinkVersion"
     compileOnly "org.apache.flink:flink-avro-confluent-registry:$compileflinkVersion"
@@ -58,11 +58,11 @@ dependencies {
     testImplementation "org.apache.flink:flink-table-planner_2.12:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-connector-base:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-json:$testedflinkVersion"
-    testImplementation "org.apache.flink:flink-connector-kafka:4.0.0-2.0"
+    testImplementation "org.apache.flink:flink-connector-kafka:4.0.1-2.0"
     testImplementation "org.apache.flink:flink-connector-test-utils:$testedflinkVersion"
-    testImplementation "org.apache.kafka:kafka-clients:3.9.0"
-    testImplementation "org.testcontainers:kafka:1.20.5"
-    testImplementation "commons-codec:commons-codec:1.18.0"
+    testImplementation "org.apache.kafka:kafka-clients:4.1.1"
+    testImplementation "org.testcontainers:kafka:1.21.4"
+    testImplementation "commons-codec:commons-codec:1.20.0"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
 
@@ -74,7 +74,7 @@ dependencies {
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
-    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.2'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.3.0'
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }

@@ -21,13 +21,13 @@ archivesBaseName='openlineage-flink1-app'
 ext {
     compileFlinkVersion = project.getProperty('flink.flink1.version')
     testedFlinkVersion = project.getProperty('flink.version')
-    assertjVersion = '3.27.3'
-    junit5Version = '5.11.4'
-    lombokVersion = '1.18.36'
+    assertjVersion = '3.27.6'
+    junit5Version = '6.0.1'
+    lombokVersion = '1.18.42'
     jacksonVersion = "2.15.3"
     mockitoVersion = '5.2.0'
-    testcontainersVersion = '1.20.5'
-    micrometerVersion = '1.14.4'
+    testcontainersVersion = '1.21.4'
+    micrometerVersion = '1.16.1'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
@@ -46,17 +46,17 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.2'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.6'
     testImplementation "org.apache.flink:flink-java:$testedFlinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java:$testedFlinkVersion"
-    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation platform('org.junit:junit-bom:6.0.1')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.3.0'
     testImplementation 'com.github.tomakehurst:wiremock:3.0.1'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.24.3'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.25.3'
     testImplementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
