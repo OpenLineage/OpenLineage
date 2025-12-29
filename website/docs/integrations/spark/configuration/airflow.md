@@ -25,14 +25,7 @@ must be set to true.
 To enable configuring transport information, Airflow configuration [spark_inject_transport_info](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/configurations-ref.html#spark-inject-transport-info)
 must be set to true.
 
-The following operators are supported:
-- [`SparkSubmitOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
-- [`SparkSubmitOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
-- [`DataprocSubmitJobOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
-- [`DataprocInstantiateInlineWorkflowTemplateOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
-- [`DataprocCreateBatchOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
-
-This list is non-exhaustive, please check the documentation of the operator you are using to see if it supports automatic injection.
+See full [list of supported operators](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/supported_classes.html#spark-operators):
 
 ### Preserving Job Hierarchy
 
