@@ -95,7 +95,7 @@ The following environment variables are available to use:
 | OPENLINEAGE_ENDPOINT       | Endpoint to which events are sent (default: api/v1/lineage)       | api/v2/events           |        |
 | OPENLINEAGE_API_KEY        | Token included in the Authentication HTTP header as the Bearer    | secret_token_123        |        |
 
-If you are using Airflow integration, there are additional [environment variables available](../integrations/airflow/usage.md#environment-variables).
+If you are using Airflow integration, there are additional [environment variables available](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/configurations-ref.html).
 
 #### Dynamic configuration with environment variables
 
