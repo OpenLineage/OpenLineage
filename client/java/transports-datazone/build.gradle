@@ -12,14 +12,14 @@ plugins {
     id 'signing'
     id 'com.adarshr.test-logger' version '3.2.0'
     id 'com.diffplug.spotless' version '7.0.2'
-    id 'com.gradleup.shadow' version '9.2.2'
+    id 'com.gradleup.shadow' version '9.3.0'
     id 'pmd'
     id 'io.freefair.lombok' version '9.1.0'
 }
 
 ext {
     projectDescription = 'DataZone OpenLineage transport library'
-    awsSdkVersion = '2.39.2'
+    awsSdkVersion = '2.40.13'
 }
 
 dependencies {
