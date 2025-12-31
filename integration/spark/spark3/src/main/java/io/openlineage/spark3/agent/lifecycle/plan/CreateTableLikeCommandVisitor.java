@@ -9,6 +9,8 @@ import static java.util.Collections.singletonList;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
+import io.openlineage.spark.agent.util.GravitinoUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -62,6 +64,9 @@ public class CreateTableLikeCommandVisitor
                   ScalaConversionUtils.<URI>asJavaOptional(command.fileFormat().locationUri())
                       .orElse(defaultLocation);
               DatasetIdentifier di = PathUtils.fromURI(location);
+              if (GravitinoInfoProviderImpl.getInstance().useGravitinoIdentifier()) {
+                di = GravitinoUtils.getGravitinoDatasetIdentifier(command.targetTable());
+              }
 
               return singletonList(
                   outputDataset()
