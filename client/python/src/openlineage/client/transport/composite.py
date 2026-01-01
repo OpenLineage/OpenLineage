@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -132,10 +132,11 @@ class CompositeTransport(Transport):
             else:  # Handle success
                 log.debug("Event successfully emitted with transport %s", transport)
                 if not self.config.continue_on_success:
-                    log.info(
-                        "Stopping OpenLineage CompositeTransport emission after the first "
+                    log.debug(
+                        "Stopping OpenLineage emission of transport %s after the first "
                         "successful delivery because `continue_on_success=False`. "
                         "Transport that emitted the event: %s",
+                        str(self),
                         transport,
                     )
                     return

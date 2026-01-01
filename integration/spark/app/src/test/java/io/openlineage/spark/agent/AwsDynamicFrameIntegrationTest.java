@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -126,5 +126,21 @@ class AwsDynamicFrameIntegrationTest {
         .isNotEmpty();
     assertThat(events.stream().flatMap(e -> e.getOutputs().stream()).collect(Collectors.toList()))
         .isNotEmpty();
+
+    RunEvent insertEvent =
+        events.stream()
+            .filter(
+                e ->
+                    e.getJob().getName().contains("execute_insert_into_hadoop_fs_relation_command"))
+            .filter(e -> RunEvent.EventType.COMPLETE.equals(e.getEventType()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No insert event found"));
+
+    assertThat(insertEvent.getInputs()).hasSize(1);
+    assertThat(insertEvent.getInputs().get(0).getName()).isEqualTo("/test_data");
+
+    assertThat(insertEvent.getOutputs()).hasSize(1);
+    assertThat(insertEvent.getOutputs().get(0).getName()).isEqualTo("/tmp/glue-test-job");
+    assertThat(insertEvent.getOutputs().get(0).getFacets().getColumnLineage()).isNotNull();
   }
 }

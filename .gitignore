@@ -177,3 +177,9 @@ changes.txt
 .cursor/
 
 CLAUDE.md
+
+# UV lock files (ignore in subdirectories only, keep root uv.lock)
+**/uv.lock
+
+# LLM-generated files from release process, just for temp use of release manager
+release-*

@@ -105,6 +105,14 @@
   }
 }
 
+#animation-container {
+  overflow: hidden;
+}
+
+.animated-wall {
+  overflow: hidden;
+}
+
 @media (min-width: 997px) {
   .animated-wall > .container {
     max-width: 1199px;
@@ -165,7 +173,7 @@ body {
 
 .cube {
   width: 100%;
-  height: 800px;
+  height: 1000px;
   position: relative;
   transform-style: preserve-3d;
 }
@@ -179,27 +187,27 @@ body {
 }
 
 .front {
-  transform: rotateY(0deg) translateZ(100px);
+  transform: rotateY(0deg) translateZ(50px);
   background-color: rgb(242, 101, 34);
 }
 .right {
-  transform: rotateY(90deg) translateZ(100px);
-  background-color: rgb(242, 101, 34);
+  transform: rotateY(33deg) translateZ(50px);
+  background-color: #333;
 }
 .back {
-  transform: rotateY(180deg) translateZ(100px);
+  transform: rotateY(66deg) translateZ(50px);
   background-color: rgb(116, 164, 188);
 }
 .left {
-  transform: rotateY(-90deg) translateZ(100px);
+  transform: rotateY(99deg) translateZ(50px);
   background-color: rgb(116, 164, 188);
 }
 .top {
-  transform: rotateX(-90deg) translateZ(100px);
+  transform: rotateX(-33deg) translateZ(50px);
   background-color: #74a4bc;
 }
 .bottom {
-  transform: rotateX(-90deg) translateZ(100px);
+  transform: rotateX(-180deg) translateZ(50px);
   background-color: #fff;
 }
 

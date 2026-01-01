@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class AmazonDataZoneConfig(Config):
     domain_id: str
+    region: str | None = None
     endpoint_override: str | None = None
 
     @classmethod
@@ -28,7 +29,11 @@ class AmazonDataZoneConfig(Config):
         if "domainId" not in params:
             msg = "`domainId` key not passed to AmazonDataZoneConfig"
             raise RuntimeError(msg)
-        return cls(domain_id=params["domainId"], endpoint_override=params.get("endpointOverride"))
+        return cls(
+            domain_id=params["domainId"],
+            region=params.get("region"),
+            endpoint_override=params.get("endpointOverride"),
+        )
 
 
 class AmazonDataZoneTransport(Transport):
@@ -39,7 +44,7 @@ class AmazonDataZoneTransport(Transport):
         self.config = config
         self.datazone = None
 
-        self._setup_datazone(self.config.endpoint_override)
+        self._setup_datazone(self.config.region, self.config.endpoint_override)
         log.debug(
             "Constructing OpenLineage transport that will send events to Amazon DataZone domain `%s`.",
             config.domain_id,
@@ -67,11 +72,22 @@ class AmazonDataZoneTransport(Transport):
         self.datazone.close()  # type: ignore[attr-defined]
         return True
 
-    def _setup_datazone(self, endpoint_url: str | None = None) -> None:
+    def _setup_datazone(self, region: str | None = None, endpoint_url: str | None = None) -> None:
         try:
             import boto3  # type: ignore[import-not-found]
 
-            self.datazone = boto3.client("datazone", endpoint_url=endpoint_url)
+            # Build client parameters
+            client_kwargs = {}
+
+            # Priority: endpointOverride takes precedence over region
+            if endpoint_url:
+                # Use endpointOverride if provided
+                client_kwargs["endpoint_url"] = endpoint_url
+            elif region:
+                # Use region only if endpointOverride is not provided
+                client_kwargs["region_name"] = region
+
+            self.datazone = boto3.client("datazone", **client_kwargs)
         except (ImportError, ModuleNotFoundError):
             log.exception(
                 "OpenLineage client could not import the boto3 module. "

@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -32,6 +32,9 @@ public class DebugConfig {
   boolean metricsDisabled;
 
   @JsonProperty Integer payloadSizeLimitInKilobytes;
+
+  @JsonProperty("logPlanAsJson")
+  boolean logPlanAsJson;
 
   public boolean isSmartDebugActive(boolean hasDetectedInputs, boolean hasDetectedOutputs) {
     if (!smartEnabled) {

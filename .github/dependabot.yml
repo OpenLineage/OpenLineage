@@ -112,22 +112,6 @@ updates:
 
 
   - package-ecosystem: "pip"
-    directory: "integration/airflow"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-    cooldown:
-      default-days: 7
-    labels:
-      - "dependabot"
-    ignore:
-      - dependency-name: "great-expectations"
-    groups:
-      integration/airflow:
-        patterns:
-          - '*'
-
-  - package-ecosystem: "pip"
     directory: "integration/dbt"
     schedule:
       interval: "weekly"
@@ -145,11 +129,26 @@ updates:
     directory: "integration/sql"
     schedule:
       interval: "weekly"
+      day: "sunday"
     cooldown:
       default-days: 7
     labels:
       - "dependabot"
     groups:
       integration/sql:
+        patterns:
+          - '*'
+
+  - package-ecosystem: "npm"
+    directory: "website"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    cooldown:
+      default-days: 7
+    labels:
+      - "dependabot"
+    groups:
+      website:
         patterns:
           - '*'

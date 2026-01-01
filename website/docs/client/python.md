@@ -95,7 +95,7 @@ The following environment variables are available to use:
 | OPENLINEAGE_ENDPOINT       | Endpoint to which events are sent (default: api/v1/lineage)       | api/v2/events           |        |
 | OPENLINEAGE_API_KEY        | Token included in the Authentication HTTP header as the Bearer    | secret_token_123        |        |
 
-If you are using Airflow integration, there are additional [environment variables available](../integrations/airflow/usage.md#environment-variables).
+If you are using Airflow integration, there are additional [environment variables available](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/configurations-ref.html).
 
 #### Dynamic configuration with environment variables
 
@@ -1454,6 +1454,7 @@ The `AmazonDataZoneTransport` requires `boto3` package to be additionally instal
 
 - `type` - string, must be `"amazon_datazone_api"`. Required.
 - `domainId` - string, specifies the DataZone / SageMaker Unified Studio domain id. The lineage events will be then sent to the following domain. Required.
+- `region` - string. When provided, the DataZone client will be configured to use this specific region. If endpointOverride is also provided, this value is not used. Optional, default: None (uses AWS SDK default region resolution).
 - `endpointOverride` - string, overrides the default HTTP endpoint for Amazon DataZone client.
   Default value will be set by AWS SDK to [following endpoints](https://docs.aws.amazon.com/general/latest/gr/datazone.html#datazone_region) based on the region.
   Optional, default: None

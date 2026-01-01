@@ -13,4 +13,4 @@ To add your organization to this table, open a [pull request](https://github.com
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2025 contributors to the OpenLineage project
+Copyright 2018-2026 contributors to the OpenLineage project

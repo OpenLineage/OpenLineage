@@ -66,10 +66,10 @@ repos:
       - id: ruff
         name: ruff-lint
         args: [--fix]
-        files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dbt/|^integration/spark/|^integration/sql/
+        files: ^client/python/|^dev/|^integration/common/|^integration/dbt/|^integration/spark/|^integration/sql/
       - id: ruff-format
         name: ruff-format
-        files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dbt/|^integration/spark/|^integration/sql/
+        files: ^client/python/|^dev/|^integration/common/|^integration/dbt/|^integration/spark/|^integration/sql/
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
@@ -92,11 +92,11 @@ repos:
   - repo: local
     hooks:
       - id: check-version-files
-        name: Check version file paths in new-version.sh
-        description: "Verifies that file paths in new-version.sh exist and are only defined in that file"
+        name: Check version file paths in release.sh
+        description: "Verifies that file paths in release.sh exist and are only defined in that file"
         language: script
         entry: .pre_commit/check_version_update_path.sh
-        files: new-version\.sh$|\.gradle$|gradle\.properties$|README\.md$|version\.properties$
+        files: release\.sh$|\.gradle$|gradle\.properties$|README\.md$|version\.properties$
         pass_filenames: false
       - id: forbid-attr-s
         name: Check for @attr.s
@@ -134,7 +134,7 @@ repos:
         description: ""
         entry: prettier --write --ignore-unknown
         files: ^spec/|\.ts$|\.tsx$|^website.*\.js$|^website.*\.jsx$|\.css$|^\..*\.yaml$|\^\..*\.yml$|^integration/.*\.json$
-        exclude: run_results\.json|manifest\.json|catalog\.json|metadata/.*\.json|bigquery/.*\.json|data/great_expectations/|integration/airflow/tests/extractors/|test_data/serde/
+        exclude: run_results\.json|manifest\.json|catalog\.json|metadata/.*\.json|bigquery/.*\.json|data/great_expectations/|test_data/serde/
         args: ["--print-width=120", "--prose-wrap=always"]
         language: node
         types: [text]
@@ -172,12 +172,6 @@ repos:
         language: system
         entry: bash -c 'cd integration/common && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
         files: ^integration/common/src/.*\.py$
-        pass_filenames: false
-      - id: mypy-integration-airflow
-        name: mypy type check - Airflow integration
-        language: system
-        entry: bash -c 'cd integration/airflow && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
-        files: ^integration/airflow/src/.*\.py$|^integration/airflow/openlineage/.*\.py$
         pass_filenames: false
       - id: mypy-integration-dbt
         name: mypy type check - dbt integration

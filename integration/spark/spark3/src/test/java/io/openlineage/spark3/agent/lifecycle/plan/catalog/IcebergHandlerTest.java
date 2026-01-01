@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -558,19 +558,14 @@ class IcebergHandlerTest {
     Catalog icebergCatalog = mock(Catalog.class);
     when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
 
-    TableIdentifier tableIdentifier =
-        TableIdentifier.parse(Identifier.of(new String[] {"database"}, "table").toString());
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+    TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
     when(icebergCatalog.loadTable(tableIdentifier))
-        .thenThrow(
-            new org.apache.iceberg.exceptions.NoSuchTableException(
-                Identifier.of(new String[] {"database"}, "table").toString()));
+        .thenThrow(new org.apache.iceberg.exceptions.NoSuchTableException(identifier.toString()));
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
-            sparkSession,
-            sparkCatalog,
-            Identifier.of(new String[] {"database"}, "table"),
-            new HashMap<>());
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
 
     assertThat(datasetIdentifier)
         .hasFieldOrPropertyWithValue("namespace", "gcs://bucket")
@@ -581,6 +576,12 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("namespace", "gcs://bucket/path/to/iceberg/warehouse")
         .hasFieldOrPropertyWithValue("name", "database.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+
+    DatasetIdentifier secondDatasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(secondDatasetIdentifier).isEqualTo(datasetIdentifier);
   }
 
   @Test

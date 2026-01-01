@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.client.transports.gcplineage;
@@ -34,6 +34,8 @@ public class GcpLineageTransportConfig
 
   @Getter @Setter private @Nullable Mode mode;
 
+  @Getter @Setter private @Nullable String gracefulShutdownDuration;
+
   @Override
   public GcpLineageTransportConfig mergeWithNonNull(GcpLineageTransportConfig other) {
     return new GcpLineageTransportConfig(
@@ -41,6 +43,7 @@ public class GcpLineageTransportConfig
         mergePropertyWith(projectId, other.projectId),
         mergePropertyWith(credentialsFile, other.credentialsFile),
         mergePropertyWith(location, other.location),
-        mergePropertyWith(mode, other.mode));
+        mergePropertyWith(mode, other.mode),
+        mergePropertyWith(gracefulShutdownDuration, other.gracefulShutdownDuration));
   }
 }

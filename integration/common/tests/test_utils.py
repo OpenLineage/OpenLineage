@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import pytest
 from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION

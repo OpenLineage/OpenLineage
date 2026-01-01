@@ -23,7 +23,6 @@ body:
       description: Part of code-base that the issue report is about (you can choose more than one)
       multiple: true
       options:
-        - Airflow integration
         - DBT integration
         - Flink integration
         - Spark integration
@@ -50,7 +49,7 @@ body:
       description: > 
         Please provide the versions of all relevant technologies and packages you are using. 
         Include versions of the programming languages (e.g., Python, Scala) and key packages 
-        (e.g., Apache Airflow, Spark). If you are unsure of what might be causing the error 
+        (e.g., Apache Spark, Flink). If you are unsure of what might be causing the error 
         or think it is necessary, include the output of your package manager 
         (e.g., `pip freeze` for Python) for a complete list.
       placeholder: >

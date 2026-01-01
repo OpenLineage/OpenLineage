@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ class BaseFacet(RedactMixin):
     def skip_redact(self) -> list[str]:
         return self._base_skip_redact + self._additional_skip_redact
 
-    def with_additional_properties(self, **kwargs: dict[str, Any]) -> "BaseFacet":
+    def with_additional_properties(self, **kwargs: Any) -> "BaseFacet":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 

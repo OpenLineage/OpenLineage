@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import logging
 import os
@@ -10,7 +10,7 @@ from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, R
 from openlineage.common.provider.dbt.facets import ParentRunMetadata
 from openlineage.common.utils import get_from_nullable_chain, parse_single_arg
 
-__version__ = "1.41.0"
+__version__ = "1.42.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 
 # for which command structured logs consumption is implemented

@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -78,6 +78,16 @@ class AmazonDataZoneTransportTests {
     AmazonDataZoneConfig config = new AmazonDataZoneConfig();
     config.setDomainId(DATAZONE_DOMAIN_ID);
     config.setEndpointOverride("https://datazone.us-east-1.api.aws");
+    TransportFactory transportFactory = new TransportFactory(config);
+
+    assertTrue(transportFactory.build() instanceof AmazonDataZoneTransport);
+  }
+
+  @Test
+  void transportFactoryCreatesAmazonDataZoneTransportWithRegion() {
+    AmazonDataZoneConfig config = new AmazonDataZoneConfig();
+    config.setDomainId(DATAZONE_DOMAIN_ID);
+    config.setRegion("us-west-2");
     TransportFactory transportFactory = new TransportFactory(config);
 
     assertTrue(transportFactory.build() instanceof AmazonDataZoneTransport);

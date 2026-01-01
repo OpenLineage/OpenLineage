@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
@@ -342,7 +342,7 @@ class OpenLineageClient:
                 k.startswith(f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}")
                 for k in os.environ
             ):
-                log.info(
+                log.debug(
                     "%s already found in environment variables, skipping aliasing OPENLINEAGE_URL",
                     default_transport_name,
                 )

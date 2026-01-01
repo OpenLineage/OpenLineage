@@ -1,9 +1,9 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
 import attr
 from openlineage.client.generated.base import RunFacet
@@ -29,7 +29,7 @@ class JobDependenciesRunFacet(RunFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/JobDependenciesRunFacet.json#/$defs/JobDependenciesRunFacet"
+        return "https://openlineage.io/spec/facets/1-0-1/JobDependenciesRunFacet.json#/$defs/JobDependenciesRunFacet"
 
 
 @attr.define
@@ -61,9 +61,29 @@ class JobDependency(RedactMixin):
     Example: EXECUTE_EVERY_TIME|EXECUTE_ON_SUCCESS|EXECUTE_ON_FAILURE
     """
 
+    def with_additional_properties(self, **kwargs: Any) -> "JobDependency":
+        """Add additional properties to updated class instance."""
+        current_attrs = [a.name for a in attr.fields(self.__class__)]
+
+        new_class = attr.make_class(
+            self.__class__.__name__,
+            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
+            bases=(self.__class__,),
+        )
+        new_class.__module__ = self.__class__.__module__
+        attrs = attr.fields(self.__class__)
+        for a in attrs:
+            if not a.init:
+                continue
+            attr_name = a.name  # To deal with private attributes.
+            init_name = a.alias
+            if init_name not in kwargs:
+                kwargs[init_name] = getattr(self, attr_name)
+        return cast(JobDependency, new_class(**kwargs))
+
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/JobDependenciesRunFacet.json#/$defs/JobDependency"
+        return "https://openlineage.io/spec/facets/1-0-1/JobDependenciesRunFacet.json#/$defs/JobDependency"
 
 
 @attr.define
@@ -80,7 +100,7 @@ class JobIdentifier(RedactMixin):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/JobDependenciesRunFacet.json#/$defs/JobIdentifier"
+        return "https://openlineage.io/spec/facets/1-0-1/JobDependenciesRunFacet.json#/$defs/JobIdentifier"
 
 
 @attr.define
@@ -94,7 +114,7 @@ class RunIdentifier(RedactMixin):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/JobDependenciesRunFacet.json#/$defs/RunIdentifier"
+        return "https://openlineage.io/spec/facets/1-0-1/JobDependenciesRunFacet.json#/$defs/RunIdentifier"
 
     @runId.validator
     def runid_check(self, attribute: str, value: str) -> None:  # noqa: ARG002

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 #
 # NOTE: This script was inspired by https://github.com/MarquezProject/marquez/blob/main/new-version.sh
@@ -10,7 +10,7 @@
 #   * You have the following dependencies installed: git, uv, bump-my-version
 #     (The script will check for these and provide installation instructions if missing)
 #
-# Usage: $ ./new-version.sh --release-version RELEASE_VERSION --next-version NEXT_VERSION
+# Usage: $ ./release.sh --release-version RELEASE_VERSION --next-version NEXT_VERSION
 
 set -e
 
@@ -24,16 +24,16 @@ usage() {
   echo
   title "EXAMPLES:"
   echo "  # Bump version ('-SNAPSHOT' will automatically be appended to '0.0.2')"
-  echo "  $ ./new-version.sh -r 0.0.1 -n 0.0.2"
+  echo "  $ ./release.sh -r 0.0.1 -n 0.0.2"
   echo
   echo "  # Bump version (with '-SNAPSHOT' already appended to '0.0.2')"
-  echo "  $ ./new-version.sh -r 0.0.1 -n 0.0.2-SNAPSHOT"
+  echo "  $ ./release.sh -r 0.0.1 -n 0.0.2-SNAPSHOT"
   echo
   echo "  # Bump release candidate"
-  echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2"
+  echo "  $ ./release.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2"
   echo
   echo "  # Bump release candidate without push"
-  echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 -p"
+  echo "  $ ./release.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 -p"
   echo
   title "ARGUMENTS:"
   echo "  -r, --release-version string     the release version (ex: X.Y.Z, X.Y.Z-rc.*)"
@@ -227,6 +227,25 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
   exit 1;
 fi
 
+# Ensure we're on the latest main with no local changes
+git fetch origin main
+if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+  echo "error: your local 'main' branch is not up to date with 'origin/main'!"
+  echo "Please run: git reset --hard origin/main"
+  exit 1;
+fi
+
+# Ensure there is no existing remote or local tag with the release version
+git fetch --tags origin
+if git ls-remote --tags origin "${RELEASE_VERSION}" | grep -q .; then
+  echo "error: Remote tag '${RELEASE_VERSION}' already exists on origin."
+  exit 1
+fi
+if git rev-parse -q --verify "refs/tags/${RELEASE_VERSION}" >/dev/null; then
+  echo "Removing existing local tag '${RELEASE_VERSION}'..."
+  git tag -d "${RELEASE_VERSION}"
+fi
+
 # Ensure valid versions
 # shellcheck disable=SC2086,SC2206
 VERSIONS=($RELEASE_VERSION $NEXT_VERSION)
@@ -248,7 +267,7 @@ fi
 # the same version as what was expected the last time we released. E.g., if the next expected
 # release was a patch version, but a new minor version is being released, we need to update to the
 # actual release version prior to committing/tagging
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/sql/iface-py/)
+PYTHON_MODULES=(client/python/ integration/common/ integration/dbt/ integration/sql/iface-py/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
   (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
 done
@@ -273,7 +292,7 @@ perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./client/jav
 perl -i -pe"s/openlineage-java:[[:alnum:]\.-]*/openlineage-java:${RELEASE_VERSION}/g" ./client/java/README.md
 
 # (4) Prepare release commit
-git commit --no-verify -sam "Prepare for release ${RELEASE_VERSION}"
+git commit --no-verify -sam "Prepare for release ${RELEASE_VERSION}" --signoff
 
 # (5) Pull latest tags, then prepare release tag
 git fetch --all --tags
@@ -309,7 +328,7 @@ echo "version ${NEXT_VERSION}" > integration/flink/flink1/src/test/resources/io/
 echo "version ${NEXT_VERSION}" > integration/flink/flink2/src/test/resources/io/openlineage/flink/client/version.properties
 
 # (7) Prepare next development version commit
-git commit --no-verify -sam "Prepare next development version ${NEXT_VERSION}"
+git commit --no-verify -sam "Prepare next development version ${NEXT_VERSION}" --signoff
 
 # (8) Check for commits in log
 COMMITS=false
