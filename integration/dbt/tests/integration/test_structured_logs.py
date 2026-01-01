@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from utils.event_validation import get_events_by_type, validate_event_schema

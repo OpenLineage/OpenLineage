@@ -32,4 +32,4 @@ For more information about our approach to quality and security, feel free to re
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2025 contributors to the OpenLineage project
+Copyright 2018-2026 contributors to the OpenLineage project
