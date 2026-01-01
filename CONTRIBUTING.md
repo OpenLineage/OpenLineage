@@ -107,7 +107,7 @@ If contributing changes, additions or fixes, please include an [appropriate head
 
 ```
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0 
 */
 ```
@@ -118,4 +118,4 @@ To set up your local environment and start developing, check the [Development do
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2025 contributors to the OpenLineage project
+Copyright 2018-2026 contributors to the OpenLineage project
