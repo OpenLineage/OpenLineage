@@ -25,8 +25,10 @@ const UseAnimationFrame = () => {
 
   return (
     <div className="container" id="animation-container">
-      <div className="animation-switch" style={{ display: !animationStatus.execute ? "none" : "inherit" }}>
-        <button onClick={handleClick}>X</button>
+      <div id="animation-switch" style={{ display: !animationStatus.execute ? "none" : "inherit" }}>
+        <button id="animation-switch-button" onClick={handleClick}>
+          X
+        </button>
       </div>
       <div className="cube" ref={ref}>
         <div className="side front" />
