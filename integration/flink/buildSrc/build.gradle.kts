@@ -1,6 +1,6 @@
 plugins {
     `kotlin-dsl`
-    kotlin("plugin.serialization") version "2.1.10"
+    kotlin("plugin.serialization") version "2.3.0"
 }
 
 repositories {
@@ -23,7 +23,7 @@ dependencies {
     implementation("io.franzbecker.gradle-lombok:io.franzbecker.gradle-lombok.gradle.plugin:${lombokPluginVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 }
 
 gradlePlugin {
