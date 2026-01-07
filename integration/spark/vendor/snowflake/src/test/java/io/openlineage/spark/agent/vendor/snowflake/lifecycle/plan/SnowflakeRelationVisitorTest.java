@@ -64,7 +64,10 @@ public class SnowflakeRelationVisitorTest {
     when(relation.schema())
         .thenReturn(
             (new StructType(
-                new StructField[] {new StructField("name", StringType$.MODULE$, false, null)})));
+                new StructField[] {
+                  new StructField("name", StringType$.MODULE$, false, null),
+                  new StructField("occupation", StringType$.MODULE$, false, null)
+                })));
   }
 
   @ParameterizedTest()
@@ -166,6 +169,54 @@ public class SnowflakeRelationVisitorTest {
     assertEquals(namespace, ds.getNamespace());
 
     assertEquals("snowflake_db.snowflake_schema.some_table", ds.getName());
+
+    assertEquals(2, ds.getFacets().getSchema().getFields().size());
+    assertEquals("name", ds.getFacets().getSchema().getFields().get(0).getName());
+    assertEquals("occupation", ds.getFacets().getSchema().getFields().get(1).getName());
+  }
+
+  @Test
+  void testApplyQueryWithSingleField() {
+    when(relation.params().sfFullURL())
+        .thenReturn("https://orgname-accountname.snowflakecomputing.com");
+    when(relation.params().table()).thenReturn(Option.empty());
+    when(relation.params().query()).thenReturn(Option.apply("select name from some_table"));
+
+    OpenLineageContext openLineageContext =
+        OpenLineageContext.builder()
+            .sparkSession(session)
+            .sparkContext(session.sparkContext())
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
+            .vendors(Vendors.getVendors())
+            .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(new SparkOpenLineageConfig())
+            .build();
+
+    SnowflakeRelationVisitor visitor =
+        new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
+
+    LogicalRelation lr =
+        new LogicalRelation(
+            relation,
+            ScalaConversionUtils.fromList(
+                Collections.singletonList(
+                    new AttributeReference(
+                        FIELD_NAME,
+                        StringType$.MODULE$,
+                        false,
+                        null,
+                        ExprId.apply(1L),
+                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
+            Option.empty(),
+            false);
+
+    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+
+    OpenLineage.Dataset ds = datasets.get(0);
+
+    assertEquals(1, ds.getFacets().getSchema().getFields().size());
+    assertEquals("name", ds.getFacets().getSchema().getFields().get(0).getName());
   }
 
   @ParameterizedTest
