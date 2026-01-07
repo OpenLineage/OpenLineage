@@ -1,6 +1,48 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.41.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.42.0...HEAD)
+
+## [1.42.0](https://github.com/OpenLineage/OpenLineage/compare/1.41.0...1.42.0)
+
+### Added
+
+* **DataZone transport: Add cross-region support** [`#4218`](https://github.com/OpenLineage/OpenLineage/pull/4218) [@RohithKayathi](https://github.com/RohithKayathi)
+  *Enable posting lineage events to DataZone domains in different regions from where data transformation jobs run.*
+* **Spark: Add config for disabling RDD event emitting** [`#4118`](https://github.com/OpenLineage/OpenLineage/pull/4118) [@kchledowski](https://github.com/kchledowski)
+  *Add new configuration option `spark.openlineage.filter.rddEventsDisabled` to selectively disable OpenLineage event emission for RDD operations while keeping SQL-based operations enabled.*
+* **Spark: Add schema and CLL facets for Snowflake writes** [`#4124`](https://github.com/OpenLineage/OpenLineage/pull/4124) [@kchledowski](https://github.com/kchledowski)
+  *Add schema and column-level lineage support for Snowflake datasets when using the Spark-Snowflake connector.*
+* **Spark: Add spark.openlineage.applicationRunId override** [`#4215`](https://github.com/OpenLineage/OpenLineage/pull/4215) [@wslulciuc](https://github.com/wslulciuc)
+  *Add support to override the application runID via the property `spark.openlineage.applicationRunId`.*
+* **Spec: Add ExecutionParametersRunFacet** [`#4182`](https://github.com/OpenLineage/OpenLineage/pull/4182) [@jakub-moravec](https://github.com/jakub-moravec)
+  *Add a new facet to capture input parameters supplied to a job at the time of execution, enabling reproducibility, debugging, and richer lineage context.*
+
+### Changed
+
+* **Java: Update GCP Lineage transport version and fix dependency shading** [`#3768`](https://github.com/OpenLineage/OpenLineage/pull/3768) [@tnazarew](https://github.com/tnazarew)
+  *Update GCP Lineage transport to use new version of the producer library with fixed dependency shading.*
+* **Python: Show what transport failed to create** [`#4220`](https://github.com/OpenLineage/OpenLineage/pull/4220) [@mobuchowski](https://github.com/mobuchowski)
+  *Improve error messages to indicate which transport failed to create.*
+* **Spark: Prevent classloader issue by gating log behind additional flag** [`#4207`](https://github.com/OpenLineage/OpenLineage/pull/4207) [@mobuchowski](https://github.com/mobuchowski)
+  *Fix classloader conflicts with BigQuery connector by gating DEBUG toJSON() logging behind an additional flag and logging exceptions.*
+
+### Fixed
+
+* **Python: Fix .with_additional_properties() annotation** [`#4197`](https://github.com/OpenLineage/OpenLineage/pull/4197) [@dolfinus](https://github.com/dolfinus)
+  *Fix type annotation for `.with_additional_properties()` method to correctly accept keyword arguments.*
+* **Spark: Fix BigQuery symlinks with ".db" suffix** [`#4192`](https://github.com/OpenLineage/OpenLineage/pull/4192) [@kchledowski](https://github.com/kchledowski)
+  *Fix BigQuery symlink namespace incorrectly having ".db" suffix in RUNNING and COMPLETE events by avoiding mutation of the Identifier object.*
+* **Spark: Fix Glue Data Catalog detection in YARN cluster mode** [`#4229`](https://github.com/OpenLineage/OpenLineage/pull/4229) [@lawofcycles](https://github.com/lawofcycles)
+  *Add fallback mechanism to retrieve AWS region from EC2 Instance Metadata Service when environment variables are unavailable in YARN cluster mode.*
+* **Spark: Fix missing inputs and CLL for AWS DynamicFrame** [`#4222`](https://github.com/OpenLineage/OpenLineage/pull/4222) [@kchledowski](https://github.com/kchledowski)
+  *Fix missing inputs and column-level lineage when writing from AWS DynamicFrame by treating NewHadoopRDD as file-like.*
+* **Spark: Remove path pattern in ColumnLineageFacet as well** [`#4228`](https://github.com/OpenLineage/OpenLineage/pull/4228) [@RohithKayathi](https://github.com/RohithKayathi)
+  *Apply `spark.openlineage.dataset.removePath.pattern` to input field names in ColumnLineageFacet, and fix hashCode/equals methods to include additionalProperties.*
+
+### Removed
+
+* **Airflow: Remove Airflow integration from OpenLineage repository** [`#4212`](https://github.com/OpenLineage/OpenLineage/pull/4212) [@kacpermuda](https://github.com/kacpermuda)
+  *The deprecated Airflow integration has been removed from the OpenLineage repository.*
 
 ## [1.41.0](https://github.com/OpenLineage/OpenLineage/compare/1.40.1...1.41.0)
 
