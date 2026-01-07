@@ -1,13 +1,10 @@
 # Snowflake Spark Vendor
 
-This project implements logic to extract an OpenLineage.Dataset for addition to the input and output datasets list 
-when Snowflake is used as a source in Spark for read or write operations.
+This package contains only vendor-specific classes and implementations related to Snowflake,
+ensuring platform-specific functionality is isolated.
 
 ## How
 Extract options provided by the Snowflake connector from `SnowflakeRelation` or `snowflake.DefaultSource`.
-
-## Limitations
-If the table name returns `COMPLEX`, it indicates that the Spark job uses the parameter `query` instead of `dbtable`.
 
 ## References
 [Snowflake Spark Connector user guide](https://docs.snowflake.com/en/user-guide/spark-connector-use)

@@ -35,6 +35,7 @@ import io.openlineage.spark.agent.vendor.gcp.facets.builder.GcpJobFacetBuilder;
 import io.openlineage.spark.agent.vendor.gcp.facets.builder.GcpRunFacetBuilder;
 import io.openlineage.spark.agent.vendor.gcp.util.GCPUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -223,6 +224,11 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void start(SparkListenerJobStart jobStart) {
+    if (isDisabled()) {
+      log.info(
+          "OpenLineage received Spark event that is configured to be skipped: RDD SparkListenerJobStart");
+      return;
+    }
     log.debug("start SparkListenerJobStart {}", jobStart);
     OpenLineage.RunEvent event =
         olContext
@@ -247,6 +253,11 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
+    if (isDisabled()) {
+      log.info(
+          "OpenLineage received Spark event that is configured to be skipped: RDD SparkListenerJobEnd");
+      return;
+    }
     log.debug("end SparkListenerJobEnd {}", jobEnd);
     if (outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
       // Oftentimes SparkListener is triggered for actions which do not contain any
@@ -583,5 +594,15 @@ class RddExecutionContext implements ExecutionContext {
       return OpenLineage.RunEvent.EventType.COMPLETE;
     }
     return OpenLineage.RunEvent.EventType.FAIL;
+  }
+
+  private boolean isDisabled() {
+    Optional<SparkOpenLineageConfig.FilterConfig> filterConfig =
+        Optional.of(olContext.getOpenLineageConfig()).map(SparkOpenLineageConfig::getFilterConfig);
+
+    if (filterConfig.isPresent() && filterConfig.get().getRddEventsDisabled() != null) {
+      return filterConfig.get().getRddEventsDisabled();
+    }
+    return false;
   }
 }
