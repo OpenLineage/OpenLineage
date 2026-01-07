@@ -132,7 +132,7 @@ commands:
       - when:
           condition: << parameters.install_parser >>
           steps:
-            - run: pip install target/wheels/*manylinux_2_24_x86_64*.whl
+            - run: pip install target/wheels/*manylinux_2_28_x86_64*.whl
       - run: (cd ~/openlineage/integration/common && pip install . --user)
 
   install_uv_python:

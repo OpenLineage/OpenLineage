@@ -35,7 +35,7 @@ fi
 
 # Build release wheels
 cd iface-py
-maturin build --sdist --out target/wheels --release --strip --compatibility manylinux_2_24
+maturin build --sdist --out target/wheels --release --strip --compatibility manylinux_2_28
 
 ls -halt target/wheels
 
