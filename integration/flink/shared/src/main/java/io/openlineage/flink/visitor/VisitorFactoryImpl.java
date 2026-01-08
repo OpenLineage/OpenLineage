@@ -52,6 +52,7 @@ public class VisitorFactoryImpl implements VisitorFactory {
             Arrays.asList(
                 new KafkaSinkVisitor(context),
                 new FlinkKafkaProducerVisitor(context),
+                new PaimonTableSinkVisitor(context),
                 new LineageProviderVisitor<>(context, DatasetFactory.output(context))));
 
     if (ClassUtils.hasIcebergClasses()) {
