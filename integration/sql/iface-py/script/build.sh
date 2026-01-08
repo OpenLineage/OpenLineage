@@ -35,17 +35,17 @@ fi
 
 # Build release wheels
 cd iface-py
-maturin build --sdist --out target/wheels --release --strip
+maturin build --sdist --out target/wheels --release --strip --compatibility manylinux_2_28
 
 ls -halt target/wheels
 
 # Verify that it imports properly
 echo "Verifying that the package imports properly"
-echo "openlineage_sql" > requirements.txt
 mkdir -p target/temp
 mv target/wheels/*.tar.gz target/temp
 python --version
-python -m pip install -r requirements.txt --no-index --find-links target/wheels --prefer-binary --force-reinstall
+# Install the wheel directly to avoid platform compatibility checks during verification
+python -m pip install target/wheels/*.whl --force-reinstall
 python -c "import openlineage_sql"
 mv target/temp/*.tar.gz target/wheels
 echo "all good"

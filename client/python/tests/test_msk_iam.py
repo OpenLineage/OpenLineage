@@ -146,6 +146,8 @@ def test_msk_token_provider(mocker: MockerFixture) -> None:
         "openlineage.client.transport.msk_iam._detect_running_region",
         return_value="eu-central-1",
     )
+    # Mock the Kafka Producer to prevent actual connection attempts
+    mocker.patch("confluent_kafka.Producer")
     config = MSKIAMConfig(
         config={"bootstrap.servers": "localhost:9092"},
         topic="random-topic",
