@@ -60,12 +60,7 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
     }
 
     List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(flattenedRdds);
-    log.info(
-        "[ OL_MISSING_INPUT_DEBUG ] \nJob Name: {}\n File-like RDDs: \n{}",
-        context.getJobName(),
-        fileLikeRdds.stream()
-            .map(rdd -> rdd.getClass().getName())
-            .collect(Collectors.joining("\n")));
+    logFileLikeRdds(fileLikeRdds);
     if (fileLikeRdds.isEmpty()) {
       return Collections.emptyList();
     }
@@ -75,13 +70,17 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
 
   public List<D> applySqlExecution(Set<RDD<?>> flattenedRdds, StructType schema) {
     List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(flattenedRdds);
+    logFileLikeRdds(fileLikeRdds);
+    return findInputDatasets(fileLikeRdds, schema);
+  }
+
+  private void logFileLikeRdds(List<RDD<?>> fileLikeRdds) {
     log.info(
         "[ OL_MISSING_INPUT_DEBUG ] \nJob Name: {}\n File-like RDDs: \n{}",
         context.getJobName(),
         fileLikeRdds.stream()
             .map(rdd -> rdd.getClass().getName())
             .collect(Collectors.joining("\n")));
-    return findInputDatasets(fileLikeRdds, schema);
   }
 
   public boolean containsSqlExecution(Set<RDD<?>> flattenedRdds) {
