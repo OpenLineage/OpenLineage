@@ -18,15 +18,17 @@ const UseAnimationFrame = () => {
 
   useAnimationFrame((t) => {
     if (ref.current && animationStatus.execute) {
-      const rotate = Math.sin(t / 10000) * 100;
-      ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg) rotateZ(${rotate * 0.5}deg)`;
+      const rotate = Math.sin(t / 10000) * 10;
+      ref.current.style.transform = `rotateX(${rotate}deg) rotateY(${rotate}deg) rotateZ(${rotate}deg)`;
     }
   });
 
   return (
-    <div className="container">
-      <div className="animation-switch" style={{ display: !animationStatus.execute ? "none" : "inherit" }}>
-        <button onClick={handleClick}>X</button>
+    <div className="container" id="animation-container">
+      <div id="animation-switch" style={{ display: !animationStatus.execute ? "none" : "inherit" }}>
+        <button id="animation-switch-button" onClick={handleClick}>
+          X
+        </button>
       </div>
       <div className="cube" ref={ref}>
         <div className="side front" />
