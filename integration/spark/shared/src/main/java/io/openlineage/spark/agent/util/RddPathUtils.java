@@ -34,6 +34,9 @@ import scala.collection.mutable.ArrayBuffer;
 public class RddPathUtils {
 
   public static Stream<Path> findRDDPaths(RDD rdd) {
+    log.info(
+        "[ OL_MISSING_INPUT_DEBUG ] Extracting paths from RDD of class: {}",
+        rdd != null ? rdd.getClass().getName() : "null");
     return Stream.<RddPathExtractor>of(
             new HadoopRDDExtractor(),
             new FileScanRDDExtractor(),
@@ -45,6 +48,12 @@ public class RddPathUtils {
         .findFirst()
         .orElse(new UnknownRDDExtractor())
         .extract(rdd)
+        .peek(
+            p -> {
+              if (p != null) {
+                log.info("[ OL_MISSING_INPUT_DEBUG ] Extracted Path: {}", p);
+              }
+            })
         .filter(p -> p != null);
   }
 

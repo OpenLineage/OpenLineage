@@ -60,6 +60,12 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
     }
 
     List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(flattenedRdds);
+    log.info(
+        "[ OL_MISSING_INPUT_DEBUG ] \nJob Name: {}\n File-like RDDs: \n{}",
+        context.getJobName(),
+        fileLikeRdds.stream()
+            .map(rdd -> rdd.getClass().getName())
+            .collect(Collectors.joining("\n")));
     if (fileLikeRdds.isEmpty()) {
       return Collections.emptyList();
     }
