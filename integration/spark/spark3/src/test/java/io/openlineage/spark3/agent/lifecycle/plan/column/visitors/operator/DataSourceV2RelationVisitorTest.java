@@ -94,9 +94,9 @@ class DataSourceV2RelationVisitorTest {
       visitor.apply(relation, builder);
 
       verify(builder, times(1))
-          .addDependency(EXPR_ID_1, ExprId.apply(0), TransformationInfo.identity());
+          .addDependency(EXPR_ID_1, ExprId.apply(0), "", TransformationInfo.identity());
       verify(builder, times(1))
-          .addDependency(EXPR_ID_2, ExprId.apply(1), TransformationInfo.identity());
+          .addDependency(EXPR_ID_2, ExprId.apply(1), "", TransformationInfo.identity());
       utilities.verify(NamedExpression::newExprId, times(2));
     }
   }

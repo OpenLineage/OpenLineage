@@ -50,7 +50,7 @@ public class ColumnLevelLineageBuilder {
   private static final Integer RETURNED_INPUT_FIELD_LIMIT = 100000;
 
   private Map<ExprId, Set<Dependency>> exprDependencies = new HashMap<>();
-  private List<ExprId> datasetDependencies = new LinkedList<>();
+  private List<DatasetDependency> datasetDependencies = new LinkedList<>();
   @Getter private Map<ExprId, Set<Input>> inputs = new HashMap<>();
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
@@ -105,14 +105,23 @@ public class ColumnLevelLineageBuilder {
    * @param outputExprId
    * @param inputExprId
    */
-  public void addDependency(ExprId outputExprId, ExprId inputExprId) {
-    addDependency(outputExprId, inputExprId, TransformationInfo.identity());
+  public void addDependency(
+      ExprId outputExprId, ExprId inputExprId, String outputExpressionString) {
+    addDependency(outputExprId, inputExprId, outputExpressionString, TransformationInfo.identity());
   }
 
   public void addDependency(
-      ExprId outputExprId, ExprId inputExprId, TransformationInfo transformationInfo) {
+      ExprId outputExprId,
+      ExprId inputExprId,
+      String outputExpressionString,
+      TransformationInfo transformationInfo) {
     if (dependenciesAdded > COMPUTED_DEPENDENCY_HARD_LIMIT) {
       // do nothing -> hard limit of allowed dependencies reached
+      return;
+    }
+
+    if (outputExprId.equals(inputExprId)) {
+      // no expression should have direct dependency on itself
       return;
     }
     dependenciesAdded++;
@@ -123,15 +132,15 @@ public class ColumnLevelLineageBuilder {
       // no need to create new dependency object
     } else {
       // store dependency in common dependencies
-      dependency = new Dependency(inputExprId, transformationInfo);
+      dependency = new Dependency(inputExprId, outputExpressionString, transformationInfo);
       commonDependencies.put(inputExprId, dependency);
     }
 
     exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(dependency);
   }
 
-  public void addDatasetDependency(ExprId outputExprId) {
-    datasetDependencies.add(outputExprId);
+  public void addDatasetDependency(ExprId outputExprId, String outputExpression, String sql) {
+    datasetDependencies.add(new DatasetDependency(outputExprId, outputExpression, sql));
   }
 
   public boolean hasOutputs() {
@@ -143,6 +152,13 @@ public class ColumnLevelLineageBuilder {
         .filter(fields -> stripQuotes(fields.getName()).equals(stripQuotes(field)))
         .findAny()
         .map(f -> outputs.get(f));
+  }
+
+  public Optional<String> getOutputExpressionByExprId(ExprId exprId) {
+    return exprDependencies.entrySet().stream()
+        .filter(e -> e.getKey().equals(exprId))
+        .findAny()
+        .map(e -> e.getValue().stream().findFirst().get().getOutputExpression());
   }
 
   @Override
@@ -267,13 +283,14 @@ public class ColumnLevelLineageBuilder {
     }
 
     ExprId outputExprId = outputs.get(outputField.get());
-    return getInputsUsedFor(outputExprId);
+    return getInputsUsedFor(outputExprId, outputName);
   }
 
   @NotNull
-  private List<TransformedInput> getInputsUsedFor(ExprId outputExprId) {
+  private List<TransformedInput> getInputsUsedFor(
+      ExprId outputExprId, String outputExpressionString) {
     List<TransformedInput> collect =
-        findDependentInputs(outputExprId).stream()
+        findDependentInputs(outputExprId, outputExpressionString).stream()
             .filter(dependency -> inputs.containsKey(dependency.getExprId()))
             .flatMap(
                 dependency ->
@@ -284,13 +301,17 @@ public class ColumnLevelLineageBuilder {
     return collect;
   }
 
-  private List<Dependency> findDependentInputs(ExprId outputExprId) {
+  private List<Dependency> findDependentInputs(ExprId outputExprId, String outputExpressionString) {
     Set<Dependency> dependentInputs = new HashSet<>();
-    dependentInputs.add(new Dependency(outputExprId, TransformationInfo.identity()));
+    Dependency e =
+        new Dependency(
+            outputExprId,
+            outputExpressionString,
+            TransformationInfo.identity(outputExpressionString));
+    dependentInputs.add(e);
     boolean continueSearch = true;
 
-    Set<Dependency> newDependentInputs =
-        Collections.singleton(new Dependency(outputExprId, TransformationInfo.identity()));
+    Set<Dependency> newDependentInputs = Collections.singleton(e);
     while (continueSearch) {
       newDependentInputs =
           newDependentInputs.stream()
@@ -329,7 +350,7 @@ public class ColumnLevelLineageBuilder {
 
   private List<TransformedInput> datasetDependencyInputs() {
     return datasetDependencies.stream()
-        .flatMap(e -> getInputsUsedFor(e).stream())
+        .flatMap(e -> getInputsUsedFor(e.getExprId(), e.getOutputExpression()).stream())
         .distinct()
         .collect(Collectors.toList());
   }

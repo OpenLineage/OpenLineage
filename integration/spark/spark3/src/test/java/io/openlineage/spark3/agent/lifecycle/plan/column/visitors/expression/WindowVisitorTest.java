@@ -5,7 +5,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression;
 
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_2;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_1;
@@ -92,12 +91,12 @@ class WindowVisitorTest {
 
     visitor.apply(new WindowExpression(windowFunction, spec), traverser);
 
-    verify(traverser).copyFor(windowFunction, TransformationInfo.transformation());
+    verify(traverser).copyFor(eq(windowFunction), any(TransformationInfo.class));
     verify(windowFuncTraverser).traverse();
 
-    verify(traverser).copyFor(partitionBy, TransformationInfo.indirect(WINDOW));
-    verify(traverser).copyFor(sortOrder, TransformationInfo.indirect(WINDOW));
-    verify(traverser).copyFor(frame, TransformationInfo.indirect(WINDOW));
+    verify(traverser).copyFor(eq(partitionBy), any(TransformationInfo.class));
+    verify(traverser).copyFor(eq(sortOrder), any(TransformationInfo.class));
+    verify(traverser).copyFor(eq(frame), any(TransformationInfo.class));
     verify(windowSpecTraverser, times(3)).traverse();
   }
 

@@ -46,7 +46,9 @@ class CreateTableAsSelectVisitorTest {
 
     visitor.apply(createTableAsSelect, builder);
 
-    verify(builder).addDependency(EXPR_ID_2, EXPR_ID_1, TransformationInfo.identity());
+    verify(builder)
+        .addDependency(
+            EXPR_ID_2, EXPR_ID_1, "name2", TransformationInfo.identity("name1 AS name2"));
   }
 
   private static LogicalPlan getCreateTableAsSelectNode(Seq<LogicalPlan> children) {
