@@ -201,6 +201,8 @@ shadowJar {
     relocate "org.reactivestreams", "io.openlineage.spark.shaded.org.reactivestreams"
     relocate "io.netty", "io.openlineage.spark.shaded.io.netty"
 
+    mergeServiceFiles()
+
     manifest {
         attributes(
                 "Created-By": "Gradle ${gradle.gradleVersion}",
