@@ -25,6 +25,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -121,9 +122,16 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT a FROM t1 WHERE b > 1");
     assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            FILTER,
+            "WHERE ((spark_catalog.default.t1.b IS NOT NULL) AND (spark_catalog.default.t1.b > 1))"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -135,15 +143,39 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
             getSchemaFacet("a;int"), "SELECT a FROM t1 WHERE b > 1 GROUP BY a, c ORDER BY c");
     assertCountColumnDependencies(facet, 5);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(
+            GROUP_BY, "GROUP BY spark_catalog.default.t1.a, spark_catalog.default.t1.c"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            FILTER,
+            "WHERE ((spark_catalog.default.t1.b IS NOT NULL) AND (spark_catalog.default.t1.b > 1))"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(
+            GROUP_BY, "GROUP BY spark_catalog.default.t1.a, spark_catalog.default.t1.c"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(SORT));
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(SORT, "SORT BY spark_catalog.default.t1.c ASC NULLS FIRST"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -162,25 +194,77 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
                 + "FROM t1 GROUP BY a");
     assertCountColumnDependencies(facet, 10);
     assertColumnDependsOnType(
-        facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "i",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.identity("spark_catalog.default.t1.a AS i"));
     assertColumnDependsOnType(
-        facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        "i",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
     assertColumnDependsOnType(
-        facet, "t", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "t",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation("(spark_catalog.default.t1.a + 1) AS t"));
     assertColumnDependsOnType(
-        facet, "t", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        "t",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
     assertColumnDependsOnType(
-        facet, "mt", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation(true));
+        facet,
+        "mt",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "sha1(CAST(CAST((spark_catalog.default.t1.a + 1) AS STRING) AS BINARY)) AS mt", true));
     assertColumnDependsOnType(
-        facet, "mt", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        "mt",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation("sum(spark_catalog.default.t1.b) AS a"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
     assertColumnDependsOnType(
-        facet, "ma", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation(true));
+        facet,
+        "ma",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation(
+            "sha1(CAST(CAST(sum(spark_catalog.default.t1.b) AS STRING) AS BINARY)) AS ma", true));
     assertColumnDependsOnType(
-        facet, "ma", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        "ma",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -200,55 +284,67 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
     //  Normally this should work: assertCountColumnDependencies(facet, 28);
     //  However, there appears to be 44 dataset dependencies (i.e. 16 too many).
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertColumnDependsOnType(
-        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity("b"));
     assertColumnDependsOnType(
-        facet, "c", FILE, T2_EXPECTED_NAME, "c", TransformationInfo.identity());
+        facet, "c", FILE, T2_EXPECTED_NAME, "c", TransformationInfo.identity("c"));
     assertColumnDependsOnType(
-        facet, "d", FILE, T3_EXPECTED_NAME, "d", TransformationInfo.identity());
+        facet, "d", FILE, T3_EXPECTED_NAME, "d", TransformationInfo.identity("d"));
+    List<String> outputs = Arrays.asList("a", "b", "c", "d");
+    String joinCondition1 = "INNER JOIN ON ((tmp.a = tmp2.a))";
+    List<String> joinConditiondescriptions2 =
+        Arrays.asList(
+            "INNER JOIN ON ((tmp3.a = spark_catalog.default.t3.a))",
+            "INNER JOIN ON ((tmp.a = spark_catalog.default.t3.a))");
     assertAllColumnsDependsOnType(
         facet,
-        Arrays.asList("a", "b", "c", "d"),
+        outputs,
         FILE,
         T1_EXPECTED_NAME,
         "a",
-        TransformationInfo.indirect(JOIN));
+        TransformationInfo.indirect(JOIN, joinCondition1));
     assertAllColumnsDependsOnType(
         facet,
-        Arrays.asList("a", "b", "c", "d"),
+        outputs,
         FILE,
         T2_EXPECTED_NAME,
         "a",
-        TransformationInfo.indirect(JOIN));
+        TransformationInfo.indirect(JOIN, joinCondition1));
+
     assertAllColumnsDependsOnType(
         facet,
-        Arrays.asList("a", "b", "c", "d"),
+        outputs,
         FILE,
         T3_EXPECTED_NAME,
         "a",
-        TransformationInfo.indirect(JOIN));
+        TransformationInfo.indirect(JOIN),
+        joinConditiondescriptions2);
     assertAllColumnsDependsOnType(
         facet,
-        Arrays.asList("a", "b", "c", "d"),
+        outputs,
         FILE,
         T1_EXPECTED_NAME,
         "b",
-        TransformationInfo.indirect(FILTER));
+        TransformationInfo.indirect(
+            FILTER,
+            "WHERE (((spark_catalog.default.t1.b IS NOT NULL) AND (spark_catalog.default.t1.b = '1')) AND (tmp.a IS NOT NULL))"));
     assertAllColumnsDependsOnType(
         facet,
-        Arrays.asList("a", "b", "c", "d"),
+        outputs,
         FILE,
         T2_EXPECTED_NAME,
         "c",
-        TransformationInfo.indirect(FILTER));
+        TransformationInfo.indirect(
+            FILTER,
+            "WHERE (((spark_catalog.default.t2.c IS NOT NULL) AND (spark_catalog.default.t2.c = 1)) AND (tmp2.a IS NOT NULL))"));
     assertAllColumnsDependsOnType(
         facet,
-        Arrays.asList("a", "b", "c", "d"),
+        outputs,
         FILE,
         T3_EXPECTED_NAME,
         "d",
-        TransformationInfo.indirect(SORT));
+        TransformationInfo.indirect(SORT, "SORT BY spark_catalog.default.t3.d ASC NULLS FIRST"));
     assertCountDatasetDependencies(facet, 0);
   }
 

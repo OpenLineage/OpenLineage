@@ -63,7 +63,7 @@ public class SqlCollector {
               if (!p.lineage().isEmpty()) {
                 p.lineage().stream()
                     .map(context.getBuilder()::getMapping)
-                    .forEach(eid -> context.getBuilder().addDependency(descendantId, eid));
+                    .forEach(eid -> context.getBuilder().addDependency(descendantId, eid, ""));
               }
             });
   }

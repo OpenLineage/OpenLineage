@@ -110,8 +110,8 @@ class JdbcColumnLineageExpressionCollectorTest {
 
       visitor.collectExpressionDependencies(context, logicalRelation);
 
-      verify(builder, times(1)).addDependency(exprId2, dependencyId1);
-      verify(builder, times(1)).addDependency(exprId2, dependencyId2);
+      verify(builder, times(1)).addDependency(exprId2, dependencyId1, "");
+      verify(builder, times(1)).addDependency(exprId2, dependencyId2, "");
       utilities.verify(NamedExpression::newExprId, times(3));
     }
   }
@@ -123,6 +123,6 @@ class JdbcColumnLineageExpressionCollectorTest {
 
     visitor.collectExpressionDependencies(context, logicalRelation);
 
-    verify(builder, never()).addDependency(any(ExprId.class), any(ExprId.class));
+    verify(builder, never()).addDependency(any(ExprId.class), any(ExprId.class), any(String.class));
   }
 }

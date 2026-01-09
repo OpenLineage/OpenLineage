@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -82,6 +83,16 @@ public class TransformationInfo {
   }
 
   /**
+   * Method that simplifies the creation of an {@link TransformationInfo} object representing {@link
+   * Types#DIRECT}, {@link Subtypes#IDENTITY} transformation with a description.
+   *
+   * @param description - description of the transformation
+   */
+  public static TransformationInfo identity(String description) {
+    return new TransformationInfo(Types.DIRECT, Subtypes.IDENTITY, description, false);
+  }
+
+  /**
    * Method that simplifies the creation of an {@link TransformationInfo} object representing
    * non-masking, {@link Types#DIRECT}, {@link Subtypes#TRANSFORMATION} transformation.
    */
@@ -100,6 +111,28 @@ public class TransformationInfo {
   }
 
   /**
+   * Method that simplifies the creation of {@link TransformationInfo} object representing
+   * non-masking, {@link Types#DIRECT}, {@link Subtypes#TRANSFORMATION} transformation with a
+   * description.
+   *
+   * @param description - description of the transformation
+   */
+  public static TransformationInfo transformation(String description) {
+    return new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, description, false);
+  }
+
+  /**
+   * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
+   * Types#DIRECT}, {@link Subtypes#TRANSFORMATION} transformation with a description.
+   *
+   * @param description - description of the transformation
+   * @param isMasking - is transformation masking
+   */
+  public static TransformationInfo transformation(String description, Boolean isMasking) {
+    return new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, description, isMasking);
+  }
+
+  /**
    * Method that simplifies the creation of an {@link TransformationInfo} object representing
    * non-masking, {@link Types#DIRECT}, {@link Subtypes#AGGREGATION} transformation.
    */
@@ -115,6 +148,28 @@ public class TransformationInfo {
    */
   public static TransformationInfo aggregation(Boolean isMasking) {
     return isMasking ? AGGREGATION_MASKING : AGGREGATION_NON_MASKING;
+  }
+
+  /**
+   * Method that simplifies the creation of {@link TransformationInfo} object representing
+   * non-masking, {@link Types#DIRECT}, {@link Subtypes#AGGREGATION} transformation with a
+   * description.
+   *
+   * @param description - description of the transformation
+   */
+  public static TransformationInfo aggregation(String description) {
+    return new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, description, false);
+  }
+
+  /**
+   * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
+   * Types#DIRECT}, {@link Subtypes#AGGREGATION} transformation with a description.
+   *
+   * @param description - description of the transformation
+   * @param isMasking - is transformation masking
+   */
+  public static TransformationInfo aggregation(String description, Boolean isMasking) {
+    return new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, description, isMasking);
   }
 
   /**
@@ -141,6 +196,35 @@ public class TransformationInfo {
    */
   public static TransformationInfo indirect(Subtypes subType, Boolean isMasking) {
     return isMasking ? INDIRECT_MASKING_MAP.get(subType) : INDIRECT_NON_MASKING_MAP.get(subType);
+  }
+
+  /**
+   * Method that simplifies the creation of {@link TransformationInfo} object representing
+   * non-masking, {@link Types#INDIRECT} transformation with a description.
+   *
+   * @param subType - the subtype of the transformation viable subtypes: {@link
+   *     Subtypes#CONDITIONAL},{@link Subtypes#SORT},{@link Subtypes#GROUP_BY},{@link
+   *     Subtypes#JOIN},{@link Subtypes#FILTER},
+   * @param description - description of the transformation
+   */
+  public static TransformationInfo indirect(Subtypes subType, String description) {
+    return new TransformationInfo(Types.INDIRECT, subType, description, false);
+  }
+
+  /**
+   * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
+   * Types#INDIRECT} transformation with a description.
+   *
+   * @param subType - the subtype of the transformation viable subtypes: {@link
+   *     Subtypes#CONDITIONAL},{@link Subtypes#SORT},{@link Subtypes#GROUP_BY},{@link
+   *     Subtypes#JOIN},{@link Subtypes#FILTER},
+   * @param description - description of the transformation
+   * @param isMasking - is transformation masking (no indirect transformation is masking, but their
+   *     dependencies can be)
+   */
+  public static TransformationInfo indirect(
+      Subtypes subType, String description, Boolean isMasking) {
+    return new TransformationInfo(Types.INDIRECT, subType, description, isMasking);
   }
 
   @Override
@@ -174,7 +258,8 @@ public class TransformationInfo {
    *
    * @param another - {@link TransformationInfo} object to be merged with
    */
-  public TransformationInfo merge(TransformationInfo another) {
+  public TransformationInfo merge(
+      TransformationInfo another, BinaryOperator<String> descriptionMerger) {
     TransformationInfo res;
     if (Types.INDIRECT.equals(this.type)) {
       res = this;
@@ -189,11 +274,16 @@ public class TransformationInfo {
     } else {
       return null;
     }
-    if (this.getMasking().equals(another.getMasking())) {
-      // no need to create new object
-      return res;
-    }
-    return new TransformationInfo(res.getType(), res.getSubType(), res.getDescription(), true);
+
+    return new TransformationInfo(
+        res.getType(),
+        res.getSubType(),
+        descriptionMerger.apply(this.getDescription(), another.getDescription()),
+        this.getMasking() || another.getMasking());
+  }
+
+  public TransformationInfo merge(TransformationInfo another) {
+    return merge(another, (d1, d2) -> d1);
   }
 
   public OpenLineage.InputFieldTransformations toInputFieldsTransformations() {

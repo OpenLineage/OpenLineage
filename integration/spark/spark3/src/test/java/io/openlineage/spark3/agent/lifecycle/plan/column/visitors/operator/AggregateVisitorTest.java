@@ -88,13 +88,19 @@ class AggregateVisitorTest {
       visitor.apply(aggregate, builder);
 
       verify(builder, times(1))
-          .addDependency(EXPR_ID_3, EXPR_ID_2, TransformationInfo.aggregation(true));
-      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
+          .addDependency(
+              EXPR_ID_3,
+              EXPR_ID_2,
+              "name3",
+              TransformationInfo.aggregation("count(name2) AS name3", true));
+      verify(builder, times(1))
+          .addDatasetDependency(datasetDependencyExpression, "GROUP BY name1", "name1");
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,
               EXPR_ID_1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.GROUP_BY));
+              "name1",
+              TransformationInfo.indirect(TransformationInfo.Subtypes.GROUP_BY, "name1"));
       utilities.verify(NamedExpression::newExprId, times(1));
     }
   }

@@ -55,12 +55,15 @@ class SortVisitorTest {
 
       visitor.apply(sort, builder);
 
-      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
+      verify(builder, times(1))
+          .addDatasetDependency(
+              datasetDependencyExpression, "SORT BY name1 null null", "name1 null null");
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,
               EXPR_ID_1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.SORT));
+              "name1 null null",
+              TransformationInfo.indirect(TransformationInfo.Subtypes.SORT, "name1 null null"));
       utilities.verify(NamedExpression::newExprId, times(1));
     }
   }

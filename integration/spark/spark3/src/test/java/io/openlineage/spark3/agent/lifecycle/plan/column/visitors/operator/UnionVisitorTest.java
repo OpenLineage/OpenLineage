@@ -36,10 +36,20 @@ class UnionVisitorTest {
 
   NamedExpression expression1 =
       new AttributeReference(
-          "name1", IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId1, null);
+          "name1",
+          IntegerType$.MODULE$,
+          false,
+          Metadata$.MODULE$.empty(),
+          exprId1,
+          ScalaConversionUtils.asScalaSeqEmpty());
   NamedExpression expression2 =
       new AttributeReference(
-          "name2", IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId2, null);
+          "name2",
+          IntegerType$.MODULE$,
+          false,
+          Metadata$.MODULE$.empty(),
+          exprId2,
+          ScalaConversionUtils.asScalaSeqEmpty());
 
   @Test
   void testIsDefinedAt() {
@@ -70,6 +80,7 @@ class UnionVisitorTest {
     visitor.apply(union, builder);
 
     // first element of a union is treated as an ancestor node
-    verify(builder, times(1)).addDependency(exprId1, exprId2, TransformationInfo.identity());
+    verify(builder, times(1))
+        .addDependency(exprId1, exprId2, "name1", TransformationInfo.identity("name2"));
   }
 }
