@@ -383,7 +383,12 @@ class ColumnLevelLineageIcebergTest {
     assertColumnDependsOnInputs(facet, "c", 1);
     assertColumnDependsOnInputs(facet, "d", 1);
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(FILTER));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(
+            FILTER, "WHERE ((local.db.t1.a IS NOT NULL) AND (local.db.t1.a = 1))"));
   }
 
   @Test

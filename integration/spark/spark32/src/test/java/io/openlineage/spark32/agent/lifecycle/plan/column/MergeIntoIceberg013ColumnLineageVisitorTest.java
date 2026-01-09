@@ -6,6 +6,8 @@
 package io.openlineage.spark32.agent.lifecycle.plan.column;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -110,7 +112,7 @@ class MergeIntoIceberg013ColumnLineageVisitorTest {
             ScalaConversionUtils.<Attribute>fromList(Collections.singletonList(tableAttribute)));
 
     visitor.collectExpressionDependencies(clContext, replaceIcebergData);
-    verify(builder, times(1)).addDependency(tableExprId, projectExprId);
+    verify(builder, times(1)).addDependency(eq(tableExprId), eq(projectExprId), isNull());
   }
 
   @Test
@@ -134,6 +136,6 @@ class MergeIntoIceberg013ColumnLineageVisitorTest {
             ScalaConversionUtils.<Attribute>fromList(Collections.singletonList(tableAttribute)));
 
     visitor.collectExpressionDependencies(clContext, replaceIcebergData);
-    verify(builder, times(0)).addDependency(any(), any());
+    verify(builder, times(0)).addDependency(any(), any(), any(), any());
   }
 }

@@ -63,22 +63,32 @@ class FilterVisitorTest {
 
       visitor.apply(filter, builder);
 
-      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
+      verify(builder, times(1))
+          .addDatasetDependency(
+              datasetDependencyExpression,
+              "WHERE ((name1 = name2) AND (name3 > 5))",
+              "((name1 = name2) AND (name3 > 5))");
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,
               EXPR_ID_1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
+              "((name1 = name2) AND (name3 > 5))",
+              TransformationInfo.indirect(
+                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,
               EXPR_ID_2,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
+              "((name1 = name2) AND (name3 > 5))",
+              TransformationInfo.indirect(
+                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,
               EXPR_ID_3,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
+              "((name1 = name2) AND (name3 > 5))",
+              TransformationInfo.indirect(
+                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
       utilities.verify(NamedExpression::newExprId, times(1));
     }
   }

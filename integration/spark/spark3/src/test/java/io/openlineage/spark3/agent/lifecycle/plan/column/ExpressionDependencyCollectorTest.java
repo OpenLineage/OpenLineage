@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -40,6 +41,7 @@ import org.apache.spark.sql.catalyst.expressions.Sha1;
 import org.apache.spark.sql.catalyst.expressions.SortDirection;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
+import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction;
 import org.apache.spark.sql.catalyst.plans.JoinType;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
@@ -116,40 +118,56 @@ class ExpressionDependencyCollectorTest {
       LogicalPlan plan = new CreateTableAsSelect(null, null, null, sort, null, null, false);
       ExpressionDependencyCollector.collect(context, plan);
 
-      verify(builder, times(1)).addDatasetDependency(ExprId.apply(0));
-      verify(builder, times(1)).addDatasetDependency(ExprId.apply(1));
-      verify(builder, times(1)).addDatasetDependency(ExprId.apply(2));
+      verify(builder, times(1))
+          .addDatasetDependency(ExprId.apply(0), "SORT BY name1 null null", "name1 null null");
+      verify(builder, times(1))
+          .addDatasetDependency(
+              ExprId.apply(1),
+              "WHERE ((name1 = name2) AND (name3 > 5))",
+              "((name1 = name2) AND (name3 > 5))");
+      verify(builder, times(1))
+          .addDatasetDependency(
+              ExprId.apply(2), "INNER JOIN ON (name1 = name2)", "(name1 = name2)");
 
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(0),
               exprId1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.SORT));
+              "name1 null null",
+              TransformationInfo.indirect(TransformationInfo.Subtypes.SORT, "name1 null null"));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(1),
               exprId1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
+              "((name1 = name2) AND (name3 > 5))",
+              TransformationInfo.indirect(
+                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(1),
               exprId2,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
+              "((name1 = name2) AND (name3 > 5))",
+              TransformationInfo.indirect(
+                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(1),
               exprId3,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
+              "((name1 = name2) AND (name3 > 5))",
+              TransformationInfo.indirect(
+                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(2),
               exprId1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN));
+              "(name1 = name2)",
+              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN, "(name1 = name2)"));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(2),
               exprId2,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN));
+              "(name1 = name2)",
+              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN, "(name1 = name2)"));
 
       utilities.verify(NamedExpression::newExprId, times(3));
     }
@@ -169,12 +187,32 @@ class ExpressionDependencyCollectorTest {
 
     verify(builder, times(1))
         .addDependency(
-            exprId5, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+            exprId5,
+            exprId1,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "(IF((name1 = name2), name3, name4)) AS res"));
     verify(builder, times(1))
         .addDependency(
-            exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
-    verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.identity());
-    verify(builder, times(1)).addDependency(exprId5, exprId4, TransformationInfo.identity());
+            exprId5,
+            exprId2,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "(IF((name1 = name2), name3, name4)) AS res"));
+    verify(builder, times(1))
+        .addDependency(
+            exprId5,
+            exprId3,
+            "res",
+            TransformationInfo.transformation("(IF((name1 = name2), name3, name4)) AS res"));
+    verify(builder, times(1))
+        .addDependency(
+            exprId5,
+            exprId4,
+            "res",
+            TransformationInfo.transformation("(IF((name1 = name2), name3, name4)) AS res"));
   }
 
   @Test
@@ -192,12 +230,26 @@ class ExpressionDependencyCollectorTest {
 
     verify(builder, times(1))
         .addDependency(
-            exprId5, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+            exprId5,
+            exprId1,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "(IF((name1 = name2), name3, (name3 + 1))) AS res"));
     verify(builder, times(1))
         .addDependency(
-            exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
-    verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.identity());
-    verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.transformation());
+            exprId5,
+            exprId2,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "(IF((name1 = name2), name3, (name3 + 1))) AS res"));
+    verify(builder, times(2))
+        .addDependency(
+            exprId5,
+            exprId3,
+            "res",
+            TransformationInfo.transformation("(IF((name1 = name2), name3, (name3 + 1))) AS res"));
   }
 
   @Test
@@ -216,9 +268,24 @@ class ExpressionDependencyCollectorTest {
 
     verify(builder, times(1))
         .addDependency(
-            exprId4, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
-    verify(builder, times(1)).addDependency(exprId4, exprId2, TransformationInfo.identity());
-    verify(builder, times(1)).addDependency(exprId4, exprId3, TransformationInfo.identity());
+            exprId4,
+            exprId1,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "CASE WHEN name1 THEN name2 ELSE name3 END AS res"));
+    verify(builder, times(1))
+        .addDependency(
+            exprId4,
+            exprId2,
+            "res",
+            TransformationInfo.transformation("CASE WHEN name1 THEN name2 ELSE name3 END AS res"));
+    verify(builder, times(1))
+        .addDependency(
+            exprId4,
+            exprId3,
+            "res",
+            TransformationInfo.transformation("CASE WHEN name1 THEN name2 ELSE name3 END AS res"));
   }
 
   @Test
@@ -237,29 +304,60 @@ class ExpressionDependencyCollectorTest {
 
     verify(builder, times(1))
         .addDependency(
-            exprId5, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+            exprId5,
+            exprId1,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "(IF((name1 = name2), name3, sha1(name4))) AS res"));
     verify(builder, times(1))
         .addDependency(
-            exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
-    verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.identity());
+            exprId5,
+            exprId2,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "(IF((name1 = name2), name3, sha1(name4))) AS res"));
     verify(builder, times(1))
-        .addDependency(exprId5, exprId4, TransformationInfo.transformation(true));
+        .addDependency(
+            exprId5,
+            exprId3,
+            "res",
+            TransformationInfo.transformation("(IF((name1 = name2), name3, sha1(name4))) AS res"));
+    verify(builder, times(1))
+        .addDependency(
+            exprId5,
+            exprId4,
+            "res",
+            TransformationInfo.transformation(
+                "(IF((name1 = name2), name3, sha1(name4))) AS res", true));
   }
 
   @Test
   void testCollectTraversingExpressions() {
-    // AggregateExpression
+    // AggregateExpression - mock aggregate functions
+    AggregateFunction aggrFunc1 = mock(AggregateFunction.class);
+    AggregateFunction aggrFunc2 = mock(AggregateFunction.class);
+
+    when(aggrFunc1.sql()).thenReturn("aggr1_func_sql");
+    when(aggrFunc2.sql()).thenReturn("aggr2_func_sql");
+
     AggregateExpression aggr1 = mock(AggregateExpression.class);
     AggregateExpression aggr2 = mock(AggregateExpression.class);
 
     when(aggr1.resultId()).thenReturn(exprId1);
     when(aggr2.resultId()).thenReturn(exprId2);
+    when(aggr1.sql()).thenReturn("aggr1_sql");
+    when(aggr2.sql()).thenReturn("aggr2_sql");
+    when(aggr1.aggregateFunction()).thenReturn(aggrFunc1);
+    when(aggr2.aggregateFunction()).thenReturn(aggrFunc2);
 
     // BinaryExpression
-    Seq<Expression> children =
-        ScalaConversionUtils.fromList(Arrays.asList((Expression) aggr1, aggr2)).toSeq();
     BinaryExpression binaryExpression = mock(BinaryExpression.class);
-    when(binaryExpression.children()).thenReturn(children);
+    doReturn(ScalaConversionUtils.fromList(Arrays.asList((Expression) aggr1, aggr2)))
+        .when(binaryExpression)
+        .children();
+    when(binaryExpression.sql()).thenReturn("binary_expr_sql");
 
     ExprId rootAliasExprId = mock(ExprId.class);
     Alias rootAlias = alias(rootAliasExprId, NAME2, (Expression) binaryExpression);
@@ -273,9 +371,11 @@ class ExpressionDependencyCollectorTest {
     ExpressionDependencyCollector.collect(context, plan);
 
     verify(builder, times(1))
-        .addDependency(rootAliasExprId, exprId1, TransformationInfo.aggregation());
-    verify(builder, times(1))
-        .addDependency(rootAliasExprId, exprId2, TransformationInfo.aggregation());
+        .addDependency(
+            rootAliasExprId,
+            exprId1,
+            "name2",
+            TransformationInfo.aggregation("binary_expr_sql AS name2"));
   }
 
   @Test
@@ -289,12 +389,30 @@ class ExpressionDependencyCollectorTest {
 
     verify(builder, times(1))
         .addDependency(
-            exprId3, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+            exprId3,
+            exprId1,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL, "coalesce(name1, name2) AS res"));
     verify(builder, times(1))
         .addDependency(
-            exprId3, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
-    verify(builder, times(1)).addDependency(exprId3, exprId1, TransformationInfo.identity());
-    verify(builder, times(1)).addDependency(exprId3, exprId2, TransformationInfo.identity());
+            exprId3,
+            exprId2,
+            "res",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL, "coalesce(name1, name2) AS res"));
+    verify(builder, times(1))
+        .addDependency(
+            exprId3,
+            exprId1,
+            "res",
+            TransformationInfo.transformation("coalesce(name1, name2) AS res"));
+    verify(builder, times(1))
+        .addDependency(
+            exprId3,
+            exprId2,
+            "res",
+            TransformationInfo.transformation("coalesce(name1, name2) AS res"));
     verifyNoMoreInteractions(builder);
   }
 

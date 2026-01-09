@@ -40,7 +40,8 @@ class AliasVisitorTest {
 
     visitor.apply(alias(field(NAME_1, EXPR_ID_1)).as(NAME_2, EXPR_ID_2), traverser);
 
-    verify(traverser).copyFor(field(NAME_1, EXPR_ID_1), TransformationInfo.identity());
+    verify(traverser)
+        .copyFor(field(NAME_1, EXPR_ID_1), TransformationInfo.identity("name1 AS name2"));
     verify(newTraverser).traverse();
   }
 }

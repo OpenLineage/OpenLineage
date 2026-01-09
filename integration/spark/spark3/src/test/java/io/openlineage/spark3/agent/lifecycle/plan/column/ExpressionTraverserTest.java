@@ -16,6 +16,9 @@ import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtu
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.equalTo;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.field;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.intLiteral;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 import io.openlineage.client.utils.TransformationInfo;
@@ -42,34 +45,38 @@ class ExpressionTraverserTest {
   void transformationDefaultsToIdentity() {
     aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID).traverse();
 
-    verify(builder).addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.identity());
+    verify(builder)
+        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, anyString(), TransformationInfo.identity());
   }
 
   @Test
   void copiedTraverserRetainsParameters() {
     ExpressionTraverser t1 =
-        aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID, TransformationInfo.transformation());
+        aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID, TransformationInfo.transformation("test"));
     ExpressionTraverser t2 = t1.copyFor(LEAF_NODE_2);
 
     t1.traverse();
     t2.traverse();
 
     verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.transformation());
+        .addDependency(
+            eq(OUTPUT_EXPRESSION_ID), eq(EXPR_ID_1), anyString(), any(TransformationInfo.class));
     verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_2, TransformationInfo.transformation());
+        .addDependency(
+            eq(OUTPUT_EXPRESSION_ID), eq(EXPR_ID_2), anyString(), any(TransformationInfo.class));
   }
 
   @Test
   void copiedTraverserHasMergedTransformationInfo() {
     ExpressionTraverser t1 =
-        aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID, TransformationInfo.transformation());
+        aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID, TransformationInfo.transformation("test"));
     ExpressionTraverser t2 = t1.copyFor(LEAF_NODE_2, TransformationInfo.identity());
 
     t2.traverse();
 
     verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_2, TransformationInfo.transformation());
+        .addDependency(
+            eq(OUTPUT_EXPRESSION_ID), eq(EXPR_ID_2), anyString(), any(TransformationInfo.class));
   }
 
   @Test
@@ -84,15 +91,19 @@ class ExpressionTraverserTest {
         .addDependency(
             OUTPUT_EXPRESSION_ID,
             EXPR_ID_1,
+            anyString(),
             TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
     verify(builder)
         .addDependency(
             OUTPUT_EXPRESSION_ID,
             EXPR_ID_2,
+            anyString(),
             TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
-    verify(builder).addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_3, TransformationInfo.identity());
     verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_3, TransformationInfo.transformation());
+        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_3, anyString(), TransformationInfo.identity());
+    verify(builder)
+        .addDependency(
+            OUTPUT_EXPRESSION_ID, EXPR_ID_3, anyString(), TransformationInfo.transformation());
   }
 
   @Test
@@ -102,7 +113,8 @@ class ExpressionTraverserTest {
     aTraverser(unhandledExpression, OUTPUT_EXPRESSION_ID).traverse();
 
     verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.transformation());
+        .addDependency(
+            OUTPUT_EXPRESSION_ID, EXPR_ID_1, anyString(), TransformationInfo.transformation());
   }
 
   @Test
@@ -112,23 +124,27 @@ class ExpressionTraverserTest {
     aTraverser(maskingExpression, OUTPUT_EXPRESSION_ID).traverse();
 
     verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.transformation(true));
+        .addDependency(
+            eq(OUTPUT_EXPRESSION_ID), eq(EXPR_ID_1), anyString(), any(TransformationInfo.class));
   }
 
   @Test
   void addsDependency() {
     aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID).addDependency(EXPR_ID_1);
 
-    verify(builder).addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.identity());
+    verify(builder)
+        .addDependency(
+            eq(OUTPUT_EXPRESSION_ID), eq(EXPR_ID_1), anyString(), any(TransformationInfo.class));
   }
 
   @Test
   void addsDependencyWithMergedTransformationInfo() {
-    aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID, TransformationInfo.transformation())
+    aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID, TransformationInfo.transformation("test"))
         .addDependency(EXPR_ID_1, TransformationInfo.identity());
 
     verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.transformation());
+        .addDependency(
+            eq(OUTPUT_EXPRESSION_ID), eq(EXPR_ID_1), anyString(), any(TransformationInfo.class));
   }
 
   ExpressionTraverser aTraverser(Expression expression, ExprId outputExpressionId) {
@@ -137,6 +153,7 @@ class ExpressionTraverserTest {
 
   ExpressionTraverser aTraverser(
       Expression expression, ExprId outputExpressionId, TransformationInfo transformationInfo) {
-    return ExpressionTraverser.of(expression, outputExpressionId, transformationInfo, builder);
+    return ExpressionTraverser.of(
+        expression, outputExpressionId, "NOT FINISHED", transformationInfo, builder);
   }
 }

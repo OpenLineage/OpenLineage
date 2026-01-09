@@ -68,13 +68,28 @@ class WindowVisitorTest {
     visitor.apply(window, builder);
 
     verify(builder, times(0))
-        .addDependency(EXPR_ID_3, EXPR_ID_1, TransformationInfo.transformation());
+        .addDependency(
+            EXPR_ID_3,
+            EXPR_ID_1,
+            "rank",
+            TransformationInfo.transformation(
+                "RANK() OVER (PARTITION BY name2 ORDER BY name1 DESC NULLS LAST null BETWEEN null FOLLOWING AND null FOLLOWING) AS rank"));
     verify(builder, times(1))
         .addDependency(
-            EXPR_ID_3, EXPR_ID_1, TransformationInfo.indirect(TransformationInfo.Subtypes.WINDOW));
+            EXPR_ID_3,
+            EXPR_ID_1,
+            "rank",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.WINDOW,
+                "RANK() OVER (PARTITION BY name2 ORDER BY name1 DESC NULLS LAST null BETWEEN null FOLLOWING AND null FOLLOWING) AS rank"));
     verify(builder, times(1))
         .addDependency(
-            EXPR_ID_3, EXPR_ID_2, TransformationInfo.indirect(TransformationInfo.Subtypes.WINDOW));
+            EXPR_ID_3,
+            EXPR_ID_2,
+            "rank",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.WINDOW,
+                "RANK() OVER (PARTITION BY name2 ORDER BY name1 DESC NULLS LAST null BETWEEN null FOLLOWING AND null FOLLOWING) AS rank"));
   }
 
   private static SortOrder sortOrder(AttributeReference child) {

@@ -35,7 +35,11 @@ public class WindowVisitor implements OperatorVisitor {
         .forEach(
             e ->
                 ExpressionTraverser.of(
-                        (Expression) e, e.exprId(), TransformationInfo.identity(), builder)
+                        (Expression) e,
+                        e.exprId(),
+                        e.qualifiedName(),
+                        TransformationInfo.identity(((Expression) e).sql()),
+                        builder)
                     .traverse());
   }
 }

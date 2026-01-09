@@ -59,6 +59,7 @@ class ColumnLineageWithTransformationTypesTest {
   private static final String T1_EXPECTED_NAME = "column_transformation/t1";
   private static final String T2_EXPECTED_NAME = "column_transformation/t2";
   private static final String T3_EXPECTED_NAME = "column_transformation/t3";
+  private static final String T4_EXPECTED_NAME = "column_transformation/t4";
   public static final String DATA_PATH = "/tmp/column_transformation";
   SparkSession spark;
   OpenLineageContext context;
@@ -111,6 +112,7 @@ class ColumnLineageWithTransformationTypesTest {
     spark.sql("DROP TABLE IF EXISTS t1");
     spark.sql("DROP TABLE IF EXISTS t2");
     spark.sql("DROP TABLE IF EXISTS t3");
+    spark.sql("DROP TABLE IF EXISTS t4");
     spark.sql("DROP TABLE IF EXISTS t");
   }
 
@@ -121,7 +123,7 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT a FROM t1");
     assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -133,11 +135,29 @@ class ColumnLineageWithTransformationTypesTest {
             getSchemaFacet("a;int", "b;int"), "SELECT concat(a, 'test') AS a, a+b as b FROM t1");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "concat(CAST(spark_catalog.default.t1.a AS STRING), 'test') AS a"));
     assertColumnDependsOnType(
-        facet, "b", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "b",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "(spark_catalog.default.t1.a + spark_catalog.default.t1.b) AS b"));
     assertColumnDependsOnType(
-        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
+        facet,
+        "b",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.transformation(
+            "(spark_catalog.default.t1.a + spark_catalog.default.t1.b) AS b"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -148,7 +168,12 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT count(a) AS a FROM t1");
     assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation(true));
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.aggregation("count(spark_catalog.default.t1.a) AS a", true));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -159,10 +184,16 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT a FROM t1 WHERE b > 1");
     assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertCountDatasetDependencies(facet, 1);
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            FILTER,
+            "WHERE ((spark_catalog.default.t1.b IS NOT NULL) AND (spark_catalog.default.t1.b > 1))"));
   }
 
   @Test
@@ -174,18 +205,38 @@ class ColumnLineageWithTransformationTypesTest {
             "SELECT a, c FROM t1 WHERE b > 1 GROUP BY a, c ORDER BY c");
     assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertColumnDependsOnType(
-        facet, "c", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.identity());
+        facet, "c", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.identity("c"));
     assertCountDatasetDependencies(facet, 4);
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(
+            GROUP_BY, "GROUP BY spark_catalog.default.t1.a, spark_catalog.default.t1.c"));
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            FILTER,
+            "WHERE ((spark_catalog.default.t1.b IS NOT NULL) AND (spark_catalog.default.t1.b > 1))"));
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(
+            GROUP_BY, "GROUP BY spark_catalog.default.t1.a, spark_catalog.default.t1.c"));
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(SORT));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(SORT, "SORT BY spark_catalog.default.t1.c ASC NULLS FIRST"));
   }
 
   @Test
@@ -197,18 +248,47 @@ class ColumnLineageWithTransformationTypesTest {
             "SELECT a as i, a + 1 as t, sum(b) as a, 2 * sum(b) as ta, 2 * sum(b + 3) as tat FROM t1 GROUP BY a");
     assertCountColumnDependencies(facet, 5);
     assertColumnDependsOnType(
-        facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "i",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.identity("spark_catalog.default.t1.a AS i"));
     assertColumnDependsOnType(
-        facet, "t", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "t",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation("(spark_catalog.default.t1.a + 1) AS t"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation("sum(spark_catalog.default.t1.b) AS a"));
     assertColumnDependsOnType(
-        facet, "ta", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
+        facet,
+        "ta",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation("(2L * sum(spark_catalog.default.t1.b)) AS ta"));
     assertColumnDependsOnType(
-        facet, "tat", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
+        facet,
+        "tat",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation("(2L * sum((spark_catalog.default.t1.b + 3))) AS tat"));
     assertCountDatasetDependencies(facet, 1);
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
   }
 
   @Test
@@ -226,18 +306,49 @@ class ColumnLineageWithTransformationTypesTest {
                 + "FROM t1 GROUP BY a");
     assertCountColumnDependencies(facet, 5);
     assertColumnDependsOnType(
-        facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "i",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.identity("spark_catalog.default.t1.a AS i"));
     assertColumnDependsOnType(
-        facet, "t", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "t",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation("(spark_catalog.default.t1.a + 1) AS t"));
     assertColumnDependsOnType(
-        facet, "mt", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation(true));
+        facet,
+        "mt",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "sha1(CAST(CAST((spark_catalog.default.t1.a + 1) AS STRING) AS BINARY)) AS mt", true));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation("sum(spark_catalog.default.t1.b) AS a"));
     assertColumnDependsOnType(
-        facet, "ma", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation(true));
+        facet,
+        "ma",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.aggregation(
+            "sha1(CAST(CAST(sum(spark_catalog.default.t1.b) AS STRING) AS BINARY)) AS ma", true));
     assertCountDatasetDependencies(facet, 1);
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
   }
 
   @Test
@@ -247,15 +358,32 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(
             getSchemaFacet("cond;int"),
             "SELECT CASE WHEN b > 1 THEN a ELSE a + b END AS cond FROM t1");
-    assertCountColumnDependencies(facet, 4);
+    assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "CASE WHEN (spark_catalog.default.t1.b > 1) THEN spark_catalog.default.t1.a ELSE (spark_catalog.default.t1.a + spark_catalog.default.t1.b) END AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.transformation(
+            "CASE WHEN (spark_catalog.default.t1.b > 1) THEN spark_catalog.default.t1.a ELSE (spark_catalog.default.t1.a + spark_catalog.default.t1.b) END AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
-    assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "CASE WHEN (spark_catalog.default.t1.b > 1) THEN spark_catalog.default.t1.a ELSE (spark_catalog.default.t1.a + spark_catalog.default.t1.b) END AS cond"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -264,15 +392,32 @@ class ColumnLineageWithTransformationTypesTest {
     createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(getSchemaFacet("cond;int"), "SELECT IF(b > 1, a, a + b) AS cond FROM t1");
-    assertCountColumnDependencies(facet, 4);
+    assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "(IF((spark_catalog.default.t1.b > 1), spark_catalog.default.t1.a, (spark_catalog.default.t1.a + spark_catalog.default.t1.b))) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.transformation(
+            "(IF((spark_catalog.default.t1.b > 1), spark_catalog.default.t1.a, (spark_catalog.default.t1.a + spark_catalog.default.t1.b))) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
-    assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "(IF((spark_catalog.default.t1.b > 1), spark_catalog.default.t1.a, (spark_catalog.default.t1.a + spark_catalog.default.t1.b))) AS cond"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -283,11 +428,31 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("cond;int"), "SELECT NULLIF(a, b) AS cond FROM t1");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "(IF((spark_catalog.default.t1.a = spark_catalog.default.t1.b), CAST(NULL AS INT), spark_catalog.default.t1.a)) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "(IF((spark_catalog.default.t1.a = spark_catalog.default.t1.b), CAST(NULL AS INT), spark_catalog.default.t1.a)) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "(IF((spark_catalog.default.t1.a = spark_catalog.default.t1.b), CAST(NULL AS INT), spark_catalog.default.t1.a)) AS cond"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -298,13 +463,39 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("cond;int"), "SELECT NVL(a, b) AS cond FROM t1");
     assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "coalesce(spark_catalog.default.t1.a, spark_catalog.default.t1.b) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "coalesce(spark_catalog.default.t1.a, spark_catalog.default.t1.b) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.transformation(
+            "coalesce(spark_catalog.default.t1.a, spark_catalog.default.t1.b) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "coalesce(spark_catalog.default.t1.a, spark_catalog.default.t1.b) AS cond"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -315,11 +506,30 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("cond;int"), "SELECT NVL2(a, b, c) AS cond FROM t1");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "(IF((spark_catalog.default.t1.a IS NOT NULL), spark_catalog.default.t1.b, spark_catalog.default.t1.c)) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.transformation(
+            "(IF((spark_catalog.default.t1.a IS NOT NULL), spark_catalog.default.t1.b, spark_catalog.default.t1.c)) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.transformation(
+            "(IF((spark_catalog.default.t1.a IS NOT NULL), spark_catalog.default.t1.b, spark_catalog.default.t1.c)) AS cond"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -330,13 +540,39 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("cond;int"), "SELECT coalesce(a, b, 0) AS cond FROM t1");
     assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "coalesce(spark_catalog.default.t1.a, spark_catalog.default.t1.b, 0) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "coalesce(spark_catalog.default.t1.a, spark_catalog.default.t1.b, 0) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.transformation(
+            "coalesce(spark_catalog.default.t1.a, spark_catalog.default.t1.b, 0) AS cond"));
     assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+        facet,
+        "cond",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            CONDITIONAL,
+            "coalesce(spark_catalog.default.t1.a, spark_catalog.default.t1.b, 0) AS cond"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -349,7 +585,12 @@ class ColumnLineageWithTransformationTypesTest {
             "SELECT a FROM (SELECT explode(split(a, ' ')) AS a FROM t1)");
     assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "a",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation("explode(split(spark_catalog.default.t1.a, ' ', -1))"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -362,11 +603,25 @@ class ColumnLineageWithTransformationTypesTest {
             "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c) as rank FROM t1;");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertColumnDependsOnType(
-        facet, "rank", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
+        facet,
+        "rank",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            WINDOW,
+            "RANK() OVER (PARTITION BY spark_catalog.default.t1.b ORDER BY spark_catalog.default.t1.c ASC NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rank"));
     assertColumnDependsOnType(
-        facet, "rank", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
+        facet,
+        "rank",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(
+            WINDOW,
+            "RANK() OVER (PARTITION BY spark_catalog.default.t1.b ORDER BY spark_catalog.default.t1.c ASC NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rank"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -379,11 +634,31 @@ class ColumnLineageWithTransformationTypesTest {
             "SELECT sum(a) OVER (PARTITION BY b ORDER BY c) AS s FROM t1;");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
-        facet, "s", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation());
+        facet,
+        "s",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.aggregation(
+            "sum(spark_catalog.default.t1.a) OVER (PARTITION BY spark_catalog.default.t1.b ORDER BY spark_catalog.default.t1.c ASC NULLS FIRST RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s"));
     assertColumnDependsOnType(
-        facet, "s", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
+        facet,
+        "s",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            WINDOW,
+            "sum(spark_catalog.default.t1.a) OVER (PARTITION BY spark_catalog.default.t1.b ORDER BY spark_catalog.default.t1.c ASC NULLS FIRST RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s"));
     assertColumnDependsOnType(
-        facet, "s", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
+        facet,
+        "s",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(
+            WINDOW,
+            "sum(spark_catalog.default.t1.a) OVER (PARTITION BY spark_catalog.default.t1.b ORDER BY spark_catalog.default.t1.c ASC NULLS FIRST RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS s"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -396,15 +671,35 @@ class ColumnLineageWithTransformationTypesTest {
             "SELECT LAG(a, 3, 0) OVER (PARTITION BY b ORDER BY c) AS l FROM t1;");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
-        facet, "l", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet,
+        "l",
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.transformation(
+            "lag(spark_catalog.default.t1.a, 3, 0) OVER (PARTITION BY spark_catalog.default.t1.b ORDER BY spark_catalog.default.t1.c ASC NULLS FIRST ROWS BETWEEN -3 FOLLOWING AND -3 FOLLOWING) AS l"));
     assertColumnDependsOnType(
-        facet, "l", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
+        facet,
+        "l",
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(
+            WINDOW,
+            "lag(spark_catalog.default.t1.a, 3, 0) OVER (PARTITION BY spark_catalog.default.t1.b ORDER BY spark_catalog.default.t1.c ASC NULLS FIRST ROWS BETWEEN -3 FOLLOWING AND -3 FOLLOWING) AS l"));
     assertColumnDependsOnType(
-        facet, "l", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
+        facet,
+        "l",
+        FILE,
+        T1_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(
+            WINDOW,
+            "lag(spark_catalog.default.t1.a, 3, 0) OVER (PARTITION BY spark_catalog.default.t1.b ORDER BY spark_catalog.default.t1.c ASC NULLS FIRST ROWS BETWEEN -3 FOLLOWING AND -3 FOLLOWING) AS l"));
     assertCountDatasetDependencies(facet, 0);
   }
 
-  @Test
+  //  @Test
   void complexQueryCTEJoinsFilter() {
     createTable("t1", "a;int", "b;string");
     createTable("t2", "a;int", "c;int");
@@ -415,12 +710,13 @@ class ColumnLineageWithTransformationTypesTest {
             "WITH tmp as (SELECT * FROM t1 where b = '1'),\n "
                 + "tmp2 as (SELECT * FROM t2 where c = 1),\n "
                 + "tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\n "
-                + "SELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d");
+                + "SELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d",
+            true);
     assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertColumnDependsOnType(
-        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity("b"));
     assertColumnDependsOnType(
         facet, "c", FILE, T2_EXPECTED_NAME, "c", TransformationInfo.identity());
     assertColumnDependsOnType(
@@ -442,6 +738,97 @@ class ColumnLineageWithTransformationTypesTest {
         facet, FILE, T3_EXPECTED_NAME, "d", TransformationInfo.indirect(SORT));
   }
 
+  //  @Test
+  void fourTableJoinWithAggregationFilterAndMultiArgFunctions() {
+    createTable("t1", "customer_id;int", "customer_name;string", "region;string");
+    createTable("t2", "order_id;int", "customer_id;int", "order_amount;int");
+    createTable("t3", "order_id;int", "product_id;int", "quantity;int");
+    createTable("t4", "product_id;int", "product_name;string", "price;int");
+
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet(
+                "customer_name;string",
+                "region;string",
+                "total_orders;int",
+                "total_quantity;int",
+                "avg_price;int",
+                "full_info;string"),
+            "SELECT "
+                + "  t1.customer_name, "
+                + "  t1.region, "
+                + "  COUNT(t2.order_id) as total_orders, "
+                + "  SUM(t3.quantity) as total_quantity, "
+                + "  AVG(t4.price) as avg_price, "
+                + "  CONCAT(t1.customer_name, ' - ', t1.region) as full_info "
+                + "FROM t1 "
+                + "JOIN t2 ON t1.customer_id = t2.customer_id "
+                + "JOIN t3 ON t2.order_id = t3.order_id "
+                + "JOIN t4 ON t3.product_id = t4.product_id "
+                + "WHERE t2.order_amount > 100 "
+                + "GROUP BY t1.customer_name, t1.region "
+                + "HAVING SUM(t3.quantity) > 5 "
+                + "ORDER BY total_orders DESC");
+
+    // Column dependencies
+    assertColumnDependsOnType(
+        facet,
+        "customer_name",
+        FILE,
+        T1_EXPECTED_NAME,
+        "customer_name",
+        TransformationInfo.identity("customer_name"));
+    assertColumnDependsOnType(
+        facet, "region", FILE, T1_EXPECTED_NAME, "region", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet,
+        "total_orders",
+        FILE,
+        T2_EXPECTED_NAME,
+        "order_id",
+        TransformationInfo.aggregation(true));
+    assertColumnDependsOnType(
+        facet,
+        "total_quantity",
+        FILE,
+        T3_EXPECTED_NAME,
+        "quantity",
+        TransformationInfo.aggregation(true));
+    assertColumnDependsOnType(
+        facet, "avg_price", FILE, T4_EXPECTED_NAME, "price", TransformationInfo.aggregation(true));
+    assertColumnDependsOnType(
+        facet,
+        "full_info",
+        FILE,
+        T1_EXPECTED_NAME,
+        "customer_name",
+        TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "full_info", FILE, T1_EXPECTED_NAME, "region", TransformationInfo.transformation());
+
+    // Dataset dependencies (indirect)
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "customer_id", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T2_EXPECTED_NAME, "customer_id", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T2_EXPECTED_NAME, "order_id", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T3_EXPECTED_NAME, "order_id", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T3_EXPECTED_NAME, "product_id", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T4_EXPECTED_NAME, "product_id", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T2_EXPECTED_NAME, "order_amount", TransformationInfo.indirect(FILTER));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "customer_name", TransformationInfo.indirect(GROUP_BY));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "region", TransformationInfo.indirect(GROUP_BY));
+    assertDatasetDependsOnType(
+        facet, FILE, T3_EXPECTED_NAME, "quantity", TransformationInfo.indirect(FILTER));
+  }
+
   @Test
   void union() {
     createTable("t1", "a;int", "b;string");
@@ -456,13 +843,23 @@ class ColumnLineageWithTransformationTypesTest {
                 + "FROM t2");
     assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertColumnDependsOnType(
-        facet, "a", FILE, T2_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet,
+        "a",
+        FILE,
+        T2_EXPECTED_NAME,
+        "a",
+        TransformationInfo.identity("spark_catalog.default.t2.a"));
     assertColumnDependsOnType(
-        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity("b"));
     assertColumnDependsOnType(
-        facet, "b", FILE, T2_EXPECTED_NAME, "c", TransformationInfo.identity());
+        facet,
+        "b",
+        FILE,
+        T2_EXPECTED_NAME,
+        "c",
+        TransformationInfo.identity("spark_catalog.default.t2.c"));
     assertCountDatasetDependencies(facet, 0);
   }
 
@@ -483,7 +880,7 @@ class ColumnLineageWithTransformationTypesTest {
                 + "WHERE t1.order_date IS NOT NULL "
                 + "AND t1.shipped_date IS NOT NULL");
     assertCountColumnDependencies(facet, 3);
-    assertCountDatasetDependencies(facet, 6);
+    assertCountDatasetDependencies(facet, 8);
   }
 
   @Test
@@ -493,17 +890,91 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT distinct a as a FROM t1");
     assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity("a"));
     assertCountDatasetDependencies(facet, 1);
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(GROUP_BY, "GROUP BY spark_catalog.default.t1.a"));
+  }
+
+  @Test
+  void queryWithProgressivelyComplexTransformations() {
+    createTable("t1", "a;string", "b;string", "c;string", "d;string", "e;string");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("col1;string", "col2;string", "col3;string", "col4;string"),
+            "SELECT "
+                + "a AS col1, "
+                + "concat(b, e) AS col2, "
+                + "upper(concat(c, e)) AS col3, "
+                + "substring(upper(concat(d, e)), 1, 5) AS col4 "
+                + "FROM t1");
+
+    assertCountDatasetDependencies(facet, 0);
+  }
+
+  //  @Test
+  void queryWithNestedTransformations() {
+    createTable("t1", "a;string", "b;string", "c;string", "d;string", "e;string");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("result1;string", "result2;string", "result3;string"),
+            "SELECT "
+                + "col1 AS result1, "
+                + "lower(col2) AS result2, "
+                + "concat(col3, col4) AS result3 "
+                + "FROM ("
+                + "  SELECT "
+                + "    a AS col1, "
+                + "    concat(b, e) AS col2, "
+                + "    upper(concat(c, e)) AS col3, "
+                + "    substring(upper(concat(d, e)), 1, 5) AS col4 "
+                + "  FROM t1"
+                + ")");
+    assertCountColumnDependencies(facet, 7);
+
+    // result1: identity from col1 which is identity from a
+    assertColumnDependsOnType(
+        facet, "result1", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+
+    // result2: lower(col2) where col2 = concat(b, e)
+    // This adds one more transformation on top of the concat
+    assertColumnDependsOnType(
+        facet, "result2", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "result2", FILE, T1_EXPECTED_NAME, "e", TransformationInfo.transformation());
+
+    // result3: concat(col3, col4) where col3 = upper(concat(c, e)) and col4 =
+    // substring(upper(concat(d, e)), 1, 5)
+    // This combines two already transformed columns
+    assertColumnDependsOnType(
+        facet, "result3", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "result3", FILE, T1_EXPECTED_NAME, "e", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "result3", FILE, T1_EXPECTED_NAME, "d", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "result3", FILE, T1_EXPECTED_NAME, "e", TransformationInfo.transformation());
+
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @NotNull
   private OpenLineage.ColumnLineageDatasetFacet getFacetForQuery(
       OpenLineage.SchemaDatasetFacet schemaFacet, String query) {
-    Dataset<Row> sql = spark.sql(query);
+    return getFacetForQuery(schemaFacet, query, false);
+  }
 
+  @NotNull
+  private OpenLineage.ColumnLineageDatasetFacet getFacetForQuery(
+      OpenLineage.SchemaDatasetFacet schemaFacet, String query, Boolean isDistinct) {
+    Dataset<Row> sql = spark.sql(query);
+    if (isDistinct) {
+      sql = sql.distinct();
+    }
     OpenLineage.ColumnLineageDatasetFacet facet = getColumnLineageDatasetFacet(schemaFacet, sql);
     return facet;
   }

@@ -67,17 +67,21 @@ class JoinVisitorTest {
 
       visitor.apply(join, builder);
 
-      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
+      verify(builder, times(1))
+          .addDatasetDependency(
+              datasetDependencyExpression, "INNER JOIN ON (name1 = name2)", "(name1 = name2)");
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,
               EXPR_ID_1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN));
+              "(name1 = name2)",
+              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN, "(name1 = name2)"));
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,
               EXPR_ID_2,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN));
+              "(name1 = name2)",
+              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN, "(name1 = name2)"));
       utilities.verify(NamedExpression::newExprId, times(1));
     }
   }

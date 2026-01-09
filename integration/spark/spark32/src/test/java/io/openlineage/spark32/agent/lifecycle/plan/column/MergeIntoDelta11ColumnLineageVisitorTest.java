@@ -5,11 +5,13 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.column;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -68,9 +70,11 @@ class MergeIntoDelta11ColumnLineageVisitorTest {
 
     when(action1.child()).thenReturn(actionChild1);
     when(actionChild1.exprId()).thenReturn(action1ExprId);
+    when(actionChild1.sql()).thenReturn("col_1");
 
     when(action2.child()).thenReturn(actionChild2);
     when(actionChild2.exprId()).thenReturn(action2ExprId);
+    when(actionChild2.sql()).thenReturn("col_2");
 
     when(builder.getOutputExprIdByFieldName("col_1")).thenReturn(Optional.of(parentExprId1));
     when(builder.getOutputExprIdByFieldName("col_2")).thenReturn(Optional.of(parentExprId2));
@@ -94,7 +98,17 @@ class MergeIntoDelta11ColumnLineageVisitorTest {
 
     visitor.collectExpressionDependencies(clContext, command);
 
-    verify(builder, times(1)).addDependency(parentExprId1, action1ExprId);
-    verify(builder, times(1)).addDependency(parentExprId2, action2ExprId);
+    verify(builder, times(1))
+        .addDependency(
+            eq(parentExprId1),
+            eq(action1ExprId),
+            eq("col_1"),
+            eq(TransformationInfo.identity("col_1")));
+    verify(builder, times(1))
+        .addDependency(
+            eq(parentExprId2),
+            eq(action2ExprId),
+            eq("col_2"),
+            eq(TransformationInfo.identity("col_2")));
   }
 }
