@@ -203,6 +203,8 @@ shadowJar {
     
     mergeServiceFiles()
 
+    mergeServiceFiles()
+
     manifest {
         attributes(
                 "Created-By": "Gradle ${gradle.gradleVersion}",

@@ -47,12 +47,20 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
   public List<D> apply(LogicalPlan x) {
     Set<RDD<?>> flattenedRdds = Rdds.flattenRDDs(((LogicalRDD) x).rdd(), new HashSet<>());
 
+    log.info(
+        "[ OL_MISSING_INPUT_DEBUG ] \nJob Name: {}\n Flattened RDDs: \n{}",
+        context.getJobName(),
+        flattenedRdds.stream()
+            .map(rdd -> rdd.getClass().getName())
+            .collect(Collectors.joining("\n")));
+
     if (VisitorFactory.classPresent("org.apache.spark.sql.execution.SQLExecutionRDD")
         && containsSqlExecution(flattenedRdds)) {
       return applySqlExecution(flattenedRdds, x.schema());
     }
 
     List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(flattenedRdds);
+    logFileLikeRdds(fileLikeRdds);
     if (fileLikeRdds.isEmpty()) {
       return Collections.emptyList();
     }
@@ -61,7 +69,18 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
   }
 
   public List<D> applySqlExecution(Set<RDD<?>> flattenedRdds, StructType schema) {
-    return findInputDatasets(Rdds.findFileLikeRdds(flattenedRdds), schema);
+    List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(flattenedRdds);
+    logFileLikeRdds(fileLikeRdds);
+    return findInputDatasets(fileLikeRdds, schema);
+  }
+
+  private void logFileLikeRdds(List<RDD<?>> fileLikeRdds) {
+    log.info(
+        "[ OL_MISSING_INPUT_DEBUG ] \nJob Name: {}\n File-like RDDs: \n{}",
+        context.getJobName(),
+        fileLikeRdds.stream()
+            .map(rdd -> rdd.getClass().getName())
+            .collect(Collectors.joining("\n")));
   }
 
   public boolean containsSqlExecution(Set<RDD<?>> flattenedRdds) {
