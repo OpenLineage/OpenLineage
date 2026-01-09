@@ -47,6 +47,13 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
   public List<D> apply(LogicalPlan x) {
     Set<RDD<?>> flattenedRdds = Rdds.flattenRDDs(((LogicalRDD) x).rdd(), new HashSet<>());
 
+    log.info(
+        "[ OL_MISSING_INPUT_DEBUG ] \nJob Name: {}\n Flattened RDDs: \n{}",
+        context.getJobName(),
+        flattenedRdds.stream()
+            .map(rdd -> rdd.getClass().getName())
+            .collect(Collectors.joining("\n")));
+
     if (VisitorFactory.classPresent("org.apache.spark.sql.execution.SQLExecutionRDD")
         && containsSqlExecution(flattenedRdds)) {
       return applySqlExecution(flattenedRdds, x.schema());
