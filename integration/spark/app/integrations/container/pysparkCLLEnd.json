@@ -82,142 +82,68 @@
         },
         "columnLineage": {
           "fields": {
-            "agg": {
-              "inputFields": [
-                {
-                  "field": "b",
-                  "name": "/tmp/cll_test/cll_source1",
-                  "namespace": "file",
-                  "transformations": [
-                    {
-                      "description": "t1.b",
-                      "masking": false,
-                      "subtype": "GROUP_BY",
-                      "type": "INDIRECT"
-                    }
-                  ]
-                },
-                {
-                  "field": "c",
-                  "name": "/tmp/cll_test/cll_source2",
-                  "namespace": "file",
-                  "transformations": [
-                    {
-                      "description": "sum(t2.c) AS agg",
-                      "masking": false,
-                      "subtype": "AGGREGATION",
-                      "type": "DIRECT"
-                    }
-                  ]
-                },
-                {
-                  "field": "a",
-                  "name": "/tmp/cll_test/cll_source2",
-                  "namespace": "file",
-                  "transformations": [
-                    {
-                      "description": "INNER JOIN ON (t1.a = t2.a)",
-                      "masking": false,
-                      "subtype": "JOIN",
-                      "type": "INDIRECT"
-                    },
-                    {
-                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
-                      "masking": false,
-                      "subtype": "FILTER",
-                      "type": "INDIRECT"
-                    }
-                  ]
-                },
-                {
-                  "field": "a",
-                  "name": "/tmp/cll_test/cll_source1",
-                  "namespace": "file",
-                  "transformations": [
-                    {
-                      "description": "t1.a",
-                      "masking": false,
-                      "subtype": "GROUP_BY",
-                      "type": "INDIRECT"
-                    },
-                    {
-                      "description": "INNER JOIN ON (t1.a = t2.a)",
-                      "masking": false,
-                      "subtype": "JOIN",
-                      "type": "INDIRECT"
-                    },
-                    {
-                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
-                      "masking": false,
-                      "subtype": "FILTER",
-                      "type": "INDIRECT"
-                    }
-                  ]
-                }
-              ]
-            },
             "ident": {
               "inputFields": [
                 {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
                   "field": "b",
-                  "name": "/tmp/cll_test/cll_source1",
-                  "namespace": "file",
                   "transformations": [
                     {
-                      "description": "t1.b",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "GROUP_BY",
-                      "type": "INDIRECT"
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
                     }
                   ]
                 },
                 {
-                  "field": "a",
+                  "namespace": "file",
                   "name": "/tmp/cll_test/cll_source2",
-                  "namespace": "file",
+                  "field": "a",
                   "transformations": [
                     {
-                      "description": "INNER JOIN ON (t1.a = t2.a)",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "type": "INDIRECT"
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
                     },
                     {
-                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "FILTER",
-                      "type": "INDIRECT"
+                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
+                      "masking": false
                     }
                   ]
                 },
                 {
-                  "field": "a",
-                  "name": "/tmp/cll_test/cll_source1",
                   "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
                   "transformations": [
                     {
-                      "description": "t1.a AS ident",
-                      "masking": false,
+                      "type": "DIRECT",
                       "subtype": "IDENTITY",
-                      "type": "DIRECT"
+                      "description": "t1.a AS ident",
+                      "masking": false
                     },
                     {
-                      "description": "t1.a",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "GROUP_BY",
-                      "type": "INDIRECT"
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
                     },
                     {
-                      "description": "INNER JOIN ON (t1.a = t2.a)",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "type": "INDIRECT"
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
                     },
                     {
-                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "FILTER",
-                      "type": "INDIRECT"
+                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
+                      "masking": false
                     }
                   ]
                 }
@@ -226,65 +152,139 @@
             "trans": {
               "inputFields": [
                 {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
                   "field": "b",
-                  "name": "/tmp/cll_test/cll_source1",
-                  "namespace": "file",
                   "transformations": [
                     {
-                      "description": "concat(t1.b, 'test') AS trans",
-                      "masking": false,
+                      "type": "DIRECT",
                       "subtype": "TRANSFORMATION",
-                      "type": "DIRECT"
+                      "description": "concat(t1.b, 'test') AS trans",
+                      "masking": false
                     },
                     {
-                      "description": "t1.b",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "GROUP_BY",
-                      "type": "INDIRECT"
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
                     }
                   ]
                 },
                 {
-                  "field": "a",
+                  "namespace": "file",
                   "name": "/tmp/cll_test/cll_source2",
-                  "namespace": "file",
+                  "field": "a",
                   "transformations": [
                     {
-                      "description": "INNER JOIN ON (t1.a = t2.a)",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "type": "INDIRECT"
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
                     },
                     {
-                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "FILTER",
-                      "type": "INDIRECT"
+                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
+                      "masking": false
                     }
                   ]
                 },
                 {
-                  "field": "a",
-                  "name": "/tmp/cll_test/cll_source1",
                   "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
                   "transformations": [
                     {
-                      "description": "t1.a",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "GROUP_BY",
-                      "type": "INDIRECT"
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
                     },
                     {
-                      "description": "INNER JOIN ON (t1.a = t2.a)",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "type": "INDIRECT"
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
                     },
                     {
-                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
-                      "masking": false,
+                      "type": "INDIRECT",
                       "subtype": "FILTER",
-                      "type": "INDIRECT"
+                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "agg": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "b",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source2",
+                  "field": "c",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "AGGREGATION",
+                      "description": "sum(t2.c) AS agg",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source2",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
+                      "masking": false
                     }
                   ]
                 }

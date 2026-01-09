@@ -118,56 +118,53 @@ class ExpressionDependencyCollectorTest {
       LogicalPlan plan = new CreateTableAsSelect(null, null, null, sort, null, null, false);
       ExpressionDependencyCollector.collect(context, plan);
 
+      String sortColumns = "name1 null null";
+      String joinCondition = "(name1 = name2)";
+      String filterCondition = "(" + joinCondition + " AND (name3 > 5))";
       verify(builder, times(1))
-          .addDatasetDependency(ExprId.apply(0), "SORT BY name1 null null", "name1 null null");
+          .addDatasetDependency(ExprId.apply(0), "SORT BY " + sortColumns, sortColumns);
+
       verify(builder, times(1))
-          .addDatasetDependency(
-              ExprId.apply(1),
-              "WHERE ((name1 = name2) AND (name3 > 5))",
-              "((name1 = name2) AND (name3 > 5))");
+          .addDatasetDependency(ExprId.apply(1), "WHERE " + filterCondition, filterCondition);
       verify(builder, times(1))
-          .addDatasetDependency(
-              ExprId.apply(2), "INNER JOIN ON (name1 = name2)", "(name1 = name2)");
+          .addDatasetDependency(ExprId.apply(2), "INNER JOIN ON " + joinCondition, joinCondition);
 
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(0),
               exprId1,
-              "name1 null null",
-              TransformationInfo.indirect(TransformationInfo.Subtypes.SORT, "name1 null null"));
+              sortColumns,
+              TransformationInfo.indirect(TransformationInfo.Subtypes.SORT, sortColumns));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(1),
               exprId1,
-              "((name1 = name2) AND (name3 > 5))",
-              TransformationInfo.indirect(
-                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
+              filterCondition,
+              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER, filterCondition));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(1),
               exprId2,
-              "((name1 = name2) AND (name3 > 5))",
-              TransformationInfo.indirect(
-                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
+              filterCondition,
+              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER, filterCondition));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(1),
               exprId3,
-              "((name1 = name2) AND (name3 > 5))",
-              TransformationInfo.indirect(
-                  TransformationInfo.Subtypes.FILTER, "((name1 = name2) AND (name3 > 5))"));
+              filterCondition,
+              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER, filterCondition));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(2),
               exprId1,
-              "(name1 = name2)",
-              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN, "(name1 = name2)"));
+              joinCondition,
+              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN, joinCondition));
       verify(builder, times(1))
           .addDependency(
               ExprId.apply(2),
               exprId2,
-              "(name1 = name2)",
-              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN, "(name1 = name2)"));
+              joinCondition,
+              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN, joinCondition));
 
       utilities.verify(NamedExpression::newExprId, times(3));
     }
@@ -185,34 +182,25 @@ class ExpressionDependencyCollectorTest {
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
 
+    String description = "(IF((name1 = name2), name3, name4)) AS res";
     verify(builder, times(1))
         .addDependency(
             exprId5,
             exprId1,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL,
-                "(IF((name1 = name2), name3, name4)) AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
             exprId5,
             exprId2,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL,
-                "(IF((name1 = name2), name3, name4)) AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
-            exprId5,
-            exprId3,
-            "res",
-            TransformationInfo.transformation("(IF((name1 = name2), name3, name4)) AS res"));
+            exprId5, exprId3, ALIAS_NAME, TransformationInfo.transformation(description));
     verify(builder, times(1))
         .addDependency(
-            exprId5,
-            exprId4,
-            "res",
-            TransformationInfo.transformation("(IF((name1 = name2), name3, name4)) AS res"));
+            exprId5, exprId4, ALIAS_NAME, TransformationInfo.transformation(description));
   }
 
   @Test
@@ -228,28 +216,22 @@ class ExpressionDependencyCollectorTest {
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
 
+    String description = "(IF((name1 = name2), name3, (name3 + 1))) AS res";
     verify(builder, times(1))
         .addDependency(
             exprId5,
             exprId1,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL,
-                "(IF((name1 = name2), name3, (name3 + 1))) AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
             exprId5,
             exprId2,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL,
-                "(IF((name1 = name2), name3, (name3 + 1))) AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(2))
         .addDependency(
-            exprId5,
-            exprId3,
-            "res",
-            TransformationInfo.transformation("(IF((name1 = name2), name3, (name3 + 1))) AS res"));
+            exprId5, exprId3, ALIAS_NAME, TransformationInfo.transformation(description));
   }
 
   @Test
@@ -266,26 +248,19 @@ class ExpressionDependencyCollectorTest {
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
 
+    String description = "CASE WHEN name1 THEN name2 ELSE name3 END AS res";
     verify(builder, times(1))
         .addDependency(
             exprId4,
             exprId1,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL,
-                "CASE WHEN name1 THEN name2 ELSE name3 END AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
-            exprId4,
-            exprId2,
-            "res",
-            TransformationInfo.transformation("CASE WHEN name1 THEN name2 ELSE name3 END AS res"));
+            exprId4, exprId2, ALIAS_NAME, TransformationInfo.transformation(description));
     verify(builder, times(1))
         .addDependency(
-            exprId4,
-            exprId3,
-            "res",
-            TransformationInfo.transformation("CASE WHEN name1 THEN name2 ELSE name3 END AS res"));
+            exprId4, exprId3, ALIAS_NAME, TransformationInfo.transformation(description));
   }
 
   @Test
@@ -302,35 +277,25 @@ class ExpressionDependencyCollectorTest {
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
 
+    String description = "(IF((name1 = name2), name3, sha1(name4))) AS res";
     verify(builder, times(1))
         .addDependency(
             exprId5,
             exprId1,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL,
-                "(IF((name1 = name2), name3, sha1(name4))) AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
             exprId5,
             exprId2,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL,
-                "(IF((name1 = name2), name3, sha1(name4))) AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
-            exprId5,
-            exprId3,
-            "res",
-            TransformationInfo.transformation("(IF((name1 = name2), name3, sha1(name4))) AS res"));
+            exprId5, exprId3, ALIAS_NAME, TransformationInfo.transformation(description));
     verify(builder, times(1))
         .addDependency(
-            exprId5,
-            exprId4,
-            "res",
-            TransformationInfo.transformation(
-                "(IF((name1 = name2), name3, sha1(name4))) AS res", true));
+            exprId5, exprId4, ALIAS_NAME, TransformationInfo.transformation(description, true));
   }
 
   @Test
@@ -387,32 +352,25 @@ class ExpressionDependencyCollectorTest {
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
 
+    String description = "coalesce(name1, name2) AS res";
     verify(builder, times(1))
         .addDependency(
             exprId3,
             exprId1,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL, "coalesce(name1, name2) AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
             exprId3,
             exprId2,
-            "res",
-            TransformationInfo.indirect(
-                TransformationInfo.Subtypes.CONDITIONAL, "coalesce(name1, name2) AS res"));
+            ALIAS_NAME,
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
-            exprId3,
-            exprId1,
-            "res",
-            TransformationInfo.transformation("coalesce(name1, name2) AS res"));
+            exprId3, exprId1, ALIAS_NAME, TransformationInfo.transformation(description));
     verify(builder, times(1))
         .addDependency(
-            exprId3,
-            exprId2,
-            "res",
-            TransformationInfo.transformation("coalesce(name1, name2) AS res"));
+            exprId3, exprId2, ALIAS_NAME, TransformationInfo.transformation(description));
     verifyNoMoreInteractions(builder);
   }
 

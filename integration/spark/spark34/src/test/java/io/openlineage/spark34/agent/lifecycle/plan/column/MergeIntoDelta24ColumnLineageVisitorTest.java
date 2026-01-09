@@ -55,6 +55,8 @@ class MergeIntoDelta24ColumnLineageVisitorTest {
   AttributeReference actionChild2 = mock(AttributeReference.class);
   ExprId parentExprId2 = mock(ExprId.class);
   ExprId action2ExprId = mock(ExprId.class);
+  final String DESCRIPTION_1 = "col_1";
+  final String DESCRIPTION_2 = "col_2";
 
   @BeforeEach
   void setup() {
@@ -107,21 +109,25 @@ class MergeIntoDelta24ColumnLineageVisitorTest {
 
   @Test
   void testGetMergeActions() {
+
     when(action1.targetColNameParts())
-        .thenReturn(ScalaConversionUtils.<String>fromList(Collections.singletonList("col_1")));
+        .thenReturn(
+            ScalaConversionUtils.<String>fromList(Collections.singletonList(DESCRIPTION_1)));
+
     when(action2.targetColNameParts())
-        .thenReturn(ScalaConversionUtils.<String>fromList(Collections.singletonList("col_2")));
+        .thenReturn(
+            ScalaConversionUtils.<String>fromList(Collections.singletonList(DESCRIPTION_2)));
 
     when(action1.child()).thenReturn(actionChild1);
     when(actionChild1.exprId()).thenReturn(action1ExprId);
-    when(actionChild1.sql()).thenReturn("col_1");
+    when(actionChild1.sql()).thenReturn(DESCRIPTION_1);
 
     when(action2.child()).thenReturn(actionChild2);
     when(actionChild2.exprId()).thenReturn(action2ExprId);
-    when(actionChild2.sql()).thenReturn("col_2");
+    when(actionChild2.sql()).thenReturn(DESCRIPTION_2);
 
-    when(builder.getOutputExprIdByFieldName("col_1")).thenReturn(Optional.of(parentExprId1));
-    when(builder.getOutputExprIdByFieldName("col_2")).thenReturn(Optional.of(parentExprId2));
+    when(builder.getOutputExprIdByFieldName(DESCRIPTION_1)).thenReturn(Optional.of(parentExprId1));
+    when(builder.getOutputExprIdByFieldName(DESCRIPTION_2)).thenReturn(Optional.of(parentExprId2));
 
     MergeIntoCommand command =
         new MergeIntoCommand(
@@ -143,13 +149,13 @@ class MergeIntoDelta24ColumnLineageVisitorTest {
         .addDependency(
             eq(parentExprId1),
             eq(action1ExprId),
-            eq("col_1"),
-            eq(TransformationInfo.identity("col_1")));
+            eq(DESCRIPTION_1),
+            eq(TransformationInfo.identity(DESCRIPTION_1)));
     verify(builder, times(1))
         .addDependency(
             eq(parentExprId2),
             eq(action2ExprId),
-            eq("col_2"),
-            eq(TransformationInfo.identity("col_2")));
+            eq(DESCRIPTION_2),
+            eq(TransformationInfo.identity(DESCRIPTION_2)));
   }
 }

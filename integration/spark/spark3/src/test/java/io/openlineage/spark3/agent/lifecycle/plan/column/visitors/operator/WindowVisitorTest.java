@@ -40,6 +40,8 @@ import scala.collection.immutable.Seq;
 
 class WindowVisitorTest {
 
+  final String ALIAS_NAME = "rank";
+
   WindowVisitor visitor = new WindowVisitor();
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
@@ -60,7 +62,7 @@ class WindowVisitorTest {
 
     Window window =
         new Window(
-            asSeq(alias(winExpr).as("rank", EXPR_ID_3)),
+            asSeq(alias(winExpr).as(ALIAS_NAME, EXPR_ID_3)),
             partitionSeq,
             sortOrderSeq,
             mock(LogicalPlan.class));
@@ -71,14 +73,14 @@ class WindowVisitorTest {
         .addDependency(
             EXPR_ID_3,
             EXPR_ID_1,
-            "rank",
+            ALIAS_NAME,
             TransformationInfo.transformation(
                 "RANK() OVER (PARTITION BY name2 ORDER BY name1 DESC NULLS LAST null BETWEEN null FOLLOWING AND null FOLLOWING) AS rank"));
     verify(builder, times(1))
         .addDependency(
             EXPR_ID_3,
             EXPR_ID_1,
-            "rank",
+            ALIAS_NAME,
             TransformationInfo.indirect(
                 TransformationInfo.Subtypes.WINDOW,
                 "RANK() OVER (PARTITION BY name2 ORDER BY name1 DESC NULLS LAST null BETWEEN null FOLLOWING AND null FOLLOWING) AS rank"));
@@ -86,7 +88,7 @@ class WindowVisitorTest {
         .addDependency(
             EXPR_ID_3,
             EXPR_ID_2,
-            "rank",
+            ALIAS_NAME,
             TransformationInfo.indirect(
                 TransformationInfo.Subtypes.WINDOW,
                 "RANK() OVER (PARTITION BY name2 ORDER BY name1 DESC NULLS LAST null BETWEEN null FOLLOWING AND null FOLLOWING) AS rank"));
