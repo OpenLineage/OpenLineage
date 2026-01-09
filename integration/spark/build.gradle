@@ -200,6 +200,8 @@ shadowJar {
     relocate "software.amazon", "io.openlineage.spark.shaded.software.amazon"
     relocate "org.reactivestreams", "io.openlineage.spark.shaded.org.reactivestreams"
     relocate "io.netty", "io.openlineage.spark.shaded.io.netty"
+    
+    mergeServiceFiles()
 
     manifest {
         attributes(
