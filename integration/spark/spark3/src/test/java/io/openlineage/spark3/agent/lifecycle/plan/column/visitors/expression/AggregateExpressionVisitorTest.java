@@ -52,7 +52,7 @@ class AggregateExpressionVisitorTest {
 
     visitor.apply(expr, traverser);
 
-    verify(traverser).addDependency(EXPR_ID_2, TransformationInfo.aggregation("count(name1)"));
+    verify(traverser).addDependency(EXPR_ID_2, TransformationInfo.aggregation());
     verify(innerTraverser).traverse();
   }
 
@@ -67,8 +67,8 @@ class AggregateExpressionVisitorTest {
 
       visitor.apply(expr, traverser);
 
-      verify(traverser).addDependency(EXPR_ID_2, TransformationInfo.aggregation("count(name1)"));
-      verify(traverser).addDependency(EXPR_ID_3, TransformationInfo.aggregation("count(name1)"));
+      verify(traverser).addDependency(EXPR_ID_2, TransformationInfo.aggregation());
+      verify(traverser).addDependency(EXPR_ID_3, TransformationInfo.aggregation());
       verify(innerTraverser).traverse();
     }
   }

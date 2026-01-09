@@ -46,7 +46,8 @@ class ExpressionTraverserTest {
     aTraverser(LEAF_NODE_1, OUTPUT_EXPRESSION_ID).traverse();
 
     verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, anyString(), TransformationInfo.identity());
+        .addDependency(
+            OUTPUT_EXPRESSION_ID, EXPR_ID_1, "name1", TransformationInfo.identity("name1"));
   }
 
   @Test
@@ -91,19 +92,24 @@ class ExpressionTraverserTest {
         .addDependency(
             OUTPUT_EXPRESSION_ID,
             EXPR_ID_1,
-            anyString(),
-            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+            "(IF((name1 = name2), name3, (name3 + 1))) AS a",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "(IF((name1 = name2), name3, (name3 + 1))) AS a"));
     verify(builder)
         .addDependency(
             OUTPUT_EXPRESSION_ID,
             EXPR_ID_2,
-            anyString(),
-            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
-    verify(builder)
-        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_3, anyString(), TransformationInfo.identity());
-    verify(builder)
+            "(IF((name1 = name2), name3, (name3 + 1))) AS a",
+            TransformationInfo.indirect(
+                TransformationInfo.Subtypes.CONDITIONAL,
+                "(IF((name1 = name2), name3, (name3 + 1))) AS a"));
+    verify(builder, Mockito.times(2))
         .addDependency(
-            OUTPUT_EXPRESSION_ID, EXPR_ID_3, anyString(), TransformationInfo.transformation());
+            OUTPUT_EXPRESSION_ID,
+            EXPR_ID_3,
+            "(IF((name1 = name2), name3, (name3 + 1))) AS a",
+            TransformationInfo.transformation("(IF((name1 = name2), name3, (name3 + 1))) AS a"));
   }
 
   @Test
@@ -114,7 +120,10 @@ class ExpressionTraverserTest {
 
     verify(builder)
         .addDependency(
-            OUTPUT_EXPRESSION_ID, EXPR_ID_1, anyString(), TransformationInfo.transformation());
+            OUTPUT_EXPRESSION_ID,
+            EXPR_ID_1,
+            "(name1 + 1)",
+            TransformationInfo.transformation("(name1 + 1)"));
   }
 
   @Test
