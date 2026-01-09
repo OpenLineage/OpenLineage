@@ -87,15 +87,25 @@ class ExpressionDependencyCollectorTest {
             false);
     ExpressionDependencyCollector.collect(context, plan);
 
+    String description =
+        "(IF((catalog.db.table.name1 = catalog.db.table.name2), catalog.db.table.name3, mask(catalog.db.table.name4, 'X', 'x', 'n', CAST(NULL AS STRING)))) AS name5";
     verify(builder, times(1))
         .addDependency(
-            exprId5, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+            exprId5,
+            exprId1,
+            "name5",
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
         .addDependency(
-            exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
-    verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.identity());
+            exprId5,
+            exprId2,
+            "name5",
+            TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL, description));
     verify(builder, times(1))
-        .addDependency(exprId5, exprId4, TransformationInfo.transformation(true));
+        .addDependency(exprId5, exprId3, "name5", TransformationInfo.transformation(description));
+    verify(builder, times(1))
+        .addDependency(
+            exprId5, exprId4, "name5", TransformationInfo.transformation(description, true));
   }
 
   private static Seq<NamedExpression> getNamedExpressionSeq(NamedExpression... expressions) {
@@ -104,8 +114,15 @@ class ExpressionDependencyCollectorTest {
 
   @NotNull
   private AttributeReference field(String name, ExprId exprId) {
-    return new AttributeReference(
-        name, IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId, null);
+    AttributeReference attributeReference =
+        new AttributeReference(
+            name,
+            IntegerType$.MODULE$,
+            false,
+            Metadata$.MODULE$.empty(),
+            exprId,
+            ScalaConversionUtils.fromList(Arrays.asList("catalog", "db", "table")));
+    return attributeReference;
   }
 
   @NotNull

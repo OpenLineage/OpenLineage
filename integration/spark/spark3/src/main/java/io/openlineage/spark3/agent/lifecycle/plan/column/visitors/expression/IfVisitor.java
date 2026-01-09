@@ -29,7 +29,7 @@ public class IfVisitor implements ExpressionVisitor {
   public void apply(Expression expression, ExpressionTraverser traverser) {
     If expr = (If) expression;
     traverser.copyFor(expr.predicate(), TransformationInfo.indirect(CONDITIONAL)).traverse();
-    traverser.copyFor(expr.trueValue()).traverse();
-    traverser.copyFor(expr.falseValue()).traverse();
+    traverser.copyFor(expr.trueValue(), TransformationInfo.transformation()).traverse();
+    traverser.copyFor(expr.falseValue(), TransformationInfo.transformation()).traverse();
   }
 }

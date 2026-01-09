@@ -11,8 +11,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.TransformationInfo;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ColumnLevelLineageTestUtils {
 
   static void assertColumnDependsOn(
@@ -85,9 +88,27 @@ public class ColumnLevelLineageTestUtils {
       String expectedInputField,
       TransformationInfo transformation,
       String outputColumn) {
-    return facet.getFields().getAdditionalProperties().get(outputColumn).getInputFields().stream()
-        .anyMatch(
-            f -> isField(expectedNamespace, expectedName, expectedInputField, transformation, f));
+    Optional<OpenLineage.InputField> any =
+        facet.getFields().getAdditionalProperties().get(outputColumn).getInputFields().stream()
+            .filter(
+                f ->
+                    isFieldWithoutTransformation(
+                        expectedNamespace, expectedName, expectedInputField, f))
+            .findAny();
+    if (any.isPresent()) {
+      if (any.filter(
+              f -> isField(expectedNamespace, expectedName, expectedInputField, transformation, f))
+          .isPresent()) {
+        return true;
+      }
+      log.warn(
+          "DIFFERENCE ONLY IN TRANSFORMATION INFO DESCRIPTION expected '{}', found: '{}'",
+          transformation.getDescription(),
+          any.get().getTransformations().stream()
+              .map(e -> e.getDescription())
+              .collect(Collectors.joining(",")));
+    }
+    return false;
   }
 
   private static boolean hasDatasetInputField(
@@ -96,9 +117,27 @@ public class ColumnLevelLineageTestUtils {
       String expectedName,
       String expectedInputField,
       TransformationInfo transformation) {
-    return facet.getDataset().stream()
-        .anyMatch(
-            f -> isField(expectedNamespace, expectedName, expectedInputField, transformation, f));
+    Optional<OpenLineage.InputField> any =
+        facet.getDataset().stream()
+            .filter(
+                f ->
+                    isFieldWithoutTransformation(
+                        expectedNamespace, expectedName, expectedInputField, f))
+            .findAny();
+    if (any.isPresent()) {
+      if (any.filter(
+              f -> isField(expectedNamespace, expectedName, expectedInputField, transformation, f))
+          .isPresent()) {
+        return true;
+      }
+      log.warn(
+          "DIFFERENCE ONLY IN TRANSFORMATION INFO DESCRIPTION expected '{}', found: '{}'",
+          transformation.getDescription(),
+          any.get().getTransformations().stream()
+              .map(e -> e.getDescription())
+              .collect(Collectors.joining(",")));
+    }
+    return false;
   }
 
   private static boolean isField(
@@ -120,6 +159,16 @@ public class ColumnLevelLineageTestUtils {
                         t.getMasking()))
             .collect(Collectors.toSet())
             .contains(transformation);
+  }
+
+  private static boolean isFieldWithoutTransformation(
+      String expectedNamespace,
+      String expectedName,
+      String expectedInputField,
+      OpenLineage.InputField f) {
+    return f.getNamespace().equalsIgnoreCase(expectedNamespace)
+        && f.getName().endsWith(expectedName)
+        && f.getField().equalsIgnoreCase(expectedInputField);
   }
 
   static void assertColumnDependsOnInputs(
