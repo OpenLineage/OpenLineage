@@ -15,7 +15,9 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.util.DatasetReducerUtils;
+import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.sql.ColumnMeta;
 import java.util.Collections;
 import java.util.HashMap;
@@ -129,15 +131,31 @@ public class ColumnLevelLineageBuilder {
       // no need to create new dependency object
     } else {
       // store dependency in common dependencies
-      dependency = new Dependency(inputExprId, outputExpressionString, transformationInfo);
+      dependency =
+          new Dependency(
+              inputExprId,
+              isDescriptionsEnabled() ? outputExpressionString : "",
+              transformationInfo.merge(
+                  TransformationInfo.identity(
+                      isDescriptionsEnabled() ? transformationInfo.getDescription() : ""),
+                  (d1, d2) -> d2));
       commonDependencies.put(inputExprId, dependency);
     }
 
     exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(dependency);
   }
 
+  private @NotNull Boolean isDescriptionsEnabled() {
+    return Optional.of(context.getOpenLineageConfig())
+        .map(SparkOpenLineageConfig::getColumnLineageConfig)
+        .map(ColumnLineageConfig::getDescriptionsEnabled)
+        .orElse(false);
+  }
+
   public void addDatasetDependency(ExprId outputExprId, String outputExpression, String sql) {
-    datasetDependencies.add(new DatasetDependency(outputExprId, outputExpression, sql));
+    String description = isDescriptionsEnabled() ? sql : "";
+    String outputString = isDescriptionsEnabled() ? outputExpression : "";
+    datasetDependencies.add(new DatasetDependency(outputExprId, outputString, description));
   }
 
   public boolean hasOutputs() {
@@ -280,7 +298,8 @@ public class ColumnLevelLineageBuilder {
     }
 
     ExprId outputExprId = outputs.get(outputField.get());
-    return getInputsUsedFor(outputExprId, outputName);
+    String outputExpressionString = isDescriptionsEnabled() ? outputName : "";
+    return getInputsUsedFor(outputExprId, outputExpressionString);
   }
 
   @NotNull

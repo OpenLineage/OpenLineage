@@ -102,6 +102,7 @@ class SparkDeltaIntegrationTest {
             .config(
                 "spark.openlineage.facets.custom_environment_variables",
                 "[" + getAvailableEnvVariable() + ";]")
+            .config("spark.openlineage.columnLineage.descriptionsEnabled", true)
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.jars.ivy", "/tmp/.ivy2/")
             .config(
