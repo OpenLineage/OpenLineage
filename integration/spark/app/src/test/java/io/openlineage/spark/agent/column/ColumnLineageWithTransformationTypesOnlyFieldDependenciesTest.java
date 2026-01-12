@@ -96,6 +96,7 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
 
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
     config.getColumnLineageConfig().setDatasetLineageEnabled(false);
+    config.getColumnLineageConfig().setDescriptionsEnabled(true);
     context =
         OpenLineageContext.builder()
             .sparkSession(spark)

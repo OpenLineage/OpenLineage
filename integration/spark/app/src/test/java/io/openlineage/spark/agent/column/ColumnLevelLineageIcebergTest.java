@@ -126,6 +126,7 @@ class ColumnLevelLineageIcebergTest {
 
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
     config.getColumnLineageConfig().setDatasetLineageEnabled(true);
+    config.getColumnLineageConfig().setDescriptionsEnabled(true);
     context =
         OpenLineageContext.builder()
             .sparkSession(spark)

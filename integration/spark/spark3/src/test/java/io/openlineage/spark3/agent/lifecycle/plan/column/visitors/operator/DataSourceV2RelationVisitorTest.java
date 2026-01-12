@@ -22,7 +22,9 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAccumulator;
@@ -40,10 +42,9 @@ import scala.collection.immutable.Seq;
 
 class DataSourceV2RelationVisitorTest {
   DataSourceV2RelationVisitor visitor = new DataSourceV2RelationVisitor();
+  OpenLineageContext context = mock(OpenLineageContext.class);
   ColumnLevelLineageBuilder builder =
-      spy(
-          new ColumnLevelLineageBuilder(
-              mock(OpenLineage.SchemaDatasetFacet.class), mock(OpenLineageContext.class)));
+      spy(new ColumnLevelLineageBuilder(mock(OpenLineage.SchemaDatasetFacet.class), context));
   LongAccumulator exprIdAccumulator = new LongAccumulator(Long::sum, 0L);
 
   @BeforeEach
@@ -85,6 +86,12 @@ class DataSourceV2RelationVisitorTest {
   @Test
   void testApply() {
     try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
+      SparkOpenLineageConfig config = mock(SparkOpenLineageConfig.class);
+      ColumnLineageConfig columnLineageConfig = mock(ColumnLineageConfig.class);
+      when(context.getOpenLineageConfig()).thenReturn(config);
+      when(config.getColumnLineageConfig()).thenReturn(columnLineageConfig);
+      when(context.getOpenLineageConfig().getColumnLineageConfig().getDescriptionsEnabled())
+          .thenReturn(true);
       mockNewExprId(exprIdAccumulator, utilities);
       DataSourceV2Relation relation =
           aDataSourceV2Relation(
