@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -45,6 +45,6 @@ public class SubqueryAliasOutputDatasetBuilder
 
   @Override
   public Optional<String> jobNameSuffix(SubqueryAlias x) {
-    return Optional.of(trimPath(x.alias()));
+    return Optional.of(trimPath(context, x.alias()));
   }
 }

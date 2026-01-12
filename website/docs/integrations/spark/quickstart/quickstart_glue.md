@@ -3,10 +3,6 @@ sidebar_position: 2
 title: Quickstart with AWS Glue
 ---
 
-:::info
-The `DynamicFrames` API is currently not supported. Use `DataFrames`, `DataSets` or `RDD` instead.
-:::
-
 ## Enable OpenLineage
 
 :::caution

@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -23,9 +23,9 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
-import io.openlineage.client.dataset.partition.DatasetReducer;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
+import io.openlineage.spark.agent.util.DatasetReducerUtils;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.RemovePathPatternUtils;
@@ -237,9 +237,10 @@ class OpenLineageRunEventBuilder {
         .getQueryExecution()
         .ifPresent(
             qe -> {
-              if (log.isDebugEnabled()) {
-                log.debug("Traversing optimized plan {}", qe.optimizedPlan().toJSON());
-                log.debug("Physical plan executed {}", qe.executedPlan().toJSON());
+              if (openLineageContext.getOpenLineageConfig().getDebugConfig() != null
+                  && openLineageContext.getOpenLineageConfig().getDebugConfig().isLogPlanAsJson()) {
+                log.info("Traversing optimized plan {}", qe.optimizedPlan().toJSON());
+                log.info("Physical plan executed {}", qe.executedPlan().toJSON());
               }
             });
     if (log.isDebugEnabled()) {
@@ -253,32 +254,29 @@ class OpenLineageRunEventBuilder {
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
 
     List<InputDataset> datasets =
-        Stream.concat(
-                buildDatasets(nodes, inputDatasetBuilders),
-                openLineageContext
-                    .getQueryExecution()
-                    .map(
-                        qe ->
-                            ScalaConversionUtils.fromSeq(qe.optimizedPlan().map(inputVisitor))
-                                .stream()
-                                .flatMap(Collection::stream)
-                                .map(((Class<InputDataset>) InputDataset.class)::cast))
-                    .orElse(Stream.empty()))
-            .collect(Collectors.toList());
-    datasets =
-        new DatasetReducer(
-                openLineageContext.getOpenLineage(),
-                openLineageContext.getOpenLineageConfig().getDatasetConfig())
-            .reduceInputs(datasets);
+        DatasetReducerUtils.inputs(
+            openLineageContext,
+            Stream.concat(
+                    buildDatasets(nodes, inputDatasetBuilders),
+                    openLineageContext
+                        .getQueryExecution()
+                        .map(
+                            qe ->
+                                ScalaConversionUtils.fromSeq(qe.optimizedPlan().map(inputVisitor))
+                                    .stream()
+                                    .flatMap(Collection::stream)
+                                    .map(((Class<InputDataset>) InputDataset.class)::cast))
+                        .orElse(Stream.empty()))
+                .collect(Collectors.toList()));
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     openLineageContext.getVisitedNodes().clearVisitedNodes();
     if (!datasets.isEmpty()) {
       Map<String, InputDatasetFacet> inputFacetsMap = new HashMap<>();
       nodes.forEach(
           event -> inputDatasetFacetBuilders.forEach(fn -> fn.accept(event, inputFacetsMap::put)));
-      Map<String, DatasetFacets> datasetFacetsMap = new HashMap<>();
+      Map<String, DatasetFacet> datasetFacetsMap = new HashMap<>();
       nodes.forEach(
-          event -> inputDatasetFacetBuilders.forEach(fn -> fn.accept(event, inputFacetsMap::put)));
+          event -> datasetFacetBuilders.forEach(fn -> fn.accept(event, datasetFacetsMap::put)));
       return datasets.stream()
           .map(
               ds ->
@@ -344,19 +342,16 @@ class OpenLineageRunEventBuilder {
                             (((QueryPlanVisitor) v).isDefinedAt((SparkListenerEvent) nodes.get(0))))
                     .collect(Collectors.toList())));
     List<OutputDataset> datasets =
-        Stream.concat(
-                buildDatasets(nodes, outputDatasetBuilders),
-                openLineageContext
-                    .getQueryExecution()
-                    .map(qe -> visitor.apply(qe.optimizedPlan()))
-                    .map(Collection::stream)
-                    .orElse(Stream.empty()))
-            .collect(Collectors.toList());
-    datasets =
-        new DatasetReducer(
-                openLineageContext.getOpenLineage(),
-                openLineageContext.getOpenLineageConfig().getDatasetConfig())
-            .reduceOutputs(datasets);
+        DatasetReducerUtils.outputs(
+            openLineageContext,
+            Stream.concat(
+                    buildDatasets(nodes, outputDatasetBuilders),
+                    openLineageContext
+                        .getQueryExecution()
+                        .map(qe -> visitor.apply(qe.optimizedPlan()))
+                        .map(Collection::stream)
+                        .orElse(Stream.empty()))
+                .collect(Collectors.toList()));
 
     OpenLineage openLineage = openLineageContext.getOpenLineage();
 

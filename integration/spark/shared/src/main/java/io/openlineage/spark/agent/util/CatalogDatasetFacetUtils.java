@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -34,6 +34,7 @@ public class CatalogDatasetFacetUtils {
                   context
                       .getOpenLineage()
                       .newCatalogDatasetFacetBuilder()
+                      .name("default")
                       .framework("hive")
                       .type("hive")
                       .source("spark");

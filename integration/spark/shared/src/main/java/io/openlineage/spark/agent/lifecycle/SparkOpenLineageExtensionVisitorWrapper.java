@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.spark.agent.lifecycle;
@@ -95,7 +95,8 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
                   } catch (Exception e) {
                     log.error(
                         "Can't invoke 'isDefinedAt' method on {} class instance",
-                        objectAndMethod.left.getClass().getCanonicalName());
+                        objectAndMethod.left.getClass().getCanonicalName(),
+                        e);
                   }
                   return false;
                 });
@@ -131,7 +132,8 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
         } catch (Exception e) {
           log.warn(
               "Can't invoke apply method on {} class instance",
-              objectAndMethod.left.getClass().getCanonicalName());
+              objectAndMethod.left.getClass().getCanonicalName(),
+              e);
         }
       }
     }
@@ -191,7 +193,8 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
         } catch (Exception e) {
           log.error(
               "Can't invoke apply method on {} class instance",
-              objectAndMethod.left.getClass().getCanonicalName());
+              objectAndMethod.left.getClass().getCanonicalName(),
+              e);
         }
       }
     }

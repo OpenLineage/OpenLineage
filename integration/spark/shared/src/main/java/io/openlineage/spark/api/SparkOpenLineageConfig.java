@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -44,6 +44,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private String rootParentJobNamespace;
   private String rootParentRunId;
   private String overriddenAppName;
+  private String overriddenApplicationRunId;
   private String testExtensionProvider;
   private JobNameConfig jobName;
 
@@ -71,6 +72,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String rootParentJobNamespace,
       String rootParentRunId,
       String overriddenAppName,
+      String overriddenApplicationRunId,
       String testExtensionProvider,
       JobNameConfig jobName,
       JobConfig job,
@@ -92,6 +94,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.rootParentJobNamespace = rootParentJobNamespace;
     this.rootParentRunId = rootParentRunId;
     this.overriddenAppName = overriddenAppName;
+    this.overriddenApplicationRunId = overriddenApplicationRunId;
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
     this.columnLineageConfig = columnLineageConfig;
@@ -165,6 +168,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   public static class FilterConfig {
     private final List<String> allowedSparkNodes = new ArrayList<>();
     private final List<String> deniedSparkNodes = new ArrayList<>();
+    private final Boolean rddEventsDisabled = false;
   }
 
   @Override
@@ -178,6 +182,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(rootParentJobNamespace, other.rootParentJobNamespace),
         mergePropertyWith(rootParentRunId, other.rootParentRunId),
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
+        mergePropertyWith(overriddenApplicationRunId, other.overriddenApplicationRunId),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),
         mergePropertyWith(jobConfig, other.jobConfig),

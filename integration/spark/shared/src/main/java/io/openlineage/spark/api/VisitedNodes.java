@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.spark.api;
@@ -72,6 +72,6 @@ public class VisitedNodes {
    * @return true if the node has been visited for the event, false otherwise
    */
   public boolean alreadyVisited(SparkListenerEvent event, LogicalPlan logicalPlan) {
-    return alreadyVisited(event, logicalPlan.semanticHash());
+    return logicalPlan != null && alreadyVisited(event, logicalPlan.semanticHash());
   }
 }

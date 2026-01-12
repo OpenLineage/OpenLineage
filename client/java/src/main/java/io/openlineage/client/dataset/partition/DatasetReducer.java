@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.client.dataset.partition;
@@ -45,7 +45,7 @@ public class DatasetReducer {
 
   public DatasetReducer(OpenLineage openLineage, DatasetConfig datasetConfig) {
     if (datasetConfig == null) {
-      this.datasetConfig = new DatasetConfig(Collections.emptyMap(), null, null);
+      this.datasetConfig = DatasetConfig.defaultConfig();
     } else this.datasetConfig = datasetConfig;
     this.openLineage = openLineage;
   }

@@ -118,7 +118,7 @@ The prefix must be a distinct identifier named after the project defining them t
 defined in the [OpenLineage.json](OpenLineage.json) spec. The entity is the core entity for which the facet is attached.
 
 When attached to a core entity, the key should follow the pattern `{prefix}_{name}`, where both prefix and name are in
-snakeCase.
+camelCase.
 
 An example of a valid name is `BigQueryStatisticsJobFacet` and key is `bigQuery_statistics`.
 

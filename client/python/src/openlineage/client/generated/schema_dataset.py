@@ -1,0 +1,51 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
+from __future__ import annotations
+
+import attr
+from openlineage.client.generated.base import DatasetFacet
+from openlineage.client.utils import RedactMixin
+
+
+@attr.define
+class SchemaDatasetFacet(DatasetFacet):
+    fields: list[SchemaDatasetFacetFields] | None = attr.field(factory=list)
+    """The fields of the data source."""
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet"
+
+
+@attr.define
+class SchemaDatasetFacetFields(RedactMixin):
+    name: str
+    """
+    The name of the field.
+
+    Example: column1
+    """
+    type: str | None = attr.field(default=None)  # noqa: A003
+    """
+    The type of the field.
+
+    Example: VARCHAR|INT|...
+    """
+    description: str | None = attr.field(default=None)
+    """The description of the field."""
+
+    ordinal_position: int | None = attr.field(default=None)
+    """
+    The ordinal position of the field in the schema (1-indexed).
+
+    Example: 1
+    """
+    fields: list[SchemaDatasetFacetFields] | None = attr.field(factory=list)
+    """Nested struct fields."""
+
+    @staticmethod
+    def _get_schema() -> str:
+        return (
+            "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacetFields"
+        )

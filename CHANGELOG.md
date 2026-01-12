@@ -1,6 +1,175 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.38.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.42.0...HEAD)
+
+## [1.42.0](https://github.com/OpenLineage/OpenLineage/compare/1.41.0...1.42.0)
+
+### Added
+
+* **DataZone transport: Add cross-region support** [`#4218`](https://github.com/OpenLineage/OpenLineage/pull/4218) [@RohithKayathi](https://github.com/RohithKayathi)
+  *Enable posting lineage events to DataZone domains in different regions from where data transformation jobs run.*
+* **Spark: Add config for disabling RDD event emitting** [`#4118`](https://github.com/OpenLineage/OpenLineage/pull/4118) [@kchledowski](https://github.com/kchledowski)
+  *Add new configuration option `spark.openlineage.filter.rddEventsDisabled` to selectively disable OpenLineage event emission for RDD operations while keeping SQL-based operations enabled.*
+* **Spark: Add schema and CLL facets for Snowflake writes** [`#4124`](https://github.com/OpenLineage/OpenLineage/pull/4124) [@kchledowski](https://github.com/kchledowski)
+  *Add schema and column-level lineage support for Snowflake datasets when using the Spark-Snowflake connector.*
+* **Spark: Add spark.openlineage.applicationRunId override** [`#4215`](https://github.com/OpenLineage/OpenLineage/pull/4215) [@wslulciuc](https://github.com/wslulciuc)
+  *Add support to override the application runID via the property `spark.openlineage.applicationRunId`.*
+* **Spec: Add ExecutionParametersRunFacet** [`#4182`](https://github.com/OpenLineage/OpenLineage/pull/4182) [@jakub-moravec](https://github.com/jakub-moravec)
+  *Add a new facet to capture input parameters supplied to a job at the time of execution, enabling reproducibility, debugging, and richer lineage context.*
+
+### Changed
+
+* **Java: Update GCP Lineage transport version and fix dependency shading** [`#3768`](https://github.com/OpenLineage/OpenLineage/pull/3768) [@tnazarew](https://github.com/tnazarew)
+  *Update GCP Lineage transport to use new version of the producer library with fixed dependency shading.*
+* **Python: Show what transport failed to create** [`#4220`](https://github.com/OpenLineage/OpenLineage/pull/4220) [@mobuchowski](https://github.com/mobuchowski)
+  *Improve error messages to indicate which transport failed to create.*
+* **Spark: Prevent classloader issue by gating log behind additional flag** [`#4207`](https://github.com/OpenLineage/OpenLineage/pull/4207) [@mobuchowski](https://github.com/mobuchowski)
+  *Fix classloader conflicts with BigQuery connector by gating DEBUG toJSON() logging behind an additional flag and logging exceptions.*
+
+### Fixed
+
+* **Python: Fix .with_additional_properties() annotation** [`#4197`](https://github.com/OpenLineage/OpenLineage/pull/4197) [@dolfinus](https://github.com/dolfinus)
+  *Fix type annotation for `.with_additional_properties()` method to correctly accept keyword arguments.*
+* **Spark: Fix BigQuery symlinks with ".db" suffix** [`#4192`](https://github.com/OpenLineage/OpenLineage/pull/4192) [@kchledowski](https://github.com/kchledowski)
+  *Fix BigQuery symlink namespace incorrectly having ".db" suffix in RUNNING and COMPLETE events by avoiding mutation of the Identifier object.*
+* **Spark: Fix Glue Data Catalog detection in YARN cluster mode** [`#4229`](https://github.com/OpenLineage/OpenLineage/pull/4229) [@lawofcycles](https://github.com/lawofcycles)
+  *Add fallback mechanism to retrieve AWS region from EC2 Instance Metadata Service when environment variables are unavailable in YARN cluster mode.*
+* **Spark: Fix missing inputs and CLL for AWS DynamicFrame** [`#4222`](https://github.com/OpenLineage/OpenLineage/pull/4222) [@kchledowski](https://github.com/kchledowski)
+  *Fix missing inputs and column-level lineage when writing from AWS DynamicFrame by treating NewHadoopRDD as file-like.*
+* **Spark: Remove path pattern in ColumnLineageFacet as well** [`#4228`](https://github.com/OpenLineage/OpenLineage/pull/4228) [@RohithKayathi](https://github.com/RohithKayathi)
+  *Apply `spark.openlineage.dataset.removePath.pattern` to input field names in ColumnLineageFacet, and fix hashCode/equals methods to include additionalProperties.*
+
+### Removed
+
+* **Airflow: Remove Airflow integration from OpenLineage repository** [`#4212`](https://github.com/OpenLineage/OpenLineage/pull/4212) [@kacpermuda](https://github.com/kacpermuda)
+  *The deprecated Airflow integration has been removed from the OpenLineage repository.*
+
+## [1.41.0](https://github.com/OpenLineage/OpenLineage/compare/1.40.1...1.41.0)
+
+### Added
+
+* **Spec: Add arbitrary extra info to JobDependency in JobDependenciesRunFacet** [`#4189`](https://github.com/OpenLineage/OpenLineage/pull/4189) [@kacpermuda](https://github.com/kacpermuda)
+  *Add support for arbitrary extra information in JobDependency within JobDependenciesRunFacet.*
+* **Python: Add debug mode to file transport** [`#4185`](https://github.com/OpenLineage/OpenLineage/pull/4185) [@kacpermuda](https://github.com/kacpermuda)
+  *Add debug mode support to file transport for better troubleshooting.*
+* **dbt: Add dbt model meta.owner to OpenLineage events** [`#4160`](https://github.com/OpenLineage/OpenLineage/pull/4160) [@harels](https://github.com/harels)
+  *Add support for capturing dbt model owner information from meta.owner in OpenLineage events.*
+* **dbt: Add DbtNodeJobFacet** [`#4151`](https://github.com/OpenLineage/OpenLineage/pull/4151) [@mobuchowski](https://github.com/mobuchowski)
+  *Add DbtNodeJobFacet to provide additional dbt node information in job facets.*
+* **Spark: Add default name to hive catalog facet** [`#4161`](https://github.com/OpenLineage/OpenLineage/pull/4161) [@tnazarew](https://github.com/tnazarew)
+  *Add default name support to Hive catalog facet in Spark integration.*
+* **Spark: Fetch input statistics for single input RDD** [`#4134`](https://github.com/OpenLineage/OpenLineage/pull/4134) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Add support for fetching input statistics for single input RDD jobs.*
+
+### Changed
+
+* **SQL: Migrate from sqlparser fork to upstream 0.59** [`#4153`](https://github.com/OpenLineage/OpenLineage/pull/4153) [@kchledowski](https://github.com/kchledowski)
+  *Migrate SQL parser from fork to upstream version 0.59 for better maintenance and compatibility.*
+* **Spark: Less aggressive normalization in UUID case** [`#4178`](https://github.com/OpenLineage/OpenLineage/pull/4178) [@mobuchowski](https://github.com/mobuchowski)
+  *Reduce aggressiveness of UUID normalization in Spark integration.*
+
+### Fixed
+
+* **Python: Small log change** [`#4186`](https://github.com/OpenLineage/OpenLineage/pull/4186) [@kacpermuda](https://github.com/kacpermuda)
+  *Improve logging output in Python client.*
+* **Spark: Ensure relation size in bytes is sane** [`#4165`](https://github.com/OpenLineage/OpenLineage/pull/4165) [@dolfinus](https://github.com/dolfinus)
+  *Fix relation size calculation to ensure values are within reasonable bounds.*
+* **Spec: Add missing job facet schema** [`#4154`](https://github.com/OpenLineage/OpenLineage/pull/4154) [@mobuchowski](https://github.com/mobuchowski)
+  *Add missing job facet schema to specification.*
+
+
+## [1.40.1](https://github.com/OpenLineage/OpenLineage/compare/1.40.0...1.40.1)
+
+### Fixed
+
+* **Python: re-add missing __version__ variables in top of releaseable modules** [`#4135`](https://github.com/OpenLineage/OpenLineage/pull/4135) [@mobuchowski](https://github.com/mobuchowski)
+  *Fixes breaking change in version 1.40.0.*
+
+## [1.40.0](https://github.com/OpenLineage/OpenLineage/compare/1.39.0...1.40.0)
+
+### Added
+
+* **Spec: standardize batch API endpoint** [`#4109`](https://github.com/OpenLineage/OpenLineage/pull/4109) [@jakub-moravec](https://github.com/jakub-moravec)
+  *Add a standardized batch API endpoint to OpenLineage specification for handling multiple events in a single request.*
+* **Spec: Add ordinal position to SchemaDatasetFacet** [`#4116`](https://github.com/OpenLineage/OpenLineage/pull/4116) [@mobuchowski](https://github.com/mobuchowski)
+  *Add ordinal_position field to track the position of fields in schema (1-indexed).*
+* **Spec: Add JobDependenciesRunFacet** [`#4112`](https://github.com/OpenLineage/OpenLineage/pull/4112) [@kacpermuda](https://github.com/kacpermuda)
+  *Introduce JobDependenciesRunFacet to track dependencies between jobs.*
+* **Spec: Add support for temporary datasets** [`#4103`](https://github.com/OpenLineage/OpenLineage/pull/4103) [@jakub-moravec](https://github.com/jakub-moravec)
+  *Add support for temporary datasets to enable job-to-job lineage tracking.*
+* **Spark: Add fallback for BigQuery project ID configuration** [`#4075`](https://github.com/OpenLineage/OpenLineage/pull/4075) [@luke-hoffman1](https://github.com/luke-hoffman1)
+  *Add fallback configuration for BigQuery project ID in Metastore integration.*
+* **Spark: Add COALESCE transformation support** [`#4123`](https://github.com/OpenLineage/OpenLineage/pull/4123) [@kacpermuda](https://github.com/kacpermuda)
+  *Include examples in Python generated classes for better documentation.*
+* **Java: Add support for jTDS JDBC URL format** [`#4077`](https://github.com/OpenLineage/OpenLineage/pull/4077) [@dolfinus](https://github.com/dolfinus)
+  *Add support for parsing jTDS JDBC URL format in Java client.*
+* **Hive: Add ParentRunFacet** [`#4066`](https://github.com/OpenLineage/OpenLineage/pull/4066) [@tnazarew](https://github.com/tnazarew)
+  *Add ParentRunFacet to Hive integration for tracking parent-child run relationships.*
+* **Hive: Add LOAD and IMPORT handling** [`#4097`](https://github.com/OpenLineage/OpenLineage/pull/4097) [@tnazarew](https://github.com/tnazarew)
+  *Add support for tracking LOAD and IMPORT operations in Hive.*
+* **Hive: Add EXPORT handling** [`#4085`](https://github.com/OpenLineage/OpenLineage/pull/4085) [@tnazarew](https://github.com/tnazarew)
+  *Add support for tracking EXPORT operations in Hive.*
+* **Hive: Add START event emission** [`#4079`](https://github.com/OpenLineage/OpenLineage/pull/4079) [@tnazarew](https://github.com/tnazarew)
+  *Add START event emission support to Hive integration.*
+
+### Fixed
+
+* **Spark: Fix dataset facet builders for inputs** [`#4121`](https://github.com/OpenLineage/OpenLineage/pull/4121) [@usamakunwar](https://github.com/usamakunwar)
+  *Fix Spark dataset facet builders for input datasets.*
+* **Spark: Fix job name trimming** [`#4114`](https://github.com/OpenLineage/OpenLineage/pull/4114) [@kchledowski](https://github.com/kchledowski)
+  *Fix job name trimming logic in Spark integration.*
+* **Spark: Fix putAll on immutable maps** [`#4113`](https://github.com/OpenLineage/OpenLineage/pull/4113) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Fix putAll operation failing on immutable maps.*
+* **Spark: Fix RDD job handling** [`#4108`](https://github.com/OpenLineage/OpenLineage/pull/4108) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Fix multiple issues with RDD job handling in Spark.*
+* **Spark: Fix JDBC dbtable parsing** [`#4102`](https://github.com/OpenLineage/OpenLineage/pull/4102) [@kchledowski](https://github.com/kchledowski)
+  *Fix JDBC dbtable parsing to support any FROM clauses.*
+* **Spark: Fix Databricks setup** [`#4083`](https://github.com/OpenLineage/OpenLineage/pull/4083) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Fix Spark connector configuration for Databricks environments.*
+* **Spark: Catch NoClassDefFoundError** [`#4099`](https://github.com/OpenLineage/OpenLineage/pull/4099) [@mobuchowski](https://github.com/mobuchowski)
+  *Catch NoClassDefFoundError when buggy implementations exist on classpath.*
+* **Spark: Fix Snowflake identifier parsing** [`#4104`](https://github.com/OpenLineage/OpenLineage/pull/4104) [@mobuchowski](https://github.com/mobuchowski)
+  *Fix Snowflake identifier parsing to handle quoted identifiers correctly.*
+* **Spark: Fix Snowflake account name handling** [`#4105`](https://github.com/OpenLineage/OpenLineage/pull/4105) [@mobuchowski](https://github.com/mobuchowski)
+  *Strip quotes from Snowflake account names for proper handling.*
+* **Spec: Fix facet property names** [`#4092`](https://github.com/OpenLineage/OpenLineage/pull/4092) [@fm100](https://github.com/fm100)
+  *Fix facet property names from snake_case to camelCase for consistency.*
+* **Python: Fix facet generator after UV migration** [`#4111`](https://github.com/OpenLineage/OpenLineage/pull/4111) [@kacpermuda](https://github.com/kacpermuda)
+  *Fix Python client facet generator after moving to UV build system.*
+* **Python: Fix retry config merge** [`#4093`](https://github.com/OpenLineage/OpenLineage/pull/4093) [@antonlin1](https://github.com/antonlin1)
+  *Fix retry configuration default merge with user-defined config in HTTP transports.*
+* **Java: Fix CVE in commons-lang3** [`#4084`](https://github.com/OpenLineage/OpenLineage/pull/4084) [@mandalbalmukund](https://github.com/mandalbalmukund)
+  *Upgrade commons-lang3 version to fix CVE security vulnerability.*
+* **Hive: Generate same runId for START and STOP events** [`#4126`](https://github.com/OpenLineage/OpenLineage/pull/4126) [@dolfinus](https://github.com/dolfinus)
+  *Ensure START and STOP events share the same runId in Hive integration.*
+
+## [1.39.0](https://github.com/OpenLineage/OpenLineage/compare/1.38.0...1.39.0)
+
+### Added
+
+* **Spark: Normalize dataset names with configurable trimmers** [`#3996`](https://github.com/OpenLineage/OpenLineage/pull/3996) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Add configurable dataset name normalization with support for date patterns, key-value pairs, and S3 location detection to enable proper dataset subsetting.*
+* **Spark: Add missing facets in inputs for Databricks Unity Catalog** [`#4057`](https://github.com/OpenLineage/OpenLineage/pull/4057) [@kchledowski](https://github.com/kchledowski)
+  *Add missing input symlink facets for Databricks Unity Catalog tables.*
+
+### Changed
+
+* **Spark: Refactor tests for dependency collector** [`#4058`](https://github.com/OpenLineage/OpenLineage/pull/4058) [@kchledowski](https://github.com/kchledowski)
+  *Refactor column-level lineage dependency collector tests for better organization and maintainability.*
+
+### Fixed
+
+* **Spec: Fix typo in iceberg commit report facet spec file** [`#4069`](https://github.com/OpenLineage/OpenLineage/pull/4069) [@fm100](https://github.com/fm100)
+  *Fix typo in IcebergCommitReportOutputDatasetFacet property name.*
+* **Spark: Fix dataset trimming for CLL inputs** [`#4061`](https://github.com/OpenLineage/OpenLineage/pull/4061) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Fix dataset name trimming for column-level lineage inputs.*
+* **Python: Remove numpy import** [`#4062`](https://github.com/OpenLineage/OpenLineage/pull/4062) [@kacpermuda](https://github.com/kacpermuda)
+  *Remove unnecessary numpy import from Python client.*
+
+### Removed
+
+* **Dagster: Remove Dagster integration** [`#3844`](https://github.com/OpenLineage/OpenLineage/pull/3844) [@kacpermuda](https://github.com/kacpermuda)
+  *Remove Dagster integration from the repository.*
 
 ## [1.38.0](https://github.com/OpenLineage/OpenLineage/compare/1.37.0...1.38.0) - 2025-10-01
 

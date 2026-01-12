@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 psql -d postgres -h postgres -U postgres -c "CREATE TABLE IF NOT EXISTS source_event(event_uid varchar(255) not null primary key, content text, created_at timestamp);"

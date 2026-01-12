@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -73,7 +73,7 @@ class FacetUtilsTest {
 
   @Test
   void testAttachSmartDebugFacetWhenSmartDebugNotActive() {
-    when(solc.getDebugConfig()).thenReturn(new DebugConfig(true, "any-missing", false, 100));
+    when(solc.getDebugConfig()).thenReturn(new DebugConfig(true, "any-missing", false, 100, false));
     when(olc.getSparkContext()).thenReturn(Optional.empty());
     when(olc.getSparkSession()).thenReturn(Optional.empty());
     when(olc.getLogicalPlan()).thenReturn(null);
@@ -95,7 +95,7 @@ class FacetUtilsTest {
     when(olc.getSparkSession()).thenReturn(Optional.of(sparkSession));
     when(sparkSession.catalog()).thenReturn(null);
     when(olc.getLogicalPlan()).thenReturn(null);
-    when(solc.getDebugConfig()).thenReturn(new DebugConfig(true, "any-missing", false, 100));
+    when(solc.getDebugConfig()).thenReturn(new DebugConfig(true, "any-missing", false, 100, false));
     RunFacetsBuilder runFacetsBuilder = mock(RunFacetsBuilder.class);
 
     FacetUtils.attachSmartDebugFacet(olc, runFacetsBuilder);

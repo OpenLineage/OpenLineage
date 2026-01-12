@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,4 +12,6 @@ public class Constants {
 
   public static final String SNOWFLAKE_PROVIDER_CLASS_NAME =
       "net.snowflake.spark.snowflake.DefaultSource";
+
+  public static final String SNOWFLAKE_PREFIX = "snowflake://";
 }

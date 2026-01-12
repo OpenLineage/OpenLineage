@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.client.dataset.partition;
@@ -276,5 +276,15 @@ class DatasetReducerTest {
             .collect(Collectors.toList());
 
     assertThat(names).containsExactly(datasetName);
+  }
+
+  @Test
+  void testTrimWithSlashAtTheEnd() {
+    inputs.add(inputFactory("/tmp/some/tested-path/20250721/20250722T901Z/key=value/"));
+    Optional<InputDataset> input =
+        reducer.reduceInputs(inputs).stream()
+            .filter(i -> i.getName().endsWith("tested-path"))
+            .findFirst();
+    assertThat(input).get().extracting("name").isEqualTo("/tmp/some/tested-path");
   }
 }

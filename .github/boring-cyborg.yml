@@ -13,10 +13,8 @@ labelPRBasedOnFilePath:
     - dev/**/*
     - .github/**/*
   area:documentation:
-    - doc/*
+    - doc/**/*
     - "*.md"
-  area:integration/airflow:
-    - integration/airflow/**/*
   area:integration/common:
     - integration/common/**/*
   area:integration/dbt:
@@ -35,6 +33,8 @@ labelPRBasedOnFilePath:
     - spec/**/*
   area:tests:
     - "**/*test*"
+  area:website:
+    - website/**/*
   kind:proposal:
     - proposals/**/*
   language:java:

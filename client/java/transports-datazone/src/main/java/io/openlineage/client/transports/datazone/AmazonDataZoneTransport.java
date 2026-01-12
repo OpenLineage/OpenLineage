@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.datazone.DataZoneClient;
 import software.amazon.awssdk.services.datazone.DataZoneClientBuilder;
 import software.amazon.awssdk.services.datazone.model.PostLineageEventRequest;
@@ -92,8 +93,11 @@ public final class AmazonDataZoneTransport extends Transport {
         DataZoneClient.builder()
             .httpClientBuilder(ApacheHttpClient.builder())
             .credentialsProvider(DefaultCredentialsProvider.create());
-    if (!StringUtils.isBlank(config.getEndpointOverride())) {
+
+    if (!StringUtils.isBlank(config.getEndpointOverride())) { // Use endpointOverride if provided
       builder.endpointOverride(URI.create(config.getEndpointOverride()));
+    } else if (!StringUtils.isBlank(config.getRegion())) { // Use the region if provided
+      builder.region(Region.of(config.getRegion()));
     }
 
     return builder.build();

@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EventEmitter {
   @Getter private OpenLineageClient client;
   @Getter private Optional<String> overriddenAppName;
+  @Getter private Optional<String> overriddenApplicationRunId;
   @Getter private String jobNamespace;
   @Getter private Optional<String> parentJobName;
   @Getter private Optional<String> parentJobNamespace;
@@ -48,6 +49,7 @@ public class EventEmitter {
     this.rootParentJobNamespace = Optional.ofNullable(config.getRootParentJobNamespace());
     this.rootParentRunId = convertToUUID(config.getRootParentRunId());
     this.overriddenAppName = Optional.ofNullable(config.getOverriddenAppName());
+    this.overriddenApplicationRunId = Optional.ofNullable(config.getOverriddenApplicationRunId());
     this.customEnvironmentVariables =
         config.getFacetsConfig() != null
             ? config.getFacetsConfig().getCustomEnvironmentVariables() != null
@@ -72,7 +74,8 @@ public class EventEmitter {
             .disableFacets(disabledFacets.toArray(new String[0]))
             .build();
     this.applicationJobName = this.overriddenAppName.orElse(applicationJobName);
-    this.applicationRunId = UUIDUtils.generateNewUUID();
+    this.applicationRunId =
+        this.overriddenApplicationRunId.map(UUID::fromString).orElse(UUIDUtils.generateNewUUID());
   }
 
   public void emit(OpenLineage.RunEvent event) {

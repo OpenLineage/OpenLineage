@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -14,11 +14,14 @@ public class FacetUtils {
   public static InputDatasetInputFacetsBuilder toBuilder(
       OpenLineage openLineage, OpenLineage.InputDatasetInputFacets facets) {
     InputDatasetInputFacetsBuilder builder = openLineage.newInputDatasetInputFacetsBuilder();
+
+    if (facets == null) return builder;
+
     builder
         .dataQualityAssertions(facets.getDataQualityAssertions())
         .dataQualityMetrics(facets.getDataQualityMetrics())
         .inputStatistics(facets.getInputStatistics())
-        .iceberg_scan_report(facets.getIceberg_scan_report());
+        .icebergScanReport(facets.getIcebergScanReport());
 
     facets.getAdditionalProperties().forEach(builder::put);
 
@@ -28,9 +31,12 @@ public class FacetUtils {
   public static OutputDatasetOutputFacetsBuilder toBuilder(
       OpenLineage openLineage, OpenLineage.OutputDatasetOutputFacets facets) {
     OutputDatasetOutputFacetsBuilder builder = openLineage.newOutputDatasetOutputFacetsBuilder();
+
+    if (facets == null) return builder;
+
     builder
         .outputStatistics(facets.getOutputStatistics())
-        .iceberg_scan_report(facets.getIceberg_scan_report());
+        .icebergCommitReport(facets.getIcebergCommitReport());
 
     facets.getAdditionalProperties().forEach(builder::put);
 

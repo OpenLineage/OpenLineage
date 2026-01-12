@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
@@ -26,8 +26,6 @@ class FakeTransport(Transport):
     kind = "fake"
     config = Config
 
-    def __init__(self, config: Config) -> None:
-        ...
+    def __init__(self, config: Config) -> None: ...
 
-    def emit(self, event: RunEvent) -> None:
-        ...
+    def emit(self, event: RunEvent) -> None: ...

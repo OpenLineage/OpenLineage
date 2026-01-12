@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -10,6 +10,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableMap;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputStatisticsInputDatasetFacet;
 import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.Run;
@@ -344,6 +346,27 @@ class SparkContainerIntegrationTest {
 
   @Test
   @SneakyThrows
+  void testRddRepartition() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "tesInputOnlyRdd", "spark_input_only_rdd.py");
+
+    List<RunEvent> events =
+        Arrays.stream(
+                mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+            .filter(e -> e.getJob().getName().contains("map_partitions"))
+            .collect(Collectors.toList());
+
+    // there should be no outputs in all the events
+    assertThat(events.stream().flatMap(e -> e.getOutputs().stream())).isEmpty();
+
+    // input should point only to a known input
+    assertThat(events.stream().flatMap(e -> e.getInputs().stream()).map(InputDataset::getName))
+        .containsExactly("/tmp/input_rdd");
+  }
+
+  @Test
+  @SneakyThrows
   void testRddWithParquet() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testRddWithParquet", "spark_rdd_with_parquet.py");
@@ -362,6 +385,32 @@ class SparkContainerIntegrationTest {
             .findFirst();
     assertThat(outputStatisticsFacet.isPresent()).isTrue();
     assertThat(outputStatisticsFacet.get().getRowCount()).isEqualTo(4L);
+
+    // verify content of output statistics facet
+    Optional<InputStatisticsInputDatasetFacet> inputStatisticsFacet =
+        Arrays.stream(
+                mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+            .flatMap(r -> r.getInputs().stream())
+            .filter(d -> d.getName().contains("rdd_c"))
+            .filter(d -> d.getInputFacets().getInputStatistics() != null)
+            .map(d -> d.getInputFacets().getInputStatistics())
+            .findAny();
+    // there are two input datasets, task based input metrics should not be used to obtain input
+    // size
+    assertThat(inputStatisticsFacet).isEmpty();
+  }
+
+  @Test
+  @SneakyThrows
+  void testSingleRddStatistics() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testSingleRddInputStats",
+        "spark_single_input_rdd.py");
+
+    verifyEvents(mockServerClient, "pysparkSingleRDDStatistics.json");
   }
 
   @Test

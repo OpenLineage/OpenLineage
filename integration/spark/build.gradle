@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -200,6 +200,8 @@ shadowJar {
     relocate "software.amazon", "io.openlineage.spark.shaded.software.amazon"
     relocate "org.reactivestreams", "io.openlineage.spark.shaded.org.reactivestreams"
     relocate "io.netty", "io.openlineage.spark.shaded.io.netty"
+    
+    mergeServiceFiles()
 
     manifest {
         attributes(

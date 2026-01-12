@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
@@ -642,8 +642,9 @@ class TestDatadogTransportMethods:
         """Test _should_use_async_transport method directly."""
         config = DatadogConfig.from_dict({"apiKey": "test-key", "site": "datadoghq.com"})
 
-        with patch("openlineage.client.transport.datadog.HttpTransport"), patch(
-            "openlineage.client.transport.datadog.AsyncHttpTransport"
+        with (
+            patch("openlineage.client.transport.datadog.HttpTransport"),
+            patch("openlineage.client.transport.datadog.AsyncHttpTransport"),
         ):
             transport = DatadogTransport(config)
 

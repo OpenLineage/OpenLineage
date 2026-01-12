@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/integration/common/openlineage/common/schema/dbt-node-job-facet.json",
+  "$defs": {
+    "DbtNodeJobFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "original_file_path": {
+              "type": "string",
+              "description": "Path to the original dbt model/test file relative to the project root",
+              "example": "models/staging/stg_customers.sql"
+            },
+            "database": {
+              "type": "string",
+              "description": "Database where the dbt node is materialized",
+              "example": "analytics"
+            },
+            "schema": {
+              "type": "string",
+              "description": "Schema where the dbt node is materialized",
+              "example": "staging"
+            },
+            "alias": {
+              "type": "string",
+              "description": "Alias for the dbt node (table/view name)",
+              "example": "stg_customers"
+            },
+            "unique_id": {
+              "type": "string",
+              "description": "Unique identifier for the dbt node",
+              "example": "model.my_project.stg_customers"
+            }
+          }
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "dbt_node": {
+      "$ref": "#/$defs/DbtNodeJobFacet"
+    }
+  }
+}

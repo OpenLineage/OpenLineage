@@ -7,4 +7,4 @@ for more details.
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2025 contributors to the OpenLineage project
+Copyright 2018-2026 contributors to the OpenLineage project

@@ -1,11 +1,13 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark.agent.vendor.snowflake.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
+import io.openlineage.spark.agent.vendor.snowflake.lifecycle.plan.column.SnowflakeColumnLineageVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.Collection;
@@ -22,5 +24,11 @@ public class SnowflakeEventHandlerFactory implements OpenLineageEventHandlerFact
     // Spark LogicalPlan
     return Collections.singleton(
         (PartialFunction) new SnowflakeSaveIntoDataSourceCommandDatasetBuilder(context));
+  }
+
+  @Override
+  public Collection<ColumnLevelLineageVisitor> createColumnLevelLineageVisitors(
+      OpenLineageContext context) {
+    return Collections.singleton(new SnowflakeColumnLineageVisitor(context));
   }
 }

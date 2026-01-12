@@ -1,10 +1,14 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark.agent.util;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -102,10 +106,83 @@ public class AwsUtils {
   }
 
   private static @NotNull Optional<String> awsRegion() {
-    return Optional.ofNullable(System.getenv("AWS_DEFAULT_REGION"))
-        .filter(s -> !s.isEmpty())
-        .map(Optional::of)
-        .orElseGet(() -> Optional.ofNullable(System.getenv("AWS_REGION")));
+    // First, try environment variables
+    Optional<String> envRegion =
+        Optional.ofNullable(System.getenv("AWS_DEFAULT_REGION"))
+            .filter(s -> !s.isEmpty())
+            .map(Optional::of)
+            .orElseGet(() -> Optional.ofNullable(System.getenv("AWS_REGION")));
+
+    if (envRegion.isPresent()) {
+      return envRegion;
+    }
+
+    // Fallback: try EC2 instance metadata service
+    try {
+      return getRegionFromEc2Metadata();
+    } catch (Exception e) {
+      log.debug("Failed to get region from EC2 metadata service", e);
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Attempts to retrieve the AWS region from EC2 instance metadata service. This is useful in YARN
+   * cluster mode where environment variables may not be propagated.
+   */
+  private static Optional<String> getRegionFromEc2Metadata() {
+    HttpURLConnection tokenConnection = null;
+    HttpURLConnection connection = null;
+    try {
+      String tokenUrl = "http://169.254.169.254/latest/api/token";
+      URL url = new URL(tokenUrl);
+      tokenConnection = (HttpURLConnection) url.openConnection();
+      tokenConnection.setRequestMethod("PUT");
+      tokenConnection.setRequestProperty("X-aws-ec2-metadata-token-ttl-seconds", "21600");
+      tokenConnection.setConnectTimeout(2000);
+      tokenConnection.setReadTimeout(2000);
+
+      String token = null;
+      if (tokenConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+        try (BufferedReader reader =
+            new BufferedReader(new InputStreamReader(tokenConnection.getInputStream()))) {
+          token = reader.readLine();
+        }
+      }
+
+      if (token == null) {
+        return Optional.empty();
+      }
+
+      String metadataUrl = "http://169.254.169.254/latest/meta-data/placement/region";
+      url = new URL(metadataUrl);
+      connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestMethod("GET");
+      connection.setRequestProperty("X-aws-ec2-metadata-token", token);
+      connection.setConnectTimeout(2000);
+      connection.setReadTimeout(2000);
+
+      if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+        try (BufferedReader reader =
+            new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+          String region = reader.readLine();
+          if (region != null && !region.trim().isEmpty()) {
+            return Optional.of(region.trim());
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.debug("Could not retrieve region from EC2 metadata service: {}", e.getMessage());
+    } finally {
+      if (tokenConnection != null) {
+        tokenConnection.disconnect();
+      }
+      if (connection != null) {
+        connection.disconnect();
+      }
+    }
+
+    return Optional.empty();
   }
 
   private static boolean isHiveUsingGlue(SparkConf sparkConf, Configuration hadoopConf) {

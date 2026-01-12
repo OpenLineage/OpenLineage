@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -558,19 +558,14 @@ class IcebergHandlerTest {
     Catalog icebergCatalog = mock(Catalog.class);
     when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
 
-    TableIdentifier tableIdentifier =
-        TableIdentifier.parse(Identifier.of(new String[] {"database"}, "table").toString());
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+    TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
     when(icebergCatalog.loadTable(tableIdentifier))
-        .thenThrow(
-            new org.apache.iceberg.exceptions.NoSuchTableException(
-                Identifier.of(new String[] {"database"}, "table").toString()));
+        .thenThrow(new org.apache.iceberg.exceptions.NoSuchTableException(identifier.toString()));
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
-            sparkSession,
-            sparkCatalog,
-            Identifier.of(new String[] {"database"}, "table"),
-            new HashMap<>());
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
 
     assertThat(datasetIdentifier)
         .hasFieldOrPropertyWithValue("namespace", "gcs://bucket")
@@ -581,6 +576,12 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("namespace", "gcs://bucket/path/to/iceberg/warehouse")
         .hasFieldOrPropertyWithValue("name", "database.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+
+    DatasetIdentifier secondDatasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(secondDatasetIdentifier).isEqualTo(datasetIdentifier);
   }
 
   @Test
@@ -616,5 +617,39 @@ class IcebergHandlerTest {
     assertEquals("iceberg", facet.getFramework());
     assertThat(facet.getCatalogProperties().getAdditionalProperties())
         .hasFieldOrPropertyWithValue("gcp_project_id", "some_gcp_project_id");
+  }
+
+  @Test
+  void testGetBigQueryMetastoreLegacyCatalogData() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn("bq_metastore_catalog");
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map4(
+                "spark.sql.catalog.bq_metastore_catalog.catalog-impl",
+                "org.apache.iceberg.gcp.bigquery.BigQueryMetastoreCatalog",
+                "spark.sql.catalog.bq_metastore_catalog.warehouse",
+                "gcs://bucket/path/to/iceberg/warehouse",
+                "spark.sql.catalog.bq_metastore_catalog.gcp_project",
+                "my-gcp-project",
+                "spark.sql.catalog.bq_metastore_catalog.gcp_location",
+                "eu"));
+
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
+
+    assertEquals("bq_metastore_catalog", facet.getName());
+    assertEquals("bigquerymetastore", facet.getType());
+    assertEquals("gcs://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
+    assertEquals("iceberg", facet.getFramework());
+    assertThat(facet.getCatalogProperties().getAdditionalProperties())
+        .hasFieldOrPropertyWithValue("gcp_location", "eu")
+        .hasFieldOrPropertyWithValue("gcp_project_id", "my-gcp-project");
   }
 }

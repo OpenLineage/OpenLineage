@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -36,6 +36,7 @@ public class ArgumentParser {
   public static final String SPARK_CONF_PARENT_JOB_NAME = "spark.openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
+  public static final String SPARK_CONF_APP_RUN_ID = "spark.openlineage.applicationRunId";
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
@@ -118,6 +119,9 @@ public class ArgumentParser {
     findSparkConfigKey(conf, SPARK_CONF_APP_NAME)
         .filter(str -> !str.isEmpty())
         .ifPresent(config::setOverriddenAppName);
+    findSparkConfigKey(conf, SPARK_CONF_APP_RUN_ID)
+        .filter(str -> !str.isEmpty())
+        .ifPresent(config::setOverriddenApplicationRunId);
 
     findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(config::setNamespace);
     findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAME).ifPresent(config::setParentJobName);

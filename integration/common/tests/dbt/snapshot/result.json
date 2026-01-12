@@ -13,7 +13,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [{ "description": "The primary key for this table", "name": "id" }]
           }
         },
@@ -44,7 +44,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [{ "description": "Order id", "name": "id" }]
           }
         },
@@ -97,7 +97,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [{ "description": "The primary key for this table", "name": "id" }]
           }
         },
@@ -133,7 +133,7 @@
           },
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
             "fields": [{ "description": "Order id", "name": "id" }]
           }
         },

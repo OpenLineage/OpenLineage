@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 # Based on the changed files (or if we are on the main branch), generate a yaml file with
@@ -67,7 +67,6 @@ else
     check_change integration/flink/ true openlineage-java.yml openlineage-flink.yml
     check_change client/python/ true openlineage-python.yml
     check_change integration/common/ true openlineage-python.yml
-    check_change integration/airflow/ true openlineage-python.yml
     check_change integration/dbt/ true openlineage-python.yml
     check_change proxy/fluentd/ true openlineage-proxy-fluentd.yml
     check_change website false openlineage-website.yml

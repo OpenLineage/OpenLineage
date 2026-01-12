@@ -36,4 +36,4 @@ For the schedule, meeting link, and agenda, visit the [wiki](https://wiki.lfaida
 | Zhenqiu Huang | [@HuangZhenQiu](https://github.com/HuangZhenQiu) | Voting member | 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2025 contributors to the OpenLineage project
+Copyright 2018-2026 contributors to the OpenLineage project

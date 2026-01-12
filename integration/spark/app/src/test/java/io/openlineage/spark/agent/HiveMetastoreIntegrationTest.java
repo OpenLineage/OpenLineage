@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -108,6 +108,7 @@ class HiveMetastoreIntegrationTest {
             input -> {
               OpenLineage.CatalogDatasetFacet catalogFacet = input.getFacets().getCatalog();
               return catalogFacet != null
+                  && "default".equals(catalogFacet.getName())
                   && "hive".equals(catalogFacet.getFramework())
                   && "hive".equals(catalogFacet.getType())
                   && "spark".equals(catalogFacet.getSource())
@@ -122,6 +123,7 @@ class HiveMetastoreIntegrationTest {
             output -> {
               OpenLineage.CatalogDatasetFacet catalogFacet = output.getFacets().getCatalog();
               return catalogFacet != null
+                  && "default".equals(catalogFacet.getName())
                   && "hive".equals(catalogFacet.getFramework())
                   && "hive".equals(catalogFacet.getType())
                   && "spark".equals(catalogFacet.getSource())

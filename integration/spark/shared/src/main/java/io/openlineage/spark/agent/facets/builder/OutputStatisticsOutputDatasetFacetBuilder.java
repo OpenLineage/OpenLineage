@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -46,10 +46,9 @@ public class OutputStatisticsOutputDatasetFacetBuilder
       return;
     }
 
-    Map<JobMetricsHolder.Metric, Number> metrics =
-        jobMetricsHolder.pollMetrics(context.getActiveJobId().get());
-    if (metrics.containsKey(JobMetricsHolder.Metric.WRITE_BYTES)
-        || metrics.containsKey(JobMetricsHolder.Metric.WRITE_RECORDS)) {
+    if (jobMetricsHolder.containsWriteMetrics(context.getActiveJobId().get())) {
+      Map<JobMetricsHolder.Metric, Number> metrics =
+          jobMetricsHolder.pollMetrics(context.getActiveJobId().get());
       consumer.accept(
           "outputStatistics",
           context

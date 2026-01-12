@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -196,14 +196,20 @@ public class JavaPoetGenerator {
         fields.add(f.getName());
       }
     });
+    
+    // Include additionalProperties field if the type has additional properties
+    if (type.hasAdditionalProperties()) {
+      fields.add("additionalProperties");
+    }
+    
     equals.addParameter(TypeName.OBJECT, "o");
     equals.addCode("if (this == o) return true;\n");
     equals.addCode("if (o == null || getClass() != o.getClass()) return false;\n");
     equals.addCode("$N that = ($N) o;\n", type.getName(), type.getName());
     fields.forEach(f ->
         equals.addCode("if (!$T.equals($N, that.$N)) return false;\n", Objects.class, f, f));
-    equals.addCode("return true;");
-
+    equals.addCode("return true;\n");
+    
     return equals.build();
   }
 
@@ -225,6 +231,12 @@ public class JavaPoetGenerator {
         fields.add(f.getName());
       }
     });
+    
+    // Include additionalProperties field if the type has additional properties
+    if (type.hasAdditionalProperties()) {
+      fields.add("additionalProperties");
+    }
+    
     hashCode.addCode("return $T.hash($N);\n", Objects.class, String.join(", ", fields));
     return hashCode.build();
   }

@@ -24,3 +24,6 @@ yarn-error.log*
 
 argos/screenshots
 argos/test-results
+
+# npm lock file, as website uses Yarn
+package-lock.json

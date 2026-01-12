@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -59,6 +59,6 @@ public class CreateTableCommandVisitor
     return context
         .getSparkSession()
         .map(session -> PathUtils.fromCatalogTable(command.table(), session))
-        .map(table -> trimPath(table.getName()));
+        .map(table -> trimPath(context, table.getName()));
   }
 }

@@ -38,7 +38,7 @@ implementation("io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:{{PREPR
 
 :::info
 This approach does not demonstrate how to configure the `OpenLineageSparkListener`.
-Please refer to the [Configuration](#configuration) section.
+Please refer to the Configuration section.
 :::
 
 1. Download the JAR and its checksum from Maven Central.
@@ -80,7 +80,7 @@ fi
 
 :::info
 This approach does not demonstrate how to configure the `OpenLineageSparkListener`.
-Please refer to the [Configuration](#configuration) section.
+Please refer to the Configuration section.
 :::
 
 1. Download the JAR and its checksum from Maven Central.
@@ -117,7 +117,7 @@ fi
 
 :::info
 This approach does not demonstrate how to configure the `OpenLineageSparkListener`.
-Please refer to the [Configuration](#configuration) section.
+Please refer to the Configuration section.
 :::
 
 Spark allows you to add packages at runtime using the `--packages` option with `spark-submit`. This
@@ -136,4 +136,3 @@ spark-submit --packages "io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION
 Version `1.8.0` and earlier only supported Scala 2.12 variants of Apache Spark. 
 Scala version name was not included in the artifact identifier.
 :::
-

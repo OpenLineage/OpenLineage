@@ -1,9 +1,11 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.client.dataset.partition.trimmer;
+
+import org.apache.commons.lang3.StringUtils;
 
 public interface DatasetNameTrimmer {
 
@@ -37,7 +39,9 @@ public interface DatasetNameTrimmer {
     if (name == null || !name.contains(SEPARATOR)) {
       return name;
     }
-    return name.substring(name.lastIndexOf(SEPARATOR)).replaceAll(SEPARATOR, "");
+    String nameWithoutTrailingSlash = StringUtils.stripEnd(name, "/");
+    return name.substring(nameWithoutTrailingSlash.lastIndexOf(SEPARATOR))
+        .replaceAll(SEPARATOR, "");
   }
 
   /**

@@ -54,6 +54,10 @@
         <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
     </property>
     <property>
+        <name>hive.exec.pre.hooks</name>
+        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+    </property>
+    <property>
         <name>hive.exec.post.hooks</name>
         <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
     </property>
@@ -62,8 +66,8 @@
         <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
     </property>
 <!--    <property>-->
-<!--        <name>hive.openlineage.namespace</name>-->
-<!--        <value>hive-namespace</value>-->
+<!--        <name>hive.openlineage.transport.type</name>-->
+<!--        <value>console</value>-->
 <!--    </property>-->
     <property>
         <name>hive.openlineage.transport.type</name>

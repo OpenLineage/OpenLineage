@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.client.dataset.partition;
@@ -10,12 +10,11 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.dataset.DatasetConfig;
-import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 class ReducedDatasetTest {
 
-  DatasetConfig config = new DatasetConfig(Collections.emptyMap(), null, null);
+  DatasetConfig config = DatasetConfig.defaultConfig();
   Dataset dataset = mock(Dataset.class);
   ReducedDataset reducedDataset;
 

@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -20,12 +20,14 @@ import lombok.ToString;
 public final class AmazonDataZoneConfig
     implements TransportConfig, MergeConfig<AmazonDataZoneConfig> {
   @Getter @Setter private String domainId;
+  @Getter @Setter @Nullable private String region;
   @Getter @Setter @Nullable private String endpointOverride;
 
   @Override
   public AmazonDataZoneConfig mergeWithNonNull(AmazonDataZoneConfig other) {
     return new AmazonDataZoneConfig(
         mergePropertyWith(domainId, other.domainId),
+        mergePropertyWith(region, other.region),
         mergePropertyWith(endpointOverride, other.getEndpointOverride()));
   }
 }

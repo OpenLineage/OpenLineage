@@ -1011,8 +1011,8 @@
       "resource_type":"test",
       "package_name":"jaffle_shop",
       "path":"unique_customers_customer_id.sql",
-      "original_file_path":"models/schema.yml",
-      "unique_id":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
+        "original_file_path":"models/schema.yml",
+        "unique_id":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
       "fqn":[
         "jaffle_shop",
         "unique_customers_customer_id"

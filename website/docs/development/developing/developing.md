@@ -20,7 +20,7 @@ For [Python](../../client/python.md) and [Java](../../client/java/java.md), we'v
 ### Common Library (Python)
 
 Getting lineage from systems like BigQuery or Redshift isn't necessarily tied to orchestrator or processing engine you're using. For this reason, we've extracted
-that functionality from our Airflow library and [packaged it for separate use](https://pypi.org/project/openlineage-integration-common/). 
+that functionality and [packaged it for separate use](https://pypi.org/project/openlineage-integration-common/). 
 
 ### SQL parser
 

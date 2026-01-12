@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -73,6 +73,6 @@ public class TruncateTableCommandVisitor
     CatalogTable table = tableOpt.get();
     DatasetIdentifier datasetIdentifier =
         PathUtils.fromCatalogTable(table, context.getSparkSession().get());
-    return Optional.of(trimPath(datasetIdentifier.getName()));
+    return Optional.of(trimPath(context, datasetIdentifier.getName()));
   }
 }

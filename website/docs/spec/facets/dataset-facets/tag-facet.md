@@ -4,7 +4,7 @@ sidebar_position: 12
 
 # Tags Dataset Facet
 
-The facet contains the tags associated with the dataset.
+The facet contains the tags associated with the job. Use to attach custom key-value tags so downstream tools can filter, group, or enrich lineage.
 
 Example:
 

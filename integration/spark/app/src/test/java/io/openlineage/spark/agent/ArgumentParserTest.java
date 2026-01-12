@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -46,6 +46,7 @@ class ArgumentParserTest {
   private static final String ROOT_PARENT_JOB_NAMESPACE = "root-namespace";
   private static final String ROOT_PARENT_RUN_ID = "ea445b5c-1a1a-2b2b-3c3c-01c7c52b6e54";
   private static final String APP_NAME = "test";
+  private static final String APP_RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
   private static final String ENDPOINT = "api/v1/lineage";
   private static final String AUTH_TYPE = "api_key";
   private static final String API_KEY = "random_token";
@@ -89,7 +90,8 @@ class ArgumentParserTest {
             .set("spark.openlineage.rootParentJobName", ROOT_PARENT_JOB_NAME)
             .set("spark.openlineage.rootParentJobNamespace", ROOT_PARENT_JOB_NAMESPACE)
             .set("spark.openlineage.rootParentRunId.", ROOT_PARENT_RUN_ID)
-            .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
+            .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME)
+            .set(ArgumentParser.SPARK_CONF_APP_RUN_ID, APP_RUN_ID);
 
     config = ArgumentParser.parse(sparkConf);
     assertEquals(JOB_NAMESPACE, config.getParentJobNamespace());
@@ -97,6 +99,7 @@ class ArgumentParserTest {
     assertEquals(JOB_NAME, config.getParentJobName());
     assertEquals(RUN_ID, config.getParentRunId());
     assertEquals(APP_NAME, config.getOverriddenAppName());
+    assertEquals(APP_RUN_ID, config.getOverriddenApplicationRunId());
 
     assertEquals(ROOT_PARENT_JOB_NAME, config.getRootParentJobName());
     assertEquals(ROOT_PARENT_JOB_NAMESPACE, config.getRootParentJobNamespace());

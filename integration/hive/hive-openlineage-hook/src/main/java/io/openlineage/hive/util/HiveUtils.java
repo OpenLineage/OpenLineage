@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.hive.util;
@@ -30,12 +30,12 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 public class HiveUtils {
 
-  public static Table getTable(Configuration conf, String dbName, String tableName) {
+  public static Table getTable(Configuration conf, Table table) {
     HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
     try {
-      return Hive.get(hiveConf).getTable(dbName, tableName);
+      return Hive.get(hiveConf).getTable(table.getDbName(), table.getTableName());
     } catch (HiveException e) {
-      throw new IllegalArgumentException(e);
+      return table;
     }
   }
 

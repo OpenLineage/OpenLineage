@@ -1,11 +1,11 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark3.agent.utils;
 
-import static io.openlineage.spark.agent.util.JdbcSparkUtils.generateSchemaFromSqlMeta;
+import static io.openlineage.spark.agent.util.SqlUtils.generateSchemaFromSqlMeta;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;

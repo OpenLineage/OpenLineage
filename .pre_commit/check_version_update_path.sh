@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 set -e
@@ -8,13 +8,13 @@ set -e
 project_root=$(git rev-parse --show-toplevel)
 cd "${project_root}/"
 
-echo "Checking paths referenced in new-version.sh..."
+echo "Checking paths referenced in release.sh..."
 
 # File to check
-NEW_VERSION_SCRIPT="${project_root}/new-version.sh"
+NEW_VERSION_SCRIPT="${project_root}/release.sh"
 
 if [ ! -f "$NEW_VERSION_SCRIPT" ]; then
-  echo "Error: new-version.sh file not found at $NEW_VERSION_SCRIPT"
+  echo "Error: release.sh file not found at $NEW_VERSION_SCRIPT"
   exit 1
 fi
 
@@ -35,7 +35,7 @@ check_paths() {
   local file_type=$2
   
   if [ -z "$paths" ]; then
-    echo "Warning: No $file_type paths found in new-version.sh"
+    echo "Warning: No $file_type paths found in release.sh"
     return
   fi
   

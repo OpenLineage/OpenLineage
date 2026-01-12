@@ -1,4 +1,4 @@
-# Copyright 2018-2025 contributors to the OpenLineage project
+# Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
@@ -400,8 +400,9 @@ def test_transform_transport_from_env_vars_emits(mock_post):
     transport = OpenLineageClient().transport
     mock_event = MagicMock()
 
-    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'), patch(
-        "gzip.compress", return_value=b"compressed_data"
+    with (
+        patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'),
+        patch("gzip.compress", return_value=b"compressed_data"),
     ):
         transport.emit(mock_event)
 

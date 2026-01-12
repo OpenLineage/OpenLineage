@@ -57,9 +57,9 @@ The [specification](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Op
 
 ## Integrations
 
-The OpenLineage repository contains integrations with several systems.
+OpenLineage supports integrations with several systems.
 
-- [Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)
+- [Apache Airflow](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/index.html)
 - [Apache Flink](https://github.com/OpenLineage/OpenLineage/tree/main/integration/flink)
 - [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
 - [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)

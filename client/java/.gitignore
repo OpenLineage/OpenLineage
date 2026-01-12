@@ -16,3 +16,6 @@ src/main/java/io/openlineage/server/*
 .sdkmanrc
 
 build-cache/
+
+# Mock credentials files used in tests - generated at runtime
+**/mock-credentials.json

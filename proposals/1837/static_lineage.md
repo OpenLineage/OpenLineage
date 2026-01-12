@@ -215,4 +215,4 @@ We add the option to mark any job or dataset facet deleted by using ```{ _delete
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2025 contributors to the OpenLineage project
+Copyright 2018-2026 contributors to the OpenLineage project

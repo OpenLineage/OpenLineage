@@ -1,0 +1,33 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
+from __future__ import annotations
+
+import attr
+from openlineage.client.generated.base import JobFacet
+
+
+@attr.define
+class JobTypeJobFacet(JobFacet):
+    processingType: str  # noqa: N815
+    """
+    Job processing type like: BATCH or STREAMING
+
+    Example: BATCH
+    """
+    integration: str
+    """
+    OpenLineage integration type of this job: for example SPARK|DBT|AIRFLOW|FLINK
+
+    Example: SPARK
+    """
+    jobType: str | None = attr.field(default=None)  # noqa: N815
+    """
+    Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is an integration-specific field.
+
+    Example: QUERY
+    """
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet"

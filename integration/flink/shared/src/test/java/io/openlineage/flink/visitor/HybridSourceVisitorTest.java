@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -42,7 +42,7 @@ class HybridSourceVisitorTest {
   SchemaDatasetFacet schema =
       openLineage.newSchemaDatasetFacet(
           Collections.singletonList(
-              openLineage.newSchemaDatasetFacetFields("a", "long", null, null)));
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type("long").build()));
 
   KafkaSourceWrapper kafkaSourceWrapper = mock(KafkaSourceWrapper.class);
   IcebergSourceWrapper icebergSourceWrapper = mock(IcebergSourceWrapper.class);

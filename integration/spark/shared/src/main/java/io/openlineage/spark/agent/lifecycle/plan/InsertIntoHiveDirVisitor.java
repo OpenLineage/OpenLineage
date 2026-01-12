@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -79,6 +79,6 @@ public class InsertIntoHiveDirVisitor
   @Override
   public Optional<String> jobNameSuffix(InsertIntoHiveDirCommand command) {
     return ScalaConversionUtils.asJavaOptional(command.storage().locationUri())
-        .map(uri -> trimPath(PathUtils.fromURI(uri).getName()));
+        .map(uri -> trimPath(context, PathUtils.fromURI(uri).getName()));
   }
 }

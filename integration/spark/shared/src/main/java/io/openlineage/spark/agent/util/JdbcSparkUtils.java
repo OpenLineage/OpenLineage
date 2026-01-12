@@ -1,12 +1,11 @@
 /*
-/* Copyright 2018-2025 contributors to the OpenLineage project
+/* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnLineage;
@@ -27,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
-import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
 @Slf4j
@@ -40,64 +38,30 @@ public class JdbcSparkUtils {
     String jdbcUrl = relation.jdbcOptions().url();
     Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
 
-    if (meta.columnLineage().isEmpty()) {
-      int numberOfTables = meta.inTables().size();
-
-      return meta.inTables().stream()
-          .map(
-              dbtm -> {
-                DatasetIdentifier di =
-                    JdbcDatasetUtils.getDatasetIdentifier(
-                        jdbcUrl, dbtm.qualifiedName(), jdbcProperties);
-
-                if (numberOfTables > 1) {
-                  return datasetFactory.getDataset(di.getName(), di.getNamespace());
-                }
-
-                return datasetFactory.getDataset(di.getName(), di.getNamespace(), schema);
-              })
-          .collect(Collectors.toList());
-    }
-    return meta.inTables().stream()
-        .map(
-            dbtm -> {
-              DatasetIdentifier di =
-                  JdbcDatasetUtils.getDatasetIdentifier(
-                      jdbcUrl, dbtm.qualifiedName(), jdbcProperties);
-              return datasetFactory.getDataset(
-                  di.getName(), di.getNamespace(), generateSchemaFromSqlMeta(dbtm, schema, meta));
-            })
-        .collect(Collectors.toList());
-  }
-
-  public static StructType generateSchemaFromSqlMeta(
-      DbTableMeta origin, StructType schema, SqlMeta sqlMeta) {
-    StructType originSchema = new StructType();
-    for (StructField f : schema.fields()) {
-      List<ColumnMeta> fields =
-          sqlMeta.columnLineage().stream()
-              .filter(cl -> cl.descendant().name().equals(f.name()))
-              .flatMap(
-                  cl ->
-                      cl.lineage().stream()
-                          .filter(
-                              cm -> cm.origin().isPresent() && cm.origin().get().equals(origin)))
-              .collect(Collectors.toList());
-      for (ColumnMeta cm : fields) {
-        originSchema = originSchema.add(cm.name(), f.dataType());
-      }
-    }
-    return originSchema;
+    return SqlUtils.createDatasets(
+        datasetFactory,
+        meta,
+        schema,
+        dbtm ->
+            JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl, dbtm.qualifiedName(), jdbcProperties));
   }
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
-    Optional<String> table =
+    Optional<String> dbtable =
         ScalaConversionUtils.asJavaOptional(
             relation.jdbcOptions().parameters().get(JDBCOptions$.MODULE$.JDBC_TABLE_NAME()));
-    // in some cases table value can be "(SELECT col1, col2 FROM table_name WHERE some='filter')
-    // ALIAS"
-    if (table.isPresent() && !table.get().startsWith("(")) {
-      DbTableMeta origin = new DbTableMeta(null, null, table.get());
+
+    // Anything that is valid in a FROM clause of a SQL query can be used in dbtable.
+    // It could be a subquery in parentheses, an alias or even multiple tables with a join.
+    // Examples of valid dbtable:
+    // `(SELECT col1, col2 FROM table_name WHERE some='filter')`
+    // `table_name AS t`
+    // `table_name t JOIN another_table a ON t.id = a.t_id`
+    // `table_name`
+    // `schema_name.table_name`
+    // https://spark.apache.org/docs/3.5.6/sql-data-sources-jdbc.html#data-source-option
+    if (dbtable.isPresent() && dbtableIsJustATableName(dbtable.get())) {
+      DbTableMeta origin = new DbTableMeta(null, null, dbtable.get());
       return Optional.of(
           new SqlMeta(
               Collections.singletonList(origin),
@@ -112,7 +76,11 @@ public class JdbcSparkUtils {
               Collections.emptyList()));
     }
 
-    String query = queryStringFromJdbcOptions(relation.jdbcOptions());
+    String query =
+        dbtable
+            .filter(t -> !dbtableIsASubquery(t))
+            .map(fromClause -> "select * from " + fromClause)
+            .orElseGet(() -> queryStringFromJdbcOptions(relation.jdbcOptions()));
 
     String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
     Optional<SqlMeta> sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), dialect);
@@ -139,6 +107,16 @@ public class JdbcSparkUtils {
   public static String queryStringFromJdbcOptions(JDBCOptions options) {
     String tableOrQuery = options.tableOrQuery();
     return tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
+  }
+
+  private static boolean dbtableIsASubquery(String dbtable) {
+    return dbtable.startsWith("(");
+  }
+
+  private static boolean dbtableIsJustATableName(String dbtable) {
+    // If there are no whitespaces between characters, we can assume this is a table name
+    // in form of `table_name` or `schema_name.table_name`
+    return !dbtable.matches("(?s).*\\S\\s+\\S.*");
   }
 
   private static String extractDialectFromJdbcUrl(String jdbcUrl) {
