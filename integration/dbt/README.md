@@ -73,7 +73,7 @@ If you need to send events without running the job you can use the command `dbt-
 
 ## Development
 
-For detailed development setup instructions, see the [Python development setup guide](https://openlineage.io/docs/development/developing/python/setup).
+For development setup instructions, see the [Python development setup guide](https://openlineage.io/docs/client/python/development/setup).
 
 Quick start:
 ```bash

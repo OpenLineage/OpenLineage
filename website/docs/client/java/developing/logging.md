@@ -1,6 +1,6 @@
 ---
 title: Logging
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 OpenLineage Java library is based on [slf4j](https://www.slf4j.org/) when generating logs. Being able to emit logs for various purposes is very helpful when troubleshooting OpenLineage.

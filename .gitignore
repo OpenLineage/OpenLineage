@@ -183,3 +183,8 @@ CLAUDE.md
 
 # LLM-generated files from release process, just for temp use of release manager
 release-*
+
+# Website files when running locally
+website/.pnp.cjs
+website/.pnp.loader.mjs
+website/.yarn/**

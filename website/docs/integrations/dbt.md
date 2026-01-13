@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: dbt
 ---
 
@@ -57,7 +57,7 @@ OPENLINEAGE_DBT_JOB_NAME=<your-job-name>
 ```
 or passing `--openlineage-dbt-job-name <your-job-name>` in the dbt command line.
 
-More configuration parameters can be found in [Python client documentation](../client/python.md#configuration)
+More configuration parameters can be found in [Python client documentation](../client/python/configuration.md)
 
 ## Running dbt with OpenLineage
 

@@ -60,7 +60,7 @@ jobs:
           cd source/client/python
           pip install -U -e .[docs]
           cd docs && make html && python convert.py
-          cp -r converted/* ../../../website/docs/development/developing/python/api-reference
+          cp -r converted/* ../../../website/docs/client/python/development/api-reference
       - name: Install dependencies
         run:  |
           cd source/website

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 # Backfilling Airflow DAGs Using Marquez
@@ -118,7 +118,7 @@ To see a visualization of the graph, search the web UI with `public.delivery_7_d
 
 ### Backfill a DAG Run
 
-![Backfill](backfill.png)
+![Backfill](./static/backfill.png)
 
 Figure 1: Backfilled daily table partitions
 
@@ -132,7 +132,7 @@ $ airflow dags backfill \
     example.etl_orders
 ```
 
-![DAG Deps](inter-dag-deps.png)
+![DAG Deps](./static/inter-dag-deps.png)
 
 Figure 2: Airflow inter-DAG dependencies
 

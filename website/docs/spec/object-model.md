@@ -93,7 +93,7 @@ Typically, a *Dataset* changes when a job writing to it completes. Similarly to 
 
 A Dataset is the part of the object model that represents a discrete collection of data. If, for example, you have cron running a Python script that executes a `CREATE TABLE x AS SELECT * FROM y` query every day, the `x` and `y` tables are Datasets.
 
-### Dataset Facets
+#### Dataset Facets
 
 Facets that can be used to augment the metadata of a Dataset include:
 

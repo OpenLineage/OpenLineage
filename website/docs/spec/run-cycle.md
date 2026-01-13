@@ -35,6 +35,8 @@ also before `START`. The purpose of this is the agility to send additional
 metadata outside standard run cycle - e.g., on a run that hasn't yet started 
 but is already awaiting the resources.
 
+![image](./run-life-cycle.svg)
+
 ## Typical Scenarios
 
 A batch Job - e.g., an Airflow task or a dbt model - will typically be represented as a `START` event followed by a `COMPLETE` event. Occasionally, an `ABORT` or `FAIL` event will be sent when a job does not complete successfully.

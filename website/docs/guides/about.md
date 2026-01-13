@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# About These Guides
+# About
 
 The following tutorials take you through the process of exploiting the lineage metadata provided by Marquez and OpenLineage to solve common data engineering problems and make new analytical and historical insights into your pipelines.
 

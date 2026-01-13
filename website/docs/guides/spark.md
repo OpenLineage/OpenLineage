@@ -63,11 +63,11 @@ notebook_1  | [I 21:43:39.015 NotebookApp] Use Control-C to stop this server and
 
 Copy the URL with 127.0.0.1 as the hostname from your own log (the token will be different from this one) and paste it into your browser window. You should have a blank Jupyter notebook environment ready to go.
 
-![Jupyter notebook environment](jupyter_home.png)
+![Jupyter notebook environment](./static/jupyter_home.png)
 
 Click on the notebooks directory, then click on the New button to create a new Python 3 notebook.
 
-![Jupyter new notebook](jupyter_new_notebook.png)
+![Jupyter new notebook](./static/jupyter_new_notebook.png)
 
 In the first cell in the window paste the below text. Update the GCP project and bucket names and the service account credentials file, then run the code:
 
@@ -158,17 +158,17 @@ docker run --network spark_default -p 3000:3000 -e MARQUEZ_HOST=marquez-api -e M
 
 Next, open a new browser tab and navigate to http://localhost:3000, which should look like this:
 
-![Marquez home](marquez_home.png)
+![Marquez home](./static/marquez_home.png)
 
 Note: the `spark_integration` namespace is automatically chosen because there are no other namespaces available. Three jobs are listed on the jobs page of the UI. They all start with `openlineage_spark_test`, which is the appName passed to the SparkSession when the first cell of the notebook was built. Each query execution or RDD action is represented as a distinct job and the name of the action is appended to the application name to form the name of the job. Clicking on the `openlineage_spark_test.execute_insert_into_hadoop_fs_relation_command` node calls up the lineage graph for our notebook:
 
-![Marquez job graph](marquez_job_graph.png)
+![Marquez job graph](./static/marquez_job_graph.png)
 
 The graph shows that the `openlineage_spark_test.execute_insert_into_hadoop_fs_relation_command` job reads from two input datasets, `bigquery-public-data.covid19_nyt.mask_use_by_county` and `bigquery-public-data.covid19_open_data.covid19_open_data`, and writes to a third dataset, `/demodata/covid_deaths_and_mask_usage`. The namespace is missing from that third dataset, but the fully qualified name is `gs://<your_bucket>/demodata/covid_deaths_and_mask_usage`.
 
 The bottom bar shows some interesting data that was collected from the Spark job. Dragging the bar up expands the view to offer a closer look.
 
-![Marquez job facets](marquez_job_facets.png)
+![Marquez job facets](./static/marquez_job_facets.png)
 
 Two facets always collected from Spark jobs are the `spark_version` and the `spark.logicalPlan`. The first simply reports what version of Spark was executing, as well as the version of the openlineage-spark library. This is helpful for debugging job runs.
 
@@ -176,13 +176,13 @@ The second facet is the serialized optimized LogicalPlan Spark reports when the 
 
 Clicking on the first BigQuery dataset provides information about the data:
 
-![Marquez BigQuery dataset](marquez_bigquery_dataset_latest.png)
+![Marquez BigQuery dataset](./static/marquez_bigquery_dataset_latest.png)
 
 One can see the schema of the dataset as well as the datasource.
 
 Similar information is available about the dataset written to in GCS:
 
-![Marquez output dataset](marquez_output_dataset_latest.png)
+![Marquez output dataset](./static/marquez_output_dataset_latest.png)
 
 As in the BigQuery dataset, one can see the output schema and the datasource — in this case, the `gs://` scheme and the name of the bucket written to.
 
@@ -190,7 +190,7 @@ In addition to the schema, one can also see a stats facet, reporting the number 
 
 The VERSIONS tab on the bottom bar would display multiple versions if there were any (not the case here). Clicking on the version shows the same schema and statistics facets, but they are specific to the version selected.
 
-![Marquez output dataset version](marquez_output_dataset_version.png)
+![Marquez output dataset version](./static/marquez_output_dataset_version.png)
 
 In production, this dataset would have many versions, as each time a job runs a new version of the dataset is created. This permits the tracking of changes to the statistics and schema over time, aiding in debugging slow jobs or data quality issues and job failures.
 

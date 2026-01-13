@@ -74,3 +74,7 @@ Each integration automatically installs its dependencies from local directories 
 - Common integration depends on `client` and `sql` packages
 
 UV handles these path-based dependencies automatically, so changes in one package are immediately reflected in dependent packages without reinstallation.
+
+## Testing
+
+There are unit tests available for OpenLineage Python libraries. You can run them with a simple `pytest` command with directory set to library base path.
