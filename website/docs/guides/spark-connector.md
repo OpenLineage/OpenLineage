@@ -48,4 +48,4 @@ The interfaces provide a way to integrate OL support for a variety of ways in wh
 
 It requires the connector to depend on two maven packages: spark-extension-interfaces and spark-extension-entrypoint. The first one contains the necessary classes to implement support for OpenLineage, however, to maintain compatibility with other connectors (that might rely on a different version of the same jar) the relocation of the package is required. The second package, spark-extension-entrypoint acts like a “pointer” for the actual implementation in the connector, allowing OpenLineage-Spark integration use those relocated classes. 
 
-The detailed documentation for interfaces is [here](https://openlineage.io/docs/development/developing/spark/built_in_lineage/). 
+The detailed documentation for interfaces is [here](https://openlineage.io/docs/integrations/spark/developing/built_in_lineage). 

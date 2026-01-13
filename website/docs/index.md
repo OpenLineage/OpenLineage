@@ -61,11 +61,19 @@ OpenLineage supports integrations with several systems.
 
 - [Apache Airflow](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/index.html)
 - [Apache Flink](https://github.com/OpenLineage/OpenLineage/tree/main/integration/flink)
+- [Apache Hive](https://github.com/OpenLineage/OpenLineage/tree/main/integration/hive)
 - [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
 - [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
+- [Great Expectations](https://openlineage.io/docs/integrations/great-expectations)
 - [SQL](https://github.com/OpenLineage/OpenLineage/tree/main/integration/sql)
+- [Trino](https://openlineage.io/docs/integrations/trino)
 
 ## Related projects
 - [Marquez](https://marquezproject.ai/): Marquez is an [LF AI & DATA](https://lfaidata.foundation/) project to collect, aggregate, and visualize a data ecosystem's metadata. It is the reference implementation of the OpenLineage API.
   - [OpenLineage collection implementation](https://github.com/MarquezProject/marquez/blob/main/api/src/main/java/marquez/api/OpenLineageResource.java)
 - [Egeria](https://egeria.odpi.org/): Egeria Open Metadata and Governance. A metadata bus.
+
+## Contributing to OpenLineage
+OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) Graduate project under active development, and we welcome contributions.
+
+See [CONTRIBUTING.md](https://github.com/OpenLineage/OpenLineage/tree/main/CONTRIBUTING.md) for more details about how to contribute.

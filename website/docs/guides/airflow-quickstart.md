@@ -1,10 +1,10 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 import Tabs from '@theme/Tabs'; import TabItem from '@theme/TabItem';
 
-# Getting Started with Apache Airflow® and OpenLineage+Marquez
+# Using OpenLineage with Airflow
 
 In this tutorial, you'll configure Apache Airflow® to send OpenLineage events to [Marquez](https://marquezproject.ai/) and explore a realistic troubleshooting scenario. 
 
@@ -256,12 +256,12 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 1. To view lineage collected by Marquez from Airflow, browse to the Marquez UI by visiting [http://localhost:3000](http://localhost:3000). Then, use the _search_ bar in the upper left to search for the `counter.inc` job. To view lineage metadata for `counter.inc`, click on the job from the drop-down list:
 
 <p align="center">
-  <img src={require("./docs/marquez-search.png").default} />
+  <img src={require("./static/marquez-search.png").default} />
 </p>
 
 2. Look at the lineage graph for `counter.inc`, where you should see `<database>.public.counts` as an output dataset and `sum.total` as a downstream job:
 
-    ![](./docs/counter-inc-graph.png)
+    ![](./static/counter-inc-graph.png)
 
 ## Troubleshoot a Failing DAG with Marquez
 
@@ -299,17 +299,17 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
     Like the owner of `sum`, `Team B`, would do, note the failed runs in the DataOps view in Marquez:
 
-    ![](./docs/sum-data-ops.png)
+    ![](./static/sum-data-ops.png)
 
     `Team B` can only guess what might have caused the DAG failure as no recent changes have been made to the DAG. So, the team decides to check Marquez.
 
 2. In Marquez, navigate to the Datasets view and select your Postgres instance from the namespace dropdown menu in the top-right corner. Then, click on the `<database>.public.counts` dataset and inspect the graph. You'll find the schema on the node:
 
-    ![](./docs/counts-graph-new-schema.png)
+    ![](./static/counts-graph-new-schema.png)
 
 3. Imagine you don't recognize the column and want to know what it was originally and when it changed. Clicking on the node will open the detail drawer. There, using the version history, find the run in which the schema changed:
 
-    ![](./docs/counts-detail.png)
+    ![](./static/counts-detail.png)
 
 4. In Airflow, fix the downstream DAG that broke by updating the task that calculates the count total to use the new column name:
 
@@ -327,7 +327,7 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
 5. Rerun the DAG. In Marquez, verify the fix by looking at the recent run history in the DataOps view:
 
-    ![](./docs/sum-history.png)
+    ![](./static/sum-history.png)
 
 ## Next Steps
 

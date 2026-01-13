@@ -1,6 +1,6 @@
 ---
 title: Logging
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 OpenLineage uses python's [logging facility](https://docs.python.org/3/library/logging.html) when generating logs. Being able to emit logs for various purposes is very helpful when troubleshooting OpenLineage.
