@@ -459,11 +459,32 @@ class DbtArtifactProcessor:
                 name = test_node["test_metadata"]["name"]
                 node_columns = test_node["test_metadata"]
 
+            # Extract test config fields
+            config = test_node.get("config", {})
+            severity = config.get("severity")
+            if severity:
+                severity = severity.lower()
+
+            # Get failures from run_results
+            failures = run.get("failures")
+
+            # Build dbt-specific properties
+            properties = {}
+            if warn_if := config.get("warn_if"):
+                properties["warnIf"] = warn_if
+            if error_if := config.get("error_if"):
+                properties["errorIf"] = error_if
+            if fail_calc := config.get("fail_calc"):
+                properties["failCalc"] = fail_calc
+
             assertions[model_node].append(
                 data_quality_assertions_dataset.Assertion(
                     assertion=name,
                     success=True if run["status"] == "pass" else False,
                     column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
+                    severity=severity,
+                    failures=failures,
+                    properties=properties if properties else None,
                 )
             )
 
