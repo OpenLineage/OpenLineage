@@ -56,12 +56,14 @@
           "assertions": [
             {
               "assertion": "row_count_equal_to",
-              "success": true
+              "success": true,
+              "properties": {}
             },
             {
               "assertion": "no_null_values",
               "success": true,
-              "column": "id"
+              "column": "id",
+              "properties": {}
             }
           ]
         }
