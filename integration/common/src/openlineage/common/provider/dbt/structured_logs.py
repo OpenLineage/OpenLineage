@@ -433,7 +433,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                 message=error_message, programmingLanguage="sql"
             )
-        elif node_status in ("success", "pass"):
+        elif node_status in ("success", "pass", "warn"):
             event_type = RunState.COMPLETE
         else:
             self.logger.info("Node %s has an unknown node status %s", node_unique_id, node_status)
@@ -448,7 +448,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         if resource_type == "test":
             success = node_status == "pass"
-            if assertion := self._get_assertion(node_unique_id, success):
+            # Extract failures from run_result if available
+            failures = event.get("data", {}).get("run_result", {}).get("failures")
+            if assertion := self._get_assertion(node_unique_id, success, failures):
                 assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
                 inputs = []
                 if attached_dataset := self._get_attached_dataset(node_unique_id):
@@ -490,13 +492,34 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return input_dataset
 
     @handle_keyerror
-    def _get_assertion(self, node_id: str, success: bool) -> Optional[dq.Assertion]:
+    def _get_assertion(
+        self, node_id: str, success: bool, failures: Optional[int] = None
+    ) -> Optional[dq.Assertion]:
         manifest_test_node = self.compiled_manifest["nodes"][node_id]
         name = manifest_test_node["test_metadata"]["name"]
+        config = manifest_test_node.get("config", {})
+
+        # Extract severity, normalize to lowercase
+        severity = config.get("severity")
+        if severity:
+            severity = severity.lower()
+
+        # Build dbt-specific properties
+        properties = {}
+        if warn_if := config.get("warn_if"):
+            properties["warnIf"] = warn_if
+        if error_if := config.get("error_if"):
+            properties["errorIf"] = error_if
+        if fail_calc := config.get("fail_calc"):
+            properties["failCalc"] = fail_calc
+
         return dq.Assertion(
             assertion=name,
             success=success,
             column=get_from_nullable_chain(manifest_test_node["test_metadata"], ["kwargs", "column_name"]),
+            severity=severity,
+            failures=failures,
+            properties=properties if properties else None,
         )
 
     def _parse_sql_query_event(self, event) -> RunEvent:
