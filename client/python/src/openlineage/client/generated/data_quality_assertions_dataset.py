@@ -26,6 +26,13 @@ class Assertion(RedactMixin):
 
     Example: id
     """
+    severity: str | None = attr.field(default=None)
+    """
+    The configured severity level of the assertion. Common values are 'error' (test failure blocks
+    pipeline) or 'warn' (test failure produces warning only).
+
+    Example: error
+    """
     _skip_redact: ClassVar[list[str]] = ["column"]
 
 
@@ -37,4 +44,4 @@ class DataQualityAssertionsDatasetFacet(InputDatasetFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-1/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-0-2/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet"
