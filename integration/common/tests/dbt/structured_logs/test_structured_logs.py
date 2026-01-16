@@ -1513,3 +1513,104 @@ def test_manifest_integrity_types_validation():
     assert result.total_missing >= 0
     assert result.parent_map_size >= 0
     assert result.available_nodes >= 0
+
+
+class TestGetAssertionSeverity:
+    """Tests for severity extraction in _get_assertion method."""
+
+    @pytest.fixture
+    def processor(self):
+        processor = DbtStructuredLogsProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="dbt-test-namespace",
+            project_dir=CURRENT_DIR,
+            target="postgres",
+            dbt_command_line=["dbt", "test"],
+        )
+        return processor
+
+    def test_severity_extracted_and_normalized(self, processor):
+        """Test that severity is extracted from config and normalized to lowercase."""
+        processor._compiled_manifest = {
+            "nodes": {
+                "test.project.test_unique_model_id": {
+                    "test_metadata": {
+                        "name": "unique",
+                        "kwargs": {"column_name": "id"},
+                    },
+                    "config": {"severity": "ERROR"},
+                }
+            },
+            "sources": {},
+        }
+
+        assertion = processor._get_assertion("test.project.test_unique_model_id", success=True)
+
+        assert assertion is not None
+        assert assertion.assertion == "unique"
+        assert assertion.success is True
+        assert assertion.column == "id"
+        assert assertion.severity == "error"
+
+    def test_severity_warn_normalized(self, processor):
+        """Test that WARN severity is normalized to lowercase."""
+        processor._compiled_manifest = {
+            "nodes": {
+                "test.project.test_not_null_model_id": {
+                    "test_metadata": {
+                        "name": "not_null",
+                        "kwargs": {"column_name": "name"},
+                    },
+                    "config": {"severity": "WARN"},
+                }
+            },
+            "sources": {},
+        }
+
+        assertion = processor._get_assertion("test.project.test_not_null_model_id", success=False)
+
+        assert assertion is not None
+        assert assertion.assertion == "not_null"
+        assert assertion.success is False
+        assert assertion.column == "name"
+        assert assertion.severity == "warn"
+
+    def test_severity_none_when_not_in_config(self, processor):
+        """Test that severity is None when not present in config."""
+        processor._compiled_manifest = {
+            "nodes": {
+                "test.project.test_unique_model_id": {
+                    "test_metadata": {
+                        "name": "unique",
+                        "kwargs": {"column_name": "id"},
+                    },
+                    "config": {},  # No severity
+                }
+            },
+            "sources": {},
+        }
+
+        assertion = processor._get_assertion("test.project.test_unique_model_id", success=True)
+
+        assert assertion is not None
+        assert assertion.severity is None
+
+    def test_severity_none_when_config_missing(self, processor):
+        """Test that severity is None when config key is missing entirely."""
+        processor._compiled_manifest = {
+            "nodes": {
+                "test.project.test_unique_model_id": {
+                    "test_metadata": {
+                        "name": "unique",
+                        "kwargs": {"column_name": "id"},
+                    },
+                    # No config key at all
+                }
+            },
+            "sources": {},
+        }
+
+        assertion = processor._get_assertion("test.project.test_unique_model_id", success=True)
+
+        assert assertion is not None
+        assert assertion.severity is None
