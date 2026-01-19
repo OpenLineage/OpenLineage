@@ -137,6 +137,7 @@ deps =
     pytest
     pytest-cov
     pytest-mock
+    {toxinidir}/../../client/python
 commands =
     pytest -vv --cov=src/openlineage --junitxml=test-results/junit.xml {posargs}
     coverage xml

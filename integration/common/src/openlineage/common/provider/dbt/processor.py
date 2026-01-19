@@ -459,11 +459,18 @@ class DbtArtifactProcessor:
                 name = test_node["test_metadata"]["name"]
                 node_columns = test_node["test_metadata"]
 
+            # Extract severity from config, normalize to lowercase
+            config = test_node.get("config", {})
+            severity = config.get("severity")
+            if severity:
+                severity = severity.lower()
+
             assertions[model_node].append(
                 data_quality_assertions_dataset.Assertion(
                     assertion=name,
                     success=True if run["status"] == "pass" else False,
                     column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
+                    severity=severity,
                 )
             )
 

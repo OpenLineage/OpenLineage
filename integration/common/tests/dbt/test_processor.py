@@ -8,7 +8,7 @@ import pytest
 from openlineage.client.facet_v2 import external_query_run, processing_engine_run
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
-from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor
+from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 
 DBT_VERSION = "0.0.1"
@@ -115,3 +115,142 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     generated_query_id = dbt_artifact_processor.get_query_id(run_result)
 
     assert generated_query_id is None
+
+
+class TestParseSeverity:
+    """Tests for severity extraction in parse_assertions."""
+
+    @pytest.fixture
+    def processor(self):
+        processor = DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="test-namespace",
+        )
+        processor.manifest_version = 11  # Use version < 12 for test_metadata path
+        return processor
+
+    def test_severity_extracted_and_normalized_to_lowercase(self, processor):
+        """Test that severity is extracted from config and normalized to lowercase."""
+        nodes = {
+            "test.project.test_unique_model_id": {
+                "test_metadata": {
+                    "name": "unique",
+                    "kwargs": {"column_name": "id"},
+                },
+                "config": {"severity": "ERROR"},
+            }
+        }
+        manifest = {
+            "parent_map": {
+                "test.project.test_unique_model_id": ["model.project.my_model"],
+            }
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "test.project.test_unique_model_id",
+                    "status": "pass",
+                }
+            ]
+        }
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertions = processor.parse_assertions(context, nodes)
+
+        assert "model.project.my_model" in assertions
+        assert len(assertions["model.project.my_model"]) == 1
+        assertion = assertions["model.project.my_model"][0]
+        assert assertion.severity == "error"
+
+    def test_severity_warn_normalized_to_lowercase(self, processor):
+        """Test that WARN severity is normalized to lowercase."""
+        nodes = {
+            "test.project.test_not_null_model_id": {
+                "test_metadata": {
+                    "name": "not_null",
+                    "kwargs": {"column_name": "id"},
+                },
+                "config": {"severity": "WARN"},
+            }
+        }
+        manifest = {
+            "parent_map": {
+                "test.project.test_not_null_model_id": ["model.project.my_model"],
+            }
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "test.project.test_not_null_model_id",
+                    "status": "pass",
+                }
+            ]
+        }
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertions = processor.parse_assertions(context, nodes)
+
+        assertion = assertions["model.project.my_model"][0]
+        assert assertion.severity == "warn"
+
+    def test_severity_none_when_not_in_config(self, processor):
+        """Test that severity is None when not present in config."""
+        nodes = {
+            "test.project.test_unique_model_id": {
+                "test_metadata": {
+                    "name": "unique",
+                    "kwargs": {"column_name": "id"},
+                },
+                "config": {},  # No severity
+            }
+        }
+        manifest = {
+            "parent_map": {
+                "test.project.test_unique_model_id": ["model.project.my_model"],
+            }
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "test.project.test_unique_model_id",
+                    "status": "pass",
+                }
+            ]
+        }
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertions = processor.parse_assertions(context, nodes)
+
+        assertion = assertions["model.project.my_model"][0]
+        assert assertion.severity is None
+
+    def test_severity_none_when_config_missing(self, processor):
+        """Test that severity is None when config key is missing entirely."""
+        nodes = {
+            "test.project.test_unique_model_id": {
+                "test_metadata": {
+                    "name": "unique",
+                    "kwargs": {"column_name": "id"},
+                },
+                # No config key at all
+            }
+        }
+        manifest = {
+            "parent_map": {
+                "test.project.test_unique_model_id": ["model.project.my_model"],
+            }
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "test.project.test_unique_model_id",
+                    "status": "pass",
+                }
+            ]
+        }
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertions = processor.parse_assertions(context, nodes)
+
+        assertion = assertions["model.project.my_model"][0]
+        assert assertion.severity is None

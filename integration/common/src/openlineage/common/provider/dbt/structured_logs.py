@@ -433,7 +433,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                 message=error_message, programmingLanguage="sql"
             )
-        elif node_status in ("success", "pass"):
+        elif node_status in ("success", "pass", "warn"):
             event_type = RunState.COMPLETE
         else:
             self.logger.info("Node %s has an unknown node status %s", node_unique_id, node_status)
@@ -493,10 +493,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def _get_assertion(self, node_id: str, success: bool) -> Optional[dq.Assertion]:
         manifest_test_node = self.compiled_manifest["nodes"][node_id]
         name = manifest_test_node["test_metadata"]["name"]
+        config = manifest_test_node.get("config", {})
+
+        # Extract severity, normalize to lowercase
+        severity = config.get("severity")
+        if severity:
+            severity = severity.lower()
+
         return dq.Assertion(
             assertion=name,
             success=success,
             column=get_from_nullable_chain(manifest_test_node["test_metadata"], ["kwargs", "column_name"]),
+            severity=severity,
         )
 
     def _parse_sql_query_event(self, event) -> RunEvent:
