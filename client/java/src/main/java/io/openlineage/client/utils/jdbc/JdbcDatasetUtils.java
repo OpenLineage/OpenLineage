@@ -6,6 +6,8 @@
 package io.openlineage.client.utils.jdbc;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.GravitinoUtils;
+import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
@@ -61,6 +63,10 @@ public class JdbcDatasetUtils {
     try {
       JdbcExtractor extractor = getExtractor(uri);
       JdbcLocation location = extractor.extract(uri, properties);
+      GravitinoInfoProviderImpl provider = GravitinoInfoProviderImpl.getInstance();
+      if (provider.useGravitinoIdentifier()) {
+        return GravitinoUtils.getGravitinoDatasetIdentifierFromJdbc(location.toName(parts));
+      }
       return new DatasetIdentifier(location.toName(parts), location.toNamespace());
     } catch (URISyntaxException e) {
       log.debug("Failed to parse jdbc url", e);
