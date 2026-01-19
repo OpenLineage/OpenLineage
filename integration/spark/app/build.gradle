@@ -26,11 +26,11 @@ ext {
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
     assertjVersion = '3.27.6'
-    bigqueryVersion = '0.43.1'
-    junit5Version = '6.0.2'
+    bigqueryVersion = '0.42.2'
+    junit5Version = '5.11.4'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.8'
-    testcontainersVersion = '2.0.3'
+    testcontainersVersion = '1.20.5'
     awssdkVersion = '2.41.5'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
