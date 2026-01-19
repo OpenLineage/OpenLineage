@@ -665,7 +665,9 @@ impl Visit for Statement {
                 context.add_non_table_output(convert_to_idents(name), false, true);
             }
             Statement::Update(update) => {
-                if let Some(name) = get_table_name_from_table_factor(&update.table.relation, &*context) {
+                if let Some(name) =
+                    get_table_name_from_table_factor(&update.table.relation, &*context)
+                {
                     context.add_output(name);
                 }
 
