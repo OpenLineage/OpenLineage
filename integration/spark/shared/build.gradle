@@ -34,7 +34,7 @@ ext {
     awaitilityVersion = "4.3.0"
     bigqueryVersion = "0.43.1"
     databricksVersion = "0.1.5"
-    junit5Version = "6.0.2"
+    junit5Version = "5.11.4"
     kafkaClientsVersion = "4.1.1"
     micrometerVersion = '1.16.1'
     mockitoVersion = "4.11.0"
