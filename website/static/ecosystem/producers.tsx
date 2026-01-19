@@ -10,6 +10,15 @@ export const Producers: Array<Partner> = [
     org_url: "https://airflow.apache.org",
   },
   {
+    image: "anyscale_logo.png",
+    org: "Anyscale",
+    full_name: "Anyscale",
+    description:
+      "Anyscale's Lineage Tracking automatically emits OpenLineage events from Ray Data operations and MLflow model events, providing end-to-end visibility for distributed AI workloads.",
+    docs_url: "https://docs.anyscale.com/lineage",
+    org_url: "https://www.anyscale.com",
+  },
+  {
     image: "dagster_logo_lg.svg",
     org: "Dagster",
     full_name: "Dagster",
