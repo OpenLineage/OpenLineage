@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsOptions;
+import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
 import org.apache.kafka.clients.admin.RecordsToDelete;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -173,13 +174,15 @@ public class KafkaSourceTestEnv extends KafkaTestBase {
     List<TopicPartition> partitions = getPartitionsForTopic(topic);
     Map<TopicPartition, OffsetAndMetadata> committedOffsets = getCommittedOffsets(partitions);
     consumer.commitSync(committedOffsets);
+    Map<String, ListConsumerGroupOffsetsSpec> groupSpecs = new HashMap<>();
+    groupSpecs.put(
+        GROUP_ID,
+        new ListConsumerGroupOffsetsSpec()
+            .topicPartitions(new ArrayList<>(committedOffsets.keySet())));
     Map<TopicPartition, OffsetAndMetadata> toVerify =
         adminClient
-            .listConsumerGroupOffsets(
-                GROUP_ID,
-                new ListConsumerGroupOffsetsOptions()
-                    .topicPartitions(new ArrayList<>(committedOffsets.keySet())))
-            .partitionsToOffsetAndMetadata()
+            .listConsumerGroupOffsets(groupSpecs, new ListConsumerGroupOffsetsOptions())
+            .partitionsToOffsetAndMetadata(GROUP_ID)
             .get();
     assertThat(toVerify).as("The offsets are not committed").isEqualTo(committedOffsets);
   }
