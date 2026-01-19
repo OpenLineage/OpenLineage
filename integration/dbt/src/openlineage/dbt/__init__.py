@@ -306,7 +306,9 @@ def consume_local_artifacts(
     pre_run_time = time.time()
     # Execute dbt in external process
 
-    force_send_events = len(args) > 1 and args[1] == "send-events"
+    force_send_events = (len(args) > 0 and args[0] == "send-events") or (
+        len(args) > 1 and args[1] == "send-events"
+    )
     if not force_send_events:
         with subprocess.Popen(["dbt"] + args, stdout=sys.stdout, stderr=sys.stderr) as process:
             return_code = process.wait()
