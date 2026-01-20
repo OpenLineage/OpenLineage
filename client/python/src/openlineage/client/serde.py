@@ -10,6 +10,7 @@ from typing import Any, cast
 import attr
 
 log = logging.getLogger(__name__)
+import numpy
 
 
 class Serde:
