@@ -648,9 +648,9 @@ impl Visit for Statement {
 
                 context.add_output(convert_to_idents(&ct.name));
             }
-            Statement::CreateView { name, query, .. } => {
-                query.visit(context)?;
-                context.add_output(convert_to_idents(name));
+            Statement::CreateView(cv) => {
+                cv.query.visit(context)?;
+                context.add_output(convert_to_idents(&cv.name));
             }
             Statement::CreateStage {
                 name, stage_params, ..
@@ -664,18 +664,14 @@ impl Visit for Statement {
                 }
                 context.add_non_table_output(convert_to_idents(name), false, true);
             }
-            Statement::Update {
-                table,
-                assignments: _,
-                from,
-                selection,
-                ..
-            } => {
-                if let Some(name) = get_table_name_from_table_factor(&table.relation, &*context) {
+            Statement::Update(update) => {
+                if let Some(name) =
+                    get_table_name_from_table_factor(&update.table.relation, &*context)
+                {
                     context.add_output(name);
                 }
 
-                if let Some(from) = from {
+                if let Some(from) = &update.from {
                     match from {
                         UpdateTableFromKind::BeforeSet(tables)
                         | UpdateTableFromKind::AfterSet(tables) => {
@@ -688,31 +684,23 @@ impl Visit for Statement {
                         }
                     }
                 }
-                if let Some(expr) = selection {
+                if let Some(expr) = &update.selection {
                     expr.visit(context)?;
                 }
             }
-            Statement::AlterTable {
-                name,
-                if_exists: _,
-                only: _,
-                operations,
-                location: _,
-                on_cluster: _,
-                ..
-            } => {
-                for operation in operations {
+            Statement::AlterTable(alter) => {
+                for operation in &alter.operations {
                     match operation {
                         AlterTableOperation::SwapWith { table_name } => {
                             // both table names are inputs and outputs of the swap operation
                             context.add_input(convert_to_idents(table_name));
-                            context.add_input(convert_to_idents(name));
+                            context.add_input(convert_to_idents(&alter.name));
 
                             context.add_output(convert_to_idents(table_name));
-                            context.add_output(convert_to_idents(name));
+                            context.add_output(convert_to_idents(&alter.name));
                         }
                         AlterTableOperation::RenameTable { table_name } => {
-                            context.add_input(convert_to_idents(name));
+                            context.add_input(convert_to_idents(&alter.name));
                             match table_name {
                                 RenameTableNameKind::As(new_name)
                                 | RenameTableNameKind::To(new_name) => {
@@ -720,7 +708,7 @@ impl Visit for Statement {
                                 }
                             };
                         }
-                        _ => context.add_output(convert_to_idents(name)),
+                        _ => context.add_output(convert_to_idents(&alter.name)),
                     }
                 }
             }
@@ -757,8 +745,8 @@ impl Visit for Statement {
                     expr.visit(context)?;
                 }
             }
-            Statement::Truncate { table_names, .. } => {
-                for table in table_names {
+            Statement::Truncate(truncate) => {
+                for table in &truncate.table_names {
                     context.add_output(convert_to_idents(&table.name))
                 }
             }
