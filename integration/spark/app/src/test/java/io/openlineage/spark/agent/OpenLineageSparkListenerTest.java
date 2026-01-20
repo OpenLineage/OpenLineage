@@ -246,4 +246,55 @@ class OpenLineageSparkListenerTest {
 
     verify(emitter, never()).emit(any());
   }
+
+  @Test
+  void testApplicationEndWithFailedJobUpdatesStatusToFail() {
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(
+        new StaticExecutionContextFactory(
+            emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
+
+    // Create a failed job end event
+    SparkListenerJobEnd failedJobEnd = mock(SparkListenerJobEnd.class);
+    org.apache.spark.scheduler.JobFailed jobFailed =
+        mock(org.apache.spark.scheduler.JobFailed.class);
+    when(jobFailed.exception()).thenReturn(new RuntimeException("Test job failure"));
+    when(failedJobEnd.jobResult()).thenReturn(jobFailed);
+    when(failedJobEnd.time()).thenReturn(System.currentTimeMillis());
+    when(failedJobEnd.jobId()).thenReturn(1);
+
+    // Simulate job lifecycle: start then fail
+    SparkListenerJobStart jobStart = mock(SparkListenerJobStart.class);
+    when(jobStart.jobId()).thenReturn(1);
+    when(jobStart.time()).thenReturn(System.currentTimeMillis());
+    when(jobStart.stageIds())
+        .thenReturn(ScalaConversionUtils.fromList(java.util.Collections.emptyList()));
+    // Mock properties to avoid NullPointerException
+    java.util.Properties properties = new java.util.Properties();
+    when(jobStart.properties()).thenReturn(properties);
+
+    try (MockedStatic<EventFilterUtils> mockedFilter = mockStatic(EventFilterUtils.class)) {
+      mockedFilter.when(() -> EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      listener.onJobStart(jobStart);
+      listener.onJobEnd(failedJobEnd);
+
+      // Now end the application
+      SparkListenerApplicationEnd appEnd = mock(SparkListenerApplicationEnd.class);
+      when(appEnd.time()).thenReturn(System.currentTimeMillis());
+
+      listener.onApplicationEnd(appEnd);
+    }
+
+    // Capture all emitted events
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    verify(emitter, times(3)).emit(lineageEvent.capture()); // job start, job fail, app end
+
+    // Get the last event (application end)
+    OpenLineage.RunEvent lastEvent = lineageEvent.getAllValues().get(2);
+
+    // Verify the application end event has FAIL status
+    assertThat(lastEvent.getEventType()).isEqualTo(OpenLineage.RunEvent.EventType.FAIL);
+  }
 }
