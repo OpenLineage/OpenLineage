@@ -237,8 +237,16 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
 - `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
 - `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
-  - `type` - string specifying the "api_key" or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
-  - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
+  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - Configuration options for `api_key` authentication:
+    - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
+  - Configuration options for `jwt` authentication:
+    - `apiKey` - string, the API key used to obtain the JWT token. Required if `type` is `jwt`.
+    - `tokenEndpoint` - string, the URL endpoint for token generation. Required if `type` is `jwt`.
+    - `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
+    - `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.
+    - `tokenFields` - list of strings, JSON field names to search for the token in the response. The provider tries each field in order. Optional, default: `["token", "access_token"]`.
+    - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 - `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
@@ -321,6 +329,143 @@ client = OpenLineageClient(transport=HttpTransport(http_config))
 
 </Tabs>
 
+#### JWT Token Provider
+
+The `JwtTokenProvider` is an authentication provider that exchanges an API key for a JWT token via a POST endpoint. This is useful for services that require OAuth-style authentication where you need to obtain a token before making API requests.
+
+##### Configuration
+
+When using JWT authentication with HTTP transport, configure the `auth` section as follows:
+
+- `type` - string, must be `"jwt"`. Required.
+- `apiKey` - string, the API key used to obtain the JWT token. Required.
+- `tokenEndpoint` - string, the URL endpoint for token generation. Required.
+- `tokenFields` - list of strings, JSON field names to search for the token in the response. The provider tries each field in order. Optional, default: `["token", "access_token"]`.
+- `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
+- `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
+- `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.
+
+##### Behavior
+
+- The provider sends a POST request with URL-encoded form data containing the API key and OAuth parameters.
+- The response is expected to be JSON containing the JWT token and optionally an expiration time.
+- Tokens are cached and automatically refreshed 60 seconds before expiration.
+- If no expiration is provided in the response, the provider attempts to extract it from the JWT payload's `exp` claim.
+- The provider supports multiple JSON field names for the token, trying each in order until a match is found.
+- Field matching is case-insensitive and handles both snake_case and camelCase variations (e.g., `expires_in` matches `expiresIn`).
+
+##### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="env-vars" label="Environment Variables">
+
+Standard OAuth configuration:
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=http
+OPENLINEAGE__TRANSPORT__URL=https://backend:5000
+OPENLINEAGE__TRANSPORT__AUTH__TYPE=jwt
+OPENLINEAGE__TRANSPORT__AUTH__APIKEY=your-api-key
+OPENLINEAGE__TRANSPORT__AUTH__TOKENENDPOINT=https://auth.example.com/token
+```
+
+IBM Cloud IAM configuration:
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=http
+OPENLINEAGE__TRANSPORT__URL=https://backend:5000
+OPENLINEAGE__TRANSPORT__AUTH__TYPE=jwt
+OPENLINEAGE__TRANSPORT__AUTH__APIKEY=your-ibm-api-key
+OPENLINEAGE__TRANSPORT__AUTH__TOKENENDPOINT=https://iam.cloud.ibm.com/identity/token
+OPENLINEAGE__TRANSPORT__AUTH__GRANTTYPE=urn:ibm:params:oauth:grant-type:apikey
+OPENLINEAGE__TRANSPORT__AUTH__RESPONSETYPE=cloud_iam
+```
+
+</TabItem>
+<TabItem value="yaml" label="Yaml Config">
+
+Standard OAuth configuration:
+
+```yaml
+transport:
+  type: http
+  url: https://backend:5000
+  auth:
+    type: jwt
+    apiKey: your-api-key
+    tokenEndpoint: https://auth.example.com/token
+```
+
+With custom field names:
+
+```yaml
+transport:
+  type: http
+  url: https://backend:5000
+  auth:
+    type: jwt
+    apiKey: your-api-key
+    tokenEndpoint: https://auth.example.com/token
+    tokenFields: ["access_token", "token"]
+    expiresInField: expires_in
+```
+
+IBM Cloud IAM configuration:
+
+```yaml
+transport:
+  type: http
+  url: https://backend:5000
+  auth:
+    type: jwt
+    apiKey: your-ibm-api-key
+    tokenEndpoint: https://iam.cloud.ibm.com/identity/token
+    grantType: urn:ibm:params:oauth:grant-type:apikey
+    responseType: cloud_iam
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+Standard OAuth configuration:
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.http import HttpConfig, HttpTransport, JwtTokenProvider
+
+http_config = HttpConfig(
+    url="https://backend:5000",
+    auth=JwtTokenProvider({
+        "apiKey": "your-api-key",
+        "tokenEndpoint": "https://auth.example.com/token"
+    })
+)
+
+client = OpenLineageClient(transport=HttpTransport(http_config))
+```
+
+IBM Cloud IAM configuration:
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.http import HttpConfig, HttpTransport, JwtTokenProvider
+
+http_config = HttpConfig(
+    url="https://backend:5000",
+    auth=JwtTokenProvider({
+        "apiKey": "your-ibm-api-key",
+        "tokenEndpoint": "https://iam.cloud.ibm.com/identity/token",
+        "grantType": "urn:ibm:params:oauth:grant-type:apikey",
+        "responseType": "cloud_iam"
+    })
+)
+
+client = OpenLineageClient(transport=HttpTransport(http_config))
+```
+
+</TabItem>
+</Tabs>
+
 ### Async HTTP Transport
 
 The Async HTTP transport provides high-performance, non-blocking event emission with advanced queuing and ordering guarantees. Use this transport when you need high throughput or want to avoid blocking your application on lineage event delivery.
@@ -335,8 +480,16 @@ Async transport API is experimental, and can change over the next few releases.
 - `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
 - `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
-  - `type` - string specifying the "api_key" or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
-  - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
+  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - Configuration options for `api_key` authentication:
+    - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
+  - Configuration options for `jwt` authentication:
+    - `apiKey` - string, the API key used to obtain the JWT token. Required if `type` is `jwt`.
+    - `tokenEndpoint` - string, the URL endpoint for token generation. Required if `type` is `jwt`.
+    - `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
+    - `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.
+    - `tokenFields` - list of strings, JSON field names to search for the token in the response. The provider tries each field in order. Optional, default: `["token", "access_token"]`.
+    - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 - `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `10000`.

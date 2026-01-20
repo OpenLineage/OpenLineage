@@ -2,15 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import base64
 import gzip
 import http.client as http_client
 import inspect
+import json
 import logging
+import time
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import attr
+import requests
 import urllib3.util
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
@@ -53,6 +57,197 @@ class ApiKeyTokenProvider(TokenProvider):
         return f"Bearer {self.api_key}"
 
 
+class JwtTokenProvider(TokenProvider):
+    """TokenProvider that exchanges an API key for a JWT token via a POST endpoint.
+
+    Sends the API key and OAuth parameters as URL-encoded form data.
+
+    The provider automatically tries multiple common JSON field names for the token:
+    the configured token_fields (default ["token", "access_token"]). This ensures
+    compatibility with various OAuth providers.
+
+    Configuration example:
+        {
+            "type": "jwt",
+            "apiKey": "your-api-key",
+            "tokenEndpoint": "https://auth.example.com/token",
+            "tokenFields": ["token", "access_token"],  # optional
+            "expiresInField": "expires_in",  # optional
+            "grantType": "urn:ietf:params:oauth:grant-type:jwt-bearer",  # optional
+            "responseType": "token"  # optional
+        }
+
+    For IBM Cloud IAM, use these settings:
+        {
+            "type": "jwt",
+            "apiKey": "your-ibm-api-key",
+            "tokenEndpoint": "https://iam.cloud.ibm.com/identity/token",
+            "grantType": "urn:ibm:params:oauth:grant-type:apikey",
+            "responseType": "cloud_iam"
+        }
+    """
+
+    TOKEN_REFRESH_BUFFER_SECONDS = 60  # Refresh 60s before expiry
+
+    def __init__(self, config: dict[str, str]) -> None:
+        super().__init__(config)
+        self.api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
+        if not self.api_key:
+            msg = "apiKey is required for JWT token provider."
+            raise KeyError(msg)
+
+        token_endpoint = config.get("tokenEndpoint") or config.get("token_endpoint")
+        if not token_endpoint:
+            msg = "tokenEndpoint is required for JWT token provider."
+            raise KeyError(msg)
+        self.token_endpoint: str = token_endpoint
+
+        # Token field names to try (in order)
+        token_fields = config.get("tokenFields") or config.get("token_fields")
+        if token_fields:
+            self.token_fields = token_fields if isinstance(token_fields, list) else [token_fields]
+        else:
+            self.token_fields = ["token", "access_token"]
+
+        # Expiration field name
+        self.expires_in_field = config.get("expiresInField") or config.get("expires_in_field") or "expires_in"
+
+        # OAuth parameters
+        self.grant_type = (
+            config.get("grantType")
+            or config.get("grant_type")
+            or "urn:ietf:params:oauth:grant-type:jwt-bearer"
+        )
+        self.response_type = config.get("responseType") or config.get("response_type") or "token"
+
+        # Token cache
+        self._cached_token: str | None = None
+        self._token_expiry: float | None = None
+
+    def get_bearer(self) -> str | None:
+        """Get the bearer token, fetching a new one if needed."""
+        if self._is_token_valid():
+            return f"Bearer {self._cached_token}"
+
+        try:
+            self._fetch_token()
+            return f"Bearer {self._cached_token}" if self._cached_token else None
+        except Exception as e:
+            log.error("Failed to fetch JWT token: %s", e)
+            raise
+
+    def _is_token_valid(self) -> bool:
+        """Check if the cached token is still valid."""
+        if not self._cached_token or not self._token_expiry:
+            return False
+        # Refresh if within buffer time of expiry
+        return time.time() < (self._token_expiry - self.TOKEN_REFRESH_BUFFER_SECONDS)
+
+    def _fetch_token(self) -> None:
+        """Fetch a new JWT token from the token endpoint."""
+
+        # Prepare form data
+        data = {
+            "grant_type": self.grant_type,
+            "response_type": self.response_type,
+            "apikey": self.api_key,
+        }
+
+        try:
+            response = requests.post(
+                self.token_endpoint,
+                data=data,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=10,
+            )
+            response.raise_for_status()
+
+            response_json = response.json()
+
+            # Try to find token in response using configured field names
+            token = self._extract_token_from_response(response_json)
+            if not token:
+                msg = f"Token not found in response. Tried fields: {self.token_fields}"
+                raise ValueError(msg)
+
+            self._cached_token = token
+
+            # Try to get expiration from response
+            expires_in = self._extract_expires_in(response_json)
+
+            if expires_in:
+                self._token_expiry = time.time() + expires_in
+            else:
+                # Try to extract expiration from JWT payload
+                self._token_expiry = self._extract_expiry_from_jwt(token)
+
+            log.debug("Successfully fetched JWT token, expires at: %s", self._token_expiry)
+
+        except (requests.RequestException, ValueError) as e:
+            msg = f"Failed to fetch JWT token from {self.token_endpoint}: {e}"
+            raise RuntimeError(msg) from e
+        except Exception as e:
+            msg = f"Failed to fetch JWT token from {self.token_endpoint}: {e}"
+            raise RuntimeError(msg) from e
+
+    def _extract_token_from_response(self, response_json: dict[str, Any]) -> str | None:
+        """Extract token from response JSON using configured field names."""
+        for field in self.token_fields:
+            # Try exact match first
+            if field in response_json:
+                value = response_json[field]
+                return str(value) if value is not None else None
+
+            # Try case-insensitive match
+            for key in response_json:
+                if key.lower() == field.lower():
+                    value = response_json[key]
+                    return str(value) if value is not None else None
+
+        return None
+
+    def _extract_expires_in(self, response_json: dict[str, Any]) -> int | None:
+        """Extract expiration time from response JSON."""
+        # Try exact match
+        if self.expires_in_field in response_json:
+            return int(response_json[self.expires_in_field])
+
+        # Try case-insensitive match and handle camelCase/snake_case variations
+        for key in response_json:
+            if key.lower() == self.expires_in_field.lower():
+                return int(response_json[key])
+            # Handle camelCase to snake_case (e.g., expiresIn -> expires_in)
+            if key.lower().replace("_", "") == self.expires_in_field.lower().replace("_", ""):
+                return int(response_json[key])
+
+        return None
+
+    def _extract_expiry_from_jwt(self, token: str) -> float | None:
+        """Extract expiration time from JWT payload's 'exp' claim."""
+        try:
+            # JWT format: header.payload.signature
+            parts = token.split(".")
+            if len(parts) != 3:
+                return None
+
+            # Decode payload (add padding if needed)
+            payload = parts[1]
+            padding = 4 - len(payload) % 4
+            if padding != 4:
+                payload += "=" * padding
+
+            decoded = base64.urlsafe_b64decode(payload)
+            payload_json = json.loads(decoded)
+
+            if "exp" in payload_json:
+                return float(payload_json["exp"])
+
+        except Exception as e:
+            log.debug("Failed to extract expiry from JWT: %s", e)
+
+        return None
+
+
 def create_token_provider(auth: dict[str, str]) -> TokenProvider:
     if "type" not in auth:
         log.debug("No auth type specified, fallback to default TokenProvider")
@@ -61,6 +256,10 @@ def create_token_provider(auth: dict[str, str]) -> TokenProvider:
     if auth["type"] == "api_key":
         log.debug("Using ApiKeyTokenProvider")
         return ApiKeyTokenProvider(auth)
+
+    if auth["type"] == "jwt":
+        log.debug("Using JwtTokenProvider")
+        return JwtTokenProvider(auth)
 
     of_type: str = auth["type"]
     subclass = import_from_string(of_type)

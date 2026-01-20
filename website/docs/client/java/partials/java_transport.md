@@ -15,8 +15,16 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
 - `urlParams` - dictionary specifying query parameters send in HTTP requests. Optional.
 - `timeoutInMillis` - integer specifying timeout (in milliseconds) value used while connecting to server. Optional, default: `5000`.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
-  - `type` - string specifying the "api_key" or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
-  - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
+  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`apiKey` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - Configuration options for `api_key` authentication: 
+     - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
+  - Configuration options for `jwt` authentication: 
+     - `apiKey` - string, the API key used to obtain the JWT token. Required if `type` is `jwt`.
+     - `tokenEndpoint` - string, the URL endpoint for token generation. Required if `type` is `jwt`.
+     - `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
+     - `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.   
+     - `tokenFields` - array of strings, JSON field names to search for the token in the response. The provider tries each field in order. Optional, default: `["token", "access_token"]`.
+     - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
 - `headers` - dictionary specifying HTTP request headers. Optional.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 
@@ -254,6 +262,176 @@ With SSL Context:
 ```
 where the config contains location of the keystore file, keystore password and its type. 
 It should also contain key password. 
+
+</TabItem>
+</Tabs>
+
+#### JWT Token Provider
+
+The `JwtTokenProvider` is an authentication provider that exchanges an API key for a JWT token via a POST endpoint. This is useful for services that require OAuth-style authentication where you need to obtain a token before making API requests.
+
+##### Configuration
+
+When using JWT authentication with HTTP transport, configure the `auth` section as follows:
+
+- `type` - string, must be `"jwt"`. Required.
+- `apiKey` - string, the API key used to obtain the JWT token. Required.
+- `tokenEndpoint` - string, the URL endpoint for token generation. Required.
+- `tokenFields` - array of strings, JSON field names to search for the token in the response. The provider tries each field in order. Optional, default: `["token", "access_token"]`.
+- `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
+- `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
+- `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.
+
+##### Behavior
+
+- The provider sends a POST request with URL-encoded form data containing the API key and OAuth parameters.
+- The response is expected to be JSON containing the JWT token and optionally an expiration time.
+- Tokens are cached and automatically refreshed 60 seconds before expiration.
+- If no expiration is provided in the response, the provider attempts to extract it from the JWT payload's `exp` claim.
+- The provider supports multiple JSON field names for the token, trying each in order until a match is found.
+- Field matching is case-insensitive and handles both snake_case and camelCase variations (e.g., `expires_in` matches `expiresIn`).
+
+##### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+Standard OAuth configuration:
+
+```yaml
+transport:
+  type: http
+  url: https://api.example.com
+  auth:
+    type: jwt
+    apiKey: your-api-key
+    tokenEndpoint: https://auth.example.com/token
+```
+
+With custom field names:
+
+```yaml
+transport:
+  type: http
+  url: https://api.example.com
+  auth:
+    type: jwt
+    apiKey: your-api-key
+    tokenEndpoint: https://auth.example.com/token
+    tokenFields: ["access_token", "token"]
+    expiresInField: expires_in
+```
+
+IBM Cloud IAM configuration:
+
+```yaml
+transport:
+  type: http
+  url: https://api.example.com
+  auth:
+    type: jwt
+    apiKey: your-ibm-api-key
+    tokenEndpoint: https://iam.cloud.ibm.com/identity/token
+    grantType: urn:ibm:params:oauth:grant-type:apikey
+    responseType: cloud_iam
+```
+
+</TabItem>
+<TabItem value="spark" label="Spark Config">
+
+Standard OAuth configuration:
+
+```ini
+spark.openlineage.transport.type=http
+spark.openlineage.transport.url=https://api.example.com
+spark.openlineage.transport.auth.type=jwt
+spark.openlineage.transport.auth.apiKey=your-api-key
+spark.openlineage.transport.auth.tokenEndpoint=https://auth.example.com/token
+```
+
+IBM Cloud IAM configuration:
+
+```ini
+spark.openlineage.transport.type=http
+spark.openlineage.transport.url=https://api.example.com
+spark.openlineage.transport.auth.type=jwt
+spark.openlineage.transport.auth.apiKey=your-ibm-api-key
+spark.openlineage.transport.auth.tokenEndpoint=https://iam.cloud.ibm.com/identity/token
+spark.openlineage.transport.auth.grantType=urn:ibm:params:oauth:grant-type:apikey
+spark.openlineage.transport.auth.responseType=cloud_iam
+```
+
+</TabItem>
+<TabItem value="flink" label="Flink Config">
+
+Standard OAuth configuration:
+
+```ini
+openlineage.transport.type=http
+openlineage.transport.url=https://api.example.com
+openlineage.transport.auth.type=jwt
+openlineage.transport.auth.apiKey=your-api-key
+openlineage.transport.auth.tokenEndpoint=https://auth.example.com/token
+```
+
+IBM Cloud IAM configuration:
+
+```ini
+openlineage.transport.type=http
+openlineage.transport.url=https://api.example.com
+openlineage.transport.auth.type=jwt
+openlineage.transport.auth.apiKey=your-ibm-api-key
+openlineage.transport.auth.tokenEndpoint=https://iam.cloud.ibm.com/identity/token
+openlineage.transport.auth.grantType=urn:ibm:params:oauth:grant-type:apikey
+openlineage.transport.auth.responseType=cloud_iam
+```
+
+</TabItem>
+<TabItem value="java" label="Java Code">
+
+Standard OAuth configuration:
+
+```java
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.client.transports.HttpTransport;
+import io.openlineage.client.transports.JwtTokenProvider;
+
+JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
+jwtTokenProvider.setApiKey("your-api-key");
+jwtTokenProvider.setTokenEndpoint(URI.create("https://auth.example.com/token"));
+
+HttpConfig httpConfig = new HttpConfig();
+httpConfig.setUrl(URI.create("https://api.example.com"));
+httpConfig.setAuth(jwtTokenProvider);
+
+OpenLineageClient client = OpenLineageClient.builder()
+  .transport(new HttpTransport(httpConfig))
+  .build();
+```
+
+IBM Cloud IAM configuration:
+
+```java
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.client.transports.HttpTransport;
+import io.openlineage.client.transports.JwtTokenProvider;
+
+JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
+jwtTokenProvider.setApiKey("your-ibm-api-key");
+jwtTokenProvider.setTokenEndpoint(URI.create("https://iam.cloud.ibm.com/identity/token"));
+jwtTokenProvider.setGrantType("urn:ibm:params:oauth:grant-type:apikey");
+jwtTokenProvider.setResponseType("cloud_iam");
+
+HttpConfig httpConfig = new HttpConfig();
+httpConfig.setUrl(URI.create("https://api.example.com"));
+httpConfig.setAuth(jwtTokenProvider);
+
+OpenLineageClient client = OpenLineageClient.builder()
+  .transport(new HttpTransport(httpConfig))
+  .build();
+```
 
 </TabItem>
 </Tabs>
