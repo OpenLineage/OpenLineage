@@ -483,11 +483,12 @@ class RddExecutionContext implements ExecutionContext {
     }
 
     JobMetricsHolder jobMetricsHolder = JobMetricsHolder.getInstance();
-    if (!jobMetricsHolder.containsWriteMetrics(activeJobId)) {
+    Map<Metric, Number> metrics = jobMetricsHolder.pollWriteMetrics(activeJobId);
+
+    if (metrics.isEmpty()) {
       log.warn("No write metrics found in job {}", activeJobId);
       return Optional.empty();
     }
-    Map<Metric, Number> metrics = jobMetricsHolder.pollMetrics(activeJobId);
 
     return Optional.of(
         olContext
@@ -513,11 +514,11 @@ class RddExecutionContext implements ExecutionContext {
     }
 
     JobMetricsHolder jobMetricsHolder = JobMetricsHolder.getInstance();
-    if (!jobMetricsHolder.containsReadMetrics(activeJobId)) {
+    Map<Metric, Number> metrics = jobMetricsHolder.pollReadMetrics(activeJobId);
+    if (metrics.isEmpty()) {
       log.warn("No read metrics found in job {}", activeJobId);
       return Optional.empty();
     }
-    Map<Metric, Number> metrics = jobMetricsHolder.pollMetrics(activeJobId);
 
     return Optional.of(
         olContext
