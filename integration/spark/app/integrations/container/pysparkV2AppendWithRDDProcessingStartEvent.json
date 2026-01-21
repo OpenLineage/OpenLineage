@@ -2,12 +2,12 @@
   "eventType": "START",
   "job": {
     "namespace": "iceberg-namespace",
-    "name": "iceberg_integration_test.append_data.spark_catalog_default_append_table"
+    "name": "iceberg_integration_test.append_data.spark_catalog_default_target_table"
   },
   "inputs": [
     {
       "namespace": "file",
-      "name": "/tmp/iceberg/default/append_source",
+      "name": "/tmp/iceberg/default/source_table",
       "facets": {
         "dataSource": {
           "name": "file",
