@@ -62,7 +62,7 @@ import org.mockserver.model.HttpRequest;
 @Tag("iceberg")
 @Slf4j
 class SparkIcebergIntegrationTest {
-  private static final int MOCK_SERVER_PORT = 1084;
+  private static final int MOCK_SERVER_PORT = 1089;
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
