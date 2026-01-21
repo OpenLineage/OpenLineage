@@ -50,7 +50,7 @@ public class BigQueryUtils {
 
     return tryExecuteMethod(bigQueryRelation, "getTableId")
         .flatMap(BigQueryUtils::extractDatasetIdentifierFromTableId)
-        .map(x -> new DatasetIdentifier((String) x, "namespace"))
+        .map(x -> new DatasetIdentifier((String) x, "bigquery"))
         .map(Collections::singletonList)
         .orElseGet(Collections::emptyList);
   }
