@@ -218,7 +218,7 @@ public class RddPathUtils {
   }
 
   public static class DataSourceRDDExtractor implements RddPathExtractor<DataSourceRDD> {
-    private final InputPartitionPathExtractorFactory inputPartitionPathExtractorFactory;
+    private final List<InputPartitionPathExtractor> inputPartitionPathExtractors;
 
     DataSourceRDDExtractor() {
       this(new InputPartitionPathExtractorFactory());
@@ -226,7 +226,8 @@ public class RddPathUtils {
 
     public DataSourceRDDExtractor(
         InputPartitionPathExtractorFactory inputPartitionPathExtractorFactory) {
-      this.inputPartitionPathExtractorFactory = inputPartitionPathExtractorFactory;
+      this.inputPartitionPathExtractors =
+          inputPartitionPathExtractorFactory.createInputPartitionPathExtractors();
     }
 
     @Override
@@ -239,7 +240,7 @@ public class RddPathUtils {
       return extractInputPartitions(rdd).stream()
           .flatMap(
               ip ->
-                  inputPartitionPathExtractorFactory.createInputPartitionPathExtractors().stream()
+                  inputPartitionPathExtractors.stream()
                       .filter(e -> e.isDefinedAt(ip))
                       .flatMap(
                           e -> e.extract(rdd.sparkContext().hadoopConfiguration(), ip).stream()));
@@ -302,7 +303,8 @@ public class RddPathUtils {
           | InstantiationException
           | IllegalAccessException
           | InvocationTargetException
-          | NoSuchMethodException e) {
+          | NoSuchMethodException
+          | NoClassDefFoundError e) {
         if (log.isDebugEnabled()) {
           log.debug(
               "{} is not on classpath: {}", ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR, e.getMessage());
