@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.filters;
 
 import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,12 @@ public class EventFilterUtils {
         .map(SparkSession::sparkContext)
         .map(SparkContext::conf)
         .map(conf -> conf.get("spark.sql.extensions", ""))
-        .filter("io.delta.sql.DeltaSparkSessionExtension"::equals)
+        .map(ext -> Arrays.asList(ext.split(",")))
+        .filter(
+            list ->
+                list.stream()
+                    .map(String::trim)
+                    .anyMatch("io.delta.sql.DeltaSparkSessionExtension"::equals))
         .isPresent();
   }
 }
