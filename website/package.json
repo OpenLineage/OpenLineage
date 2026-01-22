@@ -33,7 +33,7 @@
     "autoprefixer": "^10.4.19",
     "classnames": "^2.5.1",
     "docusaurus-lunr-search": "^3.5.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "lunr": "^2.3.9",
     "motion": "^12.23.24",
     "postcss": "^8.4.38",
