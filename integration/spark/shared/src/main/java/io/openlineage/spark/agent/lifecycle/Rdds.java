@@ -21,6 +21,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.StageInfo;
 import org.apache.spark.sql.execution.ShuffledRowRDD;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceRDD;
 import org.apache.spark.storage.RDDInfo;
 
 public class Rdds {
@@ -87,6 +88,9 @@ public class Rdds {
   }
 
   private static boolean isFileLikeRDD(RDD<?> rdd) {
-    return rdd instanceof HadoopRDD || rdd instanceof NewHadoopRDD || rdd instanceof FileScanRDD;
+    return rdd instanceof HadoopRDD
+        || rdd instanceof NewHadoopRDD
+        || rdd instanceof FileScanRDD
+        || rdd instanceof DataSourceRDD;
   }
 }

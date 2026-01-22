@@ -37,7 +37,7 @@ class SparkRddGenericIntegrationTest {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
-  private static final int MOCK_SERVER_PORT = 1083;
+  private static final int MOCK_SERVER_PORT = 1085;
   private static SparkSession spark;
   private static ClientAndServer mockServer;
 

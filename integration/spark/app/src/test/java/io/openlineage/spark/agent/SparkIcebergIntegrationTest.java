@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -61,7 +62,7 @@ import org.mockserver.model.HttpRequest;
 @Tag("iceberg")
 @Slf4j
 class SparkIcebergIntegrationTest {
-  private static final int MOCK_SERVER_PORT = 1084;
+  private static final int MOCK_SERVER_PORT = 1089;
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
@@ -393,6 +394,32 @@ class SparkIcebergIntegrationTest {
 
     verifyEvents(
         mockServer, "pysparkV2AppendDataStartEvent.json", "pysparkV2AppendDataCompleteEvent.json");
+  }
+
+  @Test
+  @SneakyThrows
+  void testAppendWithRDDProcessing() {
+    clearTables("source_table", "target_table");
+    createTempDataset(2).createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE source_table USING iceberg AS SELECT a FROM temp");
+    spark.sql("CREATE TABLE target_table (a long) USING iceberg");
+
+    JavaRDD<Row> inputRDD = spark.read().table("source_table").toJavaRDD();
+    JavaRDD<Row> filteredRDD = inputRDD.filter(row -> row.getLong(row.fieldIndex("a")) > 1);
+
+    StructType schema =
+        new StructType(
+            new StructField[] {new StructField("a", LongType$.MODULE$, false, Metadata.empty())});
+
+    Dataset<Row> processedDataFrame = spark.createDataFrame(filteredRDD, schema);
+    Dataset<Row> finalDataFrame = processedDataFrame.select("a");
+    finalDataFrame.writeTo("target_table").append();
+
+    verifyEvents(
+        mockServer,
+        "pysparkV2AppendWithRDDProcessingStartEvent.json",
+        "pysparkV2AppendWithRDDProcessingCompleteEvent.json");
   }
 
   @Test

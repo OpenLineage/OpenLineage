@@ -5,10 +5,17 @@
 
 package io.openlineage.spark.agent.util;
 
+import static io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod;
+
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -23,8 +30,11 @@ import org.apache.spark.rdd.NewHadoopRDD;
 import org.apache.spark.rdd.ParallelCollectionRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.rdd.UnionRDD;
+import org.apache.spark.sql.connector.read.InputPartition;
 import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceRDD;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceRDDPartition;
 import scala.Tuple2;
 import scala.collection.immutable.Seq;
 import scala.collection.mutable.ArrayBuffer;
@@ -40,7 +50,8 @@ public class RddPathUtils {
             new MapPartitionsRDDExtractor(),
             new UnionRddExctractor(),
             new NewHadoopRDDExtractor(),
-            new ParallelCollectionRDDExtractor())
+            new ParallelCollectionRDDExtractor(),
+            new DataSourceRDDExtractor())
         .filter(e -> e.isDefinedAt(rdd))
         .findFirst()
         .orElse(new UnknownRDDExtractor())
@@ -146,8 +157,8 @@ public class RddPathUtils {
               f -> {
                 if ("3.4".compareTo(package$.MODULE$.SPARK_VERSION()) <= 0) {
                   // filePath returns SparkPath for Spark 3.4
-                  return ReflectionUtils.tryExecuteMethod(f, "filePath")
-                      .map(o -> ReflectionUtils.tryExecuteMethod(o, "toPath"))
+                  return tryExecuteMethod(f, "filePath")
+                      .map(o -> tryExecuteMethod(o, "toPath"))
                       .map(o -> (Path) o.get())
                       .get()
                       .getParent();
@@ -203,6 +214,103 @@ public class RddPathUtils {
         log.warn("Cannot read data field from ParallelCollectionRDD {}", rdd);
       }
       return Stream.empty();
+    }
+  }
+
+  public static class DataSourceRDDExtractor implements RddPathExtractor<DataSourceRDD> {
+    private final List<InputPartitionPathExtractor> inputPartitionPathExtractors;
+
+    DataSourceRDDExtractor() {
+      this(new InputPartitionPathExtractorFactory());
+    }
+
+    public DataSourceRDDExtractor(
+        InputPartitionPathExtractorFactory inputPartitionPathExtractorFactory) {
+      this.inputPartitionPathExtractors =
+          inputPartitionPathExtractorFactory.createInputPartitionPathExtractors();
+    }
+
+    @Override
+    public boolean isDefinedAt(Object rdd) {
+      return rdd instanceof DataSourceRDD;
+    }
+
+    @Override
+    public Stream<Path> extract(DataSourceRDD rdd) {
+      return extractInputPartitions(rdd).stream()
+          .flatMap(
+              ip ->
+                  inputPartitionPathExtractors.stream()
+                      .filter(e -> e.isDefinedAt(ip))
+                      .flatMap(
+                          e -> e.extract(rdd.sparkContext().hadoopConfiguration(), ip).stream()));
+    }
+
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+    private List<InputPartition> extractInputPartitions(DataSourceRDD rdd) {
+      List<InputPartition> inputPartitions;
+      if ("3.3".compareTo(package$.MODULE$.SPARK_VERSION()) <= 0) {
+        inputPartitions =
+            Arrays.stream(rdd.getPartitions())
+                .filter(p -> p instanceof DataSourceRDDPartition)
+                .map(p -> tryExecuteMethod(p, "inputPartitions").orElse(null))
+                .filter(Objects::nonNull)
+                .flatMap(seq -> ScalaConversionUtils.fromSeq((Seq<?>) seq).stream())
+                .filter(ip -> ip instanceof InputPartition)
+                .map(ip -> (InputPartition) ip)
+                .collect(Collectors.toList());
+      } else {
+        inputPartitions =
+            Arrays.stream(rdd.getPartitions())
+                .filter(p -> p instanceof DataSourceRDDPartition)
+                .map(p -> ((DataSourceRDDPartition) p).inputPartition())
+                .collect(Collectors.toList());
+      }
+      return inputPartitions;
+    }
+  }
+
+  public static class InputPartitionPathExtractorFactory {
+    private static final String ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR =
+        "io.openlineage.spark.agent.vendor.iceberg.util.SparkInputPartitionPathExtractor";
+
+    public List<InputPartitionPathExtractor> createInputPartitionPathExtractors() {
+      List<InputPartitionPathExtractor> inputPartitionPathExtractors = new ArrayList<>();
+      getIcebergInputPartitionPathExtractor().ifPresent(inputPartitionPathExtractors::add);
+      return inputPartitionPathExtractors;
+    }
+
+    private Optional<InputPartitionPathExtractor> getIcebergInputPartitionPathExtractor() {
+      try {
+        Class<?> clazz = Class.forName(ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR);
+
+        if (InputPartitionPathExtractor.class.isAssignableFrom(clazz)) {
+          InputPartitionPathExtractor icebergInputPartitionPathExtractor =
+              (InputPartitionPathExtractor) clazz.getDeclaredConstructor().newInstance();
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Successfully created an instance of {}", ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR);
+          }
+          return Optional.of(icebergInputPartitionPathExtractor);
+        } else {
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Class {} is not assignable from InputPartitionPathExtractor.",
+                ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR);
+          }
+        }
+      } catch (ClassNotFoundException
+          | InstantiationException
+          | IllegalAccessException
+          | InvocationTargetException
+          | NoSuchMethodException
+          | NoClassDefFoundError e) {
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "{} is not on classpath: {}", ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR, e.getMessage());
+        }
+      }
+      return Optional.empty();
     }
   }
 

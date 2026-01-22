@@ -1,0 +1,56 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.append_data.spark_catalog_default_target_table"
+  },
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/target_table",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "a": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/iceberg/default/source_table",
+                  "field": "a"
+                }
+              ]
+            }
+          }
+        },
+        "catalog": {
+          "framework": "iceberg",
+          "type": "hadoop",
+          "name": "spark_catalog",
+          "warehouseUri": "/tmp/iceberg",
+          "source": "spark"
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.target_table",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
