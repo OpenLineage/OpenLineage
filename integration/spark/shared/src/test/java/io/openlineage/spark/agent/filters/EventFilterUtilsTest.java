@@ -21,6 +21,8 @@ import org.mockito.MockedStatic;
 
 class EventFilterUtilsTest {
 
+  private static final String SPARK_SQL_EXTENSIONS = "spark.sql.extensions";
+
   @Test
   void testIsDeltaPlanWithSingleExtension() {
     SparkSession session = mock(SparkSession.class);
@@ -29,7 +31,7 @@ class EventFilterUtilsTest {
 
     when(session.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.conf()).thenReturn(sparkConf);
-    when(sparkConf.get("spark.sql.extensions", ""))
+    when(sparkConf.get(SPARK_SQL_EXTENSIONS, ""))
         .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
 
     try (MockedStatic<SparkSessionUtils> mocked = mockStatic(SparkSessionUtils.class)) {
@@ -46,7 +48,7 @@ class EventFilterUtilsTest {
 
     when(session.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.conf()).thenReturn(sparkConf);
-    when(sparkConf.get("spark.sql.extensions", ""))
+    when(sparkConf.get(SPARK_SQL_EXTENSIONS, ""))
         .thenReturn(
             "io.delta.sql.DeltaSparkSessionExtension,org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
 
@@ -64,7 +66,7 @@ class EventFilterUtilsTest {
 
     when(session.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.conf()).thenReturn(sparkConf);
-    when(sparkConf.get("spark.sql.extensions", ""))
+    when(sparkConf.get(SPARK_SQL_EXTENSIONS, ""))
         .thenReturn(
             "io.delta.sql.DeltaSparkSessionExtension , org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
 
@@ -82,7 +84,7 @@ class EventFilterUtilsTest {
 
     when(session.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.conf()).thenReturn(sparkConf);
-    when(sparkConf.get("spark.sql.extensions", ""))
+    when(sparkConf.get(SPARK_SQL_EXTENSIONS, ""))
         .thenReturn("org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
 
     try (MockedStatic<SparkSessionUtils> mocked = mockStatic(SparkSessionUtils.class)) {
@@ -99,7 +101,7 @@ class EventFilterUtilsTest {
 
     when(session.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.conf()).thenReturn(sparkConf);
-    when(sparkConf.get("spark.sql.extensions", "")).thenReturn("");
+    when(sparkConf.get(SPARK_SQL_EXTENSIONS, "")).thenReturn("");
 
     try (MockedStatic<SparkSessionUtils> mocked = mockStatic(SparkSessionUtils.class)) {
       mocked.when(SparkSessionUtils::activeSession).thenReturn(Optional.of(session));
