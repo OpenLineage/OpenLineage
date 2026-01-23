@@ -279,6 +279,7 @@ class RddExecutionContext implements ExecutionContext {
     FacetUtils.attachSmartDebugFacet(olContext, runFacetsBuilder);
 
     EventType eventType = getEventType(jobEnd.jobResult());
+    updateStatus(eventType);
     OpenLineage.RunEvent event =
         olContext
             .getOpenLineage()
