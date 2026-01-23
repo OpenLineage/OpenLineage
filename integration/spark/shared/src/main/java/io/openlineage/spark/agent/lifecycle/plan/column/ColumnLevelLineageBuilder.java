@@ -173,7 +173,9 @@ public class ColumnLevelLineageBuilder {
     return exprDependencies.entrySet().stream()
         .filter(e -> e.getKey().equals(exprId))
         .findAny()
-        .map(e -> e.getValue().stream().findFirst().get().getOutputExpression());
+        .map(Map.Entry::getValue)
+        .flatMap(list -> list.stream().findFirst())
+        .map(Dependency::getOutputExpression);
   }
 
   @Override
