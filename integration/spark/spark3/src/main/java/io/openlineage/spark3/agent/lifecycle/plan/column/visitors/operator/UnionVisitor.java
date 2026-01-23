@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
@@ -54,9 +55,18 @@ public class UnionVisitor implements OperatorVisitor {
         .forEach(
             position -> {
               ExprId firstExpr = childrenAttributes.get(0).get(position).exprId();
+              String firstName = childrenAttributes.get(0).get(position).name();
               IntStream.range(1, children.size())
                   .mapToObj(childIndex -> childrenAttributes.get(childIndex).get(position))
-                  .forEach(attr -> ExpressionTraverser.of(attr, firstExpr, builder).traverse());
+                  .forEach(
+                      attr ->
+                          ExpressionTraverser.of(
+                                  attr,
+                                  firstExpr,
+                                  firstName,
+                                  TransformationInfo.identity(attr.qualifiedName()),
+                                  builder)
+                              .traverse());
             });
   }
 }

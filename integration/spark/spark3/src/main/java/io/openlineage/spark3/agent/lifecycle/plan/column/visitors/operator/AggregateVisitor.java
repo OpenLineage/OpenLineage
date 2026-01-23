@@ -11,6 +11,7 @@ import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -49,21 +50,30 @@ public class AggregateVisitor implements OperatorVisitor {
   @Override
   public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
     Aggregate aggregate = (Aggregate) operator;
+    List<Expression> grouppingExpressions =
+        ScalaConversionUtils.<Expression>fromSeq((aggregate).groupingExpressions());
+    String sql =
+        grouppingExpressions.stream().map(Expression::sql).collect(Collectors.joining(", "));
+    String outputExpressionString = String.format("GROUP BY %s", sql);
 
     ExprId exprId = NamedExpression.newExprId();
-    builder.addDatasetDependency(exprId);
+    builder.addDatasetDependency(exprId, outputExpressionString, sql);
 
-    ScalaConversionUtils.<Expression>fromSeq((aggregate).groupingExpressions())
-        .forEach(
-            e ->
-                ExpressionTraverser.of(e, exprId, TransformationInfo.indirect(GROUP_BY), builder)
-                    .traverse());
+    grouppingExpressions.forEach(
+        e ->
+            ExpressionTraverser.of(
+                    e, exprId, e.sql(), TransformationInfo.indirect(GROUP_BY, e.sql()), builder)
+                .traverse());
 
     ScalaConversionUtils.<NamedExpression>fromSeq((aggregate).aggregateExpressions())
         .forEach(
             e ->
                 ExpressionTraverser.of(
-                        (Expression) e, e.exprId(), TransformationInfo.identity(), builder)
+                        (Expression) e,
+                        e.exprId(),
+                        e.qualifiedName(),
+                        TransformationInfo.identity(((Expression) e).sql()),
+                        builder)
                     .traverse());
   }
 
