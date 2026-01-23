@@ -42,7 +42,7 @@ class Dependency {
 
   @Override
   public int hashCode() {
-    return Objects.hash(exprId, transformationInfo);
+    return Objects.hash(exprId, outputExpression, transformationInfo);
   }
 
   public Dependency merge(Dependency dependency) {
@@ -50,7 +50,7 @@ class Dependency {
       TransformationInfo merged =
           this.transformationInfo.merge(
               dependency.getTransformationInfo(),
-              (a, b) -> a.replaceAll(dependency.outputExpression, b));
+              (a, b) -> a.replace(dependency.outputExpression, b));
 
       if (merged.equals(transformationInfo)) {
         // exactly the same dependency would work

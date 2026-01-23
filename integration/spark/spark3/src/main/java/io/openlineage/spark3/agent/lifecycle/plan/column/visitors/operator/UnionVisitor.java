@@ -56,7 +56,7 @@ public class UnionVisitor implements OperatorVisitor {
             position -> {
               ExprId firstExpr = childrenAttributes.get(0).get(position).exprId();
               String firstName = childrenAttributes.get(0).get(position).name();
-              IntStream.range(0, children.size())
+              IntStream.range(1, children.size())
                   .mapToObj(childIndex -> childrenAttributes.get(childIndex).get(position))
                   .forEach(
                       attr ->
