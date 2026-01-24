@@ -37,6 +37,7 @@ $ git clone https://github.com/MarquezProject/marquez.git && cd marquez
 
 $ ./docker/up.sh
 ```
+> **Note:** Port 5000 is now reserved for MacOS. If running locally on MacOS, you can run `./docker/up.sh --api-port 9000` to configure the API to listen on port 9000 instead. Keep in mind that you will need to update the URLs below with the appropriate port number.
 
 :::info
 Pass the `--build` flag to the script to build images from source, or `--tag X.Y.Z` to use a tagged image.
