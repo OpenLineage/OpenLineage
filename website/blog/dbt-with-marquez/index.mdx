@@ -48,6 +48,7 @@ Next, let’s start a local Marquez instance to store our lineage metadata. Make
 git clone https://github.com/MarquezProject/marquez.git && cd marquez
 ./docker/up.sh
 ```
+> **Note:** Port 5000 is now reserved for MacOS. If running locally on MacOS, you can run `./docker/up.sh --api-port 9000` to configure the API to listen on port 9000 instead. Keep in mind that you will need to update the URLs below with the appropriate port number.
 
 Check to make sure Marquez is up by visiting [http://localhost:3000](http://localhost:3000). You should see an empty Marquez instance with a message saying there isn’t any data. Also, you should be able to see the server output from your requests in the terminal window where Marquez is running. Keep this window open until we’re done.
 
