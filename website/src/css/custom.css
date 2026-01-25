@@ -88,21 +88,6 @@
   .bottom {
     background-color: #000;
   }
-  .text-base text-color-4 boxed lg:text-lg mt-4 {
-    color: #fff;
-  }
-  .text-6xl.relative.mt-20.lg:text-7l {
-    color: #fff;
-  }
-  .wall-text #hero-descrip {
-    color: #fff;
-  }
-  .wall-text #hero-short-descrip {
-    color: #fff;
-  }
-  #animation-switch {
-    color: #fff;
-  }
 }
 
 #animation-container {
@@ -170,6 +155,7 @@ body {
   perspective: 25px;
   width: 99%;
   height: 600px;
+  background-color: #000;
 }
 
 .cube {
@@ -191,22 +177,27 @@ body {
   transform: rotateY(0deg) translateZ(50px);
   background-color: rgb(242, 101, 34);
 }
+
 .right {
   transform: rotateY(33deg) translateZ(50px);
   background-color: #333;
 }
+
 .back {
   transform: rotateY(66deg) translateZ(50px);
   background-color: rgb(116, 164, 188);
 }
+
 .left {
   transform: rotateY(99deg) translateZ(50px);
   background-color: rgb(116, 164, 188);
 }
+
 .top {
   transform: rotateX(-33deg) translateZ(50px);
   background-color: #74a4bc;
 }
+
 .bottom {
   transform: rotateX(-180deg) translateZ(50px);
   background-color: #fff;
@@ -215,16 +206,17 @@ body {
 .wall-text {
   z-index: 10;
   position: absolute;
+  color: #fff;
 }
 
 .wall-text #hero-descrip {
-  color: #000;
+  color: #fff;
   font-weight: bold;
 }
 
 .wall-text #hero-short-descrip {
   font-weight: bold;
-  color: #111;
+  color: #fff;
 }
 
 p {
