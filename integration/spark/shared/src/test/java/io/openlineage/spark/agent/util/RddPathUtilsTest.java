@@ -6,11 +6,13 @@
 package io.openlineage.spark.agent.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,10 +61,12 @@ class RddPathUtilsTest {
     when(filePartition.files()).thenReturn(new PartitionedFile[] {partitionedFile});
     when(partitionedFile.filePath()).thenReturn("/some-path/sub-path");
 
-    List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(mapPartitions));
+    List<DatasetIdentifier> datasetIdentifiers =
+        PlanUtils.findDatasetIdentifiers(Collections.singletonList(mapPartitions));
 
-    assertThat(rddPaths).hasSize(1);
-    assertThat(rddPaths.get(0).toString()).isEqualTo("/some-path");
+    assertThat(datasetIdentifiers)
+        .extracting(DatasetIdentifier::getNamespace, DatasetIdentifier::getName)
+        .containsExactlyInAnyOrder(tuple("file", "/some-path"));
   }
 
   @Test
@@ -79,11 +83,12 @@ class RddPathUtilsTest {
 
     FieldUtils.writeDeclaredField(parallelCollectionRDD, DATA_FIELD_NAME, data, true);
 
-    List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(parallelCollectionRDD));
+    List<DatasetIdentifier> datasetIdentifiers =
+        PlanUtils.findDatasetIdentifiers(Collections.singletonList(parallelCollectionRDD));
 
-    assertThat(rddPaths).hasSize(2);
-    assertThat(rddPaths.get(0).toString()).isEqualTo("/some-path1");
-    assertThat(rddPaths.get(1).toString()).isEqualTo("/some-path2");
+    assertThat(datasetIdentifiers)
+        .extracting(DatasetIdentifier::getNamespace, DatasetIdentifier::getName)
+        .containsExactlyInAnyOrder(tuple("file", "/some-path1"), tuple("file", "/some-path2"));
   }
 
   @Test
@@ -109,15 +114,16 @@ class RddPathUtilsTest {
 
     when(unionRdd.rdds()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(rdd1, rdd2)));
 
-    List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(unionRdd));
-    assertThat(rddPaths)
-        .hasSize(2)
-        .map(o -> ((Path) o).toString())
-        .containsExactlyInAnyOrder("/some-path1", "/some-path2");
+    List<DatasetIdentifier> datasetIdentifiers =
+        PlanUtils.findDatasetIdentifiers(Collections.singletonList(unionRdd));
+
+    assertThat(datasetIdentifiers)
+        .extracting(DatasetIdentifier::getNamespace, DatasetIdentifier::getName)
+        .containsExactlyInAnyOrder(tuple("file", "/some-path1"), tuple("file", "/some-path2"));
   }
 
   @Test
-  void testNewHadoopRDDExtractor() throws IllegalAccessException {
+  void testNewHadoopRDDExtractor() {
     SparkConf sparkConf = new SparkConf();
     sparkConf.setMaster("local[*]").setAppName("test");
     SparkContext sparkContext = new SparkContext(sparkConf);
@@ -127,11 +133,11 @@ class RddPathUtilsTest {
       when(FileInputFormat.getInputPaths(any()))
           .thenReturn(new Path[] {new Path("some-path1"), new Path("some-path2")});
 
-      List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(rdd));
-      assertThat(rddPaths)
-          .hasSize(2)
-          .map(o -> ((Path) o).toString())
-          .containsExactlyInAnyOrder("some-path1", "some-path2");
+      List<DatasetIdentifier> datasetIdentifiers =
+          PlanUtils.findDatasetIdentifiers(Collections.singletonList(rdd));
+      assertThat(datasetIdentifiers)
+          .extracting(DatasetIdentifier::getNamespace, DatasetIdentifier::getName)
+          .containsExactlyInAnyOrder(tuple("file", "some-path1"), tuple("file", "some-path2"));
     }
     sparkContext.stop();
   }
@@ -141,7 +147,8 @@ class RddPathUtilsTest {
     ParallelCollectionRDD parallelCollectionRDD = mock(ParallelCollectionRDD.class);
 
     FieldUtils.writeDeclaredField(parallelCollectionRDD, DATA_FIELD_NAME, null, true);
-    assertThat(PlanUtils.findRDDPaths(Collections.singletonList(parallelCollectionRDD))).hasSize(0);
+    assertThat(PlanUtils.findDatasetIdentifiers(Collections.singletonList(parallelCollectionRDD)))
+        .hasSize(0);
   }
 
   @Test
@@ -152,7 +159,8 @@ class RddPathUtilsTest {
         JavaConverters.asScalaIteratorConverter(Arrays.asList(333).iterator()).asScala().toSeq();
 
     FieldUtils.writeDeclaredField(parallelCollectionRDD, DATA_FIELD_NAME, data, true);
-    assertThat(PlanUtils.findRDDPaths(Collections.singletonList(parallelCollectionRDD))).hasSize(0);
+    assertThat(PlanUtils.findDatasetIdentifiers(Collections.singletonList(parallelCollectionRDD)))
+        .hasSize(0);
   }
 
   @Test
@@ -173,11 +181,12 @@ class RddPathUtilsTest {
         JavaConverters.asScalaBufferConverter(Arrays.asList(path1, path2, path3)).asScala());
 
     FieldUtils.writeDeclaredField(parallelCollectionRDD, DATA_FIELD_NAME, data, true);
-    List<?> rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(parallelCollectionRDD));
+    List<DatasetIdentifier> datasetIdentifiers =
+        PlanUtils.findDatasetIdentifiers(Collections.singletonList(parallelCollectionRDD));
 
-    assertThat(rddPaths).hasSize(2);
-    assertThat(rddPaths.get(0).toString()).isEqualTo("/some-path1");
-    assertThat(rddPaths.get(1).toString()).isEqualTo("/some-path2");
+    assertThat(datasetIdentifiers)
+        .extracting(DatasetIdentifier::getNamespace, DatasetIdentifier::getName)
+        .containsExactlyInAnyOrder(tuple("file", "/some-path1"), tuple("file", "/some-path2"));
   }
 
   @Test
@@ -191,33 +200,55 @@ class RddPathUtilsTest {
     when(fileScanRDD.filePartitions())
         .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(filePartition)));
 
-    List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(fileScanRDD));
+    List<DatasetIdentifier> datasetIdentifiers =
+        PlanUtils.findDatasetIdentifiers(Collections.singletonList(fileScanRDD));
 
-    assertThat(rddPaths).hasSize(0);
+    assertThat(datasetIdentifiers).hasSize(0);
   }
 
   @Test
   void testFindRDDPathsUnknownRdd() {
-    assertThat(PlanUtils.findRDDPaths(Collections.singletonList(mock(RDD.class)))).isEmpty();
+    assertThat(PlanUtils.findDatasetIdentifiers(Collections.singletonList(mock(RDD.class))))
+        .isEmpty();
   }
 
   @Test
   void testDataSourceRDDExtractor() {
-    Map<InputPartition, List<Path>> partitionPaths = new HashMap<>();
+    Map<InputPartition, List<DatasetIdentifier>> datasetIdentifiers = new HashMap<>();
     DataSourceRDD dataSourceRDD = getDataSourceRDD();
 
-    Path expectedPath1 = new Path("/data/source1");
-    DataSourceRDDPartition partition1 = getDataSourceRDDPartition(partitionPaths, expectedPath1);
-    Path expectedPath2 = new Path("/data/source2");
-    DataSourceRDDPartition partition2 = getDataSourceRDDPartition(partitionPaths, expectedPath2);
+    DataSourceRDDPartition partition1 =
+        getDataSourceRDDPartition(
+            datasetIdentifiers, PathUtils.fromPath(new Path("/warehouse/source1")));
+    DataSourceRDDPartition partition2 =
+        getDataSourceRDDPartition(
+            datasetIdentifiers,
+            PathUtils.fromPath(new Path("/warehouse/source2"))
+                .withSymlink(
+                    "default.source2", "file:/warehouse", DatasetIdentifier.SymlinkType.TABLE));
     when(dataSourceRDD.getPartitions())
         .thenReturn(new DataSourceRDDPartition[] {partition1, partition2});
 
-    RddPathUtils.DataSourceRDDExtractor extractor = getDataSourceRDDExtractor(partitionPaths);
+    RddPathUtils.DataSourceRDDExtractor extractor = getDataSourceRDDExtractor(datasetIdentifiers);
 
-    List<Path> extractedPaths = extractor.extract(dataSourceRDD).collect(Collectors.toList());
+    List<DatasetIdentifier> extracted =
+        extractor.extract(dataSourceRDD).collect(Collectors.toList());
 
-    assertThat(extractedPaths).hasSize(2).containsExactlyInAnyOrder(expectedPath1, expectedPath2);
+    assertThat(extracted)
+        .extracting(
+            DatasetIdentifier::getNamespace,
+            DatasetIdentifier::getName,
+            DatasetIdentifier::getSymlinks)
+        .containsExactlyInAnyOrder(
+            tuple("file", "/warehouse/source1", Collections.emptyList()),
+            tuple(
+                "file",
+                "/warehouse/source2",
+                Collections.singletonList(
+                    new DatasetIdentifier.Symlink(
+                        "default.source2",
+                        "file:/warehouse",
+                        DatasetIdentifier.SymlinkType.TABLE))));
   }
 
   private static DataSourceRDD getDataSourceRDD() {
@@ -230,43 +261,47 @@ class RddPathUtilsTest {
   }
 
   private static DataSourceRDDPartition getDataSourceRDDPartition(
-      Map<InputPartition, List<Path>> partitionPaths, Path expectedPath) {
+      Map<InputPartition, List<DatasetIdentifier>> partitionToDatasetIdentifiers,
+      DatasetIdentifier expectedDatasetIdentifier) {
     DataSourceRDDPartition partition = mock(DataSourceRDDPartition.class);
     InputPartition inputPartition = mock(InputPartition.class);
-    partitionPaths.put(inputPartition, Collections.singletonList(expectedPath));
+    partitionToDatasetIdentifiers.put(
+        inputPartition, Collections.singletonList(expectedDatasetIdentifier));
     when(partition.inputPartition()).thenReturn(inputPartition);
     return partition;
   }
 
   private static RddPathUtils.DataSourceRDDExtractor getDataSourceRDDExtractor(
-      Map<InputPartition, List<Path>> partitionPaths) {
-    InputPartitionPathExtractor customExtractor =
-        new TestInputPartitionPathExtractor(partitionPaths);
+      Map<InputPartition, List<DatasetIdentifier>> partitionToDatasetIdentifiers) {
+    InputPartitionExtractor customExtractor =
+        new TestInputPartitionExtractor(partitionToDatasetIdentifiers);
 
-    RddPathUtils.InputPartitionPathExtractorFactory mockFactory =
-        mock(RddPathUtils.InputPartitionPathExtractorFactory.class);
-    when(mockFactory.createInputPartitionPathExtractors())
+    RddPathUtils.InputPartitionExtractorFactory mockFactory =
+        mock(RddPathUtils.InputPartitionExtractorFactory.class);
+    when(mockFactory.createInputPartitionExtractors())
         .thenReturn(Collections.singletonList(customExtractor));
 
     return new RddPathUtils.DataSourceRDDExtractor(mockFactory);
   }
 
-  static class TestInputPartitionPathExtractor implements InputPartitionPathExtractor {
-    private final java.util.Map<InputPartition, List<Path>> partitionToPaths;
+  static class TestInputPartitionExtractor implements InputPartitionExtractor {
+    private final java.util.Map<InputPartition, List<DatasetIdentifier>>
+        partitionToDatasetIdentifiers;
 
-    public TestInputPartitionPathExtractor(
-        java.util.Map<InputPartition, List<Path>> partitionToPaths) {
-      this.partitionToPaths = partitionToPaths;
+    public TestInputPartitionExtractor(
+        java.util.Map<InputPartition, List<DatasetIdentifier>> partitionToDatasetIdentifiers) {
+      this.partitionToDatasetIdentifiers = partitionToDatasetIdentifiers;
     }
 
     @Override
     public boolean isDefinedAt(InputPartition inputPartition) {
-      return partitionToPaths.containsKey(inputPartition);
+      return partitionToDatasetIdentifiers.containsKey(inputPartition);
     }
 
     @Override
-    public List<Path> extract(Configuration conf, InputPartition inputPartition) {
-      return partitionToPaths.getOrDefault(inputPartition, Collections.emptyList());
+    public List<DatasetIdentifier> extract(
+        SparkContext sparkContext, InputPartition inputPartition) {
+      return partitionToDatasetIdentifiers.getOrDefault(inputPartition, Collections.emptyList());
     }
   }
 }

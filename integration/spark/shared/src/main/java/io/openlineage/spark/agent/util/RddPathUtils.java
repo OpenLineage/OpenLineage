@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.util;
 
 import static io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -43,8 +44,8 @@ import scala.collection.mutable.ArrayBuffer;
 @Slf4j
 public class RddPathUtils {
 
-  public static Stream<Path> findRDDPaths(RDD rdd) {
-    return Stream.<RddPathExtractor>of(
+  public static Stream<DatasetIdentifier> findDatasetIdentifiers(RDD<?> rdd) {
+    return Stream.<RddDatasetIdentifierExtractor>of(
             new HadoopRDDExtractor(),
             new FileScanRDDExtractor(),
             new MapPartitionsRDDExtractor(),
@@ -59,41 +60,40 @@ public class RddPathUtils {
         .filter(p -> p != null);
   }
 
-  static class UnionRddExctractor implements RddPathExtractor<RDD> {
+  static class UnionRddExctractor implements RddDatasetIdentifierExtractor<UnionRDD<?>> {
     @Override
     public boolean isDefinedAt(Object rdd) {
       return rdd instanceof UnionRDD;
     }
 
     @Override
-    public Stream<Path> extract(RDD rdd) {
-      return ScalaConversionUtils.<RDD>fromSeq(((UnionRDD) rdd).rdds()).stream()
-          .map(RDD.class::cast)
-          .flatMap(r -> findRDDPaths((RDD) r));
+    public Stream<DatasetIdentifier> extract(UnionRDD<?> rdd) {
+      return ScalaConversionUtils.fromSeq(rdd.rdds()).stream()
+          .flatMap(RddPathUtils::findDatasetIdentifiers);
     }
   }
 
-  static class UnknownRDDExtractor implements RddPathExtractor<RDD> {
+  static class UnknownRDDExtractor implements RddDatasetIdentifierExtractor<RDD<?>> {
     @Override
     public boolean isDefinedAt(Object rdd) {
       return true;
     }
 
     @Override
-    public Stream<Path> extract(RDD rdd) {
+    public Stream<DatasetIdentifier> extract(RDD<?> rdd) {
       log.warn("Unknown RDD class {}", rdd);
       return Stream.empty();
     }
   }
 
-  static class HadoopRDDExtractor implements RddPathExtractor<HadoopRDD> {
+  static class HadoopRDDExtractor implements RddDatasetIdentifierExtractor<HadoopRDD<?, ?>> {
     @Override
     public boolean isDefinedAt(Object rdd) {
       return rdd instanceof HadoopRDD;
     }
 
     @Override
-    public Stream<Path> extract(HadoopRDD rdd) {
+    public Stream<DatasetIdentifier> extract(HadoopRDD<?, ?> rdd) {
       org.apache.hadoop.fs.Path[] inputPaths = FileInputFormat.getInputPaths(rdd.getJobConf());
       Configuration hadoopConf = rdd.getConf();
       if (log.isDebugEnabled()) {
@@ -101,24 +101,26 @@ public class RddPathUtils {
         log.debug("Hadoop RDD input paths {}", Arrays.toString(inputPaths));
         log.debug("Hadoop RDD job conf {}", rdd.getJobConf());
       }
-      return PlanUtils.getDirectoryPaths(Arrays.asList(inputPaths), hadoopConf).stream();
+      return PlanUtils.getDirectoryPaths(Arrays.asList(inputPaths), hadoopConf).stream()
+          .map(PathUtils::fromPath);
     }
   }
 
-  static class NewHadoopRDDExtractor implements RddPathExtractor<NewHadoopRDD> {
+  static class NewHadoopRDDExtractor implements RddDatasetIdentifierExtractor<NewHadoopRDD<?, ?>> {
     @Override
     public boolean isDefinedAt(Object rdd) {
       return rdd instanceof NewHadoopRDD;
     }
 
     @Override
-    public Stream<Path> extract(NewHadoopRDD rdd) {
+    public Stream<DatasetIdentifier> extract(NewHadoopRDD<?, ?> rdd) {
       try {
         org.apache.hadoop.fs.Path[] inputPaths =
             org.apache.hadoop.mapreduce.lib.input.FileInputFormat.getInputPaths(
-                new Job(((NewHadoopRDD<?, ?>) rdd).getConf()));
+                new Job(rdd.getConf()));
 
-        return PlanUtils.getDirectoryPaths(Arrays.asList(inputPaths), rdd.getConf()).stream();
+        return PlanUtils.getDirectoryPaths(Arrays.asList(inputPaths), rdd.getConf()).stream()
+            .map(PathUtils::fromPath);
       } catch (IOException e) {
         log.error("Openlineage spark agent could not get input paths", e);
       }
@@ -126,7 +128,8 @@ public class RddPathUtils {
     }
   }
 
-  static class MapPartitionsRDDExtractor implements RddPathExtractor<MapPartitionsRDD> {
+  static class MapPartitionsRDDExtractor
+      implements RddDatasetIdentifierExtractor<MapPartitionsRDD<?, ?>> {
 
     @Override
     public boolean isDefinedAt(Object rdd) {
@@ -134,15 +137,15 @@ public class RddPathUtils {
     }
 
     @Override
-    public Stream<Path> extract(MapPartitionsRDD rdd) {
+    public Stream<DatasetIdentifier> extract(MapPartitionsRDD<?, ?> rdd) {
       if (log.isDebugEnabled()) {
         log.debug("Parent RDD: {}", rdd.prev());
       }
-      return findRDDPaths(rdd.prev());
+      return findDatasetIdentifiers(rdd.prev());
     }
   }
 
-  static class FileScanRDDExtractor implements RddPathExtractor<FileScanRDD> {
+  static class FileScanRDDExtractor implements RddDatasetIdentifierExtractor<FileScanRDD> {
     @Override
     public boolean isDefinedAt(Object rdd) {
       return rdd instanceof FileScanRDD;
@@ -150,7 +153,7 @@ public class RddPathUtils {
 
     @Override
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-    public Stream<Path> extract(FileScanRDD rdd) {
+    public Stream<DatasetIdentifier> extract(FileScanRDD rdd) {
       return ScalaConversionUtils.fromSeq(rdd.filePartitions()).stream()
           .flatMap((FilePartition fp) -> Arrays.stream(fp.files()))
           .map(
@@ -165,18 +168,21 @@ public class RddPathUtils {
                 } else {
                   return parentOf(f.filePath());
                 }
-              });
+              })
+          .filter(Objects::nonNull)
+          .map(PathUtils::fromPath);
     }
   }
 
-  static class ParallelCollectionRDDExtractor implements RddPathExtractor<ParallelCollectionRDD> {
+  static class ParallelCollectionRDDExtractor
+      implements RddDatasetIdentifierExtractor<ParallelCollectionRDD<?>> {
     @Override
     public boolean isDefinedAt(Object rdd) {
       return rdd instanceof ParallelCollectionRDD;
     }
 
     @Override
-    public Stream<Path> extract(ParallelCollectionRDD rdd) {
+    public Stream<DatasetIdentifier> extract(ParallelCollectionRDD<?> rdd) {
       int SEQ_LIMIT = 1000;
       AtomicBoolean loggingDone = new AtomicBoolean(false);
       try {
@@ -199,14 +205,15 @@ public class RddPathUtils {
                       log.warn("unable to extract Path from {}", el.getClass().getCanonicalName());
                       loggingDone.set(true);
                     }
-                    return path;
+                    return PathUtils.fromPath(path);
                   })
               .filter(Objects::nonNull);
         } else if ((data instanceof ArrayBuffer) && !((ArrayBuffer<?>) data).isEmpty()) {
           ArrayBuffer<?> dataBuffer = (ArrayBuffer<?>) data;
           return ScalaConversionUtils.fromSeq(dataBuffer.toSeq()).stream()
               .map(o -> parentOf(o.toString()))
-              .filter(Objects::nonNull);
+              .filter(Objects::nonNull)
+              .map(PathUtils::fromPath);
         } else {
           log.warn("Cannot extract path from ParallelCollectionRDD {}", data);
         }
@@ -217,17 +224,17 @@ public class RddPathUtils {
     }
   }
 
-  public static class DataSourceRDDExtractor implements RddPathExtractor<DataSourceRDD> {
-    private final List<InputPartitionPathExtractor> inputPartitionPathExtractors;
+  public static class DataSourceRDDExtractor
+      implements RddDatasetIdentifierExtractor<DataSourceRDD> {
+    private final List<InputPartitionExtractor> inputPartitionExtractors;
 
     DataSourceRDDExtractor() {
-      this(new InputPartitionPathExtractorFactory());
+      this(new InputPartitionExtractorFactory());
     }
 
-    public DataSourceRDDExtractor(
-        InputPartitionPathExtractorFactory inputPartitionPathExtractorFactory) {
-      this.inputPartitionPathExtractors =
-          inputPartitionPathExtractorFactory.createInputPartitionPathExtractors();
+    public DataSourceRDDExtractor(InputPartitionExtractorFactory inputPartitionExtractorFactory) {
+      this.inputPartitionExtractors =
+          inputPartitionExtractorFactory.createInputPartitionExtractors();
     }
 
     @Override
@@ -236,14 +243,13 @@ public class RddPathUtils {
     }
 
     @Override
-    public Stream<Path> extract(DataSourceRDD rdd) {
+    public Stream<DatasetIdentifier> extract(DataSourceRDD rdd) {
       return extractInputPartitions(rdd).stream()
           .flatMap(
               ip ->
-                  inputPartitionPathExtractors.stream()
+                  inputPartitionExtractors.stream()
                       .filter(e -> e.isDefinedAt(ip))
-                      .flatMap(
-                          e -> e.extract(rdd.sparkContext().hadoopConfiguration(), ip).stream()));
+                      .flatMap(e -> e.extract(rdd.sparkContext(), ip).stream()));
     }
 
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
@@ -270,33 +276,32 @@ public class RddPathUtils {
     }
   }
 
-  public static class InputPartitionPathExtractorFactory {
-    private static final String ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR =
-        "io.openlineage.spark.agent.vendor.iceberg.util.SparkInputPartitionPathExtractor";
+  public static class InputPartitionExtractorFactory {
+    private static final String ICEBERG_INPUT_PARTITION_EXTRACTOR =
+        "io.openlineage.spark.agent.vendor.iceberg.util.SparkInputPartitionExtractor";
 
-    public List<InputPartitionPathExtractor> createInputPartitionPathExtractors() {
-      List<InputPartitionPathExtractor> inputPartitionPathExtractors = new ArrayList<>();
-      getIcebergInputPartitionPathExtractor().ifPresent(inputPartitionPathExtractors::add);
-      return inputPartitionPathExtractors;
+    public List<InputPartitionExtractor> createInputPartitionExtractors() {
+      List<InputPartitionExtractor> inputPartitionExtractors = new ArrayList<>();
+      getIcebergInputPartitionExtractor().ifPresent(inputPartitionExtractors::add);
+      return inputPartitionExtractors;
     }
 
-    private Optional<InputPartitionPathExtractor> getIcebergInputPartitionPathExtractor() {
+    private Optional<InputPartitionExtractor> getIcebergInputPartitionExtractor() {
       try {
-        Class<?> clazz = Class.forName(ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR);
+        Class<?> clazz = Class.forName(ICEBERG_INPUT_PARTITION_EXTRACTOR);
 
-        if (InputPartitionPathExtractor.class.isAssignableFrom(clazz)) {
-          InputPartitionPathExtractor icebergInputPartitionPathExtractor =
-              (InputPartitionPathExtractor) clazz.getDeclaredConstructor().newInstance();
+        if (InputPartitionExtractor.class.isAssignableFrom(clazz)) {
+          InputPartitionExtractor icebergInputPartitionExtractor =
+              (InputPartitionExtractor) clazz.getDeclaredConstructor().newInstance();
           if (log.isDebugEnabled()) {
-            log.debug(
-                "Successfully created an instance of {}", ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR);
+            log.debug("Successfully created an instance of {}", ICEBERG_INPUT_PARTITION_EXTRACTOR);
           }
-          return Optional.of(icebergInputPartitionPathExtractor);
+          return Optional.of(icebergInputPartitionExtractor);
         } else {
           if (log.isDebugEnabled()) {
             log.debug(
-                "Class {} is not assignable from InputPartitionPathExtractor.",
-                ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR);
+                "Class {} is not assignable from InputPartitionExtractor.",
+                ICEBERG_INPUT_PARTITION_EXTRACTOR);
           }
         }
       } catch (ClassNotFoundException
@@ -307,7 +312,7 @@ public class RddPathUtils {
           | NoClassDefFoundError e) {
         if (log.isDebugEnabled()) {
           log.debug(
-              "{} is not on classpath: {}", ICEBERG_INPUT_PARTITION_PATH_EXTRACTOR, e.getMessage());
+              "{} is not on classpath: {}", ICEBERG_INPUT_PARTITION_EXTRACTOR, e.getMessage());
         }
       }
       return Optional.empty();
@@ -325,9 +330,9 @@ public class RddPathUtils {
     }
   }
 
-  interface RddPathExtractor<T extends RDD> {
+  interface RddDatasetIdentifierExtractor<T extends RDD<?>> {
     boolean isDefinedAt(Object rdd);
 
-    Stream<Path> extract(T rdd);
+    Stream<DatasetIdentifier> extract(T rdd);
   }
 }

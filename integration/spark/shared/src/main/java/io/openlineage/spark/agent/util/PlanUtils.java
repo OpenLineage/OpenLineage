@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.util;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.naming.NameNormalizer;
 import java.io.IOException;
@@ -289,14 +290,14 @@ public class PlanUtils {
 
   /**
    * Given a list of RDDs, it collects list of data location directories. For each RDD, a parent
-   * directory is taken and list of distinct locations is returned.
+   * directory is taken and list of distinct locations is returned, converted to DatasetIdentifiers.
    *
-   * @param fileRdds
+   * @param rdds
    * @return
    */
-  public static List<Path> findRDDPaths(List<RDD<?>> fileRdds) {
-    return fileRdds.stream()
-        .flatMap(RddPathUtils::findRDDPaths)
+  public static List<DatasetIdentifier> findDatasetIdentifiers(List<RDD<?>> rdds) {
+    return rdds.stream()
+        .flatMap(RddPathUtils::findDatasetIdentifiers)
         .distinct()
         .collect(Collectors.toList());
   }

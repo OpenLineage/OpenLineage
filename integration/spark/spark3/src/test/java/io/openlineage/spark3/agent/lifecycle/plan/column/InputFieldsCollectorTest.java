@@ -152,7 +152,6 @@ class InputFieldsCollectorTest {
     LogicalRDD relation = mock(LogicalRDD.class);
     RDD<InternalRow> rdd = mock(RDD.class);
     List<RDD<?>> listRDD = Collections.singletonList(rdd);
-    Path path = new Path("file:///tmp");
 
     when(relation.rdd()).thenReturn(rdd);
 
@@ -169,8 +168,8 @@ class InputFieldsCollectorTest {
       try (MockedStatic planUtils = mockStatic(PlanUtils.class)) {
         try (MockedStatic pathUtils = mockStatic(PathUtils.class)) {
           when(Rdds.findFileLikeRdds(rdd)).thenReturn(listRDD);
-          when(PlanUtils.findRDDPaths(listRDD)).thenReturn(Collections.singletonList(path));
-          when(PathUtils.fromPath(path)).thenReturn(new DatasetIdentifier("/tmp", FILE));
+          when(PlanUtils.findDatasetIdentifiers(listRDD))
+              .thenReturn(Collections.singletonList(new DatasetIdentifier("/tmp", FILE)));
 
           InputFieldsCollector.collect(context, plan);
           verify(builder, times(1))
