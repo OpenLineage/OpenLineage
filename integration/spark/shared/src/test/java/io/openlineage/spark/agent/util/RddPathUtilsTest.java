@@ -44,6 +44,7 @@ import scala.collection.JavaConverters;
 import scala.collection.Seq;
 import scala.collection.mutable.ArrayBuffer;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class RddPathUtilsTest {
 
   private static final String DATA_FIELD_NAME = "data";
