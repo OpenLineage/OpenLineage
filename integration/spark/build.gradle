@@ -48,6 +48,7 @@ final def archiveBaseName = "openlineage-spark_${scala}"
 final def activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 
 dependencies {
+    implementation platform('io.netty:netty-bom:4.1.129.Final')
     implementation(project(path: ":app"))
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
