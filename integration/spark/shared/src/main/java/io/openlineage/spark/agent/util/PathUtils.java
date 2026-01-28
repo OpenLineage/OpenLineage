@@ -58,13 +58,18 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, SparkSession sparkSession, URI location) {
+    return fromTableIdentifier(catalogTable.identifier(), sparkSession.sparkContext(), location);
+  }
+
+  @SneakyThrows
+  public static DatasetIdentifier fromTableIdentifier(
+      TableIdentifier identifier, SparkContext sparkContext, URI location) {
     // perform URL normalization
     DatasetIdentifier locationDataset = fromURI(location);
     URI locationUri = FilesystemDatasetUtils.toLocation(locationDataset);
 
     Optional<DatasetIdentifier> symlinkDataset = Optional.empty();
 
-    SparkContext sparkContext = sparkSession.sparkContext();
     SparkConf sparkConf = sparkContext.getConf();
     Configuration hadoopConf = sparkContext.hadoopConfiguration();
 
@@ -74,16 +79,16 @@ public class PathUtils {
     if (glueArn.isPresent()) {
       // Even if glue catalog is used, it will have a hive metastore URI
       // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'
-      String tableName = nameFromTableIdentifier(catalogTable.identifier(), "/");
+      String tableName = nameFromTableIdentifier(identifier, "/");
       symlinkDataset =
           Optional.of(new DatasetIdentifier(GLUE_TABLE_PREFIX + tableName, glueArn.get()));
     } else if (metastoreUri.isPresent()) {
       // dealing with Hive tables
       URI hiveUri = prepareHiveUri(metastoreUri.get());
-      String tableName = nameFromTableIdentifier(catalogTable.identifier());
+      String tableName = nameFromTableIdentifier(identifier);
       symlinkDataset = Optional.of(FilesystemDatasetUtils.fromLocationAndName(hiveUri, tableName));
     } else if (DatabricksUtils.isDatabricksUnityCatalogEnabled(sparkConf)) {
-      String tableName = nameFromTableIdentifier(catalogTable.identifier());
+      String tableName = nameFromTableIdentifier(identifier);
       String namespace = StringUtils.substringBeforeLast(location.toString(), File.separator);
       symlinkDataset = Optional.of(new DatasetIdentifier(tableName, namespace));
     } else {
@@ -98,7 +103,7 @@ public class PathUtils {
         if (!relativePath.equals(locationUri)) {
           // if there is no metastore, and table has custom location,
           // it cannot be accessed via default warehouse location
-          String tableName = nameFromTableIdentifier(catalogTable.identifier());
+          String tableName = nameFromTableIdentifier(identifier);
           symlinkDataset =
               Optional.of(
                   FilesystemDatasetUtils.fromLocationAndName(warehouseLocation.get(), tableName));

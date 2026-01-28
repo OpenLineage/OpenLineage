@@ -6,10 +6,13 @@
 package io.openlineage.spark33.agent.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.spark.agent.util.InputPartitionPathExtractor;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.InputPartitionExtractor;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.RddPathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Collections;
@@ -29,21 +32,41 @@ class RddPathUtilsTest {
 
   @Test
   void testDataSourceRDDExtractor() {
-    Map<InputPartition, List<Path>> partitionPaths = new HashMap<>();
+    Map<InputPartition, List<DatasetIdentifier>> datasetIdentifiers = new HashMap<>();
     DataSourceRDD dataSourceRDD = getDataSourceRDD();
 
-    Path expectedPath1 = new Path("/data/source1");
-    DataSourceRDDPartition partition1 = getDataSourceRDDPartition(partitionPaths, expectedPath1);
-    Path expectedPath2 = new Path("/data/source2");
-    DataSourceRDDPartition partition2 = getDataSourceRDDPartition(partitionPaths, expectedPath2);
+    DataSourceRDDPartition partition1 =
+        getDataSourceRDDPartition(
+            datasetIdentifiers, PathUtils.fromPath(new Path("/warehouse/source1")));
+    DataSourceRDDPartition partition2 =
+        getDataSourceRDDPartition(
+            datasetIdentifiers,
+            PathUtils.fromPath(new Path("/warehouse/source2"))
+                .withSymlink(
+                    "default.source2", "file:/warehouse", DatasetIdentifier.SymlinkType.TABLE));
     when(dataSourceRDD.getPartitions())
         .thenReturn(new DataSourceRDDPartition[] {partition1, partition2});
 
-    RddPathUtils.DataSourceRDDExtractor extractor = getDataSourceRDDExtractor(partitionPaths);
+    RddPathUtils.DataSourceRDDExtractor extractor = getDataSourceRDDExtractor(datasetIdentifiers);
 
-    List<Path> extractedPaths = extractor.extract(dataSourceRDD).collect(Collectors.toList());
+    List<DatasetIdentifier> extracted =
+        extractor.extract(dataSourceRDD).collect(Collectors.toList());
 
-    assertThat(extractedPaths).hasSize(2).containsExactlyInAnyOrder(expectedPath1, expectedPath2);
+    assertThat(extracted)
+        .extracting(
+            DatasetIdentifier::getNamespace,
+            DatasetIdentifier::getName,
+            DatasetIdentifier::getSymlinks)
+        .containsExactlyInAnyOrder(
+            tuple("file", "/warehouse/source1", Collections.emptyList()),
+            tuple(
+                "file",
+                "/warehouse/source2",
+                Collections.singletonList(
+                    new DatasetIdentifier.Symlink(
+                        "default.source2",
+                        "file:/warehouse",
+                        DatasetIdentifier.SymlinkType.TABLE))));
   }
 
   private static DataSourceRDD getDataSourceRDD() {
@@ -56,44 +79,48 @@ class RddPathUtilsTest {
   }
 
   private static DataSourceRDDPartition getDataSourceRDDPartition(
-      Map<InputPartition, List<Path>> partitionPaths, Path expectedPath) {
+      Map<InputPartition, List<DatasetIdentifier>> partitionToDatasetIdentifiers,
+      DatasetIdentifier expectedDatasetIdentifier) {
     DataSourceRDDPartition partition = mock(DataSourceRDDPartition.class);
     InputPartition inputPartition = mock(InputPartition.class);
-    partitionPaths.put(inputPartition, Collections.singletonList(expectedPath));
+    partitionToDatasetIdentifiers.put(
+        inputPartition, Collections.singletonList(expectedDatasetIdentifier));
     when(partition.inputPartitions())
         .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(inputPartition)));
     return partition;
   }
 
   private static RddPathUtils.DataSourceRDDExtractor getDataSourceRDDExtractor(
-      Map<InputPartition, List<Path>> partitionPaths) {
-    InputPartitionPathExtractor customExtractor =
-        new TestInputPartitionPathExtractor(partitionPaths);
+      Map<InputPartition, List<DatasetIdentifier>> partitionToDatasetIdentifiers) {
+    InputPartitionExtractor customExtractor =
+        new TestInputPartitionExtractor(partitionToDatasetIdentifiers);
 
-    RddPathUtils.InputPartitionPathExtractorFactory mockFactory =
-        mock(RddPathUtils.InputPartitionPathExtractorFactory.class);
-    when(mockFactory.createInputPartitionPathExtractors())
+    RddPathUtils.InputPartitionExtractorFactory mockFactory =
+        mock(RddPathUtils.InputPartitionExtractorFactory.class);
+    when(mockFactory.createInputPartitionExtractors())
         .thenReturn(Collections.singletonList(customExtractor));
 
     return new RddPathUtils.DataSourceRDDExtractor(mockFactory);
   }
 
-  static class TestInputPartitionPathExtractor implements InputPartitionPathExtractor {
-    private final java.util.Map<InputPartition, List<Path>> partitionToPaths;
+  static class TestInputPartitionExtractor implements InputPartitionExtractor {
+    private final java.util.Map<InputPartition, List<DatasetIdentifier>>
+        partitionToDatasetIdentifiers;
 
-    public TestInputPartitionPathExtractor(
-        java.util.Map<InputPartition, List<Path>> partitionToPaths) {
-      this.partitionToPaths = partitionToPaths;
+    public TestInputPartitionExtractor(
+        java.util.Map<InputPartition, List<DatasetIdentifier>> partitionToDatasetIdentifiers) {
+      this.partitionToDatasetIdentifiers = partitionToDatasetIdentifiers;
     }
 
     @Override
     public boolean isDefinedAt(InputPartition inputPartition) {
-      return partitionToPaths.containsKey(inputPartition);
+      return partitionToDatasetIdentifiers.containsKey(inputPartition);
     }
 
     @Override
-    public List<Path> extract(Configuration conf, InputPartition inputPartition) {
-      return partitionToPaths.getOrDefault(inputPartition, Collections.emptyList());
+    public List<DatasetIdentifier> extract(
+        SparkContext sparkContext, InputPartition inputPartition) {
+      return partitionToDatasetIdentifiers.getOrDefault(inputPartition, Collections.emptyList());
     }
   }
 }

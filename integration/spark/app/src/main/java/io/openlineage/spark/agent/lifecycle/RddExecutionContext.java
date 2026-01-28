@@ -82,7 +82,7 @@ class RddExecutionContext implements ExecutionContext {
   private final OpenLineageRunEventBuilder runEventBuilder;
   private final UUID runId = UUIDUtils.generateNewUUID();
   private final OpenLineageContext olContext;
-  private List<URI> inputs = Collections.emptyList();
+  private List<DatasetIdentifier> inputs = Collections.emptyList();
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
   private Integer activeJobId;
@@ -437,9 +437,8 @@ class RddExecutionContext implements ExecutionContext {
             .collect(Collectors.toList()));
   }
 
-  protected OpenLineage.InputDataset buildInputDataset(URI uri, boolean withInputStatistics) {
-    DatasetIdentifier di = PathUtils.fromURI(uri);
-
+  protected OpenLineage.InputDataset buildInputDataset(
+      DatasetIdentifier di, boolean withInputStatistics) {
     InputDatasetBuilder builder = olContext.getOpenLineage().newInputDatasetBuilder();
     log.debug("building inputs withInputStatistics={}", withInputStatistics);
     if (withInputStatistics) {
@@ -535,7 +534,7 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected List<OpenLineage.InputDataset> buildInputs(
-      List<URI> inputs, boolean withInputStatistics) {
+      List<DatasetIdentifier> inputs, boolean withInputStatistics) {
     return DatasetReducerUtils.inputs(
         olContext,
         inputs.stream()
@@ -554,13 +553,10 @@ class RddExecutionContext implements ExecutionContext {
     return Collections.emptyList();
   }
 
-  protected List<URI> findInputs(Set<RDD<?>> rdds) {
+  protected List<DatasetIdentifier> findInputs(Set<RDD<?>> rdds) {
     log.debug("find Inputs within RddExecutionContext {}", rdds);
-    return PlanUtils.findRDDPaths(rdds.stream().collect(Collectors.toList())).stream()
+    return PlanUtils.findDatasetIdentifiers(rdds.stream().collect(Collectors.toList())).stream()
         .filter(Objects::nonNull)
-        .filter(p -> !p.toString().isEmpty())
-        .map(path -> path.toUri())
-        .distinct()
         .collect(Collectors.toList());
   }
 

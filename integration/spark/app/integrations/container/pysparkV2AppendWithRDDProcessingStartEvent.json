@@ -20,6 +20,15 @@
               "type": "long"
             }
           ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.source_table",
+              "type": "TABLE"
+            }
+          ]
         }
       }
     }
