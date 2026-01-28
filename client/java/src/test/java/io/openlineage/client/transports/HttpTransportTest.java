@@ -200,11 +200,12 @@ class HttpTransportTest {
 
   @Test
   @SneakyThrows
-  void httpTransportSendsAuthAndQueryParams() throws IOException {
+  void httpTransportSendsHeadersAndQueryParams() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpConfig config = new HttpConfig();
     config.setUrl(URI.create("https://localhost:1500"));
     config.setUrlParams(singletonMap("param", "value"));
+    config.setCompression(HttpConfig.Compression.GZIP);
     ApiKeyTokenProvider auth = new ApiKeyTokenProvider();
     auth.setApiKey("apiKey");
     config.setAuth(auth);
@@ -225,6 +226,7 @@ class HttpTransportTest {
 
     assertThat(captor.getValue().getFirstHeader("Authorization").getValue())
         .isEqualTo("Bearer apiKey");
+    assertThat(captor.getValue().getFirstHeader("Content-Encoding").getValue()).isEqualTo("gzip");
     assertThat(captor.getValue().getUri())
         .isEqualTo(URI.create("https://localhost:1500/api/v1/lineage?param=value"));
   }

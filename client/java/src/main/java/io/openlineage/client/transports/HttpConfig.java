@@ -20,10 +20,14 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig> {
+  @AllArgsConstructor
+  @Getter
   public enum Compression {
     @JsonProperty("gzip")
-    GZIP
-  };
+    GZIP("gzip");
+
+    private final String contentEncoding;
+  }
 
   @Getter @Setter private URI url;
   @Getter @Setter private @Nullable String endpoint;
