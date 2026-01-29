@@ -17,7 +17,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@babel/runtime": "^7.26.10",
+    "@babel/runtime": "^7.28.6",
     "@docusaurus/core": "^3.9.2",
     "@docusaurus/plugin-content-blog": "^3.9.2",
     "@docusaurus/plugin-content-docs": "^3.9.2",
@@ -35,13 +35,13 @@
     "docusaurus-lunr-search": "^3.5.0",
     "lodash": "^4.17.23",
     "lunr": "^2.3.9",
-    "motion": "^12.23.24",
+    "motion": "^12.28.2",
     "postcss": "^8.4.38",
     "prism-react-renderer": "^2.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-feather": "^2.0.9",
-    "react-markdown": "^9.0.1",
+    "react-markdown": "^10.1.0",
     "search-insights": "^2.17.3",
     "tailwind-theme-switcher": "^1.0.2",
     "tailwindcss": "^2.2.16"
