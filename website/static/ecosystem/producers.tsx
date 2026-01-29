@@ -44,6 +44,15 @@ export const Producers: Array<Partner> = [
     org_url: "https://github.com/odpi/egeria",
   },
   {
+    image: "feast_logo.svg",
+    org: "Feast",
+    full_name: "Feast",
+    description:
+      "Feast's native OpenLineage integration automatically emits lineage events during feature store operations (feast apply and feast materialize), enabling ML teams to track feature lineage.",
+    docs_url: "https://docs.feast.dev/reference/openlineage",
+    org_url: "https://feast.dev",
+  },
+  {
     image: "flink_logo.svg",
     org: "Flink",
     full_name: "Flink",
