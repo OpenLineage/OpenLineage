@@ -9,6 +9,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.hc.core5.http.ContentType.APPLICATION_JSON;
 import static org.apache.hc.core5.http.HttpHeaders.ACCEPT;
 import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
+import static org.apache.hc.core5.http.HttpHeaders.CONTENT_ENCODING;
 import static org.apache.hc.core5.http.HttpHeaders.CONTENT_TYPE;
 
 import io.openlineage.client.OpenLineage;
@@ -227,6 +228,9 @@ public final class HttpTransport extends Transport {
     // if tokenProvider preset overwrite authorization
     if (tokenProvider != null) {
       request.addHeader(AUTHORIZATION, tokenProvider.getToken());
+    }
+    if (compression != null) {
+      request.addHeader(CONTENT_ENCODING, compression.getContentEncoding());
     }
   }
 
