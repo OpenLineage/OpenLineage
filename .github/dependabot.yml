@@ -34,6 +34,7 @@ updates:
     ignore:
       - dependency-name: "org.slf4j.slf4j-api"
       - dependency-name: "org.openapi.generator"
+      - dependency-name: "gradle"
     # https://til.simonwillison.net/github/dependabot-python-setup
     groups:
       client/java:
@@ -51,6 +52,14 @@ updates:
       - "dependabot"
     ignore:
       - dependency-name: "org.slf4j.slf4j-api"
+      - dependency-name: "org.junit.jupiter:junit-jupiter"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.junit.jupiter:junit-jupiter-params"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.junit:junit-bom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.scala-lang:scala-library"
+        update-types: ["version-update:semver-major"]
     groups:
       integration/flink:
         patterns:
@@ -75,6 +84,13 @@ updates:
       - dependency-name: "jackson-datatype-jdk8"
       - dependency-name: "jackson-datatype-jsr310"
       - dependency-name: "com.google.guava*"
+      - dependency-name: "org.junit.jupiter:junit-jupiter"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.junit:junit-bom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.testcontainers:testcontainers-bom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "gradle"
     groups:
       integration/spark:
         patterns:
@@ -139,6 +155,20 @@ updates:
         patterns:
           - '*'
 
+  - package-ecosystem: "pip"
+    directory: "dev"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    cooldown:
+      default-days: 7
+    labels:
+      - "dependabot"
+    groups:
+      dev:
+        patterns:
+          - '*'
+
   - package-ecosystem: "npm"
     directory: "website"
     schedule:
@@ -148,6 +178,21 @@ updates:
       default-days: 7
     labels:
       - "dependabot"
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@mui/material"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@mui/icons-material"
+        update-types: ["version-update:semver-major"]
     groups:
       website:
         patterns:
