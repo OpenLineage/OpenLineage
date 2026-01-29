@@ -5,13 +5,13 @@
 
 package io.openlineage.spark.agent.util;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.util.List;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.connector.read.InputPartition;
 
-public interface InputPartitionPathExtractor {
+public interface InputPartitionExtractor {
   boolean isDefinedAt(InputPartition inputPartition);
 
-  List<Path> extract(Configuration conf, InputPartition inputPartition);
+  List<DatasetIdentifier> extract(SparkContext sparkContext, InputPartition inputPartition);
 }

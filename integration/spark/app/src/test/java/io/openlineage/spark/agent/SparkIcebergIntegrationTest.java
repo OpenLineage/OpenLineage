@@ -402,8 +402,8 @@ class SparkIcebergIntegrationTest {
     clearTables("source_table", "target_table");
     createTempDataset(2).createOrReplaceTempView("temp");
 
-    spark.sql("CREATE TABLE source_table USING iceberg AS SELECT a FROM temp");
-    spark.sql("CREATE TABLE target_table (a long) USING iceberg");
+    spark.sql("CREATE TABLE source_table USING iceberg PARTITIONED BY (a) AS SELECT a FROM temp");
+    spark.sql("CREATE TABLE target_table (a long) USING iceberg PARTITIONED BY (a)");
 
     JavaRDD<Row> inputRDD = spark.read().table("source_table").toJavaRDD();
     JavaRDD<Row> filteredRDD = inputRDD.filter(row -> row.getLong(row.fieldIndex("a")) > 1);
