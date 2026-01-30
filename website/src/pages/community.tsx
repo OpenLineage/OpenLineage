@@ -226,6 +226,166 @@ export default function CommunityResources(): JSX.Element {
       </div>
 
       <div className="text-center">
+        <h2 className="text-4xl text-color-1">Get Involved</h2>
+      </div>
+      <Grid
+        container
+        margin="auto"
+        rowSpacing={4}
+        columnSpacing={4}
+        paddingBottom={4}
+        width="85%"
+        justifyContent="center"
+      >
+        <Grid>
+          <Card
+            raised={false}
+            sx={{
+              width: 440,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              [theme.breakpoints.down("sm")]: {
+                width: 300,
+              },
+            }}
+          >
+            <CardMedia
+              sx={{ width: "100%", height: 200, objectFit: "cover", padding: 0 }}
+              component="img"
+              src={require(`@site/static/img/tsc_screen.png`).default}
+              title="TSC meeting"
+            />
+            <CardContent sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" color="text.secondary">
+                TSC Meetings
+              </Typography>
+              <Typography sx={{ my: 1 }} variant="body2" color="text.secondary">
+                Every third Wednesday, 9:30-10:30am PT
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Review releases, hear about new features, and discuss the roadmap. Open to all!
+              </Typography>
+            </CardContent>
+            <CardActions disableSpacing>
+              <Button
+                size="small"
+                href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac"
+              >
+                Zoom
+              </Button>
+              <Button sx={{ marginLeft: 2 }} size="small" href="https://www.youtube.com/@openlineageproject6897/videos">
+                YouTube
+              </Button>
+              <Button
+                sx={{ marginLeft: 2 }}
+                size="small"
+                href="https://wiki.lfaidata.foundation/display/OpenLineage/Monthly+TSC+meeting"
+              >
+                Minutes
+              </Button>
+            </CardActions>
+          </Card>
+        </Grid>
+        <Grid>
+          <Card
+            raised={false}
+            sx={{
+              width: 440,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              [theme.breakpoints.down("sm")]: {
+                width: 300,
+              },
+            }}
+          >
+            <CardMedia
+              sx={{
+                width: "100%",
+                height: 200,
+                objectFit: "contain",
+                padding: 2,
+                [theme.breakpoints.down("sm")]: {
+                  padding: 2,
+                },
+              }}
+              component="img"
+              src={require(`@site/static/img/slack.png`).default}
+              title="Slack"
+            />
+            <CardContent sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" color="text.secondary">
+                OpenLineage Slack
+              </Typography>
+              <Typography sx={{ my: 1 }} variant="body2" color="text.secondary">
+                Connect with the community
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Get help from experts, learn about releases and events, and sync up with contributors.
+              </Typography>
+            </CardContent>
+            <CardActions disableSpacing>
+              <Button
+                size="small"
+                href="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
+              >
+                Join Slack
+              </Button>
+            </CardActions>
+          </Card>
+        </Grid>
+        <Grid>
+          <Card
+            raised={false}
+            sx={{
+              width: 440,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              [theme.breakpoints.down("sm")]: {
+                width: 300,
+              },
+            }}
+          >
+            <CardMedia
+              sx={{
+                width: "100%",
+                height: 200,
+                objectFit: "contain",
+                padding: 2,
+                [theme.breakpoints.down("sm")]: {
+                  padding: 2,
+                },
+              }}
+              component="img"
+              src={require(`@site/static/img/github.png`).default}
+              title="GitHub"
+            />
+            <CardContent sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" color="text.secondary">
+                GitHub Organization
+              </Typography>
+              <Typography sx={{ my: 1 }} variant="body2" color="text.secondary">
+                Contribute to the project
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Access the main codebase, website repo, and workshops. Contributions welcome!
+              </Typography>
+            </CardContent>
+            <CardActions disableSpacing>
+              <Button size="small" href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md">
+                Contribute
+              </Button>
+              <Button sx={{ marginLeft: 2 }} size="small" href="https://github.com/OpenLineage/">
+                GitHub
+              </Button>
+            </CardActions>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <div className="text-center">
         <h2 className="text-4xl text-color-1">Talks</h2>
       </div>
       <div className="eco-grid-div">
@@ -238,158 +398,6 @@ export default function CommunityResources(): JSX.Element {
         <h2 className="text-4xl text-color-1">Meetup Groups</h2>
       </div>
       <div className="eco-grid-div">{FillMeetupsGrid(Meetups)}</div>
-
-      <div className="text-center">
-        <h2 className="text-4xl text-color-1">TSC Meetings</h2>
-      </div>
-      <Grid container margin="auto" rowSpacing={8} columnSpacing={4} paddingBottom={4} width="85%">
-        <Grid marginX="auto" justifyItems="top">
-          <Card
-            raised={false}
-            sx={{
-              width: 840,
-              [theme.breakpoints.down("sm")]: {
-                width: 300,
-              },
-            }}
-          >
-            <CardMedia
-              sx={{ width: "100%", padding: 0 }}
-              component="img"
-              src={require(`@site/static/img/tsc_screen.png`).default}
-              title="TSC meeting"
-            />
-            <CardContent>
-              <Typography variant="h5" color="text.secondary">
-                OpenLineage Technical Steering Committee Meeting (open to all)
-              </Typography>
-              <Typography sx={{ my: 1 }} variant="h6" color="text.secondary">
-                Day/time: every third Wednesday from 9:30am to 10:30am Pacific time
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                At the monthly meeting, we review recent releases, hear from contributors about new integrations and
-                features, and discuss topics such as the project roadmap and work in progress. Meetings take place on
-                Zoom and are archived on the OpenLineage YouTube Channel. Notes are published on the OpenLineage Wiki.
-              </Typography>
-            </CardContent>
-            <CardActions disableSpacing>
-              <Button
-                size="small"
-                href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac"
-              >
-                Zoom
-              </Button>
-              <Button sx={{ marginLeft: 5 }} size="small" href="https://www.youtube.com/@openlineageproject6897/videos">
-                YouTube
-              </Button>
-              <Button
-                sx={{ marginLeft: 5 }}
-                size="small"
-                href="https://wiki.lfaidata.foundation/display/OpenLineage/Monthly+TSC+meeting"
-              >
-                Minutes
-              </Button>
-            </CardActions>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <div className="text-center">
-        <h2 className="text-4xl text-color-1">Contribute</h2>
-      </div>
-      <Grid container margin="auto" rowSpacing={8} columnSpacing={4} paddingBottom={4} width="85%">
-        <Grid marginX="auto" justifyItems="top">
-          <Card
-            raised={false}
-            sx={{
-              height: "auto",
-              width: 440,
-              [theme.breakpoints.down("sm")]: {
-                height: "auto",
-                width: 300,
-              },
-            }}
-          >
-            <CardMedia
-              sx={{
-                width: 440,
-                height: "auto",
-                padding: 5,
-                [theme.breakpoints.down("sm")]: {
-                  width: 300,
-                  height: "auto",
-                  padding: 5,
-                },
-              }}
-              component="img"
-              src={require(`@site/static/img/github.png`).default}
-              title="GitHub"
-            />
-            <CardContent sx={{}}>
-              <Typography variant="h5" color="text.secondary">
-                OpenLineage GiHub Organization
-              </Typography>
-              <Typography sx={{ my: 1 }} variant="body1" color="text.secondary">
-                Visit GitHub for the main codebase and repos for the website and workshops. Contributions are welcome!
-              </Typography>
-            </CardContent>
-            <CardActions disableSpacing>
-              <Button size="small" href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md">
-                Learn More
-              </Button>
-              <Button sx={{ marginLeft: 5 }} size="small" href="https://github.com/OpenLineage/">
-                GitHub
-              </Button>
-            </CardActions>
-          </Card>
-        </Grid>
-        <Grid marginX="auto" justifyItems="top">
-          <Card
-            raised={false}
-            sx={{
-              height: "auto",
-              width: 440,
-              [theme.breakpoints.down("sm")]: {
-                height: "auto",
-                width: 300,
-              },
-            }}
-          >
-            <CardMedia
-              sx={{
-                width: 440,
-                height: "auto",
-                padding: 4,
-                [theme.breakpoints.down("sm")]: {
-                  width: 300,
-                  height: "auto",
-                  padding: 4,
-                },
-              }}
-              component="img"
-              src={require(`@site/static/img/slack.png`).default}
-              title="Slack"
-            />
-            <CardContent>
-              <Typography variant="h5" color="text.secondary">
-                OpenLineage Slack
-              </Typography>
-              <Typography sx={{ my: 1 }} variant="body1" color="text.secondary">
-                Learn about the project, find out about releases and upcoming events, sync up with fellow users and
-                contributors, and get help from OpenLineage experts.
-              </Typography>
-            </CardContent>
-            <CardActions disableSpacing>
-              <Button
-                size="small"
-                href="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
-              >
-                Join
-              </Button>
-            </CardActions>
-          </Card>
-        </Grid>
-      </Grid>
 
       <div className="bg-bg">
         <Footer />
