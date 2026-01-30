@@ -263,11 +263,10 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         except FileNotFoundError:
             catalog = None
 
-        profile_dir = run_result["args"]["profiles_dir"]
-
         try:
+            profile_dir = run_result["args"]["profiles_dir"]
             profile = self.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[self.profile_name]
-        except FileNotFoundError:
+        except KeyError or FileNotFoundError:
             profile = self.load_yaml_with_jinja(
                 os.path.join(self.get_dbt_profiles_dir(self.dbt_command_line), "profiles.yml")  # type: ignore[arg-type]
             )[self.profile_name]
