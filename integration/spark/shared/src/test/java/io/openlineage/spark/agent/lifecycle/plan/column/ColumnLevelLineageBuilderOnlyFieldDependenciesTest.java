@@ -46,7 +46,7 @@ class ColumnLevelLineageBuilderOnlyFieldDependenciesTest {
   @Test
   void testBuildFieldsWithEmptyInputs() {
     builder.addOutput(rootExprId, "a");
-    builder.addDependency(rootExprId, childExprId);
+    builder.addDependency(rootExprId, childExprId, "");
 
     // no inputs
     assertEquals(0, builder.buildFields(false).getAdditionalProperties().size());
@@ -59,7 +59,7 @@ class ColumnLevelLineageBuilderOnlyFieldDependenciesTest {
     builder.addOutput(rootExprId, "a");
     builder.addInput(rootExprId, di, INPUT_A);
     builder.addInput(childExprId, di, INPUT_A); // the same input with different exprId
-    builder.addDependency(rootExprId, childExprId);
+    builder.addDependency(rootExprId, childExprId, "");
 
     List<OpenLineage.InputField> facetFields =
         builder.buildFields(false).getAdditionalProperties().get("a").getInputFields();

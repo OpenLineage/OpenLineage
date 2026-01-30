@@ -24,5 +24,7 @@ public class ColumnLineageConfig {
   // reflect it set to true
   private Boolean datasetLineageEnabled;
 
+  private Boolean descriptionsEnabled;
+
   private Integer schemaSizeLimit;
 }
