@@ -23,7 +23,7 @@ ext {
     assertjVersion = "3.27.6"
     junit5Version = "5.11.4"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.16.1"
+    micrometerVersion = "1.16.2"
     sparkVersion = project.findProperty("spark31.spark.version")
 }
 
