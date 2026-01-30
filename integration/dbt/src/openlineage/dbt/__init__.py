@@ -156,6 +156,7 @@ def main():
     project_dir = parse_single_arg(args, ["--project-dir"], default="./")
     profile_name = parse_single_arg(args, ["--profile"])
     model_selector = parse_single_arg(args, ["--selector"])
+    target_path = parse_single_arg(args, ["--target-path"])
     openlineage_job_name = parse_single_arg(args, [OPENLINEAGE_DBT_JOB_NAME_OPTION])
     models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
 
@@ -171,6 +172,7 @@ def main():
         return consume_structured_logs(
             args=args,
             target=target,
+            target_path=target_path,
             project_dir=project_dir,
             profile_name=profile_name,
             model_selector=model_selector,
@@ -181,6 +183,7 @@ def main():
         return consume_local_artifacts(
             args=args,
             target=target,
+            target_path=target_path,
             project_dir=project_dir,
             profile_name=profile_name,
             model_selector=model_selector,
@@ -192,6 +195,7 @@ def main():
 def consume_structured_logs(
     args: List[str],
     target: str,
+    target_path: Optional[str],
     project_dir: str,
     profile_name: str,
     model_selector: str,
@@ -212,6 +216,7 @@ def consume_structured_logs(
         dbt_command_line=dbt_command_line,
         producer=PRODUCER,
         target=target,
+        target_path=target_path,
         job_namespace=job_namespace,
         openlineage_job_name=openlineage_job_name,
         profile_name=profile_name,
@@ -258,6 +263,7 @@ def consume_structured_logs(
 def consume_local_artifacts(
     args: List[str],
     target: str,
+    target_path: Optional[str],
     project_dir: str,
     profile_name: str,
     model_selector: str,
@@ -278,6 +284,7 @@ def consume_local_artifacts(
     processor = DbtLocalArtifactProcessor(
         producer=PRODUCER,
         target=target,
+        target_path=target_path,
         job_namespace=job_namespace,
         project_dir=project_dir,
         profile_name=profile_name,
