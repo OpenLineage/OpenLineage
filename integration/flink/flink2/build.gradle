@@ -26,7 +26,7 @@ ext {
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
     assertjVersion = '3.27.6'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.14.2'
+    junit5Version = '5.11.4'
     lombokVersion = '1.18.42'
     scalaLibraryVersion = '2.12.20'
     mockitoVersion = '5.14.1'
