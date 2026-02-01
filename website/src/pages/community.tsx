@@ -79,7 +79,7 @@ const MeetupCard = (meetup: Meetup) => {
           {meetup.city}
         </Typography>
       </CardContent>
-      <CardActions disableSpacing>
+      <CardActions id="community-card-btns" disableSpacing>
         <Button size="small" href={meetup.link}>
           Join
         </Button>
@@ -98,7 +98,7 @@ const TalkCard = (talk: Talk) => {
   const DisplayLinks = () => {
     if (talk.video_url) {
       return (
-        <CardActions disableSpacing>
+        <CardActions id="community-card-btns" disableSpacing>
           <Button size="small" href={talk.conf_url}>
             Learn more
           </Button>
@@ -109,7 +109,7 @@ const TalkCard = (talk: Talk) => {
       );
     } else {
       return (
-        <CardActions disableSpacing>
+        <CardActions id="community-card-btns" disableSpacing>
           <Button size="small" href={talk.conf_url}>
             Learn more
           </Button>
@@ -267,7 +267,7 @@ export default function CommunityResources(): JSX.Element {
                 Review releases, hear about new features, and discuss the roadmap. Open to all!
               </Typography>
             </CardContent>
-            <CardActions disableSpacing>
+            <CardActions id="community-card-btns" disableSpacing>
               <Button
                 size="small"
                 href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac"
@@ -325,7 +325,7 @@ export default function CommunityResources(): JSX.Element {
                 Get help from experts, learn about releases and events, and sync up with contributors.
               </Typography>
             </CardContent>
-            <CardActions disableSpacing>
+            <CardActions id="community-card-btns" disableSpacing>
               <Button
                 size="small"
                 href="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
@@ -373,7 +373,7 @@ export default function CommunityResources(): JSX.Element {
                 Access the main codebase, website repo, and workshops. Contributions welcome!
               </Typography>
             </CardContent>
-            <CardActions disableSpacing>
+            <CardActions id="community-card-btns" disableSpacing>
               <Button size="small" href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md">
                 Contribute
               </Button>

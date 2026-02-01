@@ -40,7 +40,7 @@ const LogoCard = (partner: Partner) => {
   const DisplayLinks = () => {
     if (partner.docs_url) {
       return (
-        <CardActions disableSpacing>
+        <CardActions id="eco-card-btns" disableSpacing>
           <Button size="small" href={partner.docs_url}>
             Learn More
           </Button>
@@ -51,7 +51,7 @@ const LogoCard = (partner: Partner) => {
       );
     } else {
       return (
-        <CardActions disableSpacing>
+        <CardActions id="eco-card-btns" disableSpacing>
           <Button size="small" href={partner.org_url}>
             Website
           </Button>
@@ -81,8 +81,8 @@ const LogoCard = (partner: Partner) => {
         </ExpandMore>
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <CardContent sx={{ maxWidth: 340 }}>
-          <Typography variant="body1" color="text.secondary">
+        <CardContent id="eco-cardcontent" sx={{ maxWidth: 340 }}>
+          <Typography id="eco-typography" variant="body1" color="text.secondary">
             {partner.description}
           </Typography>
         </CardContent>
