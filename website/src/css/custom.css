@@ -88,6 +88,21 @@
   .bottom {
     background-color: #000;
   }
+  .MuiCardContent-root {
+    background-color: #000;
+  }
+  #eco-card-btns {
+    background-color: #000;
+  }
+  .MuiCard-root {
+    border: 1px solid #fff;
+  }
+  #community-card-btns {
+    background-color: #000;
+  }
+  .MuiTypography-root {
+    color: #fff;
+  }
 }
 
 #animation-container {
