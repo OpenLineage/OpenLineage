@@ -17,6 +17,7 @@ import org.apache.spark.sql.SparkSession;
 public class DatabricksUtils {
 
   public static final String SPARK_DATABRICKS_WORKSPACE_URL = "spark.databricks.workspaceUrl";
+  public static final String DATABRICKS_RUNTIME_VERSION = "DATABRICKS_RUNTIME_VERSION";
 
   /**
    * Determines if a Spark job is run on Databricks platform
@@ -27,8 +28,14 @@ public class DatabricksUtils {
     return getWorkspaceUrl(context).isPresent();
   }
 
+  /**
+   * Determines if a Spark job is run on Databricks platform. Fast check using
+   * DATABRICKS_RUNTIME_VERSION environment variable first, falls back to checking SparkConf for
+   * workspace URL.
+   */
   public static boolean isRunOnDatabricksPlatform(SparkConf conf) {
-    return conf.contains(SPARK_DATABRICKS_WORKSPACE_URL);
+    return System.getenv().containsKey(DATABRICKS_RUNTIME_VERSION)
+        || conf.contains(SPARK_DATABRICKS_WORKSPACE_URL);
   }
 
   public static boolean isDatabricksUnityCatalogEnabled(SparkConf conf) {
