@@ -27,6 +27,8 @@ import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
 class DatabricksEventFilterTest {
 
+  private static final String DATABRICKS_RUNTIME_13_3 = "13.3";
+
   SparkListenerEvent event = mock(SparkListenerEvent.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
   DatabricksEventFilter filter = new DatabricksEventFilter(context);
@@ -49,14 +51,14 @@ class DatabricksEventFilterTest {
   }
 
   @Test
-  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = "13.3")
+  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = DATABRICKS_RUNTIME_13_3)
   void testDatabricksEventIsFiltered() {
     when(node.nodeName()).thenReturn("collect_Limit");
     assertThat(filter.isDisabled(event)).isTrue();
   }
 
   @Test
-  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = "13.3")
+  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = DATABRICKS_RUNTIME_13_3)
   void testSerializeFromObjectIsDisabled() {
     SerializeFromObject serializeFromObject = mock(SerializeFromObject.class);
     when(serializeFromObject.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
@@ -66,14 +68,14 @@ class DatabricksEventFilterTest {
   }
 
   @Test
-  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = "13.3")
+  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = DATABRICKS_RUNTIME_13_3)
   void testDatabricksEventIsFilteredWithoutUnderscore() {
     when(node.nodeName()).thenReturn("collectlimit");
     assertThat(filter.isDisabled(event)).isTrue();
   }
 
   @Test
-  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = "13.3")
+  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = DATABRICKS_RUNTIME_13_3)
   void testDatabricksEventIsNotFiltered() {
     when(node.nodeName()).thenReturn("action_not_to_be_filtered");
     assertThat(filter.isDisabled(event)).isFalse();
