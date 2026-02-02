@@ -65,9 +65,10 @@ class CommonConfigPlugin : Plugin<Project> {
         target.tasks.named<Pmd>("pmdMain") {
             this.reports.html.required.set(true)
         }
-        target.tasks.named<Pmd>("pmdTest") {
-            this.reports.html.required.set(true)
-            this.ruleSetFiles = target.rootProject.files("pmd-openlineage-test.xml")
+        // Configure all test PMD tasks to use the more lenient test ruleset
+        target.tasks.matching { it.name.startsWith("pmdTest") }.configureEach {
+            (this as Pmd).reports.html.required.set(true)
+            (this as Pmd).ruleSetFiles = target.rootProject.files("pmd-openlineage-test.xml")
         }
     }
 
