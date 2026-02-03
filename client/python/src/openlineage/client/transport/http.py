@@ -66,6 +66,10 @@ class JwtTokenProvider(TokenProvider):
     the configured token_fields (default ["token", "access_token"]). This ensures
     compatibility with various OAuth providers.
 
+    The provider caches tokens and automatically refreshes them before expiry. By default,
+    tokens are refreshed 120 seconds before they expire. This can be configured using the
+    tokenRefreshBuffer parameter.
+
     Configuration example:
         {
             "type": "jwt",
@@ -74,7 +78,8 @@ class JwtTokenProvider(TokenProvider):
             "tokenFields": ["token", "access_token"],  # optional
             "expiresInField": "expires_in",  # optional
             "grantType": "urn:ietf:params:oauth:grant-type:jwt-bearer",  # optional
-            "responseType": "token"  # optional
+            "responseType": "token",  # optional
+            "tokenRefreshBuffer": 120  # optional, defaults to 120 seconds
         }
 
     For IBM Cloud IAM, use these settings:
@@ -87,7 +92,7 @@ class JwtTokenProvider(TokenProvider):
         }
     """
 
-    TOKEN_REFRESH_BUFFER_SECONDS = 60  # Refresh 60s before expiry
+    TOKEN_REFRESH_BUFFER_SECONDS = 120  # Default: Refresh 120s before expiry
 
     def __init__(self, config: dict[str, str]) -> None:
         super().__init__(config)
@@ -96,11 +101,14 @@ class JwtTokenProvider(TokenProvider):
             msg = "apiKey is required for JWT token provider."
             raise KeyError(msg)
 
-        token_endpoint = config.get("tokenEndpoint") or config.get("token_endpoint")
+        # Support multiple naming conventions for backwards compatibility
+        # Preferred: token_endpoint (from TOKEN_ENDPOINT env var)
+        # Also support: tokenEndpoint, tokenendpoint
+        token_endpoint = config.get("token_endpoint") or config.get("tokenEndpoint")
         if not token_endpoint:
             msg = "tokenEndpoint is required for JWT token provider."
             raise KeyError(msg)
-        self.token_endpoint: str = token_endpoint
+        self.token_endpoint: str = str(token_endpoint)
 
         # Token field names to try (in order)
         token_fields = config.get("tokenFields") or config.get("token_fields")
@@ -119,6 +127,21 @@ class JwtTokenProvider(TokenProvider):
             or "urn:ietf:params:oauth:grant-type:jwt-bearer"
         )
         self.response_type = config.get("responseType") or config.get("response_type") or "token"
+
+        # Token refresh buffer (seconds before expiry to refresh)
+        token_refresh_buffer = config.get("tokenRefreshBuffer") or config.get("token_refresh_buffer")
+        if token_refresh_buffer:
+            try:
+                self.token_refresh_buffer = int(token_refresh_buffer)
+            except ValueError:
+                log.warning(
+                    "Invalid tokenRefreshBuffer value %s, using default: %s instead",
+                    token_refresh_buffer,
+                    self.TOKEN_REFRESH_BUFFER_SECONDS,
+                )
+                self.token_refresh_buffer = self.TOKEN_REFRESH_BUFFER_SECONDS
+        else:
+            self.token_refresh_buffer = self.TOKEN_REFRESH_BUFFER_SECONDS
 
         # Token cache
         self._cached_token: str | None = None
@@ -141,7 +164,11 @@ class JwtTokenProvider(TokenProvider):
         if not self._cached_token or not self._token_expiry:
             return False
         # Refresh if within buffer time of expiry
-        return time.time() < (self._token_expiry - self.TOKEN_REFRESH_BUFFER_SECONDS)
+        return self._get_current_time() < (self._token_expiry - self.token_refresh_buffer)
+
+    def _get_current_time(self) -> float:
+        """Get current time in seconds. Can be overridden for testing."""
+        return time.time()
 
     def _fetch_token(self) -> None:
         """Fetch a new JWT token from the token endpoint."""
@@ -176,16 +203,13 @@ class JwtTokenProvider(TokenProvider):
             expires_in = self._extract_expires_in(response_json)
 
             if expires_in:
-                self._token_expiry = time.time() + expires_in
+                self._token_expiry = self._get_current_time() + expires_in
             else:
                 # Try to extract expiration from JWT payload
                 self._token_expiry = self._extract_expiry_from_jwt(token)
 
             log.debug("Successfully fetched JWT token, expires at: %s", self._token_expiry)
 
-        except (requests.RequestException, ValueError) as e:
-            msg = f"Failed to fetch JWT token from {self.token_endpoint}: {e}"
-            raise RuntimeError(msg) from e
         except Exception as e:
             msg = f"Failed to fetch JWT token from {self.token_endpoint}: {e}"
             raise RuntimeError(msg) from e

@@ -281,12 +281,13 @@ When using JWT authentication with HTTP transport, configure the `auth` section 
 - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
 - `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
 - `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.
+- `tokenRefreshBuffer` - integer, number of seconds before token expiry to trigger a refresh. Optional, default: `120`.
 
 ##### Behavior
 
 - The provider sends a POST request with URL-encoded form data containing the API key and OAuth parameters.
 - The response is expected to be JSON containing the JWT token and optionally an expiration time.
-- Tokens are cached and automatically refreshed 60 seconds before expiration.
+- Tokens are cached and automatically refreshed before expiration (default: 120 seconds before expiry, configurable via `tokenRefreshBuffer`).
 - If no expiration is provided in the response, the provider attempts to extract it from the JWT payload's `exp` claim.
 - The provider supports multiple JSON field names for the token, trying each in order until a match is found.
 - Field matching is case-insensitive and handles both snake_case and camelCase variations (e.g., `expires_in` matches `expiresIn`).

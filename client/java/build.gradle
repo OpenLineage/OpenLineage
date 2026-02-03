@@ -188,6 +188,7 @@ sourceSets.main.java.srcDirs tasks.generateCode
 
 test {
     useJUnitPlatform()
+    jvmArgs '--add-opens', 'java.base/java.util=ALL-UNNAMED'
 }
 
 publishing {

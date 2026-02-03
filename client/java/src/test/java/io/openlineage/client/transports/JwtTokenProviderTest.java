@@ -8,16 +8,24 @@ package io.openlineage.client.transports;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineageClientException;
+import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.OpenLineageConfig;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.ClassicHttpResponse;
@@ -40,6 +48,31 @@ class JwtTokenProviderTest {
     provider = new TestableJwtTokenProvider(mockHttpClient);
     provider.setApiKey("test-api-key");
     provider.setTokenEndpoint(URI.create("https://auth.example.com/token"));
+  }
+
+  /**
+   * Helper method to set environment variables using reflection. This is a workaround for the
+   * immutable System.getenv() Map.
+   */
+  @SuppressWarnings("unchecked")
+  private void setEnvironmentVariables(Map<String, String> newEnv) throws Exception {
+    Class<?> classOfMap = System.getenv().getClass();
+    Field field = classOfMap.getDeclaredField("m");
+    field.setAccessible(true);
+    Map<String, String> writeableEnvironmentVariables =
+        (Map<String, String>) field.get(System.getenv());
+    writeableEnvironmentVariables.putAll(newEnv);
+  }
+
+  /** Helper method to clear environment variables using reflection. */
+  @SuppressWarnings("unchecked")
+  private void clearEnvironmentVariables(Set<String> keys) throws Exception {
+    Class<?> classOfMap = System.getenv().getClass();
+    Field field = classOfMap.getDeclaredField("m");
+    field.setAccessible(true);
+    Map<String, String> writeableEnvironmentVariables =
+        (Map<String, String>) field.get(System.getenv());
+    keys.forEach(writeableEnvironmentVariables::remove);
   }
 
   /** Testable subclass that allows injecting a mock HTTP client. */
@@ -114,9 +147,12 @@ class JwtTokenProviderTest {
   }
 
   @Test
-  void testGetTokenRefreshesExpiredToken() throws IOException, InterruptedException {
-    // Mock response with short-lived token (expires in 1 second)
-    String mockResponse = "{\"token\": \"test-jwt-token\", \"expiresIn\": 1}";
+  void testGetTokenRefreshesExpiredToken() throws IOException {
+    // Create a spy to mock time progression
+    TestableJwtTokenProvider spyProvider = spy(provider);
+
+    // Mock response with token that expires in 3600 seconds
+    String mockResponse = "{\"token\": \"test-jwt-token\", \"expiresIn\": 3600}";
 
     ClassicHttpResponse mockHttpResponse = mock(ClassicHttpResponse.class);
     when(mockHttpResponse.getCode()).thenReturn(200);
@@ -130,16 +166,71 @@ class JwtTokenProviderTest {
               return handler.handleResponse(mockHttpResponse);
             });
 
-    // First call
-    provider.getToken();
+    // Mock current time at T=0
+    long initialTime = 1000000L;
+    doReturn(initialTime).when(spyProvider).getCurrentTimeSeconds();
 
-    // Wait for token to expire (plus buffer time)
-    Thread.sleep(2000);
+    // First call - should fetch token
+    spyProvider.getToken();
 
-    // Second call should refresh
-    provider.getToken();
+    // Mock time progression to after token expiry (3600 - 120 buffer + 1 = 3481 seconds later)
+    doReturn(initialTime + 3481).when(spyProvider).getCurrentTimeSeconds();
+
+    // Second call should refresh because token is within buffer time
+    spyProvider.getToken();
 
     // Should call endpoint twice
+    verify(mockHttpClient, times(2))
+        .execute(any(HttpPost.class), any(HttpClientResponseHandler.class));
+  }
+
+  @Test
+  void testGetTokenRespectsCustomRefreshBuffer() throws IOException {
+    // Create a spy to mock time progression
+    TestableJwtTokenProvider spyProvider = spy(provider);
+    spyProvider.setTokenRefreshBuffer(300); // Set custom 300 second buffer
+
+    // Mock response with token that expires in 3600 seconds
+    String mockResponse = "{\"token\": \"test-jwt-token\", \"expiresIn\": 3600}";
+
+    ClassicHttpResponse mockHttpResponse = mock(ClassicHttpResponse.class);
+    when(mockHttpResponse.getCode()).thenReturn(200);
+    when(mockHttpResponse.getEntity())
+        .thenReturn(new StringEntity(mockResponse, ContentType.APPLICATION_JSON));
+
+    when(mockHttpClient.execute(any(HttpPost.class), any(HttpClientResponseHandler.class)))
+        .thenAnswer(
+            invocation -> {
+              HttpClientResponseHandler handler = invocation.getArgument(1);
+              return handler.handleResponse(mockHttpResponse);
+            });
+
+    // Mock current time at T=0
+    long initialTime = 1000000L;
+    doReturn(initialTime).when(spyProvider).getCurrentTimeSeconds();
+
+    // First call - should fetch token
+    spyProvider.getToken();
+
+    // Mock time at 3200 seconds (within 300s buffer but outside 120s default buffer)
+    // Token expires at 3600, so at 3200 we're 400s before expiry
+    // With 300s buffer, token is still valid (400 > 300)
+    doReturn(initialTime + 3200).when(spyProvider).getCurrentTimeSeconds();
+
+    // Should still use cached token
+    spyProvider.getToken();
+    // Should only call endpoint once
+    verify(mockHttpClient, times(1))
+        .execute(any(HttpPost.class), any(HttpClientResponseHandler.class));
+
+    // Mock time at 3301 seconds (within 300s buffer)
+    // Token expires at 3600, so at 3301 we're 299s before expiry
+    // With 300s buffer, token should be refreshed (299 < 300)
+    doReturn(initialTime + 3301).when(spyProvider).getCurrentTimeSeconds();
+
+    // Should refresh token
+    spyProvider.getToken();
+    // Should call endpoint twice now
     verify(mockHttpClient, times(2))
         .execute(any(HttpPost.class), any(HttpClientResponseHandler.class));
   }
@@ -462,5 +553,51 @@ class JwtTokenProviderTest {
     String token = provider.getToken();
 
     assertThat(token).isEqualTo("Bearer token-jwt-value");
+  }
+
+  @Test
+  void testLoadJwtAuthFromEnvironmentVariables() throws Exception {
+    String expectedTokenEndpoint = "https://auth.example.com/token/with/underscores";
+    String expectedGrantType = "jwt-bearer-with-underscores";
+    String expectedApiKey = "test-env-api-key-with-underscores";
+    String expectedResponseType = "token-with-underscores";
+    String expectedTokenRefreshBuffer = "180";
+
+    // Use reflection to set environment variables
+    Map<String, String> envVars = new HashMap<>();
+    envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "http");
+    envVars.put("OPENLINEAGE__TRANSPORT__URL", "http://backend:5000");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TYPE", "jwt");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__API_KEY", expectedApiKey);
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT", expectedTokenEndpoint);
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__GRANT_TYPE", expectedGrantType);
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__RESPONSE_TYPE", expectedResponseType);
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TOKEN_REFRESH_BUFFER", expectedTokenRefreshBuffer);
+
+    setEnvironmentVariables(envVars);
+
+    try {
+      // Parse config from environment variables
+      OpenLineageConfig config =
+          OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+              new com.fasterxml.jackson.core.type.TypeReference<OpenLineageConfig>() {});
+
+      // Verify that underscores are preserved and values are correct
+      assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
+      HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
+
+      assertThat(httpConfig.getAuth()).isInstanceOf(JwtTokenProvider.class);
+      JwtTokenProvider provider = (JwtTokenProvider) httpConfig.getAuth();
+
+      assertThat(provider.getTokenEndpoint()).isEqualTo(URI.create(expectedTokenEndpoint));
+      assertThat(provider.getApiKey()).isEqualTo(expectedApiKey);
+      assertThat(provider.getGrantType()).isEqualTo(expectedGrantType);
+      assertThat(provider.getResponseType()).isEqualTo(expectedResponseType);
+      assertThat(provider.getTokenRefreshBuffer())
+          .isEqualTo(Integer.valueOf(expectedTokenRefreshBuffer));
+    } finally {
+      // Clean up environment variables
+      clearEnvironmentVariables(envVars.keySet());
+    }
   }
 }

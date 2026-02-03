@@ -39,6 +39,10 @@ import org.apache.hc.core5.http.message.BasicNameValuePair;
  * configured tokenFields (default ["token", "access_token"]). This ensures compatibility with
  * various OAuth providers.
  *
+ * <p>The provider caches tokens and automatically refreshes them before expiry. By default, tokens
+ * are refreshed 120 seconds before they expire. This can be configured using the tokenRefreshBuffer
+ * parameter.
+ *
  * <p>Configuration example:
  *
  * <pre>{@code
@@ -53,6 +57,7 @@ import org.apache.hc.core5.http.message.BasicNameValuePair;
  *     expiresInField: expires_in  # optional, defaults to "expires_in"
  *     grantType: urn:ietf:params:oauth:grant-type:jwt-bearer  # optional, defaults to "urn:ietf:params:oauth:grant-type:jwt-bearer"
  *     responseType: token  # optional, defaults to "token"
+ *     tokenRefreshBuffer: 120  # optional, defaults to 120 seconds
  * }</pre>
  *
  * <p>For IBM Cloud IAM, use these settings:
@@ -71,7 +76,8 @@ import org.apache.hc.core5.http.message.BasicNameValuePair;
 @ToString(exclude = {"apiKey", "cachedToken"})
 public class JwtTokenProvider implements TokenProvider {
 
-  private static final int TOKEN_REFRESH_BUFFER_SECONDS = 60; // Refresh 60s before expiry
+  private static final int DEFAULT_TOKEN_REFRESH_BUFFER_SECONDS =
+      120; // Default: Refresh 120s before expiry
 
   @Getter @Setter private String apiKey;
   @Getter @Setter private URI tokenEndpoint;
@@ -96,6 +102,12 @@ public class JwtTokenProvider implements TokenProvider {
 
   /** OAuth response type parameter sent in the token request. Optional, default: "token" */
   @Getter @Setter private String responseType = "token";
+
+  /**
+   * Number of seconds before token expiry to trigger a refresh. Optional, default: 120 seconds.
+   * This buffer ensures tokens are refreshed before they expire to avoid authentication failures.
+   */
+  @Getter @Setter private int tokenRefreshBuffer = DEFAULT_TOKEN_REFRESH_BUFFER_SECONDS;
 
   // Cached token state
   private transient String cachedToken;
@@ -127,11 +139,16 @@ public class JwtTokenProvider implements TokenProvider {
       return false;
     }
 
-    long currentTime = Instant.now().getEpochSecond();
+    long currentTime = getCurrentTimeSeconds();
     long timeUntilExpiry = tokenExpiryEpochSeconds - currentTime;
 
     // Refresh if token expires within buffer time
-    return timeUntilExpiry > TOKEN_REFRESH_BUFFER_SECONDS;
+    return timeUntilExpiry > tokenRefreshBuffer;
+  }
+
+  /** Gets current time in epoch seconds. Protected to allow test overrides. */
+  protected long getCurrentTimeSeconds() {
+    return Instant.now().getEpochSecond();
   }
 
   /** Creates an HTTP client for token requests. Protected to allow test overrides. */
@@ -175,7 +192,7 @@ public class JwtTokenProvider implements TokenProvider {
   private void parseAndCacheToken(String responseBody) throws IOException {
     // Use helper class to parse the JWT token response
     JwtTokenResponse tokenResponse =
-        new JwtTokenResponse(responseBody, tokenFields, expiresInField);
+        new JwtTokenResponse(responseBody, tokenFields, expiresInField, getCurrentTimeSeconds());
 
     cachedToken = tokenResponse.getToken();
     if (cachedToken == null || cachedToken.isEmpty()) {
@@ -188,7 +205,7 @@ public class JwtTokenProvider implements TokenProvider {
     // Get expiry from response or JWT payload
     tokenExpiryEpochSeconds = tokenResponse.getExpiryEpochSeconds();
     if (tokenExpiryEpochSeconds > 0) {
-      long expiresIn = tokenExpiryEpochSeconds - Instant.now().getEpochSecond();
+      long expiresIn = tokenExpiryEpochSeconds - getCurrentTimeSeconds();
       log.debug("JWT token cached, expires in {} seconds", expiresIn);
     } else {
       log.debug("JWT token cached, no expiry information available");
@@ -216,9 +233,14 @@ public class JwtTokenProvider implements TokenProvider {
      * @param responseBody JSON response from token endpoint
      * @param tokenFieldNames Expected field name for the token (case-insensitive)
      * @param expiresInFieldName Expected field name for expiry (case-insensitive)
+     * @param currentTimeSeconds Current time in epoch seconds
      * @throws IOException if JSON parsing fails
      */
-    JwtTokenResponse(String responseBody, String[] tokenFieldNames, String expiresInFieldName)
+    JwtTokenResponse(
+        String responseBody,
+        String[] tokenFieldNames,
+        String expiresInFieldName,
+        long currentTimeSeconds)
         throws IOException {
       JsonNode jsonResponse = MAPPER.readTree(responseBody);
 
@@ -230,7 +252,7 @@ public class JwtTokenProvider implements TokenProvider {
       long expiresInSeconds = expiresInStr != null ? Long.decode(expiresInStr) : 0;
 
       if (expiresInSeconds > 0) {
-        this.expiryEpochSeconds = Instant.now().getEpochSecond() + expiresInSeconds;
+        this.expiryEpochSeconds = currentTimeSeconds + expiresInSeconds;
       } else if (token != null) {
         // Try to extract expiry from JWT token itself
         this.expiryEpochSeconds = extractExpiryFromJwtPayload(token);

@@ -8,6 +8,7 @@ import time
 from unittest.mock import Mock, patch
 
 import pytest
+from openlineage.client import OpenLineageClient
 from openlineage.client.transport.http import HttpConfig, JwtTokenProvider
 
 
@@ -34,6 +35,7 @@ class TestJwtTokenProvider:
         assert provider.expires_in_field == "expires_in"
         assert provider.grant_type == "urn:ietf:params:oauth:grant-type:jwt-bearer"
         assert provider.response_type == "token"
+        assert provider.token_refresh_buffer == 120  # Default value
 
     def test_jwt_token_provider_initialization_with_custom_values(self):
         """Test JwtTokenProvider initialization with custom values"""
@@ -45,6 +47,7 @@ class TestJwtTokenProvider:
                 "expiresInField": "custom_expires",
                 "grantType": "custom_grant",
                 "responseType": "custom_response",
+                "tokenRefreshBuffer": 300,
             }
         )
 
@@ -52,6 +55,7 @@ class TestJwtTokenProvider:
         assert provider.expires_in_field == "custom_expires"
         assert provider.grant_type == "custom_grant"
         assert provider.response_type == "custom_response"
+        assert provider.token_refresh_buffer == 300
 
     def test_jwt_token_provider_snake_case_config(self):
         """Test JwtTokenProvider accepts snake_case config keys"""
@@ -121,28 +125,78 @@ class TestJwtTokenProvider:
         """Test that expired token is refreshed"""
         mock_response = Mock()
         mock_response.status_code = 200
-        # First response with short expiry
+        # Response with token that expires in 3600 seconds
         mock_response.json.side_effect = [
-            {"token": "jwt-token-1", "expires_in": 1},
+            {"token": "jwt-token-1", "expires_in": 3600},
             {"token": "jwt-token-2", "expires_in": 3600},
         ]
         mock_post.return_value = mock_response
 
         provider = JwtTokenProvider({"apiKey": "test-key", "tokenEndpoint": "https://auth.example.com/token"})
 
-        # First call
-        bearer1 = provider.get_bearer()
-        assert bearer1 == "Bearer jwt-token-1"
+        # Mock current time at T=0
+        initial_time = 1000000.0
+        with patch.object(provider, "_get_current_time", return_value=initial_time):
+            # First call - should fetch token
+            bearer1 = provider.get_bearer()
+            assert bearer1 == "Bearer jwt-token-1"
 
-        # Wait for token to expire (plus buffer)
-        time.sleep(2)
-
-        # Second call should fetch new token
-        bearer2 = provider.get_bearer()
-        assert bearer2 == "Bearer jwt-token-2"
+        # Mock time progression to after token expiry (3600 - 120 buffer + 1 = 3481 seconds later)
+        with patch.object(provider, "_get_current_time", return_value=initial_time + 3481):
+            # Second call should refresh because token is within buffer time
+            bearer2 = provider.get_bearer()
+            assert bearer2 == "Bearer jwt-token-2"
 
         # Should call endpoint twice
         assert mock_post.call_count == 2
+
+    @patch("requests.post")
+    def test_get_bearer_respects_custom_refresh_buffer(self, mock_post):
+        """Test that custom tokenRefreshBuffer is respected"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        # Response with token that expires in 3600 seconds
+        mock_response.json.side_effect = [
+            {"token": "jwt-token-1", "expires_in": 3600},
+            {"token": "jwt-token-2", "expires_in": 3600},
+        ]
+        mock_post.return_value = mock_response
+
+        # Set custom refresh buffer of 300 seconds
+        provider = JwtTokenProvider(
+            {
+                "apiKey": "test-key",
+                "tokenEndpoint": "https://auth.example.com/token",
+                "tokenRefreshBuffer": 300,
+            }
+        )
+
+        # Mock current time at T=0
+        initial_time = 1000000.0
+        with patch.object(provider, "_get_current_time", return_value=initial_time):
+            # First call - should fetch token
+            bearer1 = provider.get_bearer()
+            assert bearer1 == "Bearer jwt-token-1"
+
+        # Mock time at 3200 seconds (within 300s buffer but outside 120s default buffer)
+        # Token expires at 3600, so at 3200 we're 400s before expiry
+        # With 300s buffer, token is still valid (400 > 300)
+        with patch.object(provider, "_get_current_time", return_value=initial_time + 3200):
+            # Should still use cached token
+            bearer2 = provider.get_bearer()
+            assert bearer2 == "Bearer jwt-token-1"
+            # Should only call endpoint once
+            assert mock_post.call_count == 1
+
+        # Mock time at 3301 seconds (within 300s buffer)
+        # Token expires at 3600, so at 3301 we're 299s before expiry
+        # With 300s buffer, token should be refreshed (299 < 300)
+        with patch.object(provider, "_get_current_time", return_value=initial_time + 3301):
+            # Should refresh token
+            bearer3 = provider.get_bearer()
+            assert bearer3 == "Bearer jwt-token-2"
+            # Should call endpoint twice now
+            assert mock_post.call_count == 2
 
     @patch("requests.post")
     def test_get_bearer_with_access_token_field(self, mock_post):
@@ -405,3 +459,45 @@ class TestHttpConfigWithJwtAuth:
         assert isinstance(config.auth, JwtTokenProvider)
         assert config.auth.grant_type == "urn:ibm:params:oauth:grant-type:apikey"
         assert config.auth.response_type == "cloud_iam"
+
+    @patch.dict(
+        "os.environ",
+        {
+            "OPENLINEAGE__TRANSPORT__TYPE": "http",
+            "OPENLINEAGE__TRANSPORT__URL": "http://backend:5000",
+            "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "jwt",
+            "OPENLINEAGE__TRANSPORT__AUTH__API_KEY": "test-env-api-key-with-underscores",
+            "OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT": "https://auth.example.com/token/with/underscores",
+            "OPENLINEAGE__TRANSPORT__AUTH__GRANT_TYPE": "jwt-bearer-with-underscores",
+            "OPENLINEAGE__TRANSPORT__AUTH__RESPONSE_TYPE": "token-with-underscores",
+            "OPENLINEAGE__TRANSPORT__AUTH__TOKEN_REFRESH_BUFFER": "180",
+        },
+        clear=True,
+    )
+    def test_load_jwt_auth_from_environment_variables(self):
+        # Parse config from environment variables
+        config_dict = OpenLineageClient._load_config_from_env_variables()
+        auth_config = config_dict.get("transport", {}).get("auth", {})
+
+        expectedTokenEndpoint = "https://auth.example.com/token/with/underscores"
+        expectedGrantType = "jwt-bearer-with-underscores"
+        expectedApiKey = "test-env-api-key-with-underscores"
+        expectedResponseType = "token-with-underscores"
+        expectedTokenRefreshBuffer = 180
+
+        # Verify that underscores are preserved and values are correct
+        assert auth_config.get("token_endpoint") == expectedTokenEndpoint
+        assert auth_config.get("api_key") == expectedApiKey
+        assert auth_config.get("grant_type") == expectedGrantType
+        assert auth_config.get("response_type") == expectedResponseType
+        assert auth_config.get("token_refresh_buffer") == expectedTokenRefreshBuffer
+
+        # Verify the full client works and provider is correctly initialized
+        client = OpenLineageClient()
+        config = client.transport.config
+        assert isinstance(config.auth, JwtTokenProvider)
+        assert config.auth.token_endpoint == expectedTokenEndpoint
+        assert config.auth.api_key == expectedApiKey
+        assert config.auth.grant_type == expectedGrantType
+        assert config.auth.response_type == expectedResponseType
+        assert config.auth.token_refresh_buffer == expectedTokenRefreshBuffer

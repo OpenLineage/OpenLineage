@@ -344,12 +344,13 @@ When using JWT authentication with HTTP transport, configure the `auth` section 
 - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
 - `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
 - `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.
+- `tokenRefreshBuffer` - integer, number of seconds before token expiry to trigger a refresh. Optional, default: `120`.
 
 ##### Behavior
 
 - The provider sends a POST request with URL-encoded form data containing the API key and OAuth parameters.
 - The response is expected to be JSON containing the JWT token and optionally an expiration time.
-- Tokens are cached and automatically refreshed 60 seconds before expiration.
+- Tokens are cached and automatically refreshed before expiration (default: 120 seconds before expiry, configurable via `tokenRefreshBuffer`).
 - If no expiration is provided in the response, the provider attempts to extract it from the JWT payload's `exp` claim.
 - The provider supports multiple JSON field names for the token, trying each in order until a match is found.
 - Field matching is case-insensitive and handles both snake_case and camelCase variations (e.g., `expires_in` matches `expiresIn`).
@@ -365,8 +366,8 @@ Standard OAuth configuration:
 OPENLINEAGE__TRANSPORT__TYPE=http
 OPENLINEAGE__TRANSPORT__URL=https://backend:5000
 OPENLINEAGE__TRANSPORT__AUTH__TYPE=jwt
-OPENLINEAGE__TRANSPORT__AUTH__APIKEY=your-api-key
-OPENLINEAGE__TRANSPORT__AUTH__TOKENENDPOINT=https://auth.example.com/token
+OPENLINEAGE__TRANSPORT__AUTH__API_KEY=your-api-key
+OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT=https://auth.example.com/token
 ```
 
 IBM Cloud IAM configuration:
@@ -375,10 +376,10 @@ IBM Cloud IAM configuration:
 OPENLINEAGE__TRANSPORT__TYPE=http
 OPENLINEAGE__TRANSPORT__URL=https://backend:5000
 OPENLINEAGE__TRANSPORT__AUTH__TYPE=jwt
-OPENLINEAGE__TRANSPORT__AUTH__APIKEY=your-ibm-api-key
-OPENLINEAGE__TRANSPORT__AUTH__TOKENENDPOINT=https://iam.cloud.ibm.com/identity/token
-OPENLINEAGE__TRANSPORT__AUTH__GRANTTYPE=urn:ibm:params:oauth:grant-type:apikey
-OPENLINEAGE__TRANSPORT__AUTH__RESPONSETYPE=cloud_iam
+OPENLINEAGE__TRANSPORT__AUTH__API_KEY=your-ibm-api-key
+OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT=https://iam.cloud.ibm.com/identity/token
+OPENLINEAGE__TRANSPORT__AUTH__GRANT_TYPE=urn:ibm:params:oauth:grant-type:apikey
+OPENLINEAGE__TRANSPORT__AUTH__RESPONSE_TYPE=cloud_iam
 ```
 
 </TabItem>
