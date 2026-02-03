@@ -75,7 +75,7 @@ const MeetupCard = (meetup: Meetup) => {
           },
         }}
       >
-        <Typography variant="h5" color="text.secondary">
+        <Typography className="community-typography" variant="h5" color="text.secondary">
           {meetup.city}
         </Typography>
       </CardContent>
@@ -165,18 +165,23 @@ const TalkCard = (talk: Talk) => {
             },
           }}
         >
-          <Typography variant="h4" color="text.primary" className="pb-5">
+          <Typography id="community-talk-conf" className="community-typography" variant="h4" color="text.primary">
             {talk.conf}
           </Typography>
-          <Typography variant="h5" color="text.secondary">
+          <Typography className="community-typography" variant="h5" color="text.secondary">
             {talk.title}
           </Typography>
           {talk.speakers.map((speaker) => (
-            <Typography variant="h6" color="text.secondary" key={speaker.toString()}>
+            <Typography className="community-typography" variant="h6" color="text.secondary" key={speaker.toString()}>
               {speaker}
             </Typography>
           ))}
-          <Typography variant="body1" color="text.secondary" className="pt-5">
+          <Typography
+            id="community-talk-descrip"
+            className="community-typography"
+            variant="body1"
+            color="text.secondary"
+          >
             {talk.description}
           </Typography>
         </CardContent>
@@ -257,13 +262,13 @@ export default function CommunityResources(): JSX.Element {
               title="TSC meeting"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" color="text.secondary">
+              <Typography className="community-typography" variant="h6" color="text.secondary">
                 TSC Meetings
               </Typography>
-              <Typography sx={{ my: 1 }} variant="body2" color="text.secondary">
+              <Typography className="community-typography" sx={{ my: 1 }} variant="body2" color="text.secondary">
                 Every third Wednesday, 9:30-10:30am PT
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography className="community-typography" variant="body2" color="text.secondary">
                 Review releases, hear about new features, and discuss the roadmap. Open to all!
               </Typography>
             </CardContent>
@@ -315,13 +320,13 @@ export default function CommunityResources(): JSX.Element {
               title="Slack"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" color="text.secondary">
+              <Typography className="community-typography" variant="h6" color="text.secondary">
                 OpenLineage Slack
               </Typography>
-              <Typography sx={{ my: 1 }} variant="body2" color="text.secondary">
+              <Typography className="community-typography" sx={{ my: 1 }} variant="body2" color="text.secondary">
                 Connect with the community
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography className="community-typography" variant="body2" color="text.secondary">
                 Get help from experts, learn about releases and events, and sync up with contributors.
               </Typography>
             </CardContent>
@@ -363,13 +368,13 @@ export default function CommunityResources(): JSX.Element {
               title="GitHub"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" color="text.secondary">
+              <Typography className="community-typography" variant="h6" color="text.secondary">
                 GitHub Organization
               </Typography>
-              <Typography sx={{ my: 1 }} variant="body2" color="text.secondary">
+              <Typography className="community-typography" sx={{ my: 1 }} variant="body2" color="text.secondary">
                 Contribute to the project
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography className="community-typography" variant="body2" color="text.secondary">
                 Access the main codebase, website repo, and workshops. Contributions welcome!
               </Typography>
             </CardContent>
