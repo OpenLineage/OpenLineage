@@ -252,7 +252,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         return LazyJinjaLoadDict(loaded, jinja_env=self.jinja_environment)
 
     def get_dbt_metadata(
-        self,
+        self
     ) -> Tuple[Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Optional[Dict[Any, Any]]]:
         manifest = self.load_metadata(self.manifest_path, list(range(2, 13)), self.logger)
 
@@ -266,7 +266,12 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         try:
             profile_dir = run_result["args"]["profiles_dir"]
             profile = self.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[self.profile_name]
-        except KeyError or FileNotFoundError:
+        except (KeyError, FileNotFoundError):
+            self.logger.warning(
+                "Could not load profile directory from run_results.json. "
+                "Falling back to default profiles.yml location.",
+                exc_info=True
+            )
             profile = self.load_yaml_with_jinja(
                 os.path.join(self.get_dbt_profiles_dir(self.dbt_command_line), "profiles.yml")  # type: ignore[arg-type]
             )[self.profile_name]
