@@ -103,8 +103,14 @@
   #eco-typography {
     color: #fff;
   }
-  #community-typography {
+  .community-typography {
     color: #fff;
+  }
+  #community-talk-descrip {
+    padding-top: 5px;
+  }
+  #community-talk-conf {
+    padding-bottom: 5px;
   }
 }
 
