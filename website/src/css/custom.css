@@ -88,6 +88,12 @@
   .bottom {
     background-color: #000;
   }
+  #community-talk-descrip {
+    padding-top: 5px;
+  }
+  #community-talk-conf {
+    padding-bottom: 5px;
+  }
 }
 
 #animation-container {

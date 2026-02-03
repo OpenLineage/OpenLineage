@@ -168,6 +168,11 @@ const config = {
         items: [
           ...links,
           {
+            href: "https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w",
+            label: "Slack",
+            position: "right",
+          },
+          {
             href: "https://github.com/OpenLineage/openlineage",
             label: "GitHub",
             position: "right",
