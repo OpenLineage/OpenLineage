@@ -327,3 +327,46 @@ def test_column_lineage():
     assert len(order_amount_field.inputFields) == 1
     assert order_amount_field.inputFields[0].field == "amount"
     assert "orders" in order_amount_field.inputFields[0].name
+
+
+class TestDbtMetadataExceptions:
+
+    @pytest.fixture()
+    def processor(self):
+        """Fixture to create DbtLocalArtifactProcessor with run_results.json loaded"""
+        path = CURRENT_DIR + "/test/target/run_results.json"
+        logger = mock.Mock()
+
+        processor = DbtLocalArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            project_dir=CURRENT_DIR + "/env_vars",
+            target="prod",
+            job_namespace="ol-namespace",
+        )
+
+        processor.load_metadata = processor.load_metadata(path, list(range(2, 7)), logger)
+
+        return processor
+
+    @staticmethod
+    def simple_get_dbt_metadata(processor):
+        """Simplified DbtLocalArtifactProcessor().get_dbt_metadata() to test for exceptions"""
+        run_result = processor.load_metadata
+        try:
+            profile_dir = run_result["args"]["profiles_dir"]
+            profile = processor.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[processor.profile_name]
+        except (KeyError, FileNotFoundError) as e:
+            return type(e)
+
+    def test_key_error(self, processor):
+        """Test for KeyError by enforcing missing key in args"""
+        processor.load_metadata["args"].pop("profiles_dir", None)
+        processor.get_dbt_metadata = self.simple_get_dbt_metadata(processor)
+
+        assert processor.get_dbt_metadata == KeyError
+
+    def test_file_error(self, processor):
+        """Test for FileNotFoundError"""
+        processor.load_metadata["args"]["profiles_dir"] = "./non_existent_dir/dbt/test"
+        processor.get_dbt_metadata = self.simple_get_dbt_metadata(processor)
+        assert processor.get_dbt_metadata == FileNotFoundError
