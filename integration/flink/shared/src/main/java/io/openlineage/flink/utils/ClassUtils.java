@@ -49,11 +49,16 @@ public class ClassUtils {
     return false;
   }
 
+  /**
+   * Checks if Flink 2.x-specific classes are present on the classpath. Uses
+   * JobStatusChangedListenerFactory as it is a Flink 2.x-only class that is not backported through
+   * connectors (unlike LineageGraph which can appear in Flink 1.x with modern connectors).
+   */
   public static boolean hasFlink2Classes() {
     try {
       ClassUtils.class
           .getClassLoader()
-          .loadClass("org.apache.flink.streaming.api.lineage.LineageGraph");
+          .loadClass("org.apache.flink.core.execution.JobStatusChangedListenerFactory");
       return true;
     } catch (Exception e) {
       // swallow- we don't care

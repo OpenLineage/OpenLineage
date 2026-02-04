@@ -170,7 +170,8 @@ public class IcebergHandler implements CatalogHandler {
             catalogName);
       }
       String tableName = identifier.toString();
-      maybeSymlink = Optional.of(catalogTypeHandler.getIdentifier(session, catalogConf, tableName));
+      maybeSymlink =
+          Optional.ofNullable(catalogTypeHandler.getIdentifier(session, catalogConf, tableName));
     }
 
     if (!maybeTableLocation.isPresent() && warehouseLocation == null) {

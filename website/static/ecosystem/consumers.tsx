@@ -20,7 +20,7 @@ export const Consumers: Array<Partner> = [
     org_url: "https://docs.astronomer.io/astro/data-lineage-concepts",
   },
   {
-    image: "ataccama-logo-rgb-blk.svg",
+    image: "ataccama-logo-rgb-blk.png",
     org: "Ataccama",
     full_name: "Ataccama",
     description: "Ataccama leverages OpenLineage to enrich data lineage with metadata from data pipelines.",
