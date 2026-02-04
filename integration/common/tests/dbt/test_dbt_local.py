@@ -330,7 +330,6 @@ def test_column_lineage():
 
 
 class TestDbtMetadataExceptions:
-
     @pytest.fixture()
     def processor(self):
         """Fixture to create DbtLocalArtifactProcessor with run_results.json loaded"""
@@ -354,7 +353,9 @@ class TestDbtMetadataExceptions:
         run_result = processor.load_metadata
         try:
             profile_dir = run_result["args"]["profiles_dir"]
-            profile = processor.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[processor.profile_name]
+            profile = processor.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[
+                processor.profile_name
+            ]
         except (KeyError, FileNotFoundError) as e:
             return type(e)
 
