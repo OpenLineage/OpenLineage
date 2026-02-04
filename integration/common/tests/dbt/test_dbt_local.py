@@ -359,15 +359,17 @@ class TestDbtMetadataExceptions:
         except (KeyError, FileNotFoundError) as e:
             return type(e)
 
+        return profile
+
     def test_key_error(self, processor):
         """Test for KeyError by enforcing missing key in args"""
         processor.load_metadata["args"].pop("profiles_dir", None)
         processor.get_dbt_metadata = self.simple_get_dbt_metadata(processor)
 
-        assert processor.get_dbt_metadata == KeyError
+        assert processor.get_dbt_metadata is KeyError
 
     def test_file_error(self, processor):
         """Test for FileNotFoundError"""
         processor.load_metadata["args"]["profiles_dir"] = "./non_existent_dir/dbt/test"
         processor.get_dbt_metadata = self.simple_get_dbt_metadata(processor)
-        assert processor.get_dbt_metadata == FileNotFoundError
+        assert processor.get_dbt_metadata is FileNotFoundError

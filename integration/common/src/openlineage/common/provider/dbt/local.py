@@ -268,7 +268,8 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
             profile = self.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[self.profile_name]
         except (KeyError, FileNotFoundError):
             self.logger.warning(
-                "Could not load profile directory from run_results.json. Falling back to default profiles.yml location."
+                "Could not load profile directory from run_results.json. " 
+                "Falling back to default profiles.yml location."
             )
             profile = self.load_yaml_with_jinja(
                 os.path.join(self.get_dbt_profiles_dir(self.dbt_command_line), "profiles.yml")  # type: ignore[arg-type]
