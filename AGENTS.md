@@ -54,6 +54,21 @@ git commit -s -m "component: description"
 
 Components: `spec`, `client/java`, `client/python`, `spark`, `flink`, `dbt`, `airflow`, `docs`, `ci`, `build`
 
+## AI disclosure
+
+When AI assistants contribute to code, disclose this in commit messages:
+
+```
+Co-Authored-By: AI-Assistant-Name <noreply@example.com>
+```
+
+Examples:
+```
+Co-Authored-By: Claude <noreply@anthropic.com>
+Co-Authored-By: GitHub Copilot <noreply@github.com>
+Co-Authored-By: Cursor <noreply@cursor.com>
+```
+
 ## Code style
 
 - Java: Spotless formatter
