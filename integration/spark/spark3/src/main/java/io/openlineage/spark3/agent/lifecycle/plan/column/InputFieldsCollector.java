@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.BigQueryUtils;
+import io.openlineage.spark.agent.util.GlueCatalogSchemaResolver;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -74,7 +76,7 @@ public class InputFieldsCollector {
     if (isQueryRelationNode(node)) {
       QueryRelationColumnLineageCollector.extractExternalInputs(context, node);
     } else {
-      extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
+      extractInternalInputs(context, node, datasetIdentifiers);
     }
   }
 
@@ -90,18 +92,74 @@ public class InputFieldsCollector {
   }
 
   private static void extractInternalInputs(
+      ColumnLevelLineageContext context,
       LogicalPlan node,
-      ColumnLevelLineageBuilder builder,
       List<DatasetIdentifier> datasetIdentifiers) {
 
+    if (datasetIdentifiers.isEmpty()) {
+      return;
+    }
+
+    ColumnLevelLineageBuilder builder = context.getBuilder();
+
+    // Collect RDD column information
+    List<AttributeReference> rddAttributes =
+        ScalaConversionUtils.fromSeq(node.output()).stream()
+            .filter(attr -> attr instanceof AttributeReference)
+            .map(attr -> (AttributeReference) attr)
+            .collect(Collectors.toList());
+
+    // Check if this is a LogicalRDD from Glue Catalog and try to resolve original column names
+    final Optional<List<String>> catalogColumnNames;
+    if (node instanceof LogicalRDD) {
+      Optional<SparkSession> sparkSessionOpt = context.getOlContext().getSparkSession();
+      Optional<List<String>> resolved =
+          sparkSessionOpt == null
+              ? Optional.empty()
+              : sparkSessionOpt.flatMap(
+                  sparkSession ->
+                      GlueCatalogSchemaResolver.resolveOriginalColumns(
+                          datasetIdentifiers.get(0), sparkSession));
+
+      if (resolved.isPresent()) {
+        log.debug(
+            "Resolved {} original column names from Glue Catalog for LogicalRDD",
+            resolved.get().size());
+      }
+      catalogColumnNames = resolved;
+    } else {
+      catalogColumnNames = Optional.empty();
+    }
+
+    // Process each dataset identifier
     datasetIdentifiers.stream()
         .forEach(
             di -> {
-              ScalaConversionUtils.fromSeq(node.output()).stream()
-                  .filter(attr -> attr instanceof AttributeReference)
-                  .map(attr -> (AttributeReference) attr)
-                  .collect(Collectors.toList())
-                  .forEach(attr -> builder.addInput(attr.exprId(), di, attr.name()));
+              if (catalogColumnNames.isPresent()) {
+                // Use catalog column names mapped by position
+                List<String> rddColumnNames =
+                    rddAttributes.stream()
+                        .map(AttributeReference::name)
+                        .collect(Collectors.toList());
+
+                List<String> mappedColumnNames =
+                    GlueCatalogSchemaResolver.mapColumnsByPosition(
+                        rddColumnNames, catalogColumnNames.get());
+
+                // Add inputs with original catalog column names
+                for (int i = 0; i < rddAttributes.size() && i < mappedColumnNames.size(); i++) {
+                  AttributeReference attr = rddAttributes.get(i);
+                  String originalColumnName = mappedColumnNames.get(i);
+                  builder.addInput(attr.exprId(), di, originalColumnName);
+                  log.debug(
+                      "Mapped RDD column '{}' to catalog column '{}'",
+                      attr.name(),
+                      originalColumnName);
+                }
+              } else {
+                // Fall back to using RDD column names directly
+                rddAttributes.forEach(attr -> builder.addInput(attr.exprId(), di, attr.name()));
+              }
             });
   }
 
