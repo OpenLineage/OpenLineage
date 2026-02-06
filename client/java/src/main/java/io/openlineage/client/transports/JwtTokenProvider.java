@@ -5,8 +5,11 @@
 
 package io.openlineage.client.transports;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.common.util.StringUtils;
 import io.openlineage.client.OpenLineageClientException;
 import java.io.IOException;
 import java.net.URI;
@@ -18,7 +21,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -72,15 +74,36 @@ import org.apache.hc.core5.http.message.BasicNameValuePair;
  * }</pre>
  */
 @Slf4j
-@NoArgsConstructor
 @ToString(exclude = {"apiKey", "cachedToken"})
 public class JwtTokenProvider implements TokenProvider {
 
-  private static final int DEFAULT_TOKEN_REFRESH_BUFFER_SECONDS =
-      120; // Default: Refresh 120s before expiry
+  // Default: Refresh 120s before expiry
+  private static final int DEFAULT_TOKEN_REFRESH_BUFFER_SECONDS = 120;
 
-  @Getter @Setter private String apiKey;
-  @Getter @Setter private URI tokenEndpoint;
+  @Getter private String apiKey;
+  @Getter private URI tokenEndpoint;
+
+  /**
+   * Constructor that requires mandatory parameters apiKey and tokenEndpoint. Used by Jackson for
+   * deserialization.
+   *
+   * @param apiKey The API key for authentication (required)
+   * @param tokenEndpoint The token endpoint URI (required)
+   * @throws IllegalArgumentException if apiKey is null/empty or tokenEndpoint is null
+   */
+  @JsonCreator
+  public JwtTokenProvider(
+      @JsonProperty("apiKey") String apiKey, @JsonProperty("tokenEndpoint") URI tokenEndpoint) {
+    if (StringUtils.isBlank(apiKey)) {
+      throw new IllegalArgumentException("apiKey must not be null or empty");
+    }
+    if (tokenEndpoint == null) {
+      throw new IllegalArgumentException("tokenEndpoint must not be null");
+    }
+
+    this.apiKey = apiKey;
+    this.tokenEndpoint = tokenEndpoint;
+  }
 
   /**
    * The JSON field name containing the JWT token in the response. Defaults to "access_token". The

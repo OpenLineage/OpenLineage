@@ -18,13 +18,7 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
   - `type` - string specifying value for one of the out-of-the-box available authentication methods (`apiKey` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication: 
      - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
-  - Configuration options for `jwt` authentication: 
-     - `apiKey` - string, the API key used to obtain the JWT token. Required if `type` is `jwt`.
-     - `tokenEndpoint` - string, the URL endpoint for token generation. Required if `type` is `jwt`.
-     - `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
-     - `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.   
-     - `tokenFields` - array of strings, JSON field names to search for the token in the response. The provider tries each field in order. Optional, default: `["token", "access_token"]`.
-     - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
+  - Configuration options for `jwt` authentication are documented in the [JWT Token Provider](#jwt-token-provider) section.
 - `headers` - dictionary specifying HTTP request headers. Optional.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 

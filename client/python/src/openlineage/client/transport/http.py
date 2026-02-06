@@ -102,8 +102,7 @@ class JwtTokenProvider(TokenProvider):
             raise KeyError(msg)
 
         # Support multiple naming conventions for backwards compatibility
-        # Preferred: token_endpoint (from TOKEN_ENDPOINT env var)
-        # Also support: tokenEndpoint, tokenendpoint
+        # Preferred: token_endpoint (from TOKEN_ENDPOINT env var), also supports tokenEndpoint
         token_endpoint = config.get("token_endpoint") or config.get("tokenEndpoint")
         if not token_endpoint:
             msg = "tokenEndpoint is required for JWT token provider."
@@ -131,15 +130,7 @@ class JwtTokenProvider(TokenProvider):
         # Token refresh buffer (seconds before expiry to refresh)
         token_refresh_buffer = config.get("tokenRefreshBuffer") or config.get("token_refresh_buffer")
         if token_refresh_buffer:
-            try:
-                self.token_refresh_buffer = int(token_refresh_buffer)
-            except ValueError:
-                log.warning(
-                    "Invalid tokenRefreshBuffer value %s, using default: %s instead",
-                    token_refresh_buffer,
-                    self.TOKEN_REFRESH_BUFFER_SECONDS,
-                )
-                self.token_refresh_buffer = self.TOKEN_REFRESH_BUFFER_SECONDS
+            self.token_refresh_buffer = int(token_refresh_buffer)
         else:
             self.token_refresh_buffer = self.TOKEN_REFRESH_BUFFER_SECONDS
 

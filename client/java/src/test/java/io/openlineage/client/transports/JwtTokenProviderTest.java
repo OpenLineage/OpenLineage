@@ -45,16 +45,16 @@ class JwtTokenProviderTest {
   @BeforeEach
   void setUp() {
     mockHttpClient = mock(CloseableHttpClient.class);
-    provider = new TestableJwtTokenProvider(mockHttpClient);
-    provider.setApiKey("test-api-key");
-    provider.setTokenEndpoint(URI.create("https://auth.example.com/token"));
+    provider =
+        new TestableJwtTokenProvider(
+            "test-api-key", URI.create("https://auth.example.com/token"), mockHttpClient);
   }
 
   /**
    * Helper method to set environment variables using reflection. This is a workaround for the
    * immutable System.getenv() Map.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "PMD"}) // Suppress warnings for reflection and PMD
   private void setEnvironmentVariables(Map<String, String> newEnv) throws Exception {
     Class<?> classOfMap = System.getenv().getClass();
     Field field = classOfMap.getDeclaredField("m");
@@ -79,7 +79,8 @@ class JwtTokenProviderTest {
   private static class TestableJwtTokenProvider extends JwtTokenProvider {
     private final CloseableHttpClient mockClient;
 
-    TestableJwtTokenProvider(CloseableHttpClient mockClient) {
+    TestableJwtTokenProvider(String apiKey, URI tokenEndpoint, CloseableHttpClient mockClient) {
+      super(apiKey, tokenEndpoint);
       this.mockClient = mockClient;
     }
 
@@ -354,7 +355,12 @@ class JwtTokenProviderTest {
 
   @Test
   void testUrlEncodingOfSpecialCharacters() throws Exception {
-    provider.setApiKey("test+key=with&special?chars");
+    // Create a new provider with special characters in the API key
+    provider =
+        new TestableJwtTokenProvider(
+            "test+key=with&special?chars",
+            URI.create("https://auth.example.com/token"),
+            mockHttpClient);
 
     String mockResponse = "{\"token\": \"encoded-jwt-token\", \"expiresIn\": 3600}";
 
@@ -599,5 +605,45 @@ class JwtTokenProviderTest {
       // Clean up environment variables
       clearEnvironmentVariables(envVars.keySet());
     }
+  }
+
+  @Test
+  void testLoadJwtAuthFromInvialidEnvironmentVariablesFails() throws Exception {
+    String expectedTokenEndpoint = "https://auth.example.com/token/with/underscores";
+    String expectedGrantType = "jwt-bearer-with-underscores";
+    String expectedApiKey = "test-env-api-key-with-underscores";
+    String expectedResponseType = "token-with-underscores";
+    String expectedTokenRefreshBuffer = "180";
+
+    // Use reflection to set environment variables
+    Map<String, String> envVars = new HashMap<>();
+    envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "http");
+    envVars.put("OPENLINEAGE__TRANSPORT__URL", "http://backend:5000");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TYPE", "jwt");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__APIKEY", expectedApiKey);
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TOKENENDPOINT", expectedTokenEndpoint);
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__GRANTTYPE", expectedGrantType);
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__RESPONSETYPE", expectedResponseType);
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TOKEN_REFRESHBUFFER", expectedTokenRefreshBuffer);
+
+    setEnvironmentVariables(envVars);
+
+    // Should fail because environment variables use wrong field names (no underscores)
+    OpenLineageClientException exception =
+        assertThrows(
+            OpenLineageClientException.class,
+            () -> {
+              // Parse config from environment variables
+              OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+                  new com.fasterxml.jackson.core.type.TypeReference<OpenLineageConfig>() {});
+            });
+
+    // Verify the root cause is IllegalArgumentException with the expected message
+    Throwable cause = exception.getCause();
+    while (cause != null && !(cause instanceof IllegalArgumentException)) {
+      cause = cause.getCause();
+    }
+    assertThat(cause).isInstanceOf(IllegalArgumentException.class);
+    assertThat(cause.getMessage()).contains("apiKey must not be null or empty");
   }
 }

@@ -240,13 +240,7 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
   - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication:
     - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
-  - Configuration options for `jwt` authentication:
-    - `apiKey` - string, the API key used to obtain the JWT token. Required if `type` is `jwt`.
-    - `tokenEndpoint` - string, the URL endpoint for token generation. Required if `type` is `jwt`.
-    - `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
-    - `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.
-    - `tokenFields` - list of strings, JSON field names to search for the token in the response. The provider tries each field in order. Optional, default: `["token", "access_token"]`.
-    - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
+  - Configuration options for `jwt` authentication are documented in the [JWT Token Provider](#jwt-token-provider) section.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 - `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
@@ -484,13 +478,7 @@ Async transport API is experimental, and can change over the next few releases.
   - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication:
     - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
-  - Configuration options for `jwt` authentication:
-    - `apiKey` - string, the API key used to obtain the JWT token. Required if `type` is `jwt`.
-    - `tokenEndpoint` - string, the URL endpoint for token generation. Required if `type` is `jwt`.
-    - `grantType` - string, OAuth grant type parameter sent in the token request. Optional, default: `"urn:ietf:params:oauth:grant-type:jwt-bearer"`.
-    - `responseType` - string, OAuth response type parameter sent in the token request. Optional, default: `"token"`.
-    - `tokenFields` - list of strings, JSON field names to search for the token in the response. The provider tries each field in order. Optional, default: `["token", "access_token"]`.
-    - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
+  - Configuration options for `jwt` authentication are documented in the [JWT Token Provider](#jwt-token-provider) section.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 - `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `10000`.

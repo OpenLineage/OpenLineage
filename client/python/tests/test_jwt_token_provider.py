@@ -501,3 +501,39 @@ class TestHttpConfigWithJwtAuth:
         assert config.auth.grant_type == expectedGrantType
         assert config.auth.response_type == expectedResponseType
         assert config.auth.token_refresh_buffer == expectedTokenRefreshBuffer
+
+    @patch.dict(
+        "os.environ",
+        {
+            "OPENLINEAGE__TRANSPORT__TYPE": "http",
+            "OPENLINEAGE__TRANSPORT__URL": "http://backend:5000",
+            "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "jwt",
+            "OPENLINEAGE__TRANSPORT__AUTH__APIKEY": "test-env-api-key-with-underscores",
+            "OPENLINEAGE__TRANSPORT__AUTH__TOKENENDPOINT": "https://auth.example.com/token/with/underscores",
+            "OPENLINEAGE__TRANSPORT__AUTH__GRANTTYPE": "jwt-bearer-with-underscores",
+            "OPENLINEAGE__TRANSPORT__AUTH__RESPONSETYPE": "token-with-underscores",
+            "OPENLINEAGE__TRANSPORT__AUTH__TOKENREFRESH_BUFFER": "180",
+        },
+        clear=True,
+    )
+    def test_load_jwt_auth_from_invalid_environment_variables_fails(self):
+        with pytest.raises(Exception):
+            # Parse config from environment variables
+            config_dict = OpenLineageClient._load_config_from_env_variables()
+            auth_config = config_dict.get("transport", {}).get("auth", {})
+
+            expectedTokenEndpoint = "https://auth.example.com/token/with/underscores"
+            expectedGrantType = "jwt-bearer-with-underscores"
+            expectedApiKey = "test-env-api-key-with-underscores"
+            expectedResponseType = "token-with-underscores"
+            expectedTokenRefreshBuffer = 180
+
+            # Verify that underscores are not preserved -> unsupported placeholders
+            assert auth_config.get("tokenendpoint") == expectedTokenEndpoint
+            assert auth_config.get("apikey") == expectedApiKey
+            assert auth_config.get("granttype") == expectedGrantType
+            assert auth_config.get("responsetype") == expectedResponseType
+            assert auth_config.get("tokenrefresh_buffer") == expectedTokenRefreshBuffer
+
+            # Verify the client initialization fails
+            OpenLineageClient()
