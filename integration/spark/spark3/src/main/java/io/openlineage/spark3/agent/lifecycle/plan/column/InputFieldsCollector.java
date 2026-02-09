@@ -109,7 +109,9 @@ public class InputFieldsCollector {
             .map(attr -> (AttributeReference) attr)
             .collect(Collectors.toList());
 
-    // Check if this is a LogicalRDD from Glue Catalog and try to resolve original column names
+    // Check if this is a LogicalRDD from Glue Catalog and try to resolve original column names.
+    // We use the first dataset identifier for catalog lookup because a LogicalRDD from
+    // DynamicFrame.toDF() maps to a single source table in the Glue Catalog.
     final Optional<List<String>> catalogColumnNames;
     if (node instanceof LogicalRDD) {
       Optional<SparkSession> sparkSessionOpt = context.getOlContext().getSparkSession();

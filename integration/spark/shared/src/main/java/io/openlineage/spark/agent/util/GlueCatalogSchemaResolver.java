@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -177,22 +178,36 @@ public class GlueCatalogSchemaResolver {
   }
 
   /**
-   * Maps RDD column names to catalog column names by position. This is used when the column names
-   * have been transformed but the order is preserved.
+   * Returns the original catalog column names when DynamicFrame has renamed columns but preserved
+   * their order. Falls back to RDD column names when:
+   *
+   * <ul>
+   *   <li>Column counts differ (columns were added or dropped)
+   *   <li>Column name sets are identical (columns were reordered, not renamed)
+   * </ul>
    *
    * @param rddColumnNames The column names from the LogicalRDD
    * @param catalogColumnNames The original column names from the Glue Catalog
-   * @return List of catalog column names in the same order as RDD columns, or RDD names if mapping
-   *     fails
+   * @return Catalog column names if columns were renamed, RDD column names otherwise
    */
   public static List<String> mapColumnsByPosition(
       List<String> rddColumnNames, List<String> catalogColumnNames) {
 
     if (rddColumnNames.size() != catalogColumnNames.size()) {
       log.warn(
-          "Column count mismatch: RDD has {} columns, Catalog has {} columns. Using RDD column names.",
+          "Column count mismatch: RDD has {} columns, Catalog has {} columns. "
+              + "Using RDD column names.",
           rddColumnNames.size(),
           catalogColumnNames.size());
+      return rddColumnNames;
+    }
+
+    // If the column name sets are identical, columns were reordered not renamed.
+    // The RDD names are already correct in that case.
+    if (new HashSet<>(rddColumnNames).equals(new HashSet<>(catalogColumnNames))) {
+      log.debug(
+          "RDD and catalog columns have the same names (possibly reordered). "
+              + "Using RDD column names.");
       return rddColumnNames;
     }
 

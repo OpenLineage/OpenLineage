@@ -79,4 +79,18 @@ class GlueCatalogSchemaResolverTest {
     assertThat(mapped.get(0)).isEqualTo("OrderId");
     assertThat(mapped.get(1)).isEqualTo("Total");
   }
+
+  @Test
+  void testMapColumnsByPosition_ReorderedColumns() {
+    // When columns are reordered (same names, different positions), should return RDD columns
+    List<String> rddColumns = Arrays.asList("total", "orderid");
+    List<String> catalogColumns = Arrays.asList("orderid", "total");
+
+    List<String> mapped =
+        GlueCatalogSchemaResolver.mapColumnsByPosition(rddColumns, catalogColumns);
+
+    assertThat(mapped).hasSize(2);
+    assertThat(mapped.get(0)).isEqualTo("total");
+    assertThat(mapped.get(1)).isEqualTo("orderid");
+  }
 }
