@@ -41,7 +41,7 @@ export const Consumers: Array<Partner> = [
     org: "Collate",
     full_name: "Collate",
     description:
-      "Datadog's OpenLineage integration uses job and dataset metadata from Airflow, Spark, and dbt to provide visibility into the performance and reliability of data pipelines.",
+      "Managed OpenMetadata cloud service for unified metadata management and semantic intelligence, with enterprise support.",
     docs_url: "https://docs.getcollate.io/connectors/pipeline/openlineage",
     org_url: "https://www.getcollate.io/",
   },
