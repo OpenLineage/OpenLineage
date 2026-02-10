@@ -16,4 +16,4 @@ related: #ISSUE
 
 
 ### Checklist
-- [ ] AI was used in creating this PR (if so, please include `Co-Authored-By` in commits)
+- [ ] AI was used in creating this PR
