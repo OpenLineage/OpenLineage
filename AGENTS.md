@@ -23,7 +23,7 @@ All spec changes MUST be backwards compatible per [SchemaVer](spec/Versioning.md
 When changing the spec:
 1. Update version in `$id` field appropriately
 2. Add test cases in `spec/tests/`
-3. Regenerate Python client: `python ./client/python/src/openlineage/client/generator/generate.py`
+3. run pre-commit
 4. Coordinate changes across all clients (Java, Python)
 
 ## Setup commands
