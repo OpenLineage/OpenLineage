@@ -52,7 +52,7 @@ Always sign off commits (DCO required):
 git commit -s -m "component: description"
 ```
 
-Components: `spec`, `client/java`, `client/python`, `spark`, `flink`, `dbt`, `airflow`, `docs`, `ci`, `build`
+
 
 ## AI disclosure
 
@@ -78,18 +78,7 @@ Co-Authored-By: Cursor <noreply@cursor.com>
 ## License headers
 
 All new files need Apache 2.0 headers:
-
-```java
-/*
-/* Copyright 2018-2025 contributors to the OpenLineage project
-/* SPDX-License-Identifier: Apache-2.0
-*/
-```
-
-```python
-# Copyright 2018-2025 contributors to the OpenLineage project
-# SPDX-License-Identifier: Apache-2.0
-```
+we have .github/header_templates.md for this
 
 ## Client coordination
 
@@ -102,10 +91,7 @@ Examples: new transports, new facet support, API changes, configuration options.
 
 ## PR guidelines
 
-- One logical change per PR
-- Keep diffs small and focused
-- Link related issues with `closes: #123`
-- Update documentation with code changes
+follow CONTRIBUTING.md instructions
 
 ## Repository structure
 
