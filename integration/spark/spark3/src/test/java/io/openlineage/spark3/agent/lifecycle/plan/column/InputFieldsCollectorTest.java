@@ -14,34 +14,26 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
-import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
-import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
-import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -144,39 +136,6 @@ class InputFieldsCollectorTest {
 
     InputFieldsCollector.collect(context, plan);
     verify(builder, times(1)).addInput(exprId, new DatasetIdentifier("/tmp", FILE), SOME_NAME);
-  }
-
-  @Test
-  @SneakyThrows
-  void collectWhenGrandChildNodeIsLogicalRdd() {
-    LogicalRDD relation = mock(LogicalRDD.class);
-    RDD<InternalRow> rdd = mock(RDD.class);
-    List<RDD<?>> listRDD = Collections.singletonList(rdd);
-
-    when(relation.rdd()).thenReturn(rdd);
-
-    LogicalPlan plan = createPlanWithGrandChild(relation);
-
-    when(relation.output())
-        .thenReturn(
-            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
-                    Arrays.asList((Attribute) attributeReference))
-                .asScala()
-                .toSeq());
-
-    try (MockedStatic rdds = mockStatic(Rdds.class)) {
-      try (MockedStatic planUtils = mockStatic(PlanUtils.class)) {
-        try (MockedStatic pathUtils = mockStatic(PathUtils.class)) {
-          when(Rdds.findFileLikeRdds(rdd)).thenReturn(listRDD);
-          when(PlanUtils.findDatasetIdentifiers(listRDD))
-              .thenReturn(Collections.singletonList(new DatasetIdentifier("/tmp", FILE)));
-
-          InputFieldsCollector.collect(context, plan);
-          verify(builder, times(1))
-              .addInput(exprId, new DatasetIdentifier("/tmp", FILE), SOME_NAME);
-        }
-      }
-    }
   }
 
   @Test

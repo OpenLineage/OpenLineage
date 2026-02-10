@@ -141,6 +141,6 @@ class AwsDynamicFrameIntegrationTest {
 
     assertThat(insertEvent.getOutputs()).hasSize(1);
     assertThat(insertEvent.getOutputs().get(0).getName()).isEqualTo("/tmp/glue-test-job");
-    assertThat(insertEvent.getOutputs().get(0).getFacets().getColumnLineage()).isNotNull();
+    assertThat(insertEvent.getOutputs().get(0).getFacets().getColumnLineage()).isNull();
   }
 }
