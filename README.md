@@ -8,7 +8,7 @@
 <div align="center">
   <img src="./doc/openlineage-lfai-logo.png" width="754px"/>
 </div>
-
+   
 ## Overview
 OpenLineage is an Open standard for metadata and lineage collection designed to instrument jobs as they are running.
 It defines a generic model of run, job, and dataset entities identified using consistent naming strategies.
