@@ -8,7 +8,6 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
-import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.BigQueryUtils;
@@ -28,7 +27,6 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -129,8 +127,6 @@ public class InputFieldsCollector {
         && ((LogicalRelation) node).relation() instanceof JDBCRelation) {
       JDBCRelation relation = (JDBCRelation) ((LogicalRelation) node).relation();
       return extractDatasetIdentifier(context, relation);
-    } else if (node instanceof LogicalRDD) {
-      return extractDatasetIdentifier((LogicalRDD) node);
     } else if (node instanceof LogicalRelation
         && context
             .getOlContext()
@@ -143,7 +139,8 @@ public class InputFieldsCollector {
       // requires merging multiple LogicalPlans
     } else if (node instanceof OneRowRelation
         || node instanceof LocalRelation
-        || node instanceof ExternalRDD) {
+        || node instanceof ExternalRDD
+        || node instanceof LogicalRDD) {
       // skip without warning
     } else if (node instanceof LeafNode) {
       log.warn("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());
@@ -170,11 +167,6 @@ public class InputFieldsCollector {
                                         jdbcUrl, table.qualifiedName(), jdbcProperties)))
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
-  }
-
-  private static List<DatasetIdentifier> extractDatasetIdentifier(LogicalRDD logicalRDD) {
-    List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(logicalRDD.rdd());
-    return PlanUtils.findDatasetIdentifiers(fileLikeRdds);
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(

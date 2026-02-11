@@ -21,19 +21,6 @@
             }
           ]
         },
-        "columnLineage": {
-          "fields": {
-            "a": {
-              "inputFields": [
-                {
-                  "namespace": "file",
-                  "name": "/tmp/iceberg/default/source_table",
-                  "field": "a"
-                }
-              ]
-            }
-          }
-        },
         "catalog": {
           "framework": "iceberg",
           "type": "hadoop",
