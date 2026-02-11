@@ -6,21 +6,11 @@
   "inputs": [
     {
       "namespace": "file",
-      "name": "/tmp/rdd_a",
-      "facets": {
-        "schema": {
-          "fields": []
-        }
-      }
+      "name": "/tmp/rdd_a"
     },
     {
       "namespace": "file",
-      "name": "/tmp/rdd_b",
-      "facets": {
-        "schema": {
-          "fields": []
-        }
-      }
+      "name": "/tmp/rdd_b"
     }
   ],
   "outputs": [

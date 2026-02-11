@@ -220,6 +220,18 @@ public abstract class DatasetFactory<D extends Dataset> {
   }
 
   /**
+   * Construct a {@link Dataset} with the given {@link DatasetIdentifier}.
+   *
+   * @param ident
+   * @return
+   */
+  public D getDataset(DatasetIdentifier ident) {
+    DatasetCompositeFacetsBuilder facetsBuilder = datasetFacetBuilder(ident.getNamespace());
+    includeSymlinksFacet(facetsBuilder, ident);
+    return getDataset(ident, facetsBuilder);
+  }
+
+  /**
    * Construct a {@link Dataset} with the given {@link DatasetIdentifier} and schema.
    *
    * @param ident

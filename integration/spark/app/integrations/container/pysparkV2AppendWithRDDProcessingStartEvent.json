@@ -13,14 +13,6 @@
           "name": "file",
           "uri": "file"
         },
-        "schema": {
-          "fields": [
-            {
-              "name": "a",
-              "type": "long"
-            }
-          ]
-        },
         "symlinks": {
           "identifiers": [
             {
