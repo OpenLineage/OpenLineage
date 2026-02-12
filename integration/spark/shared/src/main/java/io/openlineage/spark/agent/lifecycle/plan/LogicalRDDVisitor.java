@@ -7,9 +7,9 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.Rdds;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,17 +43,16 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
   @Override
   public List<D> apply(LogicalPlan x) {
     Set<RDD<?>> flattenedRdds = Rdds.flattenRDDs(((LogicalRDD) x).rdd(), new HashSet<>());
-    return findInputDatasets(Rdds.findFileLikeRdds(flattenedRdds), resolveSchema(flattenedRdds));
+    List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(flattenedRdds);
+    return findInputDatasets(fileLikeRdds, resolveSchema(fileLikeRdds));
   }
 
-  @SuppressWarnings("PMD")
-  private static StructType resolveSchema(Collection<RDD<?>> rdds) {
-    // TODO: schema from LogicalRDD is unreliable, because it does not account for transformations
-    //  that may have been applied to the RDD, so it cannot be used.
-    //  It should be possible to resolve the schema from underlying RDDs in some cases,
-    //  for example from DataSourceRDD when reading from Iceberg Table,
-    //  where we have information about the source table schema.
-    //  The schema extraction logic can be implemented here.
-    return null;
+  private static StructType resolveSchema(List<RDD<?>> rdds) {
+    //  Schema from LogicalRDD::schema is unreliable, because it does not account for
+    // transformations that may have been applied to the RDD. It represents the final state of the
+    // RDD, not how the data source looks like, so it cannot be used here.
+    //  Instead, we should resolve schema from underlying RDDs, but it is possible only in few
+    // cases, for example from DataSourceRDD when reading from Iceberg Table.
+    return PlanUtils.findSchema(rdds).orElse(null);
   }
 }
