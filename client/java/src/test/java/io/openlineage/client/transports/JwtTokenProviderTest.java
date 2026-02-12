@@ -65,7 +65,7 @@ class JwtTokenProviderTest {
   }
 
   /** Helper method to clear environment variables using reflection. */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "PMD"})
   private void clearEnvironmentVariables(Set<String> keys) throws Exception {
     Class<?> classOfMap = System.getenv().getClass();
     Field field = classOfMap.getDeclaredField("m");
