@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/transport"
+	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
 	"github.com/google/uuid"
 )
 

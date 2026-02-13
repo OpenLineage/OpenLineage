@@ -5,8 +5,8 @@ import (
 	"errors"
 	"log/slog"
 
-	ol "github.com/ThijsKoot/openlineage/client/go/pkg/openlineage"
-	"github.com/ThijsKoot/openlineage/client/go/pkg/transport"
+	ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
+	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
 
 func ExampleRun() {

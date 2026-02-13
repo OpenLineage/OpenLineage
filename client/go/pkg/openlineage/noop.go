@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/google/uuid"
 )
 

@@ -1,6 +1,6 @@
 package openlineage
 
-import "github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+import "github.com/OpenLineage/openlineage/client/go/pkg/facets"
 
 type Event struct {
 	EventTime string          `json:"eventTime"`           // the time the event occurred at
