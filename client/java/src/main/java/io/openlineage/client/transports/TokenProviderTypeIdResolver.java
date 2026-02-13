@@ -36,9 +36,14 @@ public class TokenProviderTypeIdResolver extends TypeIdResolverBase {
 
   @Override
   public JavaType typeFromId(DatabindContext context, String id) {
-    if (Objects.equals(id, "api_key")) { // backwards compatibility
+    // Backwards compatibility mappings
+    if (Objects.equals(id, "api_key")) {
       return context.constructSpecializedType(superType, ApiKeyTokenProvider.class);
     }
+    if (Objects.equals(id, "jwt")) {
+      return context.constructSpecializedType(superType, JwtTokenProvider.class);
+    }
+
     try {
       return context.constructSpecializedType(superType, Class.forName(id));
     } catch (ClassNotFoundException e) {
