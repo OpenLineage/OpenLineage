@@ -1,10 +1,15 @@
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package openlineage
 
 import (
 	"context"
 	"runtime"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/go-stack/stack"
 	"github.com/google/uuid"
 )
@@ -18,7 +23,6 @@ const currentRunKey runContextKeyType = iota
 func RunFromContext(ctx context.Context) Run {
 	if ctx == nil {
 		return &noopRun{}
-		// return noopSpanInstance
 	}
 	if r, ok := ctx.Value(currentRunKey).(Run); ok {
 		return r
@@ -140,20 +144,34 @@ func (r *run) Parent() Run {
 }
 
 func (r *run) NewEvent(eventType EventType) *RunEvent {
-	run := NewNamespacedRunEvent(eventType, r.runID, r.jobName, r.jobNamespace)
+	if r == nil {
+		panic("run is nil")
+	}
+	if r.client == nil {
+		panic("run.client is nil - run was not properly initialized")
+	}
 
-	if r.Parent() != nil {
-		parent := facets.NewParent(
-			facets.Job{
-				Name:      r.parent.JobName(),
-				Namespace: r.parent.JobNamespace(),
+	run := NewNamespacedRunEvent(eventType, r.runID, r.jobName, r.jobNamespace, r.client.producer)
+
+	parent := r.Parent()
+	if parent != nil {
+		if _, isNoop := parent.(*noopRun); isNoop {
+			parent = nil
+		}
+	}
+	if parent != nil {
+		parentFacet := facets.NewParent(
+			r.client.producer,
+			facets.ParentJob{
+				Name:      parent.JobName(),
+				Namespace: parent.JobNamespace(),
 			},
-			facets.Run{
-				RunID: r.parent.RunID().String(),
+			facets.ParentRun{
+				RunID: parent.RunID().String(),
 			},
 		)
 
-		run = run.WithRunFacets(parent)
+		run = run.WithRunFacets(parentFacet)
 	}
 
 	return run
@@ -180,7 +198,7 @@ func (r *run) RecordError(err error) {
 	stacktrace := stack.Caller(1).String()
 	language := runtime.Version()
 
-	errorFacet := facets.NewErrorMessage(errorMessage, language).
+	errorFacet := facets.NewErrorMessage(r.client.producer, errorMessage, language).
 		WithStackTrace(stacktrace)
 
 	errorEvent := r.NewEvent(EventTypeOther).WithRunFacets(errorFacet)

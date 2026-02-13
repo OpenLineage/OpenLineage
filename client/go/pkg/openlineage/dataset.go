@@ -1,9 +1,13 @@
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package openlineage
 
 import (
 	"time"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
 type DatasetEvent struct {
@@ -24,13 +28,14 @@ func (e *DatasetEvent) AsEmittable() Event {
 func NewDatasetEvent(
 	name string,
 	namespace string,
+	producer string,
 	facets ...facets.DatasetFacet,
 ) DatasetEvent {
 	return DatasetEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
-			SchemaURL: schemaURL,
-			EventTime: time.Now().Format(time.RFC3339),
+			SchemaURL: DatasetEventSchemaURL,
+			EventTime: time.Now(),
 		},
 		Dataset: NewDataset(name, namespace, facets...),
 	}
