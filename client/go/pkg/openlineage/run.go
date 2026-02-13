@@ -1,9 +1,13 @@
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package openlineage
 
 import (
 	"time"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/google/uuid"
 )
 
@@ -49,12 +53,13 @@ func NewNamespacedRunEvent(
 	runID uuid.UUID,
 	jobName string,
 	jobNamespace string,
+	producer string,
 ) *RunEvent {
 	return &RunEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
-			SchemaURL: schemaURL,
-			EventTime: time.Now().Format(time.RFC3339),
+			SchemaURL: RunEventSchemaURL,
+			EventTime: time.Now(),
 		},
 		Run: RunInfo{
 			RunID: runID.String(),
@@ -67,8 +72,8 @@ func NewNamespacedRunEvent(
 	}
 }
 
-func NewRunEvent(eventType EventType, runID uuid.UUID, jobName string) *RunEvent {
-	return NewNamespacedRunEvent(eventType, runID, jobName, DefaultNamespace)
+func NewRunEvent(eventType EventType, runID uuid.UUID, jobName string, producer string) *RunEvent {
+	return NewNamespacedRunEvent(eventType, runID, jobName, DefaultNamespace, producer)
 }
 
 func (r *RunEvent) WithRunFacets(runFacets ...facets.RunFacet) *RunEvent {
@@ -101,11 +106,12 @@ func (r *RunEvent) WithOutputs(outputs ...OutputElement) *RunEvent {
 
 func (r *RunEvent) WithParent(parentID uuid.UUID, jobName, namespace string) *RunEvent {
 	parent := facets.NewParent(
-		facets.Job{
+		r.Producer,
+		facets.ParentJob{
 			Name:      jobName,
 			Namespace: namespace,
 		},
-		facets.Run{
+		facets.ParentRun{
 			RunID: parentID.String(),
 		},
 	)

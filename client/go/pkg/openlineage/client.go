@@ -1,21 +1,28 @@
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package openlineage
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/transport"
+	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
 	"github.com/google/uuid"
 )
 
-var DefaultClient, _ = NewClient(ClientConfig{
-	Transport: transport.Config{
-		Type: transport.TransportTypeConsole,
-		Console: transport.ConsoleConfig{
-			PrettyPrint: true,
+var DefaultClient, _ = NewClient(
+	"https://github.com/OpenLineage/OpenLineage/tree/"+Version+"/client/go",
+	ClientConfig{
+		Transport: transport.Config{
+			Type: transport.TransportTypeConsole,
+			Console: transport.ConsoleConfig{
+				PrettyPrint: true,
+			},
 		},
 	},
-})
+)
 
 type ClientConfig struct {
 	Transport transport.Config
@@ -27,7 +34,9 @@ type ClientConfig struct {
 	Disabled bool
 }
 
-func NewClient(cfg ClientConfig) (*Client, error) {
+// NewClient creates a new OpenLineage client.
+// producer is a URI identifying the producer of this metadata (e.g., "https://github.com/OpenLineage/OpenLineage/tree/1.23.0/integration/spark")
+func NewClient(producer string, cfg ClientConfig) (*Client, error) {
 	if cfg.Disabled {
 		return &Client{
 			disabled: true,
@@ -47,6 +56,7 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 	return &Client{
 		transport: transport,
 		namespace: namespace,
+		producer:  producer,
 	}, nil
 }
 
@@ -54,6 +64,7 @@ type Client struct {
 	disabled  bool
 	transport transport.Transport
 	namespace string
+	producer  string
 }
 
 type Emittable interface {
@@ -69,11 +80,11 @@ func (olc *Client) Emit(ctx context.Context, event Emittable) error {
 }
 
 // NewRun creates a Run and sets it as the active Run in ctx.
-// If ctx already contains a RunContext, it set as the parent.
+// If ctx already contains a RunContext, it is set as the parent.
 func (c *Client) NewRun(ctx context.Context, job string) (context.Context, Run) {
 	r := run{
 		client:       c,
-		runID:        uuid.New(),
+		runID:        NewRunID(),
 		jobName:      job,
 		jobNamespace: c.namespace,
 	}
@@ -113,12 +124,12 @@ func NewRun(ctx context.Context, job string) (context.Context, Run) {
 	return DefaultClient.NewRun(ctx, job)
 }
 
-// NewRunContext calls DefaultClient.StartRun
+// StartRun calls DefaultClient.StartRun
 func StartRun(ctx context.Context, job string) (context.Context, Run) {
 	return DefaultClient.StartRun(ctx, job)
 }
 
-// NewRunContext calls DefaultClient.ExistingRun
+// ExistingRun calls DefaultClient.ExistingRun
 func ExistingRun(ctx context.Context, job string, runID uuid.UUID) (context.Context, Run) {
 	return DefaultClient.ExistingRun(ctx, job, runID)
 }
