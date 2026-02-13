@@ -1,3 +1,7 @@
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package openlineage_test
 
 import (
@@ -5,13 +9,14 @@ import (
 	"errors"
 	"log/slog"
 
-	ol "github.com/ThijsKoot/openlineage/client/go/pkg/openlineage"
-	"github.com/ThijsKoot/openlineage/client/go/pkg/transport"
+	ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
+	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
 
 func ExampleRun() {
 	ctx := context.Background()
 
+	producer := "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/go"
 	cfg := ol.ClientConfig{
 		Transport: transport.Config{
 			Type: transport.TransportTypeConsole,
@@ -20,7 +25,7 @@ func ExampleRun() {
 			},
 		},
 	}
-	client, err := ol.NewClient(cfg)
+	client, err := ol.NewClient(producer, cfg)
 	if err != nil {
 		slog.Error("ol.NewClient failed", "error", err)
 	}

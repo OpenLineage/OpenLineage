@@ -1,21 +1,28 @@
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package openlineage
 
 import (
 	"context"
+	"time"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
+// OpenLineage spec schema URLs for different event types
 const (
-	producer  = "openlineage-go"
-	schemaURL = "foo"
+	RunEventSchemaURL     = "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent"
+	DatasetEventSchemaURL = "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetEvent"
+	JobEventSchemaURL     = "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobEvent"
 )
 
 var DefaultNamespace = "default"
 
 type BaseEvent struct {
 	// the time the event occurred at
-	EventTime string
+	EventTime time.Time
 	// URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
 	Producer string
 	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this RunEvent

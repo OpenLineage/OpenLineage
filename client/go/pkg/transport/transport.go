@@ -1,3 +1,7 @@
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package transport
 
 import (
@@ -10,8 +14,9 @@ import (
 )
 
 const (
-	TransportTypeHTTP    TransportType = "http"
-	TransportTypeConsole TransportType = "console"
+	TransportTypeHTTP       TransportType = "http"
+	TransportTypeConsole    TransportType = "console"
+	TransportTypeGCPLineage TransportType = "gcplineage"
 )
 
 type Transport interface {
@@ -21,12 +26,17 @@ type Transport interface {
 type TransportType string
 
 type Config struct {
-	Type    TransportType
-	Console ConsoleConfig
-	HTTP    HTTPConfig
+	Type       TransportType
+	Console    ConsoleConfig
+	HTTP       HTTPConfig
+	GCPLineage GCPLineageConfig
 }
 
 func New(config Config) (Transport, error) {
+	return NewWithContext(context.Background(), config)
+}
+
+func NewWithContext(ctx context.Context, config Config) (Transport, error) {
 	switch config.Type {
 	case TransportTypeConsole:
 		return &consoleTransport{
@@ -52,6 +62,8 @@ func New(config Config) (Transport, error) {
 			uri:        u.String(),
 			apiKey:     config.HTTP.APIKey,
 		}, nil
+	case TransportTypeGCPLineage:
+		return newGCPLineageTransport(ctx, config.GCPLineage)
 	default:
 		return nil, errors.New("no valid transport specified")
 	}
