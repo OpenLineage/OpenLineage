@@ -3,7 +3,7 @@ package openlineage
 import (
 	"time"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
 type JobEvent struct {

@@ -43,7 +43,7 @@ func openLineage() error {
 	cmd := exec.Command(
 		"gorename",
 		"-from",
-		"\"github.com/ThijsKoot/openlineage/client/go/pkg/openlineage\".Run",
+		"\"github.com/OpenLineage/openlineage/client/go/pkg/openlineage\".Run",
 		// "\"openlineage\"::Run",
 		"-to",
 		"RunInfo",

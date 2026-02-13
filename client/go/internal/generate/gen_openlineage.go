@@ -49,7 +49,7 @@ func generateOpenLineageCode() (string, error) {
 	code := string(result)
 
 	replacements := map[string]string{
-		"package openlineage":         "package openlineage\n\nimport \"github.com/ThijsKoot/openlineage/client/go/pkg/facets\"\n",
+		"package openlineage":         "package openlineage\n\nimport \"github.com/OpenLineage/openlineage/client/go/pkg/facets\"\n",
 		"map[string]InputFacetValue":  "*facets.InputDatasetFacets",
 		"map[string]DatasetFacet":     "*facets.DatasetFacets",
 		"map[string]JobFacet":         "*facets.JobFacets",

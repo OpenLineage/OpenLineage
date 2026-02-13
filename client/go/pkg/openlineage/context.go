@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/go-stack/stack"
 	"github.com/google/uuid"
 )
