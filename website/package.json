@@ -30,12 +30,12 @@
     "@mdx-js/react": "^3.1.0",
     "@mui/icons-material": "^5.14.19",
     "@mui/material": "^5.14.18",
-    "autoprefixer": "^10.4.19",
+    "autoprefixer": "^10.4.24",
     "classnames": "^2.5.1",
     "docusaurus-lunr-search": "^3.5.0",
     "lodash": "^4.17.23",
     "lunr": "^2.3.9",
-    "motion": "^12.28.2",
+    "motion": "^12.33.0",
     "postcss": "^8.4.38",
     "prism-react-renderer": "^2.4.0",
     "react": "^18.3.1",
@@ -48,7 +48,7 @@
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.9.2",
-    "@tsconfig/docusaurus": "^2.0.3",
+    "@tsconfig/docusaurus": "^2.0.8",
     "@types/react": "^18.3.12",
     "typescript": "^5.6.3"
   },
