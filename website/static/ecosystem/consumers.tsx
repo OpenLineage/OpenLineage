@@ -37,7 +37,7 @@ export const Consumers: Array<Partner> = [
     org_url: "https://atlan.com",
   },
   {
-    image: "collate-logo.svg",
+    image: "collate-logo.png",
     org: "Collate",
     full_name: "Collate",
     description:
