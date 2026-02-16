@@ -14,6 +14,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.Vendors;
+import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Optional;
@@ -60,6 +61,10 @@ public class ContextFactory {
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
+
+    String resolvedAppName = JobNameBuilder.buildApplicationName(olContext);
+    this.openLineageEventEmitter.setApplicationJobName(resolvedAppName);
+
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
     return new SparkApplicationExecutionContext(
