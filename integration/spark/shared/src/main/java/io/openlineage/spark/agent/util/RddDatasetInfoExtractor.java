@@ -36,13 +36,18 @@ import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceRDD;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceRDDPartition;
+import org.apache.spark.sql.types.StructType;
 import scala.Tuple2;
 import scala.collection.immutable.Seq;
 import scala.collection.mutable.ArrayBuffer;
 
-/** Utility class to extract paths from RDD nodes. */
+/**
+ * Utility class to extract dataset information from RDD nodes.
+ *
+ * <p>Uses a chain of specialized extractors to handle different RDD implementations.
+ */
 @Slf4j
-public class RddPathUtils {
+public class RddDatasetInfoExtractor {
 
   public static Stream<DatasetIdentifier> findDatasetIdentifiers(RDD<?> rdd) {
     return Stream.<RddDatasetIdentifierExtractor>of(
@@ -60,6 +65,13 @@ public class RddPathUtils {
         .filter(p -> p != null);
   }
 
+  public static Optional<StructType> findSchema(RDD<?> rdd) {
+    if (rdd instanceof DataSourceRDD) {
+      return new DataSourceRDDExtractor().extractSchema((DataSourceRDD) rdd);
+    }
+    return Optional.empty();
+  }
+
   static class UnionRddExctractor implements RddDatasetIdentifierExtractor<UnionRDD<?>> {
     @Override
     public boolean isDefinedAt(Object rdd) {
@@ -69,7 +81,7 @@ public class RddPathUtils {
     @Override
     public Stream<DatasetIdentifier> extract(UnionRDD<?> rdd) {
       return ScalaConversionUtils.fromSeq(rdd.rdds()).stream()
-          .flatMap(RddPathUtils::findDatasetIdentifiers);
+          .flatMap(RddDatasetInfoExtractor::findDatasetIdentifiers);
     }
   }
 
@@ -250,6 +262,18 @@ public class RddPathUtils {
                   inputPartitionExtractors.stream()
                       .filter(e -> e.isDefinedAt(ip))
                       .flatMap(e -> e.extract(rdd.sparkContext(), ip).stream()));
+    }
+
+    public Optional<StructType> extractSchema(DataSourceRDD rdd) {
+      return extractInputPartitions(rdd).stream()
+          .flatMap(
+              ip ->
+                  inputPartitionExtractors.stream()
+                      .filter(e -> e.isDefinedAt(ip))
+                      .map(e -> e.extractSchema(rdd.sparkContext(), ip))
+                      .filter(Optional::isPresent)
+                      .map(Optional::get))
+          .findFirst();
     }
 
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")

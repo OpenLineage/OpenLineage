@@ -297,9 +297,23 @@ public class PlanUtils {
    */
   public static List<DatasetIdentifier> findDatasetIdentifiers(List<RDD<?>> rdds) {
     return rdds.stream()
-        .flatMap(RddPathUtils::findDatasetIdentifiers)
+        .flatMap(RddDatasetInfoExtractor::findDatasetIdentifiers)
         .distinct()
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Attempts to find schema from a list of RDDs. Returns the first schema found.
+   *
+   * @param rdds the list of RDDs to extract schema from
+   * @return an Optional containing the schema if available, empty otherwise
+   */
+  public static Optional<StructType> findSchema(List<RDD<?>> rdds) {
+    return rdds.stream()
+        .map(RddDatasetInfoExtractor::findSchema)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .findFirst();
   }
 
   /**

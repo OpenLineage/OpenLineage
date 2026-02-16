@@ -16,9 +16,11 @@ import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.spark.SparkSchemaUtil;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.connector.read.InputPartition;
+import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 public class SparkInputPartitionExtractor implements InputPartitionExtractor {
@@ -54,11 +56,26 @@ public class SparkInputPartitionExtractor implements InputPartitionExtractor {
 
   @Override
   public List<DatasetIdentifier> extract(SparkContext sparkContext, InputPartition inputPartition) {
+    return getTable(inputPartition)
+        .map(table -> resolveIdentifier(table, sparkContext))
+        .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Optional<StructType> extractSchema(
+      SparkContext sparkContext, InputPartition inputPartition) {
+    return getTable(inputPartition).map(table -> SparkSchemaUtil.convert(table.schema()));
+  }
+
+  private Optional<Table> getTable(InputPartition inputPartition) {
     Optional<Object> maybeTable = ReflectionUtils.tryExecuteMethod(inputPartition, "table");
     if (!maybeTable.isPresent() || !(maybeTable.get() instanceof Table)) {
-      return Collections.emptyList();
+      return Optional.empty();
     }
-    Table table = (Table) maybeTable.get();
+    return Optional.of((Table) maybeTable.get());
+  }
+
+  private List<DatasetIdentifier> resolveIdentifier(Table table, SparkContext sparkContext) {
     Optional<URI> tableLocation = tableExtractor.extractTableLocation(table);
     Optional<TableIdentifier> tableIdentifier = tableExtractor.extractTableIdentifier(table);
 
