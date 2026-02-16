@@ -1,6 +1,47 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.43.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.44.0...HEAD)
+
+## [1.44.0](https://github.com/OpenLineage/OpenLineage/compare/1.43.0...1.44.0)
+
+### Added
+
+* **Client: Add JWT authentication support** [`#4313`](https://github.com/OpenLineage/OpenLineage/pull/4313) [@jakub-moravec](https://github.com/jakub-moravec)
+  *Add JWT authenticator for Java and Python clients, enabling token-based authentication without requiring a custom authenticator implementation.*
+* **Spark: Extract input symlinks from DataSourceRDD** [`#4283`](https://github.com/OpenLineage/OpenLineage/pull/4283) [@kchledowski](https://github.com/kchledowski)
+  *Enable extraction of input dataset symlinks from DataSourceRDD, providing richer lineage information for RDD-based Iceberg operations.*
+
+### Changed
+
+* **Spark: Disable column-level lineage for LogicalRDD plans** [`#4329`](https://github.com/OpenLineage/OpenLineage/pull/4329) [@kchledowski](https://github.com/kchledowski)
+  *Disable column-level lineage extraction for LogicalRDD plans to prevent incorrect lineage caused by lost schema and transformation context.*
+* **Spark: Disable input schema extraction for LogicalRDD and add schema extraction for Iceberg DataSourceRDD** [`#4331`](https://github.com/OpenLineage/OpenLineage/pull/4331) [@kchledowski](https://github.com/kchledowski)
+  *Disable unreliable input schema extraction from LogicalRDD and instead extract schemas from Iceberg table metadata when reading via DataSourceRDD.*
+
+### Fixed
+
+* **dbt: Align schema definition for dbt facets** [`#4285`](https://github.com/OpenLineage/OpenLineage/pull/4285) [@LegendPawel-Marut](https://github.com/LegendPawel-Marut)
+  *Align schema definitions for dbt-run-run-facet and dbt-version-run-facet to fix validation inconsistencies.*
+* **dbt: Better error handling for finding the directory of profiles.yml** [`#4320`](https://github.com/OpenLineage/OpenLineage/pull/4320) [@ah12068](https://github.com/ah12068)
+  *Handle missing profiles_dir key in run_results.json gracefully, falling back to default profile directory resolution.*
+* **dbt: Fix --target-path CLI flag being ignored** [`#4298`](https://github.com/OpenLineage/OpenLineage/pull/4298) [@gaurav-atlan](https://github.com/gaurav-atlan)
+  *Fix the --target-path CLI argument not being parsed and passed to artifact processors, causing the default target path to always be used.*
+* **Flink: Use Flink 2.x-only class for version detection** [`#4312`](https://github.com/OpenLineage/OpenLineage/pull/4312) [@mobuchowski](https://github.com/mobuchowski)
+  *Fix false Flink 2.x detection when modern V2-based connectors are used with Flink 1.x by using JobStatusChangedListenerFactory for version detection.*
+* **Java: Send Content-Encoding header for compressed requests** [`#4282`](https://github.com/OpenLineage/OpenLineage/pull/4282) [@Lukas-Riedel](https://github.com/Lukas-Riedel)
+  *Send the Content-Encoding header when request body compression is enabled in the Java client, consistent with the Python client behavior.*
+* **Spark: Early return in DatabricksEventFilter for non-Databricks platforms** [`#4315`](https://github.com/OpenLineage/OpenLineage/pull/4315) [@mobuchowski](https://github.com/mobuchowski)
+  *Add fast environment detection check to skip Databricks-specific event filtering on non-Databricks platforms, reducing overhead.*
+* **Spark: Handle null Glue ARN in IcebergHandler** [`#4311`](https://github.com/OpenLineage/OpenLineage/pull/4311) [@mobuchowski](https://github.com/mobuchowski)
+  *Fix NullPointerException when processing Iceberg datasets with AWS Glue catalog by safely handling null Glue ARN values.*
+* **Spark: Handle ResolvedIdentifier in DropTableVisitor** [`#4316`](https://github.com/OpenLineage/OpenLineage/pull/4316) [@mobuchowski](https://github.com/mobuchowski)
+  *Fix ClassCastException on DROP TABLE commands in Databricks Runtime 14.2+ by handling ResolvedIdentifier alongside ResolvedTable.*
+* **Python: Remove unneeded `build` runtime dependency** [`#4344`](https://github.com/OpenLineage/OpenLineage/pull/4344) [@mobuchowski](https://github.com/mobuchowski)
+  *Remove the `build` package from runtime dependencies as it is only needed at build time and is already handled by the build system configuration.*
+* **Spark: Resolve parent job name in ParentRunFacet for AWS Glue** [`#4340`](https://github.com/OpenLineage/OpenLineage/pull/4340) [@tstrilka](https://github.com/tstrilka)
+  *Fix incorrect parent job name in ParentRunFacet for child events (SQL_JOB, RDD_JOB) on AWS Glue, where the raw spark.app.name was used instead of the resolved application name from platform-specific name resolvers.*
+* **Spark: Skip Iceberg RDD integration tests on Java 8 with Spark 3.5** [@mobuchowski](https://github.com/mobuchowski)
+  *Skip `testAppendWithRDDTransformations` and `testAppendWithRDDProcessing` on Java 8 + Spark 3.5 where the Iceberg vendor module is not compiled due to Iceberg 1.7 requiring Java 11+.*
 
 ## [1.43.0](https://github.com/OpenLineage/OpenLineage/compare/1.42.1...1.43.0)
 
