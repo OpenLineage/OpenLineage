@@ -71,6 +71,10 @@ public class InputFieldsCollector {
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isQueryRelationNode(node)) {
       QueryRelationColumnLineageCollector.extractExternalInputs(context, node);
+    } else if (hasJdbcSqlColumnLineage(node)) {
+      // Skip: JdbcColumnLineageVisitor handles input collection via SqlCollector, which
+      // correctly resolves alias names to original column names. Using extractInternalInputs
+      // here would add alias names from Spark's output attributes as phantom input fields.
     } else {
       extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
     }
@@ -85,6 +89,20 @@ public class InputFieldsCollector {
           ((DataSourceV2ScanRelation) node).relation());
     }
     return false;
+  }
+
+  /**
+   * Returns true if the node is a JDBC relation whose SQL query has been parsed and column lineage
+   * is available. In that case, JdbcColumnLineageVisitor/SqlCollector will handle input collection
+   * with correct original column names rather than alias names.
+   */
+  private static boolean hasJdbcSqlColumnLineage(LogicalPlan node) {
+    if (!(node instanceof LogicalRelation)) return false;
+    if (!(((LogicalRelation) node).relation() instanceof JDBCRelation)) return false;
+    JDBCRelation relation = (JDBCRelation) ((LogicalRelation) node).relation();
+    return JdbcSparkUtils.extractQueryFromSpark(relation)
+        .map(meta -> !meta.columnLineage().isEmpty())
+        .orElse(false);
   }
 
   private static void extractInternalInputs(
