@@ -260,6 +260,27 @@ body {
   padding-top: 5px;
 }
 
+.community-talk-conf {
+  font-size: 25px;
+}
+
+.community-card-subhead {
+  font-size: 18px;
+}
+
+.community-card-header {
+  font-size: 25px;
+}
+
+.community-card-body {
+  font-size: 16px;
+}
+
+.community-card-speaker {
+  font-size: 16px;
+  font-weight: bold;
+}
+
 p {
   line-height: 165%;
 }

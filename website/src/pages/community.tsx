@@ -162,20 +162,14 @@ const TalkCard = (talk: Talk) => {
             },
           }}
         >
-          <p className="community-talk-conf" style={{ fontSize: 25 }}>
-            {talk.conf}
-          </p>
-          <p className="community-typography" style={{ fontSize: 18 }}>
-            {talk.title}
-          </p>
+          <p className="community-talk-conf">{talk.conf}</p>
+          <p className="community-typography community-card-subhead">{talk.title}</p>
           {talk.speakers.map((speaker) => (
-            <p className="community-typography" style={{ fontSize: 16, fontWeight: "bold" }} key={speaker.toString()}>
+            <p className="community-typography community-card-speaker" key={speaker.toString()}>
               {speaker}
             </p>
           ))}
-          <p className="community-typography community-talk-descrip" style={{ fontSize: 16 }}>
-            {talk.description}
-          </p>
+          <p className="community-typography community-talk-descrip community-card-body">{talk.description}</p>
         </CardContent>
         {DisplayLinks()}
       </Collapse>
@@ -254,13 +248,9 @@ export default function CommunityResources(): JSX.Element {
               title="TSC meeting"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <p className="community-typography" style={{ fontSize: 25 }}>
-                TSC Meetings
-              </p>
-              <p className="community-typography" style={{ fontSize: 18 }}>
-                Every third Wednesday, 9:30-10:30am PT
-              </p>
-              <p className="community-typography" style={{ fontSize: 16 }}>
+              <p className="community-typography community-card-header">TSC Meetings</p>
+              <p className="community-typography community-card-subhead">Every third Wednesday, 9:30-10:30am PT</p>
+              <p className="community-typography community-card-body">
                 Review releases, hear about new features, and discuss the roadmap. Open to all!
               </p>
             </CardContent>
@@ -312,13 +302,9 @@ export default function CommunityResources(): JSX.Element {
               title="Slack"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <p className="community-typography" style={{ fontSize: 25 }}>
-                OpenLineage Slack
-              </p>
-              <p className="community-typography" style={{ fontSize: 18 }}>
-                Connect with the community
-              </p>
-              <p className="community-typography" style={{ fontSize: 16 }}>
+              <p className="community-typography community-card-header">OpenLineage Slack</p>
+              <p className="community-typography community-card-subhead">Connect with the community</p>
+              <p className="community-typography community-card-body">
                 Get help from experts, learn about releases and events, and sync up with contributors.
               </p>
             </CardContent>
@@ -360,13 +346,9 @@ export default function CommunityResources(): JSX.Element {
               title="GitHub"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <p className="community-typography" style={{ fontSize: 25 }}>
-                GitHub Organization
-              </p>
-              <p className="community-typography" style={{ fontSize: 18 }}>
-                Contribute to the project
-              </p>
-              <p className="community-typography" style={{ fontSize: 16 }}>
+              <p className="community-typography community-card-header">GitHub Organization</p>
+              <p className="community-typography community-card-subhead">Contribute to the project</p>
+              <p className="community-typography community-card-body">
                 Access the main codebase, website repo, and workshops. Contributions welcome!
               </p>
             </CardContent>
