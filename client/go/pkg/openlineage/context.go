@@ -140,15 +140,16 @@ func (r *run) Parent() Run {
 }
 
 func (r *run) NewEvent(eventType EventType) *RunEvent {
-	run := NewNamespacedRunEvent(eventType, r.runID, r.jobName, r.jobNamespace)
+	run := NewNamespacedRunEvent(eventType, r.runID, r.jobName, r.jobNamespace, r.client.producer)
 
 	if r.Parent() != nil {
 		parent := facets.NewParent(
-			facets.Job{
+			r.client.producer,
+			facets.ParentJob{
 				Name:      r.parent.JobName(),
 				Namespace: r.parent.JobNamespace(),
 			},
-			facets.Run{
+			facets.ParentRun{
 				RunID: r.parent.RunID().String(),
 			},
 		)
@@ -180,7 +181,7 @@ func (r *run) RecordError(err error) {
 	stacktrace := stack.Caller(1).String()
 	language := runtime.Version()
 
-	errorFacet := facets.NewErrorMessage(errorMessage, language).
+	errorFacet := facets.NewErrorMessage(r.client.producer, errorMessage, language).
 		WithStackTrace(stacktrace)
 
 	errorEvent := r.NewEvent(EventTypeOther).WithRunFacets(errorFacet)

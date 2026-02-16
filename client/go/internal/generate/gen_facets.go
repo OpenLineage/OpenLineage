@@ -39,6 +39,7 @@ const (
 
 type facetSpec struct {
 	Name           string
+	JSONName       string
 	Tag            string
 	Fields         []facetFieldSpec
 	OptionalFields []facetFieldSpec
@@ -86,21 +87,62 @@ func generateFacets() (string, error) {
 
 	code := string(result)
 
-	replacements := map[string]string{
-		"OwnershipDatasetFacetOwnership":         "DatasetOwnership",
-		"PurpleOwner":                            "DatasetOwner",
-		"OwnershipJobFacetOwnership":             "JobOwnership",
-		"FluffyOwner":                            "JobOwner",
-		"DocumentationDatasetFacetDocumentation": "DatasetDocumentation",
-		// "NewDocumentationJobFacetDocumentation":  "JobDocumentation",
-		"DocumentationJobFacetDocumentation": "JobDocumentation",
-	}
+	// Consolidate imports: quicktype scatters imports throughout the file
+	code = consolidateImports(code)
 
-	for k, v := range replacements {
-		code = strings.ReplaceAll(code, k, v)
-	}
 
 	return code, nil
+}
+
+// consolidateImports finds all import statements scattered throughout the code,
+// removes them from their original positions, and adds a single import block
+// at the top of the file after the package declaration.
+func consolidateImports(code string) string {
+	lines := strings.Split(code, "\n")
+	if len(lines) == 0 {
+		return code
+	}
+
+	// First line is always the package declaration
+	packageLine := lines[0]
+
+	// Collect unique imports and filter out import lines from the rest
+	imports := make(map[string]bool)
+	var codeLines []string
+
+	for _, line := range lines[1:] {
+		trimmed := strings.TrimSpace(line)
+
+		// Check for single-line import: import "time"
+		if strings.HasPrefix(trimmed, "import \"") {
+			start := strings.Index(trimmed, "\"")
+			end := strings.LastIndex(trimmed, "\"")
+			if start != -1 && end > start {
+				pkg := trimmed[start+1 : end]
+				imports[pkg] = true
+			}
+			continue // Skip import lines
+		}
+
+		codeLines = append(codeLines, line)
+	}
+
+	// Build output: package + imports + code
+	var output strings.Builder
+	output.WriteString(packageLine)
+	output.WriteString("\n")
+
+	if len(imports) > 0 {
+		output.WriteString("\nimport (\n")
+		for pkg := range imports {
+			output.WriteString(fmt.Sprintf("\t\"%s\"\n", pkg))
+		}
+		output.WriteString(")\n")
+	}
+
+	output.WriteString(strings.Join(codeLines, "\n"))
+
+	return output.String()
 }
 
 func extractFacets(code string) ([]facetSpec, error) {
@@ -142,19 +184,22 @@ func extractFacets(code string) ([]facetSpec, error) {
 		// fields := typeSpec.Doc
 		facetField := structType.Fields.List[0]
 
-		facetIdent := facetField.Type.(*ast.StarExpr).X.(*ast.Ident)
-		// facetPointer, ok := facetField.Type.(*ast.StarExpr).X.(*ast.Ident)
-		// if !ok {
-		// 	panic(1)
-		// }
-		//
-		// facetIdent, ok := facetPointer.X.(*ast.Ident)
-		// if !ok {
-		// 	panic(1)
-		// }
+		// Handle both pointer (*Type) and non-pointer (Type) field types
+		var facetIdent *ast.Ident
+		switch fieldType := facetField.Type.(type) {
+		case *ast.StarExpr:
+			// Pointer type: *SomeFacet
+			facetIdent = fieldType.X.(*ast.Ident)
+		case *ast.Ident:
+			// Non-pointer type: SomeFacet
+			facetIdent = fieldType
+		default:
+			// Unknown type, skip this facet
+			return true
+		}
 
 		name := facetIdent.Name
-		schemaURL, err := getSchemaURL(name, kind)
+		schemaURL, err := getSchemaURL(wrapperName)
 		if err != nil {
 			panic(err)
 		}
@@ -163,9 +208,13 @@ func extractFacets(code string) ([]facetSpec, error) {
 		// 	log.Fatalf("schema url not found: %s", name)
 		// }
 
+		// Extract JSON field name from tag (e.g., `json:"subset,omitempty"` -> "subset")
+		jsonName := extractJSONName(facetField.Tag.Value)
+
 		facet := facetSpec{
-			Tag:  facetField.Tag.Value,
-			Name: name,
+			Tag:      facetField.Tag.Value,
+			Name:     name,
+			JSONName: jsonName,
 			// Name:      facetField.Names[0].Name,
 			Kind:      kind,
 			Producer:  "openlineage-go",
@@ -195,16 +244,31 @@ func extractFacets(code string) ([]facetSpec, error) {
 
 			switch x := f.Type.(type) {
 			case *ast.StarExpr:
-				// elem := x.X.(*ast.Ident).Name
-				// fType = fmt.Sprintf("*%s", elem)
-
-				fType = x.X.(*ast.Ident).Name
+				// Handle pointer types like *string, *int64
+				switch inner := x.X.(type) {
+				case *ast.Ident:
+					fType = inner.Name
+				case *ast.SelectorExpr:
+					// *time.Time -> time.Time
+					fType = fmt.Sprintf("%s.%s", inner.X.(*ast.Ident).Name, inner.Sel.Name)
+				default:
+					continue // Skip unsupported types
+				}
 				optional = true
 			case *ast.Ident:
 				fType = x.Name
+			case *ast.SelectorExpr:
+				// time.Time
+				fType = fmt.Sprintf("%s.%s", x.X.(*ast.Ident).Name, x.Sel.Name)
 			case *ast.ArrayType:
-				elem := x.Elt.(*ast.Ident).Obj.Name
-				fType = fmt.Sprintf("[]%s", elem)
+				switch elem := x.Elt.(type) {
+				case *ast.Ident:
+					fType = fmt.Sprintf("[]%s", elem.Name)
+				case *ast.SelectorExpr:
+					fType = fmt.Sprintf("[]%s.%s", elem.X.(*ast.Ident).Name, elem.Sel.Name)
+				default:
+					continue // Skip unsupported types
+				}
 				optional = true
 				isRefType = true
 			case *ast.MapType:
@@ -323,26 +387,9 @@ func removeFacetWrappers(code string) (string, error) {
 }
 
 // getSchemaURL reads the JSONSchema for a facet and returns its $id
-func getSchemaURL(facetName string, facetKind facetKind) (string, error) {
-	replacements := map[string]string{
-		// Not sure why this facet ends up being called Version instead of DatasetVersion
-		"Version": "DatasetVersion",
-		// Inconsistency in facet filename
-		"DataSource":           "Datasource",
-		"DatasetDocumentation": "Documentation",
-		"JobDocumentation":     "Documentation",
-		"DatasetOwnership":     "Ownership",
-		"JobOwnership":         "Ownership",
-	}
-
-	for k, v := range replacements {
-		if facetName == k {
-			facetName = v
-			break
-		}
-	}
-
-	filepath := fmt.Sprintf("../../spec/facets/%s%s.json", facetName, facetKind)
+// wrapperName is the full wrapper type name (e.g., "ErrorMessageRunFacet")
+func getSchemaURL(wrapperName string) (string, error) {
+	filepath := fmt.Sprintf("../../spec/facets/%s.json", wrapperName)
 	f, err := os.ReadFile(filepath)
 	if err != nil {
 		return "", err
@@ -360,3 +407,34 @@ func getSchemaURL(facetName string, facetKind facetKind) (string, error) {
 
 	return id.(string), nil
 }
+
+// extractJSONName extracts the JSON field name from a struct tag
+// e.g., `json:"subset,omitempty"` -> "subset"
+func extractJSONName(tag string) string {
+	// Remove backticks
+	tag = strings.Trim(tag, "`")
+
+	// Find json:"..."
+	const prefix = `json:"`
+	start := strings.Index(tag, prefix)
+	if start == -1 {
+		return ""
+	}
+	start += len(prefix)
+
+	// Find closing quote
+	end := strings.Index(tag[start:], `"`)
+	if end == -1 {
+		return ""
+	}
+
+	jsonTag := tag[start : start+end]
+
+	// Handle "name,omitempty" -> "name"
+	if comma := strings.Index(jsonTag, ","); comma != -1 {
+		return jsonTag[:comma]
+	}
+
+	return jsonTag
+}
+

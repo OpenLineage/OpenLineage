@@ -1251,6 +1251,70 @@ jobs:
             - client/java/.gradle
             - integration/spark/.gradle
 
+  # Go Client Jobs
+  build-client-go:
+    working_directory: ~/openlineage/client/go
+    docker:
+      - image: cimg/go:1.24
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-go-mod-{{ checksum "go.sum" }}
+      - run:
+          name: Download dependencies
+          command: go mod download
+      - run:
+          name: Build
+          command: go build ./...
+      - run:
+          name: Run tests
+          command: go test ./... -v -race -coverprofile=coverage.out
+      - run:
+          name: Upload coverage
+          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
+      - run:
+          name: Run linter
+          command: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+            golangci-lint run ./...
+      - save_cache:
+          key: v1-go-mod-{{ checksum "go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
+      - store_test_results:
+          path: .
+      - store_artifacts:
+          path: coverage.out
+          destination: coverage
+
+  release-client-go:
+    working_directory: ~/openlineage/client/go
+    docker:
+      - image: cimg/go:1.24
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-go-mod-{{ checksum "go.sum" }}
+      - run:
+          name: Download dependencies
+          command: go mod download
+      - run:
+          name: Build release
+          command: go build ./...
+      - run:
+          name: Verify module
+          command: |
+            go mod verify
+            go list -m github.com/OpenLineage/openlineage/client/go
+      # Go modules are released via git tags, no artifact upload needed
+      - run:
+          name: Release complete
+          command: echo "Go client release complete. Module available via git tag."
+
   build-website:
     # Build Openlineage website to make sure npm packages match
     working_directory: ~/openlineage/website

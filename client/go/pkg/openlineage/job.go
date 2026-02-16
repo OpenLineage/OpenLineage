@@ -28,19 +28,19 @@ func (e *JobEvent) AsEmittable() Event {
 	}
 }
 
-func NewNamespacedJobEvent(name, namespace string) *JobEvent {
+func NewNamespacedJobEvent(name, namespace string, producer string) *JobEvent {
 	return &JobEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
-			SchemaURL: schemaURL,
-			EventTime: time.Now().Format(time.RFC3339),
+			SchemaURL: JobEventSchemaURL,
+			EventTime: time.Now(),
 		},
 		Job: NewNamespacedJob(name, namespace),
 	}
 }
 
-func NewJobEvent(name string) *JobEvent {
-	return NewNamespacedJobEvent(name, DefaultNamespace)
+func NewJobEvent(name string, producer string) *JobEvent {
+	return NewNamespacedJobEvent(name, DefaultNamespace, producer)
 }
 
 func (j *JobEvent) WithFacets(facets ...facets.JobFacet) *JobEvent {

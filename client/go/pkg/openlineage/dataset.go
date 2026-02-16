@@ -24,13 +24,14 @@ func (e *DatasetEvent) AsEmittable() Event {
 func NewDatasetEvent(
 	name string,
 	namespace string,
+	producer string,
 	facets ...facets.DatasetFacet,
 ) DatasetEvent {
 	return DatasetEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
-			SchemaURL: schemaURL,
-			EventTime: time.Now().Format(time.RFC3339),
+			SchemaURL: DatasetEventSchemaURL,
+			EventTime: time.Now(),
 		},
 		Dataset: NewDataset(name, namespace, facets...),
 	}

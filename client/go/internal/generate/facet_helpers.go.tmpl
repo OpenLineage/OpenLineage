@@ -1,11 +1,13 @@
 package facets
 
+import "time"
+
 {{ $facets := .facets -}}
 {{ range $index, $kind := .facetKinds }}
 type {{ $kind }}s struct {
 {{- range $index, $facet := $facets }}
 {{- if eq $facet.Kind $kind }}
-        {{ $facet.Name }} *{{ $facet.Name }} {{ $facet.Tag }}
+        {{ $facet.Name }} *{{ $facet.Name }} `json:"{{ $facet.JSONName }},omitempty"`
 {{- else -}}
 {{ end -}}
 {{ end }}
@@ -31,12 +33,13 @@ func (f *{{ $facet.Name }}) Apply(facets **{{ $facet.Kind }}s) {
 
 {{ range $index, $facet := .facets }}
 func New{{ $facet.Name }}(
+        producer string,
 {{- range $index, $field := $facet.Fields }}
         {{ $field.ParamName }} {{ $field.Typ }},
 {{- end }}
 ) *{{ $facet.Name }} {
         return &{{ $facet.Name }}{
-                Producer: "{{ .Producer }}",
+                Producer: producer,
                 SchemaURL: "{{ $facet.SchemaURL }}",
                 {{- range $index, $field := $facet.Fields }}
                 {{ $field.Name }}: {{ $field.ParamName }},

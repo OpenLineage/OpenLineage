@@ -32,3 +32,4 @@ func (ct *consoleTransport) Emit(ctx context.Context, event any) error {
 
 	return nil
 }
+

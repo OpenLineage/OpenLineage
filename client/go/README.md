@@ -1,6 +1,6 @@
 # OpenLineage SDK for Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/ThijsKoot/openlineage/client/go.svg)](https://pkg.go.dev/github.com/ThijsKoot/openlineage/client/go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/OpenLineage/openlineage/client/go.svg)](https://pkg.go.dev/github.com/OpenLineage/openlineage/client/go)
 
 Go SDK for [OpenLineage](https://openlineage.io), a standard for data lineage collection and analysis.
 
@@ -16,7 +16,7 @@ Go SDK for [OpenLineage](https://openlineage.io), a standard for data lineage co
 ## Installation
 
 ```bash
-go get github.com/ThijsKoot/openlineage/client/go
+go get github.com/OpenLineage/openlineage/client/go
 ```
 
 ## Quick Start
@@ -30,7 +30,7 @@ package main
 
 import (
     "github.com/google/uuid"
-    ol "github.com/ThijsKoot/openlineage/client/go/pkg/openlineage"
+    ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
 )
 
 func main() {
@@ -50,8 +50,8 @@ import (
     "context"
     "log"
 
-    ol "github.com/ThijsKoot/openlineage/client/go/pkg/openlineage"
-    "github.com/ThijsKoot/openlineage/client/go/pkg/transport"
+    ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
+    "github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
 
 func main() {
@@ -139,7 +139,7 @@ func ProcessData(ctx context.Context) {
 Facets add metadata to runs, jobs, and datasets. The SDK provides type-safe generated facets:
 
 ```go
-import "github.com/ThijsKoot/openlineage/client/go/pkg/facets"
+import "github.com/OpenLineage/openlineage/client/go/pkg/facets"
 
 // Create an event with facets
 event := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job").
@@ -247,7 +247,7 @@ Sends events to [Google Cloud Data Catalog Lineage API](https://cloud.google.com
 ```go
 import (
     "context"
-    "github.com/ThijsKoot/openlineage/client/go/pkg/transport"
+    "github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
 
 // Using the dedicated constructor with options
@@ -304,9 +304,9 @@ import (
     "log"
 
     "github.com/google/uuid"
-    ol "github.com/ThijsKoot/openlineage/client/go/pkg/openlineage"
-    "github.com/ThijsKoot/openlineage/client/go/pkg/facets"
-    "github.com/ThijsKoot/openlineage/client/go/pkg/transport"
+    ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
+    "github.com/OpenLineage/openlineage/client/go/pkg/facets"
+    "github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
 
 func ptr[T any](v T) *T { return &v }
