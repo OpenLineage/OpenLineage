@@ -88,12 +88,43 @@
   .bottom {
     background-color: #000;
   }
-  #community-talk-descrip {
-    padding-top: 5px;
+  .community-talk-conf {
+    color: #fff;
   }
-  #community-talk-conf {
-    padding-bottom: 5px;
+  .community-typography {
+    color: #fff;
   }
+  .eco-cardcontent {
+    color: #fff;
+  }
+  .eco-card-btns {
+    background-color: #000;
+  }
+  .eco-card-btns > a {
+    color: rgb(116, 164, 188);
+  }
+  .community-card-btns {
+    background-color: #000;
+  }
+  .community-card-btns > a {
+    color: rgb(116, 164, 188);
+  }
+  .MuiCard-root {
+    border: 2px solid #fff;
+  }
+  .MuiCardContent-root {
+    background-color: #000;
+  }
+}
+
+.eco-card-btns > a:hover {
+  text-decoration: underline;
+  color: #b6420b;
+}
+
+.community-card-btns > a:hover {
+  text-decoration: underline;
+  color: #b6420b;
 }
 
 #animation-container {
@@ -225,8 +256,16 @@ body {
   color: #fff;
 }
 
+.community-talk-descrip {
+  padding-top: 5px;
+}
+
 p {
   line-height: 165%;
+}
+
+.eco-cardcontent > p {
+  line-height: 125%;
 }
 
 svg {
@@ -316,10 +355,6 @@ code .token-line {
 
 .nav.scrolled .line {
   @apply w-full;
-}
-
-.text-6xl.relative.mt-20.lg:text-7l {
-  color: #000;
 }
 
 .btn {
