@@ -8,14 +8,17 @@ import (
 	"github.com/google/uuid"
 )
 
-var DefaultClient, _ = NewClient(ClientConfig{
-	Transport: transport.Config{
-		Type: transport.TransportTypeConsole,
-		Console: transport.ConsoleConfig{
-			PrettyPrint: true,
+var DefaultClient, _ = NewClient(
+	"https://github.com/OpenLineage/OpenLineage/tree/"+Version+"/client/go",
+	ClientConfig{
+		Transport: transport.Config{
+			Type: transport.TransportTypeConsole,
+			Console: transport.ConsoleConfig{
+				PrettyPrint: true,
+			},
 		},
 	},
-})
+)
 
 type ClientConfig struct {
 	Transport transport.Config
@@ -27,7 +30,9 @@ type ClientConfig struct {
 	Disabled bool
 }
 
-func NewClient(cfg ClientConfig) (*Client, error) {
+// NewClient creates a new OpenLineage client.
+// producer is a URI identifying the producer of this metadata (e.g., "https://github.com/OpenLineage/OpenLineage/tree/1.23.0/integration/spark")
+func NewClient(producer string, cfg ClientConfig) (*Client, error) {
 	if cfg.Disabled {
 		return &Client{
 			disabled: true,
@@ -47,6 +52,7 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 	return &Client{
 		transport: transport,
 		namespace: namespace,
+		producer:  producer,
 	}, nil
 }
 
@@ -54,6 +60,7 @@ type Client struct {
 	disabled  bool
 	transport transport.Transport
 	namespace string
+	producer  string
 }
 
 type Emittable interface {

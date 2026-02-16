@@ -12,6 +12,7 @@ import (
 func ExampleRun() {
 	ctx := context.Background()
 
+	producer := "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/go"
 	cfg := ol.ClientConfig{
 		Transport: transport.Config{
 			Type: transport.TransportTypeConsole,
@@ -20,7 +21,7 @@ func ExampleRun() {
 			},
 		},
 	}
-	client, err := ol.NewClient(cfg)
+	client, err := ol.NewClient(producer, cfg)
 	if err != nil {
 		slog.Error("ol.NewClient failed", "error", err)
 	}

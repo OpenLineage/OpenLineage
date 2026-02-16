@@ -283,6 +283,9 @@ perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/exam
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive/hive-openlineage-hook/src/main/resources/io/openlineage/hive/client/version.properties
 
+# (2.1) Bump Go client version
+perl -i -pe"s/^const Version = .*/const Version = \"${RELEASE_VERSION}\"/g" ./client/go/pkg/openlineage/version.go
+
 # (3) Bump version in docs
 perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
 perl -i -pe"s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
@@ -321,6 +324,7 @@ perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/example
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/flink2-test-apps/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/hive/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/hive/hive-openlineage-hook/src/main/resources/io/openlineage/hive/client/version.properties
+perl -i -pe"s/^const Version = .*/const Version = \"${NEXT_VERSION}\"/g" ./client/go/pkg/openlineage/version.go
 echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark-extension-interfaces/src/test/resources/io/openlineage/spark/shade/extension/v1/lifecycle/plan/version.properties
 echo "version ${NEXT_VERSION}" > integration/flink/shared/src/test/resources/io/openlineage/flink/client/version.properties

@@ -55,6 +55,10 @@ func generateOpenLineageCode() (string, error) {
 		"map[string]JobFacet":         "*facets.JobFacets",
 		"map[string]OutputFacetValue": "*facets.OutputDatasetFacets",
 		"map[string]RunFacet":         "*facets.RunFacets",
+		// Rename Run to RunInfo to avoid conflict with Run interface
+		"type Run struct":             "type RunInfo struct",
+		"*Run ":                       "*RunInfo ",
+		// Prefix EventType constants
 		"Abort":                       "EventTypeAbort",
 		"Fail":                        "EventTypeFail",
 		"Complete":                    "EventTypeComplete",
