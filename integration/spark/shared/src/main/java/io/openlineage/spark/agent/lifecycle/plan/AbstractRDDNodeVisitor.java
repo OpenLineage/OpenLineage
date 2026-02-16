@@ -42,7 +42,11 @@ public abstract class AbstractRDDNodeVisitor<T extends LogicalPlan, D extends Op
     return PlanUtils.findDatasetIdentifiers(fileRdds).stream()
         // TODO- refactor this to return a single partitioned dataset based on static
         // static partitions in the relation
-        .map(di -> datasetFactory.getDataset(di, schema))
+        .map(
+            di ->
+                schema != null
+                    ? datasetFactory.getDataset(di, schema)
+                    : datasetFactory.getDataset(di))
         .collect(Collectors.toList());
   }
 }

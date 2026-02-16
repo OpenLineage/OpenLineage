@@ -45,8 +45,10 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.functions;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterAll;
@@ -420,6 +422,35 @@ class SparkIcebergIntegrationTest {
         mockServer,
         "pysparkV2AppendWithRDDProcessingStartEvent.json",
         "pysparkV2AppendWithRDDProcessingCompleteEvent.json");
+  }
+
+  @Test
+  @SneakyThrows
+  void testAppendWithRDDTransformations() {
+    clearTables("src_table", "resulting_table");
+    createTempDataset(2).createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE src_table USING iceberg AS SELECT a, b FROM temp");
+    spark.sql("CREATE TABLE resulting_table (c string) USING iceberg");
+
+    Dataset<Row> df = spark.read().table("src_table");
+
+    Dataset<Row> transformed =
+        df.withColumn("c", functions.concat(df.col("a").cast("string"), df.col("b").cast("string")))
+            .select("c");
+
+    JavaRDD<Row> rdd = transformed.toJavaRDD();
+    StructType schema =
+        new StructType(
+            new StructField[] {new StructField("c", StringType$.MODULE$, false, Metadata.empty())});
+    Dataset<Row> resultDf = spark.createDataFrame(rdd, schema);
+
+    resultDf.select("c").writeTo("resulting_table").append();
+
+    verifyEvents(
+        mockServer,
+        "pysparkV2AppendWithRDDTransformationsStartEvent.json",
+        "pysparkV2AppendWithRDDTransformationsCompleteEvent.json");
   }
 
   @Test
