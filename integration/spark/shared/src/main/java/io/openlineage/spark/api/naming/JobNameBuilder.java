@@ -29,6 +29,10 @@ public class JobNameBuilder {
   private static final ApplicationJobNameResolver applicationJobNameResolver =
       new ApplicationJobNameResolver(ApplicationJobNameResolver.buildProvidersList());
 
+  public static String buildApplicationName(OpenLineageContext context) {
+    return applicationJobNameResolver.getJobName(context);
+  }
+
   public static String build(OpenLineageContext context) {
     if (context.getJobName() != null) {
       return context.getJobName();

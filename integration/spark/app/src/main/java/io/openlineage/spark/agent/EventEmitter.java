@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -36,7 +37,7 @@ public class EventEmitter {
   @Getter private Optional<String> rootParentJobNamespace;
   @Getter private Optional<UUID> rootParentRunId;
   @Getter private UUID applicationRunId;
-  @Getter private String applicationJobName;
+  @Getter @Setter private String applicationJobName;
   @Getter private Optional<List<String>> customEnvironmentVariables;
 
   public EventEmitter(SparkOpenLineageConfig config, String applicationJobName)
