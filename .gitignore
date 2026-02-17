@@ -176,6 +176,9 @@ changes.txt
 # Cursor
 .cursor/
 
+# Claude Code
+CLAUDE.md
+
 # UV lock files (ignore in subdirectories only, keep root uv.lock)
 **/uv.lock
 
