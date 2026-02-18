@@ -56,7 +56,8 @@
     background-color: #1b1b1b;
   }
   html.docs-doc-page body {
-    background-color: #1b1b1b;
+    background-color: #3a3a3a;
+    border: 1px solid #555555;
   }
   code {
     background-color: var(--prism-background-color);
