@@ -18,6 +18,25 @@ plugins {
 
 group = "io.openlineage"
 
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+
+            // ---- Force Netty to required version ----
+            force(
+                "io.netty:netty-buffer:4.1.129.Final",
+                "io.netty:netty-codec:4.1.129.Final",
+                "io.netty:netty-codec-http:4.1.129.Final",
+                "io.netty:netty-codec-http2:4.1.129.Final",
+                "io.netty:netty-common:4.1.129.Final",
+                "io.netty:netty-handler:4.1.129.Final",
+                "io.netty:netty-handler-proxy:4.1.129.Final",
+                "io.netty:netty-resolver:4.1.129.Final",
+                "io.netty:netty-transport:4.1.129.Final"
+            )
+        }
+    }
+}
 
 ext {
     isReleaseVersion = !version.endsWith("SNAPSHOT")
@@ -29,6 +48,7 @@ final def archiveBaseName = "openlineage-spark_${scala}"
 final def activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 
 dependencies {
+    implementation platform('io.netty:netty-bom:4.1.129.Final')
     implementation(project(path: ":app"))
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
