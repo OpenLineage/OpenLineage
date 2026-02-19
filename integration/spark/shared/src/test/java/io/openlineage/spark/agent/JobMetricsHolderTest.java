@@ -29,23 +29,27 @@ class JobMetricsHolderTest {
     // on job start event
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1, 2, 3)));
     // on task end event
-    underTest.addMetrics(1, taskMetrics(0, 0, 0, 0));
     underTest.addMetrics(2, taskMetrics(10, 1, 10, 1));
     underTest.addMetrics(3, taskMetrics(100, 1, 100, 1));
 
     // on job end event
-    Map<JobMetricsHolder.Metric, Number> result = underTest.pollMetrics(0);
+    assertThat(underTest.pollReadMetrics(0))
+        .containsEntry(Metric.READ_RECORDS, 1L)
+        .containsEntry(JobMetricsHolder.Metric.READ_BYTES, 10L);
 
-    assertThat(result)
-        .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 2L)
-        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 110L)
-        .containsEntry(Metric.READ_RECORDS, 2L)
-        .containsEntry(JobMetricsHolder.Metric.READ_BYTES, 110L);
+    assertThat(underTest.pollWriteMetrics(0))
+        .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 1L)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 100L);
 
-    // second poll event should clear the maps
+    // cleanUp 0 job -> metrics are still available
     underTest.cleanUp(0);
-    Map<JobMetricsHolder.Metric, Number> secondPollResult = underTest.pollMetrics(0);
-    assertThat(secondPollResult).isEmpty();
+    assertThat(underTest.pollWriteMetrics(0)).isNotEmpty();
+    assertThat(underTest.pollReadMetrics(0)).isNotEmpty();
+
+    // cleanUp next job metrics no longer present -> memory is cleaned
+    underTest.cleanUp(1);
+    assertThat(underTest.pollWriteMetrics(0)).isEmpty();
+    assertThat(underTest.pollReadMetrics(0)).isEmpty();
   }
 
   @Test
@@ -58,17 +62,16 @@ class JobMetricsHolderTest {
     underTest.addMetrics(2, taskMetrics(10, 1, 10, 1));
 
     // on job end event
-    Map<JobMetricsHolder.Metric, Number> job0 = underTest.pollMetrics(0);
-    Map<JobMetricsHolder.Metric, Number> job1 = underTest.pollMetrics(1);
-
-    assertThat(job0)
-        .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 10L)
-        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 100L)
+    assertThat(underTest.pollReadMetrics(0))
         .containsEntry(JobMetricsHolder.Metric.READ_RECORDS, 10L)
         .containsEntry(JobMetricsHolder.Metric.READ_BYTES, 100L);
-    assertThat(job1)
+    assertThat(underTest.pollWriteMetrics(0))
+        .containsEntry(Metric.WRITE_RECORDS, 10L)
+        .containsEntry(Metric.WRITE_BYTES, 100L);
+    assertThat(underTest.pollWriteMetrics(1))
         .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 1L)
-        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 10L)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 10L);
+    assertThat(underTest.pollReadMetrics(1))
         .containsEntry(JobMetricsHolder.Metric.READ_RECORDS, 1L)
         .containsEntry(JobMetricsHolder.Metric.READ_BYTES, 10L);
   }
@@ -87,8 +90,8 @@ class JobMetricsHolderTest {
 
   /**
    * This test verifies that the call to {@link JobMetricsHolder#cleanUp(int)} clears the stage of
-   * the maps, and that the call to {@link JobMetricsHolder#pollMetrics(int)} returns an empty map,
-   * because the state is gone.
+   * the maps, and that the call to {@link JobMetricsHolder#pollReadMetrics(int)} (int)} returns an
+   * empty map, because the state is gone.
    */
   @Test
   void testCleanupOnExist() {
@@ -108,7 +111,8 @@ class JobMetricsHolderTest {
     underTest.addMetrics(1, null);
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
 
-    assertThat(underTest.pollMetrics(0)).isEmpty();
+    assertThat(underTest.pollWriteMetrics(0)).isEmpty();
+    assertThat(underTest.pollReadMetrics(0)).isEmpty();
   }
 
   @Test
@@ -116,7 +120,8 @@ class JobMetricsHolderTest {
     JobMetricsHolder underTest = new JobMetricsHolder();
     underTest.addJobStages(0, null);
 
-    assertThat(underTest.pollMetrics(0)).isEmpty();
+    assertThat(underTest.pollReadMetrics(0)).isEmpty();
+    assertThat(underTest.pollWriteMetrics(0)).isEmpty();
   }
 
   @Test
@@ -126,20 +131,9 @@ class JobMetricsHolderTest {
     underTest.addMetrics(1, taskMetrics(100, 10, 100, 10));
 
     underTest.cleanUp(0);
-    Map<JobMetricsHolder.Metric, Number> jobMetrics = underTest.pollMetrics(0);
+    Map<JobMetricsHolder.Metric, Number> jobMetrics = underTest.pollWriteMetrics(0);
 
     assertThat(jobMetrics.get(Metric.WRITE_RECORDS)).isEqualTo(10L);
-  }
-
-  @Test
-  void testCleanUpClearsMaps() {
-    // add some stage and metric
-    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
-    underTest.addMetrics(1, taskMetrics(100, 10, 100, 10));
-
-    assertThat(underTest.pollMetrics(0).get(Metric.WRITE_RECORDS)).isEqualTo(10L);
-    underTest.cleanUp(0);
-    assertThat(underTest.pollMetrics(0)).isEmpty();
   }
 
   @Test
@@ -147,7 +141,8 @@ class JobMetricsHolderTest {
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
     underTest.addMetrics(1, taskMetrics(0, 0, 0, 0));
 
-    assertThat(underTest.pollMetrics(0)).isEmpty();
+    assertThat(underTest.pollWriteMetrics(0)).isEmpty();
+    assertThat(underTest.pollReadMetrics(0)).isEmpty();
   }
 
   @Test
@@ -158,32 +153,13 @@ class JobMetricsHolderTest {
     underTest.addMetrics(1, taskMetrics(100, 10, 100, 10));
     underTest.addMetrics(1, taskMetrics(100, 10, 100, 10));
 
-    Map<Metric, Number> metrics = underTest.pollMetrics(0);
+    Map<Metric, Number> metrics = underTest.pollWriteMetrics(0);
     assertThat(metrics.get(Metric.WRITE_RECORDS)).isEqualTo(30L);
     assertThat(metrics.get(Metric.WRITE_BYTES)).isEqualTo(300L);
+
+    metrics = underTest.pollReadMetrics(0);
     assertThat(metrics.get(Metric.READ_RECORDS)).isEqualTo(30L);
     assertThat(metrics.get(Metric.READ_BYTES)).isEqualTo(300L);
-  }
-
-  @Test
-  void testContainsMetrics() {
-    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
-    underTest.addMetrics(1, taskMetrics(0, 0, 0, 0));
-
-    assertThat(underTest.containsReadMetrics(0)).isFalse();
-    assertThat(underTest.containsWriteMetrics(0)).isFalse();
-
-    underTest = new JobMetricsHolder();
-    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
-    underTest.addMetrics(1, taskMetrics(1, 0, 0, 0));
-    assertThat(underTest.containsReadMetrics(0)).isTrue();
-    assertThat(underTest.containsWriteMetrics(0)).isFalse();
-
-    underTest = new JobMetricsHolder();
-    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
-    underTest.addMetrics(1, taskMetrics(0, 0, 1, 0));
-    assertThat(underTest.containsReadMetrics(0)).isFalse();
-    assertThat(underTest.containsWriteMetrics(0)).isTrue();
   }
 
   private TaskMetrics taskMetrics(
