@@ -858,7 +858,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             node_type = "source"
             manifest_node = self.compiled_manifest["sources"][node_id]
         else:
-            raise RuntimeError(f"{node_id} not found in nodes or sources")
+            raise KeyError(node_id)
         catalog_node = get_from_nullable_chain(self.catalog, ["nodes", node_id])
         return ModelNode(type=node_type, metadata_node=manifest_node, catalog_node=catalog_node)
 
