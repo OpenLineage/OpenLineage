@@ -5,10 +5,12 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -83,15 +85,23 @@ public abstract class MergeIntoDeltaColumnLineageVisitor implements ColumnLevelL
                       .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
                       .isPresent())
           .forEach(
-              action ->
-                  context
-                      .getBuilder()
-                      .addDependency(
-                          context
-                              .getBuilder()
-                              .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
-                              .get(),
-                          ((AttributeReference) action.child()).exprId()));
+              action -> {
+                ExprId inputExprId = ((AttributeReference) action.child()).exprId();
+                Optional<String> sql =
+                    context.getBuilder().getOutputExpressionByExprId(inputExprId);
+                ExprId outputExprId =
+                    context
+                        .getBuilder()
+                        .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
+                        .get();
+                context
+                    .getBuilder()
+                    .addDependency(
+                        outputExprId,
+                        inputExprId,
+                        action.targetColNameParts().mkString(),
+                        TransformationInfo.identity(sql.orElse(action.child().sql())));
+              });
     }
   }
 }

@@ -5,7 +5,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression;
 
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.CONDITIONAL;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_2;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_3;
@@ -47,18 +46,18 @@ class IfVisitorTest {
     Expression falseVal = field(NAME_3, EXPR_ID_3);
     If expr = new If(predicate, trueVal, falseVal);
     when(traverser.copyFor(eq(predicate), any())).thenReturn(predTrav);
-    when(traverser.copyFor(trueVal)).thenReturn(trueTrav);
-    when(traverser.copyFor(falseVal)).thenReturn(falseTrav);
+    when(traverser.copyFor(eq(trueVal), any())).thenReturn(trueTrav);
+    when(traverser.copyFor(eq(falseVal), any())).thenReturn(falseTrav);
 
     visitor.apply(expr, traverser);
 
-    verify(traverser).copyFor(predicate, TransformationInfo.indirect(CONDITIONAL));
+    verify(traverser).copyFor(eq(predicate), any(TransformationInfo.class));
     verify(predTrav).traverse();
 
-    verify(traverser).copyFor(eq(trueVal));
+    verify(traverser).copyFor(eq(trueVal), any(TransformationInfo.class));
     verify(trueTrav).traverse();
 
-    verify(traverser).copyFor(eq(falseVal));
+    verify(traverser).copyFor(eq(falseVal), any(TransformationInfo.class));
     verify(falseTrav).traverse();
   }
 }

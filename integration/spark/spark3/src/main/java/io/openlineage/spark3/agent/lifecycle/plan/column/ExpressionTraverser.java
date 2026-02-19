@@ -52,6 +52,7 @@ public class ExpressionTraverser {
 
   private final Expression expression;
   private final ExprId outputExpressionId;
+  private final String outputExpressionString;
   private final TransformationInfo transformationInfo;
   private final ColumnLevelLineageBuilder builder;
   private final VisitorFactory visitorFactory;
@@ -59,11 +60,13 @@ public class ExpressionTraverser {
   private ExpressionTraverser(
       Expression expression,
       ExprId outputExpressionId,
+      String outputExpressionString,
       TransformationInfo transformationInfo,
       ColumnLevelLineageBuilder builder,
       VisitorFactory visitorFactory) {
     this.expression = expression;
     this.outputExpressionId = outputExpressionId;
+    this.outputExpressionString = outputExpressionString;
     this.transformationInfo = transformationInfo;
     this.builder = builder;
     this.visitorFactory = visitorFactory;
@@ -72,27 +75,42 @@ public class ExpressionTraverser {
   public static ExpressionTraverser of(
       Expression expression, ExprId outputExpressionId, ColumnLevelLineageBuilder builder) {
     return ExpressionTraverser.of(
-        expression, outputExpressionId, TransformationInfo.identity(), builder);
+        expression,
+        outputExpressionId,
+        expression.sql(),
+        TransformationInfo.identity(expression.sql()),
+        builder);
   }
 
   public static ExpressionTraverser of(
       Expression expression,
       ExprId outputExpressionId,
+      String outputExpressionString,
       TransformationInfo transformationInfo,
       ColumnLevelLineageBuilder builder) {
     return new ExpressionTraverser(
-        expression, outputExpressionId, transformationInfo, builder, new VisitorFactory());
+        expression,
+        outputExpressionId,
+        outputExpressionString,
+        transformationInfo,
+        builder,
+        new VisitorFactory());
   }
 
   public ExpressionTraverser copyFor(Expression expression) {
     return ExpressionTraverser.of(
-        expression, this.outputExpressionId, this.transformationInfo, this.builder);
+        expression,
+        this.outputExpressionId,
+        this.outputExpressionString,
+        this.transformationInfo,
+        this.builder);
   }
 
   public ExpressionTraverser copyFor(Expression expression, TransformationInfo transformationInfo) {
     return ExpressionTraverser.of(
         expression,
         this.outputExpressionId,
+        this.outputExpressionString,
         this.transformationInfo.merge(transformationInfo),
         this.builder);
   }
@@ -122,12 +140,19 @@ public class ExpressionTraverser {
   }
 
   public void addDependency(ExprId inputExprId) {
-    builder.addDependency(outputExpressionId, inputExprId, transformationInfo);
+    builder.addDependency(
+        outputExpressionId,
+        inputExprId,
+        outputExpressionString,
+        transformationInfo.merge(TransformationInfo.identity()));
   }
 
   public void addDependency(ExprId inputExprId, TransformationInfo transformationInfo) {
     builder.addDependency(
-        outputExpressionId, inputExprId, this.transformationInfo.merge(transformationInfo));
+        outputExpressionId,
+        inputExprId,
+        outputExpressionString,
+        this.transformationInfo.merge(transformationInfo));
   }
 
   private boolean isLeafNode() {

@@ -34,8 +34,14 @@ public class FilterVisitor implements OperatorVisitor {
   public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
     Filter filter = (Filter) operator;
     ExprId exprId = NamedExpression.newExprId();
-    builder.addDatasetDependency(exprId);
-    ExpressionTraverser.of(filter.condition(), exprId, TransformationInfo.indirect(FILTER), builder)
+    String description = filter.condition().sql();
+    builder.addDatasetDependency(exprId, String.format("WHERE %s", description), description);
+    ExpressionTraverser.of(
+            filter.condition(),
+            exprId,
+            description,
+            TransformationInfo.indirect(FILTER, description),
+            builder)
         .traverse();
   }
 }

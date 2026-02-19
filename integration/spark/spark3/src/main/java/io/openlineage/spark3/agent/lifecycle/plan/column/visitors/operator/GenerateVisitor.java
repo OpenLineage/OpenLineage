@@ -12,6 +12,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import java.util.List;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.Expression;
+import org.apache.spark.sql.catalyst.expressions.Generator;
 import org.apache.spark.sql.catalyst.plans.logical.Generate;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
@@ -29,6 +30,7 @@ public class GenerateVisitor implements OperatorVisitor {
   public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
     Generate node = (Generate) operator;
     List<Attribute> attributes = ScalaConversionUtils.fromSeq(node.generatorOutput());
+    Generator generator = node.generator();
     List<Expression> children =
         ScalaConversionUtils.fromSeq(((Expression) node.generator()).children());
     attributes.forEach(
@@ -36,7 +38,11 @@ public class GenerateVisitor implements OperatorVisitor {
             children.forEach(
                 e ->
                     ExpressionTraverser.of(
-                            e, ne.exprId(), TransformationInfo.transformation(), builder)
+                            e,
+                            ne.exprId(),
+                            ((Expression) ne).sql(),
+                            TransformationInfo.transformation(((Expression) generator).sql()),
+                            builder)
                         .traverse()));
   }
 }

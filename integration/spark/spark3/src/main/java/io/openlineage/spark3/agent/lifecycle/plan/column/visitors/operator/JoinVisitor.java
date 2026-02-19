@@ -11,11 +11,9 @@ import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import scala.Option;
 
 /**
  * Extracts expression dependencies from a Join operator in {@link LogicalPlan}. Example query:
@@ -35,11 +33,19 @@ public class JoinVisitor implements OperatorVisitor {
 
   @Override
   public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
-    Option<Expression> condition = ((Join) operator).condition();
-    if (condition.isDefined()) {
+    Join join = (Join) operator;
+    if (join.condition().isDefined()) {
       ExprId exprId = NamedExpression.newExprId();
-      builder.addDatasetDependency(exprId);
-      ExpressionTraverser.of(condition.get(), exprId, TransformationInfo.indirect(JOIN), builder)
+      String description = join.condition().get().sql();
+      String outputExpressionString =
+          String.format("%s JOIN ON %s", join.joinType().sql(), description);
+      builder.addDatasetDependency(exprId, outputExpressionString, description);
+      ExpressionTraverser.of(
+              join.condition().get(),
+              exprId,
+              description,
+              TransformationInfo.indirect(JOIN, description),
+              builder)
           .traverse();
     }
   }

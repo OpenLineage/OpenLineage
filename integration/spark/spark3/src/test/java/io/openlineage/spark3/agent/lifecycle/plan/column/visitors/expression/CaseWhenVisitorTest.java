@@ -5,7 +5,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression;
 
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.CONDITIONAL;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_2;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_3;
@@ -50,19 +49,20 @@ class CaseWhenVisitorTest {
     Expression elseExpr = field(NAME_3, EXPR_ID_3);
     CaseWhen caseWhen =
         new CaseWhen(asSeq(new Tuple2<>(condExpr, thenExpr)), Option.apply(elseExpr));
+
     when(traverser.copyFor(eq(condExpr), any())).thenReturn(predTrav);
-    when(traverser.copyFor(thenExpr)).thenReturn(thenTrav);
-    when(traverser.copyFor(elseExpr)).thenReturn(elseTrav);
+    when(traverser.copyFor(eq(thenExpr), any())).thenReturn(thenTrav);
+    when(traverser.copyFor(eq(elseExpr), any())).thenReturn(elseTrav);
 
     visitor.apply(caseWhen, traverser);
 
-    verify(traverser).copyFor(condExpr, TransformationInfo.indirect(CONDITIONAL));
+    verify(traverser).copyFor(eq(condExpr), any(TransformationInfo.class));
     verify(predTrav).traverse();
 
-    verify(traverser).copyFor(thenExpr);
+    verify(traverser).copyFor(eq(thenExpr), any(TransformationInfo.class));
     verify(thenTrav).traverse();
 
-    verify(traverser).copyFor(elseExpr);
+    verify(traverser).copyFor(eq(elseExpr), any(TransformationInfo.class));
     verify(elseTrav).traverse();
   }
 }

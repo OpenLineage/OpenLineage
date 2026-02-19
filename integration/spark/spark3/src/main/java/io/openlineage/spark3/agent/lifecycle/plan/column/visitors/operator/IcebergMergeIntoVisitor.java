@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
@@ -156,7 +157,12 @@ public class IcebergMergeIntoVisitor implements OperatorVisitor {
                   .filter(expr -> expr instanceof NamedExpression)
                   .forEach(
                       expr ->
-                          ExpressionTraverser.of(expr, output[position].exprId(), builder)
+                          ExpressionTraverser.of(
+                                  expr,
+                                  output[position].exprId(),
+                                  output[position].qualifiedName(),
+                                  TransformationInfo.identity(output[position].qualifiedName()),
+                                  builder)
                               .traverse());
 
               notMatched.stream()
@@ -165,7 +171,12 @@ public class IcebergMergeIntoVisitor implements OperatorVisitor {
                   .filter(expr -> expr instanceof NamedExpression)
                   .forEach(
                       expr ->
-                          ExpressionTraverser.of(expr, output[position].exprId(), builder)
+                          ExpressionTraverser.of(
+                                  expr,
+                                  output[position].exprId(),
+                                  output[position].qualifiedName(),
+                                  TransformationInfo.identity(output[position].qualifiedName()),
+                                  builder)
                               .traverse());
             });
   }

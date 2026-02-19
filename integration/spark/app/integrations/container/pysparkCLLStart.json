@@ -81,43 +81,12 @@
                 {
                   "namespace": "file",
                   "name": "/tmp/cll_test/cll_source1",
-                  "field": "a",
-                  "transformations": [
-                    {
-                      "type": "DIRECT",
-                      "subtype": "IDENTITY",
-                      "description": "",
-                      "masking": false
-                    },
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "GROUP_BY",
-                      "description": "",
-                      "masking": false
-                    },
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "JOIN",
-                      "description": "",
-                      "masking": false
-                    },
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "FILTER",
-                      "description": "",
-                      "masking": false
-                    }
-                  ]
-                },
-                {
-                  "namespace": "file",
-                  "name": "/tmp/cll_test/cll_source1",
                   "field": "b",
                   "transformations": [
                     {
                       "type": "INDIRECT",
                       "subtype": "GROUP_BY",
-                      "description": "",
+                      "description": "GROUP BY t1.a, t1.b",
                       "masking": false
                     }
                   ]
@@ -130,13 +99,44 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "",
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
                       "masking": false
                     },
                     {
                       "type": "INDIRECT",
                       "subtype": "FILTER",
-                      "description": "",
+                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "t1.a AS ident",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
                       "masking": false
                     }
                   ]
@@ -148,43 +148,18 @@
                 {
                   "namespace": "file",
                   "name": "/tmp/cll_test/cll_source1",
-                  "field": "a",
-                  "transformations": [
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "GROUP_BY",
-                      "description": "",
-                      "masking": false
-                    },
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "JOIN",
-                      "description": "",
-                      "masking": false
-                    },
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "FILTER",
-                      "description": "",
-                      "masking": false
-                    }
-                  ]
-                },
-                {
-                  "namespace": "file",
-                  "name": "/tmp/cll_test/cll_source1",
                   "field": "b",
                   "transformations": [
                     {
                       "type": "DIRECT",
                       "subtype": "TRANSFORMATION",
-                      "description": "",
+                      "description": "concat(t1.b, 'test') AS trans",
                       "masking": false
                     },
                     {
                       "type": "INDIRECT",
                       "subtype": "GROUP_BY",
-                      "description": "",
+                      "description": "GROUP BY t1.a, t1.b",
                       "masking": false
                     }
                   ]
@@ -197,13 +172,38 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "",
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
                       "masking": false
                     },
                     {
                       "type": "INDIRECT",
                       "subtype": "FILTER",
-                      "description": "",
+                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
                       "masking": false
                     }
                   ]
@@ -215,37 +215,12 @@
                 {
                   "namespace": "file",
                   "name": "/tmp/cll_test/cll_source1",
-                  "field": "a",
-                  "transformations": [
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "GROUP_BY",
-                      "description": "",
-                      "masking": false
-                    },
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "JOIN",
-                      "description": "",
-                      "masking": false
-                    },
-                    {
-                      "type": "INDIRECT",
-                      "subtype": "FILTER",
-                      "description": "",
-                      "masking": false
-                    }
-                  ]
-                },
-                {
-                  "namespace": "file",
-                  "name": "/tmp/cll_test/cll_source1",
                   "field": "b",
                   "transformations": [
                     {
                       "type": "INDIRECT",
                       "subtype": "GROUP_BY",
-                      "description": "",
+                      "description": "GROUP BY t1.a, t1.b",
                       "masking": false
                     }
                   ]
@@ -258,7 +233,7 @@
                     {
                       "type": "DIRECT",
                       "subtype": "AGGREGATION",
-                      "description": "",
+                      "description": "sum(t2.c) AS agg",
                       "masking": false
                     }
                   ]
@@ -271,13 +246,38 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "",
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
                       "masking": false
                     },
                     {
                       "type": "INDIRECT",
                       "subtype": "FILTER",
-                      "description": "",
+                      "description": "WHERE ((spark_catalog.default.cll_source2.a IS NOT NULL) AND (spark_catalog.default.cll_source2.a > 1))",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "GROUP BY t1.a, t1.b",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "WHERE ((t1.a > 1) AND (t1.a IS NOT NULL))",
                       "masking": false
                     }
                   ]

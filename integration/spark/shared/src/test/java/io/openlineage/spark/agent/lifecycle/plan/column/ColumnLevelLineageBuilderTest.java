@@ -94,9 +94,9 @@ class ColumnLevelLineageBuilderTest {
     DatasetIdentifier di2 = new DatasetIdentifier("t2", DB);
 
     builder.addOutput(rootExprId, "a");
-    builder.addDependency(rootExprId, childExprId);
-    builder.addDependency(childExprId, grandChildExprId1);
-    builder.addDependency(childExprId, grandChildExprId2);
+    builder.addDependency(rootExprId, childExprId, "");
+    builder.addDependency(childExprId, grandChildExprId1, "");
+    builder.addDependency(childExprId, grandChildExprId2, "");
     builder.addInput(grandChildExprId1, di1, "input1");
     builder.addInput(grandChildExprId1, di2, "input2");
 
@@ -113,8 +113,8 @@ class ColumnLevelLineageBuilderTest {
   @Test
   void testCycledExpressionDependency() {
     builder.addOutput(rootExprId, "a");
-    builder.addDependency(rootExprId, childExprId);
-    builder.addDependency(childExprId, rootExprId); // cycle that should not happen
+    builder.addDependency(rootExprId, childExprId, "");
+    builder.addDependency(childExprId, rootExprId, ""); // cycle that should not happen
 
     List<TransformedInput> inputs = builder.getInputsUsedFor("a");
     assertEquals(0, inputs.size());
@@ -146,7 +146,7 @@ class ColumnLevelLineageBuilderTest {
   @Test
   void testBuildFieldsWithEmptyInputs() {
     builder.addOutput(rootExprId, "a");
-    builder.addDependency(rootExprId, childExprId);
+    builder.addDependency(rootExprId, childExprId, "");
 
     // no inputs
     assertEquals(0, builder.buildFields(true).getAdditionalProperties().size());
@@ -159,7 +159,7 @@ class ColumnLevelLineageBuilderTest {
     builder.addOutput(rootExprId, "a");
     builder.addInput(rootExprId, di, INPUT_A);
     builder.addInput(childExprId, di, INPUT_A); // the same input with different exprId
-    builder.addDependency(rootExprId, childExprId);
+    builder.addDependency(rootExprId, childExprId, "");
 
     List<OpenLineage.InputField> facetFields =
         builder.buildFields(true).getAdditionalProperties().get("a").getInputFields();
@@ -258,7 +258,9 @@ class ColumnLevelLineageBuilderTest {
                   .forEach(
                       inputFieldIndex -> {
                         builder.addDependency(
-                            outputExprIds.get(outputFieldIndex), inputExprIds.get(inputFieldIndex));
+                            outputExprIds.get(outputFieldIndex),
+                            inputExprIds.get(inputFieldIndex),
+                            "");
                       });
             });
 

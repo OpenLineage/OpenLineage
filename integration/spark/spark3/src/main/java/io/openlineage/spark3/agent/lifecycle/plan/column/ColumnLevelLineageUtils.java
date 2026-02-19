@@ -151,7 +151,8 @@ public class ColumnLevelLineageUtils {
                                         .getBuilder()
                                         .addDependency(
                                             namedExpression.exprId(),
-                                            idMap.get(namedExpression.name())));
+                                            idMap.get(namedExpression.name()),
+                                            namedExpression.qualifiedName()));
                       });
             }
             return scala.runtime.BoxedUnit.UNIT;

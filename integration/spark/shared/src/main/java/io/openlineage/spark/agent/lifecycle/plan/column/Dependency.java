@@ -14,13 +14,15 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 @AllArgsConstructor
 class Dependency {
   @Getter private ExprId exprId;
-
+  @Getter private String outputExpression;
   @Getter private TransformationInfo transformationInfo;
 
   @Override
   public String toString() {
     return "Dependency("
         + exprId
+        + ", "
+        + outputExpression
         + ", "
         + transformationInfo.getType()
         + ", "
@@ -34,24 +36,29 @@ class Dependency {
     if (o == null || getClass() != o.getClass()) return false;
     Dependency that = (Dependency) o;
     return Objects.equals(exprId, that.exprId)
+        && Objects.equals(outputExpression, that.outputExpression)
         && Objects.equals(transformationInfo, that.transformationInfo);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(exprId, transformationInfo);
+    return Objects.hash(exprId, outputExpression, transformationInfo);
   }
 
   public Dependency merge(Dependency dependency) {
     if (this.transformationInfo != null) {
-      TransformationInfo merged = this.transformationInfo.merge(dependency.getTransformationInfo());
+      TransformationInfo merged =
+          this.transformationInfo.merge(
+              dependency.getTransformationInfo(),
+              (a, b) -> a.replace(dependency.outputExpression, b));
+
       if (merged.equals(transformationInfo)) {
         // exactly the same dependency would work
         return dependency;
       } else {
-        return new Dependency(dependency.exprId, merged);
+        return new Dependency(dependency.exprId, dependency.outputExpression, merged);
       }
     }
-    return new Dependency(dependency.exprId, null);
+    return new Dependency(dependency.exprId, "", null);
   }
 }

@@ -102,6 +102,7 @@ class SparkDeltaIntegrationTest {
             .config(
                 "spark.openlineage.facets.custom_environment_variables",
                 "[" + getAvailableEnvVariable() + ";]")
+            .config("spark.openlineage.columnLineage.descriptionsEnabled", true)
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.jars.ivy", "/tmp/.ivy2/")
             .config(
@@ -500,12 +501,15 @@ class SparkDeltaIntegrationTest {
         .sql("select event_id, coalesce(updated_at,0) as updated_at from updates")
         .createOrReplaceTempView("updates2");
 
-    spark.sql(
-        "MERGE INTO events target USING updates2 updates "
-            + " ON target.event_id = updates.event_id"
-            + " WHEN MATCHED THEN UPDATE SET target.last_updated_at = updates.updated_at"
-            + " WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) "
-            + "VALUES (event_id, updated_at)");
+    Dataset<Row> sql =
+        spark.sql(
+            "MERGE INTO events target USING updates2 updates "
+                + " ON target.event_id = updates.event_id"
+                + " WHEN MATCHED THEN UPDATE SET target.last_updated_at = updates.updated_at"
+                + " WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) "
+                + "VALUES (event_id, updated_at)");
+
+    sql.explain(true);
 
     verifyEvents(
         mockServer,
