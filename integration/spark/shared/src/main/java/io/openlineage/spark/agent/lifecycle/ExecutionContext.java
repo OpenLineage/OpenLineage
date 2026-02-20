@@ -5,7 +5,11 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static io.openlineage.client.OpenLineage.RunEvent.EventType.START;
+
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
@@ -25,6 +29,8 @@ public interface ExecutionContext {
    */
   String CAMEL_TO_SNAKE_CASE =
       "[\\s\\-_]?((?<=.)[A-Z](?=[a-z\\s\\-_])|(?<=[^A-Z])[A-Z]|((?<=[\\s\\-_])[a-z\\d]))";
+
+  AtomicReference<EventType> status = new AtomicReference<>(START);
 
   void setActiveJob(ActiveJob activeJob);
 
@@ -49,4 +55,13 @@ public interface ExecutionContext {
   }
 
   default void setActiveJobId(Integer activeJobId) {}
+
+  default EventType getStatus() {
+    return status.get();
+  }
+
+  default ExecutionContext updateStatus(EventType newStatus) {
+    status.updateAndGet(c -> newStatus);
+    return this;
+  }
 }
