@@ -9,7 +9,6 @@ import CardActionArea from "@mui/material/CardActionArea";
 import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
 import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Unstable_Grid2";
 import Collapse from "@mui/material/Collapse";
 import IconButton, { IconButtonProps } from "@mui/material/IconButton";
@@ -75,11 +74,9 @@ const MeetupCard = (meetup: Meetup) => {
           },
         }}
       >
-        <Typography className="community-typography" variant="h5" color="text.secondary">
-          {meetup.city}
-        </Typography>
+        <h5 className="community-typography">{meetup.city}</h5>
       </CardContent>
-      <CardActions id="community-card-btns" disableSpacing>
+      <CardActions className="community-card-btns" disableSpacing>
         <Button size="small" href={meetup.link}>
           Join
         </Button>
@@ -98,7 +95,7 @@ const TalkCard = (talk: Talk) => {
   const DisplayLinks = () => {
     if (talk.video_url) {
       return (
-        <CardActions id="community-card-btns" disableSpacing>
+        <CardActions className="community-card-btns" disableSpacing>
           <Button size="small" href={talk.conf_url}>
             Learn more
           </Button>
@@ -109,7 +106,7 @@ const TalkCard = (talk: Talk) => {
       );
     } else {
       return (
-        <CardActions id="community-card-btns" disableSpacing>
+        <CardActions className="community-card-btns" disableSpacing>
           <Button size="small" href={talk.conf_url}>
             Learn more
           </Button>
@@ -118,7 +115,7 @@ const TalkCard = (talk: Talk) => {
     }
   };
 
-  let imgPath = "/img/" + talk.image;
+  let imgPath: str = "/img/" + talk.image;
   return (
     <Card
       raised={true}
@@ -165,25 +162,14 @@ const TalkCard = (talk: Talk) => {
             },
           }}
         >
-          <Typography id="community-talk-conf" className="community-typography" variant="h4" color="text.primary">
-            {talk.conf}
-          </Typography>
-          <Typography className="community-typography" variant="h5" color="text.secondary">
-            {talk.title}
-          </Typography>
+          <p className="community-talk-conf">{talk.conf}</p>
+          <p className="community-typography community-card-subhead">{talk.title}</p>
           {talk.speakers.map((speaker) => (
-            <Typography className="community-typography" variant="h6" color="text.secondary" key={speaker.toString()}>
+            <p className="community-typography community-card-speaker" key={speaker.toString()}>
               {speaker}
-            </Typography>
+            </p>
           ))}
-          <Typography
-            id="community-talk-descrip"
-            className="community-typography"
-            variant="body1"
-            color="text.secondary"
-          >
-            {talk.description}
-          </Typography>
+          <p className="community-typography community-talk-descrip community-card-body">{talk.description}</p>
         </CardContent>
         {DisplayLinks()}
       </Collapse>
@@ -194,8 +180,8 @@ const TalkCard = (talk: Talk) => {
 const FillTalksGrid = (events: Talk[]) => {
   return (
     <Grid container margin="auto" rowSpacing={8} columnSpacing={4} paddingBottom={4} width="85%">
-      {events.map((event) => (
-        <Grid marginX="auto" justifyItems="top" key={event.toString()}>
+      {events.map((event, index) => (
+        <Grid marginX="auto" justifyItems="top" key={index}>
           {TalkCard(event)}
         </Grid>
       ))}
@@ -206,8 +192,8 @@ const FillTalksGrid = (events: Talk[]) => {
 const FillMeetupsGrid = (events: Meetup[]) => {
   return (
     <Grid container margin="auto" rowSpacing={8} columnSpacing={4} paddingBottom={4} width="85%">
-      {events.map((event) => (
-        <Grid marginX="auto" justifyItems="top" key={event.toString()}>
+      {events.map((event, index) => (
+        <Grid marginX="auto" justifyItems="top" key={index}>
           {MeetupCard(event)}
         </Grid>
       ))}
@@ -262,17 +248,13 @@ export default function CommunityResources(): JSX.Element {
               title="TSC meeting"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <Typography className="community-typography" variant="h6" color="text.secondary">
-                TSC Meetings
-              </Typography>
-              <Typography className="community-typography" sx={{ my: 1 }} variant="body2" color="text.secondary">
-                Every third Wednesday, 9:30-10:30am PT
-              </Typography>
-              <Typography className="community-typography" variant="body2" color="text.secondary">
+              <p className="community-typography community-card-header">TSC Meetings</p>
+              <p className="community-typography community-card-subhead">Every third Wednesday, 9:30-10:30am PT</p>
+              <p className="community-typography community-card-body">
                 Review releases, hear about new features, and discuss the roadmap. Open to all!
-              </Typography>
+              </p>
             </CardContent>
-            <CardActions id="community-card-btns" disableSpacing>
+            <CardActions className="community-card-btns" disableSpacing>
               <Button
                 size="small"
                 href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac"
@@ -320,17 +302,13 @@ export default function CommunityResources(): JSX.Element {
               title="Slack"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <Typography className="community-typography" variant="h6" color="text.secondary">
-                OpenLineage Slack
-              </Typography>
-              <Typography className="community-typography" sx={{ my: 1 }} variant="body2" color="text.secondary">
-                Connect with the community
-              </Typography>
-              <Typography className="community-typography" variant="body2" color="text.secondary">
+              <p className="community-typography community-card-header">OpenLineage Slack</p>
+              <p className="community-typography community-card-subhead">Connect with the community</p>
+              <p className="community-typography community-card-body">
                 Get help from experts, learn about releases and events, and sync up with contributors.
-              </Typography>
+              </p>
             </CardContent>
-            <CardActions id="community-card-btns" disableSpacing>
+            <CardActions className="community-card-btns" disableSpacing>
               <Button
                 size="small"
                 href="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
@@ -368,17 +346,13 @@ export default function CommunityResources(): JSX.Element {
               title="GitHub"
             />
             <CardContent sx={{ flexGrow: 1 }}>
-              <Typography className="community-typography" variant="h6" color="text.secondary">
-                GitHub Organization
-              </Typography>
-              <Typography className="community-typography" sx={{ my: 1 }} variant="body2" color="text.secondary">
-                Contribute to the project
-              </Typography>
-              <Typography className="community-typography" variant="body2" color="text.secondary">
+              <p className="community-typography community-card-header">GitHub Organization</p>
+              <p className="community-typography community-card-subhead">Contribute to the project</p>
+              <p className="community-typography community-card-body">
                 Access the main codebase, website repo, and workshops. Contributions welcome!
-              </Typography>
+              </p>
             </CardContent>
-            <CardActions id="community-card-btns" disableSpacing>
+            <CardActions className="community-card-btns" disableSpacing>
               <Button size="small" href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md">
                 Contribute
               </Button>

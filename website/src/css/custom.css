@@ -56,7 +56,8 @@
     background-color: #1b1b1b;
   }
   html.docs-doc-page body {
-    background-color: #1b1b1b;
+    background-color: #3a3a3a;
+    border: 1px solid #555555;
   }
   code {
     background-color: var(--prism-background-color);
@@ -88,12 +89,43 @@
   .bottom {
     background-color: #000;
   }
-  #community-talk-descrip {
-    padding-top: 5px;
+  .community-talk-conf {
+    color: #fff;
   }
-  #community-talk-conf {
-    padding-bottom: 5px;
+  .community-typography {
+    color: #fff;
   }
+  .eco-cardcontent {
+    color: #fff;
+  }
+  .eco-card-btns {
+    background-color: #000;
+  }
+  .eco-card-btns > a {
+    color: rgb(116, 164, 188);
+  }
+  .community-card-btns {
+    background-color: #000;
+  }
+  .community-card-btns > a {
+    color: rgb(116, 164, 188);
+  }
+  .MuiCard-root {
+    border: 2px solid #fff;
+  }
+  .MuiCardContent-root {
+    background-color: #000;
+  }
+}
+
+.eco-card-btns > a:hover {
+  text-decoration: underline;
+  color: #b6420b;
+}
+
+.community-card-btns > a:hover {
+  text-decoration: underline;
+  color: #b6420b;
 }
 
 #animation-container {
@@ -225,8 +257,37 @@ body {
   color: #fff;
 }
 
+.community-talk-descrip {
+  padding-top: 5px;
+}
+
+.community-talk-conf {
+  font-size: 25px;
+}
+
+.community-card-subhead {
+  font-size: 18px;
+}
+
+.community-card-header {
+  font-size: 25px;
+}
+
+.community-card-body {
+  font-size: 16px;
+}
+
+.community-card-speaker {
+  font-size: 16px;
+  font-weight: bold;
+}
+
 p {
   line-height: 165%;
+}
+
+.eco-cardcontent > p {
+  line-height: 125%;
 }
 
 svg {
@@ -316,10 +377,6 @@ code .token-line {
 
 .nav.scrolled .line {
   @apply w-full;
-}
-
-.text-6xl.relative.mt-20.lg:text-7l {
-  color: #000;
 }
 
 .btn {

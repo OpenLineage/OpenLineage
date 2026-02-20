@@ -9,7 +9,6 @@ import CardActionArea from "@mui/material/CardActionArea";
 import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
 import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Unstable_Grid2";
 import Collapse from "@mui/material/Collapse";
 import IconButton, { IconButtonProps } from "@mui/material/IconButton";
@@ -21,8 +20,9 @@ interface ExpandMoreProps extends IconButtonProps {
 }
 
 const ExpandMore = styled((props: ExpandMoreProps) => {
+  const key = Math.random();
   const { expand, ...other } = props;
-  return <IconButton {...other} />;
+  return <IconButton key={key} {...other} />;
 })(({ theme }) => ({
   marginX: "auto",
   transition: theme.transitions.create("transform", {
@@ -40,7 +40,7 @@ const LogoCard = (partner: Partner) => {
   const DisplayLinks = () => {
     if (partner.docs_url) {
       return (
-        <CardActions id="eco-card-btns" disableSpacing>
+        <CardActions className="eco-card-btns" disableSpacing>
           <Button size="small" href={partner.docs_url}>
             Learn More
           </Button>
@@ -51,7 +51,7 @@ const LogoCard = (partner: Partner) => {
       );
     } else {
       return (
-        <CardActions id="eco-card-btns" disableSpacing>
+        <CardActions className="eco-card-btns" disableSpacing>
           <Button size="small" href={partner.org_url}>
             Website
           </Button>
@@ -81,10 +81,8 @@ const LogoCard = (partner: Partner) => {
         </ExpandMore>
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <CardContent id="eco-cardcontent" sx={{ maxWidth: 340 }}>
-          <Typography id="eco-typography" variant="body1" color="text.secondary">
-            {partner.description}
-          </Typography>
+        <CardContent className="eco-cardcontent" sx={{ maxWidth: 340 }}>
+          <p>{partner.description}</p>
         </CardContent>
         {DisplayLinks()}
       </Collapse>
@@ -95,8 +93,8 @@ const LogoCard = (partner: Partner) => {
 const FillGrid = (partners: Partner[]) => {
   return (
     <Grid container margin="auto" rowSpacing={8} columnSpacing={4} paddingBottom={4} width="85%">
-      {partners.map((partner) => (
-        <Grid marginX="auto" justifyItems="top">
+      {partners.map((partner, index) => (
+        <Grid marginX="auto" justifyItems="top" key={index}>
           {LogoCard(partner)}
         </Grid>
       ))}
