@@ -37,6 +37,15 @@ export const Consumers: Array<Partner> = [
     org_url: "https://atlan.com",
   },
   {
+    image: "collate-logo.png",
+    org: "Collate",
+    full_name: "Collate",
+    description:
+      "Managed OpenMetadata cloud service for unified metadata management and semantic intelligence, with enterprise support.",
+    docs_url: "https://docs.getcollate.io/connectors/pipeline/openlineage",
+    org_url: "https://www.getcollate.io/",
+  },
+  {
     image: "dd_logo_h_rgb_small.svg",
     org: "Datadog",
     full_name: "Datadog",
@@ -132,7 +141,7 @@ export const Consumers: Array<Partner> = [
     full_name: "OpenMetadata",
     description:
       "An OpenLineage connector collects OpenLineage events via a KafkaConsumer and transforms them into OpenMetadata Lineage edges.",
-    docs_url: "https://github.com/open-metadata/OpenMetadata/pull/15317",
+    docs_url: "https://docs.open-metadata.org/latest/connectors/pipeline/openlineage",
     org_url: "https://open-metadata.org/",
   },
   {
