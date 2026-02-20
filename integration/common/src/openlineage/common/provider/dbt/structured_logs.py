@@ -17,6 +17,7 @@ from openlineage.client.facet_v2 import (
 from openlineage.client.facet_v2 import (
     error_message_run,
     external_query_run,
+    extraction_error_run,
     job_type_job,
     processing_engine_run,
     sql_job,
@@ -96,6 +97,13 @@ def handle_keyerror(func):
                 "the manifest change while the job was executing?",
                 node_id,
             )
+            self._extraction_errors[node_id].append(
+                extraction_error_run.Error(
+                    errorMessage=f"Failed to extract metadata in {func.__name__}: "
+                    f"node_id '{node_id}' not found in manifest",
+                    task=func.__name__,
+                )
+            )
             return None
 
     return wrapper
@@ -127,6 +135,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         self.node_id_to_inputs: Dict[str, List[ModelNode]] = {}
         self.node_id_to_output: Dict[str, ModelNode] = {}
+        self._extraction_errors: Dict[str, List[extraction_error_run.Error]] = defaultdict(list)
 
         # will be populated when some dbt events are collected
         self._compiled_manifest: Dict = {}
@@ -371,6 +380,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if node := self._get_model_node(node_unique_id):
             outputs = [self.node_to_output_dataset(node=node, has_facets=True)]
 
+        if extraction_error := self._get_extraction_error_facet(node_unique_id):
+            run_facets["extractionError"] = extraction_error
+
         return generate_run_event(
             event_type=RunState.START,
             event_time=node_start_time,
@@ -461,6 +473,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                             facets=dataset_facets,
                         )
                     ]
+
+        if extraction_error := self._get_extraction_error_facet(node_unique_id):
+            run_facets["extractionError"] = extraction_error
 
         return generate_run_event(
             event_type=event_type,
@@ -846,6 +861,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         while self._dbt_log_file.readlines():
             pass
 
+    def _get_extraction_error_facet(
+        self, node_id: str
+    ) -> Optional[extraction_error_run.ExtractionErrorRunFacet]:
+        errors = self._extraction_errors.pop(node_id, [])
+        if not errors:
+            return None
+        return extraction_error_run.ExtractionErrorRunFacet(
+            totalTasks=len(errors),
+            failedTasks=len(errors),
+            errors=errors,
+        )
+
     @handle_keyerror
     def _get_model_node(self, node_id) -> Optional[ModelNode]:
         """
@@ -858,7 +885,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             node_type = "source"
             manifest_node = self.compiled_manifest["sources"][node_id]
         else:
-            raise RuntimeError(f"{node_id} not found in nodes or sources")
+            raise KeyError(node_id)
         catalog_node = get_from_nullable_chain(self.catalog, ["nodes", node_id])
         return ModelNode(type=node_type, metadata_node=manifest_node, catalog_node=catalog_node)
 

@@ -26,4 +26,21 @@ class EventEmitterTest {
 
     assertThat(eventEmitter.getApplicationJobName()).isEqualTo(overrideName);
   }
+
+  @SneakyThrows
+  @Test
+  void testApplicationJobNameCanBeUpdatedAfterConstruction() {
+    String appName = "raw-spark-app-name";
+
+    SparkConf sparkConf = new SparkConf().setAppName(appName);
+    SparkOpenLineageConfig olConfig = ArgumentParser.parse(sparkConf);
+    EventEmitter eventEmitter = new EventEmitter(olConfig, appName);
+
+    assertThat(eventEmitter.getApplicationJobName()).isEqualTo(appName);
+
+    String resolvedName = "glue_job_name";
+    eventEmitter.setApplicationJobName(resolvedName);
+
+    assertThat(eventEmitter.getApplicationJobName()).isEqualTo(resolvedName);
+  }
 }

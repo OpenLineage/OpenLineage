@@ -153,6 +153,12 @@ class JobNameBuilderTest {
   }
 
   @Test
+  void testBuildApplicationNameResolvesAppName() {
+    when(sparkContext.appName()).thenReturn("spark_app");
+    assertThat(JobNameBuilder.buildApplicationName(context)).isEqualTo("spark_app");
+  }
+
+  @Test
   void testBuildPrettifiesDatabricksJobName() {
     try (MockedStatic mocked = mockStatic(DatabricksUtils.class)) {
       when(DatabricksUtils.isRunOnDatabricksPlatform(any(SparkConf.class))).thenReturn(true);

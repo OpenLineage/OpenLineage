@@ -106,7 +106,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
         self.target = target
         self.project_name = dbt_project["name"]
-        self.project_version = dbt_project["version"]
+        self.project_version = dbt_project.get("version")
         self.profile_name = profile_name or dbt_project.get("profile")
         if not self.profile_name:
             raise KeyError(f"profile not found in {dbt_project}")

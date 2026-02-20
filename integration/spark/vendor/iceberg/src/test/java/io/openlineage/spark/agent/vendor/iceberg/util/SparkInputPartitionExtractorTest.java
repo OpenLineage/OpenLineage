@@ -15,13 +15,16 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.types.Types;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.connector.read.InputPartition;
 import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.internal.StaticSQLConf;
+import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -147,6 +150,49 @@ class SparkInputPartitionExtractorTest {
       assertEquals("file:/tmp/warehouse", result.get(0).getSymlinks().get(0).getNamespace());
       assertEquals(
           DatasetIdentifier.SymlinkType.TABLE, result.get(0).getSymlinks().get(0).getType());
+    }
+  }
+
+  @Test
+  void extractSchemaReturnsStructTypeWhenTableIsPresent() {
+    InputPartition mockInputPartition = mock(InputPartition.class);
+    Schema icebergSchema =
+        new Schema(
+            Types.NestedField.required(1, "id", Types.LongType.get()),
+            Types.NestedField.optional(2, "name", Types.StringType.get()));
+    when(mockTable.schema()).thenReturn(icebergSchema);
+
+    try (MockedStatic<?> reflectionUtils =
+        mockStatic(io.openlineage.spark.agent.util.ReflectionUtils.class)) {
+      reflectionUtils
+          .when(
+              () -> io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod(any(), any()))
+          .thenReturn(Optional.of(mockTable));
+
+      Optional<StructType> result = extractor.extractSchema(mockSparkContext, mockInputPartition);
+
+      assertTrue(result.isPresent());
+      StructType schema = result.get();
+      assertEquals(2, schema.fields().length);
+      assertEquals("id", schema.fields()[0].name());
+      assertEquals("name", schema.fields()[1].name());
+    }
+  }
+
+  @Test
+  void extractSchemaReturnsEmptyWhenTableIsNotPresent() {
+    InputPartition mockInputPartition = mock(InputPartition.class);
+
+    try (MockedStatic<?> reflectionUtils =
+        mockStatic(io.openlineage.spark.agent.util.ReflectionUtils.class)) {
+      reflectionUtils
+          .when(
+              () -> io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod(any(), any()))
+          .thenReturn(Optional.empty());
+
+      Optional<StructType> result = extractor.extractSchema(mockSparkContext, mockInputPartition);
+
+      assertFalse(result.isPresent());
     }
   }
 }
