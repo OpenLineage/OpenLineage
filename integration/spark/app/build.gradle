@@ -25,13 +25,13 @@ ext {
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
-    assertjVersion = '3.27.6'
-    bigqueryVersion = '0.42.2'
-    junit5Version = '5.11.4'
+    assertjVersion = '3.27.7'
+    bigqueryVersion = '0.43.1'
+    junit5Version = '6.0.2'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.9'
     testcontainersVersion = '1.21.4'
-    awssdkVersion = '2.41.12'
+    awssdkVersion = '2.41.24'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
