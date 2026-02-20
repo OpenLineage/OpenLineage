@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.client.OpenLineage.RunEvent.EventType.COMPLETE;
+import static io.openlineage.client.OpenLineage.RunEvent.EventType.FAIL;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -13,6 +15,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.Environment;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
@@ -43,6 +46,7 @@ import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkEnv$;
 import org.apache.spark.package$;
 import org.apache.spark.scheduler.ActiveJob;
+import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -79,6 +83,22 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
   private final String sparkVersion = package$.MODULE$.SPARK_VERSION();
+
+  /**
+   * Tracks the event type of the most recent job or SQL execution end. Used to determine the event
+   * type (FAIL vs COMPLETE) for the application-level end event. Unlike a sticky boolean, this
+   * allows recovery: if a failure is caught and subsequent operations succeed, the
+   * application-level event will reflect the most recent outcome.
+   *
+   * <p>Updated via two paths:
+   *
+   * <ul>
+   *   <li>{@code onJobEnd} — set to FAIL on {@code JobFailed}, COMPLETE otherwise.
+   *   <li>{@code sparkSQLExecEnd} — set to FAIL when {@code executionFailure()} is present (Spark
+   *       3.4+, SPARK-40834), COMPLETE otherwise.
+   * </ul>
+   */
+  private EventType lastExecutionEventType = COMPLETE;
 
   /**
    * Id of the last active job. Has to be stored within the listener, as some jobs use both
@@ -171,6 +191,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
                         return null;
                       }));
     }
+    // Check executionFailure directly (Spark 3.4+, SPARK-40834) to detect output committer
+    // failures that occur after the Spark job completes successfully.
+    try {
+      scala.Option<?> failure = endEvent.executionFailure();
+      lastExecutionEventType = (failure != null && failure.isDefined()) ? FAIL : COMPLETE;
+    } catch (NoSuchMethodError e) {
+      // executionFailure() not available on Spark < 3.4
+    }
   }
 
   /** called by the SparkListener when a job starts */
@@ -251,6 +279,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           }
           return null;
         });
+    lastExecutionEventType = (jobEnd.jobResult() instanceof JobFailed) ? FAIL : COMPLETE;
   }
 
   @Override
@@ -308,7 +337,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
     circuitBreaker.run(
         () -> {
-          getSparkApplicationExecutionContext().end(applicationEnd);
+          getSparkApplicationExecutionContext().end(applicationEnd, lastExecutionEventType);
           return null;
         });
     close();

@@ -33,6 +33,8 @@ import java.util.UUID;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.JobFailed;
+import org.apache.spark.scheduler.JobSucceeded$;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
@@ -245,5 +247,58 @@ class OpenLineageSparkListenerTest {
     listener.onApplicationStart(event);
 
     verify(emitter, never()).emit(any());
+  }
+
+  @Test
+  void testFailedJobFollowedBySuccessfulJobEmitsComplete() {
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(
+        new StaticExecutionContextFactory(
+            emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
+
+    // Simulate a failed job followed by a successful job
+    SparkListenerJobEnd failedJobEnd = mock(SparkListenerJobEnd.class);
+    when(failedJobEnd.jobId()).thenReturn(0);
+    when(failedJobEnd.jobResult()).thenReturn(mock(JobFailed.class));
+    listener.onJobEnd(failedJobEnd);
+
+    SparkListenerJobEnd successfulJobEnd = mock(SparkListenerJobEnd.class);
+    when(successfulJobEnd.jobId()).thenReturn(1);
+    when(successfulJobEnd.jobResult()).thenReturn(JobSucceeded$.MODULE$);
+    listener.onJobEnd(successfulJobEnd);
+
+    // Application end should emit COMPLETE since the last job succeeded
+    listener.onApplicationEnd(mock(SparkListenerApplicationEnd.class));
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    verify(emitter, times(1)).emit(lineageEvent.capture());
+
+    assertThat(lineageEvent.getValue())
+        .hasFieldOrPropertyWithValue("eventType", OpenLineage.RunEvent.EventType.COMPLETE);
+  }
+
+  @Test
+  void testFailedJobWithNoSubsequentSuccessEmitsFail() {
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(
+        new StaticExecutionContextFactory(
+            emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
+
+    // Simulate only a failed job
+    SparkListenerJobEnd failedJobEnd = mock(SparkListenerJobEnd.class);
+    when(failedJobEnd.jobId()).thenReturn(0);
+    when(failedJobEnd.jobResult()).thenReturn(mock(JobFailed.class));
+    listener.onJobEnd(failedJobEnd);
+
+    // Application end should emit FAIL since the last job failed
+    listener.onApplicationEnd(mock(SparkListenerApplicationEnd.class));
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    verify(emitter, times(1)).emit(lineageEvent.capture());
+
+    assertThat(lineageEvent.getValue())
+        .hasFieldOrPropertyWithValue("eventType", OpenLineage.RunEvent.EventType.FAIL);
   }
 }
