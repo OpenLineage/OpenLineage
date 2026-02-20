@@ -324,4 +324,61 @@ class SparkSQLExecutionContextTest {
       assertThat(rootRun.getRunId()).isEqualTo(rootUuid);
     }
   }
+
+  @Test
+  void testFailIsSentOnSqlExecutionFailure(SparkSession spark) {
+    // Test that when SparkListenerSQLExecutionEnd has an executionFailure,
+    // a FAIL event is emitted with an errorMessage facet.
+    // This covers the case where write failures occur in the output committer phase
+    // after SparkListenerJobEnd(SUCCESS).
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    SparkListenerSQLExecutionEnd sqlEnd = mock(SparkListenerSQLExecutionEnd.class);
+    RuntimeException failure = new RuntimeException("Output committer failed: bucket not found");
+    when(sqlEnd.executionFailure()).thenReturn(scala.Option.apply(failure));
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.end(mock(SparkListenerJobEnd.class)); // JobEnd with SUCCESS (default mock)
+      context.end(sqlEnd); // SQLExecutionEnd with failure
+    }
+    verify(eventEmitter, times(3)).emit(lineageEvent.capture());
+
+    // The SQL execution end event should be FAIL
+    RunEvent sqlEndEvent = lineageEvent.getAllValues().get(2);
+    assertThat(sqlEndEvent).hasFieldOrPropertyWithValue("eventType", EventType.FAIL);
+
+    // Verify errorMessage facet is present
+    OpenLineage.ErrorMessageRunFacet errorFacet =
+        sqlEndEvent.getRun().getFacets().getErrorMessage();
+    assertThat(errorFacet).isNotNull();
+    assertThat(errorFacet.getMessage())
+        .isEqualTo("Output committer failed: bucket not found");
+    assertThat(errorFacet.getProgrammingLanguage()).isEqualTo("SPARK");
+    assertThat(errorFacet.getStackTrace()).contains("RuntimeException");
+  }
+
+  @Test
+  void testCompleteIsSentWhenNoExecutionFailure(SparkSession spark) {
+    // Test that when SparkListenerSQLExecutionEnd has no executionFailure,
+    // a COMPLETE event is emitted (existing behavior preserved).
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    SparkListenerSQLExecutionEnd sqlEnd = mock(SparkListenerSQLExecutionEnd.class);
+    when(sqlEnd.executionFailure()).thenReturn(scala.Option.empty());
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.end(mock(SparkListenerJobEnd.class));
+      context.end(sqlEnd);
+    }
+    verify(eventEmitter, times(3)).emit(lineageEvent.capture());
+
+    RunEvent sqlEndEvent = lineageEvent.getAllValues().get(2);
+    assertThat(sqlEndEvent).hasFieldOrPropertyWithValue("eventType", EventType.COMPLETE);
+  }
 }

@@ -230,4 +230,47 @@ class SparkApplicationExecutionContextTest {
     }
     assertThat(lineageEvent.getAllValues()).isNotEmpty();
   }
+
+  @Test
+  void testEndWithFailEventType(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.end(mock(SparkListenerApplicationEnd.class), EventType.FAIL);
+    }
+    verify(eventEmitter, times(1)).emit(lineageEvent.capture());
+
+    assertThat(lineageEvent.getAllValues().get(0))
+        .hasFieldOrPropertyWithValue("eventType", EventType.FAIL);
+  }
+
+  @Test
+  void testEndWithCompleteEventType(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.end(mock(SparkListenerApplicationEnd.class), EventType.COMPLETE);
+    }
+    verify(eventEmitter, times(1)).emit(lineageEvent.capture());
+
+    assertThat(lineageEvent.getAllValues().get(0))
+        .hasFieldOrPropertyWithValue("eventType", EventType.COMPLETE);
+  }
+
+  @Test
+  void testDefaultEndUsesComplete(SparkSession spark) {
+    // Verify that end(applicationEnd) without event type still defaults to COMPLETE
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.end(mock(SparkListenerApplicationEnd.class));
+    }
+    verify(eventEmitter, times(1)).emit(lineageEvent.capture());
+
+    assertThat(lineageEvent.getAllValues().get(0))
+        .hasFieldOrPropertyWithValue("eventType", EventType.COMPLETE);
+  }
 }
