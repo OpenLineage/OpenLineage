@@ -1,6 +1,17 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.44.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.44.1...HEAD)
+
+## [1.44.1](https://github.com/OpenLineage/OpenLineage/compare/1.44.0...1.44.1)
+
+### Fixed
+
+* **dbt: Attach ExtractionErrorRunFacet on metadata extraction failures** [`#4349`](https://github.com/OpenLineage/OpenLineage/pull/4349) [@harels](https://github.com/harels)
+  *Attach `ExtractionErrorRunFacet` to run events when `@handle_keyerror`-decorated extraction methods fail, making previously invisible extraction errors visible to downstream consumers instead of silently emitting incomplete events.*
+* **dbt: Fix KeyError handling in `_get_model_node`** [`#4348`](https://github.com/OpenLineage/OpenLineage/pull/4348) [@harels](https://github.com/harels)
+  *Fix exception type mismatch in `_get_model_node()` by raising `KeyError` instead of `RuntimeError`, allowing the `@handle_keyerror` decorator to catch it and return `None` gracefully when a node_id is not found in the manifest.*
+* **dbt: Use `.get()` for optional project version retrieval** [`#4345`](https://github.com/OpenLineage/OpenLineage/pull/4345) [@zagoodman](https://github.com/zagoodman)
+  *Fix crash when `version` key is absent from `dbt_project.yml`, which became optional in dbt 1.5, by using `.get()` instead of direct key access.*
 
 ## [1.44.0](https://github.com/OpenLineage/OpenLineage/compare/1.43.0...1.44.0)
 
