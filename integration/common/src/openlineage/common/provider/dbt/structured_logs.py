@@ -868,7 +868,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if not errors:
             return None
         return extraction_error_run.ExtractionErrorRunFacet(
-            totalTasks=len(errors) + 1,
+            totalTasks=len(errors),
             failedTasks=len(errors),
             errors=errors,
         )
