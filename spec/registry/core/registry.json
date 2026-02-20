@@ -4,6 +4,7 @@
     "produced_facets": [
       "ol:core:CatalogDatasetFacet.json",
       "ol:core:ColumnLineageDatasetFacet.json",
+      "ol:core:DatabaseHierarchyDatasetFacet.json",
       "ol:core:DataQualityAssertionsDatasetFacet.json",
       "ol:core:DataQualityMetricsInputDatasetFacet.json",
       "ol:core:DatasetTypeDatasetFacet.json",
