@@ -21,8 +21,7 @@ import org.apache.spark.sql.SparkSession;
 class RestCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   private static final String REST_CATALOG_TYPE = "rest";
-  private static final String BIGLAKE_CATALOG_URI =
-      "https://biglake.googleapis.com/iceberg/v1beta/restcatalog";
+  private static final String BIGLAKE_CATALOG_URI = "https://biglake.googleapis.com/";
 
   @Override
   String getType() {
@@ -47,7 +46,7 @@ class RestCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   Map<String, String> catalogProperties(Map<String, String> catalogConf) {
-    if (BIGLAKE_CATALOG_URI.equals(catalogConf.get(CatalogProperties.URI))) {
+    if (catalogConf.getOrDefault(CatalogProperties.URI, "").startsWith(BIGLAKE_CATALOG_URI)) {
       Map<String, String> properties = new HashMap<>();
       properties.put("gcp_project_id", catalogConf.get("header.x-goog-user-project"));
       return properties;
