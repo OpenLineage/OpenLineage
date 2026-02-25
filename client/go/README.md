@@ -34,9 +34,11 @@ import (
 )
 
 func main() {
+    producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
+    
     // Create and emit a simple run event
     runID := uuid.New()
-    event := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job")
+    event := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job", producer)
     event.Emit()
 }
 ```
@@ -55,6 +57,7 @@ import (
 )
 
 func main() {
+    producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
     cfg := ol.ClientConfig{
         Namespace: "my-namespace",
         Transport: transport.Config{
@@ -66,7 +69,7 @@ func main() {
         },
     }
 
-    client, err := ol.NewClient(cfg)
+    client, err := ol.NewClient(producer, cfg)
     if err != nil {
         log.Fatal(err)
     }
@@ -258,6 +261,7 @@ t, err := transport.NewGCPLineageTransport(ctx, "my-gcp-project",
 )
 
 // Or using the Config struct
+producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
 cfg := ol.ClientConfig{
     Transport: transport.Config{
         Type: transport.TransportTypeGCPLineage,
@@ -268,7 +272,7 @@ cfg := ol.ClientConfig{
         },
     },
 }
-client, err := ol.NewClient(cfg)
+client, err := ol.NewClient(producer, cfg)
 ```
 
 #### Authentication
@@ -288,10 +292,11 @@ The GCP Lineage transport supports:
 For testing or conditional instrumentation:
 
 ```go
+producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
 cfg := ol.ClientConfig{
     Disabled: true, // All Emit calls become no-ops
 }
-client, _ := ol.NewClient(cfg)
+client, _ := ol.NewClient(producer, cfg)
 ```
 
 ## Complete Example
@@ -312,8 +317,10 @@ import (
 func ptr[T any](v T) *T { return &v }
 
 func main() {
+    producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
+    
     // Create client
-    client, err := ol.NewClient(ol.ClientConfig{
+    client, err := ol.NewClient(producer, ol.ClientConfig{
         Namespace: "analytics",
         Transport: transport.Config{
             Type: transport.TransportTypeHTTP,
@@ -395,7 +402,7 @@ func processData(ctx context.Context) error {
 
 | Method | Description |
 |--------|-------------|
-| `NewClient(cfg)` | Create a new client with configuration |
+| `NewClient(producer, cfg)` | Create a new client with producer URL and configuration |
 | `Emit(ctx, event)` | Emit an event using the configured transport |
 | `NewRun(ctx, job)` | Create a new run (without emitting) |
 | `StartRun(ctx, job)` | Create and start a run (emits START) |
@@ -423,9 +430,9 @@ func processData(ctx context.Context) error {
 
 | Function | Description |
 |----------|-------------|
-| `NewRunEvent(type, runID, job)` | Create a run event |
-| `NewJobEvent(name)` | Create a job event |
-| `NewDatasetEvent(name, namespace)` | Create a dataset event |
+| `NewRunEvent(type, runID, job, producer)` | Create a run event |
+| `NewJobEvent(name, producer)` | Create a job event |
+| `NewDatasetEvent(name, namespace, producer)` | Create a dataset event |
 
 ## Contributing
 

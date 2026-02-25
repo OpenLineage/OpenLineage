@@ -76,7 +76,7 @@ func (olc *Client) Emit(ctx context.Context, event Emittable) error {
 }
 
 // NewRun creates a Run and sets it as the active Run in ctx.
-// If ctx already contains a RunContext, it set as the parent.
+// If ctx already contains a RunContext, it is set as the parent.
 func (c *Client) NewRun(ctx context.Context, job string) (context.Context, Run) {
 	r := run{
 		client:       c,
@@ -120,12 +120,12 @@ func NewRun(ctx context.Context, job string) (context.Context, Run) {
 	return DefaultClient.NewRun(ctx, job)
 }
 
-// NewRunContext calls DefaultClient.StartRun
+// StartRun calls DefaultClient.StartRun
 func StartRun(ctx context.Context, job string) (context.Context, Run) {
 	return DefaultClient.StartRun(ctx, job)
 }
 
-// NewRunContext calls DefaultClient.ExistingRun
+// ExistingRun calls DefaultClient.ExistingRun
 func ExistingRun(ctx context.Context, job string, runID uuid.UUID) (context.Context, Run) {
 	return DefaultClient.ExistingRun(ctx, job, runID)
 }

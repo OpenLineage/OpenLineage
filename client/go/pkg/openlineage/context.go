@@ -18,7 +18,6 @@ const currentRunKey runContextKeyType = iota
 func RunFromContext(ctx context.Context) Run {
 	if ctx == nil {
 		return &noopRun{}
-		// return noopSpanInstance
 	}
 	if r, ok := ctx.Value(currentRunKey).(Run); ok {
 		return r
@@ -142,7 +141,7 @@ func (r *run) Parent() Run {
 func (r *run) NewEvent(eventType EventType) *RunEvent {
 	run := NewNamespacedRunEvent(eventType, r.runID, r.jobName, r.jobNamespace, r.client.producer)
 
-	if r.Parent() != nil {
+	if _, isNoop := r.Parent().(*noopRun); !isNoop {
 		parent := facets.NewParent(
 			r.client.producer,
 			facets.ParentJob{

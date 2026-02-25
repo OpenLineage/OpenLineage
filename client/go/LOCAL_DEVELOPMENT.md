@@ -92,8 +92,10 @@ import (
 )
 
 func main() {
+    producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
+    
     // Create client with GCP Lineage transport
-    client, err := ol.NewClient(ol.ClientConfig{
+    client, err := ol.NewClient(producer, ol.ClientConfig{
         Namespace: "my-namespace",
         Transport: transport.Config{
             Type: transport.TransportTypeGCPLineage,
