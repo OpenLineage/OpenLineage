@@ -1,16 +1,25 @@
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
 package main
 
 import (
+	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
 	if err := facets(); err != nil {
+		fmt.Fprintf(os.Stderr, "facets() failed: %v\n", err)
 		panic(err)
 
 	}
 
 	if err := openLineage(); err != nil {
+		fmt.Fprintf(os.Stderr, "openLineage() failed: %v\n", err)
 		panic(err)
 
 	}

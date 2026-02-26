@@ -1,3 +1,9 @@
+/*
+/*
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
 package main
 
 import (
@@ -49,7 +55,7 @@ func generateOpenLineageCode() (string, error) {
 	code := string(result)
 
 	replacements := map[string]string{
-		"package openlineage":         "package openlineage\n\nimport \"github.com/OpenLineage/openlineage/client/go/pkg/facets\"\n",
+		"package openlineage":         "/*\n/* Copyright 2018-2026 contributors to the OpenLineage project\n/* SPDX-License-Identifier: Apache-2.0\n*/\n\npackage openlineage\n\nimport \"github.com/OpenLineage/openlineage/client/go/pkg/facets\"\n",
 		"map[string]InputFacetValue":  "*facets.InputDatasetFacets",
 		"map[string]DatasetFacet":     "*facets.DatasetFacets",
 		"map[string]JobFacet":         "*facets.JobFacets",

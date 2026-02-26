@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package main
 
 import (
@@ -103,13 +108,11 @@ func consolidateImports(code string) string {
 		return code
 	}
 
-	// First line is always the package declaration
-	packageLine := lines[0]
-
 	// Collect unique imports and filter out import lines from the rest
 	imports := make(map[string]bool)
 	var codeLines []string
 
+    var package_line = lines[0]
 	for _, line := range lines[1:] {
 		trimmed := strings.TrimSpace(line)
 
@@ -127,10 +130,14 @@ func consolidateImports(code string) string {
 		codeLines = append(codeLines, line)
 	}
 
-	// Build output: package + imports + code
+	// Build output: copyright + package + imports + code
 	var output strings.Builder
-	output.WriteString(packageLine)
-	output.WriteString("\n")
+	output.WriteString("/*\n")
+	output.WriteString(" * Copyright 2018-2026 contributors to the OpenLineage project\n")
+	output.WriteString(" * SPDX-License-Identifier: Apache-2.0\n")
+	output.WriteString(" */\n\n")
+
+    output.WriteString(package_line + "\n")
 
 	if len(imports) > 0 {
 		output.WriteString("\nimport (\n")
@@ -383,6 +390,7 @@ func removeFacetWrappers(code string) (string, error) {
 		return "", err
 	}
 
+	// Prepend copyright header back
 	return out.String(), nil
 }
 
