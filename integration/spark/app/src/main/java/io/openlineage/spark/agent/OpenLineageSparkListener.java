@@ -191,13 +191,16 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
                         return null;
                       }));
     }
-    // Check executionFailure directly (Spark 3.4+, SPARK-40834) to detect output committer
+    // Check executionFailure via reflection (Spark 3.4+, SPARK-40834) to detect output committer
     // failures that occur after the Spark job completes successfully.
     try {
-      scala.Option<?> failure = endEvent.executionFailure();
+      java.lang.reflect.Method method = endEvent.getClass().getMethod("executionFailure");
+      scala.Option<?> failure = (scala.Option<?>) method.invoke(endEvent);
       lastExecutionEventType = (failure != null && failure.isDefined()) ? FAIL : COMPLETE;
-    } catch (NoSuchMethodError e) {
+    } catch (NoSuchMethodException e) {
       // executionFailure() not available on Spark < 3.4
+    } catch (Exception e) {
+      log.debug("Unable to check executionFailure: {}", e.getMessage());
     }
   }
 

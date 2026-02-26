@@ -185,8 +185,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     try {
       // Use reflection because executionFailure() is only available on Spark 3.4+
       // (SPARK-40834) and direct calls won't compile against Spark 3.3.
-      java.lang.reflect.Method method =
-          endEvent.getClass().getMethod("executionFailure");
+      java.lang.reflect.Method method = endEvent.getClass().getMethod("executionFailure");
       scala.Option<?> failure = (scala.Option<?>) method.invoke(endEvent);
       if (failure != null && failure.isDefined()) {
         return (Throwable) failure.get();
