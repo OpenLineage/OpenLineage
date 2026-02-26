@@ -37,11 +37,11 @@ public interface ExecutionContext {
 
   void start(SparkListenerStageSubmitted stageSubmitted);
 
-  void end(SparkListenerApplicationEnd applicationEnd);
-
-  default void end(SparkListenerApplicationEnd applicationEnd, EventType eventType) {
-    end(applicationEnd);
+  default void end(SparkListenerApplicationEnd applicationEnd) {
+    end(applicationEnd, EventType.COMPLETE);
   }
+
+  void end(SparkListenerApplicationEnd applicationEnd, EventType eventType);
 
   void end(SparkListenerJobEnd jobEnd);
 

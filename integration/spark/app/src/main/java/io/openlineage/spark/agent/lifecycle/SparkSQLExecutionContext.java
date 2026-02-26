@@ -172,8 +172,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event = runEventBuilder.buildRun(contextBuilder.build());
 
-    if (eventType.equals(EventType.COMPLETE)) {
-      // clean up metrics on complete only
+    if (eventType.equals(EventType.COMPLETE) || eventType.equals(EventType.FAIL)) {
       olContext.getActiveJobId().ifPresent(i -> JobMetricsHolder.getInstance().cleanUp(i));
     }
     if (log.isDebugEnabled()) {
@@ -184,11 +183,15 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   private Throwable getExecutionFailure(SparkListenerSQLExecutionEnd endEvent) {
     try {
-      scala.Option<?> failure = endEvent.executionFailure();
+      // Use reflection because executionFailure() is only available on Spark 3.4+
+      // (SPARK-40834) and direct calls won't compile against Spark 3.3.
+      java.lang.reflect.Method method =
+          endEvent.getClass().getMethod("executionFailure");
+      scala.Option<?> failure = (scala.Option<?>) method.invoke(endEvent);
       if (failure != null && failure.isDefined()) {
         return (Throwable) failure.get();
       }
-    } catch (NoSuchMethodError e) {
+    } catch (NoSuchMethodException e) {
       // executionFailure() not available on Spark < 3.4
       log.debug("executionFailure() not available on this Spark version");
     } catch (Exception e) {
@@ -406,7 +409,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void start(SparkListenerApplicationStart applicationStart) {}
 
   @Override
-  public void end(SparkListenerApplicationEnd applicationEnd) {}
+  public void end(SparkListenerApplicationEnd applicationEnd, EventType eventType) {}
 
   private OpenLineage.ParentRunFacet buildApplicationParentFacet() {
     return PlanUtils.parentRunFacet(

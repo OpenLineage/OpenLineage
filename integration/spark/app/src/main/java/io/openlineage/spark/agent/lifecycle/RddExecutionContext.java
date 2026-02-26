@@ -106,7 +106,7 @@ class RddExecutionContext implements ExecutionContext {
   public void start(SparkListenerApplicationStart applicationStart) {}
 
   @Override
-  public void end(SparkListenerApplicationEnd applicationEnd) {}
+  public void end(SparkListenerApplicationEnd applicationEnd, EventType eventType) {}
 
   @Override
   @SuppressWarnings("PMD") // f.setAccessible(true);
