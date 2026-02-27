@@ -51,6 +51,8 @@ A dataset, or `table`, is organized according to a producer, namespace, database
 | WASBS (Azure Blob Storage)    | Blob Storage                                               | `wasbs://{container name}@{service name}.dfs.core.windows.net`                                                                   | `{object key}`                                                               |
 | PubSub                        | Distributed event streaming platform                       | `pubsub`                                                                                                                         | `topic:{projectId}:{topicId}` or `subscription:{projectId}:{subscriptionId}` |
 | In memory                     | In-memory (temporary datasets) with no persistance backend | `inmemory://`                                                                                                                    | `{temporary dataset name or ID}`                                             | 
+| REST API                      | Web API                                                    | `{scheme}://{authority}`                                                                                                         | `{resource-path}`                                                            |
+| SOAP API                      | Web API                                                    | `{scheme}://{authority}/{service-path}`                                                                                          | `{operation-name}`                                                           |
 
 
 
@@ -59,6 +61,12 @@ When possible, instead of using legacy account locator format, you should migrat
 Using the legacy Snowflake account locator format (that will create `snowflake://{locator}.{region}.{cloud}` dataset IDs) is supported, 
 but it forces dataset IDs that won’t match IDs created with the orgname-account_name format.
 If you switch formats later, existing lineage nodes won’t connect to new ones.
+
+For Web API datasources (REST and SOAP), request parameters (path params, query params etc.) should be expressed
+via [Subset Definition Facets](./facets/dataset-facets/subset.md#examples) rather than embedded in the dataset name.
+For REST APIs, path parameters should use named tokens in the resource path (e.g. `repos/{org}/{repo}/issues`).
+Embedding actual values in the path (e.g. `repos/openlineage/openlineage/issues`) is acceptable
+**only** when the producer cannot determine which segments are parameters.
 
 ## Job Naming
 
