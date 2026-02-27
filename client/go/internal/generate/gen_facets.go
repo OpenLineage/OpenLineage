@@ -1,8 +1,7 @@
 /*
-/* Copyright 2018-2026 contributors to the OpenLineage project
-/* SPDX-License-Identifier: Apache-2.0
-*/
-
+ * Copyright 2018-2026 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package main
 
 import (
@@ -95,7 +94,6 @@ func generateFacets() (string, error) {
 	// Consolidate imports: quicktype scatters imports throughout the file
 	code = consolidateImports(code)
 
-
 	return code, nil
 }
 
@@ -112,7 +110,7 @@ func consolidateImports(code string) string {
 	imports := make(map[string]bool)
 	var codeLines []string
 
-    var package_line = lines[0]
+	var package_line = lines[0]
 	for _, line := range lines[1:] {
 		trimmed := strings.TrimSpace(line)
 
@@ -137,7 +135,7 @@ func consolidateImports(code string) string {
 	output.WriteString(" * SPDX-License-Identifier: Apache-2.0\n")
 	output.WriteString(" */\n\n")
 
-    output.WriteString(package_line + "\n")
+	output.WriteString(package_line + "\n")
 
 	if len(imports) > 0 {
 		output.WriteString("\nimport (\n")
@@ -445,4 +443,3 @@ func extractJSONName(tag string) string {
 
 	return jsonTag
 }
-

@@ -1,8 +1,7 @@
 /*
-/*
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 
 package openlineage
 
@@ -145,21 +144,34 @@ func (r *run) Parent() Run {
 }
 
 func (r *run) NewEvent(eventType EventType) *RunEvent {
+	if r == nil {
+		panic("run is nil")
+	}
+	if r.client == nil {
+		panic("run.client is nil - run was not properly initialized")
+	}
+
 	run := NewNamespacedRunEvent(eventType, r.runID, r.jobName, r.jobNamespace, r.client.producer)
 
-	if _, isNoop := r.Parent().(*noopRun); !isNoop {
-		parent := facets.NewParent(
+	parent := r.Parent()
+	if parent != nil {
+		if _, isNoop := parent.(*noopRun); isNoop {
+			parent = nil
+		}
+	}
+	if parent != nil {
+		parentFacet := facets.NewParent(
 			r.client.producer,
 			facets.ParentJob{
-				Name:      r.parent.JobName(),
-				Namespace: r.parent.JobNamespace(),
+				Name:      parent.JobName(),
+				Namespace: parent.JobNamespace(),
 			},
 			facets.ParentRun{
-				RunID: r.parent.RunID().String(),
+				RunID: parent.RunID().String(),
 			},
 		)
 
-		run = run.WithRunFacets(parent)
+		run = run.WithRunFacets(parentFacet)
 	}
 
 	return run

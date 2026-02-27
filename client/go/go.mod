@@ -1,6 +1,6 @@
 module github.com/OpenLineage/openlineage/client/go
 
-go 1.23
+go 1.24.0
 
 require (
 	cloud.google.com/go/datacatalog v1.26.1

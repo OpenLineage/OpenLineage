@@ -37,7 +37,7 @@ func main() {
     producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
     
     // Create and emit a simple run event
-    runID := uuid.New()
+    runID := ol.NewRunID()
     event := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job", producer)
     event.Emit()
 }
@@ -96,7 +96,11 @@ OpenLineage defines three types of events:
 
 ### Runs
 
-The `Run` interface provides an ergonomic way to instrument your code:
+OpenLineage provides two approaches for emitting events:
+
+#### 1. Using the Run Interface (Recommended for most cases)
+
+The `Run` interface provides an ergonomic way to instrument your code with automatic lifecycle management:
 
 ```go
 ctx, run := client.StartRun(ctx, "my-job")
@@ -118,6 +122,50 @@ if err := doWork(); err != nil {
     return err
 }
 ```
+
+#### 2. Manual Event Construction (For fine-grained control)
+
+For cases where you need full control over when events are emitted, you can construct events manually:
+
+```go
+producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
+runID := ol.NewRunID()
+
+// Manually create and emit a START event
+startEvent := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job", producer).
+    WithJobFacets(
+        facets.NewJobType(producer, "BATCH", "SPARK"),
+    ).
+    WithInputs(
+        ol.NewInputElement("source", "postgres://db/table"),
+    )
+
+// Emit whenever you're ready
+if err := client.Emit(ctx, startEvent); err != nil {
+    log.Fatal(err)
+}
+
+// ... do work ...
+
+// Create and emit a COMPLETE event
+completeEvent := ol.NewRunEvent(ol.EventTypeComplete, runID, "my-job", producer).
+    WithRunFacets(
+        facets.NewNominalTime(producer, time.Now()),
+    ).
+    WithOutputs(
+        ol.NewOutputElement("target", "s3://bucket/data"),
+    )
+
+if err := client.Emit(ctx, completeEvent); err != nil {
+    log.Fatal(err)
+}
+```
+
+**When to use manual construction:**
+- You need precise control over event timing
+- Events are emitted across different parts of your application
+- You're integrating with existing job orchestration that manages lifecycle
+- You need to emit multiple events with the same runID from different processes
 
 ### Parent-Child Relationships
 
@@ -142,29 +190,23 @@ func ProcessData(ctx context.Context) {
 Facets add metadata to runs, jobs, and datasets. The SDK provides type-safe generated facets:
 
 ```go
-import "github.com/OpenLineage/openlineage/client/go/pkg/facets"
+import (
+    ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
+    "github.com/OpenLineage/openlineage/client/go/pkg/facets"
+)
 
 // Create an event with facets
-event := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job").
+event := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job", producer).
     WithRunFacets(
-        &facets.NominalTime{
-            NominalStartTime: "2024-01-15T10:00:00Z",
-            NominalEndTime:   "2024-01-15T11:00:00Z",
-        },
-        &facets.ProcessingEngine{
-            Version: "3.5.0",
-            Name:    ptr("Apache Spark"),
-        },
+        facets.NewNominalTime(producer, time.Now()).
+            WithNominalEndTime(time.Now().Add(time.Hour)),
+        facets.NewProcessingEngine(producer, "3.5.0").
+            WithName("Apache Spark"),
     ).
     WithJobFacets(
-        &facets.SQL{
-            Query: "SELECT * FROM users",
-        },
-        &facets.JobType{
-            ProcessingType: "BATCH",
-            Integration:    "SPARK",
-            JobType:        ptr("QUERY"),
-        },
+        facets.NewSQL(producer, "SELECT * FROM users"),
+        facets.NewJobType(producer, "SPARK", "BATCH").
+            WithJobType("QUERY"),
     )
 ```
 
@@ -299,7 +341,9 @@ cfg := ol.ClientConfig{
 client, _ := ol.NewClient(producer, cfg)
 ```
 
-## Complete Example
+## Complete Examples
+
+### Example 1: Using the Run Interface
 
 ```go
 package main
@@ -308,13 +352,10 @@ import (
     "context"
     "log"
 
-    "github.com/google/uuid"
     ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
     "github.com/OpenLineage/openlineage/client/go/pkg/facets"
     "github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
-
-func ptr[T any](v T) *T { return &v }
 
 func main() {
     producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
@@ -341,26 +382,19 @@ func main() {
 
     // Record job metadata
     run.RecordJobFacets(
-        &facets.JobType{
-            ProcessingType: "BATCH",
-            Integration:    "SPARK",
-        },
-        &facets.SQL{
-            Query: "INSERT INTO analytics.summary SELECT * FROM staging.events",
-        },
+        facets.NewJobType(producer, "BATCH", "SPARK"),
+        facets.NewSQL(producer, "INSERT INTO analytics.summary SELECT * FROM staging.events"),
     )
 
     // Record inputs
     run.RecordInputs(
         ol.NewInputElement("events", "postgres://staging/public").
             WithFacets(
-                &facets.Schema{
-                    Fields: []facets.SchemaDatasetFacetFields{
-                        {Name: "event_id", Type: ptr("UUID")},
-                        {Name: "event_type", Type: ptr("VARCHAR")},
-                        {Name: "timestamp", Type: ptr("TIMESTAMP")},
-                    },
-                },
+                facets.NewSchema(producer).WithFields([]facets.FieldElement{
+                    {Name: "event_id", Type: ol.Ptr("UUID")},
+                    {Name: "event_type", Type: ol.Ptr("VARCHAR")},
+                    {Name: "timestamp", Type: ol.Ptr("TIMESTAMP")},
+                }),
             ),
     )
 
@@ -375,10 +409,9 @@ func main() {
     run.RecordOutputs(
         ol.NewOutputElement("summary", "s3://analytics/warehouse").
             WithOutputFacets(
-                &facets.OutputStatistics{
-                    RowCount: ptr(int64(1000000)),
-                    Size:     ptr(int64(104857600)),
-                },
+                facets.NewOutputStatistics(producer).
+                    WithRowCount(1000000).
+                    WithSize(104857600),
             ),
     )
 }
@@ -391,6 +424,104 @@ func processData(ctx context.Context) error {
     ctx, childRun := parent.StartChild(ctx, "transform-step")
     defer childRun.Finish()
     
+    // Processing logic here...
+    return nil
+}
+```
+
+### Example 2: Manual Event Construction
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "time"
+
+    ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
+    "github.com/OpenLineage/openlineage/client/go/pkg/facets"
+    "github.com/OpenLineage/openlineage/client/go/pkg/transport"
+)
+
+func main() {
+    producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
+    
+    // Create client
+    client, err := ol.NewClient(producer, ol.ClientConfig{
+        Namespace: "analytics",
+        Transport: transport.Config{
+            Type: transport.TransportTypeHTTP,
+            HTTP: transport.HTTPConfig{
+                URL: "http://marquez:5000",
+            },
+        },
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    ctx := context.Background()
+    runID := ol.NewRunID()
+    jobName := "daily-etl"
+
+    // START event - emitted at job start
+    startEvent := ol.NewRunEvent(ol.EventTypeStart, runID, jobName, producer).
+        WithJobFacets(
+            facets.NewJobType(producer, "BATCH", "SPARK"),
+            facets.NewSQL(producer, "INSERT INTO analytics.summary SELECT * FROM staging.events"),
+        ).
+        WithInputs(
+            ol.NewInputElement("events", "postgres://staging/public").
+                WithFacets(
+                    facets.NewSchema(producer).WithFields([]facets.FieldElement{
+                        {Name: "event_id", Type: ol.Ptr("UUID")},
+                        {Name: "event_type", Type: ol.Ptr("VARCHAR")},
+                        {Name: "timestamp", Type: ol.Ptr("TIMESTAMP")},
+                    }),
+                ),
+        )
+
+    if err := client.Emit(ctx, startEvent); err != nil {
+        log.Fatal(err)
+    }
+
+    // Do the actual work
+    startTime := time.Now()
+    if err := processData(); err != nil {
+        // FAIL event - emitted on error
+        failEvent := ol.NewRunEvent(ol.EventTypeFail, runID, jobName, producer).
+            WithRunFacets(
+                facets.NewErrorMessage(producer, err.Error(), "go"),
+            )
+        
+        if err := client.Emit(ctx, failEvent); err != nil {
+            log.Printf("Failed to emit fail event: %v", err)
+        }
+        log.Fatal(err)
+    }
+
+    // COMPLETE event - emitted on success
+    completeEvent := ol.NewRunEvent(ol.EventTypeComplete, runID, jobName, producer).
+        WithRunFacets(
+            facets.NewNominalTime(producer, startTime).
+                WithNominalEndTime(time.Now()),
+        ).
+        WithOutputs(
+            ol.NewOutputElement("summary", "s3://analytics/warehouse").
+                WithOutputFacets(
+                    facets.NewOutputStatistics(producer).
+                        WithRowCount(1000000).
+                        WithSize(104857600),
+                ),
+        )
+
+    if err := client.Emit(ctx, completeEvent); err != nil {
+        log.Fatal(err)
+    }
+}
+
+func processData() error {
     // Processing logic here...
     return nil
 }
@@ -433,6 +564,13 @@ func processData(ctx context.Context) error {
 | `NewRunEvent(type, runID, job, producer)` | Create a run event |
 | `NewJobEvent(name, producer)` | Create a job event |
 | `NewDatasetEvent(name, namespace, producer)` | Create a dataset event |
+
+### Helpers
+
+| Function | Description |
+|----------|-------------|
+| `NewRunID()` | Generate a new UUID v7 for use as a run ID (time-ordered) |
+| `Ptr[T](v)` | Create a pointer to a value (useful for optional facet fields) |
 
 ## Contributing
 

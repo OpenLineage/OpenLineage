@@ -1,9 +1,7 @@
 /*
-/*
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
-*/
-
+ */
 package main
 
 import (
@@ -55,22 +53,22 @@ func generateOpenLineageCode() (string, error) {
 	code := string(result)
 
 	replacements := map[string]string{
-		"package openlineage":         "/*\n/* Copyright 2018-2026 contributors to the OpenLineage project\n/* SPDX-License-Identifier: Apache-2.0\n*/\n\npackage openlineage\n\nimport \"github.com/OpenLineage/openlineage/client/go/pkg/facets\"\n",
+		"package openlineage":         "/*\n * Copyright 2018-2026 contributors to the OpenLineage project\n * SPDX-License-Identifier: Apache-2.0\n*/\n\npackage openlineage\n\nimport \"github.com/OpenLineage/openlineage/client/go/pkg/facets\"\n",
 		"map[string]InputFacetValue":  "*facets.InputDatasetFacets",
 		"map[string]DatasetFacet":     "*facets.DatasetFacets",
 		"map[string]JobFacet":         "*facets.JobFacets",
 		"map[string]OutputFacetValue": "*facets.OutputDatasetFacets",
 		"map[string]RunFacet":         "*facets.RunFacets",
 		// Rename Run to RunInfo to avoid conflict with Run interface
-		"type Run struct":             "type RunInfo struct",
-		"*Run ":                       "*RunInfo ",
+		"type Run struct": "type RunInfo struct",
+		"*Run ":           "*RunInfo ",
 		// Prefix EventType constants
-		"Abort":                       "EventTypeAbort",
-		"Fail":                        "EventTypeFail",
-		"Complete":                    "EventTypeComplete",
-		"Other":                       "EventTypeOther",
-		"Running":                     "EventTypeRunning",
-		"Start":                       "EventTypeStart",
+		"Abort":    "EventTypeAbort",
+		"Fail":     "EventTypeFail",
+		"Complete": "EventTypeComplete",
+		"Other":    "EventTypeOther",
+		"Running":  "EventTypeRunning",
+		"Start":    "EventTypeStart",
 	}
 
 	for k, v := range replacements {

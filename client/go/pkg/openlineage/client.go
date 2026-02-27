@@ -1,9 +1,7 @@
 /*
-/*
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
-*/
-
+ */
 package openlineage
 
 import (
@@ -86,7 +84,7 @@ func (olc *Client) Emit(ctx context.Context, event Emittable) error {
 func (c *Client) NewRun(ctx context.Context, job string) (context.Context, Run) {
 	r := run{
 		client:       c,
-		runID:        uuid.New(),
+		runID:        NewRunID(),
 		jobName:      job,
 		jobNamespace: c.namespace,
 	}

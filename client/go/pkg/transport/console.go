@@ -1,9 +1,7 @@
 /*
-/*
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
-*/
-
+ */
 package transport
 
 import (
@@ -38,4 +36,3 @@ func (ct *consoleTransport) Emit(ctx context.Context, event any) error {
 
 	return nil
 }
-
