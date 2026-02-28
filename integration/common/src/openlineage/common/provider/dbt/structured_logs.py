@@ -21,7 +21,6 @@ from openlineage.client.facet_v2 import (
     job_type_job,
     processing_engine_run,
     sql_job,
-    tags_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -350,9 +349,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         # Add tags if they exist for this node
         if tags := self._get_node_tags(node_unique_id):
-            run_facets["tags"] = tags_run.TagsRunFacet(
-                tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-            )
+            run_facets["tags"] = self._dbt_tags_facet(tags)
 
         job_name = self._get_job_name(event)
         node_metadata = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
@@ -413,9 +410,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         # Add tags if they exist for this node
         if tags := self._get_node_tags(node_unique_id):
-            run_facets["tags"] = tags_run.TagsRunFacet(
-                tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-            )
+            run_facets["tags"] = self._dbt_tags_facet(tags)
 
         job_name = self._get_job_name(event)
         node_metadata = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})

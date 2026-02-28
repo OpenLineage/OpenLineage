@@ -326,9 +326,7 @@ class DbtArtifactProcessor:
 
             run_facets: Dict[str, RunFacet] = {}
             if tags := output_node.get("tags", None):
-                run_facets["tags"] = tags_run.TagsRunFacet(
-                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-                )
+                run_facets["tags"] = self._dbt_tags_facet(tags)
 
             output_dataset = self.node_to_output_dataset(
                 ModelNode(
@@ -410,9 +408,7 @@ class DbtArtifactProcessor:
 
             run_facets: Dict[str, RunFacet] = {}
             if tags := node.get("tags", None):
-                run_facets["tags"] = tags_run.TagsRunFacet(
-                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-                )
+                run_facets["tags"] = self._dbt_tags_facet(tags)
 
             run_id = str(generate_new_uuid())
             dataset_facets: Dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
@@ -771,6 +767,27 @@ class DbtArtifactProcessor:
         if not self.adapter_type:
             return None
         return self.adapter_type.value.lower()
+
+    @staticmethod
+    def _parse_dbt_tag(tag: str) -> tags_run.TagsRunFacetFields:
+        """Parse a dbt tag into an OpenLineage run tag.
+
+        Supported formats:
+        - "tag" -> key="tag", value="true", source="DBT"
+        - "key:value" -> key="key", value="value", source="DBT"
+        - "key:value:source" -> key="key", value="value", source="source"
+
+        Any other format falls back to the legacy behavior to preserve compatibility.
+        """
+        parts = tag.split(":")
+        if len(parts) == 2:
+            return tags_run.TagsRunFacetFields(key=parts[0], value=parts[1], source="DBT")
+        if len(parts) == 3:
+            return tags_run.TagsRunFacetFields(key=parts[0], value=parts[1], source=parts[2])
+        return tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT")
+
+    def _dbt_tags_facet(self, tags: Sequence[str]) -> tags_run.TagsRunFacet:
+        return tags_run.TagsRunFacet(tags=[self._parse_dbt_tag(tag) for tag in tags])
 
     def get_run(
         self, run_id: str, query_id: Optional[str] = None, run_facets: Optional[dict[str, Any]] = None
