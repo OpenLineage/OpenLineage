@@ -94,7 +94,7 @@ public class QueryRelationColumnLineageCollector {
                       if (!p.lineage().isEmpty()) {
                         p.lineage().stream()
                             .map(builder::getMapping)
-                            .forEach(eid -> builder.addDependency(descendantId, eid));
+                            .forEach(eid -> builder.addDependency(descendantId, eid, ""));
                       }
                     }));
   }
