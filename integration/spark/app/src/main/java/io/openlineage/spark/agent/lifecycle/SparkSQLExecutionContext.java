@@ -20,6 +20,7 @@ import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.StreamingMicroBatchThrottler;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.time.ZoneOffset;
@@ -61,6 +62,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private boolean emittedOnJobEnd = false;
   private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
+  /** Set to true when this micro-batch is throttled; all subsequent emit calls are no-ops. */
+  private boolean throttled = false;
 
   private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
 
@@ -87,6 +90,16 @@ class SparkSQLExecutionContext implements ExecutionContext {
       log.info(
           "OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionStart");
       return;
+    }
+
+    if (olContext.getQueryExecution().map(qe -> qe.optimizedPlan().isStreaming()).orElse(false)) {
+      StreamingMicroBatchThrottler t = olContext.getStreamingThrottler();
+      if (t != null && !t.shouldEmit()) {
+        log.debug(
+            "Streaming throttle active: skipping micro-batch event (executionId={})", executionId);
+        throttled = true;
+        return;
+      }
     }
 
     olContext.setActiveJobId(activeJobId);
@@ -122,6 +135,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     if (log.isDebugEnabled()) {
       log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
     }
+    if (throttled) return;
     // TODO: can we get failed event here?
     // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
     // Maybe use QueryExecutionListener?
@@ -261,6 +275,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     log.debug("SparkListenerJobStart - executionId: {}", executionId);
+    if (throttled) return;
     olContext.setActiveJobId(jobStart.jobId());
 
     if (!olContext.getQueryExecution().isPresent()) {
@@ -303,6 +318,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
     log.debug("SparkListenerJobEnd - executionId: {}", executionId);
+    if (throttled) return;
     olContext.setActiveJobId(jobEnd.jobId());
     if (!finished.compareAndSet(false, true)) {
       log.debug("Event already finished, returning");
