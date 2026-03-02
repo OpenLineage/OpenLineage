@@ -24,7 +24,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.sql.ColumnLineage;
-import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
@@ -294,8 +293,7 @@ class InputFieldsCollectorTest {
     ColumnLineage columnLineage = mock(ColumnLineage.class);
     when(sqlMeta.columnLineage()).thenReturn(Collections.singletonList(columnLineage));
     when(sqlMeta.inTables())
-        .thenReturn(
-            Collections.singletonList(new DbTableMeta(null, null, "jdbc_source1")));
+        .thenReturn(Collections.singletonList(new DbTableMeta(null, null, "jdbc_source1")));
 
     when(context.getNamespaceResolver())
         .thenReturn(new DatasetNamespaceCombinedResolver(new SparkOpenLineageConfig()));
@@ -324,8 +322,7 @@ class InputFieldsCollectorTest {
     SqlMeta sqlMeta = mock(SqlMeta.class);
     when(sqlMeta.columnLineage()).thenReturn(Collections.emptyList());
     when(sqlMeta.inTables())
-        .thenReturn(
-            Collections.singletonList(new DbTableMeta(null, null, "jdbc_source1")));
+        .thenReturn(Collections.singletonList(new DbTableMeta(null, null, "jdbc_source1")));
 
     when(context.getNamespaceResolver())
         .thenReturn(new DatasetNamespaceCombinedResolver(new SparkOpenLineageConfig()));
