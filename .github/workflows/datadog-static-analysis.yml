@@ -16,11 +16,9 @@ jobs:
           node-version: 24
       - name: Check code meets quality and security standards
         id: datadog-static-analysis
-        uses: DataDog/datadog-static-analyzer-github-action@v1
+        uses: DataDog/datadog-static-analyzer-github-action@v3
         with:
           dd_api_key: ${{ secrets.DD_API_KEY }}
           dd_app_key: ${{ secrets.DD_APP_KEY }}
-          dd_service: openlineage
-          dd_env: ci
           dd_site: us5.datadoghq.com
           cpu_count: 2
