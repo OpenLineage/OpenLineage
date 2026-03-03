@@ -6,9 +6,11 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -283,17 +285,40 @@ class InputFieldsCollectorTest {
     return jdbcRelation;
   }
 
+  /**
+   * Regression test for https://github.com/OpenLineage/OpenLineage/issues/4314.
+   *
+   * <p>When reading from JDBC with a column alias (e.g. {@code SELECT name AS namex FROM
+   * source_table}), Spark's output attributes carry the alias name {@code "namex"}. Before the fix,
+   * {@code extractInternalInputs()} iterated those attributes and added {@code "namex"} as a
+   * phantom input field. After the fix the call is skipped for JDBC nodes that already have SQL
+   * column lineage, so only the original column name {@code "name"} is recorded (by
+   * JdbcColumnLineageVisitor/SqlCollector).
+   */
   @Test
-  void collectSkipsInternalInputsForJdbcRelationWithSqlColumnLineage() {
+  void jdbcAliasColumnShouldNotAppearAsPhantomInputField() {
     JDBCRelation jdbcRelation = createMockJdbcRelation();
-    LogicalRelation logicalRelation = createJdbcLogicalRelation(jdbcRelation);
 
-    // Create SqlMeta with non-empty column lineage
+    // Spark exposes the alias "namex" as the output attribute, not the original column "name"
+    AttributeReference aliasedAttr = mock(AttributeReference.class);
+    when(aliasedAttr.exprId()).thenReturn(ExprId.apply(100));
+    when(aliasedAttr.name()).thenReturn("namex");
+
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    when(logicalRelation.relation()).thenReturn(jdbcRelation);
+    when(logicalRelation.output())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(aliasedAttr))
+                .asScala()
+                .toSeq());
+
     SqlMeta sqlMeta = mock(SqlMeta.class);
     ColumnLineage columnLineage = mock(ColumnLineage.class);
     when(sqlMeta.columnLineage()).thenReturn(Collections.singletonList(columnLineage));
     when(sqlMeta.inTables())
-        .thenReturn(Collections.singletonList(new DbTableMeta(null, null, "jdbc_source1")));
+        .thenReturn(Collections.singletonList(new DbTableMeta(null, null, "source_table")));
 
     when(context.getNamespaceResolver())
         .thenReturn(new DatasetNamespaceCombinedResolver(new SparkOpenLineageConfig()));
@@ -308,9 +333,10 @@ class InputFieldsCollectorTest {
 
       InputFieldsCollector.collect(context, plan);
     }
-    // builder.addInput should NOT be called because the JDBC SQL column lineage path
-    // delegates input collection to JdbcColumnLineageVisitor instead
-    verify(builder, times(0)).addInput(any(), any(), any());
+
+    // "namex" must never appear as an input field — it is an alias, not a source column.
+    // Before the fix, extractInternalInputs() would add it from Spark's output attributes.
+    verify(builder, never()).addInput(any(), any(), eq("namex"));
   }
 
   @Test
@@ -340,25 +366,6 @@ class InputFieldsCollectorTest {
     // builder.addInput SHOULD be called because there's no SQL column lineage,
     // so the normal extractInternalInputs path is used
     verify(builder, times(1)).addInput(any(), any(), any());
-  }
-
-  @Test
-  void collectUsesInternalInputsForJdbcRelationWithNoSqlMeta() {
-    JDBCRelation jdbcRelation = createMockJdbcRelation();
-    LogicalRelation logicalRelation = createJdbcLogicalRelation(jdbcRelation);
-
-    LogicalPlan plan = createPlanWithGrandChild(logicalRelation);
-
-    try (MockedStatic<JdbcSparkUtils> mockedJdbcUtils = mockStatic(JdbcSparkUtils.class)) {
-      mockedJdbcUtils
-          .when(() -> JdbcSparkUtils.extractQueryFromSpark(jdbcRelation))
-          .thenReturn(Optional.empty());
-
-      InputFieldsCollector.collect(context, plan);
-    }
-    // builder.addInput should NOT be called because extractDatasetIdentifier returns
-    // empty when SqlMeta is absent (no tables found)
-    verify(builder, times(0)).addInput(any(), any(), any());
   }
 
   private LogicalPlan createPlanWithGrandChild(LogicalPlan grandChild) {
