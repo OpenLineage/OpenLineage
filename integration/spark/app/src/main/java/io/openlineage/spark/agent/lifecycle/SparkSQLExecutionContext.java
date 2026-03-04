@@ -408,7 +408,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void start(SparkListenerApplicationStart applicationStart) {}
 
   @Override
-  public void end(SparkListenerApplicationEnd applicationEnd, EventType eventType) {}
+  public void end(SparkListenerApplicationEnd applicationEnd) {}
 
   private OpenLineage.ParentRunFacet buildApplicationParentFacet() {
     return PlanUtils.parentRunFacet(

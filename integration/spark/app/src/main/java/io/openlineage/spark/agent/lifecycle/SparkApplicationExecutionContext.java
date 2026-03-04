@@ -5,12 +5,12 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static io.openlineage.client.OpenLineage.RunEvent.EventType.COMPLETE;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.START;
 import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -99,11 +99,10 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   }
 
   @Override
-  public void end(SparkListenerApplicationEnd applicationEnd, EventType eventType) {
+  public void end(SparkListenerApplicationEnd applicationEnd) {
     String applicationId =
         olContext.getSparkContext().map(context -> context.applicationId()).orElse(null);
-    log.debug(
-        "SparkListenerApplicationEnd - applicationId: {}, eventType: {}", applicationId, eventType);
+    log.debug("SparkListenerApplicationEnd - applicationId: {}", applicationId);
     if (EventFilterUtils.isDisabled(olContext, applicationEnd)) {
       log.info(
           "OpenLineage received Spark event that is configured to be skipped: SparkListenerApplicationEnd");
@@ -119,7 +118,7 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                         .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(applicationEnd.time())))
-                .eventType(eventType)
+                .eventType(COMPLETE)
                 .jobBuilder(getJobBuilder())
                 .jobFacetsBuilder(getJobFacetsBuilder())
                 .overwriteRunId(Optional.of(olContext.getApplicationUuid()))

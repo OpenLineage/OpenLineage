@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import java.util.Optional;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
@@ -37,11 +36,7 @@ public interface ExecutionContext {
 
   void start(SparkListenerStageSubmitted stageSubmitted);
 
-  default void end(SparkListenerApplicationEnd applicationEnd) {
-    end(applicationEnd, EventType.COMPLETE);
-  }
-
-  void end(SparkListenerApplicationEnd applicationEnd, EventType eventType);
+  void end(SparkListenerApplicationEnd applicationEnd);
 
   void end(SparkListenerJobEnd jobEnd);
 
