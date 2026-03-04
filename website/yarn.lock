@@ -267,23 +267,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "@argos-ci/cli@npm:4.1.0"
+"@argos-ci/cli@npm:^4.1.1":
+  version: 4.1.1
+  resolution: "@argos-ci/cli@npm:4.1.1"
   dependencies:
-    "@argos-ci/core": "npm:5.1.0"
+    "@argos-ci/core": "npm:5.1.1"
     commander: "npm:^14.0.3"
     ora: "npm:^9.1.0"
     update-notifier: "npm:^7.3.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/9a62d3d4f8e8bccfce5ffe2e780099d68ad7ea66ecbef0928033bed556ea1c7c0a5168dee3b8d62d10ec277455bd7bf5ad1018b343ffe6a370c827cc03fcf993
+  checksum: 10c0/0c5ed04d564e73cc34647aeed986b3f37daf2a7656f9c66f472a981656a794656ee4d24b6a02fd11708bb537ce4511d83f21d25ff85e90473466d55d1fad7813
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:5.1.0":
-  version: 5.1.0
-  resolution: "@argos-ci/core@npm:5.1.0"
+"@argos-ci/core@npm:5.1.1":
+  version: 5.1.1
+  resolution: "@argos-ci/core@npm:5.1.1"
   dependencies:
     "@argos-ci/api-client": "npm:0.16.0"
     "@argos-ci/util": "npm:3.2.0"
@@ -293,20 +293,20 @@ __metadata:
     mime-types: "npm:^3.0.2"
     sharp: "npm:^0.34.5"
     tmp: "npm:^0.2.5"
-  checksum: 10c0/4f0f77834f3fd4b179d43a4b0930e4733aab27b8f5fd20924fe337405cbf21a84966a140fb871684d08ae5f6c2f20c673bb63d361123d4ee0b575a397bdff006
+  checksum: 10c0/4284203baacf6dcf3424da9bcf4b30eb7172f2a1b63ac65673be27b5b6b9f5d6b52d2b4ea70674f3691cd4f17aa32c07683e5c1abce68bddccd16e5bf11b60e0
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^6.4.1":
-  version: 6.4.1
-  resolution: "@argos-ci/playwright@npm:6.4.1"
+"@argos-ci/playwright@npm:^6.4.2":
+  version: 6.4.2
+  resolution: "@argos-ci/playwright@npm:6.4.2"
   dependencies:
     "@argos-ci/browser": "npm:5.1.2"
-    "@argos-ci/core": "npm:5.1.0"
+    "@argos-ci/core": "npm:5.1.1"
     "@argos-ci/util": "npm:3.2.0"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
-  checksum: 10c0/33230da6cee17c34d257c8994da7970d80d37a74618e1d9e3725a0d275823cf7ff76f560b7ae08f9142aae08ca8b4612b421a0319fbd11cfbd15b5bd9f89e3c8
+  checksum: 10c0/99aac0c9446f45a7023d414d37b6d433f34330aa3a2b6c8aef261a6eb431106ae13fc52c65b01c2f6e6ee64b0fd39a9ac361071d640a3b0cce26459d256cc2ff
   languageName: node
   linkType: hard
 
@@ -2994,10 +2994,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fontsource/roboto@npm:^5.0.8":
-  version: 5.2.9
-  resolution: "@fontsource/roboto@npm:5.2.9"
-  checksum: 10c0/8280ab6504ab7da105c77afc1231236be86f7cd02a708e25b6cfc2871975699a44be7a42491e59934f2a84c874a8109bb2babfbc6b1986bcad9f3ac1de3980ca
+"@fontsource/roboto@npm:^5.2.10":
+  version: 5.2.10
+  resolution: "@fontsource/roboto@npm:5.2.10"
+  checksum: 10c0/abadfcaefbe2196bbd36d9258b336063f721894a3624a9639da00792583c565bfd0748ef978f91a38c3c0de8d247615c9be92a763184c085c630fa43f04b1cd9
   languageName: node
   linkType: hard
 
@@ -4815,14 +4815,14 @@ __metadata:
   linkType: hard
 
 "ajv@npm:^6.12.5":
-  version: 6.12.6
-  resolution: "ajv@npm:6.12.6"
+  version: 6.14.0
+  resolution: "ajv@npm:6.14.0"
   dependencies:
     fast-deep-equal: "npm:^3.1.1"
     fast-json-stable-stringify: "npm:^2.0.0"
     json-schema-traverse: "npm:^0.4.1"
     uri-js: "npm:^4.2.2"
-  checksum: 10c0/41e23642cbe545889245b9d2a45854ebba51cda6c778ebced9649420d9205f2efb39cb43dbc41e358409223b1ea43303ae4839db682c848b891e4811da1a5a71
+  checksum: 10c0/a2bc39b0555dc9802c899f86990eb8eed6e366cddbf65be43d5aa7e4f3c4e1a199d5460fd7ca4fb3d864000dbbc049253b72faa83b3b30e641ca52cb29a68c22
   languageName: node
   linkType: hard
 
@@ -4956,8 +4956,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^4.1.0"
-    "@argos-ci/playwright": "npm:^6.4.1"
+    "@argos-ci/cli": "npm:^4.1.1"
+    "@argos-ci/playwright": "npm:^6.4.2"
     "@playwright/test": "npm:^1.58.2"
     cheerio: "npm:^1.2.0"
   languageName: unknown
@@ -6630,7 +6630,7 @@ __metadata:
     "@docusaurus/theme-common": "npm:^3.9.2"
     "@emotion/react": "npm:^11.13.3"
     "@emotion/styled": "npm:^11.13.0"
-    "@fontsource/roboto": "npm:^5.0.8"
+    "@fontsource/roboto": "npm:^5.2.10"
     "@mdx-js/mdx": "npm:^3.1.0"
     "@mdx-js/react": "npm:^3.1.0"
     "@mui/icons-material": "npm:^5.14.19"
@@ -6642,7 +6642,7 @@ __metadata:
     docusaurus-lunr-search: "npm:^3.5.0"
     lodash: "npm:^4.17.23"
     lunr: "npm:^2.3.9"
-    motion: "npm:^12.33.0"
+    motion: "npm:^12.34.3"
     postcss: "npm:^8.4.38"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
@@ -7514,11 +7514,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-motion@npm:^12.34.0":
-  version: 12.34.0
-  resolution: "framer-motion@npm:12.34.0"
+"framer-motion@npm:^12.34.3":
+  version: 12.34.3
+  resolution: "framer-motion@npm:12.34.3"
   dependencies:
-    motion-dom: "npm:^12.34.0"
+    motion-dom: "npm:^12.34.3"
     motion-utils: "npm:^12.29.2"
     tslib: "npm:^2.4.0"
   peerDependencies:
@@ -7532,7 +7532,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10c0/f4b3cd9b9ca8281e55c8b1e331937de98725038ac0cc41943b4146f87bc2f6072f2b4ca20acdabcfcc5801e2a39063d256e85c02403b80e660e2695c7b6d667d
+  checksum: 10c0/e36d8d2b33200c6d8ad8af6508090276674dcd239da8026ab19ec4f739b8943197c7b1777f28f96c7149f65ccd35efb5905cbdfdaf6e75017bcd7cc4eb69328b
   languageName: node
   linkType: hard
 
@@ -10501,12 +10501,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion-dom@npm:^12.34.0":
-  version: 12.34.0
-  resolution: "motion-dom@npm:12.34.0"
+"motion-dom@npm:^12.34.3":
+  version: 12.34.3
+  resolution: "motion-dom@npm:12.34.3"
   dependencies:
     motion-utils: "npm:^12.29.2"
-  checksum: 10c0/cbb656abd55804f409c4315887fd579a5504ec9424ee1e5ecf9330f308d39b2351d0795a0bea3f7468b46a2b99b6faf0a37e2403c04aed0f79c6cb82447a44ab
+  checksum: 10c0/9a336be96dbb24a2ea3cafe401043553bc326274d118b86d6414e505cd394f26c071cd420d2e71c2cf19e76abc89bfdac4a7c5c1b3842eca56b11d6b8687dfdc
   languageName: node
   linkType: hard
 
@@ -10517,11 +10517,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion@npm:^12.33.0":
-  version: 12.34.0
-  resolution: "motion@npm:12.34.0"
+"motion@npm:^12.34.3":
+  version: 12.34.3
+  resolution: "motion@npm:12.34.3"
   dependencies:
-    framer-motion: "npm:^12.34.0"
+    framer-motion: "npm:^12.34.3"
     tslib: "npm:^2.4.0"
   peerDependencies:
     "@emotion/is-prop-valid": "*"
@@ -10534,7 +10534,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10c0/03825464a47558303dfb44292859f3a2b682bdd25d610e4de2da6c134075d9d184a6f574cac754228663d21b94a003243ffd0170f2272479857d8c407f02e338
+  checksum: 10c0/bb16391e893c2df81e1447d920cb97f54da1c2660ca648c9bfee6cc5b482f96b4bcb223eee02da40e78bd33c4211168b444e3fefefeb1177e338f0e1063b4be1
   languageName: node
   linkType: hard
 
