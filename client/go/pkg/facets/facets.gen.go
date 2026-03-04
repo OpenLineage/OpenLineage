@@ -913,6 +913,255 @@ type TagsTag struct {
 	Value string `json:"value"`
 }
 
+// An Output Dataset Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type IcebergCommitReport struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL     string                 `json:"_schemaURL"`
+	CommitMetrics *CommitMetrics         `json:"commitMetrics,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	// Operation that was performed on the iceberg table
+	Operation *string `json:"operation,omitempty"`
+	// Sequence number of the iceberg table
+	SequenceNumber *float64 `json:"sequenceNumber,omitempty"`
+	// Snapshot ID of the iceberg table
+	SnapshotID *float64 `json:"snapshotId,omitempty"`
+}
+
+type CommitMetrics struct {
+	// Number of data files that are added during the commit
+	AddedDataFiles *float64 `json:"addedDataFiles,omitempty"`
+	// Number of delete files that are added during the commit
+	AddedDeleteFiles *float64 `json:"addedDeleteFiles,omitempty"`
+	// Number of added DVs
+	AddedDVs *float64 `json:"addedDVs,omitempty"`
+	// Number of added equality delete files
+	AddedEqualityDeleteFiles *float64 `json:"addedEqualityDeleteFiles,omitempty"`
+	// Number of equality deletes that are added during the commit
+	AddedEqualityDeletes *float64 `json:"addedEqualityDeletes,omitempty"`
+	// Number of files size in bytes that are added during the commit
+	AddedFilesSizeInBytes *float64 `json:"addedFilesSizeInBytes,omitempty"`
+	// Number of added positional delete files
+	AddedPositionalDeleteFiles *float64 `json:"addedPositionalDeleteFiles,omitempty"`
+	// Number of positional deletes that are added during the commit
+	AddedPositionalDeletes *float64 `json:"addedPositionalDeletes,omitempty"`
+	// Number of records that are added during the commit
+	AddedRecords *float64 `json:"addedRecords,omitempty"`
+	// Number of attempts made to commit the iceberg table
+	Attempts *float64 `json:"attempts,omitempty"`
+	// Number of data files that are removed during the commit
+	RemovedDataFiles *float64 `json:"removedDataFiles,omitempty"`
+	// Number of delete files that are removed during the commit
+	RemovedDeleteFiles *float64 `json:"removedDeleteFiles,omitempty"`
+	// Number of removed DVs
+	RemovedDVs *float64 `json:"removedDVs,omitempty"`
+	// Number of removed equality delete files
+	RemovedEqualityDeleteFiles *float64 `json:"removedEqualityDeleteFiles,omitempty"`
+	// Number of equality deletes that are removed during the commit
+	RemovedEqualityDeletes *float64 `json:"removedEqualityDeletes,omitempty"`
+	// Number of files size in bytes that are removed during the commit
+	RemovedFilesSizeInBytes *float64 `json:"removedFilesSizeInBytes,omitempty"`
+	// Number of removed positional delete files
+	RemovedPositionalDeleteFiles *float64 `json:"removedPositionalDeleteFiles,omitempty"`
+	// Number of positional deletes that are removed during the commit
+	RemovedPositionalDeletes *float64 `json:"removedPositionalDeletes,omitempty"`
+	// Number of records that are removed during the commit
+	RemovedRecords *float64 `json:"removedRecords,omitempty"`
+	// Total number of data files that are present in the iceberg table
+	TotalDataFiles *float64 `json:"totalDataFiles,omitempty"`
+	// Total number of temporary delete files that are present in the iceberg table
+	TotalDeleteFiles *float64 `json:"totalDeleteFiles,omitempty"`
+	// Duration of the commit in MILLISECONDS
+	TotalDuration *float64 `json:"totalDuration,omitempty"`
+	// Number of equality deletes that are present in the iceberg table
+	TotalEqualityDeletes *float64 `json:"totalEqualityDeletes,omitempty"`
+	// Number of files size in bytes in the iceberg table
+	TotalFilesSizeInBytes *float64 `json:"totalFilesSizeInBytes,omitempty"`
+	// Number of positional deletes that are present in the iceberg table
+	TotalPositionalDeletes *float64 `json:"totalPositionalDeletes,omitempty"`
+	// Number of records that are present in the iceberg table
+	TotalRecords *float64 `json:"totalRecords,omitempty"`
+}
+
+// An Input Dataset Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type IcebergScanReport struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// Filter used to scan the iceberg table
+	FilterDescription *string                `json:"filterDescription,omitempty"`
+	Metadata          map[string]interface{} `json:"metadata,omitempty"`
+	// List of field names that are projected from the iceberg table
+	ProjectedFieldNames []string     `json:"projectedFieldNames,omitempty"`
+	ScanMetrics         *ScanMetrics `json:"scanMetrics,omitempty"`
+	// Schema ID of the iceberg table
+	SchemaID *float64 `json:"schemaId,omitempty"`
+	// Snapshot ID of the iceberg table
+	SnapshotID *float64 `json:"snapshotId,omitempty"`
+}
+
+type ScanMetrics struct {
+	// Number of delete files that are equality indexed during the scan
+	EqualityDeleteFiles *float64 `json:"equalityDeleteFiles,omitempty"`
+	// Number of delete files that are indexed during the scan
+	IndexedDeleteFiles *float64 `json:"indexedDeleteFiles,omitempty"`
+	// Number of delete files that are positional indexed during the scan
+	PositionalDeleteFiles *float64 `json:"positionalDeleteFiles,omitempty"`
+	// List of data files that are read during the scan
+	ResultDataFiles *float64 `json:"resultDataFiles,omitempty"`
+	// List of delete files that are read during the scan
+	ResultDeleteFiles *float64 `json:"resultDeleteFiles,omitempty"`
+	// Number of data manifests that are scanned during the scan
+	ScannedDataManifests *float64 `json:"scannedDataManifests,omitempty"`
+	// Number of delete manifests that are scanned during the scan
+	ScannedDeleteManifests *float64 `json:"scannedDeleteManifests,omitempty"`
+	// Number of data files that are skipped during the scan
+	SkippedDataFiles *float64 `json:"skippedDataFiles,omitempty"`
+	// Number of data manifests that are skipped during the scan
+	SkippedDataManifests *float64 `json:"skippedDataManifests,omitempty"`
+	// Number of delete files that are skipped during the scan
+	SkippedDeleteFiles *float64 `json:"skippedDeleteFiles,omitempty"`
+	// Number of delete manifests that are skipped during the scan
+	SkippedDeleteManifests *float64 `json:"skippedDeleteManifests,omitempty"`
+	// Total number of manifests that are scanned during the scan
+	TotalDataManifests *float64 `json:"totalDataManifests,omitempty"`
+	// Total delete file size in bytes that are read during the scan
+	TotalDeleteFileSizeInBytes *float64 `json:"totalDeleteFileSizeInBytes,omitempty"`
+	// Total number of delete manifests that are scanned during the scan
+	TotalDeleteManifests *float64 `json:"totalDeleteManifests,omitempty"`
+	// Total file size in bytes that are read during the scan
+	TotalFileSizeInBytes *float64 `json:"totalFileSizeInBytes,omitempty"`
+	// Duration of the scan in MILLISECONDS
+	TotalPlanningDuration *float64 `json:"totalPlanningDuration,omitempty"`
+}
+
+// A Job Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type GcpComposerJob struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool `json:"_deleted,omitempty"`
+	// Version of Airflow, suffixed by `+composer`
+	AirflowVersion string `json:"airflowVersion"`
+	// Version of the Cloud Composer environment
+	ComposerVersion string `json:"composerVersion"`
+	// The id of the DAG
+	DagID string `json:"dagId"`
+	// Cloud Composer Environment name
+	EnvironmentName string `json:"environmentName"`
+	// Operator class name. Only present for tasks, not for DAGs. For example `PythonOperator`
+	Operator *string `json:"operator,omitempty"`
+	// The id of the task. Only present for tasks, not for DAGs
+	TaskID *string `json:"taskId,omitempty"`
+}
+
+// A Run Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type GcpComposerRun struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// The id of the DAG run
+	DagRunID string `json:"dagRunId"`
+}
+
+// A Run Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type GcpDataproc struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// Application ID set by the resource manager. For spark jobs, it is set in the spark
+	// configuration of the current context.
+	AppID string `json:"appId"`
+	// App name which may be provided by the user, or some default is used by the resource
+	// manager. For spark jobs, it is set in the spark configuration of the current context.
+	AppName string `json:"appName"`
+	// Populated only for Dataproc serverless batches. The resource id of the batch.
+	BatchID *string `json:"batchId,omitempty"`
+	// Populated only for Dataproc serverless batches. A UUID generated by the service when it
+	// creates the batch.
+	BatchUUID *string `json:"batchUuid,omitempty"`
+	// Populated only for Dataproc GCE workloads. The cluster name is unique within a GCP
+	// project.
+	ClusterName *string `json:"clusterName,omitempty"`
+	// Populated only for Dataproc GCE workloads. A UUID generated by the service at the time of
+	// cluster creation.
+	ClusterUUID *string `json:"clusterUuid,omitempty"`
+	// Populated only for Dataproc GCE workloads. If not specified by the user, the job ID will
+	// be provided by the service.
+	JobID *string `json:"jobId,omitempty"`
+	// Identifies whether the process is a job (on a Dataproc cluster), a batch or a session.
+	JobType *string `json:"jobType,omitempty"`
+	// Populated only for Dataproc GCE workloads. A UUID that uniquely identifies a job within
+	// the project over time.
+	JobUUID *string `json:"jobUuid,omitempty"`
+	// The GCP project ID that the resource belongs to.
+	ProjectID string `json:"projectId"`
+	// The name of the query node in the executed Spark Plan. Often used to describe the command
+	// being executed.
+	QueryNodeName *string `json:"queryNodeName,omitempty"`
+	// Populated only for Dataproc serverless interactive sessions. The resource id of the
+	// session, used for URL generation.
+	SessionID *string `json:"sessionId,omitempty"`
+	// Populated only for Dataproc serverless interactive sessions. A UUID generated by the
+	// service when it creates the session.
+	SessionUUID *string `json:"sessionUuid,omitempty"`
+}
+
+// A Job Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type GcpLineage struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool `json:"_deleted,omitempty"`
+	// The name of the job to be used on UI
+	DisplayName *string `json:"displayName,omitempty"`
+	Origin      *Origin `json:"origin,omitempty"`
+}
+
+type Origin struct {
+	// If the sourceType isn't CUSTOM, the value of this field should be a GCP resource name of
+	// the system, which reports lineage. The project and location parts of the resource name
+	// must match the project and location of the lineage resource being created. More details
+	// in GCP documentation
+	// https://cloud.google.com/data-catalog/docs/reference/data-lineage/rest/v1/projects.locations.processes#origin
+	Name *string `json:"name,omitempty"`
+	// Type of the source. Possible values can be found in GCP documentation
+	// (https://cloud.google.com/data-catalog/docs/reference/data-lineage/rest/v1/projects.locations.processes#SourceType)
+	SourceType *string `json:"sourceType,omitempty"`
+}
+
 type LeftType string
 
 const (

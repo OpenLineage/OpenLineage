@@ -15,6 +15,7 @@ import (
 	"go/token"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -62,23 +63,17 @@ type facetFieldSpec struct {
 func generateFacets() (string, error) {
 	quicktypeCommand := strings.Join([]string{
 		"quicktype",
-		"-l",
-		"go",
-		"--src-lang",
-		"schema",
-		"--package",
-		"facets",
+		"-l", "go",
+		"--src-lang", "schema",
+		"--package", "facets",
 		"--just-types-and-package",
 		"--no-ignore-json-refs",
-		"../../spec/facets/*.json",
+		"--src", "../../spec/facets/*Facet.json",
+		"--src", "../../spec/registry/*/facets/*Facet.json",
+		"--src", "../../spec/registry/*/*/facets/*Facet.json",
 	}, " ")
 
-	args := []string{
-		"-c",
-		quicktypeCommand,
-	}
-
-	cmd := exec.Command("bash", args...)
+	cmd := exec.Command("bash", "-c", quicktypeCommand)
 	result, err := cmd.Output()
 	if err != nil {
 		var exitError *exec.ExitError
@@ -194,7 +189,11 @@ func extractFacets(code string) ([]facetSpec, error) {
 		switch fieldType := facetField.Type.(type) {
 		case *ast.StarExpr:
 			// Pointer type: *SomeFacet
-			facetIdent = fieldType.X.(*ast.Ident)
+			ident, ok := fieldType.X.(*ast.Ident)
+			if !ok {
+				return true // skip unsupported pointer targets (e.g. *ast.InterfaceType)
+			}
+			facetIdent = ident
 		case *ast.Ident:
 			// Non-pointer type: SomeFacet
 			facetIdent = fieldType
@@ -270,20 +269,28 @@ func extractFacets(code string) ([]facetSpec, error) {
 				case *ast.Ident:
 					fType = fmt.Sprintf("[]%s", elem.Name)
 				case *ast.SelectorExpr:
-					fType = fmt.Sprintf("[]%s.%s", elem.X.(*ast.Ident).Name, elem.Sel.Name)
+					pkg, ok := elem.X.(*ast.Ident)
+					if !ok {
+						continue
+					}
+					fType = fmt.Sprintf("[]%s.%s", pkg.Name, elem.Sel.Name)
 				default:
 					continue // Skip unsupported types
 				}
 				optional = true
 				isRefType = true
 			case *ast.MapType:
-				mt := x
-				k := mt.Key.(*ast.Ident).Name
-				v := mt.Value.(*ast.Ident).Name
+				kIdent, ok := x.Key.(*ast.Ident)
+				if !ok {
+					continue
+				}
+				vIdent, ok := x.Value.(*ast.Ident)
+				if !ok {
+					continue
+				}
 				optional = true
 				isRefType = true
-
-				fType = fmt.Sprintf("map[%s]%s", k, v)
+				fType = fmt.Sprintf("map[%s]%s", kIdent.Name, vIdent.Name)
 			}
 
 			paramName := strcase.ToLowerCamel(fName)
@@ -392,26 +399,44 @@ func removeFacetWrappers(code string) (string, error) {
 	return out.String(), nil
 }
 
-// getSchemaURL reads the JSONSchema for a facet and returns its $id
-// wrapperName is the full wrapper type name (e.g., "ErrorMessageRunFacet")
+// getSchemaURL reads the JSONSchema for a facet and returns its $id.
+// wrapperName is the full wrapper type name (e.g., "ErrorMessageRunFacet").
+// It searches spec/facets and spec/registry/**/facets/.
 func getSchemaURL(wrapperName string) (string, error) {
-	filepath := fmt.Sprintf("../../spec/facets/%s.json", wrapperName)
-	f, err := os.ReadFile(filepath)
-	if err != nil {
-		return "", err
+	globs := []string{
+		fmt.Sprintf("../../spec/facets/%s.json", wrapperName),
+		fmt.Sprintf("../../spec/registry/*/facets/%s.json", wrapperName),
+		fmt.Sprintf("../../spec/registry/*/*/facets/%s.json", wrapperName),
 	}
 
-	var schema map[string]any
-	if err := json.Unmarshal(f, &schema); err != nil {
-		return "", err
+	var candidates []string
+	for _, pattern := range globs {
+		matches, err := filepath.Glob(pattern)
+		if err == nil {
+			candidates = append(candidates, matches...)
+		}
 	}
 
-	id, ok := schema["$id"]
-	if !ok {
-		return "", errors.New("$id field not found")
+	for _, path := range candidates {
+		f, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+
+		var schema map[string]any
+		if err := json.Unmarshal(f, &schema); err != nil {
+			return "", err
+		}
+
+		id, ok := schema["$id"]
+		if !ok {
+			return "", fmt.Errorf("$id field not found in %s", path)
+		}
+
+		return id.(string), nil
 	}
 
-	return id.(string), nil
+	return "", fmt.Errorf("schema file not found for %s", wrapperName)
 }
 
 // extractJSONName extracts the JSON field name from a struct tag
