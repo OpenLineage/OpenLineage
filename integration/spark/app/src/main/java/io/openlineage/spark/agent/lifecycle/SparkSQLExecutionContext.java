@@ -41,7 +41,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
-import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 class SparkSQLExecutionContext implements ExecutionContext {
@@ -133,8 +132,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
       return;
     }
 
-    // Spark 3.4+ only (SPARK-40834): detect write failures (e.g., output committer failures)
-    // that occur after the Spark job completes successfully and are not visible via JobFailed.
+    // Detect write failures (e.g., output committer failures) that occur after the Spark job
+    // completes successfully and are not visible via JobFailed.
     Throwable executionFailure = getExecutionFailure(endEvent);
 
     EventType eventType;
@@ -183,15 +182,14 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   private Throwable getExecutionFailure(SparkListenerSQLExecutionEnd endEvent) {
     try {
-      // Use reflection because executionFailure() is only available on Spark 3.4+
-      // (SPARK-40834) and direct calls won't compile against Spark 3.3.
+      // Use reflection to stay compatible with older Spark versions that may not have
+      // executionFailure() on SparkListenerSQLExecutionEnd.
       java.lang.reflect.Method method = endEvent.getClass().getMethod("executionFailure");
       scala.Option<?> failure = (scala.Option<?>) method.invoke(endEvent);
       if (failure != null && failure.isDefined()) {
         return (Throwable) failure.get();
       }
     } catch (NoSuchMethodException e) {
-      // executionFailure() not available on Spark < 3.4
       log.debug("executionFailure() not available on this Spark version");
     } catch (Exception e) {
       log.debug("Unable to check executionFailure: {}", e.getMessage());
@@ -199,7 +197,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     return null;
   }
 
-  private OpenLineage.@NotNull RunFacetsBuilder addErrorMessageRunFacet(
+  private OpenLineage.RunFacetsBuilder addErrorMessageRunFacet(
       Throwable executionFailure) {
     OpenLineage ol = olContext.getOpenLineage();
     String message =
@@ -392,8 +390,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
-    if (eventType.equals(EventType.COMPLETE)) {
-      // clean up metrics on complete only
+    if (eventType.equals(EventType.COMPLETE) || eventType.equals(EventType.FAIL)) {
       JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
     }
 
