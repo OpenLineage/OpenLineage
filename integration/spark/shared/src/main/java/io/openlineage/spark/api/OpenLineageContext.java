@@ -270,10 +270,9 @@ public class OpenLineageContext {
   }
 
   /**
-   * Optional throttler for Structured Streaming micro-batch events. When non-null, {@link
-   * io.openlineage.spark.agent.lifecycle.SparkSQLExecutionContext} will call {@code shouldEmit()}
-   * before emitting events for streaming queries, skipping the entire micro-batch if the throttle
-   * is active.
+   * Optional throttler for Structured Streaming micro-batch events. When non-null, {@code
+   * SparkSQLExecutionContext} will call {@code shouldEmit()} before emitting events for streaming
+   * queries, skipping the entire micro-batch if the throttle is active.
    */
   @Getter @Setter StreamingMicroBatchThrottler streamingThrottler;
 
