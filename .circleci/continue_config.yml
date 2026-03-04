@@ -1272,9 +1272,6 @@ jobs:
           name: Run tests
           command: go test ./... -v -race -coverprofile=coverage.out
       - run:
-          name: Upload coverage
-          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
-      - run:
           name: Run linter
           command: |
             curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.8            
@@ -1283,11 +1280,6 @@ jobs:
           key: v1-go-mod-{{ checksum "go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
-      - store_test_results:
-          path: .
-      - store_artifacts:
-          path: coverage.out
-          destination: coverage
 
   release-client-go:
     working_directory: ~/openlineage/client/go
