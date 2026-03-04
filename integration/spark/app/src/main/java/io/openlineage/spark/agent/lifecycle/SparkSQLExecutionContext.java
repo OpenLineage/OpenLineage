@@ -197,8 +197,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     return null;
   }
 
-  private OpenLineage.RunFacetsBuilder addErrorMessageRunFacet(
-      Throwable executionFailure) {
+  private OpenLineage.RunFacetsBuilder addErrorMessageRunFacet(Throwable executionFailure) {
     OpenLineage ol = olContext.getOpenLineage();
     String message =
         executionFailure.getMessage() != null
