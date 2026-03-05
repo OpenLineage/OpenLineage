@@ -9,9 +9,10 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/go-stack/stack"
 	"github.com/google/uuid"
+
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
 type runContextKeyType int
@@ -97,16 +98,16 @@ type run struct {
 }
 
 // RecordFacets implements Run.
-func (r *run) RecordRunFacets(facets ...facets.RunFacet) {
+func (r *run) RecordRunFacets(fs ...facets.RunFacet) {
 	r.NewEvent(EventTypeOther).
-		WithRunFacets(facets...).
+		WithRunFacets(fs...).
 		Emit()
 }
 
 // RecordFacets implements Run.
-func (r *run) RecordJobFacets(facets ...facets.JobFacet) {
+func (r *run) RecordJobFacets(fs ...facets.JobFacet) {
 	r.NewEvent(EventTypeOther).
-		WithJobFacets(facets...).
+		WithJobFacets(fs...).
 		Emit()
 }
 
@@ -154,12 +155,7 @@ func (r *run) NewEvent(eventType EventType) *RunEvent {
 	run := NewNamespacedRunEvent(eventType, r.runID, r.jobName, r.jobNamespace, r.client.producer)
 
 	parent := r.Parent()
-	if parent != nil {
-		if _, isNoop := parent.(*noopRun); isNoop {
-			parent = nil
-		}
-	}
-	if parent != nil {
+	if _, isNoop := parent.(*noopRun); parent != nil && !isNoop {
 		parentFacet := facets.NewParent(
 			r.client.producer,
 			facets.ParentJob{

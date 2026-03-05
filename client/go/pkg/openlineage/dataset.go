@@ -2,6 +2,7 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
 package openlineage
 
 import (
@@ -10,12 +11,14 @@ import (
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
+// DatasetEvent represents an OpenLineage dataset event.
 type DatasetEvent struct {
 	Dataset Dataset
 
 	BaseEvent
 }
 
+// AsEmittable converts this DatasetEvent to an emittable Event.
 func (e *DatasetEvent) AsEmittable() Event {
 	return Event{
 		EventTime: e.EventTime,
@@ -25,11 +28,12 @@ func (e *DatasetEvent) AsEmittable() Event {
 	}
 }
 
+// NewDatasetEvent creates a new DatasetEvent with the given dataset and producer.
 func NewDatasetEvent(
 	name string,
 	namespace string,
 	producer string,
-	facets ...facets.DatasetFacet,
+	fs ...facets.DatasetFacet,
 ) DatasetEvent {
 	return DatasetEvent{
 		BaseEvent: BaseEvent{
@@ -37,11 +41,12 @@ func NewDatasetEvent(
 			SchemaURL: DatasetEventSchemaURL,
 			EventTime: time.Now(),
 		},
-		Dataset: NewDataset(name, namespace, facets...),
+		Dataset: NewDataset(name, namespace, fs...),
 	}
 }
 
-func NewDataset(name string, namespace string, datasetFacets ...facets.DatasetFacet) Dataset {
+// NewDataset creates a Dataset with the given name, namespace and optional facets.
+func NewDataset(name, namespace string, datasetFacets ...facets.DatasetFacet) Dataset {
 	var dataset *facets.DatasetFacets
 	for _, f := range datasetFacets {
 		f.Apply(&dataset)

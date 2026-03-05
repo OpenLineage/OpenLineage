@@ -2,14 +2,16 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
+//nolint:revive // package comment is in client.go
 package openlineage
 
 import (
-	"bytes"
 	"context"
 
-	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/google/uuid"
+
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
 var _ Run = (*noopRun)(nil)
@@ -28,12 +30,12 @@ func (n *noopRun) RecordInputs(...InputElement) {}
 func (n *noopRun) RecordOutputs(...OutputElement) {}
 
 // NewChild implements RunContext.
-func (n *noopRun) NewChild(ctx context.Context, jobName string) (context.Context, Run) {
+func (n *noopRun) NewChild(ctx context.Context, _ string) (context.Context, Run) {
 	return ctx, &noopRun{}
 }
 
 // StartChild implements RunContext.
-func (n *noopRun) StartChild(ctx context.Context, jobName string) (context.Context, Run) {
+func (n *noopRun) StartChild(ctx context.Context, _ string) (context.Context, Run) {
 	return ctx, &noopRun{}
 }
 
@@ -43,7 +45,7 @@ func (n *noopRun) HasFailed() bool {
 }
 
 // Child implements RunContext.
-func (n *noopRun) Child(ctx context.Context, jobName string) (context.Context, Run) {
+func (n *noopRun) Child(ctx context.Context, _ string) (context.Context, Run) {
 	return ctx, &noopRun{}
 }
 
@@ -80,7 +82,6 @@ func (n *noopRun) Parent() Run {
 
 // RunID implements RunContext.
 func (n *noopRun) RunID() uuid.UUID {
-	empty := bytes.Repeat([]byte{0}, 16)
-	id, _ := uuid.FromBytes(empty)
+	id, _ := uuid.FromBytes(make([]byte, 16))
 	return id
 }

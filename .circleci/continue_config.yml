@@ -1255,7 +1255,7 @@ jobs:
   build-client-go:
     working_directory: ~/openlineage/client/go
     docker:
-      - image: cimg/go:1.24
+      - image: cimg/go:1.26
     resource_class: medium
     steps:
       - *checkout_project_root
@@ -1274,7 +1274,7 @@ jobs:
       - run:
           name: Run linter
           command: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.8            
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.10.1            
             golangci-lint run ./...
       - save_cache:
           key: v1-go-mod-{{ checksum "go.sum" }}
@@ -1284,7 +1284,7 @@ jobs:
   release-client-go:
     working_directory: ~/openlineage/client/go
     docker:
-      - image: cimg/go:1.24
+      - image: cimg/go:1.26
     resource_class: medium
     steps:
       - *checkout_project_root
