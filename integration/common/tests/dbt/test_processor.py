@@ -254,3 +254,48 @@ class TestParseSeverity:
 
         assertion = assertions["model.project.my_model"][0]
         assert assertion.severity is None
+
+
+class TestParseSingularTests:
+    """Tests for singular test handling in parse_assertions (no test_metadata)."""
+
+    @pytest.fixture
+    def processor(self):
+        processor = DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="test-namespace",
+        )
+        processor.manifest_version = 11  # Use version < 12 for test_metadata path
+        return processor
+
+    def test_singular_test_no_test_metadata(self, processor):
+        """Singular tests (manifest v<12) have no test_metadata; name comes from node name."""
+        nodes = {
+            "test.project.assert_no_future_dates": {
+                "name": "assert_no_future_dates",
+                # No test_metadata key
+            }
+        }
+        manifest = {
+            "parent_map": {
+                "test.project.assert_no_future_dates": ["model.project.my_model"],
+            }
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "test.project.assert_no_future_dates",
+                    "status": "pass",
+                }
+            ]
+        }
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertions = processor.parse_assertions(context, nodes)
+
+        assert "model.project.my_model" in assertions
+        assert len(assertions["model.project.my_model"]) == 1
+        assertion = assertions["model.project.my_model"][0]
+        assert assertion.assertion == "assert_no_future_dates"
+        assert assertion.success is True
+        assert assertion.column is None

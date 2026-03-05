@@ -1614,3 +1614,55 @@ class TestGetAssertionSeverity:
 
         assert assertion is not None
         assert assertion.severity is None
+
+
+class TestGetAssertionSingularTests:
+    """Tests for singular test handling in _get_assertion (no test_metadata)."""
+
+    @pytest.fixture
+    def processor(self):
+        processor = DbtStructuredLogsProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="dbt-test-namespace",
+            project_dir=CURRENT_DIR,
+            target="postgres",
+            dbt_command_line=["dbt", "test"],
+        )
+        return processor
+
+    def test_singular_test_no_test_metadata(self, processor):
+        """Singular tests have no test_metadata; assertion name should come from node name."""
+        processor._compiled_manifest = {
+            "nodes": {
+                "test.project.assert_no_future_dates": {
+                    "name": "assert_no_future_dates",
+                    "config": {"severity": "ERROR"},
+                    # No test_metadata key
+                }
+            },
+            "sources": {},
+        }
+
+        assertion = processor._get_assertion("test.project.assert_no_future_dates", success=True)
+
+        assert assertion is not None
+        assert assertion.assertion == "assert_no_future_dates"
+        assert assertion.success is True
+        assert assertion.column is None
+        assert assertion.severity == "error"
+
+    def test_singular_test_no_attached_node(self, processor):
+        """Singular tests have no attached_node; _get_attached_dataset should return None."""
+        processor._compiled_manifest = {
+            "nodes": {
+                "test.project.assert_no_future_dates": {
+                    "name": "assert_no_future_dates",
+                    # No attached_node key
+                }
+            },
+            "sources": {},
+        }
+
+        dataset = processor._get_attached_dataset("test.project.assert_no_future_dates")
+
+        assert dataset is None
