@@ -126,8 +126,11 @@ class StreamingThrottleIntegrationTest {
   void twoQueriesRunSequentiallyBothEmitIndependently() throws Exception {
     spark = buildSparkSession("throttleIndependenceTest", 1000);
 
-    // Query A — runs until at least 2 batches complete, then stops.
-    // This ensures A's per-job counter advances beyond 0.
+    // Query A — writes to a unique temp path so its OL job name includes the path as a suffix,
+    // making it distinct from query B's job name and thus an independent throttle key.
+    // Runs until at least 2 batches complete, then stops so A's per-job counter advances beyond 0.
+    String pathA = "/tmp/ol-stream-a-" + UUID.randomUUID();
+    String pathB = "/tmp/ol-stream-b-" + UUID.randomUUID();
     StreamingQuery qA =
         spark
             .readStream()
@@ -135,8 +138,9 @@ class StreamingThrottleIntegrationTest {
             .option("rowsPerSecond", "100")
             .load()
             .writeStream()
-            .format("console")
-            .queryName("output_a_" + UUID.randomUUID())
+            .format("csv")
+            .option("path", pathA)
+            .option("checkpointLocation", pathA + "-checkpoint")
             .trigger(Trigger.ProcessingTime(Duration.ofMillis(100).toMillis()))
             .start();
 
@@ -148,7 +152,7 @@ class StreamingThrottleIntegrationTest {
     qA.stop();
     MockServerUtils.clearRequests(mockServer);
 
-    // Query B — different query name → different job key → independent throttle counter.
+    // Query B — different output path → different OL job name suffix → independent throttle key.
     // Its first batch must emit even though A already ran multiple batches.
     StreamingQuery qB =
         spark
@@ -157,8 +161,9 @@ class StreamingThrottleIntegrationTest {
             .option("rowsPerSecond", "100")
             .load()
             .writeStream()
-            .format("console")
-            .queryName("output_b_" + UUID.randomUUID())
+            .format("csv")
+            .option("path", pathB)
+            .option("checkpointLocation", pathB + "-checkpoint")
             .trigger(Trigger.ProcessingTime(Duration.ofMillis(100).toMillis()))
             .start();
 
