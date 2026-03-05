@@ -497,8 +497,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         """
         all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
         test_node = all_nodes[test_node_id]
-        attached_node_id = test_node["attached_node"]
+        attached_node_id = test_node.get("attached_node")
         input_dataset = None
+        # TODO: For singular tests (no attached_node), use SQL parsing on the compiled
+        # node's SQL to extract the referenced datasets and attach the assertion to them.
         if attached_node_id:
             attached_model_node = self._get_model_node(attached_node_id)
             input_dataset = self.node_to_dataset(node=attached_model_node, has_facets=True)
@@ -507,7 +509,15 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     @handle_keyerror
     def _get_assertion(self, node_id: str, success: bool) -> Optional[dq.Assertion]:
         manifest_test_node = self.compiled_manifest["nodes"][node_id]
-        name = manifest_test_node["test_metadata"]["name"]
+        test_metadata = manifest_test_node.get("test_metadata")
+        if test_metadata:
+            name = test_metadata["name"]
+            column = get_from_nullable_chain(test_metadata, ["kwargs", "column_name"])
+        else:
+            # Singular test — no test_metadata, use node name directly
+            name = manifest_test_node["name"]
+            column = None
+
         config = manifest_test_node.get("config", {})
 
         # Extract severity, normalize to lowercase
@@ -518,7 +528,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return dq.Assertion(
             assertion=name,
             success=success,
-            column=get_from_nullable_chain(manifest_test_node["test_metadata"], ["kwargs", "column_name"]),
+            column=column,
             severity=severity,
         )
 
