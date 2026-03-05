@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -100,11 +99,7 @@ class StreamingThrottleIntegrationTest {
 
     // Each non-throttled batch produces events with a unique run ID.
     // With N=1000, only batch 0 should have emitted → 1 distinct run ID.
-    long distinctRuns =
-        streamingEvents.stream()
-            .map(e -> e.getRun().getRunId())
-            .distinct()
-            .count();
+    long distinctRuns = streamingEvents.stream().map(e -> e.getRun().getRunId()).distinct().count();
 
     assertThat(distinctRuns)
         .as(
@@ -234,13 +229,13 @@ class StreamingThrottleIntegrationTest {
             .filter(
                 e ->
                     e.getJob().getFacets().getJobType() != null
-                        && "BATCH".equals(
-                            e.getJob().getFacets().getJobType().getProcessingType()))
+                        && "BATCH".equals(e.getJob().getFacets().getJobType().getProcessingType()))
             .filter(e -> RunEvent.EventType.COMPLETE.equals(e.getEventType()))
             .count();
 
     assertThat(batchCompletes)
-        .as("batch query after streaming must still emit a COMPLETE event (throttle is streaming-only)")
+        .as(
+            "batch query after streaming must still emit a COMPLETE event (throttle is streaming-only)")
         .isGreaterThanOrEqualTo(1);
   }
 
@@ -269,8 +264,7 @@ class StreamingThrottleIntegrationTest {
         .filter(
             e ->
                 e.getJob().getFacets().getJobType() != null
-                    && "STREAMING".equals(
-                        e.getJob().getFacets().getJobType().getProcessingType()))
+                    && "STREAMING".equals(e.getJob().getFacets().getJobType().getProcessingType()))
         .collect(Collectors.toList());
   }
 }
