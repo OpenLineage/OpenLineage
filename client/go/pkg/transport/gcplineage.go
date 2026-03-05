@@ -1,14 +1,15 @@
 /*
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 
-package transport
+package transport //nolint:revive // package comment is in transport.go
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	lineage "cloud.google.com/go/datacatalog/lineage/apiv1"
@@ -18,6 +19,7 @@ import (
 )
 
 const (
+	// DefaultGCPLocation is the default GCP region used when none is specified.
 	DefaultGCPLocation string = "us-central1"
 )
 
@@ -55,7 +57,11 @@ func newGCPLineageTransport(ctx context.Context, config GCPLineageConfig) (*gcpL
 
 	var opts []option.ClientOption
 	if config.CredentialsFile != "" {
-		opts = append(opts, option.WithCredentialsFile(config.CredentialsFile))
+		data, err := os.ReadFile(config.CredentialsFile)
+		if err != nil {
+			return nil, fmt.Errorf("read credentials file: %w", err)
+		}
+		opts = append(opts, option.WithCredentialsJSON(data)) //nolint:staticcheck // both WithCredentialsFile and WithCredentialsJSON are deprecated; reading file manually is the safest available approach // WithCredentialsFile is deprecated; WithCredentialsJSON reads the file manually
 	}
 
 	client, err := lineage.NewClient(ctx, opts...)

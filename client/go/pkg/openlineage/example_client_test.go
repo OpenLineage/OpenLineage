@@ -2,15 +2,17 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
 package openlineage_test
 
 import (
 	"context"
 	"log/slog"
 
+	"github.com/google/uuid"
+
 	ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
 	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
-	"github.com/google/uuid"
 )
 
 func ExampleClient() {
@@ -24,7 +26,7 @@ func ExampleClient() {
 		},
 	}
 
-	client, err := ol.NewClient(producer, cfg)
+	client, err := ol.NewClient(producer, &cfg)
 	if err != nil {
 		slog.Error("ol.NewClient failed", "error", err)
 	}

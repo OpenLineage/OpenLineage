@@ -39,7 +39,7 @@ func openLineage() error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if _, err := file.WriteString(edited); err != nil {
 		return err
@@ -73,7 +73,7 @@ func facets() error {
 	if err != nil {
 		return err
 	}
-	defer facetFile.Close()
+	defer func() { _ = facetFile.Close() }()
 
 	if _, err := facetFile.WriteString(editedFacetCode); err != nil {
 		return err
@@ -83,7 +83,7 @@ func facets() error {
 	if err != nil {
 		return err
 	}
-	defer facetHelpersFile.Close()
+	defer func() { _ = facetHelpersFile.Close() }()
 
 	if _, err := facetHelpersFile.WriteString(facetHelperCode); err != nil {
 		return err

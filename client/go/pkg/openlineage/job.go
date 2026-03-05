@@ -2,6 +2,7 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
 package openlineage
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
+// JobEvent represents an OpenLineage job event.
 type JobEvent struct {
 	Job Job
 
@@ -21,6 +23,7 @@ type JobEvent struct {
 	BaseEvent
 }
 
+// AsEmittable converts this JobEvent to an emittable Event.
 func (e *JobEvent) AsEmittable() Event {
 	return Event{
 		EventTime: e.EventTime,
@@ -32,7 +35,8 @@ func (e *JobEvent) AsEmittable() Event {
 	}
 }
 
-func NewNamespacedJobEvent(name, namespace string, producer string) *JobEvent {
+// NewNamespacedJobEvent creates a new JobEvent with an explicit namespace.
+func NewNamespacedJobEvent(name, namespace, producer string) *JobEvent {
 	return &JobEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
@@ -43,31 +47,36 @@ func NewNamespacedJobEvent(name, namespace string, producer string) *JobEvent {
 	}
 }
 
-func NewJobEvent(name string, producer string) *JobEvent {
+// NewJobEvent creates a new JobEvent using the default namespace.
+func NewJobEvent(name, producer string) *JobEvent {
 	return NewNamespacedJobEvent(name, DefaultNamespace, producer)
 }
 
-func (j *JobEvent) WithFacets(facets ...facets.JobFacet) *JobEvent {
-	for _, f := range facets {
-		f.Apply(&j.Job.Facets)
+// WithFacets adds job facets to this JobEvent.
+func (e *JobEvent) WithFacets(fs ...facets.JobFacet) *JobEvent {
+	for _, f := range fs {
+		f.Apply(&e.Job.Facets)
 	}
 
-	return j
+	return e
 }
 
-func (j *JobEvent) WithInputs(inputs ...InputElement) *JobEvent {
-	j.Inputs = append(j.Inputs, inputs...)
+// WithInputs adds input datasets to this JobEvent.
+func (e *JobEvent) WithInputs(inputs ...InputElement) *JobEvent {
+	e.Inputs = append(e.Inputs, inputs...)
 
-	return j
+	return e
 }
 
-func (j *JobEvent) WithOutputs(inputs ...OutputElement) *JobEvent {
-	j.Outputs = append(j.Outputs, inputs...)
+// WithOutputs adds output datasets to this JobEvent.
+func (e *JobEvent) WithOutputs(inputs ...OutputElement) *JobEvent {
+	e.Outputs = append(e.Outputs, inputs...)
 
-	return j
+	return e
 }
 
-func NewNamespacedJob(name string, namespace string, jobFacets ...facets.JobFacet) Job {
+// NewNamespacedJob creates a Job with an explicit namespace and optional facets.
+func NewNamespacedJob(name, _ string, jobFacets ...facets.JobFacet) Job {
 
 	var job *facets.JobFacets
 	for _, f := range jobFacets {
@@ -81,6 +90,7 @@ func NewNamespacedJob(name string, namespace string, jobFacets ...facets.JobFace
 	}
 }
 
+// NewJob creates a Job using the default namespace.
 func NewJob(name string, jobFacets ...facets.JobFacet) Job {
 	return NewNamespacedJob(name, DefaultNamespace, jobFacets...)
 }
