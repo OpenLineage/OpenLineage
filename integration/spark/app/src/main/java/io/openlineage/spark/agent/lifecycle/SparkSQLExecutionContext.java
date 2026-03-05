@@ -94,11 +94,16 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     if (olContext.getQueryExecution().map(qe -> qe.optimizedPlan().isStreaming()).orElse(false)) {
       StreamingMicroBatchThrottler t = olContext.getStreamingThrottler();
-      if (t != null && !t.shouldEmit()) {
-        log.debug(
-            "Streaming throttle active: skipping micro-batch event (executionId={})", executionId);
-        throttled = true;
-        return;
+      if (t != null) {
+        String jobKey = eventEmitter.getJobNamespace() + "/" + JobNameBuilder.build(olContext);
+        if (!t.shouldEmit(jobKey)) {
+          log.debug(
+              "Streaming throttle active: skipping micro-batch event (executionId={}, job={})",
+              executionId,
+              jobKey);
+          throttled = true;
+          return;
+        }
       }
     }
 
@@ -318,7 +323,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
     log.debug("SparkListenerJobEnd - executionId: {}", executionId);
-    if (throttled) return;
+    // Always emit failure events even when this micro-batch was throttled, so that job failures
+    // are never silently dropped.
+    boolean isFailed = jobEnd.jobResult() instanceof JobFailed;
+    if (throttled && !isFailed) return;
     olContext.setActiveJobId(jobEnd.jobId());
     if (!finished.compareAndSet(false, true)) {
       log.debug("Event already finished, returning");

@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.util;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,10 @@ import lombok.extern.slf4j.Slf4j;
  * trigger interval, that is roughly 360 events per hour indefinitely. This class reduces volume by
  * allowing either a count-based throttle (every N micro-batches), a time-based throttle (every M
  * minutes), or both with OR semantics: emit when either condition is satisfied.
+ *
+ * <p>Throttle state is maintained <em>per job</em> (keyed by job name + namespace) so that multiple
+ * concurrent streaming queries are throttled independently. This prevents a single shared counter
+ * from causing one streaming query's batch counter to affect another query's visibility.
  *
  * <p>Configuration:
  *
@@ -32,10 +37,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StreamingMicroBatchThrottler {
 
-  private final AtomicLong batchCount = new AtomicLong(0);
-  private final AtomicReference<Instant> lastEmitTime = new AtomicReference<>(null);
   private final Integer microbatchThrottle;
   private final Integer microbatchThrottleMinutes;
+
+  /** Per-job throttle state, keyed by "{namespace}/{jobName}". */
+  private final ConcurrentHashMap<String, JobThrottleState> jobStates = new ConcurrentHashMap<>();
 
   public StreamingMicroBatchThrottler(
       Integer microbatchThrottle, Integer microbatchThrottleMinutes) {
@@ -44,8 +50,9 @@ public class StreamingMicroBatchThrottler {
   }
 
   /**
-   * Returns {@code true} if this micro-batch should emit OpenLineage events. Increments the
-   * internal batch counter and updates {@code lastEmitTime} when returning {@code true}.
+   * Returns {@code true} if this micro-batch should emit OpenLineage events for the given job.
+   * Increments the internal batch counter for that job and updates {@code lastEmitTime} when
+   * returning {@code true}.
    *
    * <p>Semantics:
    *
@@ -55,44 +62,56 @@ public class StreamingMicroBatchThrottler {
    *   <li>Only time configured → emit when ≥M minutes have elapsed since last emit
    *   <li>Both configured → emit when EITHER condition is satisfied (OR semantics)
    * </ul>
+   *
+   * @param jobKey a unique identifier for the streaming job, typically "{namespace}/{jobName}"
    */
-  public boolean shouldEmit() {
-    long count = batchCount.getAndIncrement();
-    Instant now = Instant.now();
-    Instant last = lastEmitTime.get();
+  public boolean shouldEmit(String jobKey) {
+    JobThrottleState state = jobStates.computeIfAbsent(jobKey, k -> new JobThrottleState());
+    return state.shouldEmit();
+  }
 
-    boolean emit;
-    boolean countOk = (microbatchThrottle != null) && (count % microbatchThrottle == 0);
-    boolean timeOk =
-        (microbatchThrottleMinutes != null)
-            && ((last == null)
-                || (Duration.between(last, now).toMinutes() >= microbatchThrottleMinutes));
+  private class JobThrottleState {
+    private final AtomicLong batchCount = new AtomicLong(0);
+    private final AtomicReference<Instant> lastEmitTime = new AtomicReference<>(null);
 
-    if (microbatchThrottle == null && microbatchThrottleMinutes == null) {
-      // Neither configured — always emit.
-      emit = true;
-    } else if (microbatchThrottle != null && microbatchThrottleMinutes != null) {
-      // Both configured — OR semantics.
-      emit = countOk || timeOk;
-    } else if (microbatchThrottle != null) {
-      // Only count-based throttle.
-      emit = countOk;
-    } else {
-      // Only time-based throttle.
-      emit = timeOk;
+    boolean shouldEmit() {
+      long count = batchCount.getAndIncrement();
+      Instant now = Instant.now();
+      Instant last = lastEmitTime.get();
+
+      boolean emit;
+      boolean countOk = (microbatchThrottle != null) && (count % microbatchThrottle == 0);
+      boolean timeOk =
+          (microbatchThrottleMinutes != null)
+              && ((last == null)
+                  || (Duration.between(last, now).toMinutes() >= microbatchThrottleMinutes));
+
+      if (microbatchThrottle == null && microbatchThrottleMinutes == null) {
+        // Neither configured — always emit.
+        emit = true;
+      } else if (microbatchThrottle != null && microbatchThrottleMinutes != null) {
+        // Both configured — OR semantics.
+        emit = countOk || timeOk;
+      } else if (microbatchThrottle != null) {
+        // Only count-based throttle.
+        emit = countOk;
+      } else {
+        // Only time-based throttle.
+        emit = timeOk;
+      }
+
+      if (emit) {
+        lastEmitTime.set(now);
+      }
+
+      log.debug(
+          "StreamingMicroBatchThrottler: batch={} countOk={} timeOk={} emit={}",
+          count,
+          countOk,
+          timeOk,
+          emit);
+
+      return emit;
     }
-
-    if (emit) {
-      lastEmitTime.set(now);
-    }
-
-    log.debug(
-        "StreamingMicroBatchThrottler: batch={} countOk={} timeOk={} emit={}",
-        count,
-        countOk,
-        timeOk,
-        emit);
-
-    return emit;
   }
 }
