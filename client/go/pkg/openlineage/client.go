@@ -2,19 +2,23 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
+// Package openlineage provides a Go client for emitting OpenLineage events.
 package openlineage
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
 	"github.com/google/uuid"
+
+	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
 
+// DefaultClient is a client using the console transport with pretty printing.
 var DefaultClient, _ = NewClient(
 	"https://github.com/OpenLineage/OpenLineage/tree/"+Version+"/client/go",
-	ClientConfig{
+	&ClientConfig{
 		Transport: transport.Config{
 			Type: transport.TransportTypeConsole,
 			Console: transport.ConsoleConfig{
@@ -24,6 +28,7 @@ var DefaultClient, _ = NewClient(
 	},
 )
 
+// ClientConfig holds configuration for the OpenLineage client.
 type ClientConfig struct {
 	Transport transport.Config
 
@@ -36,14 +41,14 @@ type ClientConfig struct {
 
 // NewClient creates a new OpenLineage client.
 // producer is a URI identifying the producer of this metadata (e.g., "https://github.com/OpenLineage/OpenLineage/tree/1.23.0/integration/spark")
-func NewClient(producer string, cfg ClientConfig) (*Client, error) {
+func NewClient(producer string, cfg *ClientConfig) (*Client, error) {
 	if cfg.Disabled {
 		return &Client{
 			disabled: true,
 		}, nil
 	}
 
-	transport, err := transport.New(cfg.Transport)
+	t, err := transport.New(&cfg.Transport)
 	if err != nil {
 		return nil, fmt.Errorf("create transport: %w", err)
 	}
@@ -54,12 +59,13 @@ func NewClient(producer string, cfg ClientConfig) (*Client, error) {
 	}
 
 	return &Client{
-		transport: transport,
+		transport: t,
 		namespace: namespace,
 		producer:  producer,
 	}, nil
 }
 
+// Client is the main OpenLineage client for emitting lineage events.
 type Client struct {
 	disabled  bool
 	transport transport.Transport
@@ -67,10 +73,12 @@ type Client struct {
 	producer  string
 }
 
+// Emittable is implemented by event types that can be emitted via the client.
 type Emittable interface {
 	AsEmittable() Event
 }
 
+// Emit sends an OpenLineage event using the client's transport.
 func (olc *Client) Emit(ctx context.Context, event Emittable) error {
 	if olc.disabled {
 		return nil
@@ -81,12 +89,12 @@ func (olc *Client) Emit(ctx context.Context, event Emittable) error {
 
 // NewRun creates a Run and sets it as the active Run in ctx.
 // If ctx already contains a RunContext, it is set as the parent.
-func (c *Client) NewRun(ctx context.Context, job string) (context.Context, Run) {
+func (olc *Client) NewRun(ctx context.Context, job string) (context.Context, Run) {
 	r := run{
-		client:       c,
+		client:       olc,
 		runID:        NewRunID(),
 		jobName:      job,
-		jobNamespace: c.namespace,
+		jobNamespace: olc.namespace,
 	}
 
 	parent := RunFromContext(ctx)
@@ -99,8 +107,8 @@ func (c *Client) NewRun(ctx context.Context, job string) (context.Context, Run) 
 
 // StartRun calls NewRun and emits a START event.
 // For details, see NewRun.
-func (c *Client) StartRun(ctx context.Context, job string) (context.Context, Run) {
-	ctx, r := c.NewRun(ctx, job)
+func (olc *Client) StartRun(ctx context.Context, job string) (context.Context, Run) {
+	ctx, r := olc.NewRun(ctx, job)
 
 	r.NewEvent(EventTypeStart).Emit()
 
@@ -108,12 +116,12 @@ func (c *Client) StartRun(ctx context.Context, job string) (context.Context, Run
 }
 
 // ExistingRun recreates a Run for a given run ID.
-func (c *Client) ExistingRun(ctx context.Context, job string, runID uuid.UUID) (context.Context, Run) {
+func (olc *Client) ExistingRun(ctx context.Context, job string, runID uuid.UUID) (context.Context, Run) {
 	rctx := run{
-		client:       c,
+		client:       olc,
 		runID:        runID,
 		jobName:      job,
-		jobNamespace: c.namespace,
+		jobNamespace: olc.namespace,
 	}
 
 	return ContextWithRun(ctx, &rctx), &rctx

@@ -2,6 +2,8 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
+// Package transport provides OpenLineage event transport implementations.
 package transport
 
 import (
@@ -14,17 +16,23 @@ import (
 )
 
 const (
-	TransportTypeHTTP       TransportType = "http"
-	TransportTypeConsole    TransportType = "console"
+	// TransportTypeHTTP is the HTTP transport type.
+	TransportTypeHTTP TransportType = "http"
+	// TransportTypeConsole is the console transport type.
+	TransportTypeConsole TransportType = "console"
+	// TransportTypeGCPLineage is the GCP Data Catalog Lineage transport type.
 	TransportTypeGCPLineage TransportType = "gcplineage"
 )
 
+// Transport is the interface implemented by all OpenLineage transports.
 type Transport interface {
 	Emit(ctx context.Context, event any) error
 }
 
+// TransportType identifies the transport implementation to use.
 type TransportType string
 
+// Config holds configuration for creating a Transport.
 type Config struct {
 	Type       TransportType
 	Console    ConsoleConfig
@@ -32,11 +40,13 @@ type Config struct {
 	GCPLineage GCPLineageConfig
 }
 
-func New(config Config) (Transport, error) {
+// New creates a new Transport using a background context.
+func New(config *Config) (Transport, error) {
 	return NewWithContext(context.Background(), config)
 }
 
-func NewWithContext(ctx context.Context, config Config) (Transport, error) {
+// NewWithContext creates a new Transport using the provided context.
+func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 	switch config.Type {
 	case TransportTypeConsole:
 		return &consoleTransport{

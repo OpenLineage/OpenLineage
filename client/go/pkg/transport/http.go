@@ -1,9 +1,9 @@
 /*
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 
-package transport
+package transport //nolint:revive // package comment is in transport.go
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 
 var _ Transport = (*httpTransport)(nil)
 
+// HTTPConfig holds configuration for the HTTP transport.
 type HTTPConfig struct {
 	// The URL to send lineage events to (also see OPENLINEAGE_ENDPOINT)
 	URL string
@@ -61,7 +62,9 @@ func (h *httpTransport) Emit(ctx context.Context, event any) error {
 	if err != nil {
 		return fmt.Errorf("execute POST request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
