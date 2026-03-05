@@ -6,7 +6,11 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.HierarchyDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
@@ -45,13 +49,24 @@ public class CreateTableCommandVisitor
 
     CreateTableCommand command = (CreateTableCommand) x;
     CatalogTable catalogTable = command.table();
+    DatasetIdentifier di =
+        PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get());
 
-    return Collections.singletonList(
-        outputDataset()
-            .getDataset(
-                PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
-                catalogTable.schema(),
-                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
+    DatasetCompositeFacetsBuilder builder = outputDataset().createCompositeFacetBuilder();
+    builder
+        .getFacets()
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), catalogTable.schema()))
+        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()))
+        .lifecycleStateChange(
+            context
+                .getOpenLineage()
+                .newLifecycleStateChangeDatasetFacet(
+                    OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE, null))
+        .hierarchy(
+            HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                context.getOpenLineage(), catalogTable.identifier()));
+
+    return Collections.singletonList(outputDataset().getDataset(di, builder));
   }
 
   @Override
