@@ -2,6 +2,7 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
 package openlineage
 
 import (
@@ -18,8 +19,10 @@ const (
 	JobEventSchemaURL     = "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobEvent"
 )
 
+// DefaultNamespace is the default namespace used when none is specified.
 var DefaultNamespace = "default"
 
+// BaseEvent contains fields common to all OpenLineage event types.
 type BaseEvent struct {
 	// the time the event occurred at
 	EventTime time.Time
@@ -29,58 +32,67 @@ type BaseEvent struct {
 	SchemaURL string
 }
 
+// Emit emits this DatasetEvent using the DefaultClient.
 func (e *DatasetEvent) Emit() {
 	_ = DefaultClient.Emit(context.Background(), e)
 }
 
+// Emit emits this RunEvent using the DefaultClient.
 func (e *RunEvent) Emit() {
 	_ = DefaultClient.Emit(context.Background(), e)
 }
 
+// Emit emits this JobEvent using the DefaultClient.
 func (e *JobEvent) Emit() {
 	_ = DefaultClient.Emit(context.Background(), e)
 }
 
-func NewInputElement(name string, namespace string) InputElement {
+// NewInputElement creates a new InputElement with the given name and namespace.
+func NewInputElement(name, namespace string) InputElement {
 	return InputElement{
 		Name:      name,
 		Namespace: namespace,
 	}
 }
 
-func (ie InputElement) WithInputFacets(facets ...facets.InputDatasetFacet) InputElement {
-	for _, f := range facets {
+// WithInputFacets adds input dataset facets to this InputElement.
+func (ie InputElement) WithInputFacets(fs ...facets.InputDatasetFacet) InputElement {
+	for _, f := range fs {
 		f.Apply(&ie.InputFacets)
 	}
 
 	return ie
 }
 
-func (ie InputElement) WithFacets(facets ...facets.DatasetFacet) InputElement {
-	for _, f := range facets {
+// WithFacets adds dataset facets to this InputElement.
+func (ie InputElement) WithFacets(fs ...facets.DatasetFacet) InputElement {
+	for _, f := range fs {
 		f.Apply(&ie.Facets)
 	}
 
 	return ie
 }
 
-func NewOutputElement(name string, namespace string) OutputElement {
+// NewOutputElement creates a new OutputElement with the given name and namespace.
+func NewOutputElement(name, namespace string) OutputElement {
 	return OutputElement{
 		Name:      name,
 		Namespace: namespace,
 	}
 }
 
-func (oe OutputElement) WithOutputFacets(facets ...facets.OutputDatasetFacet) OutputElement {
-	for _, f := range facets {
+// WithOutputFacets adds output dataset facets to this OutputElement.
+func (oe OutputElement) WithOutputFacets(fs ...facets.OutputDatasetFacet) OutputElement {
+	for _, f := range fs {
 		f.Apply(&oe.OutputFacets)
 	}
 
 	return oe
 }
 
-func (oe OutputElement) WithFacets(facets ...facets.DatasetFacet) OutputElement {
-	for _, f := range facets {
+// WithFacets adds dataset facets to this OutputElement.
+func (oe OutputElement) WithFacets(fs ...facets.DatasetFacet) OutputElement {
+	for _, f := range fs {
 		f.Apply(&oe.Facets)
 	}
 
