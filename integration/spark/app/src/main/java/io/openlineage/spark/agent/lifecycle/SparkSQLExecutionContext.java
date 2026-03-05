@@ -324,7 +324,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void end(SparkListenerJobEnd jobEnd) {
     log.debug("SparkListenerJobEnd - executionId: {}", executionId);
     // Always emit failure events even when this micro-batch was throttled, so that job failures
-    // are never silently dropped.
+    // are never silently dropped. Note: this means a FAIL event may be emitted without a preceding
+    // START event for that run, which is unusual but acceptable. The alternative would be to
+    // retroactively emit a "fake" START event for the throttled batch before emitting FAIL, but
+    // that adds complexity without clear benefit.
     boolean isFailed = jobEnd.jobResult() instanceof JobFailed;
     if (throttled && !isFailed) return;
     olContext.setActiveJobId(jobEnd.jobId());
