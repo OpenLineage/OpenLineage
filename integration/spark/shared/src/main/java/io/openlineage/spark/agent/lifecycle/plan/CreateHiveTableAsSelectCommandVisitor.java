@@ -6,9 +6,12 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
+import io.openlineage.spark.agent.util.HierarchyDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -56,23 +59,24 @@ public class CreateHiveTableAsSelectCommandVisitor
                 schemaAttributes.add(
                     attributes.get(index).withName(command.outputColumnNames().apply(index))));
 
-    return Collections.singletonList(
-        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context)
-            .map(
-                catalogDatasetFacet ->
-                    outputDataset()
-                        .getDataset(
-                            di,
-                            outputSchema(schemaAttributes),
-                            OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                                .CREATE,
-                            catalogDatasetFacet))
-            .orElse(
-                outputDataset()
-                    .getDataset(
-                        di,
-                        outputSchema(schemaAttributes),
-                        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)));
+    StructType schema = outputSchema(schemaAttributes);
+    DatasetCompositeFacetsBuilder builder = outputDataset().createCompositeFacetBuilder();
+    builder
+        .getFacets()
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
+        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()))
+        .lifecycleStateChange(
+            context
+                .getOpenLineage()
+                .newLifecycleStateChangeDatasetFacet(
+                    OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE, null))
+        .hierarchy(
+            HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                context.getOpenLineage(), table.identifier()));
+    CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context)
+        .ifPresent(catalogDatasetFacet -> builder.getFacets().catalog(catalogDatasetFacet));
+
+    return Collections.singletonList(outputDataset().getDataset(di, builder));
   }
 
   private StructType outputSchema(List<Attribute> attrs) {
