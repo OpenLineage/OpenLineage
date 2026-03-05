@@ -69,7 +69,7 @@ func main() {
         },
     }
 
-    client, err := ol.NewClient(producer, cfg)
+    client, err := ol.NewClient(producer, &cfg)
     if err != nil {
         log.Fatal(err)
     }
@@ -314,7 +314,7 @@ cfg := ol.ClientConfig{
         },
     },
 }
-client, err := ol.NewClient(producer, cfg)
+client, err := ol.NewClient(producer, &cfg)
 ```
 
 #### Authentication
@@ -338,7 +338,7 @@ producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
 cfg := ol.ClientConfig{
     Disabled: true, // All Emit calls become no-ops
 }
-client, _ := ol.NewClient(producer, cfg)
+client, _ := ol.NewClient(producer, &cfg)
 ```
 
 ## Complete Examples
@@ -361,7 +361,7 @@ func main() {
     producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
     
     // Create client
-    client, err := ol.NewClient(producer, ol.ClientConfig{
+    client, err := ol.NewClient(producer, &ol.ClientConfig{
         Namespace: "analytics",
         Transport: transport.Config{
             Type: transport.TransportTypeHTTP,
@@ -448,7 +448,7 @@ func main() {
     producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
     
     // Create client
-    client, err := ol.NewClient(producer, ol.ClientConfig{
+    client, err := ol.NewClient(producer, &ol.ClientConfig{
         Namespace: "analytics",
         Transport: transport.Config{
             Type: transport.TransportTypeHTTP,

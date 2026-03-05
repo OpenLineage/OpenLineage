@@ -2,19 +2,24 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
+//nolint:revive // package comment is in client.go
 package openlineage
 
 import (
 	"time"
 
-	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/google/uuid"
+
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
+// Eventtypes is a type constraint for OpenLineage event types.
 type Eventtypes interface {
 	RunEvent | DatasetEvent | JobEvent
 }
 
+// RunEvent represents an OpenLineage run event.
 type RunEvent struct {
 	Run RunInfo
 	Job Job
@@ -30,6 +35,7 @@ type RunEvent struct {
 	BaseEvent
 }
 
+// AsEmittable converts this RunEvent to an emittable Event.
 func (e *RunEvent) AsEmittable() Event {
 	eventType := e.EventType
 	if eventType == "" {
@@ -48,6 +54,7 @@ func (e *RunEvent) AsEmittable() Event {
 	}
 }
 
+// NewNamespacedRunEvent creates a new RunEvent with an explicit namespace.
 func NewNamespacedRunEvent(
 	eventType EventType,
 	runID uuid.UUID,
@@ -72,10 +79,12 @@ func NewNamespacedRunEvent(
 	}
 }
 
-func NewRunEvent(eventType EventType, runID uuid.UUID, jobName string, producer string) *RunEvent {
+// NewRunEvent creates a new RunEvent using the default namespace.
+func NewRunEvent(eventType EventType, runID uuid.UUID, jobName, producer string) *RunEvent {
 	return NewNamespacedRunEvent(eventType, runID, jobName, DefaultNamespace, producer)
 }
 
+// WithRunFacets adds run facets to this RunEvent.
 func (r *RunEvent) WithRunFacets(runFacets ...facets.RunFacet) *RunEvent {
 	for _, rf := range runFacets {
 		rf.Apply(&r.Run.Facets)
@@ -84,6 +93,7 @@ func (r *RunEvent) WithRunFacets(runFacets ...facets.RunFacet) *RunEvent {
 	return r
 }
 
+// WithJobFacets adds job facets to this RunEvent.
 func (r *RunEvent) WithJobFacets(jobFacets ...facets.JobFacet) *RunEvent {
 	for _, rf := range jobFacets {
 		rf.Apply(&r.Job.Facets)
@@ -92,18 +102,21 @@ func (r *RunEvent) WithJobFacets(jobFacets ...facets.JobFacet) *RunEvent {
 	return r
 }
 
+// WithInputs adds input datasets to this RunEvent.
 func (r *RunEvent) WithInputs(inputs ...InputElement) *RunEvent {
 	r.Inputs = append(r.Inputs, inputs...)
 
 	return r
 }
 
+// WithOutputs adds output datasets to this RunEvent.
 func (r *RunEvent) WithOutputs(outputs ...OutputElement) *RunEvent {
 	r.Outputs = append(r.Outputs, outputs...)
 
 	return r
 }
 
+// WithParent adds a parent run facet to this RunEvent.
 func (r *RunEvent) WithParent(parentID uuid.UUID, jobName, namespace string) *RunEvent {
 	parent := facets.NewParent(
 		r.Producer,

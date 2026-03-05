@@ -2,6 +2,7 @@
  * Copyright 2018-2026 contributors to the OpenLineage project
  * SPDX-License-Identifier: Apache-2.0
  */
+
 package openlineage_test
 
 import (
@@ -25,7 +26,7 @@ func ExampleRun() {
 			},
 		},
 	}
-	client, err := ol.NewClient(producer, cfg)
+	client, err := ol.NewClient(producer, &cfg)
 	if err != nil {
 		slog.Error("ol.NewClient failed", "error", err)
 	}
