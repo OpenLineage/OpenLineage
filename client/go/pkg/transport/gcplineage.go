@@ -78,21 +78,21 @@ func newGCPLineageTransport(ctx context.Context, config GCPLineageConfig) (*gcpL
 }
 
 // Emit sends an OpenLineage event to GCP Data Catalog Lineage.
-func (g *gcpLineageTransport) Emit(ctx context.Context, event any) error {
+func (g *gcpLineageTransport) Emit(ctx context.Context, event any) (map[string]string, error) {
 	// Convert event to JSON then to structpb.Struct
 	eventJSON, err := json.Marshal(event)
 	if err != nil {
-		return fmt.Errorf("marshal event to JSON: %w", err)
+		return nil, fmt.Errorf("marshal event to JSON: %w", err)
 	}
 
 	var eventMap map[string]interface{}
 	if err := json.Unmarshal(eventJSON, &eventMap); err != nil {
-		return fmt.Errorf("unmarshal event to map: %w", err)
+		return nil, fmt.Errorf("unmarshal event to map: %w", err)
 	}
 
 	openLineageStruct, err := structpb.NewStruct(eventMap)
 	if err != nil {
-		return fmt.Errorf("convert event to protobuf struct: %w", err)
+		return nil, fmt.Errorf("convert event to protobuf struct: %w", err)
 	}
 
 	req := &lineagepb.ProcessOpenLineageRunEventRequest{
@@ -100,12 +100,21 @@ func (g *gcpLineageTransport) Emit(ctx context.Context, event any) error {
 		OpenLineage: openLineageStruct,
 	}
 
-	_, err = g.client.ProcessOpenLineageRunEvent(ctx, req)
+	resp, err := g.client.ProcessOpenLineageRunEvent(ctx, req)
 	if err != nil {
-		return fmt.Errorf("send lineage event to GCP: %w", err)
+		return nil, fmt.Errorf("send lineage event to GCP: %w", err)
 	}
 
-	return nil
+	meta := map[string]string{
+		"process": resp.GetProcess(),
+		"run":     resp.GetRun(),
+	}
+
+	if events := resp.GetLineageEvents(); len(events) > 0 {
+		meta["event"] = events[0]
+	}
+
+	return meta, nil
 }
 
 // Close closes the GCP Lineage client connection.

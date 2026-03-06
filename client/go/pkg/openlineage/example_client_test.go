@@ -35,7 +35,7 @@ func ExampleClient() {
 	runID := uuid.Must(uuid.NewV7())
 	event := ol.NewRunEvent(ol.EventTypeStart, runID, "foo-job", producer)
 
-	if err := client.Emit(ctx, event); err != nil {
+	if _, err := client.Emit(ctx, event); err != nil {
 		slog.Error("emitting event failed", "error", err)
 	}
 }

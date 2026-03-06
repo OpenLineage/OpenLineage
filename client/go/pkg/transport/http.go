@@ -35,10 +35,10 @@ type httpTransport struct {
 }
 
 // Emit implements transport.
-func (h *httpTransport) Emit(ctx context.Context, event any) error {
+func (h *httpTransport) Emit(ctx context.Context, event any) (map[string]string, error) {
 	body, err := json.Marshal(&event)
 	if err != nil {
-		return fmt.Errorf("marshal event: %w", err)
+		return nil, fmt.Errorf("marshal event: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(
@@ -48,7 +48,7 @@ func (h *httpTransport) Emit(ctx context.Context, event any) error {
 		bytes.NewReader(body),
 	)
 	if err != nil {
-		return fmt.Errorf("create request: %w", err)
+		return nil, fmt.Errorf("create request: %w", err)
 	}
 
 	if h.apiKey != "" {
@@ -60,7 +60,7 @@ func (h *httpTransport) Emit(ctx context.Context, event any) error {
 
 	resp, err := h.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("execute POST request: %w", err)
+		return nil, fmt.Errorf("execute POST request: %w", err)
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -68,8 +68,15 @@ func (h *httpTransport) Emit(ctx context.Context, event any) error {
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("server responded with status %v: %s", resp.StatusCode, body)
+		return nil, fmt.Errorf("server responded with status %v: %s", resp.StatusCode, body)
 	}
 
-	return nil
+	meta := make(map[string]string)
+	for key, vals := range resp.Header {
+		if len(vals) > 0 {
+			meta[key] = vals[0]
+		}
+	}
+
+	return meta, nil
 }
