@@ -25,8 +25,10 @@ const (
 )
 
 // Transport is the interface implemented by all OpenLineage transports.
+// The map returned by Emit contains any response metadata from the consumer
+// (e.g. a server-assigned event ID). It may be nil if the transport has nothing to report.
 type Transport interface {
-	Emit(ctx context.Context, event any) error
+	Emit(ctx context.Context, event any) (map[string]string, error)
 }
 
 // TransportType identifies the transport implementation to use.
