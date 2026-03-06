@@ -92,21 +92,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
       return;
     }
 
-    if (olContext.getQueryExecution().map(qe -> qe.optimizedPlan().isStreaming()).orElse(false)) {
-      StreamingMicroBatchThrottler t = olContext.getStreamingThrottler();
-      if (t != null) {
-        String jobKey = eventEmitter.getJobNamespace() + "/" + JobNameBuilder.build(olContext);
-        if (!t.shouldEmit(jobKey)) {
-          log.debug(
-              "Streaming throttle active: skipping micro-batch event (executionId={}, job={})",
-              executionId,
-              jobKey);
-          throttled = true;
-          return;
-        }
-      }
-    }
-
     olContext.setActiveJobId(activeJobId);
     // only one START event is expected, in case it was already sent with jobStart, we send running
     EventType eventType = emittedOnJobStart ? RUNNING : START;
@@ -126,6 +111,25 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobBuilder(buildJob())
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
+
+    // Throttle check runs after buildRun() so that the job name is fully resolved (including the
+    // output-dataset suffix computed by dataset builders). Using an early pre-buildRun() check
+    // would produce an incomplete job name — missing the sink path — causing unrelated streaming
+    // queries that share the same app name and plan structure to collide on the same throttle key.
+    if (olContext.getQueryExecution().map(qe -> qe.optimizedPlan().isStreaming()).orElse(false)) {
+      StreamingMicroBatchThrottler t = olContext.getStreamingThrottler();
+      if (t != null) {
+        String jobKey = eventEmitter.getJobNamespace() + "/" + JobNameBuilder.build(olContext);
+        if (!t.shouldEmit(jobKey)) {
+          log.debug(
+              "Streaming throttle active: skipping micro-batch event (executionId={}, job={})",
+              executionId,
+              jobKey);
+          throttled = true;
+          return;
+        }
+      }
+    }
 
     if (log.isDebugEnabled()) {
       log.debug(
