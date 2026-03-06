@@ -62,8 +62,12 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private boolean emittedOnJobEnd = false;
   private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
-  /** Set to true when this micro-batch is throttled; all subsequent emit calls are no-ops. */
-  private boolean throttled = false;
+  /**
+   * Set to true when this micro-batch is throttled; all subsequent emit calls are no-ops. Declared
+   * volatile for the same reason {@link #finished} uses AtomicBoolean: lifecycle events may arrive
+   * on different threads.
+   */
+  private volatile boolean throttled = false;
 
   private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
 
@@ -95,7 +99,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     olContext.setActiveJobId(activeJobId);
     // only one START event is expected, in case it was already sent with jobStart, we send running
     EventType eventType = emittedOnJobStart ? RUNNING : START;
-    emittedOnSqlExecutionStart = true;
 
     RunEvent event =
         runEventBuilder.buildRun(
@@ -116,20 +119,27 @@ class SparkSQLExecutionContext implements ExecutionContext {
     // output-dataset suffix computed by dataset builders). Using an early pre-buildRun() check
     // would produce an incomplete job name — missing the sink path — causing unrelated streaming
     // queries that share the same app name and plan structure to collide on the same throttle key.
-    if (olContext.getQueryExecution().map(qe -> qe.optimizedPlan().isStreaming()).orElse(false)) {
-      StreamingMicroBatchThrottler t = olContext.getStreamingThrottler();
-      if (t != null) {
-        String jobKey = eventEmitter.getJobNamespace() + "/" + JobNameBuilder.build(olContext);
-        if (!t.shouldEmit(jobKey)) {
-          log.debug(
-              "Streaming throttle active: skipping micro-batch event (executionId={}, job={})",
-              executionId,
-              jobKey);
-          throttled = true;
-          return;
+    try {
+      if (olContext.getQueryExecution().map(qe -> qe.optimizedPlan().isStreaming()).orElse(false)) {
+        StreamingMicroBatchThrottler t = olContext.getStreamingThrottler();
+        if (t != null) {
+          String jobKey = eventEmitter.getJobNamespace() + "/" + JobNameBuilder.build(olContext);
+          if (!t.shouldEmit(jobKey)) {
+            log.debug(
+                "Streaming throttle active: skipping micro-batch event (executionId={}, job={})",
+                executionId,
+                jobKey);
+            throttled = true;
+            return;
+          }
         }
       }
+    } catch (Exception e) {
+      log.warn(
+          "Streaming throttle check failed for executionId={}, defaulting to emit", executionId, e);
     }
+
+    emittedOnSqlExecutionStart = true;
 
     if (log.isDebugEnabled()) {
       log.debug(
