@@ -10,24 +10,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-
-	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
 var _ Run = (*noopRun)(nil)
 
 type noopRun struct{}
-
-// RecordFacets implements Run.
-func (n *noopRun) RecordRunFacets(...facets.RunFacet) {}
-
-func (n *noopRun) RecordJobFacets(...facets.JobFacet) {}
-
-// RecordInputs implements Run.
-func (n *noopRun) RecordInputs(...InputElement) {}
-
-// RecordOutputs implements Run.
-func (n *noopRun) RecordOutputs(...OutputElement) {}
 
 // NewChild implements RunContext.
 func (n *noopRun) NewChild(ctx context.Context, _ string) (context.Context, Run) {
@@ -50,11 +37,11 @@ func (n *noopRun) Child(ctx context.Context, _ string) (context.Context, Run) {
 }
 
 // Finish implements RunContext.
-func (n *noopRun) Finish() {}
+func (n *noopRun) Finish(...error) {}
 
 // Emit implements RunContext.
-func (n *noopRun) Emit(context.Context, Emittable) error {
-	return nil
+func (n *noopRun) Emit(context.Context, Emittable) (map[string]string, error) {
+	return nil, nil
 }
 
 // RecordError implements RunContext.

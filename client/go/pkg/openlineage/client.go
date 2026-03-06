@@ -15,19 +15,6 @@ import (
 	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
 
-// DefaultClient is a client using the console transport with pretty printing.
-var DefaultClient, _ = NewClient(
-	"https://github.com/OpenLineage/OpenLineage/tree/"+Version+"/client/go",
-	&ClientConfig{
-		Transport: transport.Config{
-			Type: transport.TransportTypeConsole,
-			Console: transport.ConsoleConfig{
-				PrettyPrint: true,
-			},
-		},
-	},
-)
-
 // ClientConfig holds configuration for the OpenLineage client.
 type ClientConfig struct {
 	Transport transport.Config
@@ -79,9 +66,10 @@ type Emittable interface {
 }
 
 // Emit sends an OpenLineage event using the client's transport.
-func (olc *Client) Emit(ctx context.Context, event Emittable) error {
+// The returned map contains any metadata from the consumer (e.g. a server-assigned ID); it may be nil.
+func (olc *Client) Emit(ctx context.Context, event Emittable) (map[string]string, error) {
 	if olc.disabled {
-		return nil
+		return nil, nil
 	}
 
 	return olc.transport.Emit(ctx, event.AsEmittable())
@@ -109,8 +97,10 @@ func (olc *Client) NewRun(ctx context.Context, job string) (context.Context, Run
 // For details, see NewRun.
 func (olc *Client) StartRun(ctx context.Context, job string) (context.Context, Run) {
 	ctx, r := olc.NewRun(ctx, job)
-
-	r.NewEvent(EventTypeStart).Emit()
+	_, err := olc.Emit(ctx, r.NewEvent(EventTypeStart))
+	if err != nil {
+		return nil, nil
+	}
 
 	return ctx, r
 }
@@ -125,19 +115,4 @@ func (olc *Client) ExistingRun(ctx context.Context, job string, runID uuid.UUID)
 	}
 
 	return ContextWithRun(ctx, &rctx), &rctx
-}
-
-// NewRun calls DefaultClient.NewRun
-func NewRun(ctx context.Context, job string) (context.Context, Run) {
-	return DefaultClient.NewRun(ctx, job)
-}
-
-// StartRun calls DefaultClient.StartRun
-func StartRun(ctx context.Context, job string) (context.Context, Run) {
-	return DefaultClient.StartRun(ctx, job)
-}
-
-// ExistingRun calls DefaultClient.ExistingRun
-func ExistingRun(ctx context.Context, job string, runID uuid.UUID) (context.Context, Run) {
-	return DefaultClient.ExistingRun(ctx, job, runID)
 }
