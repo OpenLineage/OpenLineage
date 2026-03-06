@@ -17,6 +17,7 @@ import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.util.DatasetReducerUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.sql.ColumnMeta;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -282,7 +283,7 @@ public class ColumnLevelLineageBuilder {
   }
 
   private List<Dependency> findDependentInputs(ExprId outputExprId) {
-    List<Dependency> dependentInputs = new LinkedList<>();
+    Set<Dependency> dependentInputs = new HashSet<>();
     dependentInputs.add(new Dependency(outputExprId, TransformationInfo.identity()));
     boolean continueSearch = true;
 
@@ -302,7 +303,7 @@ public class ColumnLevelLineageBuilder {
       continueSearch = !newDependentInputs.isEmpty();
     }
 
-    return dependentInputs;
+    return new ArrayList<>(dependentInputs);
   }
 
   public void addExternalMapping(ColumnMeta meta, ExprId exprid) {
