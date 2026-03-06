@@ -283,6 +283,9 @@ perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/exam
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive/hive-openlineage-hook/src/main/resources/io/openlineage/hive/client/version.properties
 
+# (2.1) Bump Go client version
+perl -i -pe"s/^const Version = .*/const Version = \"${RELEASE_VERSION}\"/g" ./client/go/pkg/openlineage/version.go
+
 # (3) Bump version in docs
 perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
 perl -i -pe"s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
@@ -297,6 +300,9 @@ git commit --no-verify -sam "Prepare for release ${RELEASE_VERSION}" --signoff
 # (5) Pull latest tags, then prepare release tag
 git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
+# Required for go client so it can be imported with from github.com/OpenLineage/OpenLineage@v${RELEASE_VERSION}
+git tag -a "client/go/v${RELEASE_VERSION}" -m "openlineage go-style version client/go/v${RELEASE_VERSION}"
+
 
 # (6) Prepare next development version
 # Determine bump type based on release version and next version
@@ -321,6 +327,7 @@ perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/example
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/flink2-test-apps/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/hive/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/hive/hive-openlineage-hook/src/main/resources/io/openlineage/hive/client/version.properties
+perl -i -pe"s/^const Version = .*/const Version = \"${NEXT_VERSION}\"/g" ./client/go/pkg/openlineage/version.go
 echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark-extension-interfaces/src/test/resources/io/openlineage/spark/shade/extension/v1/lifecycle/plan/version.properties
 echo "version ${NEXT_VERSION}" > integration/flink/shared/src/test/resources/io/openlineage/flink/client/version.properties
@@ -344,7 +351,7 @@ fi
 
 # (9) Push commits and tag
 if [[ $COMMITS = "true" ]] && [[ ! ${PUSH} = "false" ]]; then
-  git push origin main && git push origin "${RELEASE_VERSION}"
+  git push origin main && git push origin "${RELEASE_VERSION}" && git push origin "client/go/v${RELEASE_VERSION}"
 else
   echo "...skipping push; to push manually, use 'git push origin main && git push origin \"${RELEASE_VERSION}\"'"
 fi
