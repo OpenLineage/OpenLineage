@@ -6,7 +6,6 @@
 package openlineage
 
 import (
-	"context"
 	"time"
 
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
@@ -30,21 +29,6 @@ type BaseEvent struct {
 	Producer string
 	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this RunEvent
 	SchemaURL string
-}
-
-// Emit emits this DatasetEvent using the DefaultClient.
-func (e *DatasetEvent) Emit() {
-	_ = DefaultClient.Emit(context.Background(), e)
-}
-
-// Emit emits this RunEvent using the DefaultClient.
-func (e *RunEvent) Emit() {
-	_ = DefaultClient.Emit(context.Background(), e)
-}
-
-// Emit emits this JobEvent using the DefaultClient.
-func (e *JobEvent) Emit() {
-	_ = DefaultClient.Emit(context.Background(), e)
 }
 
 // NewInputElement creates a new InputElement with the given name and namespace.
