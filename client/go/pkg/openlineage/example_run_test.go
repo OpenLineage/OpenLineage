@@ -35,7 +35,6 @@ func ExampleRun() {
 	defer run.Finish()
 
 	if err := ChildFunction(ctx); err != nil {
-		run.RecordError(err)
 
 		slog.Warn("child function failed", "error", err)
 	}
@@ -45,17 +44,11 @@ func ExampleRun() {
 func ChildFunction(ctx context.Context) error {
 	parent := ol.RunFromContext(ctx)
 	_, childRun := parent.StartChild(ctx, "child")
-	defer childRun.Finish()
 
-	if err := DoWork(); err != nil {
-		// Record the error in this run.
-		// Finish() will emit a FAIL event.
-		childRun.RecordError(err)
+	err := DoWork()
+	childRun.Finish(err)
 
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func DoWork() error {

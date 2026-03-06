@@ -22,10 +22,10 @@ type consoleTransport struct {
 	prettyPrint bool
 }
 
-func (ct *consoleTransport) Emit(_ context.Context, event any) error {
+func (ct *consoleTransport) Emit(_ context.Context, event any) (map[string]string, error) {
 	body, err := json.Marshal(&event)
 	if err != nil {
-		return fmt.Errorf("marshal event: %w", err)
+		return nil, fmt.Errorf("marshal event: %w", err)
 	}
 
 	if ct.prettyPrint {
@@ -33,8 +33,8 @@ func (ct *consoleTransport) Emit(_ context.Context, event any) error {
 	}
 
 	if _, err := fmt.Println(string(body)); err != nil {
-		return fmt.Errorf("emit event to console: %w", err)
+		return nil, fmt.Errorf("emit event to console: %w", err)
 	}
 
-	return nil
+	return nil, nil
 }
