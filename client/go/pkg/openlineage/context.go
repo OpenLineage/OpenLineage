@@ -61,11 +61,20 @@ type Run interface {
 	NewEvent(EventType) *RunEvent
 
 	// Emit emits an event with this Run's client.
-	Emit(context.Context, Emittable) error
+	// The returned map contains any metadata from the consumer; it may be nil.
+	Emit(context.Context, Emittable) (map[string]string, error)
 
-	// Finish will emit a COMPLETE event if no error has occurred.
-	// Otherwise, it will emit a FAIL event.
-	Finish()
+	// Finish emits a COMPLETE event if no error has occurred, or a FAIL event otherwise.
+	// If an error is passed it is recorded via RecordError before finishing — nil is ignored.
+	// This allows the common pattern:
+	//
+	//	defer run.Finish()
+	//
+	// as well as the single-call error pattern:
+	//
+	//	err := doWork()
+	//	run.Finish(err)
+	Finish(errs ...error)
 
 	// Returns true if RecordError was called for this Run.
 	HasFailed() bool
@@ -73,18 +82,6 @@ type Run interface {
 	// RecordError emits an OTHER event with an ErrorMessage facet.
 	// Once this is called, the run is considered to have failed.
 	RecordError(error)
-
-	// RecordRunFacets emits an OTHER event with the supplied RunFacets
-	RecordRunFacets(...facets.RunFacet)
-
-	// RecordJobFacets emits an OTHER event with the supplied JobFacets
-	RecordJobFacets(...facets.JobFacet)
-
-	// RecordInputs emits an OTHER event with the supplied InputElements
-	RecordInputs(...InputElement)
-
-	// RecordOutputs emits an OTHER event with the supplied OutputElements
-	RecordOutputs(...OutputElement)
 }
 
 type run struct {
@@ -95,34 +92,6 @@ type run struct {
 
 	hasFailed bool
 	client    *Client
-}
-
-// RecordFacets implements Run.
-func (r *run) RecordRunFacets(fs ...facets.RunFacet) {
-	r.NewEvent(EventTypeOther).
-		WithRunFacets(fs...).
-		Emit()
-}
-
-// RecordFacets implements Run.
-func (r *run) RecordJobFacets(fs ...facets.JobFacet) {
-	r.NewEvent(EventTypeOther).
-		WithJobFacets(fs...).
-		Emit()
-}
-
-// RecordInputs implements Run.
-func (r *run) RecordInputs(inputs ...InputElement) {
-	r.NewEvent(EventTypeOther).
-		WithInputs(inputs...).
-		Emit()
-}
-
-// RecordOutputs implements Run.
-func (r *run) RecordOutputs(outputs ...OutputElement) {
-	r.NewEvent(EventTypeOther).
-		WithOutputs(outputs...).
-		Emit()
 }
 
 // JobName implements RunContext.
@@ -182,7 +151,7 @@ func (r *run) StartChild(ctx context.Context, jobName string) (context.Context, 
 }
 
 // Emit uses its openlineage.Client to emit an event
-func (r *run) Emit(ctx context.Context, event Emittable) error {
+func (r *run) Emit(ctx context.Context, event Emittable) (map[string]string, error) {
 	return r.client.Emit(ctx, event)
 }
 
@@ -199,16 +168,22 @@ func (r *run) RecordError(err error) {
 
 	errorEvent := r.NewEvent(EventTypeOther).WithRunFacets(errorFacet)
 
-	_ = r.client.Emit(context.Background(), errorEvent)
+	_, _ = r.client.Emit(context.Background(), errorEvent)
 }
 
-func (r *run) Finish() {
+func (r *run) Finish(errs ...error) {
+	for _, err := range errs {
+		if err != nil {
+			r.RecordError(err)
+		}
+	}
+
 	eventType := EventTypeComplete
 	if r.hasFailed {
 		eventType = EventTypeFail
 	}
 
-	_ = r.client.Emit(context.Background(), r.NewEvent(eventType))
+	_, _ = r.client.Emit(context.Background(), r.NewEvent(eventType))
 }
 
 func (r *run) HasFailed() bool {
