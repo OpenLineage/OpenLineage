@@ -300,6 +300,9 @@ git commit --no-verify -sam "Prepare for release ${RELEASE_VERSION}" --signoff
 # (5) Pull latest tags, then prepare release tag
 git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
+# Required for go client so it can be imported with from github.com/OpenLineage/OpenLineage@v${RELEASE_VERSION}
+git tag -a "v${RELEASE_VERSION}" -m "openlineage go-style version v${RELEASE_VERSION}"
+
 
 # (6) Prepare next development version
 # Determine bump type based on release version and next version
