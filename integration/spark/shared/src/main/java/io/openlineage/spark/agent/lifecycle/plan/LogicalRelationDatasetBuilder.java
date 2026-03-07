@@ -22,18 +22,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.CatalogStatistics;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.datasources.FileIndex;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
+import org.apache.spark.sql.execution.datasources.PartitioningAwareFileIndex;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.sources.BaseRelation;
@@ -198,25 +202,19 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                                         .getOpenLineage()
                                         .newDatasetVersionDatasetFacet(version)));
 
-                if (relation.inputFiles() != null) {
-                  datasetFacetsBuilder
-                      .getInputFacets()
-                      .inputStatistics(
-                          context
-                              .getOpenLineage()
-                              .newInputStatisticsInputDatasetFacetBuilder()
-                              .size(relation.sizeInBytes())
-                              .fileCount(
-                                  Optional.of(relation.inputFiles())
-                                      .map(l -> l.length)
-                                      .map(Long::valueOf)
-                                      .orElse(0L))
-                              .build());
+                FileIndex fileIndex = relation.location();
+                Collection<Path> rootPaths = ScalaConversionUtils.fromSeq(fileIndex.rootPaths());
+
+                if (fileIndex instanceof PartitioningAwareFileIndex) {
+                  return handlePartitioningAwareRelation(
+                      relation,
+                      (PartitioningAwareFileIndex) fileIndex,
+                      rootPaths,
+                      datasetFacetsBuilder);
                 }
 
-                Collection<Path> rootPaths =
-                    ScalaConversionUtils.fromSeq(relation.location().rootPaths());
-
+                // Non-PartitioningAwareFileIndex (e.g. CatalogFileIndex): skip file count
+                // to avoid triggering expensive filesystem listings
                 if (isSingleFileRelation(rootPaths, hadoopConfig)) {
                   return Collections.singletonList(
                       datasetFactory.getDataset(
@@ -226,13 +224,9 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                 } else {
                   return PlanUtils.getDirectoryPaths(rootPaths, hadoopConfig).stream()
                       .map(
-                          p -> {
-                            // TODO- refactor this to return a single partitioned dataset based on
-                            // static
-                            // static partitions in the relation
-                            return datasetFactory.getDataset(
-                                p.toUri(), relation.schema(), datasetFacetsBuilder);
-                          })
+                          p ->
+                              datasetFactory.getDataset(
+                                  p.toUri(), relation.schema(), datasetFacetsBuilder))
                       .collect(Collectors.toList());
                 }
               })
@@ -243,17 +237,10 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       // is enabled and you're attempting to get the data lake credentials.
       // The Spark Listener context cannot use the user credentials
       // thus we need a fallback.
-      // This is similar to the InsertIntoHadoopRelationVisitor's process for getting
-      // Datasets
       //
       // This can also occur when running on a spark cluster with UnityCatalog
       // enabled.
       // An exception will get thrown claiming there is "no Credential Scope".
-      // Catching
-      // a specific exception such as the above azure databricks exception
-      // didn't seem to yield the correct results, so a catch all on exceptions here
-      // works
-      // for unity catalog.
       List<D> inputDatasets = new ArrayList<D>();
       List<Path> paths =
           new ArrayList<>(ScalaConversionUtils.fromSeq(relation.location().rootPaths()));
@@ -266,6 +253,62 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         return inputDatasets;
       }
     }
+  }
+
+  /**
+   * Handles HadoopFsRelation backed by a PartitioningAwareFileIndex (the common case for
+   * InMemoryFileIndex). Uses the index's cached allFiles() to derive file count and directory paths
+   * without any remote filesystem calls or expensive String[] materialization.
+   */
+  private List<D> handlePartitioningAwareRelation(
+      HadoopFsRelation relation,
+      PartitioningAwareFileIndex fileIndex,
+      Collection<Path> rootPaths,
+      DatasetCompositeFacetsBuilder datasetFacetsBuilder) {
+
+    List<FileStatus> allFiles = ScalaConversionUtils.fromSeq(fileIndex.allFiles());
+
+    datasetFacetsBuilder
+        .getInputFacets()
+        .inputStatistics(
+            context
+                .getOpenLineage()
+                .newInputStatisticsInputDatasetFacetBuilder()
+                .size(relation.sizeInBytes())
+                .fileCount((long) allFiles.size())
+                .build());
+
+    // Single root path pointing directly to a file (e.g. /tmp/data.csv)
+    if (rootPaths.size() == 1 && allFiles.size() == 1) {
+      Path rootPath = rootPaths.stream().findFirst().get();
+      Path filePath = allFiles.get(0).getPath();
+      // If the root path matches the only file, this is a single-file relation
+      if (rootPath.getName().equals(filePath.getName())) {
+        return Collections.singletonList(
+            datasetFactory.getDataset(rootPath.toUri(), relation.schema(), datasetFacetsBuilder));
+      }
+    }
+
+    // Collect unique parent directories from the cached file statuses.
+    // This avoids remote getFileStatus() calls that getDirectoryPaths() would make.
+    LinkedHashSet<Path> directories = new LinkedHashSet<>();
+    for (FileStatus fs : allFiles) {
+      Path parent = fs.getPath().getParent();
+      if (parent != null) {
+        directories.add(parent);
+      }
+    }
+
+    if (directories.isEmpty()) {
+      // Fall back to root paths if no files found
+      return rootPaths.stream()
+          .map(p -> datasetFactory.getDataset(p.toUri(), relation.schema(), datasetFacetsBuilder))
+          .collect(Collectors.toList());
+    }
+
+    return directories.stream()
+        .map(p -> datasetFactory.getDataset(p.toUri(), relation.schema(), datasetFacetsBuilder))
+        .collect(Collectors.toList());
   }
 
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
