@@ -95,7 +95,7 @@
   .community-typography {
     color: #fff;
   }
-  .eco-cardcontent {
+  .eco-cardcontent-text {
     color: #fff;
   }
   .eco-card-btns {
@@ -115,12 +115,27 @@
   }
   .MuiCardContent-root {
     background-color: #000;
+    color: #fff;
   }
+}
+
+.eco-card-btns {
+  font-size: 18px;
+}
+
+.eco-card-btns > a {
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .eco-card-btns > a:hover {
   text-decoration: underline;
   color: #b6420b;
+}
+
+.community-card-btns > a {
+  margin-left: 10px;
+  margin-right: 10px;
 }
 
 .community-card-btns > a:hover {
@@ -286,7 +301,7 @@ p {
   line-height: 165%;
 }
 
-.eco-cardcontent > p {
+.eco-cardcontent > span {
   line-height: 125%;
 }
 
