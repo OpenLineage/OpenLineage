@@ -35,21 +35,16 @@ func (e *JobEvent) AsEmittable() Event {
 	}
 }
 
-// NewNamespacedJobEvent creates a new JobEvent with an explicit namespace.
-func NewNamespacedJobEvent(name, namespace, producer string) *JobEvent {
+// NewJobEvent creates a new JobEvent with an explicit namespace.
+func NewJobEvent(name, namespace, producer string) *JobEvent {
 	return &JobEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
 			SchemaURL: JobEventSchemaURL,
 			EventTime: time.Now(),
 		},
-		Job: NewNamespacedJob(name, namespace),
+		Job: NewJob(name, namespace),
 	}
-}
-
-// NewJobEvent creates a new JobEvent using the default namespace.
-func NewJobEvent(name, producer string) *JobEvent {
-	return NewNamespacedJobEvent(name, DefaultNamespace, producer)
 }
 
 // WithFacets adds job facets to this JobEvent.
@@ -75,8 +70,8 @@ func (e *JobEvent) WithOutputs(inputs ...OutputElement) *JobEvent {
 	return e
 }
 
-// NewNamespacedJob creates a Job with an explicit namespace and optional facets.
-func NewNamespacedJob(name, _ string, jobFacets ...facets.JobFacet) Job {
+// NewJob creates a Job with an explicit namespace and optional facets.
+func NewJob(name, namespace string, jobFacets ...facets.JobFacet) Job {
 
 	var job *facets.JobFacets
 	for _, f := range jobFacets {
@@ -85,12 +80,7 @@ func NewNamespacedJob(name, _ string, jobFacets ...facets.JobFacet) Job {
 
 	return Job{
 		Name:      name,
-		Namespace: DefaultNamespace,
+		Namespace: namespace,
 		Facets:    job,
 	}
-}
-
-// NewJob creates a Job using the default namespace.
-func NewJob(name string, jobFacets ...facets.JobFacet) Job {
-	return NewNamespacedJob(name, DefaultNamespace, jobFacets...)
 }
