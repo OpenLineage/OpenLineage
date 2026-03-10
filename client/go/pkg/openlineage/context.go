@@ -125,7 +125,7 @@ func (r *run) NewEvent(eventType EventType) *RunEvent {
 
 	parent := r.Parent()
 	if _, isNoop := parent.(*noopRun); parent != nil && !isNoop {
-		parentFacet := facets.NewParent(
+		parentFacet := facets.NewParentRunFacet(
 			r.client.producer,
 			facets.ParentJob{
 				Name:      parent.JobName(),
@@ -163,7 +163,7 @@ func (r *run) RecordError(err error) {
 	stacktrace := stack.Caller(1).String()
 	language := runtime.Version()
 
-	errorFacet := facets.NewErrorMessage(r.client.producer, errorMessage, language).
+	errorFacet := facets.NewErrorMessageRunFacet(r.client.producer, errorMessage, language).
 		WithStackTrace(stacktrace)
 
 	errorEvent := r.NewEvent(EventTypeOther).WithRunFacets(errorFacet)
