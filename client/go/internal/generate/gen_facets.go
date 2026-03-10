@@ -61,26 +61,51 @@ type facetFieldSpec struct {
 	IsStructType bool
 }
 
+// skipFacetFiles lists JSON filenames (basename without path) that should be
+// excluded from generation due to type name collisions with other facets.
+var skipFacetFiles = map[string]bool{
+	"DataQualityMetricsInputDatasetFacet.json": true,
+}
+
 func generateFacets() (string, error) {
-	quicktypeCommand := strings.Join([]string{
-		"quicktype",
+	globs := []string{
+		"../../spec/facets/*Facet.json",
+		"../../spec/registry/*/facets/*Facet.json",
+		"../../spec/registry/*/*/facets/*Facet.json",
+	}
+
+	// Resolve globs to individual file paths, filtering skipped facets
+	var srcArgs []string
+	for _, pattern := range globs {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return "", fmt.Errorf("glob %s: %w", pattern, err)
+		}
+		for _, match := range matches {
+			if !skipFacetFiles[filepath.Base(match)] {
+				srcArgs = append(srcArgs, "--src", match)
+			}
+		}
+	}
+
+	if len(srcArgs) == 0 {
+		return "", fmt.Errorf("no facet JSON files found")
+	}
+
+	args := append([]string{
 		"-l", "go",
 		"--src-lang", "schema",
 		"--package", "facets",
 		"--just-types-and-package",
 		"--no-ignore-json-refs",
-		"--src", "../../spec/facets/*Facet.json",
-		"--src", "../../spec/registry/*/facets/*Facet.json",
-		"--src", "../../spec/registry/*/*/facets/*Facet.json",
-	}, " ")
+	}, srcArgs...)
 
-	cmd := exec.Command("bash", "-c", quicktypeCommand)
+	cmd := exec.Command("quicktype", args...)
 	result, err := cmd.Output()
 	if err != nil {
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {
 			fmt.Println(string(exitError.Stderr))
-
 		}
 		return "", err
 	}
@@ -203,7 +228,6 @@ func extractFacets(code string) ([]facetSpec, error) {
 			return true
 		}
 
-		name := facetIdent.Name
 		schemaURL, err := getSchemaURL(wrapperName)
 		if err != nil {
 			panic(err)
@@ -213,10 +237,9 @@ func extractFacets(code string) ([]facetSpec, error) {
 		jsonName := extractJSONName(facetField.Tag.Value)
 
 		facet := facetSpec{
-			Tag:      facetField.Tag.Value,
-			Name:     name,
-			JSONName: jsonName,
-			// Name:      facetField.Names[0].Name,
+			Tag:       facetField.Tag.Value,
+			Name:      wrapperName,
+			JSONName:  jsonName,
 			Kind:      kind,
 			Producer:  "openlineage-go",
 			SchemaURL: schemaURL,
@@ -248,7 +271,7 @@ func extractFacets(code string) ([]facetSpec, error) {
 				// Handle pointer types like *string, *int64
 				switch inner := x.X.(type) {
 				case *ast.Ident:
-					fType = inner.Name
+					fType = normalizeTypeName(inner.Name)
 					// Capitalized idents are struct types, lowercase are builtins
 					if inner.Name != "" && inner.Name[0] >= 'A' && inner.Name[0] <= 'Z' {
 						isStructType = true
@@ -265,14 +288,14 @@ func extractFacets(code string) ([]facetSpec, error) {
 					isRefType = true // treat structs as ref types (passed by pointer)
 				}
 			case *ast.Ident:
-				fType = x.Name
+				fType = normalizeTypeName(x.Name)
 			case *ast.SelectorExpr:
 				// time.Time
 				fType = fmt.Sprintf("%s.%s", x.X.(*ast.Ident).Name, x.Sel.Name)
 			case *ast.ArrayType:
 				switch elem := x.Elt.(type) {
 				case *ast.Ident:
-					fType = fmt.Sprintf("[]%s", elem.Name)
+					fType = fmt.Sprintf("[]%s", normalizeTypeName(elem.Name))
 				case *ast.SelectorExpr:
 					pkg, ok := elem.X.(*ast.Ident)
 					if !ok {
@@ -358,6 +381,19 @@ func generateFacetHelpers(facets []facetSpec) (string, error) {
 	return string(formatted), nil
 }
 
+// normalizeTypeName is intentionally a no-op here — field type normalization
+// is handled by the renameIdents map built in removeFacetWrappers, which operates
+// on the generated file. For helper generation, field types that reference inner
+// structs are resolved to the wrapper name via the facetSpec.Name (wrapperName) already.
+func normalizeTypeName(name string) string {
+	switch name {
+	case "PurpleOwner", "FluffyOwner":
+		return "Owner"
+	}
+
+	return name
+}
+
 func deduceFacetKind(name string) (facetKind, error) {
 	kinds := []facetKind{
 		facetTypeInputDataset,
@@ -377,11 +413,68 @@ func deduceFacetKind(name string) (facetKind, error) {
 }
 
 func removeFacetWrappers(code string) (string, error) {
+	// Static renames for Purple/Fluffy quicktype disambiguation artefacts.
+	renameIdents := map[string]string{
+		// Owner consolidation
+		"PurpleOwner": "Owner",
+		"FluffyOwner": "Owner",
+		// LeftType constants — strip Purple prefix
+		"PurpleBinary":    "LeftBinary",
+		"PurpleCompare":   "LeftCompare",
+		"PurpleLocation":  "LeftLocation",
+		"PurplePartition": "LeftPartition",
+		// InputConditionType constants — strip Fluffy prefix
+		"FluffyBinary":    "InputConditionBinary",
+		"FluffyCompare":   "InputConditionCompare",
+		"FluffyLocation":  "InputConditionLocation",
+		"FluffyPartition": "InputConditionPartition",
+	}
+
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "facets.gen.go", code, parser.ParseComments)
 	if err != nil {
 		return "", err
 	}
+
+	// Build dynamic rename map from wrapper struct fields:
+	// for each wrapper type (ending in Facet), map its inner struct name → wrapper name.
+	// e.g. InputStatisticsInputDatasetFacet { InputStatistics } → InputStatistics → InputStatisticsInputDatasetFacet
+	// e.g. TagsDatasetFacet { TagsDatasetFacetTags } → TagsDatasetFacetTags → TagsDatasetFacet
+	for _, decl := range file.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.TYPE {
+			continue
+		}
+		spec, ok := genDecl.Specs[0].(*ast.TypeSpec)
+		if !ok {
+			continue
+		}
+		wrapperName := spec.Name.Name
+		if !strings.HasSuffix(wrapperName, "Facet") {
+			continue
+		}
+		structType, ok := spec.Type.(*ast.StructType)
+		if !ok || len(structType.Fields.List) != 1 {
+			continue
+		}
+		field := structType.Fields.List[0]
+		var innerName string
+		switch ft := field.Type.(type) {
+		case *ast.StarExpr:
+			if id, ok := ft.X.(*ast.Ident); ok {
+				innerName = id.Name
+			}
+		case *ast.Ident:
+			innerName = ft.Name
+		}
+		if innerName != "" && innerName != wrapperName {
+			renameIdents[innerName] = wrapperName
+		}
+	}
+
+	// Track whether we have already emitted the Owner type declaration,
+	// so the second occurrence (FluffyOwner) gets deleted entirely.
+	ownerEmitted := false
 
 	result := astutil.Apply(file, nil, func(c *astutil.Cursor) bool {
 		n := c.Node()
@@ -398,13 +491,30 @@ func removeFacetWrappers(code string) (string, error) {
 					return true
 				}
 
-				// Fix doc comment to start with the type name (revive exported rule)
+				// If this is one of the duplicate Owner declarations, keep only the first.
+				if typeDeclName == "PurpleOwner" || typeDeclName == "FluffyOwner" {
+					if ownerEmitted {
+						c.Delete()
+						return true
+					}
+					ownerEmitted = true
+					spec.Name.Name = "Owner"
+					return true
+				}
+
+				// Apply dynamic inner-struct rename on the declaration itself
+				if newName, ok := renameIdents[typeDeclName]; ok {
+					spec.Name.Name = newName
+				}
+
+				// Fix doc comment to start with the (possibly renamed) type name
+				finalName := spec.Name.Name
 				if x.Doc != nil && len(x.Doc.List) > 0 {
 					existing := strings.TrimPrefix(x.Doc.List[0].Text, "// ")
-					x.Doc.List[0].Text = "// " + typeDeclName + " — " + existing
+					x.Doc.List[0].Text = "// " + finalName + " — " + existing
 				} else {
 					x.Doc = &ast.CommentGroup{
-						List: []*ast.Comment{{Text: "// " + typeDeclName + " is an OpenLineage facet type."}},
+						List: []*ast.Comment{{Text: "// " + finalName + " is an OpenLineage facet type."}},
 					}
 				}
 			}
@@ -423,6 +533,36 @@ func removeFacetWrappers(code string) (string, error) {
 
 		return true
 	})
+
+	// Second pass: rename type references throughout the file (not field names).
+	astutil.Apply(result, func(c *astutil.Cursor) bool {
+		ident, ok := c.Node().(*ast.Ident)
+		if !ok {
+			return true
+		}
+		newName, found := renameIdents[ident.Name]
+		if !found {
+			return true
+		}
+		// Only rename if this ident is used as a type, not as a field name.
+		// Field names appear as Names[i] in ast.Field; type expressions appear elsewhere.
+		switch c.Parent().(type) {
+		case *ast.Field:
+			// Only rename if it's the type part of a field, not the name part.
+			// The cursor Index tells us which child: index 0 for names, -1 or type pos for type.
+			field := c.Parent().(*ast.Field)
+			for _, nameIdent := range field.Names {
+				if nameIdent == ident {
+					return true // it's a field name — skip
+				}
+			}
+		case *ast.TypeSpec:
+			// This is the type name declaration itself — already handled in first pass
+			return true
+		}
+		c.Replace(&ast.Ident{Name: newName, NamePos: ident.NamePos, Obj: ident.Obj})
+		return true
+	}, nil)
 
 	var out bytes.Buffer
 	if err := format.Node(&out, fset, result); err != nil {

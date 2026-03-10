@@ -118,7 +118,7 @@ func (r *RunEvent) WithOutputs(outputs ...OutputElement) *RunEvent {
 
 // WithParent adds a parent run facet to this RunEvent.
 func (r *RunEvent) WithParent(parentID uuid.UUID, jobName, namespace string) *RunEvent {
-	parent := facets.NewParent(
+	parent := facets.NewParentRunFacet(
 		r.Producer,
 		facets.ParentJob{
 			Name:      jobName,

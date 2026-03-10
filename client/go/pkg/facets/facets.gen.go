@@ -10,12 +10,12 @@ import (
 	"time"
 )
 
-// Subset — An Input Dataset Facet
+// BaseSubsetDatasetFacet — An Input Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 //
 // An Output Dataset Facet
-type Subset struct {
+type BaseSubsetDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -62,10 +62,10 @@ type Partition struct {
 	Identifier *string `json:"identifier,omitempty"`
 }
 
-// Catalog — A Dataset Facet
+// CatalogDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type Catalog struct {
+type CatalogDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -90,10 +90,10 @@ type Catalog struct {
 	WarehouseURI *string `json:"warehouseUri,omitempty"`
 }
 
-// ColumnLineage — A Dataset Facet
+// ColumnLineageDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type ColumnLineage struct {
+type ColumnLineageDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -140,12 +140,12 @@ type FieldValue struct {
 	TransformationType *string `json:"transformationType,omitempty"`
 }
 
-// DataQualityAssertions — list of tests performed on dataset or dataset columns, and their results
+// DataQualityAssertionsDatasetFacet — list of tests performed on dataset or dataset columns, and their results
 //
 // # An Input Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type DataQualityAssertions struct {
+type DataQualityAssertionsDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -167,10 +167,10 @@ type Assertion struct {
 	Success  bool    `json:"success"`
 }
 
-// DataQualityMetricsDatasetFacetDataQualityMetrics — A Dataset Facet
+// DataQualityMetricsDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type DataQualityMetricsDatasetFacetDataQualityMetrics struct {
+type DataQualityMetricsDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -182,7 +182,7 @@ type DataQualityMetricsDatasetFacetDataQualityMetrics struct {
 	// The size in bytes
 	Bytes *int64 `json:"bytes,omitempty"`
 	// The property key is the column name
-	ColumnMetrics map[string]PurpleColumnMetric `json:"columnMetrics"`
+	ColumnMetrics map[string]ColumnMetric `json:"columnMetrics"`
 	// The number of files evaluated
 	FileCount *int64 `json:"fileCount,omitempty"`
 	// The last time the dataset was changed
@@ -191,7 +191,7 @@ type DataQualityMetricsDatasetFacetDataQualityMetrics struct {
 	RowCount *int64 `json:"rowCount,omitempty"`
 }
 
-type PurpleColumnMetric struct {
+type ColumnMetric struct {
 	// The number of values in this column
 	Count *float64 `json:"count,omitempty"`
 	// The number of distinct values in this column for the rows evaluated
@@ -206,47 +206,10 @@ type PurpleColumnMetric struct {
 	Sum *float64 `json:"sum,omitempty"`
 }
 
-// DataQualityMetricsInputDatasetFacetDataQualityMetrics — An Input Dataset Facet
+// DatasetTypeDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type DataQualityMetricsInputDatasetFacetDataQualityMetrics struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// The size in bytes
-	Bytes *int64 `json:"bytes,omitempty"`
-	// The property key is the column name
-	ColumnMetrics map[string]FluffyColumnMetric `json:"columnMetrics"`
-	// The number of files evaluated
-	FileCount *int64 `json:"fileCount,omitempty"`
-	// The last time the dataset was changed
-	LastUpdated *time.Time `json:"lastUpdated,omitempty"`
-	// The number of rows evaluated
-	RowCount *int64 `json:"rowCount,omitempty"`
-}
-
-type FluffyColumnMetric struct {
-	// The number of values in this column
-	Count *float64 `json:"count,omitempty"`
-	// The number of distinct values in this column for the rows evaluated
-	DistinctCount *int64   `json:"distinctCount,omitempty"`
-	Max           *float64 `json:"max,omitempty"`
-	Min           *float64 `json:"min,omitempty"`
-	// The number of null values in this column for the rows evaluated
-	NullCount *int64 `json:"nullCount,omitempty"`
-	// The property key is the quantile. Examples: 0.1 0.25 0.5 0.75 1
-	Quantiles map[string]float64 `json:"quantiles,omitempty"`
-	// The total sum of values in this column for the rows evaluated
-	Sum *float64 `json:"sum,omitempty"`
-}
-
-// DatasetType — A Dataset Facet
-//
-// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type DatasetType struct {
+type DatasetTypeDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -261,10 +224,10 @@ type DatasetType struct {
 	SubType *string `json:"subType,omitempty"`
 }
 
-// Version — A Dataset Facet
+// DatasetVersionDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type Version struct {
+type DatasetVersionDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -277,10 +240,10 @@ type Version struct {
 	DatasetVersion string `json:"datasetVersion"`
 }
 
-// DataSource — A Dataset Facet
+// DatasourceDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type DataSource struct {
+type DatasourceDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -293,10 +256,10 @@ type DataSource struct {
 	URI     *string `json:"uri,omitempty"`
 }
 
-// DocumentationDatasetFacetDocumentation — A Dataset Facet
+// DocumentationDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type DocumentationDatasetFacetDocumentation struct {
+type DocumentationDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -311,10 +274,10 @@ type DocumentationDatasetFacetDocumentation struct {
 	Description string `json:"description"`
 }
 
-// DocumentationJobFacetDocumentation — A Job Facet
+// DocumentationJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type DocumentationJobFacetDocumentation struct {
+type DocumentationJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -329,10 +292,10 @@ type DocumentationJobFacetDocumentation struct {
 	Description string `json:"description"`
 }
 
-// EnvironmentVariables — A Run Facet
+// EnvironmentVariablesRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type EnvironmentVariables struct {
+type EnvironmentVariablesRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -350,10 +313,10 @@ type EnvironmentVariableElement struct {
 	Value string `json:"value"`
 }
 
-// ErrorMessage — A Run Facet
+// ErrorMessageRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type ErrorMessage struct {
+type ErrorMessageRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -368,10 +331,10 @@ type ErrorMessage struct {
 	StackTrace *string `json:"stackTrace,omitempty"`
 }
 
-// ExecutionParameters — A Run Facet
+// ExecutionParametersRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type ExecutionParameters struct {
+type ExecutionParametersRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -393,10 +356,10 @@ type ParameterElement struct {
 	Value *string `json:"value,omitempty"`
 }
 
-// ExternalQuery — A Run Facet
+// ExternalQueryRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type ExternalQuery struct {
+type ExternalQueryRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -409,10 +372,10 @@ type ExternalQuery struct {
 	Source string `json:"source"`
 }
 
-// ExtractionError — A Run Facet
+// ExtractionErrorRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type ExtractionError struct {
+type ExtractionErrorRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -440,10 +403,10 @@ type Error struct {
 	TaskNumber *int64 `json:"taskNumber,omitempty"`
 }
 
-// Hierarchy — A Dataset Facet
+// HierarchyDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type Hierarchy struct {
+type HierarchyDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -464,10 +427,10 @@ type HierarchyElement struct {
 	Type string `json:"type"`
 }
 
-// InputStatistics — An Input Dataset Facet
+// InputStatisticsInputDatasetFacet — An Input Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type InputStatistics struct {
+type InputStatisticsInputDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -482,13 +445,13 @@ type InputStatistics struct {
 	Size *int64 `json:"size,omitempty"`
 }
 
-// JobDependencies — Maps execution dependencies (control flow relationships) between upstream and downstream
+// JobDependenciesRunFacet — Maps execution dependencies (control flow relationships) between upstream and downstream
 // job runs
 //
 // # A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type JobDependencies struct {
+type JobDependenciesRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -535,10 +498,10 @@ type DownstreamRun struct {
 	RunID string `json:"runId"`
 }
 
-// JobType — A Job Facet
+// JobTypeJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type JobType struct {
+type JobTypeJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -556,10 +519,10 @@ type JobType struct {
 	ProcessingType string `json:"processingType"`
 }
 
-// LifecycleStateChange — A Dataset Facet
+// LifecycleStateChangeDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type LifecycleStateChange struct {
+type LifecycleStateChangeDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -580,10 +543,10 @@ type PreviousIdentifier struct {
 	Namespace string `json:"namespace"`
 }
 
-// NominalTime — A Run Facet
+// NominalTimeRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type NominalTime struct {
+type NominalTimeRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -598,10 +561,10 @@ type NominalTime struct {
 	NominalStartTime time.Time `json:"nominalStartTime"`
 }
 
-// OutputStatistics — An Output Dataset Facet
+// OutputStatisticsOutputDatasetFacet — An Output Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type OutputStatistics struct {
+type OutputStatisticsOutputDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -616,10 +579,10 @@ type OutputStatistics struct {
 	Size *int64 `json:"size,omitempty"`
 }
 
-// OwnershipDatasetFacetOwnership — A Dataset Facet
+// OwnershipDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type OwnershipDatasetFacetOwnership struct {
+type OwnershipDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -629,10 +592,10 @@ type OwnershipDatasetFacetOwnership struct {
 	// set to true to delete a facet
 	Deleted *bool `json:"_deleted,omitempty"`
 	// The owners of the dataset.
-	Owners []PurpleOwner `json:"owners,omitempty"`
+	Owners []Owner `json:"owners,omitempty"`
 }
 
-type PurpleOwner struct {
+type Owner struct {
 	// the identifier of the owner of the Dataset. It is recommended to define this as a URN.
 	// For example application:foo, user:jdoe, team:data
 	Name string `json:"name"`
@@ -640,10 +603,10 @@ type PurpleOwner struct {
 	Type *string `json:"type,omitempty"`
 }
 
-// OwnershipJobFacetOwnership — A Job Facet
+// OwnershipJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type OwnershipJobFacetOwnership struct {
+type OwnershipJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -653,24 +616,21 @@ type OwnershipJobFacetOwnership struct {
 	// set to true to delete a facet
 	Deleted *bool `json:"_deleted,omitempty"`
 	// The owners of the job.
-	Owners []FluffyOwner `json:"owners,omitempty"`
+	Owners []Owner `json:"owners,omitempty"`
 }
 
-type FluffyOwner struct {
-	// the identifier of the owner of the Job. It is recommended to define this as a URN. For
-	// example application:foo, user:jdoe, team:data
-	Name string `json:"name"`
-	// The type of ownership (optional)
-	Type *string `json:"type,omitempty"`
-}
+// the identifier of the owner of the Job. It is recommended to define this as a URN. For
+// example application:foo, user:jdoe, team:data
 
-// Parent — the id of the parent run and job, iff this run was spawn from an other run (for example,
+// The type of ownership (optional)
+
+// ParentRunFacet — the id of the parent run and job, iff this run was spawn from an other run (for example,
 // the Dag run scheduling its tasks)
 //
 // # A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type Parent struct {
+type ParentRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -711,10 +671,10 @@ type ParentRun struct {
 	RunID string `json:"runId"`
 }
 
-// ProcessingEngine — A Run Facet
+// ProcessingEngineRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type ProcessingEngine struct {
+type ProcessingEngineRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -730,10 +690,10 @@ type ProcessingEngine struct {
 	Version string `json:"version"`
 }
 
-// SQL — A Job Facet
+// SQLJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type SQL struct {
+type SQLJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -746,10 +706,10 @@ type SQL struct {
 	Query   string  `json:"query"`
 }
 
-// Schema — A Dataset Facet
+// SchemaDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type Schema struct {
+type SchemaDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -775,10 +735,10 @@ type FieldElement struct {
 	Type *string `json:"type,omitempty"`
 }
 
-// SourceCode — A Job Facet
+// SourceCodeJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type SourceCode struct {
+type SourceCodeJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -793,10 +753,10 @@ type SourceCode struct {
 	SourceCode string `json:"sourceCode"`
 }
 
-// SourceCodeLocation — A Job Facet
+// SourceCodeLocationJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type SourceCodeLocation struct {
+type SourceCodeLocationJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -821,10 +781,10 @@ type SourceCodeLocation struct {
 	Version *string `json:"version,omitempty"`
 }
 
-// Storage — A Dataset Facet
+// StorageDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type Storage struct {
+type StorageDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -839,10 +799,10 @@ type Storage struct {
 	StorageLayer string `json:"storageLayer"`
 }
 
-// Symlinks — A Dataset Facet
+// SymlinksDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type Symlinks struct {
+type SymlinksDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -863,10 +823,10 @@ type Identifier struct {
 	Type string `json:"type"`
 }
 
-// TagsDatasetFacetTags — A Dataset Facet
+// TagsDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type TagsDatasetFacetTags struct {
+type TagsDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -890,10 +850,10 @@ type TagElement struct {
 	Value string `json:"value"`
 }
 
-// TagsJobFacetTags — A Job Facet
+// TagsJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type TagsJobFacetTags struct {
+type TagsJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -915,10 +875,10 @@ type TagClass struct {
 	Value string `json:"value"`
 }
 
-// TagsRunFacetTags — A Run Facet
+// TagsRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type TagsRunFacetTags struct {
+type TagsRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -938,10 +898,10 @@ type TagsTag struct {
 	Value string `json:"value"`
 }
 
-// IcebergCommitReport — An Output Dataset Facet
+// IcebergCommitReportOutputDatasetFacet — An Output Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type IcebergCommitReport struct {
+type IcebergCommitReportOutputDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -1013,10 +973,10 @@ type CommitMetrics struct {
 	TotalRecords *float64 `json:"totalRecords,omitempty"`
 }
 
-// IcebergScanReport — An Input Dataset Facet
+// IcebergScanReportInputDatasetFacet — An Input Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type IcebergScanReport struct {
+type IcebergScanReportInputDatasetFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -1070,10 +1030,10 @@ type ScanMetrics struct {
 	TotalPlanningDuration *float64 `json:"totalPlanningDuration,omitempty"`
 }
 
-// GcpComposerJob — A Job Facet
+// GcpComposerJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type GcpComposerJob struct {
+type GcpComposerJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -1096,10 +1056,10 @@ type GcpComposerJob struct {
 	TaskID *string `json:"taskId,omitempty"`
 }
 
-// GcpComposerRun — A Run Facet
+// GcpComposerRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type GcpComposerRun struct {
+type GcpComposerRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -1110,10 +1070,10 @@ type GcpComposerRun struct {
 	DagRunID string `json:"dagRunId"`
 }
 
-// GcpDataproc — A Run Facet
+// GcpDataprocRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type GcpDataproc struct {
+type GcpDataprocRunFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -1158,10 +1118,10 @@ type GcpDataproc struct {
 	SessionUUID *string `json:"sessionUuid,omitempty"`
 }
 
-// GcpLineage — A Job Facet
+// GcpLineageJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-type GcpLineage struct {
+type GcpLineageJobFacet struct {
 	// URI identifying the producer of this metadata. For example this could be a git url with a
 	// given tag or sha
 	Producer string `json:"_producer"`
@@ -1190,21 +1150,21 @@ type Origin struct {
 type LeftType string
 
 const (
-	Field           LeftType = "field"
-	Literal         LeftType = "literal"
-	PurpleBinary    LeftType = "binary"
-	PurpleCompare   LeftType = "compare"
-	PurpleLocation  LeftType = "location"
-	PurplePartition LeftType = "partition"
+	Field         LeftType = "field"
+	Literal       LeftType = "literal"
+	LeftBinary    LeftType = "binary"
+	LeftCompare   LeftType = "compare"
+	LeftLocation  LeftType = "location"
+	LeftPartition LeftType = "partition"
 )
 
 type InputConditionType string
 
 const (
-	FluffyBinary    InputConditionType = "binary"
-	FluffyCompare   InputConditionType = "compare"
-	FluffyLocation  InputConditionType = "location"
-	FluffyPartition InputConditionType = "partition"
+	InputConditionBinary    InputConditionType = "binary"
+	InputConditionCompare   InputConditionType = "compare"
+	InputConditionLocation  InputConditionType = "location"
+	InputConditionPartition InputConditionType = "partition"
 )
 
 // LifecycleStateChangeEnum — The lifecycle state change.
