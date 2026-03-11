@@ -23,11 +23,13 @@ var DefaultNamespace = "default"
 
 // BaseEvent contains fields common to all OpenLineage event types.
 type BaseEvent struct {
-	// the time the event occurred at
+	// EventTime is the time the event occurred at.
 	EventTime time.Time
-	// URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	// Producer is a URI identifying the producer of this metadata.
+	// For example this could be a git url with a given tag or sha.
 	Producer string
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this RunEvent
+	// SchemaURL is the JSON Pointer (https://tools.ietf.org/html/rfc6901) URL
+	// to the corresponding version of the schema definition for this event.
 	SchemaURL string
 }
 
