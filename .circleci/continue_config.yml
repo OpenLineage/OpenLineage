@@ -1267,6 +1267,10 @@ jobs:
           command: |
             golangci-lint run ./...
       - run:
+          name: Run linter
+          command: |
+            golangci-lint run ./...
+      - run:
           name: Download dependencies
           command: go mod download
       - run:
