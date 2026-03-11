@@ -4,8 +4,9 @@
 */
 package io.openlineage.spark.api;
 
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -13,65 +14,51 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
  * A utility class for tracking visited nodes in a Spark LogicalPlan, specifically for identifying
- * nodes from which InputDataset information has been extracted. Uses semantic hash codes to
- * uniquely identify nodes representing the same data source within the LogicalPlan's leaf nodes.
+ * nodes from which InputDataset information has been extracted.
+ *
+ * <p>Nodes are tracked by object identity (reference equality) rather than semantic hash. This
+ * avoids calling {@code LogicalPlan.semanticHash()}, which is expensive on first invocation because
+ * it canonicalizes the entire subtree and computes a MurmurHash over it. Within a single query
+ * execution, {@code QueryExecution.optimizedPlan()} returns the same object references each time,
+ * so identity is sufficient for deduplication. An {@link IdentityHashMap} is used so that lookup
+ * uses {@code System.identityHashCode()} rather than {@code hashCode()}, which avoids NPEs from
+ * {@code LogicalPlan.hashCode()} on plans with partially-constructed nodes (e.g. null metadata).
  */
 public class VisitedNodes {
 
-  /**
-   * A map storing event names as keys and sets of semantic hash codes of visited nodes as values.
-   */
-  private final Map<String, Set<Integer>> visitedNodeHashes = new HashMap<>();
+  private final Map<String, Set<LogicalPlan>> nodesByEvent = new HashMap<>();
 
   /**
-   * Adds a node's semantic hash code to the set of visited nodes for a given Spark event.
+   * Marks a LogicalPlan node as visited for the given Spark event.
    *
    * @param event the SparkListenerEvent associated with the node
-   * @param hashCode the semantic hash code of the node
+   * @param plan the LogicalPlan node to mark as visited
    */
-  public void addVisitedNodeHash(SparkListenerEvent event, int hashCode) {
+  public void addVisitedNode(SparkListenerEvent event, LogicalPlan plan) {
     String eventName = event.getClass().getSimpleName();
-    if (visitedNodeHashes.containsKey(eventName)) {
-      visitedNodeHashes.get(eventName).add(hashCode);
-    } else {
-      Set<Integer> hashSet = new HashSet<>();
-      hashSet.add(hashCode);
-      visitedNodeHashes.put(eventName, hashSet);
-    }
-  }
-
-  public void addVisitedNodeHash(SparkListenerEvent event, LogicalPlan p) {
-    addVisitedNodeHash(event, p.semanticHash());
+    nodesByEvent
+        .computeIfAbsent(eventName, k -> Collections.newSetFromMap(new IdentityHashMap<>()))
+        .add(plan);
   }
 
   /**
-   * Checks if a node with the given semantic hash code has already been visited for a specific
-   * Spark event.
+   * Checks if a LogicalPlan node has already been visited for a specific Spark event.
    *
    * @param event the SparkListenerEvent associated with the node
-   * @param hashCode the semantic hash code of the node
+   * @param plan the LogicalPlan node to check
    * @return true if the node has been visited for the event, false otherwise
    */
-  public boolean alreadyVisited(SparkListenerEvent event, int hashCode) {
+  public boolean alreadyVisited(SparkListenerEvent event, LogicalPlan plan) {
+    if (plan == null) {
+      return false;
+    }
     String eventName = event.getClass().getSimpleName();
-    return visitedNodeHashes.containsKey(eventName)
-        && visitedNodeHashes.get(eventName).contains(hashCode);
+    Set<LogicalPlan> nodes = nodesByEvent.get(eventName);
+    return nodes != null && nodes.contains(plan);
   }
 
   /** Clears all stored information about visited nodes. */
   public void clearVisitedNodes() {
-    visitedNodeHashes.clear();
-  }
-
-  /**
-   * Checks if a LogicalPlan node has already been visited for a specific Spark event by using its
-   * semantic hash.
-   *
-   * @param event the SparkListenerEvent associated with the node
-   * @param logicalPlan the LogicalPlan node to check
-   * @return true if the node has been visited for the event, false otherwise
-   */
-  public boolean alreadyVisited(SparkListenerEvent event, LogicalPlan logicalPlan) {
-    return logicalPlan != null && alreadyVisited(event, logicalPlan.semanticHash());
+    nodesByEvent.clear();
   }
 }

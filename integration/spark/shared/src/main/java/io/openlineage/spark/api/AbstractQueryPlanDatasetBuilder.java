@@ -104,7 +104,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
         }
         List<D> result = builder.apply(event, (P) x);
         if (!result.isEmpty()) {
-          context.getVisitedNodes().addVisitedNodeHash((SparkListenerEvent) event, x);
+          context.getVisitedNodes().addVisitedNode((SparkListenerEvent) event, x);
         }
         return result;
       }
