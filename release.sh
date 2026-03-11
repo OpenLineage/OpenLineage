@@ -300,7 +300,7 @@ git commit --no-verify -sam "Prepare for release ${RELEASE_VERSION}" --signoff
 # (5) Pull latest tags, then prepare release tag
 git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
-# Required for go client so it can be imported with from github.com/OpenLineage/OpenLineage@v${RELEASE_VERSION}
+# Required for go client so it can be imported with from github.com/OpenLineage/openlineage/client/go@v${RELEASE_VERSION}
 git tag -a "client/go/v${RELEASE_VERSION}" -m "openlineage go-style version client/go/v${RELEASE_VERSION}"
 
 
