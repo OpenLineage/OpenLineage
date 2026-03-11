@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
 )
@@ -61,24 +62,35 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 			prettyPrint: config.Console.PrettyPrint,
 		}, nil
 	case TransportTypeHTTP:
-		httpClient := retryablehttp.NewClient().StandardClient()
+		retryClient := retryablehttp.NewClient()
+		retryClient.Logger = nil // suppress default debug logging
+
+		timeout := defaultTimeout
+		if config.HTTP.TimeoutInMillis > 0 {
+			timeout = time.Duration(config.HTTP.TimeoutInMillis) * time.Millisecond
+		}
+
+		httpClient := retryClient.StandardClient()
+		httpClient.Timeout = timeout
 
 		u, err := url.Parse(config.HTTP.URL)
 		if err != nil {
-			return nil, fmt.Errorf("parsing URL \"%s\" failed: %w", config.HTTP.URL, err)
+			return nil, fmt.Errorf("parsing URL %q failed: %w", config.HTTP.URL, err)
 		}
 
 		ep := config.HTTP.Endpoint
 		if ep == "" {
 			ep = "api/v1/lineage"
 		}
-
 		u = u.JoinPath(ep)
 
 		return &httpTransport{
-			httpClient: httpClient,
-			uri:        u.String(),
-			apiKey:     config.HTTP.APIKey,
+			httpClient:  httpClient,
+			uri:         u.String(),
+			urlParams:   config.HTTP.URLParams,
+			auth:        config.HTTP.Auth,
+			headers:     config.HTTP.Headers,
+			compression: config.HTTP.Compression,
 		}, nil
 	case TransportTypeGCPLineage:
 		return newGCPLineageTransport(ctx, config.GCPLineage)
