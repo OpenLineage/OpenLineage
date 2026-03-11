@@ -6,9 +6,9 @@ package io.openlineage.spark.api;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
@@ -20,8 +20,9 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * avoids calling {@code LogicalPlan.semanticHash()}, which is expensive on first invocation because
  * it canonicalizes the entire subtree and computes a MurmurHash over it. Within a single query
  * execution, {@code QueryExecution.optimizedPlan()} returns the same object references each time,
- * so identity is sufficient for deduplication. A {@link WeakHashMap} is used so that plan
- * references do not prevent garbage collection once the execution context is released.
+ * so identity is sufficient for deduplication. An {@link IdentityHashMap} is used so that lookup
+ * uses {@code System.identityHashCode()} rather than {@code hashCode()}, which avoids NPEs from
+ * {@code LogicalPlan.hashCode()} on plans with partially-constructed nodes (e.g. null metadata).
  */
 public class VisitedNodes {
 
@@ -36,7 +37,7 @@ public class VisitedNodes {
   public void addVisitedNode(SparkListenerEvent event, LogicalPlan plan) {
     String eventName = event.getClass().getSimpleName();
     nodesByEvent
-        .computeIfAbsent(eventName, k -> Collections.newSetFromMap(new WeakHashMap<>()))
+        .computeIfAbsent(eventName, k -> Collections.newSetFromMap(new IdentityHashMap<>()))
         .add(plan);
   }
 
