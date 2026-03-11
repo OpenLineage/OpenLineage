@@ -8,6 +8,7 @@ package openlineage_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
@@ -31,7 +32,11 @@ func ExampleRun() {
 		slog.Error("ol.NewClient failed", "error", err)
 	}
 
-	ctx, run := client.StartRun(ctx, "ingest")
+	ctx, run, err := client.StartRun(ctx, "ingest")
+	if err != nil {
+		slog.Error("client.StartRun failed", "error", err)
+		return
+	}
 	defer run.Finish()
 
 	if err := ChildFunction(ctx); err != nil {
@@ -43,9 +48,12 @@ func ExampleRun() {
 
 func ChildFunction(ctx context.Context) error {
 	parent := ol.RunFromContext(ctx)
-	_, childRun := parent.StartChild(ctx, "child")
+	_, childRun, err := parent.StartChild(ctx, "child")
+	if err != nil {
+		return fmt.Errorf("start child run: %w", err)
+	}
 
-	err := DoWork()
+	err = DoWork()
 	childRun.Finish(err)
 
 	return err
