@@ -95,10 +95,12 @@ func (olc *Client) NewRun(ctx context.Context, job string) (context.Context, Run
 
 // StartRun calls NewRun and emits a START event.
 // For details, see NewRun.
-func (olc *Client) StartRun(ctx context.Context, job string) (context.Context, Run) {
+func (olc *Client) StartRun(ctx context.Context, job string) (context.Context, Run, error) {
 	ctx, r := olc.NewRun(ctx, job)
-	_, _ = olc.Emit(ctx, r.NewEvent(EventTypeStart))
-	return ctx, r
+	if _, err := olc.Emit(ctx, r.NewEvent(EventTypeStart)); err != nil {
+		return ctx, r, fmt.Errorf("emit START event: %w", err)
+	}
+	return ctx, r, nil
 }
 
 // ExistingRun recreates a Run for a given run ID.

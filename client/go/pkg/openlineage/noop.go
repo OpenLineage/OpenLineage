@@ -22,8 +22,8 @@ func (n *noopRun) NewChild(ctx context.Context, _ string) (context.Context, Run)
 }
 
 // StartChild implements RunContext.
-func (n *noopRun) StartChild(ctx context.Context, _ string) (context.Context, Run) {
-	return ctx, &noopRun{}
+func (n *noopRun) StartChild(ctx context.Context, _ string) (context.Context, Run, error) {
+	return ctx, &noopRun{}, nil
 }
 
 // HasFailed implements RunContext.
