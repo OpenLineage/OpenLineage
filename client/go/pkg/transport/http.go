@@ -34,6 +34,11 @@ type httpTransport struct {
 	apiKey     string
 }
 
+// Close is a no-op for the HTTP transport; connections are managed by the http.Client.
+func (h *httpTransport) Close() error {
+	return nil
+}
+
 // Emit implements transport.
 func (h *httpTransport) Emit(ctx context.Context, event any) (map[string]string, error) {
 	body, err := json.Marshal(&event)

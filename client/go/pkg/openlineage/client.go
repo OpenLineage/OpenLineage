@@ -97,11 +97,7 @@ func (olc *Client) NewRun(ctx context.Context, job string) (context.Context, Run
 // For details, see NewRun.
 func (olc *Client) StartRun(ctx context.Context, job string) (context.Context, Run) {
 	ctx, r := olc.NewRun(ctx, job)
-	_, err := olc.Emit(ctx, r.NewEvent(EventTypeStart))
-	if err != nil {
-		return nil, nil
-	}
-
+	_, _ = olc.Emit(ctx, r.NewEvent(EventTypeStart))
 	return ctx, r
 }
 
