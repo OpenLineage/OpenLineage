@@ -7,7 +7,6 @@ package openlineage
 
 import (
 	"context"
-	"runtime"
 
 	"github.com/go-stack/stack"
 	"github.com/google/uuid"
@@ -159,11 +158,9 @@ func (r *run) RecordError(err error) {
 	r.hasFailed = true
 
 	errorMessage := err.Error()
-
 	stacktrace := stack.Caller(1).String()
-	language := runtime.Version()
 
-	errorFacet := facets.NewErrorMessageRunFacet(r.client.producer, errorMessage, language).
+	errorFacet := facets.NewErrorMessageRunFacet(r.client.producer, errorMessage, "go").
 		WithStackTrace(stacktrace)
 
 	errorEvent := r.NewEvent(EventTypeOther).WithRunFacets(errorFacet)
