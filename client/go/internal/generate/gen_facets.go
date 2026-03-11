@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -160,8 +161,15 @@ func consolidateImports(code string) string {
 	output.WriteString(packageLine + "\n")
 
 	if len(imports) > 0 {
-		output.WriteString("\nimport (\n")
+		// Sort for deterministic output
+		sortedImports := make([]string, 0, len(imports))
 		for pkg := range imports {
+			sortedImports = append(sortedImports, pkg)
+		}
+		sort.Strings(sortedImports)
+
+		output.WriteString("\nimport (\n")
+		for _, pkg := range sortedImports {
 			fmt.Fprintf(&output, "\t%q\n", pkg)
 		}
 		output.WriteString(")\n")

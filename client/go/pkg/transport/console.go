@@ -38,3 +38,8 @@ func (ct *consoleTransport) Emit(_ context.Context, event any) (map[string]strin
 
 	return nil, nil
 }
+
+// Close is a no-op for the console transport.
+func (ct *consoleTransport) Close() error {
+	return nil
+}

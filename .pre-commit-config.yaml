@@ -166,9 +166,11 @@ repos:
         files: ^spec/facets/.*\.json$
       - id: golangci-lint-client-go
         name: golangci-lint - Go client
-        description: "Runs the golangci-lint linter for Go client."
-        language: script
-        entry: .pre_commit/run-golangci-lint.sh --config-file client/go/.golangci.yml --working-dir client/go
+        description: "Runs the golangci-lint linter for Go client using Docker."
+        language: system
+        entry:
+          bash -c 'docker run --rm -v "$(pwd):/app" -w /app/client/go golangci/golangci-lint:v2.10.1 golangci-lint run
+          --config /app/client/go/.golangci.yml ./...'
         files: ^client/go/.*\.go$
         exclude: ".*\\.gen\\.go$"
         pass_filenames: false
