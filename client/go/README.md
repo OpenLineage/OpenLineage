@@ -21,29 +21,7 @@ go get github.com/OpenLineage/openlineage/client/go
 
 ## Quick Start
 
-### Using the Default Client
-
-The simplest way to emit events is using the default client with console output:
-
-```go
-package main
-
-import (
-    "github.com/google/uuid"
-    ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
-)
-
-func main() {
-    producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
-    
-    // Create and emit a simple run event
-    runID := ol.NewRunID()
-    event := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job", producer)
-    event.Emit()
-}
-```
-
-### Creating a Custom Client
+### Quick Start
 
 ```go
 package main
@@ -58,7 +36,8 @@ import (
 
 func main() {
     producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
-    cfg := ol.ClientConfig{
+
+    client, err := ol.NewClient(producer, &ol.ClientConfig{
         Namespace: "my-namespace",
         Transport: transport.Config{
             Type: transport.TransportTypeHTTP,
@@ -67,19 +46,17 @@ func main() {
                 APIKey: "your-api-key",
             },
         },
-    }
-
-    client, err := ol.NewClient(producer, &cfg)
+    })
     if err != nil {
         log.Fatal(err)
     }
 
     ctx := context.Background()
-    
-    // Start a run - this emits a START event
+
+    // Start a run — emits a START event
     ctx, run := client.StartRun(ctx, "etl-pipeline")
     defer run.Finish() // Emits COMPLETE or FAIL based on whether errors occurred
-    
+
     // Do work...
 }
 ```
@@ -106,15 +83,16 @@ The `Run` interface provides an ergonomic way to instrument your code with autom
 ctx, run := client.StartRun(ctx, "my-job")
 defer run.Finish()
 
-// Record inputs and outputs
-run.RecordInputs(
-    ol.NewInputElement("users", "postgres://db/schema"),
-    ol.NewInputElement("orders", "postgres://db/schema"),
-)
-
-run.RecordOutputs(
-    ol.NewOutputElement("user_orders", "s3://bucket/warehouse"),
-)
+// Build and emit an event with inputs, outputs and facets
+event := run.NewEvent(ol.EventTypeRunning).
+    WithInputs(
+        ol.NewInputElement("users", "postgres://db/schema"),
+        ol.NewInputElement("orders", "postgres://db/schema"),
+    ).
+    WithOutputs(
+        ol.NewOutputElement("user_orders", "s3://bucket/warehouse"),
+    )
+_, _ = run.Emit(ctx, event)
 
 // If something goes wrong
 if err := doWork(); err != nil {
@@ -198,14 +176,14 @@ import (
 // Create an event with facets
 event := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job", producer).
     WithRunFacets(
-        facets.NewNominalTime(producer, time.Now()).
+        facets.NewNominalTimeRunFacet(producer, time.Now()).
             WithNominalEndTime(time.Now().Add(time.Hour)),
-        facets.NewProcessingEngine(producer, "3.5.0").
+        facets.NewProcessingEngineRunFacet(producer, "3.5.0").
             WithName("Apache Spark"),
     ).
     WithJobFacets(
-        facets.NewSQL(producer, "SELECT * FROM users"),
-        facets.NewJobType(producer, "SPARK", "BATCH").
+        facets.NewSQLJobFacet(producer, "SELECT * FROM users"),
+        facets.NewJobTypeJobFacet(producer, "SPARK", "BATCH").
             WithJobType("QUERY"),
     )
 ```
@@ -217,40 +195,23 @@ Add input and output datasets to your events:
 ```go
 input := ol.NewInputElement("source_table", "postgres://host/db").
     WithFacets(
-        &facets.Schema{
-            Fields: []facets.SchemaDatasetFacetFields{
-                {Name: "id", Type: ptr("BIGINT")},
-                {Name: "name", Type: ptr("VARCHAR")},
-            },
-        },
-        &facets.DataSource{
-            Name: ptr("production-postgres"),
-            URI:  ptr("postgres://prod-db.example.com:5432/analytics"),
-        },
-    ).
-    WithInputFacets(
-        &facets.DataQualityMetrics{
-            RowCount: ptr(int64(1000000)),
-            Bytes:    ptr(int64(524288000)),
-            ColumnMetrics: map[string]facets.ColumnMetrics{
-                "id": {
-                    NullCount:     ptr(int64(0)),
-                    DistinctCount: ptr(int64(1000000)),
-                },
-            },
-        },
+        facets.NewSchemaDatasetFacet(producer).WithFields([]facets.FieldElement{
+            {Name: "id", Type: ol.Ptr("BIGINT")},
+            {Name: "name", Type: ol.Ptr("VARCHAR")},
+        }),
+        facets.NewDatasourceDatasetFacet(producer).
+            WithName("production-postgres").
+            WithURI("postgres://prod-db.example.com:5432/analytics"),
     )
 
 output := ol.NewOutputElement("target_table", "s3://bucket/warehouse").
     WithOutputFacets(
-        &facets.OutputStatistics{
-            RowCount:  ptr(int64(500000)),
-            Size:      ptr(int64(262144000)),
-            FileCount: ptr(int64(10)),
-        },
+        facets.NewOutputStatisticsOutputDatasetFacet(producer).
+            WithRowCount(500000).
+            WithSize(262144000),
     )
 
-event := ol.NewRunEvent(ol.EventTypeComplete, runID, "etl-job").
+event := ol.NewRunEvent(ol.EventTypeComplete, runID, "etl-job", producer).
     WithInputs(input).
     WithOutputs(output)
 ```
@@ -359,15 +320,12 @@ import (
 
 func main() {
     producer := "https://github.com/your-org/your-integration/tree/v1.0.0"
-    
-    // Create client
+
     client, err := ol.NewClient(producer, &ol.ClientConfig{
         Namespace: "analytics",
         Transport: transport.Config{
             Type: transport.TransportTypeHTTP,
-            HTTP: transport.HTTPConfig{
-                URL: "http://marquez:5000",
-            },
+            HTTP: transport.HTTPConfig{URL: "http://marquez:5000"},
         },
     })
     if err != nil {
@@ -375,56 +333,54 @@ func main() {
     }
 
     ctx := context.Background()
-    
-    // Start the main pipeline run
+
+    // Start the main pipeline run — emits START
     ctx, run := client.StartRun(ctx, "daily-etl")
-    defer run.Finish()
+    defer run.Finish() // emits COMPLETE or FAIL
 
-    // Record job metadata
-    run.RecordJobFacets(
-        facets.NewJobType(producer, "BATCH", "SPARK"),
-        facets.NewSQL(producer, "INSERT INTO analytics.summary SELECT * FROM staging.events"),
-    )
+    // Emit a RUNNING event with inputs, outputs and job facets
+    event := run.NewEvent(ol.EventTypeRunning).
+        WithJobFacets(
+            facets.NewJobTypeJobFacet(producer, "SPARK", "BATCH"),
+            facets.NewSQLJobFacet(producer, "INSERT INTO analytics.summary SELECT * FROM staging.events"),
+        ).
+        WithInputs(
+            ol.NewInputElement("events", "postgres://staging/public").
+                WithFacets(
+                    facets.NewSchemaDatasetFacet(producer).WithFields([]facets.FieldElement{
+                        {Name: "event_id", Type: ol.Ptr("UUID")},
+                        {Name: "event_type", Type: ol.Ptr("VARCHAR")},
+                    }),
+                ),
+        ).
+        WithOutputs(
+            ol.NewOutputElement("summary", "s3://analytics/warehouse").
+                WithOutputFacets(
+                    facets.NewOutputStatisticsOutputDatasetFacet(producer).
+                        WithRowCount(1000000).
+                        WithSize(104857600),
+                ),
+        )
 
-    // Record inputs
-    run.RecordInputs(
-        ol.NewInputElement("events", "postgres://staging/public").
-            WithFacets(
-                facets.NewSchema(producer).WithFields([]facets.FieldElement{
-                    {Name: "event_id", Type: ol.Ptr("UUID")},
-                    {Name: "event_type", Type: ol.Ptr("VARCHAR")},
-                    {Name: "timestamp", Type: ol.Ptr("TIMESTAMP")},
-                }),
-            ),
-    )
-
-    // Do the actual work
-    if err := processData(ctx); err != nil {
+    if _, err := run.Emit(ctx, event); err != nil {
         run.RecordError(err)
         log.Printf("Pipeline failed: %v", err)
         return
     }
 
-    // Record outputs
-    run.RecordOutputs(
-        ol.NewOutputElement("summary", "s3://analytics/warehouse").
-            WithOutputFacets(
-                facets.NewOutputStatistics(producer).
-                    WithRowCount(1000000).
-                    WithSize(104857600),
-            ),
-    )
+    if err := processData(ctx); err != nil {
+        run.RecordError(err)
+        log.Printf("Pipeline failed: %v", err)
+    }
 }
 
 func processData(ctx context.Context) error {
-    // Get the current run from context
     parent := ol.RunFromContext(ctx)
-    
-    // Create a child run for a sub-task
+
     ctx, childRun := parent.StartChild(ctx, "transform-step")
     defer childRun.Finish()
-    
-    // Processing logic here...
+
+    _ = ctx
     return nil
 }
 ```
@@ -465,16 +421,16 @@ func main() {
     runID := ol.NewRunID()
     jobName := "daily-etl"
 
-    // START event - emitted at job start
+    // START event — emitted at job start
     startEvent := ol.NewRunEvent(ol.EventTypeStart, runID, jobName, producer).
         WithJobFacets(
-            facets.NewJobType(producer, "BATCH", "SPARK"),
-            facets.NewSQL(producer, "INSERT INTO analytics.summary SELECT * FROM staging.events"),
+            facets.NewJobTypeJobFacet(producer, "BATCH", "SPARK"),
+            facets.NewSQLJobFacet(producer, "INSERT INTO analytics.summary SELECT * FROM staging.events"),
         ).
         WithInputs(
             ol.NewInputElement("events", "postgres://staging/public").
                 WithFacets(
-                    facets.NewSchema(producer).WithFields([]facets.FieldElement{
+                    facets.NewSchemaDatasetFacet(producer).WithFields([]facets.FieldElement{
                         {Name: "event_id", Type: ol.Ptr("UUID")},
                         {Name: "event_type", Type: ol.Ptr("VARCHAR")},
                         {Name: "timestamp", Type: ol.Ptr("TIMESTAMP")},
@@ -482,41 +438,41 @@ func main() {
                 ),
         )
 
-    if err := client.Emit(ctx, startEvent); err != nil {
+    if _, err := client.Emit(ctx, startEvent); err != nil {
         log.Fatal(err)
     }
 
     // Do the actual work
     startTime := time.Now()
     if err := processData(); err != nil {
-        // FAIL event - emitted on error
+        // FAIL event — emitted on error
         failEvent := ol.NewRunEvent(ol.EventTypeFail, runID, jobName, producer).
             WithRunFacets(
-                facets.NewErrorMessage(producer, err.Error(), "go"),
+                facets.NewErrorMessageRunFacet(producer, err.Error(), "go"),
             )
-        
-        if err := client.Emit(ctx, failEvent); err != nil {
+
+        if _, err := client.Emit(ctx, failEvent); err != nil {
             log.Printf("Failed to emit fail event: %v", err)
         }
         log.Fatal(err)
     }
 
-    // COMPLETE event - emitted on success
+    // COMPLETE event — emitted on success
     completeEvent := ol.NewRunEvent(ol.EventTypeComplete, runID, jobName, producer).
         WithRunFacets(
-            facets.NewNominalTime(producer, startTime).
-                WithNominalEndTime(time.Now()),
+            facets.NewNominalTimeRunFacet(producer, startTime).
+                WithNominalEndTime(&[]time.Time{time.Now()}[0]),
         ).
         WithOutputs(
             ol.NewOutputElement("summary", "s3://analytics/warehouse").
                 WithOutputFacets(
-                    facets.NewOutputStatistics(producer).
+                    facets.NewOutputStatisticsOutputDatasetFacet(producer).
                         WithRowCount(1000000).
                         WithSize(104857600),
                 ),
         )
 
-    if err := client.Emit(ctx, completeEvent); err != nil {
+    if _, err := client.Emit(ctx, completeEvent); err != nil {
         log.Fatal(err)
     }
 }
@@ -550,12 +506,10 @@ func processData() error {
 | `NewChild(ctx, job)` | Create a child run |
 | `StartChild(ctx, job)` | Create and start a child run |
 | `NewEvent(eventType)` | Create an event for this run |
-| `Finish()` | Complete the run (COMPLETE or FAIL) |
+| `Emit(ctx, event)` | Emit an event using the run's client |
+| `Finish(errs...)` | Complete the run (COMPLETE or FAIL) |
+| `HasFailed()` | Returns true if RecordError was called |
 | `RecordError(err)` | Record an error (marks run as failed) |
-| `RecordRunFacets(...)` | Emit run facets |
-| `RecordJobFacets(...)` | Emit job facets |
-| `RecordInputs(...)` | Emit input datasets |
-| `RecordOutputs(...)` | Emit output datasets |
 
 ### Events
 

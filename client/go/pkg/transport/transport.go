@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -27,8 +28,10 @@ const (
 // Transport is the interface implemented by all OpenLineage transports.
 // The map returned by Emit contains any response metadata from the consumer
 // (e.g. a server-assigned event ID). It may be nil if the transport has nothing to report.
+// Close releases any resources held by the transport (e.g. network connections).
 type Transport interface {
 	Emit(ctx context.Context, event any) (map[string]string, error)
+	io.Closer
 }
 
 // TransportType identifies the transport implementation to use.
@@ -49,6 +52,9 @@ func New(config *Config) (Transport, error) {
 
 // NewWithContext creates a new Transport using the provided context.
 func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
+	if config == nil {
+		return nil, errors.New("transport config must not be nil")
+	}
 	switch config.Type {
 	case TransportTypeConsole:
 		return &consoleTransport{
