@@ -53,8 +53,8 @@ type Run interface {
 	// NewChild creates a new Run with the current Run set as its parent
 	NewChild(ctx context.Context, jobName string) (context.Context, Run)
 
-	// StartChild calls NewChild and emits a START event
-	StartChild(ctx context.Context, jobName string) (context.Context, Run)
+	// StartChild calls NewChild and emits a START event.
+	StartChild(ctx context.Context, jobName string) (context.Context, Run, error)
 
 	// NewEvent creates a new Event of the provided EventType
 	NewEvent(EventType) *RunEvent
@@ -145,7 +145,7 @@ func (r *run) NewChild(ctx context.Context, jobName string) (context.Context, Ru
 	return r.client.NewRun(ctx, jobName)
 }
 
-func (r *run) StartChild(ctx context.Context, jobName string) (context.Context, Run) {
+func (r *run) StartChild(ctx context.Context, jobName string) (context.Context, Run, error) {
 	return r.client.StartRun(ctx, jobName)
 }
 
