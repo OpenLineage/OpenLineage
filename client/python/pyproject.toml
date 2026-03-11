@@ -7,6 +7,8 @@ name = "openlineage-python"
 version = "1.46.0"
 description = "OpenLineage Python Client"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 keywords = [
   "openlineage",
 ]
