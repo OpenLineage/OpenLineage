@@ -97,6 +97,12 @@ class CommonConfigPlugin : Plugin<Project> {
                 showStandardStreams = true
             }
 
+            if (target.hasProperty("java.test.home")) {
+                // Allow running tests with a specific JDK (e.g. Java 17) independently of the
+                // JDK used to run Gradle. Mirrors the java.compile.home mechanism for compilation.
+                executable = "${target.findProperty("java.test.home")}/bin/java"
+            }
+
             if (JavaVersion.current() >= JavaVersion.VERSION_17) {
                 jvmArgs(
                     "--add-opens=java.base/java.lang=ALL-UNNAMED",

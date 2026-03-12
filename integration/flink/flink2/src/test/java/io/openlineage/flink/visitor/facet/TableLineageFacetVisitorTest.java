@@ -10,14 +10,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
+import io.openlineage.client.OpenLineage.DefaultDatasetFacet;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.Versions;
 import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.apache.flink.streaming.api.lineage.DatasetConfigFacet;
+import org.apache.flink.streaming.api.lineage.LineageDatasetFacet;
 import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.Schema.UnresolvedPhysicalColumn;
 import org.apache.flink.table.planner.lineage.TableLineageDataset;
@@ -62,5 +68,36 @@ class TableLineageFacetVisitorTest {
     assertThat(fields.get(1))
         .hasFieldOrPropertyWithValue("name", "col_b")
         .hasFieldOrPropertyWithValue("type", "type2");
+  }
+
+  @Test
+  void testApplyWithConfigFacet() {
+    when(context.getOpenLineage()).thenReturn(openLineage);
+    DatasetFacetsBuilder facetsBuilder = openLineage.newDatasetFacetsBuilder();
+    Schema schema = mock(Schema.class);
+    when(table.table().getUnresolvedSchema()).thenReturn(schema);
+    when(schema.getColumns()).thenReturn(Arrays.asList());
+
+    DatasetConfigFacet configFacet = mock(DatasetConfigFacet.class);
+    when(configFacet.name()).thenReturn("config");
+    Map<String, String> config = new HashMap<>();
+    config.put("key1", "value1");
+    config.put("key2", "value2");
+    when(configFacet.config()).thenReturn(config);
+
+    Map<String, LineageDatasetFacet> facets = new HashMap<>();
+    facets.put("config", configFacet);
+    when(table.facets()).thenReturn(facets);
+
+    visitor.apply(
+        new LineageDatasetWithIdentifier(new DatasetIdentifier("namespace", "name"), table),
+        facetsBuilder);
+
+    Map<String, DatasetFacet> additionalProps = facetsBuilder.build().getAdditionalProperties();
+    DefaultDatasetFacet resultFacet = (DefaultDatasetFacet) additionalProps.get("config");
+
+    assertThat(resultFacet).isNotNull();
+    assertThat(resultFacet.getAdditionalProperties()).containsEntry("key1", "value1");
+    assertThat(resultFacet.getAdditionalProperties()).containsEntry("key2", "value2");
   }
 }
