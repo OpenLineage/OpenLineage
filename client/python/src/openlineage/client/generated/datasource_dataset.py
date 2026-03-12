@@ -14,6 +14,7 @@ class DatasourceDatasetFacet(DatasetFacet):
     name: str | None = attr.field(default=None)
     uri: str | None = attr.field(default=None)
     _additional_skip_redact: ClassVar[list[str]] = ["name", "uri"]
+    key: ClassVar[str] = "dataSource"
 
     @staticmethod
     def _get_schema() -> str:
@@ -21,6 +22,7 @@ class DatasourceDatasetFacet(DatasetFacet):
 
     @uri.validator
     def uri_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+
         if value is None:
             return
         from urllib.parse import urlparse

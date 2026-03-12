@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import DatasetFacet
 
@@ -14,6 +16,8 @@ class StorageDatasetFacet(DatasetFacet):
 
     fileFormat: str | None = attr.field(default=None)  # noqa: N815
     """File format with allowed values: parquet, orc, avro, json, csv, text, xml."""
+
+    key: ClassVar[str] = "storage"
 
     @staticmethod
     def _get_schema() -> str:

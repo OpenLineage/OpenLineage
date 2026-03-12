@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import RunFacet
 
@@ -21,6 +23,7 @@ class ExternalQueryRunFacet(RunFacet):
 
     Example: bigquery
     """
+    key: ClassVar[str] = "externalQuery"
 
     @staticmethod
     def _get_schema() -> str:

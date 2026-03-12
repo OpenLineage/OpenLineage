@@ -26,6 +26,7 @@ class NominalTimeRunFacet(RunFacet):
     Example: 2020-12-17T04:00:00.000Z
     """
     _additional_skip_redact: ClassVar[list[str]] = ["nominalStartTime", "nominalEndTime"]
+    key: ClassVar[str] = "nominalTime"
 
     @staticmethod
     def _get_schema() -> str:
@@ -43,6 +44,7 @@ class NominalTimeRunFacet(RunFacet):
 
     @nominalEndTime.validator
     def nominalendtime_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+
         if value is None:
             return
         from dateutil import parser

@@ -54,6 +54,7 @@ TEMPLATES_LOCATION = FILE_LOCATION / "templates"
 # Contains schema URLs and base IDs parsed from specification files
 SCHEMA_URLS: dict[str, str] = {}
 BASE_IDS: dict[str, str] = {}
+FACET_KEYS: dict[str, str] = {}
 
 
 def deep_merge_dicts(dict1: dict[str, Any], dict2: dict[str, Any]) -> dict[str, Any]:
@@ -89,6 +90,10 @@ def parse_additional_data(spec: dict[str, Any], file_name: str) -> None:
     for name, _ in spec["$defs"].items():
         SCHEMA_URLS[name] = f"{base_id}#/$defs/{name}"
         BASE_IDS[file_name] = spec["$id"]
+    for facet_key, ref_obj in spec.get("properties", {}).items():
+        if "$ref" in ref_obj:
+            class_name = ref_obj["$ref"].split("/")[-1]
+            FACET_KEYS[class_name] = facet_key
 
 
 def load_specs(base_spec_location: pathlib.Path, facets_spec_location: pathlib.Path) -> list[pathlib.Path]:

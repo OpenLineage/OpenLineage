@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import RunFacet
 from openlineage.client.utils import RedactMixin
@@ -44,6 +46,8 @@ class ExecutionParameter(RedactMixin):
 class ExecutionParametersRunFacet(RunFacet):
     parameters: list[ExecutionParameter] | None = attr.field(factory=list)
     """The parameters passed to the Job at runtime"""
+
+    key: ClassVar[str] = "executionParameters"
 
     @staticmethod
     def _get_schema() -> str:
