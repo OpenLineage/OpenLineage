@@ -11,7 +11,7 @@ import CardMedia from "@mui/material/CardMedia";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Unstable_Grid2";
 import Collapse from "@mui/material/Collapse";
-import IconButton, { IconButtonProps } from "@mui/material/IconButton";
+import { IconButtonProps } from "@mui/material/IconButton";
 import { Talks, Talk } from "@site/static/talks/talkStrings";
 import { Meetups, Meetup } from "@site/static/meetups/meetupStrings";
 
@@ -29,7 +29,7 @@ interface ExpandMoreProps extends IconButtonProps {
 
 const ExpandMore = styled((props: ExpandMoreProps) => {
   const { isExpand, ...other } = props;
-  return <IconButton {...other} />;
+  return <div {...other} />;
 })(({ theme }) => ({
   marginX: "auto",
   transition: theme.transitions.create("transform", {
@@ -77,9 +77,7 @@ const MeetupCard = (meetup: Meetup) => {
         <h5 className="community-typography">{meetup.city}</h5>
       </CardContent>
       <CardActions className="community-card-btns" disableSpacing>
-        <Button size="small" href={meetup.link}>
-          Join
-        </Button>
+        <a href={meetup.link}>Join</a>
       </CardActions>
     </Card>
   );
@@ -96,20 +94,16 @@ const TalkCard = (talk: Talk) => {
     if (talk.video_url) {
       return (
         <CardActions className="community-card-btns" disableSpacing>
-          <Button size="small" href={talk.conf_url}>
-            Learn more
-          </Button>
-          <Button size="small" href={talk.video_url} sx={{ marginLeft: 2 }}>
+          <a href={talk.conf_url}>Learn more</a>
+          <a href={talk.video_url} sx={{ marginLeft: 2 }}>
             Watch
-          </Button>
+          </a>
         </CardActions>
       );
     } else {
       return (
         <CardActions className="community-card-btns" disableSpacing>
-          <Button size="small" href={talk.conf_url}>
-            Learn more
-          </Button>
+          <a href={talk.conf_url}>Learn more</a>
         </CardActions>
       );
     }
@@ -255,22 +249,11 @@ export default function CommunityResources(): JSX.Element {
               </p>
             </CardContent>
             <CardActions className="community-card-btns" disableSpacing>
-              <Button
-                size="small"
-                href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac"
-              >
+              <a href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac">
                 Zoom
-              </Button>
-              <Button sx={{ marginLeft: 2 }} size="small" href="https://www.youtube.com/@openlineageproject6897/videos">
-                YouTube
-              </Button>
-              <Button
-                sx={{ marginLeft: 2 }}
-                size="small"
-                href="https://wiki.lfaidata.foundation/display/OpenLineage/Monthly+TSC+meeting"
-              >
-                Minutes
-              </Button>
+              </a>
+              <a href="https://www.youtube.com/@openlineageproject6897/videos">YouTube</a>
+              <a href="https://wiki.lfaidata.foundation/display/OpenLineage/Monthly+TSC+meeting">Minutes</a>
             </CardActions>
           </Card>
         </Grid>
@@ -309,12 +292,9 @@ export default function CommunityResources(): JSX.Element {
               </p>
             </CardContent>
             <CardActions className="community-card-btns" disableSpacing>
-              <Button
-                size="small"
-                href="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
-              >
+              <a href="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w">
                 Join Slack
-              </Button>
+              </a>
             </CardActions>
           </Card>
         </Grid>
@@ -353,12 +333,8 @@ export default function CommunityResources(): JSX.Element {
               </p>
             </CardContent>
             <CardActions className="community-card-btns" disableSpacing>
-              <Button size="small" href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md">
-                Contribute
-              </Button>
-              <Button sx={{ marginLeft: 2 }} size="small" href="https://github.com/OpenLineage/">
-                GitHub
-              </Button>
+              <a href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md">Contribute</a>
+              <a href="https://github.com/OpenLineage/">GitHub</a>
             </CardActions>
           </Card>
         </Grid>
