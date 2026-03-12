@@ -319,8 +319,6 @@ def test_generated_facets_have_key_classvar():
 
 def test_facet_key_not_serialized():
     """ClassVar `key` must not appear in the serialized event payload."""
-    facet = error_message_run.ErrorMessageRunFacet(
-        message="boom", programmingLanguage="Python"
-    )
+    facet = error_message_run.ErrorMessageRunFacet(message="boom", programmingLanguage="Python")
     serialized = Serde.to_json(facet)
     assert '"key"' not in serialized

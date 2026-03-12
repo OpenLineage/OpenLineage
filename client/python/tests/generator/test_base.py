@@ -146,7 +146,10 @@ def test_parse_additional_data_raises_on_key_field_conflict() -> None:
             "BadFacet": {
                 "allOf": [
                     {"$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"},
-                    {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}},
+                    {
+                        "type": "object",
+                        "properties": {"key": {"type": "string"}, "value": {"type": "string"}},
+                    },
                 ]
             }
         },

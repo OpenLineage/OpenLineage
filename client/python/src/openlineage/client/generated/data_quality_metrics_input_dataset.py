@@ -55,7 +55,6 @@ class DataQualityMetricsInputDatasetFacet(InputDatasetFacet):
 
     @lastUpdated.validator
     def lastupdated_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
-
         if value is None:
             return
         from dateutil import parser

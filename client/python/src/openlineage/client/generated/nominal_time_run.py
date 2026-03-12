@@ -44,7 +44,6 @@ class NominalTimeRunFacet(RunFacet):
 
     @nominalEndTime.validator
     def nominalendtime_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
-
         if value is None:
             return
         from dateutil import parser
