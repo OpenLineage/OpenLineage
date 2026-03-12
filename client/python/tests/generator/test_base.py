@@ -10,6 +10,7 @@ from unittest import mock
 import pytest
 from openlineage.client.generator.base import (
     BASE_IDS,
+    FACET_KEYS,
     SCHEMA_URLS,
     camel_to_snake,
     deep_merge_dicts,
@@ -123,6 +124,53 @@ def my_function():
     assert imports == "import os\nimport sys\nfrom typing import Dict, List"
     assert "class MyClass:" in rest
     assert "def my_function():" in rest
+
+
+def test_parse_additional_data_extracts_facet_key() -> None:
+    FACET_KEYS.clear()
+    spec = {
+        "$id": "https://openlineage.io/spec/facets/1-0-0/ErrorFacet.json",
+        "$defs": {"ErrorFacet": {"type": "object"}},
+        "properties": {"errorMessage": {"$ref": "#/$defs/ErrorFacet"}},
+    }
+    parse_additional_data(spec, "ErrorFacet.json")
+    assert FACET_KEYS["ErrorFacet"] == "errorMessage"
+
+
+def test_parse_additional_data_raises_on_key_field_conflict() -> None:
+    """A facet spec that defines a field named 'key' must be rejected."""
+    FACET_KEYS.clear()
+    spec = {
+        "$id": "https://openlineage.io/spec/facets/1-0-0/BadFacet.json",
+        "$defs": {
+            "BadFacet": {
+                "allOf": [
+                    {"$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"},
+                    {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}},
+                ]
+            }
+        },
+        "properties": {"badFacet": {"$ref": "#/$defs/BadFacet"}},
+    }
+    with pytest.raises(ValueError, match="'key'"):
+        parse_additional_data(spec, "BadFacet.json")
+
+
+def test_parse_additional_data_raises_on_key_field_conflict_flat_properties() -> None:
+    """Same check for facets using flat properties instead of allOf."""
+    FACET_KEYS.clear()
+    spec = {
+        "$id": "https://openlineage.io/spec/facets/1-0-0/BadFacet.json",
+        "$defs": {
+            "BadFacet": {
+                "type": "object",
+                "properties": {"key": {"type": "string"}},
+            }
+        },
+        "properties": {"badFacet": {"$ref": "#/$defs/BadFacet"}},
+    }
+    with pytest.raises(ValueError, match="'key'"):
+        parse_additional_data(spec, "BadFacet.json")
 
 
 @mock.patch("openlineage.client.generator.base.tempfile.NamedTemporaryFile")
