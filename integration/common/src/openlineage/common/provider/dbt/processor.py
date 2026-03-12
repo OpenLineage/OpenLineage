@@ -456,8 +456,14 @@ class DbtArtifactProcessor:
                 node_columns = test_node
 
             else:
-                name = test_node["test_metadata"]["name"]
-                node_columns = test_node["test_metadata"]
+                test_metadata = test_node.get("test_metadata")
+                if test_metadata:
+                    name = test_metadata["name"]
+                    node_columns = test_metadata
+                else:
+                    # Singular test — no test_metadata, use node name directly
+                    name = test_node["name"]
+                    node_columns = test_node
 
             # Extract severity from config, normalize to lowercase
             config = test_node.get("config", {})
