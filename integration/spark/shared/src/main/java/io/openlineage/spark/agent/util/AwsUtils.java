@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -26,10 +27,12 @@ public class AwsUtils {
   public static final String AWS_GLUE_HIVE_FACTORY_CLASS =
       "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory";
   private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
+  private static final String SPARK_SQL_CATALOG_PREFIX = "spark.sql.catalog.";
+  private static final String GLUE_CATALOG_SUFFIX = "GlueCatalog";
 
   @SneakyThrows
   public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
-    if (isHiveUsingGlue(sparkConf, hadoopConf)) {
+    if (isHiveUsingGlue(sparkConf, hadoopConf) || isIcebergUsingGlue(sparkConf)) {
       return awsRegion()
           .flatMap(
               region ->
@@ -183,6 +186,11 @@ public class AwsUtils {
     }
 
     return Optional.empty();
+  }
+
+  private static boolean isIcebergUsingGlue(SparkConf sparkConf) {
+    return Arrays.stream(sparkConf.getAllWithPrefix(SPARK_SQL_CATALOG_PREFIX))
+        .anyMatch(tuple -> tuple._2().endsWith(GLUE_CATALOG_SUFFIX));
   }
 
   private static boolean isHiveUsingGlue(SparkConf sparkConf, Configuration hadoopConf) {
