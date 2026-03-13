@@ -30,6 +30,7 @@ func ExampleRun() {
 	client, err := ol.NewClient(producer, &cfg)
 	if err != nil {
 		slog.Error("ol.NewClient failed", "error", err)
+		return
 	}
 
 	ctx, run, err := client.StartRun(ctx, "ingest")
