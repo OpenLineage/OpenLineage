@@ -130,6 +130,36 @@ class HiveMetastoreIntegrationTest {
                   && expectedMetadataUri.equals(catalogFacet.getMetadataUri())
                   && expectedWarehouseUri.equals(catalogFacet.getWarehouseUri());
             });
+
+    assertThat(events)
+        .flatExtracting(OpenLineage.RunEvent::getInputs)
+        .filteredOn(input -> input.getName().contains("hive3."))
+        .allMatch(
+            input -> {
+              OpenLineage.HierarchyDatasetFacet hierarchyFacet = input.getFacets().getHierarchy();
+              return hierarchyFacet != null
+                  && hierarchyFacet.getHierarchy() != null
+                  && hierarchyFacet.getHierarchy().stream()
+                      .anyMatch(
+                          level ->
+                              "DATABASE".equals(level.getType())
+                                  && "hive3".equals(level.getName()));
+            });
+
+    assertThat(events)
+        .flatExtracting(OpenLineage.RunEvent::getOutputs)
+        .filteredOn(output -> output.getName().contains("hive3."))
+        .allMatch(
+            output -> {
+              OpenLineage.HierarchyDatasetFacet hierarchyFacet = output.getFacets().getHierarchy();
+              return hierarchyFacet != null
+                  && hierarchyFacet.getHierarchy() != null
+                  && hierarchyFacet.getHierarchy().stream()
+                      .anyMatch(
+                          level ->
+                              "DATABASE".equals(level.getType())
+                                  && "hive3".equals(level.getName()));
+            });
   }
 
   @Test

@@ -14,6 +14,7 @@ import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
+import io.openlineage.client.OpenLineage.HierarchyDatasetFacet;
 import io.openlineage.client.OpenLineage.IcebergCommitReportOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.IcebergScanReportInputDatasetFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
@@ -831,6 +832,68 @@ class SparkIcebergIntegrationTest {
         .isEqualTo(1L);
     assertThat(icebergCommitReport.get().getCommitMetrics().getAddedDataFiles().longValue())
         .isEqualTo(1L);
+  }
+
+  @Test
+  void testHierarchyFacets() {
+    clearTables("hierarchy_source", "hierarchy_target");
+    createTempDataset(2).createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE hierarchy_source USING iceberg AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE hierarchy_target (a long, b long) USING iceberg");
+    spark.sql("INSERT INTO hierarchy_target SELECT * FROM hierarchy_source");
+
+    List<RunEvent> events = getEventsEmitted(mockServer);
+
+    assertThat(events)
+        .flatExtracting(RunEvent::getOutputs)
+        .filteredOn(output -> output.getName().contains("hierarchy_target"))
+        .allMatch(
+            output -> {
+              HierarchyDatasetFacet hierarchy = output.getFacets().getHierarchy();
+              return hierarchy != null
+                  && hierarchy.getHierarchy() != null
+                  && hierarchy.getHierarchy().stream()
+                      .anyMatch(
+                          level ->
+                              "CATALOG".equals(level.getType())
+                                  && "spark_catalog".equals(level.getName()))
+                  && hierarchy.getHierarchy().stream()
+                      .anyMatch(
+                          level ->
+                              "DATABASE".equals(level.getType())
+                                  && "default".equals(level.getName()))
+                  && hierarchy.getHierarchy().stream()
+                      .anyMatch(
+                          level ->
+                              "TABLE".equals(level.getType())
+                                  && "hierarchy_target".equals(level.getName()));
+            });
+
+    assertThat(events)
+        .flatExtracting(RunEvent::getInputs)
+        .filteredOn(input -> input.getName().contains("hierarchy_source"))
+        .allMatch(
+            input -> {
+              HierarchyDatasetFacet hierarchy = input.getFacets().getHierarchy();
+              return hierarchy != null
+                  && hierarchy.getHierarchy() != null
+                  && hierarchy.getHierarchy().stream()
+                      .anyMatch(
+                          level ->
+                              "CATALOG".equals(level.getType())
+                                  && "spark_catalog".equals(level.getName()))
+                  && hierarchy.getHierarchy().stream()
+                      .anyMatch(
+                          level ->
+                              "DATABASE".equals(level.getType())
+                                  && "default".equals(level.getName()))
+                  && hierarchy.getHierarchy().stream()
+                      .anyMatch(
+                          level ->
+                              "TABLE".equals(level.getType())
+                                  && "hierarchy_source".equals(level.getName()));
+            });
   }
 
   private void clearTables(String... tables) {
