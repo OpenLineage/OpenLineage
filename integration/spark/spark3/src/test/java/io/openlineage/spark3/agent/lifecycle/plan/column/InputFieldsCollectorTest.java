@@ -6,23 +6,33 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
+import io.openlineage.sql.ColumnLineage;
+import io.openlineage.sql.DbTableMeta;
+import io.openlineage.sql.SqlMeta;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.Properties;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -36,6 +46,8 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 import org.apache.spark.sql.sources.BaseRelation;
@@ -249,6 +261,111 @@ class InputFieldsCollectorTest {
     InputFieldsCollector.collect(context, plan);
 
     verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
+  }
+
+  private LogicalRelation createJdbcLogicalRelation(JDBCRelation jdbcRelation) {
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    when(logicalRelation.relation()).thenReturn(jdbcRelation);
+    when(logicalRelation.output())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(attributeReference))
+                .asScala()
+                .toSeq());
+    return logicalRelation;
+  }
+
+  private JDBCRelation createMockJdbcRelation() {
+    JDBCRelation jdbcRelation = mock(JDBCRelation.class);
+    JDBCOptions jdbcOptions = mock(JDBCOptions.class);
+    when(jdbcRelation.jdbcOptions()).thenReturn(jdbcOptions);
+    when(jdbcOptions.url()).thenReturn("jdbc:postgresql://localhost:5432/test");
+    when(jdbcOptions.asConnectionProperties()).thenReturn(new Properties());
+    return jdbcRelation;
+  }
+
+  /**
+   * Regression test for https://github.com/OpenLineage/OpenLineage/issues/4314.
+   *
+   * <p>When reading from JDBC with a column alias (e.g. {@code SELECT name AS namex FROM
+   * source_table}), Spark's output attributes carry the alias name {@code "namex"}. Before the fix,
+   * {@code extractInternalInputs()} iterated those attributes and added {@code "namex"} as a
+   * phantom input field. After the fix the call is skipped for JDBC nodes that already have SQL
+   * column lineage, so only the original column name {@code "name"} is recorded (by
+   * JdbcColumnLineageVisitor/SqlCollector).
+   */
+  @Test
+  void jdbcAliasColumnShouldNotAppearAsPhantomInputField() {
+    JDBCRelation jdbcRelation = createMockJdbcRelation();
+
+    // Spark exposes the alias "namex" as the output attribute, not the original column "name"
+    AttributeReference aliasedAttr = mock(AttributeReference.class);
+    when(aliasedAttr.exprId()).thenReturn(ExprId.apply(100));
+    when(aliasedAttr.name()).thenReturn("namex");
+
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    when(logicalRelation.relation()).thenReturn(jdbcRelation);
+    when(logicalRelation.output())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(aliasedAttr))
+                .asScala()
+                .toSeq());
+
+    SqlMeta sqlMeta = mock(SqlMeta.class);
+    ColumnLineage columnLineage = mock(ColumnLineage.class);
+    when(sqlMeta.columnLineage()).thenReturn(Collections.singletonList(columnLineage));
+    when(sqlMeta.inTables())
+        .thenReturn(Collections.singletonList(new DbTableMeta(null, null, "source_table")));
+
+    when(context.getNamespaceResolver())
+        .thenReturn(new DatasetNamespaceCombinedResolver(new SparkOpenLineageConfig()));
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+
+    LogicalPlan plan = createPlanWithGrandChild(logicalRelation);
+
+    try (MockedStatic<JdbcSparkUtils> mockedJdbcUtils = mockStatic(JdbcSparkUtils.class)) {
+      mockedJdbcUtils
+          .when(() -> JdbcSparkUtils.extractQueryFromSpark(jdbcRelation))
+          .thenReturn(Optional.of(sqlMeta));
+
+      InputFieldsCollector.collect(context, plan);
+    }
+
+    // "namex" must never appear as an input field — it is an alias, not a source column.
+    // Before the fix, extractInternalInputs() would add it from Spark's output attributes.
+    verify(builder, never()).addInput(any(), any(), eq("namex"));
+  }
+
+  @Test
+  void collectUsesInternalInputsForJdbcRelationWithoutSqlColumnLineage() {
+    JDBCRelation jdbcRelation = createMockJdbcRelation();
+    LogicalRelation logicalRelation = createJdbcLogicalRelation(jdbcRelation);
+
+    // SqlMeta with empty column lineage (e.g., simple table name, no subquery)
+    SqlMeta sqlMeta = mock(SqlMeta.class);
+    when(sqlMeta.columnLineage()).thenReturn(Collections.emptyList());
+    when(sqlMeta.inTables())
+        .thenReturn(Collections.singletonList(new DbTableMeta(null, null, "jdbc_source1")));
+
+    when(context.getNamespaceResolver())
+        .thenReturn(new DatasetNamespaceCombinedResolver(new SparkOpenLineageConfig()));
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+
+    LogicalPlan plan = createPlanWithGrandChild(logicalRelation);
+
+    try (MockedStatic<JdbcSparkUtils> mockedJdbcUtils = mockStatic(JdbcSparkUtils.class)) {
+      mockedJdbcUtils
+          .when(() -> JdbcSparkUtils.extractQueryFromSpark(jdbcRelation))
+          .thenReturn(Optional.of(sqlMeta));
+
+      InputFieldsCollector.collect(context, plan);
+    }
+    // builder.addInput SHOULD be called because there's no SQL column lineage,
+    // so the normal extractInternalInputs path is used
+    verify(builder, times(1)).addInput(any(), any(), any());
   }
 
   private LogicalPlan createPlanWithGrandChild(LogicalPlan grandChild) {
