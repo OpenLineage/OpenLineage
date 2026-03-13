@@ -23,7 +23,9 @@ from openlineage.client.facet_v2 import (
     BaseFacet,
     RunFacet,
     data_quality_assertions_dataset,
+    documentation_dataset,
     documentation_job,
+    error_message_run,
     nominal_time_run,
     output_statistics_output_dataset,
     parent_run,
@@ -303,3 +305,20 @@ def test_custom_facet_copy_serialization_fails_when_mixing_attr_classes():
     # Let's just ensure serialization works correctly for now
     result = Serde.to_json(facet_copy)
     assert '"version": "1"' in result
+
+
+def test_generated_facets_have_key_classvar():
+    """Each generated facet class exposes the spec property name via a ClassVar `key`."""
+    assert error_message_run.ErrorMessageRunFacet.key == "errorMessage"
+    assert nominal_time_run.NominalTimeRunFacet.key == "nominalTime"
+    assert parent_run.ParentRunFacet.key == "parent"
+    assert schema_dataset.SchemaDatasetFacet.key == "schema"
+    assert documentation_job.DocumentationJobFacet.key == "documentation"
+    assert documentation_dataset.DocumentationDatasetFacet.key == "documentation"
+
+
+def test_facet_key_not_serialized():
+    """ClassVar `key` must not appear in the serialized event payload."""
+    facet = error_message_run.ErrorMessageRunFacet(message="boom", programmingLanguage="Python")
+    serialized = Serde.to_json(facet)
+    assert '"key"' not in serialized
