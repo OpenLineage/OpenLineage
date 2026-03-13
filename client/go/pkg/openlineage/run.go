@@ -14,8 +14,8 @@ import (
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
-// Eventtypes is a type constraint for OpenLineage event types.
-type Eventtypes interface {
+// EventTypes is a type constraint for OpenLineage event types.
+type EventTypes interface {
 	RunEvent | DatasetEvent | JobEvent
 }
 

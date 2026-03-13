@@ -1261,7 +1261,7 @@ jobs:
       - *checkout_project_root
       - restore_cache:
           keys:
-            - v1-go-mod-{{ checksum "go.sum" }}
+            - v1-go-mod-{{ checksum "client/go/go.sum" }}
       - run:
           name: Run linter
           command: |
@@ -1276,7 +1276,7 @@ jobs:
           name: Run tests
           command: go test ./... -v -race -coverprofile=coverage.out
       - save_cache:
-          key: v1-go-mod-{{ checksum "go.sum" }}
+          key: v1-go-mod-{{ checksum "client/go/go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
 
@@ -1289,7 +1289,7 @@ jobs:
       - *checkout_project_root
       - restore_cache:
           keys:
-            - v1-go-mod-{{ checksum "go.sum" }}
+            - v1-go-mod-{{ checksum "client/go/go.sum" }}
       - run:
           name: Download dependencies
           command: go mod download

@@ -75,9 +75,20 @@ func (olc *Client) Emit(ctx context.Context, event Emittable) (map[string]string
 	return olc.transport.Emit(ctx, event.AsEmittable())
 }
 
+// Close releases any resources held by the client's transport (e.g. GCP connections).
+func (olc *Client) Close() error {
+	if olc.disabled || olc.transport == nil {
+		return nil
+	}
+	return olc.transport.Close()
+}
+
 // NewRun creates a Run and sets it as the active Run in ctx.
 // If ctx already contains a RunContext, it is set as the parent.
 func (olc *Client) NewRun(ctx context.Context, job string) (context.Context, Run) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	r := run{
 		client:       olc,
 		runID:        NewRunID(),
