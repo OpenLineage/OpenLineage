@@ -64,8 +64,8 @@ func (e *JobEvent) WithInputs(inputs ...InputElement) *JobEvent {
 }
 
 // WithOutputs adds output datasets to this JobEvent.
-func (e *JobEvent) WithOutputs(inputs ...OutputElement) *JobEvent {
-	e.Outputs = append(e.Outputs, inputs...)
+func (e *JobEvent) WithOutputs(outputs ...OutputElement) *JobEvent {
+	e.Outputs = append(e.Outputs, outputs...)
 
 	return e
 }

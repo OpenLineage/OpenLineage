@@ -42,8 +42,11 @@ func main() {
         Transport: transport.Config{
             Type: transport.TransportTypeHTTP,
             HTTP: transport.HTTPConfig{
-                URL:    "http://localhost:5000",
-                APIKey: "your-api-key",
+                URL: "http://localhost:5000",
+                Auth: &transport.HTTPAuthConfig{
+                    Type:   "apiKey",
+                    APIKey: "your-api-key",
+                },
             },
         },
     })
@@ -54,7 +57,10 @@ func main() {
     ctx := context.Background()
 
     // Start a run — emits a START event
-    ctx, run := client.StartRun(ctx, "etl-pipeline")
+    ctx, run, err := client.StartRun(ctx, "etl-pipeline")
+    if err != nil {
+        log.Fatal(err)
+    }
     defer run.Finish() // Emits COMPLETE or FAIL based on whether errors occurred
 
     // Do work...
@@ -80,7 +86,10 @@ OpenLineage provides two approaches for emitting events:
 The `Run` interface provides an ergonomic way to instrument your code with automatic lifecycle management:
 
 ```go
-ctx, run := client.StartRun(ctx, "my-job")
+ctx, run, err := client.StartRun(ctx, "my-job")
+if err != nil {
+    log.Fatal(err)
+}
 defer run.Finish()
 
 // Build and emit an event with inputs, outputs and facets
@@ -112,14 +121,14 @@ runID := ol.NewRunID()
 // Manually create and emit a START event
 startEvent := ol.NewRunEvent(ol.EventTypeStart, runID, "my-job", producer).
     WithJobFacets(
-        facets.NewJobType(producer, "BATCH", "SPARK"),
+        facets.NewJobTypeJobFacet(producer, "BATCH", "SPARK"),
     ).
     WithInputs(
         ol.NewInputElement("source", "postgres://db/table"),
     )
 
 // Emit whenever you're ready
-if err := client.Emit(ctx, startEvent); err != nil {
+if _, err := client.Emit(ctx, startEvent); err != nil {
     log.Fatal(err)
 }
 
@@ -128,13 +137,13 @@ if err := client.Emit(ctx, startEvent); err != nil {
 // Create and emit a COMPLETE event
 completeEvent := ol.NewRunEvent(ol.EventTypeComplete, runID, "my-job", producer).
     WithRunFacets(
-        facets.NewNominalTime(producer, time.Now()),
+        facets.NewNominalTimeRunFacet(producer, time.Now()),
     ).
     WithOutputs(
         ol.NewOutputElement("target", "s3://bucket/data"),
     )
 
-if err := client.Emit(ctx, completeEvent); err != nil {
+if _, err := client.Emit(ctx, completeEvent); err != nil {
     log.Fatal(err)
 }
 ```
@@ -155,7 +164,10 @@ func ProcessData(ctx context.Context) {
     parent := ol.RunFromContext(ctx)
     
     // Create a child run - automatically linked to parent
-    ctx, childRun := parent.StartChild(ctx, "process-step")
+    ctx, childRun, err := parent.StartChild(ctx, "process-step")
+    if err != nil {
+        log.Fatal(err)
+    }
     defer childRun.Finish()
     
     // Child run's context can be passed further
@@ -335,7 +347,10 @@ func main() {
     ctx := context.Background()
 
     // Start the main pipeline run — emits START
-    ctx, run := client.StartRun(ctx, "daily-etl")
+    ctx, run, err := client.StartRun(ctx, "daily-etl")
+    if err != nil {
+        log.Fatal(err)
+    }
     defer run.Finish() // emits COMPLETE or FAIL
 
     // Emit a RUNNING event with inputs, outputs and job facets
@@ -377,7 +392,10 @@ func main() {
 func processData(ctx context.Context) error {
     parent := ol.RunFromContext(ctx)
 
-    ctx, childRun := parent.StartChild(ctx, "transform-step")
+    ctx, childRun, err := parent.StartChild(ctx, "transform-step")
+    if err != nil {
+        return err
+    }
     defer childRun.Finish()
 
     _ = ctx
