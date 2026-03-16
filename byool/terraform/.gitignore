@@ -1,0 +1,19 @@
+# Build output
+bin/
+terraform-provider-openlineage
+
+# Terraform working files
+examples/.terraform/
+examples/.terraform.lock.hcl
+examples/terraform.tfstate
+examples/terraform.tfstate.backup
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+
+# vendor/ is intentionally committed so the repo is self-contained.
+# Do NOT add vendor/ here.
+
