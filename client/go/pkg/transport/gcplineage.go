@@ -20,7 +20,7 @@ import (
 
 const (
 	// DefaultGCPLocation is the default GCP region used when none is specified.
-	DefaultGCPLocation string = "us-central1"
+	DefaultGCPLocation string = "us"
 )
 
 var _ Transport = (*gcpLineageTransport)(nil)

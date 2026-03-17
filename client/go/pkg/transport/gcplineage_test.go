@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+// TestGCPLineageConfig_Validation verifies that the only mandatory field in
+// GCPLineageConfig is ProjectID; all other fields are optional.
 func TestGCPLineageConfig_Validation(t *testing.T) {
 	t.Parallel()
 
@@ -63,6 +65,9 @@ func TestGCPLineageConfig_Validation(t *testing.T) {
 	}
 }
 
+// TestGCPLineageConfig_DefaultLocation verifies that GCPLineageConfig leaves the
+// Location field empty by default and that the DefaultGCPLocation constant equals
+// "us".
 func TestGCPLineageConfig_DefaultLocation(t *testing.T) {
 	t.Parallel()
 
@@ -77,13 +82,16 @@ func TestGCPLineageConfig_DefaultLocation(t *testing.T) {
 	})
 
 	t.Run("DefaultGCPLocation constant is correct", func(t *testing.T) {
-		want := "us-central1"
+		want := "us"
 		if DefaultGCPLocation != want {
 			t.Errorf("DefaultGCPLocation = %q, want %q", DefaultGCPLocation, want)
 		}
 	})
 }
 
+// TestParseGCPLocation verifies that parseGCPLocation correctly extracts the
+// region from a full "projects/.../locations/<region>" parent path and returns
+// bare region strings unchanged.
 func TestParseGCPLocation(t *testing.T) {
 	t.Parallel()
 
@@ -94,8 +102,8 @@ func TestParseGCPLocation(t *testing.T) {
 	}{
 		{
 			name:  "simple location",
-			input: "us-central1",
-			want:  "us-central1",
+			input: "us",
+			want:  "us",
 		},
 		{
 			name:  "full parent path extracts location",
@@ -136,6 +144,8 @@ func TestParseGCPLocation(t *testing.T) {
 	}
 }
 
+// TestTransportTypeGCPLineage verifies that the TransportTypeGCPLineage constant
+// has the expected string value "gcplineage".
 func TestTransportTypeGCPLineage(t *testing.T) {
 	t.Parallel()
 
@@ -145,6 +155,9 @@ func TestTransportTypeGCPLineage(t *testing.T) {
 	}
 }
 
+// TestGCPLineageOptions verifies that the WithLocation and WithCredentialsFile
+// option functions correctly mutate a GCPLineageConfig, and that multiple options
+// can be applied in sequence.
 func TestGCPLineageOptions(t *testing.T) {
 	t.Parallel()
 
@@ -195,6 +208,8 @@ func TestGCPLineageOptions(t *testing.T) {
 	})
 }
 
+// TestNewGCPLineageTransport_Validation verifies that NewGCPLineageTransport
+// returns an error when the project ID is empty.
 func TestNewGCPLineageTransport_Validation(t *testing.T) {
 	t.Parallel()
 
@@ -210,6 +225,8 @@ func TestNewGCPLineageTransport_Validation(t *testing.T) {
 	})
 }
 
+// TestGCPLineageParentFormat verifies that the "projects/<id>/locations/<region>"
+// parent resource path is assembled correctly for various project IDs and locations.
 func TestGCPLineageParentFormat(t *testing.T) {
 	t.Parallel()
 
@@ -223,7 +240,7 @@ func TestGCPLineageParentFormat(t *testing.T) {
 			name:       "default location",
 			projectID:  "my-project",
 			location:   "",
-			wantParent: "projects/my-project/locations/us-central1",
+			wantParent: "projects/my-project/locations/us",
 		},
 		{
 			name:       "custom location",
@@ -258,7 +275,8 @@ func TestGCPLineageParentFormat(t *testing.T) {
 	}
 }
 
-// TestGCPLineageTransport_Interface verifies that gcpLineageTransport implements Transport
+// TestGCPLineageTransport_Interface is a compile-time check confirming that
+// gcpLineageTransport satisfies the Transport interface.
 func TestGCPLineageTransport_Interface(t *testing.T) {
 	t.Parallel()
 
