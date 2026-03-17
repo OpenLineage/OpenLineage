@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import uuid
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 from dateutil.parser import parse
@@ -36,7 +36,7 @@ def is_uuid(result: Any):
     return "false"
 
 
-def env_var(var: str, default: Optional[str] = None) -> str:
+def env_var(var: str, default: str | None = None) -> str:
     """The env_var() function. Return the environment variable named 'var'.
     If there is no such environment variable set, return the default.
     If the default is None, raise an exception for an undefined variable.

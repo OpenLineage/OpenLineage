@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import warnings
 from enum import Enum
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 import attr
 from openlineage.client.constants import DEFAULT_PRODUCER
@@ -46,7 +46,7 @@ class BaseFacet(RedactMixin):
 @attr.s
 class NominalTimeRunFacet(BaseFacet):
     nominalStartTime: str = attr.ib()  # noqa: N815
-    nominalEndTime: Optional[str] = attr.ib(default=None)  # noqa: N815
+    nominalEndTime: str | None = attr.ib(default=None)  # noqa: N815
 
     _additional_skip_redact: ClassVar[list[str]] = ["nominalStartTime", "nominalEndTime"]
 
@@ -122,7 +122,7 @@ class DocumentationDatasetFacet(BaseFacet):
 class SchemaField(RedactMixin):
     name: str = attr.ib()
     type: str = attr.ib()
-    description: Optional[str] = attr.ib(default=None)
+    description: str | None = attr.ib(default=None)
 
     _do_not_redact: ClassVar[list[str]] = ["name", "type"]
 
@@ -150,9 +150,9 @@ class DataSourceDatasetFacet(BaseFacet):
 
 @attr.s
 class OutputStatisticsOutputDatasetFacet(BaseFacet):
-    rowCount: Optional[int] = attr.ib(default=None)  # noqa: N815
-    size: Optional[int] = attr.ib(default=None)
-    fileCount: Optional[int] = attr.ib(default=None)  # noqa: N815
+    rowCount: int | None = attr.ib(default=None)  # noqa: N815
+    size: int | None = attr.ib(default=None)
+    fileCount: int | None = attr.ib(default=None)  # noqa: N815
 
     _additional_skip_redact: ClassVar[list[str]] = ["rowCount", "size", "fileCount"]
 
@@ -163,20 +163,20 @@ class OutputStatisticsOutputDatasetFacet(BaseFacet):
 
 @attr.s
 class ColumnMetric:
-    nullCount: Optional[int] = attr.ib(default=None)  # noqa: N815
-    distinctCount: Optional[int] = attr.ib(default=None)  # noqa: N815
-    sum: Optional[int] = attr.ib(default=None)
-    count: Optional[int] = attr.ib(default=None)
-    min: Optional[float] = attr.ib(default=None)
-    max: Optional[float] = attr.ib(default=None)
-    quantiles: Optional[dict[str, float]] = attr.ib(default=None)
+    nullCount: int | None = attr.ib(default=None)  # noqa: N815
+    distinctCount: int | None = attr.ib(default=None)  # noqa: N815
+    sum: int | None = attr.ib(default=None)
+    count: int | None = attr.ib(default=None)
+    min: float | None = attr.ib(default=None)
+    max: float | None = attr.ib(default=None)
+    quantiles: dict[str, float] | None = attr.ib(default=None)
 
 
 @attr.s
 class DataQualityMetricsInputDatasetFacet(BaseFacet):
-    rowCount: Optional[int] = attr.ib(default=None)  # noqa: N815
-    bytes: Optional[int] = attr.ib(default=None)
-    fileCount: Optional[int] = attr.ib(default=None)  # noqa: N815
+    rowCount: int | None = attr.ib(default=None)  # noqa: N815
+    bytes: int | None = attr.ib(default=None)
+    fileCount: int | None = attr.ib(default=None)  # noqa: N815
     columnMetrics: dict[str, ColumnMetric] = attr.ib(factory=dict)  # noqa: N815
 
     @staticmethod
@@ -188,7 +188,7 @@ class DataQualityMetricsInputDatasetFacet(BaseFacet):
 class Assertion(RedactMixin):
     assertion: str = attr.ib()
     success: bool = attr.ib()
-    column: Optional[str] = attr.ib(default=None)
+    column: str | None = attr.ib(default=None)
 
     _skip_redact: ClassVar[list[str]] = ["column"]
 
@@ -230,7 +230,7 @@ class ErrorMessageRunFacet(BaseFacet):
 
     message: str = attr.ib()
     programmingLanguage: str = attr.ib()  # noqa: N815
-    stackTrace: Optional[str] = attr.ib(default=None)  # noqa: N815
+    stackTrace: str | None = attr.ib(default=None)  # noqa: N815
 
     _additional_skip_redact: ClassVar[list[str]] = ["programmingLanguage"]
 
@@ -272,7 +272,7 @@ class StorageDatasetFacet(BaseFacet):
 @attr.s
 class OwnershipJobFacetOwners:
     name: str = attr.ib()
-    type: Optional[str] = attr.ib(default=None)
+    type: str | None = attr.ib(default=None)
 
 
 @attr.s
@@ -395,9 +395,9 @@ class ProcessingEngineRunFacet(BaseFacet):
 @attr.s
 class ExtractionError(BaseFacet):
     errorMessage: str = attr.ib()  # noqa: N815
-    stackTrace: Optional[str] = attr.ib()  # noqa: N815
-    task: Optional[str] = attr.ib()
-    taskNumber: Optional[int] = attr.ib()  # noqa: N815
+    stackTrace: str | None = attr.ib()  # noqa: N815
+    task: str | None = attr.ib()
+    taskNumber: int | None = attr.ib()  # noqa: N815
 
 
 @attr.s

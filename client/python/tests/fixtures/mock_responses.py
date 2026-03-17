@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import MagicMock
 
 import httpx
@@ -10,9 +10,9 @@ import httpx
 
 def create_mock_response(
     status_code: int = 200,
-    headers: Dict[str, str] | None = None,
+    headers: dict[str, str] | None = None,
     content: str = "",
-    json_data: Dict[str, Any] | None = None,
+    json_data: dict[str, Any] | None = None,
 ) -> MagicMock:
     """Create a mock httpx.Response object."""
     mock_response = MagicMock(spec=httpx.Response)

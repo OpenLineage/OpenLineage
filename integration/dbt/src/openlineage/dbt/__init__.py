@@ -10,7 +10,6 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-from typing import List, Optional
 
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
@@ -49,8 +48,8 @@ def dbt_run_event(
     state: RunState,
     job_name: str,
     job_namespace: str,
-    run_id: Optional[str] = None,
-    parent: Optional[ParentRunMetadata] = None,
+    run_id: str | None = None,
+    parent: ParentRunMetadata | None = None,
 ) -> RunEvent:
     return RunEvent(
         eventType=state,
@@ -83,7 +82,7 @@ def dbt_run_event_end(
     run_id: str,
     job_namespace: str,
     job_name: str,
-    parent_run_metadata: Optional[ParentRunMetadata],
+    parent_run_metadata: ParentRunMetadata | None,
 ) -> RunEvent:
     return dbt_run_event(
         state=RunState.COMPLETE,
@@ -98,7 +97,7 @@ def dbt_run_event_failed(
     run_id: str,
     job_namespace: str,
     job_name: str,
-    parent_run_metadata: Optional[ParentRunMetadata],
+    parent_run_metadata: ParentRunMetadata | None,
 ) -> RunEvent:
     return dbt_run_event(
         state=RunState.FAIL,
@@ -193,14 +192,14 @@ def main():
 
 
 def consume_structured_logs(
-    args: List[str],
+    args: list[str],
     target: str,
-    target_path: Optional[str],
+    target_path: str | None,
     project_dir: str,
     profile_name: str,
     model_selector: str,
-    models: List[str],
-    openlineage_job_name: Optional[str] = None,
+    models: list[str],
+    openlineage_job_name: str | None = None,
 ):
     logger = logging.getLogger("openlineage.dbt")
     logger.info(
@@ -261,14 +260,14 @@ def consume_structured_logs(
 
 
 def consume_local_artifacts(
-    args: List[str],
+    args: list[str],
     target: str,
-    target_path: Optional[str],
+    target_path: str | None,
     project_dir: str,
     profile_name: str,
     model_selector: str,
-    models: List[str],
-    openlineage_job_name: Optional[str] = None,
+    models: list[str],
+    openlineage_job_name: str | None = None,
 ):
     logger = logging.getLogger("openlineage.dbt")
     logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")

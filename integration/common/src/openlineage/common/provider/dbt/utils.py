@@ -4,7 +4,6 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.provider.dbt.facets import ParentRunMetadata
@@ -40,7 +39,7 @@ def get_event_timestamp(timestamp: str):
     return timestamp
 
 
-def get_dbt_command(dbt_command_line: List[str]) -> Optional[str]:
+def get_dbt_command(dbt_command_line: list[str]) -> str | None:
     dbt_command_line_tokens = set(dbt_command_line)
     for command in HANDLED_COMMANDS:
         if command in dbt_command_line_tokens:
@@ -54,10 +53,10 @@ def generate_run_event(
     run_id: str,
     job_name: str,
     job_namespace: str,
-    inputs: Optional[List[InputDataset]] = None,
-    outputs: Optional[List[OutputDataset]] = None,
-    job_facets: Optional[Dict] = None,
-    run_facets: Optional[Dict] = None,
+    inputs: list[InputDataset] | None = None,
+    outputs: list[OutputDataset] | None = None,
+    job_facets: dict | None = None,
+    run_facets: dict | None = None,
 ) -> RunEvent:
     inputs = inputs or []
     outputs = outputs or []
@@ -78,7 +77,7 @@ def generate_run_event(
     )
 
 
-def get_dbt_profiles_dir(command: List[str]) -> str:
+def get_dbt_profiles_dir(command: list[str]) -> str:
     """
     Based on https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
     Gets the profiles directory
@@ -90,7 +89,7 @@ def get_dbt_profiles_dir(command: List[str]) -> str:
     return from_command or from_env_var or current_working_directory or default_dir
 
 
-def get_dbt_log_path(command: List[str]) -> str:
+def get_dbt_log_path(command: list[str]) -> str:
     """
     Based on this https://docs.getdbt.com/reference/global-configs/logs
     Gets the absolute path of the dbt log file.
@@ -104,7 +103,7 @@ def get_dbt_log_path(command: List[str]) -> str:
     return os.path.join(log_dirname, "dbt.log")
 
 
-def is_random_logfile(command: List[str]) -> bool:
+def is_random_logfile(command: list[str]) -> bool:
     from_command = parse_single_arg(command, ["--log-path"], default=None)
     from_env_var = os.getenv("DBT_LOG_PATH")
     if from_env_var or from_command:
@@ -160,7 +159,7 @@ def get_node_unique_id(event):
     return get_from_nullable_chain(event, ["data", "node_info", "unique_id"])
 
 
-def get_job_type(event) -> Optional[str]:
+def get_job_type(event) -> str | None:
     """
     Gets the Run Event's job type
     """

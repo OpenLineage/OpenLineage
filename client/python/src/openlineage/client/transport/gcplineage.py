@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Coroutine
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Coroutine, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import attr
 from openlineage.client import event_v2
@@ -41,7 +42,7 @@ class GCPLineageConfig(Config):
 
     project_id: str = attr.field()
     location: str = attr.field(default=DEFAULT_LOCATION)
-    credentials_path: Optional[str] = attr.field(default=None)
+    credentials_path: str | None = attr.field(default=None)
     async_transport_rules: dict[str, dict[str, bool]] = attr.field(factory=lambda: {"dbt": {"*": True}})
 
     @classmethod
@@ -63,7 +64,7 @@ class GCPLineageTransport(Transport):
         self.parent = f"projects/{self.config.project_id}/locations/{self.config.location}"
 
     @cached_property
-    def client(self) -> "LineageClient":
+    def client(self) -> LineageClient:
         """Lazy initialization of sync LineageClient."""
         try:
             from google.cloud.datacatalog_lineage_v1 import LineageClient
@@ -86,7 +87,7 @@ class GCPLineageTransport(Transport):
             raise
 
     @cached_property
-    def async_client(self) -> "LineageAsyncClient":
+    def async_client(self) -> LineageAsyncClient:
         """Lazy initialization of async LineageAsyncClient."""
         try:
             from google.cloud.datacatalog_lineage_v1 import LineageAsyncClient

@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Tuple, TypeVar
+from typing import Any, TypeVar
 
 import yaml
 from jinja2 import Environment, Undefined
@@ -82,10 +82,10 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
     def __init__(
         self,
         project_dir: str,
-        profile_name: Optional[str] = None,
-        target: Optional[str] = None,
-        target_path: Optional[str] = None,
-        dbt_command_line: Optional[List[str]] = None,
+        profile_name: str | None = None,
+        target: str | None = None,
+        target_path: str | None = None,
+        dbt_command_line: list[str] | None = None,
         *args,
         **kwargs,
     ):
@@ -93,7 +93,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         self.dbt_command_line = dbt_command_line
         if self.dbt_command_line is None:
             self.dbt_command_line = []
-        self.jinja_environment: Optional[Environment] = None
+        self.jinja_environment: Environment | None = None
 
         absolute_dir = os.path.abspath(project_dir)
         dbt_project = self.load_yaml_with_jinja(os.path.join(project_dir, "dbt_project.yml"))
@@ -196,8 +196,8 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
     @classmethod
     def load_metadata(
-        cls, path: str, desired_schema_versions: List[int], logger: logging.Logger
-    ) -> Dict[Any, Any]:
+        cls, path: str, desired_schema_versions: list[int], logger: logging.Logger
+    ) -> dict[Any, Any]:
         with open(path) as f:
             metadata = json.load(f)
             str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
@@ -217,7 +217,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
             return metadata
 
     @staticmethod
-    def env_var(var: str, default: Optional[str] = None) -> str:
+    def env_var(var: str, default: str | None = None) -> str:
         """The env_var() function. Return the environment variable named 'var'.
         If there is no such environment variable set, return the default.
 
@@ -232,7 +232,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
             raise Exception(msg)
 
     @staticmethod
-    def load_yaml(path: str) -> Dict:
+    def load_yaml(path: str) -> dict:
         with open(path) as f:
             return yaml.safe_load(f)
 
@@ -245,7 +245,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         env.globals["env_var"] = DbtLocalArtifactProcessor.env_var
         return env
 
-    def load_yaml_with_jinja(self, path: str) -> Dict:
+    def load_yaml_with_jinja(self, path: str) -> dict:
         loaded = self.load_yaml(path)
         if not self.jinja_environment:
             self.jinja_environment = self.setup_jinja()
@@ -253,13 +253,13 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
     def get_dbt_metadata(
         self,
-    ) -> Tuple[Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Optional[Dict[Any, Any]]]:
+    ) -> tuple[dict[Any, Any], dict[Any, Any], dict[Any, Any], dict[Any, Any] | None]:
         manifest = self.load_metadata(self.manifest_path, list(range(2, 13)), self.logger)
 
         run_result = self.load_metadata(self.run_result_path, list(range(2, 7)), self.logger)
 
         try:
-            catalog: Optional[Dict[Any, Any]] = self.load_metadata(self.catalog_path, [1], self.logger)
+            catalog: dict[Any, Any] | None = self.load_metadata(self.catalog_path, [1], self.logger)
         except FileNotFoundError:
             catalog = None
 
@@ -282,7 +282,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
         return manifest, run_result, profile, catalog
 
-    def get_dbt_profiles_dir(self, command: List[str]) -> str:
+    def get_dbt_profiles_dir(self, command: list[str]) -> str:
         """
         Based on https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
         Gets the profiles directory

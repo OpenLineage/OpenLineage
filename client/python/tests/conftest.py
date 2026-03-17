@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import subprocess
 import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Union
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -34,9 +34,9 @@ def _setup_producer(test_producer) -> None:
 
 # For testing events emitted by the client
 
-Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
-Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
-Event = Union[Event_v1, Event_v2]
+Event_v1 = RunEvent | DatasetEvent | JobEvent
+Event_v2 = event_v2.RunEvent | event_v2.DatasetEvent | event_v2.JobEvent
+Event = Event_v1 | Event_v2
 
 
 class NoOutputConfig(Config): ...

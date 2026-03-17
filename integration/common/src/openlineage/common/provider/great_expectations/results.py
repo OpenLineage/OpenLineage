@@ -1,7 +1,7 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Optional
+from typing import Any
 
 import attr
 from openlineage.common.utils import get_from_nullable_chain
@@ -17,14 +17,14 @@ class ExpectationsParserResult:
 
     facet_key: str
     value: Any
-    column_id: Optional[str] = None
+    column_id: str | None = None
 
 
 @attr.define
 class GreatExpectationsAssertion:
     expectationType: str
     success: bool
-    column: Optional[str] = None
+    column: str | None = None
 
 
 class ExpectationsParser:
@@ -37,7 +37,7 @@ class ExpectationsParser:
     facet_key: str = ""
 
     @classmethod
-    def can_accept(cls, expectation_result: ExpectationValidationResult) -> Optional[Any]:
+    def can_accept(cls, expectation_result: ExpectationValidationResult) -> Any | None:
         expectation_type = get_from_nullable_chain(
             expectation_result, ["expectation_config", "expectation_type"]
         )
@@ -82,7 +82,7 @@ class ColumnExpectationsParser(ExpectationsParser):
     column = ""
 
     @classmethod
-    def can_accept(cls, expectation_result: ExpectationValidationResult) -> Optional[Any]:
+    def can_accept(cls, expectation_result: ExpectationValidationResult) -> Any | None:
         expectation_type = get_from_nullable_chain(
             expectation_result, ["expectation_config", "expectation_type"]
         )

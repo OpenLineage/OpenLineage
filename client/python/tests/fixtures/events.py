@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-from typing import Dict, List
 
 from openlineage.client.run import Dataset, Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
@@ -15,8 +14,8 @@ def create_run_event(
     job_name: str = "test-job",
     job_namespace: str = "test-namespace",
     event_time: str | None = None,
-    inputs: List[Dataset] | None = None,
-    outputs: List[Dataset] | None = None,
+    inputs: list[Dataset] | None = None,
+    outputs: list[Dataset] | None = None,
 ) -> RunEvent:
     """Create a RunEvent for testing purposes."""
     if run_id is None:
@@ -53,7 +52,7 @@ def create_run_lifecycle_events(
     job_name: str = "test-job",
     job_namespace: str = "test-namespace",
     include_inputs_outputs: bool = False,
-) -> Dict[str, RunEvent]:
+) -> dict[str, RunEvent]:
     """Create a complete set of run lifecycle events (START, COMPLETE)."""
     if run_id is None:
         run_id = str(generate_new_uuid())
@@ -90,7 +89,7 @@ def create_run_lifecycle_events(
 
 def create_failed_run_events(
     run_id: str | None = None, job_name: str = "test-job", job_namespace: str = "test-namespace"
-) -> Dict[str, RunEvent]:
+) -> dict[str, RunEvent]:
     """Create a set of run events for a failed run (START, FAIL)."""
     if run_id is None:
         run_id = str(generate_new_uuid())
@@ -117,7 +116,7 @@ def create_failed_run_events(
 
 def create_multiple_runs(
     num_runs: int = 3, job_name_prefix: str = "test-job", job_namespace: str = "test-namespace"
-) -> List[Dict[str, RunEvent]]:
+) -> list[dict[str, RunEvent]]:
     """Create multiple complete run lifecycles for testing concurrency."""
     runs = []
     for i in range(num_runs):

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, List, TypeVar
+from typing import TypeVar
 
 from jinja2 import Undefined
 from openlineage.common.provider.dbt.processor import DbtArtifactProcessor, DbtRunRunFacet
@@ -46,7 +46,7 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
 
     @classmethod
     def check_metadata_version(
-        cls, metadata, desired_schema_versions: List[int], logger: logging.Logger
+        cls, metadata, desired_schema_versions: list[int], logger: logging.Logger
     ) -> None:
         str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
         schema_version = cls.get_schema_version(metadata)
@@ -68,7 +68,7 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
 
         return self.manifest, self.run_result, self.profile, self.catalog
 
-    def extract_namespace(self, profile: Dict) -> str:
+    def extract_namespace(self, profile: dict) -> str:
         return super().extract_namespace(profile["details"])
 
     def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]:

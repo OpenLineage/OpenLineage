@@ -1,9 +1,9 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-from typing import Any, Dict, List, Literal
+from typing import Any, Literal
 
 
-def validate_event_schema(event: Dict[str, Any]) -> bool:
+def validate_event_schema(event: dict[str, Any]) -> bool:
     """Validate that an event has the required OpenLineage schema fields."""
     required_fields = ["eventType", "eventTime", "run", "job", "inputs", "outputs"]
 
@@ -22,17 +22,17 @@ def validate_event_schema(event: Dict[str, Any]) -> bool:
     return True
 
 
-def filter_events_by_job(events: List[Dict[str, Any]], job_name: str) -> List[Dict[str, Any]]:
+def filter_events_by_job(events: list[dict[str, Any]], job_name: str) -> list[dict[str, Any]]:
     """Filter events by job name."""
     return [event for event in events if event.get("job", {}).get("name") == job_name]
 
 
-def get_events_by_type(events: List[Dict[str, Any]], event_type: str) -> List[Dict[str, Any]]:
+def get_events_by_type(events: list[dict[str, Any]], event_type: str) -> list[dict[str, Any]]:
     """Get events by event type (START, COMPLETE, FAIL)."""
     return [event for event in events if event.get("eventType") == event_type]
 
 
-def validate_lineage_chain(events: List[Dict[str, Any]], expected_models: List[str]) -> bool:
+def validate_lineage_chain(events: list[dict[str, Any]], expected_models: list[str]) -> bool:
     """Validate that all expected models appear in the lineage chain."""
     job_names = set()
     for event in events:
@@ -47,14 +47,14 @@ def validate_lineage_chain(events: List[Dict[str, Any]], expected_models: List[s
     return True
 
 
-def extract_dataset_names(event: Dict[str, Any], io_type: str) -> List[str]:
+def extract_dataset_names(event: dict[str, Any], io_type: str) -> list[str]:
     """Extract dataset names from inputs or outputs."""
     datasets = event.get(io_type, [])
     return [dataset.get("name", "") for dataset in datasets]
 
 
 def validate_dataset_facets(
-    event: Dict[str, Any], io_type: Literal["inputs", "outputs"], expected_facets: List[str]
+    event: dict[str, Any], io_type: Literal["inputs", "outputs"], expected_facets: list[str]
 ) -> bool:
     """Validate that expected facets are present in dataset inputs/outputs."""
     datasets = event.get(io_type, [])

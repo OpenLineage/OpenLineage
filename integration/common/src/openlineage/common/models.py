@@ -1,7 +1,7 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from typing import TYPE_CHECKING, ClassVar
 
 from openlineage.client.utils import RedactMixin
 
@@ -10,14 +10,14 @@ if TYPE_CHECKING:
 
 
 class DbColumn(RedactMixin):
-    _skip_redact: ClassVar[List[str]] = ["name", "type", "ordinal_position"]
+    _skip_redact: ClassVar[list[str]] = ["name", "type", "ordinal_position"]
 
     def __init__(
         self,
         name: str,
         type: str,
-        description: Optional[str] = None,
-        ordinal_position: Optional[int] = None,
+        description: str | None = None,
+        ordinal_position: int | None = None,
     ):
         self.name = name
         self.type = type
@@ -38,13 +38,13 @@ class DbColumn(RedactMixin):
 
 
 class DbTableSchema(RedactMixin):
-    _skip_redact: ClassVar[List[str]] = ["schema_name", "table_name"]
+    _skip_redact: ClassVar[list[str]] = ["schema_name", "table_name"]
 
     def __init__(
         self,
         schema_name: str,
         table_name: "DbTableMeta",
-        columns: List[DbColumn],
+        columns: list[DbColumn],
     ):
         self.schema_name = schema_name
         self.table_name = table_name

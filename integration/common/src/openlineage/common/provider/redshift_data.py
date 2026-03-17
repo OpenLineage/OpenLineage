@@ -3,7 +3,7 @@
 
 import logging
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import attr
 from openlineage.client.facet_v2 import (
@@ -18,17 +18,17 @@ from openlineage.common.sql import DbTableMeta
 
 @attr.define
 class RedshiftFacets:
-    run_facets: Dict[str, BaseFacet]
-    inputs: List[Dataset]
-    output: List[Dataset]
+    run_facets: dict[str, BaseFacet]
+    inputs: list[Dataset]
+    output: list[Dataset]
 
 
 class RedshiftDataDatasetsProvider:
     def __init__(
         self,
         client,
-        connection_details: Dict[str, Any],
-        logger: Optional[logging.Logger] = None,
+        connection_details: dict[str, Any],
+        logger: logging.Logger | None = None,
     ):
         if logger is None:
             self.logger: logging.Logger = logging.getLogger(__name__)
@@ -38,11 +38,11 @@ class RedshiftDataDatasetsProvider:
         self.client = client
 
     def get_facets(
-        self, job_id: str, inputs: List[DbTableMeta], outputs: List[DbTableMeta]
+        self, job_id: str, inputs: list[DbTableMeta], outputs: list[DbTableMeta]
     ) -> RedshiftFacets:
-        ds_inputs: List[Dataset] = []
-        ds_outputs: List[Dataset] = []
-        run_facets: Dict[str, BaseFacet] = {}
+        ds_inputs: list[Dataset] = []
+        ds_outputs: list[Dataset] = []
+        run_facets: dict[str, BaseFacet] = {}
         dataset_stat_facet = None
 
         source = Source(
@@ -84,7 +84,7 @@ class RedshiftDataDatasetsProvider:
             size=properties.get("ResultSize"),
         )
 
-    def _get_dataset_from_tables(self, tables: List[DbTableMeta], source: Source) -> List[Dataset]:
+    def _get_dataset_from_tables(self, tables: list[DbTableMeta], source: Source) -> list[Dataset]:
         try:
             return [
                 Dataset.from_table_schema(
@@ -109,13 +109,13 @@ class RedshiftDataDatasetsProvider:
             self.logger.warning(f"Could not extract output schema from redshift. {e}")
         return None
 
-    def _get_table_schemas(self, tables: List[DbTableMeta]) -> List[DbTableSchema]:
+    def _get_table_schemas(self, tables: list[DbTableMeta]) -> list[DbTableSchema]:
         if not tables:
             return []
         return [schema for table in tables if (schema := self._get_table(table)) is not None]
 
-    def _get_table(self, table: DbTableMeta) -> Optional[DbTableSchema]:
-        kwargs: Dict[str, Any] = {
+    def _get_table(self, table: DbTableMeta) -> DbTableSchema | None:
+        kwargs: dict[str, Any] = {
             "ClusterIdentifier": self.connection_details.get("cluster_identifier"),
             "Database": table.database or self.connection_details.get("database"),
             "Table": table.name,

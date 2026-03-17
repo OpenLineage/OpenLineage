@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, Optional, Union
 
 from openlineage_sql import (
     ColumnLineage,
@@ -28,10 +27,10 @@ log = logging.getLogger(__name__)
 
 
 def parse(
-    sql: Union[List[str], str],
-    dialect: Optional[str] = None,
-    default_schema: Optional[str] = None,
-) -> Optional[SqlMeta]:
+    sql: list[str] | str,
+    dialect: str | None = None,
+    default_schema: str | None = None,
+) -> SqlMeta | None:
     if isinstance(sql, str):
         sql = [sql]
     try:
