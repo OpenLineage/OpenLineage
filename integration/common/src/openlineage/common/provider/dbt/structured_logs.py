@@ -7,8 +7,9 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
+from collections.abc import Generator
 from functools import cached_property, wraps
-from typing import Dict, Generator, List, NamedTuple, Optional, TextIO
+from typing import NamedTuple, TextIO
 
 from openlineage.client.event_v2 import Dataset, RunEvent, RunState
 from openlineage.client.facet_v2 import (
@@ -74,9 +75,9 @@ class ManifestIntegrityResult(NamedTuple):
     """
 
     is_valid: bool
-    missing_nodes: List[str]
-    missing_parents: List[str]
-    missing_children: List[str]
+    missing_nodes: list[str]
+    missing_parents: list[str]
+    missing_children: list[str]
     total_missing: int
     parent_map_size: int
     available_nodes: int
@@ -114,56 +115,56 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def __init__(
         self,
-        dbt_command_line: List[str],
+        dbt_command_line: list[str],
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
-        self.dbt_command_line: List[str] = dbt_command_line
+        self.dbt_command_line: list[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
         self.is_random_logfile: bool = is_random_logfile(command=self.dbt_command_line)
         self.dbt_log_dirname: str = os.path.dirname(self.dbt_log_file_path)
         self.parent_run_metadata: ParentRunMetadata = get_parent_run_metadata()
 
-        self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
+        self.node_id_to_ol_run_id: dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
 
         # sql query ids are incremented sequentially per node_id
-        self.node_id_to_sql_query_id: Dict[str, Dict[str, int]] = defaultdict(lambda: {"next_id": 1})
-        self.node_id_to_sql_start_event: Dict[str, RunEvent] = {}
+        self.node_id_to_sql_query_id: dict[str, dict[str, int]] = defaultdict(lambda: {"next_id": 1})
+        self.node_id_to_sql_start_event: dict[str, RunEvent] = {}
 
-        self.node_id_to_inputs: Dict[str, List[ModelNode]] = {}
-        self.node_id_to_output: Dict[str, ModelNode] = {}
-        self._extraction_errors: Dict[str, List[extraction_error_run.Error]] = defaultdict(list)
+        self.node_id_to_inputs: dict[str, list[ModelNode]] = {}
+        self.node_id_to_output: dict[str, ModelNode] = {}
+        self._extraction_errors: dict[str, list[extraction_error_run.Error]] = defaultdict(list)
 
         # will be populated when some dbt events are collected
-        self._compiled_manifest: Dict = {}
-        self._dbt_version: Optional[str] = None
-        self._dbt_invocation_id: Optional[str] = None
-        self._dbt_log_file: Optional[TextIO] = None
+        self._compiled_manifest: dict = {}
+        self._dbt_version: str | None = None
+        self._dbt_invocation_id: str | None = None
+        self._dbt_log_file: TextIO | None = None
         self.received_dbt_command_completed = False
         self.processed_bytes = 0
 
         self.dbt_command_return_code = 0
 
     @cached_property
-    def dbt_command(self) -> Optional[str]:
+    def dbt_command(self) -> str | None:
         return get_dbt_command(self.dbt_command_line)
 
     @property
-    def dbt_version(self) -> Optional[str]:
+    def dbt_version(self) -> str | None:
         """
         Extracted from the first structured log MainReportVersion
         """
         return self._dbt_version
 
     @property
-    def invocation_id(self) -> Optional[str]:
+    def invocation_id(self) -> str | None:
         return self._dbt_invocation_id
 
     @cached_property
-    def catalog(self) -> Optional[Dict]:
+    def catalog(self) -> dict | None:
         if os.path.isfile(self.catalog_path):
             return self.load_metadata(self.catalog_path, [1], self.logger)
         return None
@@ -180,7 +181,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return current_profile
 
     @property
-    def compiled_manifest(self) -> Dict:
+    def compiled_manifest(self) -> dict:
         """
         Manifest is loaded and cached.
         It's loaded when the dbt structured logs are generated and processed.
@@ -222,7 +223,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             if ol_event:
                 yield ol_event
 
-    def _parse_structured_log_event(self, line: str) -> Optional[RunEvent]:
+    def _parse_structured_log_event(self, line: str) -> RunEvent | None:
         """
         dbt generates structured events https://docs.getdbt.com/reference/events-logging
         relevant events are consumed to generate OL events.
@@ -336,7 +337,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_facets=run_facets,
         )
 
-    def _parse_node_start_event(self, event: Dict) -> RunEvent:
+    def _parse_node_start_event(self, event: dict) -> RunEvent:
         node_unique_id = get_node_unique_id(event)
         run_id = self.node_id_to_ol_run_id[node_unique_id]
         node_start_time = get_event_timestamp(event["data"]["node_info"]["node_started_at"])
@@ -490,7 +491,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
     @handle_keyerror
-    def _get_attached_dataset(self, test_node_id: str) -> Optional[Dataset]:
+    def _get_attached_dataset(self, test_node_id: str) -> Dataset | None:
         """
         gets the input the data test is attached to.
         Some nodes like tests related to sources have an attached_node to None.
@@ -507,7 +508,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return input_dataset
 
     @handle_keyerror
-    def _get_assertion(self, node_id: str, success: bool) -> Optional[dq.Assertion]:
+    def _get_assertion(self, node_id: str, success: bool) -> dq.Assertion | None:
         manifest_test_node = self.compiled_manifest["nodes"][node_id]
         test_metadata = manifest_test_node.get("test_metadata")
         if test_metadata:
@@ -689,7 +690,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
     # TODO: remove after deprecation period
-    def dbt_version_facet(self) -> Dict[str, DbtVersionRunFacet]:
+    def dbt_version_facet(self) -> dict[str, DbtVersionRunFacet]:
         if not self.dbt_version:
             return {}
         self.logger.debug(
@@ -698,7 +699,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
         return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
 
-    def dbt_run_run_facet(self) -> Dict[str, DbtRunRunFacet]:
+    def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]:
         if not self.invocation_id:
             return {}
         return {
@@ -711,7 +712,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             )
         }
 
-    def processing_engine_facet(self) -> Dict[str, processing_engine_run.ProcessingEngineRunFacet]:
+    def processing_engine_facet(self) -> dict[str, processing_engine_run.ProcessingEngineRunFacet]:
         if not self.dbt_version:
             return {}
         return {
@@ -873,7 +874,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _get_extraction_error_facet(
         self, node_id: str
-    ) -> Optional[extraction_error_run.ExtractionErrorRunFacet]:
+    ) -> extraction_error_run.ExtractionErrorRunFacet | None:
         errors = self._extraction_errors.pop(node_id, [])
         if not errors:
             return None
@@ -884,7 +885,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
     @handle_keyerror
-    def _get_model_node(self, node_id) -> Optional[ModelNode]:
+    def _get_model_node(self, node_id) -> ModelNode | None:
         """
         Builds a ModelNode of a given node_id
         """
@@ -900,7 +901,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return ModelNode(type=node_type, metadata_node=manifest_node, catalog_node=catalog_node)
 
     @handle_keyerror
-    def _get_node_tags(self, node_id: str) -> List[str]:
+    def _get_node_tags(self, node_id: str) -> list[str]:
         """
         Extract tags from a dbt node in the compiled manifest
         """
@@ -908,7 +909,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         manifest_node = all_nodes[node_id]
         return manifest_node.get("tags", [])
 
-    def _get_model_inputs(self, node_id) -> List[ModelNode]:
+    def _get_model_inputs(self, node_id) -> list[ModelNode]:
         """
         Builds the model's upstream inputs
         """

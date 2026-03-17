@@ -13,13 +13,12 @@ keywords = [
   "openlineage",
 ]
 authors = [{ name = "OpenLineage", email = "info@openlineage.io" }]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -133,7 +132,7 @@ lint.select = [
     "W",
     "I001"
 ]
-target-version = "py39"
+target-version = "py310"
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/client"]
 
@@ -158,7 +157,7 @@ addopts = [
 legacy_tox_ini = """
 [tox]
 requires = tox-uv
-env_list = py39,py310,py311,py312,py313
+env_list = py310,py311,py312,py313
 skip_missing_interpreters = true
 
 [testenv]

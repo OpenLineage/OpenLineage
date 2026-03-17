@@ -1,7 +1,7 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar
 from urllib.parse import urlparse
 
 from openlineage.client.event_v2 import Dataset as OpenLineageDataset
@@ -19,14 +19,14 @@ from openlineage.common.models import DbColumn, DbTableSchema
 
 
 class Source(RedactMixin):
-    _skip_redact: ClassVar[List[str]] = ["scheme", "name"]
+    _skip_redact: ClassVar[list[str]] = ["scheme", "name"]
 
     def __init__(
         self,
-        scheme: Optional[str] = None,
-        authority: Optional[str] = None,
-        connection_url: Optional[str] = None,
-        name: Optional[str] = None,
+        scheme: str | None = None,
+        authority: str | None = None,
+        connection_url: str | None = None,
+        name: str | None = None,
     ):
         self.scheme = scheme
         self.authority = authority
@@ -53,14 +53,14 @@ class Source(RedactMixin):
 
 
 class Field(RedactMixin):
-    _skip_redact: ClassVar[List[str]] = ["name", "type", "tags"]
+    _skip_redact: ClassVar[list[str]] = ["name", "type", "tags"]
 
     def __init__(
         self,
         name: str,
         type: str,
-        tags: Optional[List[str]] = None,
-        description: Optional[str] = None,
+        tags: list[str] | None = None,
+        description: str | None = None,
     ):
         self.name = name
         self.type = type
@@ -88,17 +88,17 @@ class Field(RedactMixin):
 
 
 class Dataset(RedactMixin):
-    _skip_redact: ClassVar[List[str]] = ["name"]
+    _skip_redact: ClassVar[list[str]] = ["name"]
 
     def __init__(
         self,
         source: Source,
         name: str,
-        fields: Optional[List[Field]] = None,
-        description: Optional[str] = None,
-        custom_facets: Optional[Dict[str, BaseFacet]] = None,
-        input_facets: Optional[Dict[str, BaseFacet]] = None,
-        output_facets: Optional[Dict[str, BaseFacet]] = None,
+        fields: list[Field] | None = None,
+        description: str | None = None,
+        custom_facets: dict[str, BaseFacet] | None = None,
+        input_facets: dict[str, BaseFacet] | None = None,
+        output_facets: dict[str, BaseFacet] | None = None,
     ):
         if fields is None:
             fields = []
@@ -120,8 +120,8 @@ class Dataset(RedactMixin):
     def from_table(
         source: Source,
         table_name: str,
-        schema_name: Optional[str] = None,
-        database_name: Optional[str] = None,
+        schema_name: str | None = None,
+        database_name: str | None = None,
     ):
         return Dataset(
             name=Dataset._to_name(
@@ -136,8 +136,8 @@ class Dataset(RedactMixin):
     def from_table_schema(
         source: Source,
         table_schema: DbTableSchema,
-        database_name: Optional[str] = None,
-        data_location: Optional[str] = None,
+        database_name: str | None = None,
+        data_location: str | None = None,
     ):
         parsed_path = urlparse(data_location)
         custom_facets = (
@@ -174,8 +174,8 @@ class Dataset(RedactMixin):
     @staticmethod
     def _to_name(
         table_name: str,
-        schema_name: Optional[str] = None,
-        database_name: Optional[str] = None,
+        schema_name: str | None = None,
+        database_name: str | None = None,
     ):
         # Prefix the table name with database and schema name using
         # the format: {database_name}.{table_schema}.{table_name}.
@@ -200,7 +200,7 @@ class Dataset(RedactMixin):
                          {self.fields!r},{self.description!r})"
 
     def to_openlineage_dataset(self) -> OpenLineageDataset:
-        facets: Dict[str, DatasetFacet] = {
+        facets: dict[str, DatasetFacet] = {
             "dataSource": datasource_dataset.DatasourceDatasetFacet(
                 name=self.source.name,
                 uri=self.source.connection_url or "",

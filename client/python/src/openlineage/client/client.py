@@ -7,7 +7,7 @@ import json
 import logging
 import os
 import warnings
-from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import attr
 import yaml
@@ -35,9 +35,9 @@ if TYPE_CHECKING:
     from requests.adapters import HTTPAdapter
 
 
-Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
-Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
-Event = Union[Event_v1, Event_v2]
+Event_v1 = RunEvent | DatasetEvent | JobEvent
+Event_v2 = event_v2.RunEvent | event_v2.DatasetEvent | event_v2.JobEvent
+Event = Event_v1 | Event_v2
 
 
 @attr.define

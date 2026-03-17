@@ -4,7 +4,6 @@ import datetime
 import json
 from enum import Enum
 from pathlib import Path
-from typing import Dict
 from unittest import mock
 
 import attr
@@ -27,7 +26,7 @@ DUMMY_RANDOM_LOG_FILE = "dbt-logs-e2c4a0ab-d119-4828-b9c4-96ffd4c79d4f"
 CURRENT_DIR = str(Path(__file__).absolute().parent)
 
 
-def ol_event_to_dict(event) -> Dict:
+def ol_event_to_dict(event) -> dict:
     return attr.asdict(event, value_serializer=serialize)
 
 

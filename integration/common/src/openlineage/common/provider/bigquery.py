@@ -6,7 +6,7 @@ import json
 import logging
 import traceback
 import warnings
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import attr
 from openlineage.client.facet_v2 import BaseFacet, external_query_run, output_statistics_output_dataset
@@ -37,8 +37,8 @@ class BigQueryErrorRunFacet(BaseFacet):
     :param parserError: represents errors that happened during parsing SQL provided to bigquery
     """
 
-    clientError: Optional[str] = None
-    parserError: Optional[str] = None
+    clientError: str | None = None
+    parserError: str | None = None
 
     @staticmethod
     def _get_schema() -> str:
@@ -56,8 +56,8 @@ class BigQueryJobRunFacet(BaseFacet):
     """
 
     cached: bool
-    billedBytes: Optional[int] = None
-    properties: Optional[str] = None
+    billedBytes: int | None = None
+    properties: str | None = None
 
     @staticmethod
     def _get_schema() -> str:
@@ -87,13 +87,13 @@ class BigQueryStatisticsDatasetFacet(BaseFacet):
 
 @attr.define
 class BigQueryFacets:
-    run_facets: Dict[str, BaseFacet]
-    inputs: List[Dataset]
-    outputs: List[Dataset]
-    _output: Optional[Dataset] = None
+    run_facets: dict[str, BaseFacet]
+    inputs: list[Dataset]
+    outputs: list[Dataset]
+    _output: Dataset | None = None
 
     @property
-    def output(self) -> Optional[Dataset]:
+    def output(self) -> Dataset | None:
         warnings.warn(
             "The 'output' attribute will be removed in a future version. Use 'outputs' instead.",
             DeprecationWarning,
@@ -102,12 +102,12 @@ class BigQueryFacets:
         return self._output
 
     @output.setter
-    def output(self, value: Optional[Dataset]) -> None:
+    def output(self, value: Dataset | None) -> None:
         self._output = value
 
 
 class BigQueryDatasetsProvider:
-    def __init__(self, client: Optional["Client"] = None, logger: Optional[logging.Logger] = None):
+    def __init__(self, client: Optional["Client"] = None, logger: logging.Logger | None = None):
         if client is None:
             # lazy-load bigquery client since its slow to import (primarily due to pandas)
             self.client = get_bq_client()
@@ -121,7 +121,7 @@ class BigQueryDatasetsProvider:
     def get_facets(self, job_id: str) -> BigQueryFacets:
         inputs = []
         outputs = []
-        run_facets: Dict[str, BaseFacet] = {
+        run_facets: dict[str, BaseFacet] = {
             "externalQuery": external_query_run.ExternalQueryRunFacet(
                 externalQueryId=job_id, source="bigquery"
             )
@@ -178,7 +178,7 @@ class BigQueryDatasetsProvider:
         )
 
     @staticmethod
-    def _deduplicate_outputs(outputs) -> List[Dataset]:
+    def _deduplicate_outputs(outputs) -> list[Dataset]:
         # Sources are the same so we can compare only names
         final_outputs = {}
         for single_output in outputs:
@@ -197,7 +197,7 @@ class BigQueryDatasetsProvider:
 
         return list(final_outputs.values())
 
-    def _get_input_output(self, properties) -> Tuple[List[Dataset], Optional[Dataset]]:
+    def _get_input_output(self, properties) -> tuple[list[Dataset], Dataset | None]:
         dataset_stat_facet = self._get_statistics_dataset_facet(properties)
         inputs = self._get_input_from_bq(properties)
         output = self._get_output_from_bq(properties)
@@ -223,7 +223,7 @@ class BigQueryDatasetsProvider:
         )
 
     @staticmethod
-    def _get_statistics_dataset_facet(properties) -> Optional[BigQueryStatisticsDatasetFacet]:
+    def _get_statistics_dataset_facet(properties) -> BigQueryStatisticsDatasetFacet | None:
         query_plan = get_from_nullable_chain(properties, ["statistics", "query", "queryPlan"])
         if not query_plan:
             return None
@@ -251,7 +251,7 @@ class BigQueryDatasetsProvider:
             self.logger.warning(f"Could not extract schema from bigquery. {e}")
             return [Dataset.from_table(source, table) for table, source in zip(input_table_names, sources)]
 
-    def _get_output_from_bq(self, properties) -> Optional[Dataset]:
+    def _get_output_from_bq(self, properties) -> Dataset | None:
         bq_output_table = get_from_nullable_chain(properties, ["configuration", "query", "destinationTable"])
         if not bq_output_table:
             return None
@@ -276,7 +276,7 @@ class BigQueryDatasetsProvider:
             self.logger.warning(f"Could not extract output schema from bigquery. {e}")
         return None
 
-    def _get_table_schemas(self, tables: List[str]) -> List[DbTableSchema]:
+    def _get_table_schemas(self, tables: list[str]) -> list[DbTableSchema]:
         # Avoid querying BigQuery by returning an empty array
         # if no tables have been provided.
         if not tables:
@@ -284,7 +284,7 @@ class BigQueryDatasetsProvider:
 
         return [schema for table in tables if (schema := self._get_table(table)) is not None]
 
-    def _get_table(self, table: str) -> Optional[DbTableSchema]:
+    def _get_table(self, table: str) -> DbTableSchema | None:
         bq_table = self.client.get_table(table)
         if not bq_table._properties:
             return None

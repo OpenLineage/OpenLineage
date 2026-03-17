@@ -531,7 +531,7 @@ def test_file_transport_open_file_local_fallback():
 
     # Verify file was created using standard filesystem
     assert os.path.exists(file_path)
-    with open(file_path, "r") as f:
+    with open(file_path) as f:
         assert f.read() == "test content"
 
 
@@ -582,7 +582,7 @@ def test_file_transport_uses_local_handler_for_local_paths(mock_fsspec):
 
     # Verify file was created using standard filesystem
     assert os.path.exists(local_path)
-    with open(local_path, "r") as f:
+    with open(local_path) as f:
         assert f.read() == "test content"
 
 

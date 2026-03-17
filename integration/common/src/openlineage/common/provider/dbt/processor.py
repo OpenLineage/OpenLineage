@@ -6,8 +6,9 @@ import collections
 import datetime
 import logging
 from abc import abstractmethod
+from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 import attr
 from openlineage.client.event_v2 import Dataset, InputDataset, Job, OutputDataset, Run, RunEvent, RunState
@@ -84,8 +85,8 @@ class ModelNode:
     # in reality Literal["model", "test", "snapshot", "source", "seed"]
     # but way too much work to convince mypy that it's true
     type: str
-    metadata_node: Dict
-    catalog_node: Optional[Dict] = None
+    metadata_node: dict
+    catalog_node: dict | None = None
 
 
 @attr.define
@@ -93,8 +94,8 @@ class DbtRun:
     started_at: str
     completed_at: str
     status: str
-    inputs: List[Dataset]
-    output: Optional[Dataset]
+    inputs: list[Dataset]
+    output: Dataset | None
     job_name: str
     namespace: str
     run_id: str = attr.field(factory=lambda: str(generate_new_uuid()))
@@ -103,20 +104,20 @@ class DbtRun:
 @attr.define
 class DbtRunResult:
     start: RunEvent
-    complete: Optional[RunEvent] = None
-    fail: Optional[RunEvent] = None
+    complete: RunEvent | None = None
+    fail: RunEvent | None = None
 
 
 @attr.define
 class DbtEvents:
-    starts: List[RunEvent] = attr.field(factory=list)
-    completes: List[RunEvent] = attr.field(factory=list)
-    fails: List[RunEvent] = attr.field(factory=list)
+    starts: list[RunEvent] = attr.field(factory=list)
+    completes: list[RunEvent] = attr.field(factory=list)
+    fails: list[RunEvent] = attr.field(factory=list)
 
     def events(self):
         return self.starts + self.completes + self.fails
 
-    def add(self, item: Optional[DbtRunResult]):
+    def add(self, item: DbtRunResult | None):
         if not item:
             return
         self.starts.append(item.start)
@@ -136,9 +137,9 @@ class DbtEvents:
 
 @attr.define
 class DbtRunContext:
-    manifest: Dict
-    run_results: Dict
-    catalog: Optional[Dict] = None
+    manifest: dict
+    run_results: dict
+    catalog: dict | None = None
 
 
 class DbtArtifactProcessor:
@@ -149,13 +150,13 @@ class DbtArtifactProcessor:
         producer: str,
         job_namespace: str,
         skip_errors: bool = False,
-        logger: Optional[logging.Logger] = None,
-        models: Optional[Sequence[str]] = None,
-        selector: Optional[str] = None,
-        openlineage_job_name: Optional[str] = None,
+        logger: logging.Logger | None = None,
+        models: Sequence[str] | None = None,
+        selector: str | None = None,
+        openlineage_job_name: str | None = None,
     ):
         self.producer = producer
-        self._dbt_run_metadata: Optional[ParentRunMetadata] = None
+        self._dbt_run_metadata: ParentRunMetadata | None = None
         self.logger = logger or logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
 
         self.openlineage_job_name = openlineage_job_name
@@ -223,7 +224,7 @@ class DbtArtifactProcessor:
         str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
         return cls.get_version_number(str_schema_version)
 
-    def get_query_id(self, run_result: dict[str, Any]) -> Optional[str]:
+    def get_query_id(self, run_result: dict[str, Any]) -> str | None:
         # Validate that there is an adapter_response in the run_result
         if "adapter_response" not in run_result:
             return None
@@ -235,7 +236,7 @@ class DbtArtifactProcessor:
         if self.adapter_type == Adapter.BIGQUERY:
             query_id_key = "job_id"
 
-        query_id: Optional[str] = run_result["adapter_response"].get(query_id_key)
+        query_id: str | None = run_result["adapter_response"].get(query_id_key)
 
         if isinstance(query_id, str):
             # For Databricks, "N/A" could be returned if the query_id is None; catch that
@@ -250,7 +251,7 @@ class DbtArtifactProcessor:
         # "v2.json" -> 2
         return int(file.split(".")[0][1:])
 
-    def parse_execution(self, context: DbtRunContext, nodes: Dict) -> DbtEvents:
+    def parse_execution(self, context: DbtRunContext, nodes: dict) -> DbtEvents:
         events = DbtEvents()
         for run in context.run_results["results"]:
             name = run["unique_id"]
@@ -306,7 +307,7 @@ class DbtArtifactProcessor:
             else:
                 sql = output_node["compiled_sql"]
 
-            job_facets: Dict[str, JobFacet] = {
+            job_facets: dict[str, JobFacet] = {
                 "jobType": job_type_job.JobTypeJobFacet(
                     jobType=jobType,
                     integration="DBT",
@@ -324,7 +325,7 @@ class DbtArtifactProcessor:
             if sql:
                 job_facets["sql"] = sql_job.SQLJobFacet(query=sql, dialect=self.extract_dialect())
 
-            run_facets: Dict[str, RunFacet] = {}
+            run_facets: dict[str, RunFacet] = {}
             if tags := output_node.get("tags", None):
                 run_facets["tags"] = tags_run.TagsRunFacet(
                     tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
@@ -359,7 +360,7 @@ class DbtArtifactProcessor:
             )
         return events
 
-    def parse_test(self, context: DbtRunContext, nodes: Dict) -> DbtEvents:
+    def parse_test(self, context: DbtRunContext, nodes: dict) -> DbtEvents:
         # The tests can have different timings, so just take current time
         started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -392,7 +393,7 @@ class DbtArtifactProcessor:
                 self.removeprefix(node["unique_id"], "model."),
             ) + (".build.test" if self.command == "build" else ".test")
 
-            job_facets: Dict[str, JobFacet] = {
+            job_facets: dict[str, JobFacet] = {
                 "jobType": job_type_job.JobTypeJobFacet(
                     jobType="TEST",
                     integration="DBT",
@@ -408,14 +409,14 @@ class DbtArtifactProcessor:
                 ),
             }
 
-            run_facets: Dict[str, RunFacet] = {}
+            run_facets: dict[str, RunFacet] = {}
             if tags := node.get("tags", None):
                 run_facets["tags"] = tags_run.TagsRunFacet(
                     tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
                 )
 
             run_id = str(generate_new_uuid())
-            dataset_facets: Dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
+            dataset_facets: dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
             events.add(
                 self.to_openlineage_events(
                     "success",
@@ -438,8 +439,8 @@ class DbtArtifactProcessor:
         return events
 
     def parse_assertions(
-        self, context: DbtRunContext, nodes: Dict
-    ) -> Dict[str, List[data_quality_assertions_dataset.Assertion]]:
+        self, context: DbtRunContext, nodes: dict
+    ) -> dict[str, list[data_quality_assertions_dataset.Assertion]]:
         assertions = collections.defaultdict(list)
         for run in context.run_results["results"]:
             if not run["unique_id"].startswith("test."):
@@ -484,7 +485,7 @@ class DbtArtifactProcessor:
                 self.logger.warning(f"Model node connected to test {nodes[run['unique_id']]} not found")
         return assertions  # type: ignore
 
-    def to_openlineage_events(self, *args, **kwargs) -> Optional[DbtRunResult]:
+    def to_openlineage_events(self, *args, **kwargs) -> DbtRunResult | None:
         try:
             return self._to_openlineage_events(*args, **kwargs)
         except Exception as e:
@@ -499,9 +500,9 @@ class DbtArtifactProcessor:
         completed_at: str,
         run: Run,
         job: Job,
-        inputs: List[InputDataset],
-        output: Optional[OutputDataset],
-    ) -> Optional[DbtRunResult]:
+        inputs: list[InputDataset],
+        output: OutputDataset | None,
+    ) -> DbtRunResult | None:
         start = RunEvent(
             eventType=RunState.START,
             eventTime=started_at,
@@ -553,7 +554,7 @@ class DbtArtifactProcessor:
         self,
         node: ModelNode,
         has_facets: bool = False,
-        adapter_response: Optional[Dict] = None,
+        adapter_response: dict | None = None,
     ) -> OutputDataset:
         namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
         if not has_facets:
@@ -607,7 +608,7 @@ class DbtArtifactProcessor:
         if not row_count and not byte_count:
             return OutputDataset(name=name, namespace=namespace, facets=facets)
 
-        output_facets: Dict[str, OutputDatasetFacet] = {}
+        output_facets: dict[str, OutputDatasetFacet] = {}
         output_facets["outputStatistics"] = (
             output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
                 rowCount=row_count if row_count > 0 else None,
@@ -616,17 +617,17 @@ class DbtArtifactProcessor:
         )
         return OutputDataset(name=name, namespace=namespace, facets=facets, outputFacets=output_facets)
 
-    def _format_dataset_name(self, database: Optional[str], schema: Optional[str], table: str) -> str:
+    def _format_dataset_name(self, database: str | None, schema: str | None, table: str) -> str:
         return ".".join(list(filter(None, [database, schema, table])))
 
     def extract_dataset_data(
         self,
         node: ModelNode,
-        assertions: Optional[data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet],
+        assertions: data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet | None,
         has_facets: bool = False,
-    ) -> Tuple[str, str, Dict, Dict]:
-        facets: Dict[str, DatasetFacet]
-        input_facets: Dict[str, InputDatasetFacet] = {}
+    ) -> tuple[str, str, dict, dict]:
+        facets: dict[str, DatasetFacet]
+        input_facets: dict[str, InputDatasetFacet] = {}
         if has_facets:
             facets = {
                 "dataSource": datasource_dataset.DatasourceDatasetFacet(
@@ -675,7 +676,7 @@ class DbtArtifactProcessor:
         )
 
     @staticmethod
-    def extract_metadata_fields(columns: List[Dict]) -> List[schema_dataset.SchemaDatasetFacetFields]:
+    def extract_metadata_fields(columns: list[dict]) -> list[schema_dataset.SchemaDatasetFacetFields]:
         """
         Extract table field info from metadata's node column info
         Should be used only in the lack of catalog's presence, as there's less
@@ -694,8 +695,8 @@ class DbtArtifactProcessor:
 
     @staticmethod
     def extract_catalog_fields(
-        columns: List[Dict], metadata_columns: Dict
-    ) -> List[schema_dataset.SchemaDatasetFacetFields]:
+        columns: list[dict], metadata_columns: dict
+    ) -> list[schema_dataset.SchemaDatasetFacetFields]:
         """Extract table field info from catalog's node column info"""
         fields = []
         for field in columns:
@@ -708,7 +709,7 @@ class DbtArtifactProcessor:
             )
         return fields
 
-    def extract_adapter_type(self, profile: Dict):
+    def extract_adapter_type(self, profile: dict):
         try:
             self.adapter_type = Adapter[profile["type"].upper()]
         except KeyError:
@@ -716,10 +717,10 @@ class DbtArtifactProcessor:
                 f"Only {Adapter.adapters()} adapters are supported right now. Passed {profile['type']}"
             )
 
-    def extract_dataset_namespace(self, profile: Dict):
+    def extract_dataset_namespace(self, profile: dict):
         self.dataset_namespace = self.extract_namespace(profile)
 
-    def extract_namespace(self, profile: Dict) -> str:
+    def extract_namespace(self, profile: dict) -> str:
         """Extract namespace from profile's type"""
         if self.adapter_type == Adapter.SNOWFLAKE:
             return f"snowflake://{fix_account_name(profile['account'])}"
@@ -779,7 +780,7 @@ class DbtArtifactProcessor:
         return self.adapter_type.value.lower()
 
     def get_run(
-        self, run_id: str, query_id: Optional[str] = None, run_facets: Optional[dict[str, Any]] = None
+        self, run_id: str, query_id: str | None = None, run_facets: dict[str, Any] | None = None
     ) -> Run:
         if run_facets is None:
             run_facets = {}
@@ -832,7 +833,7 @@ class DbtArtifactProcessor:
         }
 
     @staticmethod
-    def get_timings(timings: List[Dict]) -> Tuple[str, str]:
+    def get_timings(timings: list[dict]) -> tuple[str, str]:
         """Extract timing info from run_result's timing dict"""
         try:
             timing = list(filter(lambda x: x["name"] == "execute", timings))[0]
@@ -851,7 +852,7 @@ class DbtArtifactProcessor:
 
     def get_column_lineage(
         self, namespace: str, compiled_sql: str
-    ) -> Optional[column_lineage_dataset.ColumnLineageDatasetFacet]:
+    ) -> column_lineage_dataset.ColumnLineageDatasetFacet | None:
         """Parse SQL and extract column-level lineage information
 
         Args:

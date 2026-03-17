@@ -19,7 +19,6 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Optional
 
 # Constants
 MIN_PRINTABLE_CHAR = 32
@@ -35,8 +34,8 @@ class JarComparator:
         self.jar1_path = Path(jar1_path)
         self.jar2_path = Path(jar2_path)
         self.verbose = verbose
-        self.temp_dir1: Optional[Path] = None
-        self.temp_dir2: Optional[Path] = None
+        self.temp_dir1: Path | None = None
+        self.temp_dir2: Path | None = None
 
     def __enter__(self):
         """Context manager entry - create temp directories."""
@@ -138,7 +137,7 @@ class JarComparator:
         except OSError as e:
             return [f"Error comparing text files: {e}"]
 
-    def decompile_class_file(self, class_file: Path) -> Optional[list[str]]:
+    def decompile_class_file(self, class_file: Path) -> list[str] | None:
         """Decompile .class file using javap if available."""
         try:
             result = subprocess.run(  # noqa: S603

@@ -7,7 +7,7 @@ name = "openlineage-integration-common"
 version = "1.46.0"
 description = "OpenLineage common python library for integrations"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 authors = [{name = "OpenLineage"}]
 keywords = ["openlineage"]
@@ -16,7 +16,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -38,6 +37,7 @@ bigquery = [
     "google-crc32c>=1.1.2",
 ]
 dbt = []  # left for backcompat
+tests = []  # left for backcompat
 great_expectations = [
     "great_expectations>=1.0.0",
     "sqlalchemy>=1.3.24,<2.0.0",
@@ -111,7 +111,7 @@ lint.select = [
     "W",
     "I001"
 ]
-target-version = "py39"
+target-version = "py310"
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/common"]
 

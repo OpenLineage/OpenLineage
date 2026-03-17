@@ -3,7 +3,7 @@
 import uuid
 import warnings
 from enum import Enum
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 import attr
 from dateutil import parser
@@ -80,8 +80,8 @@ class JobEvent(RedactMixin):
     producer: str = attr.ib()
     schemaURL: str = attr.ib()  # noqa: N815
     job: Job = attr.ib()
-    inputs: Optional[list[Dataset]] = attr.ib(factory=list)
-    outputs: Optional[list[Dataset]] = attr.ib(factory=list)
+    inputs: list[Dataset] | None = attr.ib(factory=list)
+    outputs: list[Dataset] | None = attr.ib(factory=list)
 
     _skip_redact: ClassVar[list[str]] = ["producer"]
 
@@ -105,8 +105,8 @@ class RunEvent(RedactMixin):
     run: Run = attr.ib()
     job: Job = attr.ib()
     producer: str = attr.ib()
-    inputs: Optional[list[Dataset]] = attr.ib(factory=list)
-    outputs: Optional[list[Dataset]] = attr.ib(factory=list)
+    inputs: list[Dataset] | None = attr.ib(factory=list)
+    outputs: list[Dataset] | None = attr.ib(factory=list)
     schemaURL: str = attr.ib(default=SCHEMA_URL)  # noqa: N815
 
     _skip_redact: ClassVar[list[str]] = ["eventType", "eventTime", "producer", "schemaURL"]

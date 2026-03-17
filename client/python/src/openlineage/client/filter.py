@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import re
-import typing
 import warnings
 
 import attr
@@ -15,7 +14,7 @@ with warnings.catch_warnings():
     from openlineage.client.run import RunEvent
 
 log = logging.getLogger(__name__)
-RunEventType = typing.Union[RunEvent, RunEvent_v2]
+RunEventType = RunEvent | RunEvent_v2
 
 
 @attr.define

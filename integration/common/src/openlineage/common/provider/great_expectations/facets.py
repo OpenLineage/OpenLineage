@@ -1,7 +1,6 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional, Union
 
 import attr
 from openlineage.client.facet import BaseFacet
@@ -31,17 +30,17 @@ class GreatExpectationsRunFacet(BaseFacet):
 
     great_expectations_version = attr.field()
     expectation_suite_name: str = attr.field()
-    run_id: Dict = attr.field()  # type: ignore
-    expectation_suite_meta: Dict = attr.field()
+    run_id: dict = attr.field()  # type: ignore
+    expectation_suite_meta: dict = attr.field()
     validation_time: str = attr.field()
-    batch_spec: Optional[BatchSpec] = attr.field(default=None)
-    batch_markers: Optional[BatchMarkers] = attr.field(default=None)
-    batch_kwargs: Optional[BatchKwargs] = attr.field(default=None)
-    active_batch_definition: Union[None, IDDict, BatchDefinition] = attr.field(default=None)
+    batch_spec: BatchSpec | None = attr.field(default=None)
+    batch_markers: BatchMarkers | None = attr.field(default=None)
+    batch_kwargs: BatchKwargs | None = attr.field(default=None)
+    active_batch_definition: None | IDDict | BatchDefinition = attr.field(default=None)
     batch_parameters = attr.field(default=None)
-    checkpoint_name: Optional[str] = attr.field(default=None)
-    validation_id: Optional[str] = attr.field(default=None)
-    checkpoint_id: Optional[str] = attr.field(default=None)
+    checkpoint_name: str | None = attr.field(default=None)
+    validation_id: str | None = attr.field(default=None)
+    checkpoint_id: str | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
@@ -54,7 +53,7 @@ class GreatExpectationsAssertionsDatasetFacet(BaseFacet):
     This facet represents passed/failed status of asserted expectations on dataset
     """
 
-    assertions: List[GreatExpectationsAssertion]
+    assertions: list[GreatExpectationsAssertion]
 
     @staticmethod
     def _get_schema() -> str:
