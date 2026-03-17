@@ -77,6 +77,7 @@ class DbtNodeJobFacet(JobFacet):
     schema: str | None = attr.field(default=None)
     alias: str | None = attr.field(default=None)
     unique_id: str | None = attr.field(default=None)
+    test_type: str | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
