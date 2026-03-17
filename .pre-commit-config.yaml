@@ -42,6 +42,17 @@ repos:
           - LICENSE.insert.txt
           - --fuzzy-match-generates-todo
           - --use-current-year
+      - id: insert-license
+        name: Add license for all Go files
+        files: \.go$
+        exclude: ".*\\.gen\\.go$"
+        args:
+          - --comment-style
+          - "/*| *| */"
+          - --license-filepath
+          - LICENSE.insert.txt
+          - --fuzzy-match-generates-todo
+          - --use-current-year
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -153,6 +164,16 @@ repos:
         additional_dependencies: ["github.com/santhosh-tekuri/jsonschema/cmd/jv@latest"]
         entry: ./.pre_commit/json-schema/test-facets.sh
         files: ^spec/facets/.*\.json$
+      - id: golangci-lint-client-go
+        name: golangci-lint - Go client
+        description: "Runs the golangci-lint linter for Go client using Docker."
+        language: system
+        entry:
+          bash -c 'docker run --rm -v "$(pwd):/app" -w /app/client/go golangci/golangci-lint:v2.10.1 golangci-lint run
+          --config /app/client/go/.golangci.yml ./...'
+        files: ^client/go/.*\.go$
+        exclude: ".*\\.gen\\.go$"
+        pass_filenames: false
       - id: generate_facets
         name: Generate OpenLineage facets for Python client.
         language: python
