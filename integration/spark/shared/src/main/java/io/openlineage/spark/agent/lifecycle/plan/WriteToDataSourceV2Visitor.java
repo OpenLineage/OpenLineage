@@ -118,9 +118,10 @@ public final class WriteToDataSourceV2Visitor
     // Extract namespace and name from table identifier
     // e.g., "hive.bronze.application" -> namespace="hive.bronze", name="application"
     String[] parts = tableName.split("\\.");
-    String namespace = parts.length > 1
-        ? String.join(".", java.util.Arrays.copyOfRange(parts, 0, parts.length - 1))
-        : "default";
+    String namespace =
+        parts.length > 1
+            ? String.join(".", java.util.Arrays.copyOfRange(parts, 0, parts.length - 1))
+            : "default";
     String name = parts[parts.length - 1];
 
     StructType schema = proxy.getSchema();

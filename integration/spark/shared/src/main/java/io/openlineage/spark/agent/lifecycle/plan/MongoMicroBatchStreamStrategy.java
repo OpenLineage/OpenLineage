@@ -51,24 +51,25 @@ public class MongoMicroBatchStreamStrategy extends StreamStrategy {
     Map<String, String> option = options.get();
 
     // Try to get collection name (required)
-    String collectionName = option.getOrDefault("spark.mongodb.collection",
-        option.get("collection"));
+    String collectionName =
+        option.getOrDefault("spark.mongodb.collection", option.get("collection"));
     if (collectionName == null || collectionName.isEmpty()) {
-      return new ArrayList<>();  // Collection is required
+      return new ArrayList<>(); // Collection is required
     }
 
     // Try to get connection URI from various possible keys
-    String connectionURL = option.getOrDefault("spark.mongodb.connection.uri",
-        option.getOrDefault("connection.uri",
-            option.getOrDefault("spark.mongodb.read.connection.uri", "")));
+    String connectionURL =
+        option.getOrDefault(
+            "spark.mongodb.connection.uri",
+            option.getOrDefault(
+                "connection.uri", option.getOrDefault("spark.mongodb.read.connection.uri", "")));
 
     if (connectionURL == null || connectionURL.isEmpty()) {
-      return new ArrayList<>();  // Connection URL is required
+      return new ArrayList<>(); // Connection URL is required
     }
 
     // Try to get database name from options first
-    String databaseName = option.getOrDefault("spark.mongodb.database",
-        option.get("database"));
+    String databaseName = option.getOrDefault("spark.mongodb.database", option.get("database"));
 
     // If database not in options, try to extract from connection URI
     // Format: mongodb://user:pass@host:port/database?params
@@ -77,11 +78,11 @@ public class MongoMicroBatchStreamStrategy extends StreamStrategy {
     }
 
     if (databaseName == null || databaseName.isEmpty()) {
-      return new ArrayList<>();  // Database is required
+      return new ArrayList<>(); // Database is required
     }
 
-    OpenLineage.InputDataset dataset = datasetFactory.getDataset(
-        collectionName, connectionURL + "/" + databaseName, schema);
+    OpenLineage.InputDataset dataset =
+        datasetFactory.getDataset(collectionName, connectionURL + "/" + databaseName, schema);
 
     return Arrays.asList(dataset);
   }

@@ -13,8 +13,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.spark.sql.connector.read.streaming.Offset;
 import org.apache.spark.sql.connector.read.streaming.SparkDataStream;
@@ -22,9 +20,7 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for MongoMicroBatchStreamStrategy to verify Spark 4.0 constructor support.
- */
+/** Unit tests for MongoMicroBatchStreamStrategy to verify Spark 4.0 constructor support. */
 class MongoMicroBatchStreamStrategyTest {
 
   private OpenLineageContext context;
