@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,19 +38,6 @@ class WriteToDataSourceV2VisitorTest {
     WriteToDataSourceV2Visitor visitor = new WriteToDataSourceV2Visitor(context);
 
     // Then: Visitor should be created successfully
-    assertNotNull(visitor);
-  }
-
-  @Test
-  void testVisitorHasContext() {
-    // Given: A visitor instance
-    WriteToDataSourceV2Visitor visitor = new WriteToDataSourceV2Visitor(context);
-
-    // When: Checking if visitor is applicable (testing basic functionality)
-    LogicalPlan mockPlan = mock(LogicalPlan.class);
-
-    // Then: Visitor should function without errors
-    // Note: Full test of Iceberg streaming write requires Iceberg classes
     assertNotNull(visitor);
   }
 }
