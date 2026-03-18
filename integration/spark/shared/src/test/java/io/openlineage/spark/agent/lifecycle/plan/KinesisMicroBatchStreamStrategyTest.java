@@ -20,9 +20,7 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests for KinesisMicroBatchStreamStrategy to verify Spark 4.0 constructor support.
- */
+/** Unit tests for KinesisMicroBatchStreamStrategy to verify Spark 4.0 constructor support. */
 class KinesisMicroBatchStreamStrategyTest {
 
   private OpenLineageContext context;
