@@ -1,5 +1,4 @@
-module github.com/tomasznazarewicz/openlineage-terraform-resources
-
+module github.com/OpenLineage/openlineage/byool/terraform
 go 1.26.0
 
 require (
