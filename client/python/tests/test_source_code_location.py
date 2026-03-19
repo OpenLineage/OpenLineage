@@ -10,7 +10,7 @@ from openlineage.client.client import OpenLineageClient, OpenLineageConfig
 from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
 from openlineage.client.run import Job, JobEvent, Run, RunEvent, RunState
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import get_git_repo_url
+from openlineage.client.utils import get_git_branch, get_git_repo_url, get_git_tag, get_git_version
 from openlineage.client.uuid import generate_new_uuid
 
 
@@ -76,6 +76,59 @@ class TestGetGitRepoUrl:
 
 
 # ---------------------------------------------------------------------------
+# get_git_version / get_git_branch / get_git_tag
+# ---------------------------------------------------------------------------
+class TestGetGitVersion:
+    def test_explicit_value_returned_as_is(self):
+        assert get_git_version(version="deadbeef") == "deadbeef"
+
+    @patch("openlineage.client.utils.subprocess.run")
+    def test_autodetect(self, mock_run):
+        mock_run.return_value = MagicMock(stdout="abc123def456\n")
+        assert get_git_version() == "abc123def456"
+
+    @patch("openlineage.client.utils.subprocess.run")
+    def test_returns_none_on_failure(self, mock_run):
+        mock_run.side_effect = subprocess.CalledProcessError(128, "git")
+        assert get_git_version() is None
+
+
+class TestGetGitBranch:
+    def test_explicit_value_returned_as_is(self):
+        assert get_git_branch(branch="my-branch") == "my-branch"
+
+    @patch("openlineage.client.utils.subprocess.run")
+    def test_autodetect(self, mock_run):
+        mock_run.return_value = MagicMock(stdout="main\n")
+        assert get_git_branch() == "main"
+
+    @patch("openlineage.client.utils.subprocess.run")
+    def test_returns_none_on_failure(self, mock_run):
+        mock_run.side_effect = subprocess.CalledProcessError(128, "git")
+        assert get_git_branch() is None
+
+    @patch("openlineage.client.utils.subprocess.run")
+    def test_returns_none_in_detached_head(self, mock_run):
+        mock_run.return_value = MagicMock(stdout="HEAD\n")
+        assert get_git_branch() is None
+
+
+class TestGetGitTag:
+    def test_explicit_value_returned_as_is(self):
+        assert get_git_tag(tag="v1.2.3") == "v1.2.3"
+
+    @patch("openlineage.client.utils.subprocess.run")
+    def test_autodetect_exact_tag(self, mock_run):
+        mock_run.return_value = MagicMock(stdout="v1.0.0\n")
+        assert get_git_tag() == "v1.0.0"
+
+    @patch("openlineage.client.utils.subprocess.run")
+    def test_returns_none_when_no_exact_tag(self, mock_run):
+        mock_run.side_effect = subprocess.CalledProcessError(128, "git")
+        assert get_git_tag() is None
+
+
+# ---------------------------------------------------------------------------
 # Config parsing
 # ---------------------------------------------------------------------------
 class TestSourceCodeLocationConfig:
@@ -83,6 +136,9 @@ class TestSourceCodeLocationConfig:
         config = OpenLineageConfig.from_dict({})
         assert config.facets.source_code_location.disabled is False
         assert config.facets.source_code_location.repo_url is None
+        assert config.facets.source_code_location.version is None
+        assert config.facets.source_code_location.branch is None
+        assert config.facets.source_code_location.tag is None
 
     def test_config_from_dict(self):
         config = OpenLineageConfig.from_dict(
@@ -104,14 +160,14 @@ class TestSourceCodeLocationConfig:
 # ---------------------------------------------------------------------------
 # add_source_code_location_facet
 # ---------------------------------------------------------------------------
-def _make_client(repo_url=None, disabled=False):
+def _make_client(repo_url=None, disabled=False, version=None, branch=None, tag=None):
     """Create a client with noop transport and SCL config."""
-    scl_config = SourceCodeLocationConfig(disabled=disabled, repo_url=repo_url)
+    scl_config = SourceCodeLocationConfig(
+        disabled=disabled, repo_url=repo_url, version=version, branch=branch, tag=tag
+    )
     facets_config = FacetsConfig(source_code_location=scl_config)
     client = OpenLineageClient.__new__(OpenLineageClient)
-    client._config = OpenLineageConfig(
-        facets=facets_config,
-    )
+    client._config = OpenLineageConfig(facets=facets_config)
     client.transport = NoopTransport(NoopConfig())
     client._filters = []
     return client
@@ -177,18 +233,68 @@ class TestAddSourceCodeLocationFacet:
             result = client.add_source_code_location_facet(_make_run_event())
         assert result.job.facets is None or "sourceCodeLocation" not in (result.job.facets or {})
 
-    def test_url_is_cached(self):
+    def test_git_info_is_cached(self):
         client = _make_client()
         with patch(
             "openlineage.client.utils.subprocess.run",
             return_value=MagicMock(stdout="https://github.com/org/repo.git\n"),
         ) as mock_run:
-            _ = client._source_code_location_url
-            _ = client._source_code_location_url
-            mock_run.assert_called_once()
+            _ = client._source_code_location
+            _ = client._source_code_location
+            # All four git calls happen on first access; second access hits the cache
+            assert mock_run.call_count == 4
 
     def test_preserves_git_suffix_in_facet(self):
         client = _make_client(repo_url="git@github.com:org/repo.git")
         event = _make_run_event()
         result = client.add_source_code_location_facet(event)
         assert result.job.facets["sourceCodeLocation"].url == "git@github.com:org/repo.git"
+
+    def test_autodetects_version_branch_tag(self):
+        client = _make_client(repo_url="https://github.com/org/repo")
+
+        def fake_git(args, **_kwargs):
+            cmd = args[1]
+            if cmd == "remote":
+                return MagicMock(stdout="https://github.com/org/repo\n")
+            if cmd == "rev-parse" and "--abbrev-ref" in args:
+                return MagicMock(stdout="main\n")
+            if cmd == "rev-parse":
+                return MagicMock(stdout="abc123\n")
+            if cmd == "describe":
+                return MagicMock(stdout="v1.0.0\n")
+            return MagicMock(stdout="\n")
+
+        with patch("openlineage.client.utils.subprocess.run", side_effect=fake_git):
+            result = client.add_source_code_location_facet(_make_run_event())
+
+        facet = result.job.facets["sourceCodeLocation"]
+        assert facet.version == "abc123"
+        assert facet.branch == "main"
+        assert facet.tag == "v1.0.0"
+
+    def test_explicit_version_branch_tag_override(self):
+        client = _make_client(
+            repo_url="https://github.com/org/repo",
+            version="deadbeef",
+            branch="feature/my-branch",
+            tag="v2.0.0",
+        )
+        result = client.add_source_code_location_facet(_make_run_event())
+        facet = result.job.facets["sourceCodeLocation"]
+        assert facet.version == "deadbeef"
+        assert facet.branch == "feature/my-branch"
+        assert facet.tag == "v2.0.0"
+
+    def test_tag_is_none_when_no_exact_match(self):
+        client = _make_client(repo_url="https://github.com/org/repo")
+
+        def fake_git(args, **_kwargs):
+            if "describe" in args:
+                raise subprocess.CalledProcessError(128, "git")
+            return MagicMock(stdout="some-value\n")
+
+        with patch("openlineage.client.utils.subprocess.run", side_effect=fake_git):
+            result = client.add_source_code_location_facet(_make_run_event())
+
+        assert result.job.facets["sourceCodeLocation"].tag is None

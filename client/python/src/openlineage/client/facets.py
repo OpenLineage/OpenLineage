@@ -9,6 +9,9 @@ import attr
 class SourceCodeLocationConfig:
     disabled: bool = False
     repo_url: str | None = None
+    version: str | None = None
+    tag: str | None = None
+    branch: str | None = None
 
 
 @attr.define

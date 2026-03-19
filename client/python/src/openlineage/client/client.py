@@ -30,7 +30,13 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import deep_merge_dicts, get_git_repo_url
+from openlineage.client.utils import (
+    deep_merge_dicts,
+    get_git_branch,
+    get_git_repo_url,
+    get_git_tag,
+    get_git_version,
+)
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -533,8 +539,14 @@ class OpenLineageClient:
         return tags_facet
 
     @cached_property
-    def _source_code_location_url(self) -> str | None:
-        return get_git_repo_url(self.config.facets.source_code_location.repo_url)
+    def _source_code_location(self) -> dict[str, str | None]:
+        scl = self.config.facets.source_code_location
+        return {
+            "url": get_git_repo_url(scl.repo_url),
+            "version": get_git_version(scl.version),
+            "branch": get_git_branch(scl.branch),
+            "tag": get_git_tag(scl.tag),
+        }
 
     def add_source_code_location_facet(self, event: Event) -> Event:
         """Adds sourceCodeLocation job facet if not already present and not disabled."""
@@ -543,15 +555,18 @@ class OpenLineageClient:
         if not isinstance(event, (RunEvent, event_v2.RunEvent)):
             return event
 
-        url = self._source_code_location_url
-        if not url:
+        scl = self._source_code_location
+        if not scl["url"]:
             return event
 
         event.job.facets = event.job.facets or {}
         if "sourceCodeLocation" not in event.job.facets:
             event.job.facets["sourceCodeLocation"] = source_code_location_job.SourceCodeLocationJobFacet(
                 type="git",
-                url=url,
-                repoUrl=url,
+                url=scl["url"],
+                repoUrl=scl["url"],
+                version=scl["version"],
+                branch=scl["branch"],
+                tag=scl["tag"],
             )
         return event
