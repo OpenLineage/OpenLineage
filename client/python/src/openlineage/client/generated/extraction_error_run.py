@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import RunFacet
 from openlineage.client.utils import RedactMixin
@@ -38,6 +40,7 @@ class ExtractionErrorRunFacet(RunFacet):
     Those could be, for example, distinct SQL statements.
     """
     errors: list[Error]
+    key: ClassVar[str] = "extractionError"
 
     @staticmethod
     def _get_schema() -> str:

@@ -181,6 +181,10 @@ class {{ class_name }}:
                 kwargs[init_name] = getattr(self, attr_name)
         return cast({{ class_name }}, new_class(**kwargs))
 {%- endif -%}
+{#- key ClassVar for concrete facet classes -#}
+{%- if _facet_key %}
+    key: ClassVar[str] = "{{ _facet_key }}"
+{%- endif -%}
 {#- staticmethod serves as placeholder for static fields in child classes -#}
 {%- if _schemaURL %}
     @staticmethod

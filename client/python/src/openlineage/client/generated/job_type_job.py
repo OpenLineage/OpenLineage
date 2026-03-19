@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import JobFacet
 
@@ -27,6 +29,7 @@ class JobTypeJobFacet(JobFacet):
 
     Example: QUERY
     """
+    key: ClassVar[str] = "jobType"
 
     @staticmethod
     def _get_schema() -> str:

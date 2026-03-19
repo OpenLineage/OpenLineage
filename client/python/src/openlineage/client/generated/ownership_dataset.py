@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
@@ -29,6 +31,8 @@ class Owner(RedactMixin):
 class OwnershipDatasetFacet(DatasetFacet):
     owners: list[Owner] | None = attr.field(factory=list)
     """The owners of the dataset."""
+
+    key: ClassVar[str] = "ownership"
 
     @staticmethod
     def _get_schema() -> str:

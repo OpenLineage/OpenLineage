@@ -50,6 +50,7 @@ class SourceCodeLocationJobFacet(JobFacet):
     """optional branch name"""
 
     _additional_skip_redact: ClassVar[list[str]] = ["type", "url"]
+    key: ClassVar[str] = "sourceCodeLocation"
 
     @staticmethod
     def _get_schema() -> str:

@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import DatasetFacet
 
@@ -11,6 +13,8 @@ from openlineage.client.generated.base import DatasetFacet
 class DatasetVersionDatasetFacet(DatasetFacet):
     datasetVersion: str  # noqa: N815
     """The version of the dataset."""
+
+    key: ClassVar[str] = "version"
 
     @staticmethod
     def _get_schema() -> str:

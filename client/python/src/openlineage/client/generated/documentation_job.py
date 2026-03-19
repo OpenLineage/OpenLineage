@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import JobFacet
 
@@ -18,6 +20,7 @@ class DocumentationJobFacet(JobFacet):
 
     Example: application/json, text/markdown
     """
+    key: ClassVar[str] = "documentation"
 
     @staticmethod
     def _get_schema() -> str:
