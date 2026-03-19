@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import importlib
 import logging
+import os
+import subprocess
 from typing import Any, ClassVar, cast
 
 import attr
@@ -53,6 +55,30 @@ def deep_merge_dicts(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[Any, 
         else:
             merged[k] = v
     return merged
+
+
+def get_git_repo_url(repo_url: str | None = None, timeout: int = 5) -> str | None:
+    """Return a repo URL suitable for SourceCodeLocationJobFacet.
+
+    If *repo_url* is given it is used directly; otherwise the URL is
+    auto-detected from ``git remote get-url origin`` in the current
+    working directory.  The URL is returned as-is with no normalization.
+    """
+    if repo_url:
+        return repo_url
+
+    try:
+        result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=os.getcwd(),
+            timeout=timeout,
+        )
+        return result.stdout.strip() or None
+    except Exception:
+        return None
 
 
 class RedactMixin:
