@@ -31,11 +31,10 @@ from openlineage.client.transport import (
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.utils import (
+    _find_git_root,
+    _get_git_snapshot,
     deep_merge_dicts,
-    get_git_branch,
     get_git_repo_url,
-    get_git_tag,
-    get_git_version,
 )
 
 with warnings.catch_warnings():
@@ -541,11 +540,31 @@ class OpenLineageClient:
     @cached_property
     def _source_code_location(self) -> dict[str, str | None]:
         scl = self.config.facets.source_code_location
+
+        # Explicit overrides bypass all subprocess calls.
+        sha: str | None = scl.version
+        branch: str | None = scl.branch
+        tag: str | None = scl.tag
+
+        # Cache the git root check so we don't call _find_git_root twice.
+        in_git_repo = _find_git_root() is not None
+
+        # Auto-detect sha/branch/tag in a single subprocess only when inside a
+        # git repo and at least one field still needs to be resolved.
+        if (sha is None or branch is None or tag is None) and in_git_repo:
+            auto_sha, auto_branch, auto_tag = _get_git_snapshot()
+            if sha is None:
+                sha = auto_sha
+            if branch is None:
+                branch = auto_branch
+            if tag is None:
+                tag = auto_tag
+
         return {
-            "url": get_git_repo_url(scl.repo_url),
-            "version": get_git_version(scl.version),
-            "branch": get_git_branch(scl.branch),
-            "tag": get_git_tag(scl.tag),
+            "url": get_git_repo_url(scl.repo_url) if (scl.repo_url or in_git_repo) else None,
+            "version": sha,
+            "branch": branch,
+            "tag": tag,
         }
 
     def add_source_code_location_facet(self, event: Event) -> Event:

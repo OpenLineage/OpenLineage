@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import logging
 import os
+import pathlib
 import subprocess
 from typing import Any, ClassVar, cast
 
@@ -57,6 +58,52 @@ def deep_merge_dicts(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[Any, 
     return merged
 
 
+def _find_git_root(start: str | None = None) -> str | None:
+    """Walk up from *start* (default: CWD) looking for a ``.git`` entry.
+
+    Returns the first directory that contains ``.git``, or ``None`` if no git
+    repository is found before reaching the filesystem root.  Checking before
+    spawning any subprocesses lets callers short-circuit entirely when not
+    running inside a git repository.
+    """
+    path = pathlib.Path(start or os.getcwd()).resolve()
+    while True:
+        if (path / ".git").exists():
+            return str(path)
+        parent = path.parent
+        if parent == path:
+            return None
+        path = parent
+
+
+def _get_git_snapshot(timeout: int = 5) -> tuple[str | None, str | None, str | None]:
+    """Return ``(sha, branch, tag)`` from a single ``git log`` call.
+
+    Uses ``%H|%D`` format to get the full commit SHA and all ref decorations in
+    one subprocess instead of three separate calls.  Branch is extracted from
+    ``HEAD -> <name>`` and tag from ``tag: <name>`` in the decoration string.
+    Returns ``(None, None, None)`` on any failure.
+    """
+    raw = _run_git_command(["git", "log", "-1", "--format=%H|%D"], timeout)
+    if not raw:
+        return None, None, None
+
+    sha_part, _, dec_part = raw.partition("|")
+    sha = sha_part.strip() or None
+
+    branch: str | None = None
+    tag: str | None = None
+    # `%D` decorations are comma-separated. While Git may allow commas in ref
+    # names, major hosts reject them, so splitting on `,` is sufficient here.
+    for token in (t.strip() for t in dec_part.split(",")):
+        if branch is None and token.startswith("HEAD -> "):
+            branch = token[len("HEAD -> ") :]
+        if tag is None and token.startswith("tag: "):
+            tag = token[len("tag: ") :]
+
+    return sha, branch, tag
+
+
 def _run_git_command(args: list[str], timeout: int = 5) -> str | None:
     """Run a git command and return stripped stdout, or None on any failure."""
     try:
@@ -83,35 +130,6 @@ def get_git_repo_url(repo_url: str | None = None, timeout: int = 5) -> str | Non
     if repo_url:
         return repo_url
     return _run_git_command(["git", "remote", "get-url", "origin"], timeout)
-
-
-def get_git_version(version: str | None = None, timeout: int = 5) -> str | None:
-    """Return the current git commit SHA, or *version* if explicitly provided."""
-    if version:
-        return version
-    return _run_git_command(["git", "rev-parse", "HEAD"], timeout)
-
-
-def get_git_branch(branch: str | None = None, timeout: int = 5) -> str | None:
-    """Return the current git branch name, or *branch* if explicitly provided.
-
-    Returns None in detached HEAD state (e.g. during CI checkout).
-    """
-    if branch:
-        return branch
-    result = _run_git_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], timeout)
-    return None if result == "HEAD" else result
-
-
-def get_git_tag(tag: str | None = None, timeout: int = 5) -> str | None:
-    """Return the exact tag on HEAD if one exists, or *tag* if explicitly provided.
-
-    Returns None if HEAD has no exact tag — partial ``git describe`` output
-    (e.g. ``v1.2.3-4-gabcdef``) is intentionally excluded.
-    """
-    if tag:
-        return tag
-    return _run_git_command(["git", "describe", "--tags", "--exact-match", "HEAD"], timeout)
 
 
 class RedactMixin:
