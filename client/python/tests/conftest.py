@@ -17,6 +17,14 @@ from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.transport import Config, Transport
 
 
+@pytest.fixture(autouse=True)
+def _no_git_autodetect():
+    """Prevent git autodetection from injecting sourceCodeLocation facets
+    based on the repo where tests happen to run."""
+    with patch("openlineage.client.client.get_git_repo_url", return_value=None):
+        yield
+
+
 @pytest.fixture(scope="session")
 def test_producer():
     return "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python"
