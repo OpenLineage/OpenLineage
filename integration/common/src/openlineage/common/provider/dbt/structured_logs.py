@@ -474,13 +474,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
                 inputs = []
                 for attached_dataset in self._get_attached_datasets(node_unique_id):
-                    dataset_facets = {**attached_dataset.facets}
-                    dataset_facets["dataQualityAssertions"] = assertion_facet
                     inputs.append(
                         Dataset(
                             name=attached_dataset.name,
                             namespace=attached_dataset.namespace,
-                            facets=dataset_facets,
+                            facets={**attached_dataset.facets, "dataQualityAssertions": assertion_facet},  # type: ignore[dict-item]
                         )
                     )
 

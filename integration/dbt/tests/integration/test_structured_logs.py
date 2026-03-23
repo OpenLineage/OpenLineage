@@ -197,12 +197,13 @@ class TestStructuredLogs:
                 f"got empty inputs. Event: {event.get('job', {}).get('name')}"
             )
 
-            # At least one input should have dataQualityAssertions facet
+            # All inputs should have dataQualityAssertions facet
             inputs_with_assertions = [
                 inp for inp in inputs if "dataQualityAssertions" in inp.get("facets", {})
             ]
-            assert len(inputs_with_assertions) >= 1, (
-                f"Expected at least one input with dataQualityAssertions facet, got none. Inputs: {inputs}"
+            assert len(inputs_with_assertions) == len(inputs), (
+                f"Expected all inputs to have dataQualityAssertions facet, "
+                f"but only {len(inputs_with_assertions)}/{len(inputs)} do. Inputs: {inputs}"
             )
 
             # The input with assertions should reference 'orders' model
