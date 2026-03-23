@@ -18,7 +18,6 @@ import scala.Option;
 /** Utility class for building {@link HierarchyDatasetFacet} from various Spark catalog types. */
 public class HierarchyDatasetFacetUtils {
 
-  private static final String CATALOG = "CATALOG";
   private static final String DATABASE = "DATABASE";
   private static final String SCHEMA = "SCHEMA";
   private static final String TABLE = "TABLE";
@@ -29,13 +28,16 @@ public class HierarchyDatasetFacetUtils {
    * <p>Mapping logic for namespace levels:
    *
    * <ul>
-   *   <li>0 namespace parts: CATALOG + TABLE
-   *   <li>1 namespace part: CATALOG + DATABASE + TABLE
-   *   <li>2+ namespace parts: CATALOG + DATABASE + SCHEMA + ... + TABLE
+   *   <li>0 namespace parts: TABLE
+   *   <li>1 namespace part: DATABASE + TABLE
+   *   <li>2+ namespace parts: DATABASE + SCHEMA + ... + TABLE
    * </ul>
    *
+   * <p>The catalog name is not included in the hierarchy as it is already captured by the {@code
+   * catalog} facet.
+   *
    * @param openLineage the OpenLineage instance used for facet construction
-   * @param tableCatalog the V2 table catalog (provides catalog name)
+   * @param tableCatalog the V2 table catalog (unused, catalog info goes in the catalog facet)
    * @param identifier the V2 table identifier (provides namespace + table name)
    * @return a {@link HierarchyDatasetFacet} with the appropriate hierarchy levels
    */
@@ -43,7 +45,6 @@ public class HierarchyDatasetFacetUtils {
   public static HierarchyDatasetFacet buildHierarchyFacet(
       OpenLineage openLineage, TableCatalog tableCatalog, Identifier identifier) {
     List<HierarchyDatasetFacetLevel> levels = new ArrayList<>();
-    levels.add(level(openLineage, CATALOG, tableCatalog.name()));
 
     String[] namespace = identifier.namespace();
     if (namespace.length == 1) {
@@ -78,15 +79,17 @@ public class HierarchyDatasetFacetUtils {
    * Build a {@link HierarchyDatasetFacet} from a V1 {@link TableIdentifier} with an explicit
    * catalog name.
    *
+   * <p>The catalog name is not included in the hierarchy as it is already captured by the {@code
+   * catalog} facet.
+   *
    * @param openLineage the OpenLineage instance used for facet construction
-   * @param catalogName the catalog name
+   * @param catalogName the catalog name (unused, catalog info goes in the catalog facet)
    * @param identifier the V1 table identifier (optional database + table name)
    * @return a {@link HierarchyDatasetFacet} with the appropriate hierarchy levels
    */
   public static HierarchyDatasetFacet buildHierarchyFacet(
       OpenLineage openLineage, String catalogName, TableIdentifier identifier) {
     List<HierarchyDatasetFacetLevel> levels = new ArrayList<>();
-    levels.add(level(openLineage, CATALOG, catalogName));
     addDatabaseLevel(openLineage, identifier.database(), levels);
     levels.add(level(openLineage, TABLE, identifier.table()));
     return openLineage.newHierarchyDatasetFacet(levels);

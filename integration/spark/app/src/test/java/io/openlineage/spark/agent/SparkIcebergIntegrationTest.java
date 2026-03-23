@@ -856,11 +856,6 @@ class SparkIcebergIntegrationTest {
                   && hierarchy.getHierarchy().stream()
                       .anyMatch(
                           level ->
-                              "CATALOG".equals(level.getType())
-                                  && "spark_catalog".equals(level.getName()))
-                  && hierarchy.getHierarchy().stream()
-                      .anyMatch(
-                          level ->
                               "DATABASE".equals(level.getType())
                                   && "default".equals(level.getName()))
                   && hierarchy.getHierarchy().stream()
@@ -878,11 +873,6 @@ class SparkIcebergIntegrationTest {
               HierarchyDatasetFacet hierarchy = input.getFacets().getHierarchy();
               return hierarchy != null
                   && hierarchy.getHierarchy() != null
-                  && hierarchy.getHierarchy().stream()
-                      .anyMatch(
-                          level ->
-                              "CATALOG".equals(level.getType())
-                                  && "spark_catalog".equals(level.getName()))
                   && hierarchy.getHierarchy().stream()
                       .anyMatch(
                           level ->
