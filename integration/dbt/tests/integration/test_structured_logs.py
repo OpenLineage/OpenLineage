@@ -153,3 +153,137 @@ class TestStructuredLogs:
             f"COMPLETE: {len(sql_complete_events)})"
         )
         print(f"Total events: {len(events)}")
+
+    def test_singular_test_data_quality_assertions(self, dbt_runner, reset_test_server):
+        """Test that singular dbt tests emit DataQualityAssertionsDatasetFacet on parent datasets."""
+        result = dbt_runner.run_dbt_command(["seed"])
+        assert result["success"], f"dbt seed failed: {result['output']}"
+
+        result = dbt_runner.run_dbt_command(["run"])
+        assert result["success"], f"dbt run failed: {result['output']}"
+
+        result = dbt_runner.run_dbt_ol_command(
+            [
+                "--consume-structured-logs",
+                "test",
+                "--select",
+                "assert_positive_order_amounts",
+            ]
+        )
+        assert result["success"], f"dbt-ol test with structured logs failed: {result['output']}"
+
+        events = dbt_runner.get_events()
+        assert len(events) > 0, "Expected at least some events"
+
+        # Find COMPLETE events for the singular test job (jobType TEST, not SQL sub-jobs)
+        complete_events = [
+            e
+            for e in events
+            if e.get("eventType") == "COMPLETE"
+            and "assert_positive_order_amounts" in e.get("job", {}).get("name", "")
+            and e.get("job", {}).get("facets", {}).get("jobType", {}).get("jobType") == "TEST"
+        ]
+
+        assert len(complete_events) >= 1, (
+            f"Expected at least 1 COMPLETE event for assert_positive_order_amounts, "
+            f"got {len(complete_events)}. Events: {[e.get('job', {}).get('name') for e in events]}"
+        )
+
+        # Each COMPLETE event for the singular test should have inputs with dataQualityAssertions
+        for event in complete_events:
+            inputs = event.get("inputs", [])
+            assert len(inputs) >= 1, (
+                f"Expected COMPLETE event for singular test to have inputs with assertions, "
+                f"got empty inputs. Event: {event.get('job', {}).get('name')}"
+            )
+
+            # All inputs should have dataQualityAssertions facet
+            inputs_with_assertions = [
+                inp for inp in inputs if "dataQualityAssertions" in inp.get("facets", {})
+            ]
+            assert len(inputs_with_assertions) == len(inputs), (
+                f"Expected all inputs to have dataQualityAssertions facet, "
+                f"but only {len(inputs_with_assertions)}/{len(inputs)} do. Inputs: {inputs}"
+            )
+
+            # The input with assertions should reference 'orders' model
+            orders_inputs = [inp for inp in inputs_with_assertions if "orders" in inp.get("name", "")]
+            assert len(orders_inputs) >= 1, (
+                f"Expected dataQualityAssertions to be attached to 'orders' dataset, "
+                f"but assertion was on: {[inp.get('name') for inp in inputs_with_assertions]}"
+            )
+
+            # Validate the assertion facet structure
+            assertion_facet = orders_inputs[0]["facets"]["dataQualityAssertions"]
+            assertions = assertion_facet.get("assertions", [])
+            assert len(assertions) >= 1, f"Expected at least one assertion, got: {assertion_facet}"
+
+            assertion = assertions[0]
+            assert "assertion" in assertion, f"Assertion missing 'assertion': {assertion}"
+            assert "success" in assertion, f"Assertion missing 'success': {assertion}"
+            assert assertion["assertion"] == "assert_positive_order_amounts", (
+                f"Expected assertion name 'assert_positive_order_amounts', got: {assertion['assertion']}"
+            )
+
+        print("✅ Singular test DataQualityAssertions validation passed!")
+
+    def test_singular_test_multi_table_data_quality_assertions(self, dbt_runner, reset_test_server):
+        """Test that singular tests joining multiple tables attach assertions to all parent datasets."""
+        result = dbt_runner.run_dbt_command(["seed"])
+        assert result["success"], f"dbt seed failed: {result['output']}"
+
+        result = dbt_runner.run_dbt_command(["run"])
+        assert result["success"], f"dbt run failed: {result['output']}"
+
+        result = dbt_runner.run_dbt_ol_command(
+            [
+                "--consume-structured-logs",
+                "test",
+                "--no-partial-parse",
+                "--select",
+                "assert_customer_order_consistency",
+            ]
+        )
+        assert result["success"], f"dbt-ol test failed: {result['output']}"
+
+        events = dbt_runner.get_events()
+
+        complete_events = [
+            e
+            for e in events
+            if e.get("eventType") == "COMPLETE"
+            and "assert_customer_order_consistency" in e.get("job", {}).get("name", "")
+            and e.get("job", {}).get("facets", {}).get("jobType", {}).get("jobType") == "TEST"
+        ]
+
+        assert len(complete_events) == 1, (
+            f"Expected 1 TEST COMPLETE event for assert_customer_order_consistency, "
+            f"got {len(complete_events)}"
+        )
+
+        event = complete_events[0]
+        inputs = event.get("inputs", [])
+
+        # Should have assertions on both referenced tables: customers and orders
+        inputs_with_assertions = [inp for inp in inputs if "dataQualityAssertions" in inp.get("facets", {})]
+        assert len(inputs_with_assertions) == 2, (
+            f"Expected dataQualityAssertions on both parent datasets (customers + orders), "
+            f"got {len(inputs_with_assertions)}: {[i['name'] for i in inputs_with_assertions]}"
+        )
+
+        input_names = {inp["name"] for inp in inputs_with_assertions}
+        assert any("customers" in name for name in input_names), (
+            f"Expected 'customers' dataset in inputs with assertions, got: {input_names}"
+        )
+        assert any("orders" in name for name in input_names), (
+            f"Expected 'orders' dataset in inputs with assertions, got: {input_names}"
+        )
+
+        # Each input should have the assertion with the correct name
+        for inp in inputs_with_assertions:
+            assertions = inp["facets"]["dataQualityAssertions"]["assertions"]
+            assert len(assertions) == 1
+            assert assertions[0]["assertion"] == "assert_customer_order_consistency"
+            assert "success" in assertions[0]
+
+        print("✅ Multi-table singular test DataQualityAssertions validation passed!")
