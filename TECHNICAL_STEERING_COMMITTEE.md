@@ -15,6 +15,7 @@ For the schedule, meeting link, and agenda, visit the [wiki](https://wiki.lfaida
 | Howard Yoo | [@howardyoo](https://github.com/howardyoo) | Voting member |
 | Harel Shein | [@harels](https://github.com/harels) | Voting member |
 | Jakub Dardziński | [@JDarDagran](https://github.com/jdardagran) | Voting member |
+| Jakub Moravec | [@jakub-moravec](https://github.com/jakub-moravec) | Voting member |
 | Jens Pfau | [@jenspfaug](https://github.com/jenspfaug) | Voting member |
 | James Campbell | [@jcampbell](https://github.com/jcampbell) | Voting member |
 | Julien Le Dem | [@julienledem](https://github.com/julienledem) | Chairperson |
