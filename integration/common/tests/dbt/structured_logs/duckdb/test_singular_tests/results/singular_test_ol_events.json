@@ -1,0 +1,1066 @@
+[
+  {
+    "eventTime": "2026-03-17T14:35:05.380385Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.939439Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_no_future_dates",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "TEST"
+        },
+        "dbt_node": {
+          "original_file_path": "tests/assert_no_future_dates.sql",
+          "database": "duckdb",
+          "schema": "raw_data_dbt_test__audit",
+          "alias": "assert_no_future_dates",
+          "unique_id": "test.dbt_test_project.assert_no_future_dates"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [
+      {
+        "namespace": "duckdb://duckdb.db",
+        "name": "duckdb.raw_data.fact_orders",
+        "facets": {
+          "dataSource": {
+            "name": "duckdb://duckdb.db",
+            "uri": "duckdb://duckdb.db"
+          },
+          "documentation": {
+            "description": "Order fact table with enriched data",
+            "contentType": null
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_id",
+                "type": null,
+                "description": "Unique order identifier",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "customer_id",
+                "type": null,
+                "description": "Reference to customer dimension",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "product_id",
+                "type": null,
+                "description": "Reference to product dimension",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "order_profit",
+                "type": null,
+                "description": "Calculated order profit",
+                "ordinal_position": null,
+                "fields": []
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "duckdb://duckdb.db",
+        "name": "duckdb.raw_data_dbt_test__audit.assert_no_future_dates",
+        "facets": {
+          "dataSource": {
+            "name": "duckdb://duckdb.db",
+            "uri": "duckdb://duckdb.db"
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.955005Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "test.dbt_test_project.assert_no_future_dates"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_no_future_dates.sql.1",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "BEGIN",
+          "dialect": "duckdb"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.955773Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "test.dbt_test_project.assert_no_future_dates"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_no_future_dates.sql.1",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "BEGIN",
+          "dialect": "duckdb"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.956487Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "test.dbt_test_project.assert_no_future_dates"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_no_future_dates.sql.2",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.10.15\", \"profile_name\": \"dbt_test_project\", \"target_name\": \"duckdb\", \"node_id\": \"test.dbt_test_project.assert_no_future_dates\"} */\n\n    select\n      count(*) as failures,\n      count(*) != 0 as should_warn,\n      count(*) != 0 as should_error\n    from (\n      \n    \n  -- Test that no order dates are in the future\nselect *\nfrom \"duckdb\".\"raw_data\".\"fact_orders\"\nwhere order_date > current_date()\n  \n  \n      \n    ) dbt_internal_test",
+          "dialect": "duckdb"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.957210Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "test.dbt_test_project.assert_no_future_dates"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_no_future_dates.sql.2",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.10.15\", \"profile_name\": \"dbt_test_project\", \"target_name\": \"duckdb\", \"node_id\": \"test.dbt_test_project.assert_no_future_dates\"} */\n\n    select\n      count(*) as failures,\n      count(*) != 0 as should_warn,\n      count(*) != 0 as should_error\n    from (\n      \n    \n  -- Test that no order dates are in the future\nselect *\nfrom \"duckdb\".\"raw_data\".\"fact_orders\"\nwhere order_date > current_date()\n  \n  \n      \n    ) dbt_internal_test",
+          "dialect": "duckdb"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.960500Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_no_future_dates",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "TEST"
+        },
+        "dbt_node": {
+          "original_file_path": "tests/assert_no_future_dates.sql",
+          "database": "duckdb",
+          "schema": "raw_data_dbt_test__audit",
+          "alias": "assert_no_future_dates",
+          "unique_id": "test.dbt_test_project.assert_no_future_dates"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [
+      {
+        "namespace": "duckdb://duckdb.db",
+        "name": "duckdb.raw_data.fact_orders",
+        "facets": {
+          "dataSource": {
+            "name": "duckdb://duckdb.db",
+            "uri": "duckdb://duckdb.db"
+          },
+          "documentation": {
+            "description": "Order fact table with enriched data",
+            "contentType": null
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_id",
+                "type": null,
+                "description": "Unique order identifier",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "customer_id",
+                "type": null,
+                "description": "Reference to customer dimension",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "product_id",
+                "type": null,
+                "description": "Reference to product dimension",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "order_profit",
+                "type": null,
+                "description": "Calculated order profit",
+                "ordinal_position": null,
+                "fields": []
+              }
+            ]
+          },
+          "dataQualityAssertions": {
+            "assertions": [
+              {
+                "assertion": "assert_no_future_dates",
+                "success": true,
+                "column": null,
+                "severity": "error"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "duckdb://duckdb.db",
+        "name": "duckdb.raw_data_dbt_test__audit.assert_no_future_dates",
+        "facets": {
+          "dataSource": {
+            "name": "duckdb://duckdb.db",
+            "uri": "duckdb://duckdb.db"
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.961375Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_positive_order_amounts",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "TEST"
+        },
+        "dbt_node": {
+          "original_file_path": "tests/assert_positive_order_amounts.sql",
+          "database": "duckdb",
+          "schema": "raw_data_dbt_test__audit",
+          "alias": "assert_positive_order_amounts",
+          "unique_id": "test.dbt_test_project.assert_positive_order_amounts"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [
+      {
+        "namespace": "duckdb://duckdb.db",
+        "name": "duckdb.raw_data.fact_orders",
+        "facets": {
+          "dataSource": {
+            "name": "duckdb://duckdb.db",
+            "uri": "duckdb://duckdb.db"
+          },
+          "documentation": {
+            "description": "Order fact table with enriched data",
+            "contentType": null
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_id",
+                "type": null,
+                "description": "Unique order identifier",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "customer_id",
+                "type": null,
+                "description": "Reference to customer dimension",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "product_id",
+                "type": null,
+                "description": "Reference to product dimension",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "order_profit",
+                "type": null,
+                "description": "Calculated order profit",
+                "ordinal_position": null,
+                "fields": []
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "duckdb://duckdb.db",
+        "name": "duckdb.raw_data_dbt_test__audit.assert_positive_order_amounts",
+        "facets": {
+          "dataSource": {
+            "name": "duckdb://duckdb.db",
+            "uri": "duckdb://duckdb.db"
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.966537Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "test.dbt_test_project.assert_positive_order_amounts"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_positive_order_amounts.sql.1",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "BEGIN",
+          "dialect": "duckdb"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.967262Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "test.dbt_test_project.assert_positive_order_amounts"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_positive_order_amounts.sql.1",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "BEGIN",
+          "dialect": "duckdb"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.967947Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "test.dbt_test_project.assert_positive_order_amounts"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_positive_order_amounts.sql.2",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.10.15\", \"profile_name\": \"dbt_test_project\", \"target_name\": \"duckdb\", \"node_id\": \"test.dbt_test_project.assert_positive_order_amounts\"} */\n\n    select\n      count(*) as failures,\n      count(*) != 0 as should_warn,\n      count(*) != 0 as should_error\n    from (\n      \n    \n  -- Test that all completed orders have positive amounts\nselect *\nfrom \"duckdb\".\"raw_data\".\"fact_orders\"\nwhere status = 'completed'\n  and order_amount <= 0\n  \n  \n      \n    ) dbt_internal_test",
+          "dialect": "duckdb"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.968555Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "test.dbt_test_project.assert_positive_order_amounts"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_positive_order_amounts.sql.2",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.10.15\", \"profile_name\": \"dbt_test_project\", \"target_name\": \"duckdb\", \"node_id\": \"test.dbt_test_project.assert_positive_order_amounts\"} */\n\n    select\n      count(*) as failures,\n      count(*) != 0 as should_warn,\n      count(*) != 0 as should_error\n    from (\n      \n    \n  -- Test that all completed orders have positive amounts\nselect *\nfrom \"duckdb\".\"raw_data\".\"fact_orders\"\nwhere status = 'completed'\n  and order_amount <= 0\n  \n  \n      \n    ) dbt_internal_test",
+          "dialect": "duckdb"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-03-17T14:35:05.970356Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        },
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
+          },
+          "root": {
+            "run": {
+              "runId": "{{ any(result) }}"
+            },
+            "job": {
+              "namespace": "dbt-test-namespace",
+              "name": "dbt-run-jaffle_shop"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "test.dbt_test_project.assert_positive_order_amounts",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "TEST"
+        },
+        "dbt_node": {
+          "original_file_path": "tests/assert_positive_order_amounts.sql",
+          "database": "duckdb",
+          "schema": "raw_data_dbt_test__audit",
+          "alias": "assert_positive_order_amounts",
+          "unique_id": "test.dbt_test_project.assert_positive_order_amounts"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [
+      {
+        "namespace": "duckdb://duckdb.db",
+        "name": "duckdb.raw_data.fact_orders",
+        "facets": {
+          "dataSource": {
+            "name": "duckdb://duckdb.db",
+            "uri": "duckdb://duckdb.db"
+          },
+          "documentation": {
+            "description": "Order fact table with enriched data",
+            "contentType": null
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_id",
+                "type": null,
+                "description": "Unique order identifier",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "customer_id",
+                "type": null,
+                "description": "Reference to customer dimension",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "product_id",
+                "type": null,
+                "description": "Reference to product dimension",
+                "ordinal_position": null,
+                "fields": []
+              },
+              {
+                "name": "order_profit",
+                "type": null,
+                "description": "Calculated order profit",
+                "ordinal_position": null,
+                "fields": []
+              }
+            ]
+          },
+          "dataQualityAssertions": {
+            "assertions": [
+              {
+                "assertion": "assert_positive_order_amounts",
+                "success": true,
+                "column": null,
+                "severity": "error"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "duckdb://duckdb.db",
+        "name": "duckdb.raw_data_dbt_test__audit.assert_positive_order_amounts",
+        "facets": {
+          "dataSource": {
+            "name": "duckdb://duckdb.db",
+            "uri": "duckdb://duckdb.db"
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventTime": "2026-03-17T14:35:06.008254Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.10.15"
+        },
+        "processing_engine": {
+          "version": "1.10.15",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "9bc58572-d584-479b-bc96-5bf39d28f157",
+          "project_name": "jaffle_shop",
+          "dbt_runtime": "core",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "account_id": null
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
+  }
+]

@@ -355,8 +355,12 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
             )
 
+        resource_type = event["data"]["node_info"]["resource_type"]
         job_name = self._get_job_name(event)
         node_metadata = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
+        test_type = None
+        if resource_type == "test":
+            test_type = "singular" if not node_metadata.get("test_metadata") else "generic"
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
                 jobType=get_job_type(event),
@@ -370,6 +374,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 schema=node_metadata.get("schema"),
                 alias=node_metadata.get("alias"),
                 unique_id=node_metadata.get("unique_id"),
+                test_type=test_type,
             ),
         }
 
@@ -420,6 +425,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         job_name = self._get_job_name(event)
         node_metadata = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
+        test_type = None
+        if resource_type == "test":
+            test_type = "singular" if not node_metadata.get("test_metadata") else "generic"
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
                 jobType=get_job_type(event),
@@ -433,6 +441,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 schema=node_metadata.get("schema"),
                 alias=node_metadata.get("alias"),
                 unique_id=node_metadata.get("unique_id"),
+                test_type=test_type,
             ),
         }
 
@@ -464,16 +473,14 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             if assertion := self._get_assertion(node_unique_id, success):
                 assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
                 inputs = []
-                if attached_dataset := self._get_attached_dataset(node_unique_id):
-                    dataset_facets = attached_dataset.facets
-                    dataset_facets["dataQualityAssertions"] = assertion_facet
-                    inputs = [
+                for attached_dataset in self._get_attached_datasets(node_unique_id):
+                    inputs.append(
                         Dataset(
                             name=attached_dataset.name,
                             namespace=attached_dataset.namespace,
-                            facets=dataset_facets,
+                            facets={**attached_dataset.facets, "dataQualityAssertions": assertion_facet},  # type: ignore[dict-item]
                         )
-                    ]
+                    )
 
         if extraction_error := self._get_extraction_error_facet(node_unique_id):
             run_facets["extractionError"] = extraction_error
@@ -491,21 +498,28 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
     @handle_keyerror
-    def _get_attached_dataset(self, test_node_id: str) -> Dataset | None:
+    def _get_attached_datasets(self, test_node_id: str) -> list[Dataset]:
         """
-        gets the input the data test is attached to.
-        Some nodes like tests related to sources have an attached_node to None.
+        Gets the input datasets the data test is attached to.
+
+        For generic tests, returns the single dataset referenced by attached_node.
+        For singular tests (no attached_node), returns all parent datasets from
+        parent_map — these are models/sources referenced via ref() and source()
+        in the singular test's SQL.
         """
         all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
         test_node = all_nodes[test_node_id]
         attached_node_id = test_node.get("attached_node")
-        input_dataset = None
-        # TODO: For singular tests (no attached_node), use SQL parsing on the compiled
-        # node's SQL to extract the referenced datasets and attach the assertion to them.
         if attached_node_id:
             attached_model_node = self._get_model_node(attached_node_id)
-            input_dataset = self.node_to_dataset(node=attached_model_node, has_facets=True)
-        return input_dataset
+            if attached_model_node:
+                return [self.node_to_dataset(node=attached_model_node, has_facets=True)]
+            return []
+        # Singular test: use parent_map to find all referenced models/sources
+        return [
+            self.node_to_dataset(node=model_node, has_facets=True)
+            for model_node in self._get_model_inputs(test_node_id)
+        ]
 
     @handle_keyerror
     def _get_assertion(self, node_id: str, success: bool) -> dq.Assertion | None:

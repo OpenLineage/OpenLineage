@@ -145,6 +145,15 @@ def patch_get_dbt_profiles_dir(monkeypatch):
             CURRENT_DIR + "/postgres/build_command/results/build_ol_events.json",
             CURRENT_DIR + "/postgres/build_command/target/manifest.json",
         ),
+        # duckdb singular tests — verifies that DataQualityAssertions are attached to
+        # the referenced parent datasets (via parent_map) for tests without attached_node
+        (
+            "duckdb",
+            ["dbt", "test", "..."],
+            CURRENT_DIR + "/duckdb/test_singular_tests/logs/singular_test_logs.jsonl",
+            CURRENT_DIR + "/duckdb/test_singular_tests/results/singular_test_ol_events.json",
+            CURRENT_DIR + "/duckdb/test_singular_tests/target/manifest.json",
+        ),
     ],
     ids=[
         # run command
@@ -163,6 +172,8 @@ def patch_get_dbt_profiles_dir(monkeypatch):
         "postgres_dbt_test_source",
         # build command
         "postgres_dbt_build",
+        # singular tests
+        "duckdb_singular_tests",
     ],
 )
 @mock.patch("openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command")
@@ -1650,8 +1661,8 @@ class TestGetAssertionSingularTests:
         assert assertion.column is None
         assert assertion.severity == "error"
 
-    def test_singular_test_no_attached_node(self, processor):
-        """Singular tests have no attached_node; _get_attached_dataset should return None."""
+    def test_singular_test_no_refs_returns_empty(self, processor):
+        """Singular tests with no ref() or source() calls have no parent datasets."""
         processor._compiled_manifest = {
             "nodes": {
                 "test.project.assert_no_future_dates": {
@@ -1660,8 +1671,41 @@ class TestGetAssertionSingularTests:
                 }
             },
             "sources": {},
+            "parent_map": {
+                "test.project.assert_no_future_dates": [],
+            },
         }
 
-        dataset = processor._get_attached_dataset("test.project.assert_no_future_dates")
+        datasets = processor._get_attached_datasets("test.project.assert_no_future_dates")
 
-        assert dataset is None
+        assert datasets == []
+
+    def test_singular_test_with_ref_returns_parent_datasets(self, processor):
+        """Singular tests with ref() calls return the referenced model datasets."""
+        processor._compiled_manifest = {
+            "nodes": {
+                "test.project.assert_no_future_dates": {
+                    "name": "assert_no_future_dates",
+                    # No attached_node — singular test
+                },
+                "model.project.my_model": {
+                    "unique_id": "model.project.my_model",
+                    "name": "my_model",
+                    "alias": "my_model",
+                    "database": "mydb",
+                    "schema": "myschema",
+                    "description": "",
+                    "columns": {},
+                    "fqn": ["project", "my_model"],
+                },
+            },
+            "sources": {},
+            "parent_map": {
+                "test.project.assert_no_future_dates": ["model.project.my_model"],
+            },
+        }
+
+        datasets = processor._get_attached_datasets("test.project.assert_no_future_dates")
+
+        assert len(datasets) == 1
+        assert datasets[0].name == "mydb.myschema.my_model"

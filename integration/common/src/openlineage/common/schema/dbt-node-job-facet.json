@@ -34,6 +34,11 @@
               "type": "string",
               "description": "Unique identifier for the dbt node",
               "example": "model.my_project.stg_customers"
+            },
+            "test_type": {
+              "type": "string",
+              "description": "Type of dbt test (e.g. 'singular' or 'generic')",
+              "example": "singular"
             }
           }
         }
