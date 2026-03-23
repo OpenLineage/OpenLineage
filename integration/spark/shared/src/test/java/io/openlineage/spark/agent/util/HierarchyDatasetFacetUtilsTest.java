@@ -41,10 +41,9 @@ class HierarchyDatasetFacetUtilsTest {
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, tableCatalog, identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
-    assertThat(levels).hasSize(3);
-    assertLevel(levels.get(0), "CATALOG", "my_catalog");
-    assertLevel(levels.get(1), "DATABASE", "my_database");
-    assertLevel(levels.get(2), "TABLE", "my_table");
+    assertThat(levels).hasSize(2);
+    assertLevel(levels.get(0), "DATABASE", "my_database");
+    assertLevel(levels.get(1), "TABLE", "my_table");
   }
 
   @Test
@@ -55,11 +54,10 @@ class HierarchyDatasetFacetUtilsTest {
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, tableCatalog, identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
-    assertThat(levels).hasSize(4);
-    assertLevel(levels.get(0), "CATALOG", "my_catalog");
-    assertLevel(levels.get(1), "DATABASE", "my_database");
-    assertLevel(levels.get(2), "SCHEMA", "my_schema");
-    assertLevel(levels.get(3), "TABLE", "my_table");
+    assertThat(levels).hasSize(3);
+    assertLevel(levels.get(0), "DATABASE", "my_database");
+    assertLevel(levels.get(1), "SCHEMA", "my_schema");
+    assertLevel(levels.get(2), "TABLE", "my_table");
   }
 
   @Test
@@ -70,9 +68,8 @@ class HierarchyDatasetFacetUtilsTest {
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, tableCatalog, identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
-    assertThat(levels).hasSize(2);
-    assertLevel(levels.get(0), "CATALOG", "my_catalog");
-    assertLevel(levels.get(1), "TABLE", "my_table");
+    assertThat(levels).hasSize(1);
+    assertLevel(levels.get(0), "TABLE", "my_table");
   }
 
   @Test
@@ -114,10 +111,9 @@ class HierarchyDatasetFacetUtilsTest {
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, "my_catalog", identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
-    assertThat(levels).hasSize(3);
-    assertLevel(levels.get(0), "CATALOG", "my_catalog");
-    assertLevel(levels.get(1), "DATABASE", "my_database");
-    assertLevel(levels.get(2), "TABLE", "my_table");
+    assertThat(levels).hasSize(2);
+    assertLevel(levels.get(0), "DATABASE", "my_database");
+    assertLevel(levels.get(1), "TABLE", "my_table");
   }
 
   private void assertLevel(

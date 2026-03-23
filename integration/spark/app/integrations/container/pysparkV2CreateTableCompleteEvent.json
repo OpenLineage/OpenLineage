@@ -44,7 +44,6 @@
         },
         "hierarchy": {
           "hierarchy": [
-            { "type": "CATALOG", "name": "spark_catalog" },
             { "type": "DATABASE", "name": "default" },
             { "type": "TABLE", "name": "create_table_test" }
           ]
