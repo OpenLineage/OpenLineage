@@ -88,6 +88,15 @@ export const Producers: Array<Partner> = [
     org_url: "https://github.com/dagworks-inc/hamilton",
   },
   {
+    image: "ibm_logo_bkgd.svg",
+    org: "IBM",
+    full_name: "IBM",
+    description:
+      "IBM watsonx.data emits OpenLineage events from its query and processing engines, capturing lineage for structured workloads. Watsonx.data integration emits OpenLineage events from ingestion and transformation pipelines, including those that process unstructured data.",
+    docs_url: "https://www.ibm.com/docs/en/watsonx/wdi/saas?topic=lineage-openlineage-integration",
+    org_url: "https://www.ibm.com/products/watsonx-data-intelligence/data-lineage",
+  },
+  {
     image: "keboola_logo_lg.svg",
     org: "Keboola",
     full_name: "Keboola",
