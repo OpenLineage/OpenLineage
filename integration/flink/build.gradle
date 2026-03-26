@@ -13,7 +13,7 @@ plugins {
     id 'jacoco'
     id "com.adarshr.test-logger"
     id 'com.diffplug.spotless'
-    id 'com.github.johnrengelman.shadow'
+    id 'com.gradleup.shadow' version '9.4.0'
     id 'io.franzbecker.gradle-lombok'
     id 'io.openlineage.common-config'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'

@@ -13,7 +13,7 @@ plugins {
     id 'io.franzbecker.gradle-lombok'
     id 'io.openlineage.common-config'
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow'
+    id 'com.gradleup.shadow' version '9.4.0'
 }
 
 archivesBaseName='openlineage-flink1-app'

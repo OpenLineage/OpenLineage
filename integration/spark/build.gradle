@@ -7,7 +7,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id("java-library")
-    id("io.github.goooler.shadow")
+    id("com.gradleup.shadow")
     id("io.openlineage.common-config")
     id("io.openlineage.jar-verification")
     id("maven-publish")

@@ -15,7 +15,7 @@ plugins {
     id("pmd")
     id("com.diffplug.spotless")
     id("io.freefair.lombok")
-    id("io.github.goooler.shadow")
+    id("com.gradleup.shadow")
     id("io.openlineage.common-config")
     id "org.gradle.test-retry" version "1.6.4"
 }
