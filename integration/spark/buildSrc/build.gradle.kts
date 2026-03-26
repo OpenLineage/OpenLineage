@@ -11,7 +11,7 @@ repositories {
 
 val downloadTaskVersion: String = "5.6.0"
 val lombokPluginVersion: String = "8.6"
-val shadowPluginVersion: String = "9.4.0"
+val shadowPluginVersion: String = "8.3.10"
 val spotlessVersion: String = "6.13.0"
 
 dependencies {
