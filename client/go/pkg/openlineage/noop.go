@@ -26,26 +26,13 @@ func (n *noopRun) StartChild(ctx context.Context, _ string) (context.Context, Ru
 	return ctx, &noopRun{}, nil
 }
 
-// HasFailed implements RunContext.
-func (n *noopRun) HasFailed() bool {
-	return false
-}
+// Finish implements Run.
+func (n *noopRun) Finish(error) {}
 
-// Child implements RunContext.
-func (n *noopRun) Child(ctx context.Context, _ string) (context.Context, Run) {
-	return ctx, &noopRun{}
-}
-
-// Finish implements RunContext.
-func (n *noopRun) Finish(...error) {}
-
-// Emit implements RunContext.
+// Emit implements Run.
 func (n *noopRun) Emit(context.Context, Emittable) (map[string]string, error) {
 	return nil, nil
 }
-
-// RecordError implements RunContext.
-func (n *noopRun) RecordError(error) {}
 
 // NewEvent implements RunContext.
 func (n *noopRun) NewEvent(EventType) *RunEvent {

@@ -8,6 +8,7 @@ package openlineage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -29,6 +30,10 @@ type ClientConfig struct {
 // NewClient creates a new OpenLineage client.
 // producer is a URI identifying the producer of this metadata (e.g., "https://github.com/OpenLineage/OpenLineage/tree/1.23.0/integration/spark")
 func NewClient(producer string, cfg *ClientConfig) (*Client, error) {
+	if cfg == nil {
+		return nil, errors.New("config must not be nil")
+	}
+
 	if cfg.Disabled {
 		return &Client{
 			disabled: true,

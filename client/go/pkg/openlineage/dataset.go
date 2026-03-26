@@ -34,8 +34,8 @@ func NewDatasetEvent(
 	namespace string,
 	producer string,
 	fs ...facets.DatasetFacet,
-) DatasetEvent {
-	return DatasetEvent{
+) *DatasetEvent {
+	return &DatasetEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
 			SchemaURL: DatasetEventSchemaURL,

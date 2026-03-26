@@ -38,7 +38,7 @@ func ExampleRun() {
 		slog.Error("client.StartRun failed", "error", err)
 		return
 	}
-	defer run.Finish()
+	defer run.Finish(nil)
 
 	if err := ChildFunction(ctx); err != nil {
 

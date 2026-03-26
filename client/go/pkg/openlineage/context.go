@@ -7,6 +7,7 @@ package openlineage
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-stack/stack"
 	"github.com/google/uuid"
@@ -63,24 +64,16 @@ type Run interface {
 	// The returned map contains any metadata from the consumer; it may be nil.
 	Emit(context.Context, Emittable) (map[string]string, error)
 
-	// Finish emits a COMPLETE event if no error has occurred, or a FAIL event otherwise.
-	// If an error is passed it is recorded via RecordError before finishing — nil is ignored.
+	// Finish emits a COMPLETE event if err is nil, or a FAIL event with an ErrorMessage facet otherwise.
 	// This allows the common pattern:
 	//
-	//	defer run.Finish()
+	//	defer run.Finish(nil)
 	//
 	// as well as the single-call error pattern:
 	//
 	//	err := doWork()
 	//	run.Finish(err)
-	Finish(errs ...error)
-
-	// Returns true if RecordError was called for this Run.
-	HasFailed() bool
-
-	// RecordError emits an OTHER event with an ErrorMessage facet.
-	// Once this is called, the run is considered to have failed.
-	RecordError(error)
+	Finish(err error)
 }
 
 type run struct {
@@ -88,9 +81,7 @@ type run struct {
 	runID        uuid.UUID
 	jobName      string
 	jobNamespace string
-
-	hasFailed bool
-	client    *Client
+	client       *Client
 }
 
 // JobName implements RunContext.
@@ -142,11 +133,22 @@ func (r *run) NewEvent(eventType EventType) *RunEvent {
 }
 
 func (r *run) NewChild(ctx context.Context, jobName string) (context.Context, Run) {
-	return r.client.NewRun(ctx, jobName)
+	child := &run{
+		client:       r.client,
+		runID:        NewRunID(),
+		jobName:      jobName,
+		jobNamespace: r.jobNamespace,
+		parent:       r,
+	}
+	return ContextWithRun(ctx, child), child
 }
 
 func (r *run) StartChild(ctx context.Context, jobName string) (context.Context, Run, error) {
-	return r.client.StartRun(ctx, jobName)
+	ctx, child := r.NewChild(ctx, jobName)
+	if _, err := r.client.Emit(ctx, child.NewEvent(EventTypeStart)); err != nil {
+		return ctx, child, fmt.Errorf("emit START event: %w", err)
+	}
+	return ctx, child, nil
 }
 
 // Emit uses its openlineage.Client to emit an event
@@ -154,35 +156,17 @@ func (r *run) Emit(ctx context.Context, event Emittable) (map[string]string, err
 	return r.client.Emit(ctx, event)
 }
 
-func (r *run) RecordError(err error) {
-	r.hasFailed = true
+func (r *run) Finish(err error) {
+	if err != nil {
+		errorMessage := err.Error()
+		stacktrace := stack.Caller(1).String()
 
-	errorMessage := err.Error()
-	stacktrace := stack.Caller(1).String()
+		errorFacet := facets.NewErrorMessageRunFacet(r.client.producer, errorMessage, "go").
+			WithStackTrace(stacktrace)
 
-	errorFacet := facets.NewErrorMessageRunFacet(r.client.producer, errorMessage, "go").
-		WithStackTrace(stacktrace)
-
-	errorEvent := r.NewEvent(EventTypeOther).WithRunFacets(errorFacet)
-
-	_, _ = r.client.Emit(context.Background(), errorEvent)
-}
-
-func (r *run) Finish(errs ...error) {
-	for _, err := range errs {
-		if err != nil {
-			r.RecordError(err)
-		}
+		_, _ = r.client.Emit(context.Background(), r.NewEvent(EventTypeFail).WithRunFacets(errorFacet))
+		return
 	}
 
-	eventType := EventTypeComplete
-	if r.hasFailed {
-		eventType = EventTypeFail
-	}
-
-	_, _ = r.client.Emit(context.Background(), r.NewEvent(eventType))
-}
-
-func (r *run) HasFailed() bool {
-	return r.hasFailed
+	_, _ = r.client.Emit(context.Background(), r.NewEvent(EventTypeComplete))
 }
