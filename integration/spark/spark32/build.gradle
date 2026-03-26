@@ -29,7 +29,7 @@ ext {
     assertjVersion = "3.27.6"
     deltaVersion = "1.1.0"
     icebergVersion = "0.14.1"
-    jacksonVersion = "2.18.6"
+    jacksonVersion = "2.15.3"
     junit5Version = "5.11.4"
     mockitoVersion = "4.11.0"
     micrometerVersion = "1.16.2"
