@@ -7,7 +7,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id("java-library")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
     id("io.openlineage.jar-verification")
     id("maven-publish")
