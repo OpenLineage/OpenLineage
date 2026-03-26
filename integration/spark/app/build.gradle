@@ -31,7 +31,7 @@ ext {
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.9'
     testcontainersVersion = '1.21.4'
-    awssdkVersion = '2.42.21'
+    awssdkVersion = '2.41.12'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
