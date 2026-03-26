@@ -9,8 +9,9 @@ use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArguments, Ident, Join, JoinConstraint,
     JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select, SelectItem,
-    SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    SelectItemQualifiedWildcardKind, SetExpr, Statement, Subscript, Table, TableFactor,
+    TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec,
+    WindowType, With,
 };
 use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
@@ -36,6 +37,9 @@ impl Visit for With {
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
+                let col_names: Vec<String> =
+                    f.column_ancestry.keys().map(|cm| cm.name.clone()).collect();
+                context.register_cte_columns(table.qualified_name(), col_names);
                 context.collect_with_table(f, table);
             }
 
@@ -584,7 +588,28 @@ impl Visit for Select {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
                     expr.visit(context)?;
                 }
-                _ => {}
+                SelectItem::Wildcard(_) => {
+                    for table_with_joins in &self.from {
+                        expand_wildcard_for_table_factor(
+                            &table_with_joins.relation,
+                            context,
+                        );
+                        for join in &table_with_joins.joins {
+                            expand_wildcard_for_table_factor(&join.relation, context);
+                        }
+                    }
+                }
+                SelectItem::QualifiedWildcard(kind, _) => {
+                    if let SelectItemQualifiedWildcardKind::ObjectName(name) = kind {
+                        let table = DbTableMeta::new(
+                            convert_to_idents(name),
+                            context.dialect(),
+                            context.default_schema().clone(),
+                            context.default_database().clone(),
+                        );
+                        expand_wildcard_for_cte_table(&table, context);
+                    }
+                }
             }
         }
 
@@ -1043,6 +1068,41 @@ fn convert_to_idents(object_name: &ObjectName) -> Vec<Ident> {
             ObjectNamePart::Function(f) => f.name.clone(),
         })
         .collect()
+}
+
+fn expand_wildcard_for_table_factor(relation: &TableFactor, context: &mut Context) {
+    if let TableFactor::Table { name, .. } = relation {
+        let table = DbTableMeta::new(
+            convert_to_idents(name),
+            context.dialect(),
+            context.default_schema().clone(),
+            context.default_database().clone(),
+        );
+        expand_wildcard_for_cte_table(&table, context);
+    }
+}
+
+fn expand_wildcard_for_cte_table(table: &DbTableMeta, context: &mut Context) {
+    let qn = table.qualified_name();
+    let resolved_qn = context.resolve_table_qualified_name(table);
+
+    let columns = context
+        .cte_columns(&resolved_qn)
+        .or_else(|| context.cte_columns(&qn))
+        .cloned();
+
+    let columns = match columns {
+        Some(cols) => cols,
+        None => return,
+    };
+
+    for col_name in columns {
+        context.set_column_context(Some(ColumnMeta::new(col_name.clone(), None)));
+        context.add_column_ancestors(
+            ColumnMeta::new(col_name.clone(), None),
+            vec![ColumnMeta::new(col_name, Some(table.clone()))],
+        );
+    }
 }
 
 pub fn extract_up_to_two_ident_values(
