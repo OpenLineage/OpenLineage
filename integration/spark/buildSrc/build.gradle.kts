@@ -1,3 +1,4 @@
+// Updated to use GradleUp Shadow plugin 9.4.0 for Java 21 bytecode support
 plugins {
     `kotlin-dsl`
     kotlin("plugin.serialization") version "2.1.10"
