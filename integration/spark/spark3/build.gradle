@@ -31,7 +31,7 @@ ext {
     databricksVersion = "0.1.5"
     deltaVersion = "1.1.0"
     icebergVersion = "1.4.3"
-    jacksonVersion = "2.18.6"
+    jacksonVersion = "2.15.3"
     junit5Version = "5.11.4"
     lombokVersion = "1.18.30"
     mockitoVersion = "4.11.0"
