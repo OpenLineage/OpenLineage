@@ -13,7 +13,7 @@ plugins {
     id 'io.franzbecker.gradle-lombok'
     id 'io.openlineage.common-config'
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow'
+    id 'com.gradleup.shadow' version '9.4.0'
 }
 
 group = "io.openlineage"
@@ -25,7 +25,7 @@ ext {
     testedflinkVersion = project.getProperty('flink.version')
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
     assertjVersion = '3.27.6'
-    jacksonVersion = "2.15.3"
+    jacksonVersion = "2.18.6"
     junit5Version = '5.11.4'
     lombokVersion = '1.18.42'
     scalaLibraryVersion = '2.12.20'

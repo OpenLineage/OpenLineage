@@ -1,6 +1,7 @@
+// Upgraded to Gradle 8.14 with Shadow plugin 9.4.0 for Java 21 bytecode support
 plugins {
     `kotlin-dsl`
-    kotlin("plugin.serialization") version "2.1.10"
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 repositories {
@@ -10,12 +11,12 @@ repositories {
 
 val downloadTaskVersion: String = "5.6.0"
 val lombokPluginVersion: String = "8.6"
-val shadowPluginVersion: String = "8.1.1"
+val shadowPluginVersion: String = "9.4.0"
 val spotlessVersion: String = "6.13.0"
 
 dependencies {
     implementation("com.diffplug.spotless:spotless-plugin-gradle:${spotlessVersion}")
-    implementation("com.github.johnrengelman:shadow:${shadowPluginVersion}")
+    implementation("com.gradleup.shadow:shadow-gradle-plugin:${shadowPluginVersion}")
     implementation("de.undercouch:gradle-download-task:${downloadTaskVersion}")
     implementation("io.freefair.gradle:lombok-plugin:${lombokPluginVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")

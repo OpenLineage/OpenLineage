@@ -9,7 +9,7 @@ plugins {
     id 'pmd'
     id "com.adarshr.test-logger" version "4.0.0"
     id 'com.diffplug.spotless' version '6.23.0'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "com.gradleup.shadow" version "8.3.10"
     id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
 }
 
