@@ -26,6 +26,7 @@ class NominalTimeRunFacet(RunFacet):
     Example: 2020-12-17T04:00:00.000Z
     """
     _additional_skip_redact: ClassVar[list[str]] = ["nominalStartTime", "nominalEndTime"]
+    key: ClassVar[str] = "nominalTime"
 
     @staticmethod
     def _get_schema() -> str:
