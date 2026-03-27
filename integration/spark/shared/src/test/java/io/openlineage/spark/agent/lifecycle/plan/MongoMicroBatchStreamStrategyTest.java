@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for MongoMicroBatchStreamStrategy to verify Spark 4.0 constructor support. */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class MongoMicroBatchStreamStrategyTest {
 
   private OpenLineageContext context;
@@ -181,6 +182,7 @@ class MongoMicroBatchStreamStrategyTest {
   // ===========================
 
   /** Helper method to invoke private extractDatabaseFromURI method using reflection. */
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   private String invokeExtractDatabaseFromURI(String uri) throws Exception {
     StructType schema = new StructType();
     SparkDataStream stream = mock(SparkDataStream.class);
@@ -194,6 +196,7 @@ class MongoMicroBatchStreamStrategyTest {
   }
 
   /** Helper method to invoke private stripDatabaseFromURI method using reflection. */
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   private String invokeStripDatabaseFromURI(String uri) throws Exception {
     StructType schema = new StructType();
     SparkDataStream stream = mock(SparkDataStream.class);
