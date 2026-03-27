@@ -23,6 +23,7 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
     sql_job,
     tags_run,
+    test_result_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -470,6 +471,17 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         if resource_type == "test":
             success = node_status == "pass"
+
+            # Emit TestResultRunFacet for all test nodes
+            config = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {}).get("config", {})
+            severity = config.get("severity", "error")
+            if severity:
+                severity = severity.lower()
+            run_facets["testResult"] = test_result_run.TestResultRunFacet(
+                status=test_result_run.Status.pass_ if success else test_result_run.Status.fail,
+                severity=test_result_run.Severity(severity),
+            )
+
             if assertion := self._get_assertion(node_unique_id, success):
                 assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
                 inputs = []
