@@ -41,6 +41,12 @@
               "type": "TABLE"
             }
           ]
+        },
+        "hierarchy": {
+          "hierarchy": [
+            { "type": "DATABASE", "name": "default" },
+            { "type": "TABLE", "name": "create_table_test" }
+          ]
         }
       }
     }
