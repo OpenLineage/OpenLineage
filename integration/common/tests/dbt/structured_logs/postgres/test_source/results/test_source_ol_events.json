@@ -316,7 +316,28 @@
       }
     },
     "eventType": "COMPLETE",
-    "inputs": [],
+    "inputs": [
+      {
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.dim_date",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
+          },
+          "dataQualityAssertions": {
+            "assertions": [
+              {
+                "assertion": "unique",
+                "success": true,
+                "column": "id",
+                "severity": "error"
+              }
+            ]
+          }
+        }
+      }
+    ],
     "outputs": [
       {
         "namespace": "postgres://postgres:5432",

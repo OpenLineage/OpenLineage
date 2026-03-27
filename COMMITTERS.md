@@ -8,7 +8,7 @@ The current OpenLineage committers are:
 
 
 | Name               | Email |
-| ------------------ | -----------------|
+|--------------------| -----------------|
 | Julien Le Dem      | |
 | Mandy Chessell     | |
 | Daniel Henneberger | |
@@ -35,6 +35,8 @@ The current OpenLineage committers are:
 | Zhenqiu Huang      | |
 | Jens Pfau          | |
 | Sheeri Cabral      | |
+| Jakub Moravec      | |
+
 To understand how to become an OpenLineage committer,
 read the [OpenLineage Governance Guide](GOVERNANCE.md).
 
