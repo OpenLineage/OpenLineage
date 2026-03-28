@@ -54,9 +54,7 @@ class SparkApplicationExecutionContextTest {
   private final EventEmitter eventEmitter = mock(EventEmitter.class);
   private final OpenLineageEventHandlerFactory eventHandlerFactory =
       mock(OpenLineageEventHandlerFactory.class);
-  private SparkApplicationExecutionContext context =
-      new SparkApplicationExecutionContext(
-          eventEmitter, olContext, new OpenLineageRunEventBuilder(olContext, eventHandlerFactory));
+  private SparkApplicationExecutionContext context;
 
   @AfterEach
   void reset() {
@@ -87,6 +85,9 @@ class SparkApplicationExecutionContextTest {
 
   @Test
   void testSingleStartIsSent(SparkSession spark) {
+
+    // Create a new context for each test
+    context = getContext();
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
@@ -100,7 +101,11 @@ class SparkApplicationExecutionContextTest {
   }
 
   @Test
-  void testSingleEndIsSent(SparkSession spark) {
+  void testSingleEndCompleteIsSent(SparkSession spark) {
+
+    // Create a new context for each test
+    context = getContext();
+    context.updateStatus(EventType.COMPLETE);
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
@@ -111,6 +116,24 @@ class SparkApplicationExecutionContextTest {
 
     assertThat(lineageEvent.getAllValues().get(0))
         .hasFieldOrPropertyWithValue("eventType", EventType.COMPLETE);
+  }
+
+  @Test
+  void testSingleEndFailIsSent(SparkSession spark) {
+
+    // Create a new context for each test
+    context = getContext();
+    context.updateStatus(EventType.FAIL);
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.end(mock(SparkListenerApplicationEnd.class));
+    }
+    verify(eventEmitter, times(1)).emit(lineageEvent.capture());
+
+    assertThat(lineageEvent.getAllValues().get(0))
+        .hasFieldOrPropertyWithValue("eventType", EventType.FAIL);
   }
 
   @Test
@@ -207,11 +230,7 @@ class SparkApplicationExecutionContextTest {
                 }));
 
     // need to new context to inject eventHandlerFactory
-    SparkApplicationExecutionContext context =
-        new SparkApplicationExecutionContext(
-            eventEmitter,
-            olContext,
-            new OpenLineageRunEventBuilder(olContext, eventHandlerFactory));
+    SparkApplicationExecutionContext context = getContext();
 
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
@@ -229,5 +248,10 @@ class SparkApplicationExecutionContextTest {
           .containsKey("custom_job_facet");
     }
     assertThat(lineageEvent.getAllValues()).isNotEmpty();
+  }
+
+  private SparkApplicationExecutionContext getContext() {
+    return new SparkApplicationExecutionContext(
+        eventEmitter, olContext, new OpenLineageRunEventBuilder(olContext, eventHandlerFactory));
   }
 }
