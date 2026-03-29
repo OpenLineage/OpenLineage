@@ -25,19 +25,19 @@ ext {
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
-    assertjVersion = '3.27.6'
-    bigqueryVersion = '0.42.2'
-    junit5Version = '5.11.4'
+    assertjVersion = '3.27.7'
+    bigqueryVersion = '0.44.0'
+    junit5Version = '6.0.3'
     mockitoVersion = '4.11.0'
-    postgresqlVersion = '42.7.9'
+    postgresqlVersion = '42.7.10'
     testcontainersVersion = '1.21.4'
-    awssdkVersion = '2.41.12'
+    awssdkVersion = '2.42.18'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
             testDir      : project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.16.2'
+    micrometerVersion = '1.16.4'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -121,7 +121,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.51.1.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.51.3.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
