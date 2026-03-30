@@ -42,7 +42,7 @@ ext {
     postgresqlVersion = "42.7.9"
     sqlLiteVersion = "3.51.1.0"
     testcontainersVersion = "1.19.3"
-    awsSdkVersion = '2.41.12'
+    awsSdkVersion = '2.42.21'
 
     sparkVersion = project.findProperty("shared.spark.version")
     sparkSeries = sparkVersion.substring(0, 3)
