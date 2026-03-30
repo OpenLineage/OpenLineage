@@ -31,10 +31,12 @@ from openlineage.client.transport import (
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.utils import (
-    _find_git_root,
-    _get_git_snapshot,
+    _find_git_dir,
     deep_merge_dicts,
+    get_git_branch,
     get_git_repo_url,
+    get_git_tag,
+    get_git_version,
 )
 
 with warnings.catch_warnings():
@@ -538,34 +540,30 @@ class OpenLineageClient:
         return tags_facet
 
     @cached_property
-    def _source_code_location(self) -> dict[str, str | None]:
+    def _source_code_location(self) -> dict[str, str | None] | None:
         scl = self.config.facets.source_code_location
 
-        # Explicit overrides bypass all subprocess calls.
+        git_dir = _find_git_dir()
+
+        url: str | None = scl.repo_url
         sha: str | None = scl.version
         branch: str | None = scl.branch
         tag: str | None = scl.tag
 
-        # Cache the git root check so we don't call _find_git_root twice.
-        in_git_repo = _find_git_root() is not None
-
-        # Auto-detect sha/branch/tag in a single subprocess only when inside a
-        # git repo and at least one field still needs to be resolved.
-        if (sha is None or branch is None or tag is None) and in_git_repo:
-            auto_sha, auto_branch, auto_tag = _get_git_snapshot()
+        if git_dir:
+            if url is None:
+                url = get_git_repo_url(git_dir=git_dir)
             if sha is None:
-                sha = auto_sha
+                sha = get_git_version(git_dir)
             if branch is None:
-                branch = auto_branch
+                branch = get_git_branch(git_dir)
             if tag is None:
-                tag = auto_tag
+                tag = get_git_tag(git_dir)
 
-        return {
-            "url": get_git_repo_url(scl.repo_url) if (scl.repo_url or in_git_repo) else None,
-            "version": sha,
-            "branch": branch,
-            "tag": tag,
-        }
+        if url is None:
+            return None
+
+        return {"url": url, "version": sha, "branch": branch, "tag": tag}
 
     def add_source_code_location_facet(self, event: Event) -> Event:
         """Adds sourceCodeLocation job facet if not already present and not disabled."""
@@ -575,7 +573,7 @@ class OpenLineageClient:
             return event
 
         scl = self._source_code_location
-        if not scl["url"]:
+        if not scl or not scl["url"]:
             return event
 
         event.job.facets = event.job.facets or {}
