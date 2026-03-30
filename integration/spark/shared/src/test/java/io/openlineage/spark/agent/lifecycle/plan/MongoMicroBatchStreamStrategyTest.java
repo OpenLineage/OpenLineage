@@ -190,7 +190,8 @@ class MongoMicroBatchStreamStrategyTest {
         new MongoMicroBatchStreamStrategy(datasetFactory, schema, stream, Optional.empty());
 
     Method method =
-        MongoMicroBatchStreamStrategy.class.getDeclaredMethod("extractDatabaseFromURI", String.class);
+        MongoMicroBatchStreamStrategy.class.getDeclaredMethod(
+            "extractDatabaseFromURI", String.class);
     method.setAccessible(true);
     return (String) method.invoke(strategy, uri);
   }

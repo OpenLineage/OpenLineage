@@ -115,8 +115,7 @@ public class MongoMicroBatchStreamStrategy extends StreamStrategy {
       namespace = baseUri + "/" + databaseName;
     }
 
-    OpenLineage.InputDataset dataset =
-        datasetFactory.getDataset(collectionName, namespace, schema);
+    OpenLineage.InputDataset dataset = datasetFactory.getDataset(collectionName, namespace, schema);
 
     return Arrays.asList(dataset);
   }
@@ -172,8 +171,7 @@ public class MongoMicroBatchStreamStrategy extends StreamStrategy {
 
       // Strip query parameters if present
       int questionMark = afterSlash.indexOf('?');
-      String database =
-          (questionMark != -1) ? afterSlash.substring(0, questionMark) : afterSlash;
+      String database = (questionMark != -1) ? afterSlash.substring(0, questionMark) : afterSlash;
 
       // Return null if database name is empty after stripping params
       return database.isEmpty() ? null : database;
