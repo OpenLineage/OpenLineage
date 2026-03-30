@@ -39,6 +39,57 @@
 	},
 	{
 		"eventTime": "{{ is_datetime(result) }}",
+		"eventType": "START",
+		"job": {
+			"name": "test.dbt_bigquery_test.dbt_expectations_expect_column_median_to_be_between_test_first_dbt_model_id__21__1.dd83ff215d",
+			"namespace": "job-namespace"
+		},
+		"run": {
+			"runId": "{{ any(result) }}",
+			"facets": {
+				"testResult": {
+					"status": "pass",
+					"severity": "error"
+				}
+			}
+		}
+	},
+	{
+		"eventTime": "{{ is_datetime(result) }}",
+		"eventType": "START",
+		"job": {
+			"name": "test.dbt_bigquery_test.dbt_expectations_expect_column_quantile_values_to_be_between_test_first_dbt_model_id__2__0__0_95.af5e727e43",
+			"namespace": "job-namespace"
+		},
+		"run": {
+			"runId": "{{ any(result) }}",
+			"facets": {
+				"testResult": {
+					"status": "pass",
+					"severity": "error"
+				}
+			}
+		}
+	},
+	{
+		"eventTime": "{{ is_datetime(result) }}",
+		"eventType": "START",
+		"job": {
+			"name": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.f2b0bdd46c",
+			"namespace": "job-namespace"
+		},
+		"run": {
+			"runId": "{{ any(result) }}",
+			"facets": {
+				"testResult": {
+					"status": "pass",
+					"severity": "error"
+				}
+			}
+		}
+	},
+	{
+		"eventTime": "{{ is_datetime(result) }}",
 		"eventType": "COMPLETE",
 		"outputs": [
 			{
@@ -198,6 +249,57 @@
 				}
 			},
 			"runId": "{{ any(result) }}"
+		}
+	},
+	{
+		"eventTime": "{{ is_datetime(result) }}",
+		"eventType": "COMPLETE",
+		"job": {
+			"name": "test.dbt_bigquery_test.dbt_expectations_expect_column_median_to_be_between_test_first_dbt_model_id__21__1.dd83ff215d",
+			"namespace": "job-namespace"
+		},
+		"run": {
+			"runId": "{{ any(result) }}",
+			"facets": {
+				"testResult": {
+					"status": "pass",
+					"severity": "error"
+				}
+			}
+		}
+	},
+	{
+		"eventTime": "{{ is_datetime(result) }}",
+		"eventType": "COMPLETE",
+		"job": {
+			"name": "test.dbt_bigquery_test.dbt_expectations_expect_column_quantile_values_to_be_between_test_first_dbt_model_id__2__0__0_95.af5e727e43",
+			"namespace": "job-namespace"
+		},
+		"run": {
+			"runId": "{{ any(result) }}",
+			"facets": {
+				"testResult": {
+					"status": "pass",
+					"severity": "error"
+				}
+			}
+		}
+	},
+	{
+		"eventTime": "{{ is_datetime(result) }}",
+		"eventType": "COMPLETE",
+		"job": {
+			"name": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.f2b0bdd46c",
+			"namespace": "job-namespace"
+		},
+		"run": {
+			"runId": "{{ any(result) }}",
+			"facets": {
+				"testResult": {
+					"status": "pass",
+					"severity": "error"
+				}
+			}
 		}
 	}
 ]

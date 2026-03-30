@@ -30,6 +30,7 @@ from openlineage.client.facet_v2 import (
     schema_dataset,
     sql_job,
     tags_run,
+    test_result_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -436,6 +437,74 @@ class DbtArtifactProcessor:
                     None,
                 )
             )
+
+        # Emit per-test events with TestResultRunFacet
+        for run in context.run_results["results"]:
+            if not run["unique_id"].startswith("test."):
+                continue
+            test_node = nodes.get(run["unique_id"])
+            if not test_node:
+                continue
+
+            success = run["status"] == "pass"
+            config = test_node.get("config", {})
+            severity = config.get("severity", "error")
+            if severity:
+                severity = severity.lower()
+
+            status = "success" if success or run["status"] == "warn" else "error"
+
+            run_facets_per_test: dict[str, RunFacet] = {
+                "testResult": test_result_run.TestResultRunFacet(
+                    status=test_result_run.Status.pass_ if success else test_result_run.Status.fail,
+                    severity=test_result_run.Severity(severity),
+                ),
+            }
+            if tags := test_node.get("tags", None):
+                run_facets_per_test["tags"] = tags_run.TagsRunFacet(
+                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
+                )
+
+            job_facets_per_test: dict[str, JobFacet] = {
+                "jobType": job_type_job.JobTypeJobFacet(
+                    jobType="TEST",
+                    integration="DBT",
+                    processingType="BATCH",
+                    producer=self.producer,
+                ),
+                "dbt_node": DbtNodeJobFacet(
+                    original_file_path=test_node.get("original_file_path"),
+                    database=test_node.get("database"),
+                    schema=test_node.get("schema"),
+                    alias=test_node.get("alias"),
+                    unique_id=test_node.get("unique_id"),
+                ),
+            }
+
+            # Resolve input datasets from parent_map
+            inputs: list[InputDataset] = []
+            for parent_id in context.manifest.get("parent_map", {}).get(run["unique_id"], []):
+                if any(parent_id.startswith(p) for p in ["model.", "source.", "seed."]):
+                    parent_node = manifest_nodes.get(parent_id)
+                    if parent_node:
+                        ptype = "model" if parent_id.startswith("model.") else "source"
+                        ns, nm, _, _ = self.extract_dataset_data(
+                            ModelNode(type=ptype, metadata_node=parent_node), None, has_facets=False
+                        )
+                        inputs.append(InputDataset(namespace=ns, name=nm))
+
+            events.add(
+                self.to_openlineage_events(
+                    status,
+                    started_at,
+                    completed_at,
+                    self.get_run(run_id=str(generate_new_uuid()), run_facets=run_facets_per_test),
+                    Job(namespace=self.job_namespace, name=run["unique_id"], facets=job_facets_per_test),
+                    inputs,
+                    None,
+                )
+            )
+
         return events
 
     def parse_assertions(

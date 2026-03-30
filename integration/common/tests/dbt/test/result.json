@@ -246,6 +246,272 @@
   },
   {
     "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_quantile_values_to_be_between_test_first_dbt_model_id__2__0__0_95.7d02be244f",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0000-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "fail",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_median_to_be_between_test_first_dbt_model_id__21__7.98cdd3d9df",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0001-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "fail",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_values_to_not_be_null_test_first_dbt_model_id.2da7e7b96e",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0002-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_first_dbt_model_id.a8c5d0180a",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0003-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_second_dbt_model_id.6458075b2a",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0004-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_second_parallel_dbt_model_id.92c37ea38b",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0005-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_third_dbt_model_id.ee37a1e1fb",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0006-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_third_dbt_model_second_id.808ed9e604",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0007-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.1f3ee5c4a1",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0008-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "fail",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_second_dbt_model_id.ba8cd8dfe1",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0009-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "fail",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_second_parallel_dbt_model_id.d59ed1725f",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa000a-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_third_dbt_model_id.66d6711da6",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa000b-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_third_dbt_model_second_id.f3c38f3b89",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa000c-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "START",
+    "job": {
+      "name": "test.dbt_bigquery_test.source_not_null_dbt_test2_source_table_id.a44e73432a",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa000d-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
     "eventType": "COMPLETE",
     "inputs": [
       {
@@ -611,6 +877,272 @@
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
           "invocation_id": "9adc7020-c784-4179-a4e3-e3c4ffb3b09c"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_values_to_not_be_null_test_first_dbt_model_id.2da7e7b96e",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0002-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_first_dbt_model_id.a8c5d0180a",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0003-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_second_dbt_model_id.6458075b2a",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0004-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_second_parallel_dbt_model_id.92c37ea38b",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0005-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_third_dbt_model_id.ee37a1e1fb",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0006-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.not_null_test_third_dbt_model_second_id.808ed9e604",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0007-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_second_parallel_dbt_model_id.d59ed1725f",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa000a-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_third_dbt_model_id.66d6711da6",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa000b-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_third_dbt_model_second_id.f3c38f3b89",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa000c-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "test.dbt_bigquery_test.source_not_null_dbt_test2_source_table_id.a44e73432a",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa000d-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "pass",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "FAIL",
+    "job": {
+      "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_quantile_values_to_be_between_test_first_dbt_model_id__2__0__0_95.7d02be244f",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0000-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "fail",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "FAIL",
+    "job": {
+      "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_median_to_be_between_test_first_dbt_model_id__21__7.98cdd3d9df",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0001-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "fail",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "FAIL",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.1f3ee5c4a1",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0008-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "fail",
+          "severity": "error"
+        }
+      }
+    }
+  },
+  {
+    "eventTime": "2021-08-25T11:00:25.277467+00:00",
+    "eventType": "FAIL",
+    "job": {
+      "name": "test.dbt_bigquery_test.unique_test_second_dbt_model_id.ba8cd8dfe1",
+      "namespace": "dbt-test-namespace"
+    },
+    "run": {
+      "runId": "aaaa0009-0000-0000-0000-000000000000",
+      "facets": {
+        "testResult": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
+          "status": "fail",
+          "severity": "error"
         }
       }
     }
