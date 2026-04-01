@@ -185,8 +185,8 @@ public final class OpenLineageClient implements AutoCloseable {
   }
 
   /**
-   * Enriches a JobEvent with job tags and job ownership from config.
-   * Returns a new enriched event (the original is not modified).
+   * Enriches a JobEvent with job tags and job ownership from config. Returns a new enriched event
+   * (the original is not modified).
    */
   OpenLineage.JobEvent enrichJobEvent(@NonNull OpenLineage.JobEvent jobEvent) {
     if (openLineageConfig == null) {
@@ -221,7 +221,8 @@ public final class OpenLineageClient implements AutoCloseable {
 
     // Copy all existing named facets
     if (existing != null) {
-      if (existing.getDocumentation() != null) facetsBuilder.documentation(existing.getDocumentation());
+      if (existing.getDocumentation() != null)
+        facetsBuilder.documentation(existing.getDocumentation());
       if (existing.getSql() != null) facetsBuilder.sql(existing.getSql());
       if (existing.getOwnership() != null) facetsBuilder.ownership(existing.getOwnership());
       if (existing.getJobType() != null) facetsBuilder.jobType(existing.getJobType());
@@ -275,7 +276,8 @@ public final class OpenLineageClient implements AutoCloseable {
     if (existing != null) {
       if (existing.getNominalTime() != null) facetsBuilder.nominalTime(existing.getNominalTime());
       if (existing.getParent() != null) facetsBuilder.parent(existing.getParent());
-      if (existing.getErrorMessage() != null) facetsBuilder.errorMessage(existing.getErrorMessage());
+      if (existing.getErrorMessage() != null)
+        facetsBuilder.errorMessage(existing.getErrorMessage());
       if (existing.getProcessing_engine() != null)
         facetsBuilder.processing_engine(existing.getProcessing_engine());
       if (existing.getTags() != null) facetsBuilder.tags(existing.getTags());
@@ -289,11 +291,7 @@ public final class OpenLineageClient implements AutoCloseable {
     OpenLineage.TagsRunFacet existingTags = (existing != null) ? existing.getTags() : null;
     facetsBuilder.tags(mergeRunTagFacet(openLineage, existingTags, configRunTags));
 
-    return openLineage
-        .newRunBuilder()
-        .runId(run.getRunId())
-        .facets(facetsBuilder.build())
-        .build();
+    return openLineage.newRunBuilder().runId(run.getRunId()).facets(facetsBuilder.build()).build();
   }
 
   /** Returns job tags from config (source = CONFIG). */
@@ -330,9 +328,7 @@ public final class OpenLineageClient implements AutoCloseable {
   }
 
   private OpenLineage.TagsJobFacet mergeJobTagFacet(
-      OpenLineage openLineage,
-      OpenLineage.TagsJobFacet existing,
-      List<TagField> configTags) {
+      OpenLineage openLineage, OpenLineage.TagsJobFacet existing, List<TagField> configTags) {
     Map<String, OpenLineage.TagsJobFacetFields> tagMap = new HashMap<>();
     // Start with existing tags
     if (existing != null && existing.getTags() != null) {
@@ -344,16 +340,11 @@ public final class OpenLineageClient implements AutoCloseable {
             tagMap.put(
                 t.getKey().toLowerCase(),
                 openLineage.newTagsJobFacetFields(t.getKey(), t.getValue(), t.getSource())));
-    return openLineage
-        .newTagsJobFacetBuilder()
-        .tags(new ArrayList<>(tagMap.values()))
-        .build();
+    return openLineage.newTagsJobFacetBuilder().tags(new ArrayList<>(tagMap.values())).build();
   }
 
   private OpenLineage.TagsRunFacet mergeRunTagFacet(
-      OpenLineage openLineage,
-      OpenLineage.TagsRunFacet existing,
-      List<TagField> configTags) {
+      OpenLineage openLineage, OpenLineage.TagsRunFacet existing, List<TagField> configTags) {
     Map<String, OpenLineage.TagsRunFacetFields> tagMap = new HashMap<>();
     // Start with existing tags
     if (existing != null && existing.getTags() != null) {
@@ -365,10 +356,7 @@ public final class OpenLineageClient implements AutoCloseable {
             tagMap.put(
                 t.getKey().toLowerCase(),
                 openLineage.newTagsRunFacetFields(t.getKey(), t.getValue(), t.getSource())));
-    return openLineage
-        .newTagsRunFacetBuilder()
-        .tags(new ArrayList<>(tagMap.values()))
-        .build();
+    return openLineage.newTagsRunFacetBuilder().tags(new ArrayList<>(tagMap.values())).build();
   }
 
   @SuppressWarnings("PMD")

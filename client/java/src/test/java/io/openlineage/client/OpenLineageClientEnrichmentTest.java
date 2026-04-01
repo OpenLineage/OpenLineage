@@ -27,8 +27,7 @@ class OpenLineageClientEnrichmentTest {
   OpenLineage ol = new OpenLineage(PRODUCER);
 
   private OpenLineageClient clientWithConfig(OpenLineageConfig config) {
-    return new OpenLineageClient(
-        new ConsoleTransport(), null, new SimpleMeterRegistry(), config);
+    return new OpenLineageClient(new ConsoleTransport(), null, new SimpleMeterRegistry(), config);
   }
 
   private OpenLineageConfig configWithJobTags(List<TagField> tags) {
@@ -78,7 +77,8 @@ class OpenLineageClientEnrichmentTest {
   @Test
   void testJobTagsAddedFromConfig() {
     OpenLineageConfig config =
-        configWithJobTags(Arrays.asList(new TagField("env", "production"), new TagField("team", "data")));
+        configWithJobTags(
+            Arrays.asList(new TagField("env", "production"), new TagField("team", "data")));
     OpenLineageClient client = clientWithConfig(config);
 
     OpenLineage.RunEvent enriched = client.enrichRunEvent(buildRunEvent());
@@ -114,7 +114,11 @@ class OpenLineageClientEnrichmentTest {
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventType(OpenLineage.RunEvent.EventType.START)
-            .run(ol.newRunBuilder().runId(UUID.randomUUID()).facets(ol.newRunFacetsBuilder().build()).build())
+            .run(
+                ol.newRunBuilder()
+                    .runId(UUID.randomUUID())
+                    .facets(ol.newRunFacetsBuilder().build())
+                    .build())
             .job(
                 ol.newJobBuilder()
                     .namespace("ns")
@@ -125,7 +129,8 @@ class OpenLineageClientEnrichmentTest {
                                 ol.newTagsJobFacetBuilder()
                                     .tags(
                                         Collections.singletonList(
-                                            ol.newTagsJobFacetFields("existing_tag", "value", "INTEGRATION")))
+                                            ol.newTagsJobFacetFields(
+                                                "existing_tag", "value", "INTEGRATION")))
                                     .build())
                             .build())
                     .build())
@@ -148,7 +153,11 @@ class OpenLineageClientEnrichmentTest {
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventType(OpenLineage.RunEvent.EventType.START)
-            .run(ol.newRunBuilder().runId(UUID.randomUUID()).facets(ol.newRunFacetsBuilder().build()).build())
+            .run(
+                ol.newRunBuilder()
+                    .runId(UUID.randomUUID())
+                    .facets(ol.newRunFacetsBuilder().build())
+                    .build())
             .job(
                 ol.newJobBuilder()
                     .namespace("ns")
@@ -159,7 +168,8 @@ class OpenLineageClientEnrichmentTest {
                                 ol.newTagsJobFacetBuilder()
                                     .tags(
                                         Collections.singletonList(
-                                            ol.newTagsJobFacetFields("env", "staging", "INTEGRATION")))
+                                            ol.newTagsJobFacetFields(
+                                                "env", "staging", "INTEGRATION")))
                                     .build())
                             .build())
                     .build())
@@ -260,7 +270,11 @@ class OpenLineageClientEnrichmentTest {
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventType(OpenLineage.RunEvent.EventType.START)
-            .run(ol.newRunBuilder().runId(UUID.randomUUID()).facets(ol.newRunFacetsBuilder().build()).build())
+            .run(
+                ol.newRunBuilder()
+                    .runId(UUID.randomUUID())
+                    .facets(ol.newRunFacetsBuilder().build())
+                    .build())
             .job(
                 ol.newJobBuilder()
                     .namespace("ns")
@@ -300,10 +314,8 @@ class OpenLineageClientEnrichmentTest {
     assertThat(config.getJobConfig().getEffectiveOwners().getAdditionalProperties())
         .containsEntry("team", "MyTeam")
         .containsEntry("person", "John Smith");
-    assertThat(config.getJobConfig().getTags())
-        .contains(new TagField("env", "production"));
-    assertThat(config.getRunConfig().getTags())
-        .contains(new TagField("pipeline", "etl"));
+    assertThat(config.getJobConfig().getTags()).contains(new TagField("env", "production"));
+    assertThat(config.getRunConfig().getTags()).contains(new TagField("pipeline", "etl"));
   }
 
   @Test
@@ -338,14 +350,28 @@ class OpenLineageClientEnrichmentTest {
   private OpenLineage.RunEvent buildRunEvent() {
     return ol.newRunEventBuilder()
         .eventType(OpenLineage.RunEvent.EventType.START)
-        .run(ol.newRunBuilder().runId(UUID.randomUUID()).facets(ol.newRunFacetsBuilder().build()).build())
-        .job(ol.newJobBuilder().namespace("ns").name("job").facets(ol.newJobFacetsBuilder().build()).build())
+        .run(
+            ol.newRunBuilder()
+                .runId(UUID.randomUUID())
+                .facets(ol.newRunFacetsBuilder().build())
+                .build())
+        .job(
+            ol.newJobBuilder()
+                .namespace("ns")
+                .name("job")
+                .facets(ol.newJobFacetsBuilder().build())
+                .build())
         .build();
   }
 
   private OpenLineage.JobEvent buildJobEvent() {
     return ol.newJobEventBuilder()
-        .job(ol.newJobBuilder().namespace("ns").name("job").facets(ol.newJobFacetsBuilder().build()).build())
+        .job(
+            ol.newJobBuilder()
+                .namespace("ns")
+                .name("job")
+                .facets(ol.newJobFacetsBuilder().build())
+                .build())
         .build();
   }
 }
