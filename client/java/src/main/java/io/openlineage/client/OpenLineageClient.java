@@ -231,8 +231,7 @@ public final class OpenLineageClient implements AutoCloseable {
       if (existing.getSourceCodeLocation() != null)
         facetsBuilder.sourceCodeLocation(existing.getSourceCodeLocation());
       if (existing.getSourceCode() != null) facetsBuilder.sourceCode(existing.getSourceCode());
-      if (existing.getGcp_lineage() != null)
-        facetsBuilder.gcp_lineage(existing.getGcp_lineage());
+      if (existing.getGcp_lineage() != null) facetsBuilder.gcp_lineage(existing.getGcp_lineage());
       if (existing.getGcp_composer_job() != null)
         facetsBuilder.gcp_composer_job(existing.getGcp_composer_job());
       // Copy additional (unknown) facets
