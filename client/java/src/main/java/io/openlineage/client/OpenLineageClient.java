@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -332,13 +333,13 @@ public final class OpenLineageClient implements AutoCloseable {
     Map<String, OpenLineage.TagsJobFacetFields> tagMap = new HashMap<>();
     // Start with existing tags
     if (existing != null && existing.getTags() != null) {
-      existing.getTags().forEach(t -> tagMap.put(t.getKey().toLowerCase(), t));
+      existing.getTags().forEach(t -> tagMap.put(t.getKey().toLowerCase(Locale.ROOT), t));
     }
     // Config tags override by key (case-insensitive)
     configTags.forEach(
         t ->
             tagMap.put(
-                t.getKey().toLowerCase(),
+                t.getKey().toLowerCase(Locale.ROOT),
                 openLineage.newTagsJobFacetFields(t.getKey(), t.getValue(), t.getSource())));
     return openLineage.newTagsJobFacetBuilder().tags(new ArrayList<>(tagMap.values())).build();
   }
@@ -348,13 +349,13 @@ public final class OpenLineageClient implements AutoCloseable {
     Map<String, OpenLineage.TagsRunFacetFields> tagMap = new HashMap<>();
     // Start with existing tags
     if (existing != null && existing.getTags() != null) {
-      existing.getTags().forEach(t -> tagMap.put(t.getKey().toLowerCase(), t));
+      existing.getTags().forEach(t -> tagMap.put(t.getKey().toLowerCase(Locale.ROOT), t));
     }
     // Config tags override by key (case-insensitive)
     configTags.forEach(
         t ->
             tagMap.put(
-                t.getKey().toLowerCase(),
+                t.getKey().toLowerCase(Locale.ROOT),
                 openLineage.newTagsRunFacetFields(t.getKey(), t.getValue(), t.getSource())));
     return openLineage.newTagsRunFacetBuilder().tags(new ArrayList<>(tagMap.values())).build();
   }
