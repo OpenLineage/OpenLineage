@@ -8,12 +8,9 @@ package io.openlineage.flink.visitor.lifecycle;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.JobFacets;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
-import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
-import io.openlineage.client.OpenLineageConfig;
-import io.openlineage.client.job.JobConfig;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -28,8 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -229,7 +224,7 @@ public class FlinkExecutionContext implements ExecutionContext {
   private RunEventBuilder commonEventBuilder() {
     OpenLineage openLineage = olContext.getOpenLineage();
     JobFacets jobFacets =
-        buildOwnershipFacet(new JobFacetsBuilder())
+        new JobFacetsBuilder()
             .jobType(
                 openLineage
                     .newJobTypeJobFacetBuilder()
@@ -256,35 +251,6 @@ public class FlinkExecutionContext implements ExecutionContext {
         .version(EnvironmentInformation.getVersion())
         .openlineageAdapterVersion(Versions.getVersion())
         .build();
-  }
-
-  private JobFacetsBuilder buildOwnershipFacet(JobFacetsBuilder builder) {
-    Optional.of(olContext.getConfig())
-        .map(OpenLineageConfig::getJobConfig)
-        .map(JobConfig::getOwners)
-        .map(JobConfig.JobOwnersConfig::getAdditionalProperties)
-        .filter(Objects::nonNull)
-        .ifPresent(
-            map -> {
-              List<OwnershipJobFacetOwners> ownersList = new ArrayList<>();
-              map.forEach(
-                  (type, name) ->
-                      ownersList.add(
-                          olContext
-                              .getOpenLineage()
-                              .newOwnershipJobFacetOwnersBuilder()
-                              .name(name)
-                              .type(type)
-                              .build()));
-              builder.ownership(
-                  olContext
-                      .getOpenLineage()
-                      .newOwnershipJobFacetBuilder()
-                      .owners(ownersList)
-                      .build());
-            });
-
-    return builder;
   }
 
   private List<OpenLineage.InputDataset> getInputDatasets(
