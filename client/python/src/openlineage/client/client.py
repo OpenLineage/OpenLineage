@@ -21,6 +21,13 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
 from openlineage.client.filter import Filter, FilterConfig, create_filter
+from openlineage.client.git import (
+    _find_git_dir,
+    get_git_branch,
+    get_git_repo_url,
+    get_git_tag,
+    get_git_version,
+)
 from openlineage.client.serde import Serde
 from openlineage.client.tags import TagsConfig
 from openlineage.client.transport import (
@@ -30,14 +37,7 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import (
-    _find_git_dir,
-    deep_merge_dicts,
-    get_git_branch,
-    get_git_repo_url,
-    get_git_tag,
-    get_git_version,
-)
+from openlineage.client.utils import deep_merge_dicts
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -543,22 +543,24 @@ class OpenLineageClient:
     def _source_code_location(self) -> dict[str, str | None] | None:
         scl = self.config.facets.source_code_location
 
-        git_dir = _find_git_dir()
-
         url: str | None = scl.repo_url
         sha: str | None = scl.version
         branch: str | None = scl.branch
         tag: str | None = scl.tag
 
-        if git_dir:
-            if url is None:
-                url = get_git_repo_url(git_dir=git_dir)
-            if sha is None:
-                sha = get_git_version(git_dir)
-            if branch is None:
-                branch = get_git_branch(git_dir)
-            if tag is None:
-                tag = get_git_tag(git_dir)
+        try:
+            git_dir = _find_git_dir()
+            if git_dir:
+                if url is None:
+                    url = get_git_repo_url(git_dir=git_dir)
+                if sha is None:
+                    sha = get_git_version(git_dir)
+                if branch is None:
+                    branch = get_git_branch(git_dir)
+                if tag is None:
+                    tag = get_git_tag(git_dir)
+        except Exception:
+            log.warning("Failed to read git metadata for sourceCodeLocation facet", exc_info=True)
 
         if url is None:
             return None

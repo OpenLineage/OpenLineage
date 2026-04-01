@@ -8,9 +8,7 @@ from unittest.mock import patch
 import pytest
 from openlineage.client.client import OpenLineageClient, OpenLineageConfig
 from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
-from openlineage.client.run import Job, JobEvent, Run, RunEvent, RunState
-from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import (
+from openlineage.client.git import (
     _find_git_dir,
     _find_tag_in_packed_refs,
     _read_head_content,
@@ -21,6 +19,8 @@ from openlineage.client.utils import (
     get_git_tag,
     get_git_version,
 )
+from openlineage.client.run import Job, JobEvent, Run, RunEvent, RunState
+from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.uuid import generate_new_uuid
 
 
@@ -200,9 +200,7 @@ class TestFindTagInPackedRefs:
     def test_lightweight_tag(self, tmp_path):
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
-        (git_dir / "packed-refs").write_text(
-            f"# pack-refs with: peeled\n{_FAKE_SHA} refs/tags/v1.0.0\n"
-        )
+        (git_dir / "packed-refs").write_text(f"# pack-refs with: peeled\n{_FAKE_SHA} refs/tags/v1.0.0\n")
         assert _find_tag_in_packed_refs(git_dir, _FAKE_SHA) == "v1.0.0"
 
     def test_annotated_tag(self, tmp_path):
@@ -217,9 +215,7 @@ class TestFindTagInPackedRefs:
     def test_returns_none_when_no_match(self, tmp_path):
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
-        (git_dir / "packed-refs").write_text(
-            f"# pack-refs with: peeled\n{_TAG_OBJ_SHA} refs/tags/v1.0.0\n"
-        )
+        (git_dir / "packed-refs").write_text(f"# pack-refs with: peeled\n{_TAG_OBJ_SHA} refs/tags/v1.0.0\n")
         assert _find_tag_in_packed_refs(git_dir, _FAKE_SHA) is None
 
     def test_returns_none_when_no_packed_refs(self, tmp_path):
@@ -230,9 +226,7 @@ class TestFindTagInPackedRefs:
     def test_ignores_non_tag_refs(self, tmp_path):
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
-        (git_dir / "packed-refs").write_text(
-            f"# pack-refs with: peeled\n{_FAKE_SHA} refs/heads/main\n"
-        )
+        (git_dir / "packed-refs").write_text(f"# pack-refs with: peeled\n{_FAKE_SHA} refs/heads/main\n")
         assert _find_tag_in_packed_refs(git_dir, _FAKE_SHA) is None
 
 
@@ -259,18 +253,14 @@ class TestGetGitTag:
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
         (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
-        (git_dir / "packed-refs").write_text(
-            f"# pack-refs with: peeled\n{_FAKE_SHA} refs/tags/v2.0.0\n"
-        )
+        (git_dir / "packed-refs").write_text(f"# pack-refs with: peeled\n{_FAKE_SHA} refs/tags/v2.0.0\n")
         assert get_git_tag(git_dir) == "v2.0.0"
 
     def test_returns_none_when_untagged(self, tmp_path):
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
         (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
-        (git_dir / "packed-refs").write_text(
-            f"# pack-refs with: peeled\n{_TAG_OBJ_SHA} refs/tags/v1.0.0\n"
-        )
+        (git_dir / "packed-refs").write_text(f"# pack-refs with: peeled\n{_TAG_OBJ_SHA} refs/tags/v1.0.0\n")
         assert get_git_tag(git_dir) is None
 
     def test_returns_none_when_no_head(self, tmp_path):
@@ -323,13 +313,11 @@ class TestGetGitRepoUrl:
         """URLs with % must not raise InterpolationSyntaxError."""
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
-        (git_dir / "config").write_text(
-            '[remote "origin"]\n\turl = https://host/repo%2Fname.git\n'
-        )
+        (git_dir / "config").write_text('[remote "origin"]\n\turl = https://host/repo%2Fname.git\n')
         assert get_git_repo_url(git_dir=git_dir) == "https://host/repo%2Fname.git"
 
     def test_returns_none_when_no_git_dir(self):
-        with patch("openlineage.client.utils._find_git_dir", return_value=None):
+        with patch("openlineage.client.git._find_git_dir", return_value=None):
             assert get_git_repo_url() is None
 
     def test_returns_none_when_no_origin(self, tmp_path):
