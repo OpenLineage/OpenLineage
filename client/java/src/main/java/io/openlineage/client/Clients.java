@@ -71,7 +71,7 @@ public final class Clients {
     Optional.ofNullable(openLineageConfig.getMetricsConfig())
         .map(MicrometerProvider::addMeterRegistryFromConfig)
         .ifPresent(f -> builder.meterRegistry((MeterRegistry) f)); // Java 8 requires cast here :(
-    return builder.transport(transport).build();
+    return builder.transport(transport).config(openLineageConfig).build();
   }
 
   private static boolean isDisabled() {
