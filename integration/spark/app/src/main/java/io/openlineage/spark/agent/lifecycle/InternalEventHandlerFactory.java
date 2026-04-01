@@ -198,8 +198,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new SparkPropertyFacetBuilder(context),
                 new SparkProcessingEngineRunFacetBuilder(context),
                 new SparkApplicationDetailsFacetBuilder(context),
-                new SparkJobDetailsFacetBuilder(),
-                new TagsRunFacetBuilder(context));
+                new SparkJobDetailsFacetBuilder());
     if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
       listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
     } else if (context.getCustomEnvironmentVariables() != null) {
@@ -211,16 +210,10 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   @Override
   public List<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(
       OpenLineageContext context) {
-    Builder<CustomFacetBuilder<?, ? extends JobFacet>> listBuilder;
-    listBuilder =
-        ImmutableList.<CustomFacetBuilder<?, ? extends JobFacet>>builder()
-            .addAll(
-                generate(
-                    eventHandlerFactories, factory -> factory.createJobFacetBuilders(context)));
-
-    listBuilder.add(new OwnershipJobFacetBuilder(context));
-    listBuilder.add(new TagsJobFacetBuilder(context));
-    return listBuilder.build();
+    return ImmutableList.<CustomFacetBuilder<?, ? extends JobFacet>>builder()
+        .addAll(
+            generate(eventHandlerFactories, factory -> factory.createJobFacetBuilders(context)))
+        .build();
   }
 
   @Override
