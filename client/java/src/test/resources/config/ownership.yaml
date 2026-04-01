@@ -1,0 +1,9 @@
+transport:
+  type: console
+job:
+  ownership:
+    team: MyTeam
+    person: John Smith
+  tags: [ env:production ]
+run:
+  tags: [ pipeline:etl ]

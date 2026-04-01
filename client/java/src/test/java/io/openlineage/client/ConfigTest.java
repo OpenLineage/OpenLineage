@@ -385,6 +385,27 @@ class ConfigTest {
   }
 
   @Test
+  void testJobConfigOwnershipKeyPrecedence() {
+    OpenLineageConfig config = new OpenLineageConfig();
+    io.openlineage.client.job.JobConfig jobConfig = new io.openlineage.client.job.JobConfig();
+
+    io.openlineage.client.job.JobConfig.JobOwnersConfig legacy =
+        new io.openlineage.client.job.JobConfig.JobOwnersConfig();
+    legacy.getAdditionalProperties().put("team", "LegacyTeam");
+    jobConfig.setOwners(legacy);
+
+    io.openlineage.client.job.JobConfig.JobOwnersConfig newOwnership =
+        new io.openlineage.client.job.JobConfig.JobOwnersConfig();
+    newOwnership.getAdditionalProperties().put("team", "NewTeam");
+    jobConfig.setOwnership(newOwnership);
+
+    config.setJobConfig(jobConfig);
+
+    assertThat(config.getJobConfig().getEffectiveOwners().getAdditionalProperties())
+        .containsEntry("team", "NewTeam");
+  }
+
+  @Test
   void testExtractTagsEdgeCases() {
     final OpenLineageConfig config =
         OpenLineageClientUtils.loadOpenLineageConfigYaml(
