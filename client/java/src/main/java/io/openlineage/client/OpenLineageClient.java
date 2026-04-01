@@ -230,6 +230,11 @@ public final class OpenLineageClient implements AutoCloseable {
       if (existing.getTags() != null) facetsBuilder.tags(existing.getTags());
       if (existing.getSourceCodeLocation() != null)
         facetsBuilder.sourceCodeLocation(existing.getSourceCodeLocation());
+      if (existing.getSourceCode() != null) facetsBuilder.sourceCode(existing.getSourceCode());
+      if (existing.getGcp_lineage() != null)
+        facetsBuilder.gcp_lineage(existing.getGcp_lineage());
+      if (existing.getGcp_composer_job() != null)
+        facetsBuilder.gcp_composer_job(existing.getGcp_composer_job());
       // Copy additional (unknown) facets
       if (existing.getAdditionalProperties() != null) {
         existing.getAdditionalProperties().forEach(facetsBuilder::put);
@@ -282,6 +287,20 @@ public final class OpenLineageClient implements AutoCloseable {
       if (existing.getProcessing_engine() != null)
         facetsBuilder.processing_engine(existing.getProcessing_engine());
       if (existing.getTags() != null) facetsBuilder.tags(existing.getTags());
+      if (existing.getExternalQuery() != null)
+        facetsBuilder.externalQuery(existing.getExternalQuery());
+      if (existing.getGcp_dataproc() != null)
+        facetsBuilder.gcp_dataproc(existing.getGcp_dataproc());
+      if (existing.getExtractionError() != null)
+        facetsBuilder.extractionError(existing.getExtractionError());
+      if (existing.getEnvironmentVariables() != null)
+        facetsBuilder.environmentVariables(existing.getEnvironmentVariables());
+      if (existing.getGcp_composer_run() != null)
+        facetsBuilder.gcp_composer_run(existing.getGcp_composer_run());
+      if (existing.getExecutionParameters() != null)
+        facetsBuilder.executionParameters(existing.getExecutionParameters());
+      if (existing.getJobDependencies() != null)
+        facetsBuilder.jobDependencies(existing.getJobDependencies());
       // Copy additional (unknown) facets
       if (existing.getAdditionalProperties() != null) {
         existing.getAdditionalProperties().forEach(facetsBuilder::put);
