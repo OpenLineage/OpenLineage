@@ -1729,6 +1729,72 @@ To implement a custom transport, follow the instructions in [`transport.py`](htt
 
 The `type` property (required) must be a fully qualified class name that can be imported.
 
+## Attaching source code location
+
+### Configuration
+
+The `sourceCodeLocation` facet records the git coordinates (URL, SHA, branch, tag) of the code that produced a lineage event.
+It is **disabled by default** — you must explicitly enable it.
+
+All fields can be provided explicitly, or omitted to let the client auto-detect them by reading `.git` directory files directly.
+
+| Field | Type | Description |
+|---|---|---|
+| `disabled` | bool | Set to `false` to enable. Defaults to `true`. |
+| `repo_url` | string | Git remote URL (e.g. `https://github.com/org/repo`). Auto-detected from `.git/config` if omitted. |
+| `version` | string | Commit SHA. Auto-detected from `HEAD` if omitted. |
+| `branch` | string | Branch name. Auto-detected from `HEAD` if omitted. Returns `None` in detached HEAD state. |
+| `tag` | string | Tag name. Auto-detected from `refs/tags/` and `packed-refs` if omitted. |
+
+:::note
+- Only `RunEvent` events receive the facet — `JobEvent` and `DatasetEvent` are unaffected.
+- If an event already has a `sourceCodeLocation` facet (e.g. set by an integration), it is preserved as-is.
+- If auto-detection finds no git repository and no `repo_url` is configured, no facet is added.
+:::
+
+### Examples
+
+<Tabs groupId="source-code-location">
+<TabItem value="env-vars" label="Environment Variables">
+
+```sh
+OPENLINEAGE__FACETS__SOURCE_CODE_LOCATION__DISABLED=false
+OPENLINEAGE__FACETS__SOURCE_CODE_LOCATION__REPO_URL=https://github.com/org/repo
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML Config">
+
+```yaml
+facets:
+  source_code_location:
+    disabled: false
+    repo_url: https://github.com/org/repo
+    # version, branch, tag: omit to auto-detect from .git
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+
+config = {
+    "facets": {
+        "source_code_location": {
+            "disabled": False,
+            "repo_url": "https://github.com/org/repo",
+        }
+    },
+    "transport": {"type": "console"}
+}
+client = OpenLineageClient(config=config)
+```
+
+</TabItem>
+</Tabs>
+
+
 ## Attaching environment variables
 
 ### Configuration
