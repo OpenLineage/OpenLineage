@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 import os
+import re
 import uuid
 from datetime import datetime
 
@@ -153,6 +154,27 @@ def get_parent_run_metadata():
             root_parent_run_id=root_parent_run_id,
         )
     return parent_run_metadata
+
+
+def get_ci_pr_number() -> str | None:
+    """Detect the PR/MR number from CI platform environment variables.
+
+    Supports GitHub Actions (GITHUB_REF) and GitLab CI (CI_MERGE_REQUEST_IID).
+    Returns None if not running in a CI context or no PR is associated.
+    """
+    # GitLab CI: set automatically for merge request pipelines
+    gitlab_mr_iid = os.getenv("CI_MERGE_REQUEST_IID")
+    if gitlab_mr_iid:
+        return gitlab_mr_iid
+
+    # GitHub Actions: GITHUB_REF is "refs/pull/{number}/merge" for pull_request events
+    github_ref = os.getenv("GITHUB_REF")
+    if github_ref:
+        match = re.match(r"refs/pull/(\d+)/merge", github_ref)
+        if match:
+            return match.group(1)
+
+    return None
 
 
 def get_node_unique_id(event):

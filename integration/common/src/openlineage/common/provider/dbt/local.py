@@ -10,6 +10,7 @@ from typing import Any, TypeVar
 import yaml
 from jinja2 import Environment, Undefined
 from openlineage.common.provider.dbt.processor import DbtArtifactProcessor, DbtRunRunFacet
+from openlineage.common.provider.dbt.utils import get_ci_pr_number
 from openlineage.common.utils import get_from_nullable_chain, parse_single_arg
 
 DBT_TARGET_PATH_ENVVAR = "DBT_TARGET_PATH"
@@ -304,5 +305,6 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
                 project_version=self.project_version,
                 profile_name=self.profile_name,
                 dbt_runtime="core",
+                pr_number=get_ci_pr_number(),
             )
         }
