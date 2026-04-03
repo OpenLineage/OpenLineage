@@ -58,13 +58,13 @@ Important embedding rule:
 
 Capabilities declare supported facets for a given consumer/resource:
 
-- `FullJobCapability()`
-- `FullDatasetCapability()` (with `FacetDatasetColumnLineage` disabled by default)
-- `WithFacetDisabled(...)`
+- `EmptyJobCapability()`
+- `EmptyDatasetCapability()`
+- `WithFacetEnabled(...)`
 
 Facet constants are defined in `capability.go` and cover both job and dataset facets.
 
-Disabled facets are represented as compatibility stubs in generated schema:
+Facets that are not explicitly enabled are represented as compatibility stubs in generated schema:
 
 - block remains present,
 - leaf attributes become `Optional + Computed`,
@@ -79,7 +79,7 @@ This behavior is what keeps config portable across consumers with different face
 
 Current behavior:
 
-- identity attributes are always present (`id`, `namespace`, `name`, plus `description` for job),
+- identity attributes are always present (`namespace`, `name`, plus `description` for job),
 - job facet blocks are included as active blocks or stubs depending on capability,
 - `inputs` and `outputs` are always present and use capability-aware dataset facet blocks,
 - standalone dataset schema is also capability-driven.
@@ -88,14 +88,22 @@ Consumer-specific schema parts are merged after generation by base resources.
 
 ## Event Builder
 
-`BuildRunEvent(data *JobResourceModel, runID uuid.UUID) *openlineage.RunEvent` maps Terraform model to OpenLineage `RunEvent`.
+`BuildJobEvent(data *JobResourceModel) *openlineage.JobEvent`,
+`BuildRunEvent(data *JobResourceModel) *openlineage.RunEvent`, and
+`BuildDatasetEvent(data *DatasetResourceModel) *openlineage.DatasetEvent`
+map Terraform models to OpenLineage events.
 
 Current behavior:
 
+- `BuildJobEvent` builds the shared job payload,
+- `BuildRunEvent` is a compatibility wrapper for consumers that do not support static events yet,
+- `BuildRunEvent` wraps `BuildJobEvent`, sets `eventType = COMPLETE`, and generates `run.runId` internally,
+- `BuildRunEvent` does **not** populate run facets,
+- `BuildDatasetEvent` builds a standalone dataset event from `DatasetResourceModel`,
 - event type is `COMPLETE`,
 - job identity is built from `namespace` and `name`,
 - `inputs` and `outputs` are mapped to OL dataset elements with supported facets,
-- `ProviderOriginName` is exported from `event_builder.go` for origin checks by consumers.
+- dataset events and dataset elements reuse the same dataset-facet mapping helpers.
 
 ## Package Files
 
@@ -125,7 +133,7 @@ fields into the parent namespace automatically. A tag causes `invalid tfsdk tag`
 ```go
 // ✓ correct
 type MyJobModel struct {
-    ol.JobResourceModel  // no tag — fields promoted: id, run_id, namespace, name, …
+    ol.JobResourceModel  // no tag — fields promoted: namespace, name, description, inputs, outputs, …
     MyState              // no tag — consumer-specific computed fields
 }
 
@@ -156,16 +164,17 @@ func NewMyJobResource() resource.Resource {
 
 ### Step 3 — Declare `Capability`
 
-Start from `FullJobCapability()` and disable what the target system does not support.
-Disabled facets remain in the schema as `Optional + Computed` stubs — config copied
-from another consumer is accepted without error, values are ignored.
+Start from `EmptyJobCapability()` and enable only what the target system supports.
+Facets that are not enabled remain in the schema as `Optional + Computed` stubs —
+config copied from another consumer is accepted without error, values are ignored.
 
 ```go
 func (r *MyJobResource) Capability() ol.JobCapability {
-    return ol.FullJobCapability().WithFacetDisabled(
-        ol.FacetJobSQL,
-        ol.FacetDatasetStorage,
-        ol.FacetDatasetSchema,
+    return ol.EmptyJobCapability().WithFacetEnabled(
+        ol.FacetJobType,
+        ol.FacetJobOwnership,
+        ol.FacetDatasetSymlinks,
+        ol.FacetDatasetCatalog,
     )
 }
 ```
@@ -173,7 +182,7 @@ func (r *MyJobResource) Capability() ol.JobCapability {
 ### Step 4 — Add consumer schema attributes
 
 Return only attributes that are unique to the consumer (e.g. system-assigned IDs).
-Do **not** redeclare `id`, `run_id`, `namespace`, `name`, `inputs`, `outputs` — those
+Do **not** redeclare `namespace`, `name`, `description`, `inputs`, `outputs` — those
 are already present in the generated schema.
 
 ```go
@@ -201,10 +210,8 @@ func (r *MyJobResource) ConsumerEmit(ctx context.Context, modelAny any, runID uu
     var diags diag.Diagnostics
     model := modelAny.(*MyJobModel)
 
-    model.ID = types.StringValue(model.Namespace.ValueString() + "." + model.Name.ValueString())
-    model.RunID = types.StringValue(runID.String())
-
-    event := ol.BuildRunEvent(&model.JobResourceModel, runID)
+    event := ol.BuildRunEvent(&model.JobResourceModel)
+    emittedRunID := event.Run.RunID
 
     result, err := r.client.Emit(ctx, event)
     if err != nil {
@@ -213,6 +220,7 @@ func (r *MyJobResource) ConsumerEmit(ctx context.Context, modelAny any, runID uu
     }
 
     model.ResourceID = types.StringValue(result.ID)
+    model.EmittedRunID = types.StringValue(emittedRunID)
     return diags
 }
 ```
@@ -264,6 +272,6 @@ func (r *MyJobResource) NewModel() any {
 |---|---|---|
 | `invalid tfsdk tag` | embedded struct has a `tfsdk` tag | remove the tag |
 | `nil pointer dereference` in emit | `r.Backend = r` missing | add self-reference in constructor |
-| Schema missing fields from embedded model | consumer redeclares generic keys | remove `id`, `run_id`, `namespace`, `name`, `inputs`, `outputs` from `ConsumerAttributes()` |
+| Schema missing fields from embedded model | consumer redeclares generic keys | remove `namespace`, `name`, `description`, `inputs`, `outputs` from `ConsumerAttributes()` |
 | Drift not detected | `ConsumerRead` returns `error` instead of `false` for missing resource | return `false, nil` when not found |
-| State not updated after apply | `ConsumerEmit` does not set `model.ID` and `model.RunID` | always set both in `ConsumerEmit` |
+| Build fails after package update | consumer still calls `BuildRunEvent(..., runID)` | call `BuildRunEvent(&model.JobResourceModel)` and read `event.Run.RunID` from the returned event if needed |

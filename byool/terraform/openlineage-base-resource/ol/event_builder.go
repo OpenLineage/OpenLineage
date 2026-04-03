@@ -11,53 +11,60 @@ import (
 	"github.com/google/uuid"
 )
 
-// producer is the URI that identifies this dataplex as the source of OL events.
+// producer is the URI that identifies this provider as the source of OL events.
 // In OpenLineage, every event carries a "producer" field so consumers know
 // which system generated the lineage data.
-const producer = "https://github.com/tomasznazarewicz/openlineage-terraform-provider"
+const producer = "https://github.com/OpenLineage/openlineage/byool/terraform"
 
-// ProviderOriginName is placed in the GcpLineage facet's Origin.Name field.
-// Exported so consumer packages can verify origin on Read.
-const ProviderOriginName = "openlineage-byol-dataplex-v1.46.0-prerelease"
+// BuildRunEvent wraps a JobEvent with run-specific fields (event type + generated run ID).
+func BuildRunEvent(data *JobResourceModel) *openlineage.RunEvent {
+	jobEvent := BuildJobEvent(data)
+	runID := uuid.New()
 
-// BuildRunEvent is the top-level function that assembles a complete OpenLineage RunEvent
-// from the Terraform resource model. The result is passed to emitAndCapture().
-//
-// An OpenLineage RunEvent has:
-//   - EventType: always COMPLETE here (we declare the job finished successfully)
-//   - Run: identified by a UUID we generate fresh on every apply
-//   - Job: identified by name + namespace from the Terraform config
-//   - Inputs/Outputs: datasets the job reads from / writes to, each with optional facets
-func BuildRunEvent(data *JobResourceModel, runID uuid.UUID) *openlineage.RunEvent {
-	// NewNamespacedRunEvent creates the base event with the job identity baked in.
-	// The runID UUID is unique per apply — each terraform apply creates a new Run
-	// in Dataplex even if the job config hasn't changed.
-	event := openlineage.NewNamespacedRunEvent(
-		openlineage.EventTypeComplete, // always COMPLETE — we declare success
-		runID,                         // fresh UUID generated in Create/Update
-		data.Name.ValueString(),       // promoted from embedded OLJobConfig
-		data.Namespace.ValueString(),  // promoted from embedded OLJobConfig
-		producer,                      // who created this event
+	return &openlineage.RunEvent{
+		BaseEvent: openlineage.BaseEvent{
+			Producer:  producer,
+			SchemaURL: openlineage.RunEventSchemaURL,
+			EventTime: jobEvent.EventTime,
+		},
+		Run: openlineage.RunInfo{
+			RunID: runID.String(),
+		},
+		Job:       jobEvent.Job,
+		EventType: openlineage.EventTypeComplete,
+		Inputs:    jobEvent.Inputs,
+		Outputs:   jobEvent.Outputs,
+	}
+}
+
+// BuildJobEvent assembles an OpenLineage JobEvent from the Terraform job model.
+func BuildJobEvent(data *JobResourceModel) *openlineage.JobEvent {
+	event := openlineage.NewJobEvent(
+		data.Name.ValueString(),
+		data.Namespace.ValueString(),
+		producer,
 	)
 
-	// Each `inputs {}` block in the Terraform config becomes one InputElement.
-	// The OL spec uses inputs to describe datasets the job READ from.
 	for _, input := range data.Inputs {
-		ie := buildInputElement(&input)
-		event = event.WithInputs(ie)
+		event = event.WithInputs(buildInputElement(&input))
 	}
 
-	// Each `outputs {}` block becomes one OutputElement.
-	// The OL spec uses outputs to describe datasets the job WROTE to.
 	for _, output := range data.Outputs {
-		oe := buildOutputElement(&output)
-		event = event.WithOutputs(oe)
+		event = event.WithOutputs(buildOutputElement(&output))
 	}
 
-	event = event.WithJobFacets(facets.NewGcpLineageJobFacet(producer).WithOrigin(&facets.Origin{
-		Name:       openlineage.Ptr(ProviderOriginName),
-		SourceType: openlineage.Ptr("CUSTOM"),
-	}))
+	return event
+}
+
+// BuildDatasetEvent assembles an OpenLineage DatasetEvent from the standalone dataset model.
+func BuildDatasetEvent(data *DatasetResourceModel) *openlineage.DatasetEvent {
+	facetsList := buildDatasetFacets(&data.DatasetModel)
+	event := openlineage.NewDatasetEvent(
+		data.Name.ValueString(),
+		data.Namespace.ValueString(),
+		producer,
+		facetsList...,
+	)
 
 	return event
 }
@@ -73,18 +80,7 @@ func buildInputElement(input *OLInputModel) openlineage.InputElement {
 		input.Namespace.ValueString(), // promoted from embedded DatasetModel
 	)
 
-	// Symlinks facet: lets consumers find this dataset under alternate names.
-	// Only attached if the user declared at least one `symlinks {}` block.
-	if len(input.Symlinks) > 0 {
-		ie = ie.WithFacets(buildSymlinksFacet(input.Symlinks))
-	}
-
-	// Catalog facet: metastore/catalog metadata (Hive, Iceberg, etc.).
-	// Only attached if the user declared a `catalog {}` block.
-	// We use index [0] because only one catalog facet makes sense per dataset.
-	if input.Catalog != nil {
-		ie = ie.WithFacets(buildCatalogFacet(input.Catalog))
-	}
+	ie = ie.WithFacets(buildDatasetFacets(&input.DatasetModel)...)
 
 	return ie
 }
@@ -99,13 +95,7 @@ func buildOutputElement(output *OLOutputModel) openlineage.OutputElement {
 		output.Namespace.ValueString(), // promoted from embedded DatasetModel
 	)
 
-	if len(output.Symlinks) > 0 {
-		oe = oe.WithFacets(buildSymlinksFacet(output.Symlinks))
-	}
-
-	if output.Catalog != nil {
-		oe = oe.WithFacets(buildCatalogFacet(output.Catalog))
-	}
+	oe = oe.WithFacets(buildDatasetFacets(&output.DatasetModel)...)
 
 	// Column lineage is only meaningful on outputs — it maps output columns
 	// back to the input columns that produced them.
@@ -114,6 +104,20 @@ func buildOutputElement(output *OLOutputModel) openlineage.OutputElement {
 	}
 
 	return oe
+}
+
+func buildDatasetFacets(dataset *DatasetModel) []facets.DatasetFacet {
+	var facetsList []facets.DatasetFacet
+
+	if len(dataset.Symlinks) > 0 {
+		facetsList = append(facetsList, buildSymlinksFacet(dataset.Symlinks))
+	}
+
+	if dataset.Catalog != nil {
+		facetsList = append(facetsList, buildCatalogFacet(dataset.Catalog))
+	}
+
+	return facetsList
 }
 
 // buildSymlinksFacet creates a SymlinksDatasetFacet from a list of SymlinkModels.

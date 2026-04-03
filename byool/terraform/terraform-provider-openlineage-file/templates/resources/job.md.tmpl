@@ -1,0 +1,24 @@
+---
+page_title: "openlineage_job Resource - OpenLineage JSON File"
+description: |-
+  Records an OpenLineage job and its lineage (inputs, outputs, facets)
+  as a JSON file on disk.
+---
+
+# openlineage_job
+
+Records an OpenLineage job and its full lineage metadata as a JSON file.
+One file is written per job at `{output_dir}/{namespace}__{name}.json`.
+The file contains the raw OpenLineage RunEvent alongside metadata for auditing.
+
+Because this provider uses `FullJobCapability()`, **all** OpenLineage facets
+are available and fully functional — schema, documentation, source code,
+SQL, tags, column lineage, and more. Use the full example below as a
+reference for the complete facet vocabulary.
+
+## Example Usage
+
+{{ tffile "examples/resources/openlineage_job/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
