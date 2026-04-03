@@ -5,15 +5,10 @@
 
 package ol
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
-
 // JobResourceModel is the top-level state struct for the openlineage_job resource.
 // OLJobConfig is embedded (no tfsdk tag) so the framework promotes its fields
 // directly into this struct's attribute/block namespace.
 type JobResourceModel struct {
-	ID    types.String `tfsdk:"id"`
-	RunID types.String `tfsdk:"run_id"`
-
 	OLJobConfig                 // embedded — fields promoted: namespace, name, description, job_type, …
 	Inputs      []OLInputModel  `tfsdk:"inputs"`
 	Outputs     []OLOutputModel `tfsdk:"outputs"`
@@ -35,6 +30,5 @@ type OLOutputModel struct {
 
 // DatasetResourceModel is the top-level state struct for a standalone dataset resource.
 type DatasetResourceModel struct {
-	ID           types.String `tfsdk:"id"`
-	DatasetModel              // embedded
+	DatasetModel // embedded
 }

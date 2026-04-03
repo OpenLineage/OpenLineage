@@ -77,13 +77,6 @@ func GenerateDatasetSchema(cap DatasetCapability) schema.Schema {
 
 func jobIdentityAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Computed:    true,
-			Description: "Internal identifier (namespace.name)",
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.UseStateForUnknown(),
-			},
-		},
 		"namespace": schema.StringAttribute{
 			Required:    true,
 			Description: "Job namespace",
@@ -108,16 +101,9 @@ func jobIdentityAttributes() map[string]schema.Attribute {
 // ── Dataset identity attributes (always present on dataset resources) ─────────
 
 // datasetIdentityAttributes returns the fixed attributes every dataset resource
-// has: id, namespace, name. These are separate from the optional facet blocks.
+// has: namespace, name. These are separate from the optional facet blocks.
 func datasetIdentityAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Computed:    true,
-			Description: "Internal identifier (namespace.name)",
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.UseStateForUnknown(),
-			},
-		},
 		"namespace": schema.StringAttribute{
 			Required:    true,
 			Description: "Dataset namespace",
