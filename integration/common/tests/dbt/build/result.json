@@ -54,7 +54,8 @@
             {
               "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_median_to_be_between_test_first_dbt_model_id__21__1.dd83ff215d",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -78,7 +79,8 @@
             {
               "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_quantile_values_to_be_between_test_first_dbt_model_id__2__0__0_95.af5e727e43",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -102,7 +104,8 @@
             {
               "name": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.f2b0bdd46c",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -289,7 +292,8 @@
             {
               "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_median_to_be_between_test_first_dbt_model_id__21__1.dd83ff215d",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -313,7 +317,8 @@
             {
               "name": "test.dbt_bigquery_test.dbt_expectations_expect_column_quantile_values_to_be_between_test_first_dbt_model_id__2__0__0_95.af5e727e43",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -337,7 +342,8 @@
             {
               "name": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.f2b0bdd46c",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }

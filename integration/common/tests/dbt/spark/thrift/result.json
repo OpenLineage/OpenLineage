@@ -959,7 +959,8 @@
             {
               "name": "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -983,7 +984,8 @@
             {
               "name": "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1007,7 +1009,8 @@
             {
               "name": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1031,7 +1034,8 @@
             {
               "name": "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1055,7 +1059,8 @@
             {
               "name": "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1079,7 +1084,8 @@
             {
               "name": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1103,7 +1109,8 @@
             {
               "name": "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1127,7 +1134,8 @@
             {
               "name": "test.jaffle_shop.unique_stg_payments_payment_id.3744510712",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1151,7 +1159,8 @@
             {
               "name": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1175,7 +1184,8 @@
             {
               "name": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1199,7 +1209,8 @@
             {
               "name": "test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.be6b5b5ec3",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1223,7 +1234,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_amount.106140f9fd",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1247,7 +1259,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_bank_transfer_amount.7743500c49",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1271,7 +1284,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_coupon_amount.ab90c90625",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1295,7 +1309,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_credit_card_amount.d3ca593b59",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1319,7 +1334,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_customer_id.c5f02694af",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1343,7 +1359,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_gift_card_amount.413a0d2d7a",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1367,7 +1384,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_order_id.cf6c17daed",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1391,7 +1409,8 @@
             {
               "name": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -1415,7 +1434,8 @@
             {
               "name": "test.jaffle_shop.unique_orders_order_id.fed79b3a6e",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2382,7 +2402,8 @@
             {
               "name": "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2406,7 +2427,8 @@
             {
               "name": "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2430,7 +2452,8 @@
             {
               "name": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2454,7 +2477,8 @@
             {
               "name": "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2478,7 +2502,8 @@
             {
               "name": "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2502,7 +2527,8 @@
             {
               "name": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2526,7 +2552,8 @@
             {
               "name": "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2550,7 +2577,8 @@
             {
               "name": "test.jaffle_shop.unique_stg_payments_payment_id.3744510712",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2574,7 +2602,8 @@
             {
               "name": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2598,7 +2627,8 @@
             {
               "name": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2622,7 +2652,8 @@
             {
               "name": "test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.be6b5b5ec3",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2646,7 +2677,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_amount.106140f9fd",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2670,7 +2702,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_bank_transfer_amount.7743500c49",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2694,7 +2727,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_coupon_amount.ab90c90625",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2718,7 +2752,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_credit_card_amount.d3ca593b59",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2742,7 +2777,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_customer_id.c5f02694af",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2766,7 +2802,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_gift_card_amount.413a0d2d7a",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2790,7 +2827,8 @@
             {
               "name": "test.jaffle_shop.not_null_orders_order_id.cf6c17daed",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2814,7 +2852,8 @@
             {
               "name": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
@@ -2838,7 +2877,8 @@
             {
               "name": "test.jaffle_shop.unique_orders_order_id.fed79b3a6e",
               "status": "pass",
-              "severity": "error"
+              "severity": "error",
+              "params": {}
             }
           ]
         }
