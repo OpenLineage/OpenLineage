@@ -292,13 +292,11 @@
       redact_fields: [ ]
     - class_name: Subset
       redact_fields: [ ]
-- module: test_result_run
+- module: test_run
   classes:
-    - class_name: Severity
+    - class_name: Test
       redact_fields: []
-    - class_name: Status
-      redact_fields: []
-    - class_name: TestResultRunFacet
+    - class_name: TestRunFacet
       redact_fields: []
 - module: hierarchy_dataset
   classes:

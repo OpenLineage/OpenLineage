@@ -38,7 +38,7 @@ from openlineage.client.generated import (
     tags_dataset,
     tags_job,
     tags_run,
-    test_result_run,
+    test_run,
 )
 from openlineage.client.generated.base import (
     PRODUCER,
@@ -96,5 +96,5 @@ __all__ = [
     "tags_dataset",
     "tags_job",
     "tags_run",
-    "test_result_run",
+    "test_run",
 ]

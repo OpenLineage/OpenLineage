@@ -23,7 +23,7 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
     sql_job,
     tags_run,
-    test_result_run,
+    test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -472,15 +472,12 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if resource_type == "test":
             success = node_status == "pass"
 
-            # Emit TestResultRunFacet for all test nodes
-            config = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {}).get("config", {})
+            # Emit TestRunFacet for all test nodes
+            test_node = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
+            config = test_node.get("config", {})
             severity = config.get("severity", "error")
             if severity:
                 severity = severity.lower()
-            run_facets["testResult"] = test_result_run.TestResultRunFacet(
-                status=test_result_run.Status.pass_ if success else test_result_run.Status.fail,
-                severity=test_result_run.Severity(severity),
-            )
 
             if assertion := self._get_assertion(node_unique_id, success):
                 assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
@@ -493,6 +490,30 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                             facets={**attached_dataset.facets, "dataQualityAssertions": assertion_facet},  # type: ignore[dict-item]
                         )
                     )
+
+            # Build Test object — enrich with details for singular tests
+            # and generic tests without resolved datasets
+            test_metadata = test_node.get("test_metadata")
+            has_resolved_datasets = len(inputs) > 0
+
+            test_obj = test_run.Test(
+                name=node_unique_id,
+                status="pass" if success else "fail",
+                severity=severity,
+            )
+
+            if not has_resolved_datasets:
+                test_obj.type = test_metadata["name"] if test_metadata else "singular"
+                test_obj.content = test_node.get("compiled_code") or test_node.get("raw_code")
+                test_obj.contentType = "sql"
+                if test_metadata:
+                    params = {k: v for k, v in test_metadata.get("kwargs", {}).items() if k != "model"}
+                    if params:
+                        test_obj.params = params
+                if desc := test_node.get("description"):
+                    test_obj.description = desc
+
+            run_facets["test"] = test_run.TestRunFacet(tests=[test_obj])
 
         if extraction_error := self._get_extraction_error_facet(node_unique_id):
             run_facets["extractionError"] = extraction_error

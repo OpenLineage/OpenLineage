@@ -1711,8 +1711,8 @@ class TestGetAssertionSingularTests:
         assert datasets[0].name == "mydb.myschema.my_model"
 
 
-class TestTestResultRunFacet:
-    """Tests for TestResultRunFacet emission on test node finished events."""
+class TestTestRunFacet:
+    """Tests for TestRunFacet emission on test node finished events."""
 
     @pytest.fixture
     def processor(self):
@@ -1780,8 +1780,8 @@ class TestTestResultRunFacet:
         event = self._make_node_finished_event(node_id, "pass")
         result = ol_event_to_dict(processor.parse_node_finished_event(event))
 
-        assert "testResult" in result["run"]["facets"]
-        tr = result["run"]["facets"]["testResult"]
+        assert "test" in result["run"]["facets"]
+        tr = result["run"]["facets"]["test"]["tests"][0]
         assert tr["status"] == "pass"
         assert tr["severity"] == "error"
 
@@ -1807,8 +1807,8 @@ class TestTestResultRunFacet:
         result = ol_event_to_dict(processor.parse_node_finished_event(event))
 
         assert result["eventType"] == "COMPLETE"
-        assert "testResult" in result["run"]["facets"]
-        tr = result["run"]["facets"]["testResult"]
+        assert "test" in result["run"]["facets"]
+        tr = result["run"]["facets"]["test"]["tests"][0]
         assert tr["status"] == "fail"
         assert tr["severity"] == "warn"
 
@@ -1834,8 +1834,8 @@ class TestTestResultRunFacet:
         result = ol_event_to_dict(processor.parse_node_finished_event(event))
 
         assert result["eventType"] == "FAIL"
-        assert "testResult" in result["run"]["facets"]
-        tr = result["run"]["facets"]["testResult"]
+        assert "test" in result["run"]["facets"]
+        tr = result["run"]["facets"]["test"]["tests"][0]
         assert tr["status"] == "fail"
         assert tr["severity"] == "error"
 
@@ -1860,13 +1860,13 @@ class TestTestResultRunFacet:
         event = self._make_node_finished_event(node_id, "pass")
         result = ol_event_to_dict(processor.parse_node_finished_event(event))
 
-        assert "testResult" in result["run"]["facets"]
-        tr = result["run"]["facets"]["testResult"]
+        assert "test" in result["run"]["facets"]
+        tr = result["run"]["facets"]["test"]["tests"][0]
         assert tr["status"] == "pass"
         assert tr["severity"] == "error"
 
     def test_non_test_resource_type_has_no_test_result(self, processor):
-        """Non-test resource types (models, seeds) should not emit TestResultRunFacet."""
+        """Non-test resource types (models, seeds) should not emit TestRunFacet."""
         node_id = "model.project.my_model"
         processor._compiled_manifest = {
             "nodes": {
@@ -1893,4 +1893,4 @@ class TestTestResultRunFacet:
         event = self._make_node_finished_event(node_id, "success", resource_type="model")
         result = ol_event_to_dict(processor.parse_node_finished_event(event))
 
-        assert "testResult" not in result["run"]["facets"]
+        assert "test" not in result["run"]["facets"]

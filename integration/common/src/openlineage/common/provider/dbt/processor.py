@@ -30,7 +30,7 @@ from openlineage.client.facet_v2 import (
     schema_dataset,
     sql_job,
     tags_run,
-    test_result_run,
+    test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -438,7 +438,7 @@ class DbtArtifactProcessor:
                 )
             )
 
-        # Emit per-test events with TestResultRunFacet
+        # Emit per-test events with TestRunFacet
         for run in context.run_results["results"]:
             if not run["unique_id"].startswith("test."):
                 continue
@@ -454,11 +454,44 @@ class DbtArtifactProcessor:
 
             status = "success" if success or run["status"] == "warn" else "error"
 
+            # Resolve input datasets from parent_map
+            inputs: list[InputDataset] = []
+            for parent_id in context.manifest.get("parent_map", {}).get(run["unique_id"], []):
+                if any(parent_id.startswith(p) for p in ["model.", "source.", "seed."]):
+                    parent_node = manifest_nodes.get(parent_id)
+                    if parent_node:
+                        ptype = "model" if parent_id.startswith("model.") else "source"
+                        ns, nm, _, _ = self.extract_dataset_data(
+                            ModelNode(type=ptype, metadata_node=parent_node), None, has_facets=False
+                        )
+                        inputs.append(InputDataset(namespace=ns, name=nm))
+
+            # Build Test object — enrich with details for singular tests
+            # and generic tests without resolved datasets
+            test_metadata = test_node.get("test_metadata")
+            has_resolved_datasets = len(inputs) > 0
+
+            test_obj = test_run.Test(
+                name=run["unique_id"],
+                status="pass" if success else "fail",
+                severity=severity,
+            )
+
+            if not has_resolved_datasets:
+                test_obj.type = test_metadata["name"] if test_metadata else "singular"
+                test_obj.content = (
+                    run.get("compiled_code") or test_node.get("compiled_code") or test_node.get("raw_code")
+                )
+                test_obj.contentType = "sql"
+                if test_metadata:
+                    params = {k: v for k, v in test_metadata.get("kwargs", {}).items() if k != "model"}
+                    if params:
+                        test_obj.params = params
+                if desc := test_node.get("description"):
+                    test_obj.description = desc
+
             run_facets_per_test: dict[str, RunFacet] = {
-                "testResult": test_result_run.TestResultRunFacet(
-                    status=test_result_run.Status.pass_ if success else test_result_run.Status.fail,
-                    severity=test_result_run.Severity(severity),
-                ),
+                "test": test_run.TestRunFacet(tests=[test_obj]),
             }
             if tags := test_node.get("tags", None):
                 run_facets_per_test["tags"] = tags_run.TagsRunFacet(
@@ -480,18 +513,6 @@ class DbtArtifactProcessor:
                     unique_id=test_node.get("unique_id"),
                 ),
             }
-
-            # Resolve input datasets from parent_map
-            inputs: list[InputDataset] = []
-            for parent_id in context.manifest.get("parent_map", {}).get(run["unique_id"], []):
-                if any(parent_id.startswith(p) for p in ["model.", "source.", "seed."]):
-                    parent_node = manifest_nodes.get(parent_id)
-                    if parent_node:
-                        ptype = "model" if parent_id.startswith("model.") else "source"
-                        ns, nm, _, _ = self.extract_dataset_data(
-                            ModelNode(type=ptype, metadata_node=parent_node), None, has_facets=False
-                        )
-                        inputs.append(InputDataset(namespace=ns, name=nm))
 
             events.add(
                 self.to_openlineage_events(

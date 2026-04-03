@@ -604,11 +604,16 @@
     "run": {
       "runId": "aaaa0000-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "fail",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_customers_customer_id.d48e126d80",
+              "status": "fail",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -623,11 +628,16 @@
     "run": {
       "runId": "aaaa0001-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "fail",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_customers_customer_id.923d2d910a",
+              "status": "fail",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -642,11 +652,16 @@
     "run": {
       "runId": "aaaa0002-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_orders_order_id.0d77ddcf59",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -661,11 +676,16 @@
     "run": {
       "runId": "aaaa0003-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_order_id.4daff5eed7",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -680,11 +700,16 @@
     "run": {
       "runId": "aaaa0004-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_customer_id.70722cc05f",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -699,11 +724,16 @@
     "run": {
       "runId": "aaaa0005-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -718,11 +748,16 @@
     "run": {
       "runId": "aaaa0006-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.2e6d271b93",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -737,11 +772,16 @@
     "run": {
       "runId": "aaaa0007-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_amount.f7bae8de1b",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -756,11 +796,16 @@
     "run": {
       "runId": "aaaa0008-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_credit_card_amount.f6f7978042",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -775,11 +820,16 @@
     "run": {
       "runId": "aaaa0009-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_coupon_amount.edd08a4b47",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -794,11 +844,16 @@
     "run": {
       "runId": "aaaa000a-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_bank_transfer_amount.402a8a1daa",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -813,11 +868,16 @@
     "run": {
       "runId": "aaaa000b-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_gift_card_amount.6205906a88",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -832,11 +892,16 @@
     "run": {
       "runId": "aaaa000c-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_stg_customers_customer_id.5530022331",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -851,11 +916,16 @@
     "run": {
       "runId": "aaaa000d-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_stg_customers_customer_id.4ab9034fe1",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -870,11 +940,16 @@
     "run": {
       "runId": "aaaa000e-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_stg_orders_order_id.99e62d7d48",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -889,11 +964,16 @@
     "run": {
       "runId": "aaaa000f-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_stg_orders_order_id.052f14ae90",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -908,11 +988,16 @@
     "run": {
       "runId": "aaaa0010-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.1b7358ad3f",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -927,11 +1012,16 @@
     "run": {
       "runId": "aaaa0011-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_stg_payments_payment_id.5f5522e7d6",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -946,11 +1036,16 @@
     "run": {
       "runId": "aaaa0012-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_stg_payments_payment_id.ece096e012",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -965,11 +1060,16 @@
     "run": {
       "runId": "aaaa0013-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.59d3da1081",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1579,11 +1679,16 @@
     "run": {
       "runId": "aaaa0002-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_orders_order_id.0d77ddcf59",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1598,11 +1703,16 @@
     "run": {
       "runId": "aaaa0003-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_order_id.4daff5eed7",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1617,11 +1727,16 @@
     "run": {
       "runId": "aaaa0004-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_customer_id.70722cc05f",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1636,11 +1751,16 @@
     "run": {
       "runId": "aaaa0005-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1655,11 +1775,16 @@
     "run": {
       "runId": "aaaa0006-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.2e6d271b93",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1674,11 +1799,16 @@
     "run": {
       "runId": "aaaa0007-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_amount.f7bae8de1b",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1693,11 +1823,16 @@
     "run": {
       "runId": "aaaa0008-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_credit_card_amount.f6f7978042",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1712,11 +1847,16 @@
     "run": {
       "runId": "aaaa0009-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_coupon_amount.edd08a4b47",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1731,11 +1871,16 @@
     "run": {
       "runId": "aaaa000a-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_bank_transfer_amount.402a8a1daa",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1750,11 +1895,16 @@
     "run": {
       "runId": "aaaa000b-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_orders_gift_card_amount.6205906a88",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1769,11 +1919,16 @@
     "run": {
       "runId": "aaaa000c-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_stg_customers_customer_id.5530022331",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1788,11 +1943,16 @@
     "run": {
       "runId": "aaaa000d-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_stg_customers_customer_id.4ab9034fe1",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1807,11 +1967,16 @@
     "run": {
       "runId": "aaaa000e-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_stg_orders_order_id.99e62d7d48",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1826,11 +1991,16 @@
     "run": {
       "runId": "aaaa000f-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_stg_orders_order_id.052f14ae90",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1845,11 +2015,16 @@
     "run": {
       "runId": "aaaa0010-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.1b7358ad3f",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1864,11 +2039,16 @@
     "run": {
       "runId": "aaaa0011-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_stg_payments_payment_id.5f5522e7d6",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1883,11 +2063,16 @@
     "run": {
       "runId": "aaaa0012-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_stg_payments_payment_id.ece096e012",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1902,11 +2087,16 @@
     "run": {
       "runId": "aaaa0013-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "pass",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.59d3da1081",
+              "status": "pass",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1921,11 +2111,16 @@
     "run": {
       "runId": "aaaa0000-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "fail",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.unique_customers_customer_id.d48e126d80",
+              "status": "fail",
+              "severity": "error"
+            }
+          ]
         }
       }
     }
@@ -1940,11 +2135,16 @@
     "run": {
       "runId": "aaaa0001-0000-0000-0000-000000000000",
       "facets": {
-        "testResult": {
+        "test": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestResultRunFacet.json#/$defs/TestResultRunFacet",
-          "status": "fail",
-          "severity": "error"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.jaffle_shop.not_null_customers_customer_id.923d2d910a",
+              "status": "fail",
+              "severity": "error"
+            }
+          ]
         }
       }
     }

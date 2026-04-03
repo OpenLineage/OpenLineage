@@ -97,7 +97,7 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata,
         "f99310b4-339a-4381-ad3e-c1b95c24ff11",
         "c11f2efd-4415-45fc-8081-10d2aaa594d2",
         "b901441a-7b4a-4a97-aa61-a200106b3ce3",
-        # Additional UUIDs for per-test TestResultRunFacet events
+        # Additional UUIDs for per-test TestRunFacet events
         "aaaa0000-0000-0000-0000-000000000000",
         "aaaa0001-0000-0000-0000-000000000000",
         "aaaa0002-0000-0000-0000-000000000000",
