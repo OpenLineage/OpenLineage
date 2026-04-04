@@ -18,6 +18,15 @@
       },
       "flink_job": {
         "jobId": "${json-unit.any-string}"
+      },
+      "tags": {
+        "tags": [
+          {
+            "key": "openlineage_client_version",
+            "value": "${json-unit.any-string}",
+            "source": "OPENLINEAGE_CLIENT"
+          }
+        ]
       }
     }
   }
