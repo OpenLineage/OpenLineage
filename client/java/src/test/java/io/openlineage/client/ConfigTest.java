@@ -449,12 +449,25 @@ class ConfigTest {
     Thread.sleep(100);
 
     String content = new String(Files.readAllBytes(Paths.get(LOG_FILE_NAME)));
-    assertThat(content)
+    // Normalize path separators for cross-platform compatibility
+    String normalizedContent = content.replace('\\', '/');
+    assertThat(normalizedContent)
         .contains(
             "Unable to load config from [config/notexist.yaml]. Trying to load it from EnvVars");
 
-    Files.delete(Paths.get(LOG_FILE_NAME));
-
+    // Clear the system property first to allow logger to release the file
     System.clearProperty("org.slf4j.simpleLogger.logFile");
+
+    // On Windows, the file may still be locked by the logger. Try to delete with retries.
+    boolean deleted = false;
+    for (int i = 0; i < 5 && !deleted; i++) {
+      try {
+        Files.deleteIfExists(Paths.get(LOG_FILE_NAME));
+        deleted = true;
+      } catch (IOException e) {
+        // File still locked, wait a bit
+        Thread.sleep(100);
+      }
+    }
   }
 }
