@@ -21,6 +21,13 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
 from openlineage.client.filter import Filter, FilterConfig, create_filter
+from openlineage.client.git import (
+    _find_git_dir,
+    get_git_branch,
+    get_git_repo_url,
+    get_git_tag,
+    get_git_version,
+)
 from openlineage.client.serde import Serde
 from openlineage.client.tags import TagsConfig
 from openlineage.client.transport import (
@@ -30,13 +37,7 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import (
-    deep_merge_dicts,
-    get_git_branch,
-    get_git_repo_url,
-    get_git_tag,
-    get_git_version,
-)
+from openlineage.client.utils import deep_merge_dicts
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -539,14 +540,32 @@ class OpenLineageClient:
         return tags_facet
 
     @cached_property
-    def _source_code_location(self) -> dict[str, str | None]:
+    def _source_code_location(self) -> dict[str, str | None] | None:
         scl = self.config.facets.source_code_location
-        return {
-            "url": get_git_repo_url(scl.repo_url),
-            "version": get_git_version(scl.version),
-            "branch": get_git_branch(scl.branch),
-            "tag": get_git_tag(scl.tag),
-        }
+
+        url: str | None = scl.repo_url
+        sha: str | None = scl.version
+        branch: str | None = scl.branch
+        tag: str | None = scl.tag
+
+        try:
+            git_dir = _find_git_dir()
+            if git_dir:
+                if url is None:
+                    url = get_git_repo_url(git_dir=git_dir)
+                if sha is None:
+                    sha = get_git_version(git_dir)
+                if branch is None:
+                    branch = get_git_branch(git_dir)
+                if tag is None:
+                    tag = get_git_tag(git_dir)
+        except Exception:
+            log.warning("Failed to read git metadata for sourceCodeLocation facet", exc_info=True)
+
+        if url is None:
+            return None
+
+        return {"url": url, "version": sha, "branch": branch, "tag": tag}
 
     def add_source_code_location_facet(self, event: Event) -> Event:
         """Adds sourceCodeLocation job facet if not already present and not disabled."""
@@ -556,7 +575,7 @@ class OpenLineageClient:
             return event
 
         scl = self._source_code_location
-        if not scl["url"]:
+        if not scl or not scl["url"]:
             return event
 
         event.job.facets = event.job.facets or {}

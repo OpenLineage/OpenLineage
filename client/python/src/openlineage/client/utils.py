@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import importlib
 import logging
-import os
-import subprocess
 from typing import Any, ClassVar, cast
 
 import attr
@@ -55,63 +53,6 @@ def deep_merge_dicts(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[Any, 
         else:
             merged[k] = v
     return merged
-
-
-def _run_git_command(args: list[str], timeout: int = 5) -> str | None:
-    """Run a git command and return stripped stdout, or None on any failure."""
-    try:
-        result = subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=os.getcwd(),
-            timeout=timeout,
-        )
-        return result.stdout.strip() or None
-    except Exception:
-        return None
-
-
-def get_git_repo_url(repo_url: str | None = None, timeout: int = 5) -> str | None:
-    """Return a repo URL suitable for SourceCodeLocationJobFacet.
-
-    If *repo_url* is given it is used directly; otherwise the URL is
-    auto-detected from ``git remote get-url origin`` in the current
-    working directory.  The URL is returned as-is with no normalization.
-    """
-    if repo_url:
-        return repo_url
-    return _run_git_command(["git", "remote", "get-url", "origin"], timeout)
-
-
-def get_git_version(version: str | None = None, timeout: int = 5) -> str | None:
-    """Return the current git commit SHA, or *version* if explicitly provided."""
-    if version:
-        return version
-    return _run_git_command(["git", "rev-parse", "HEAD"], timeout)
-
-
-def get_git_branch(branch: str | None = None, timeout: int = 5) -> str | None:
-    """Return the current git branch name, or *branch* if explicitly provided.
-
-    Returns None in detached HEAD state (e.g. during CI checkout).
-    """
-    if branch:
-        return branch
-    result = _run_git_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], timeout)
-    return None if result == "HEAD" else result
-
-
-def get_git_tag(tag: str | None = None, timeout: int = 5) -> str | None:
-    """Return the exact tag on HEAD if one exists, or *tag* if explicitly provided.
-
-    Returns None if HEAD has no exact tag — partial ``git describe`` output
-    (e.g. ``v1.2.3-4-gabcdef``) is intentionally excluded.
-    """
-    if tag:
-        return tag
-    return _run_git_command(["git", "describe", "--tags", "--exact-match", "HEAD"], timeout)
 
 
 class RedactMixin:
