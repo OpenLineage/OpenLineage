@@ -1,0 +1,85 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+#
+# Overrides GitHub Default Setup with a dynamic language matrix: only languages
+# that have source files in the repository are scanned. This prevents false
+# failures when CodeQL is configured for a language (e.g. Go) that has no
+# corresponding source code.
+name: "CodeQL"
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "30 1 * * 0"
+
+jobs:
+  detect-languages:
+    name: Detect languages
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect CodeQL-supported languages present in repo
+        id: detect
+        shell: bash
+        run: |
+          includes=()
+          go_files=$(find . -not -path './.git/*' -name '*.go' -print -quit 2>/dev/null)
+          [ -n "$go_files" ] && includes+=('{"language":"go","build-mode":"autobuild"}')
+
+          java_files=$(find . -not -path './.git/*' \( -name '*.java' -o -name '*.kt' \) -print -quit 2>/dev/null)
+          [ -n "$java_files" ] && includes+=('{"language":"java-kotlin","build-mode":"autobuild"}')
+
+          py_files=$(find . -not -path './.git/*' -name '*.py' -print -quit 2>/dev/null)
+          [ -n "$py_files" ] && includes+=('{"language":"python","build-mode":"none"}')
+
+          js_files=$(find . -not -path './.git/*' \( -name '*.js' -o -name '*.ts' \) -print -quit 2>/dev/null)
+          [ -n "$js_files" ] && includes+=('{"language":"javascript-typescript","build-mode":"none"}')
+
+          rb_files=$(find . -not -path './.git/*' -name '*.rb' -print -quit 2>/dev/null)
+          [ -n "$rb_files" ] && includes+=('{"language":"ruby","build-mode":"none"}')
+
+          matrix='{"include":['
+          for i in "${!includes[@]}"; do
+            [ "$i" -gt 0 ] && matrix+=','
+            matrix+="${includes[$i]}"
+          done
+          matrix+=']}'
+
+          echo "Detected languages: $matrix"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: detect-languages
+    if: ${{ needs.detect-languages.outputs.matrix != '{"include":[]}' }}
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-languages.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
