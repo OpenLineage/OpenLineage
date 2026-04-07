@@ -107,9 +107,8 @@ type SQLJobModel struct {
 // TagsJobModel — facets.TagsJobFacet
 // A free-form tag attached to this job.
 type TagsJobModel struct {
-	Name        types.String `tfsdk:"name"`
-	Value       types.String `tfsdk:"value"`
-	Description types.String `tfsdk:"description"` // optional
+	Name  types.String `tfsdk:"name"`
+	Value types.String `tfsdk:"value"`
 }
 
 // ============================================================================
@@ -153,12 +152,11 @@ type DocumentationDatasetModel struct {
 }
 
 // DatasetTypeDatasetModel — facets.DatasetTypeDatasetFacet
-// Classifies the dataset by its storage type and format.
+// Classifies the dataset by its type.
 // Note: 'DatasetType' appears twice because the client facet is named DatasetTypeDatasetFacet.
 type DatasetTypeDatasetModel struct {
-	DatasetType  types.String `tfsdk:"dataset_type"`  // e.g. "TABLE", "VIEW", "STREAM"
-	MediaType    types.String `tfsdk:"media_type"`    // e.g. "application/json", optional
-	StorageLayer types.String `tfsdk:"storage_layer"` // e.g. "bigquery", "hive", optional
+	DatasetType types.String `tfsdk:"dataset_type"` // e.g. "TABLE", "VIEW", "STREAM"
+	SubType     types.String `tfsdk:"sub_type"`     // optional sub-type e.g. "MATERIALIZED", "EXTERNAL"
 }
 
 // DatasetVersionDatasetModel — facets.DatasetVersionDatasetFacet
@@ -230,9 +228,8 @@ type CatalogDatasetModel struct {
 // TagsDatasetModel — facets.TagsDatasetFacet
 // A free-form tag attached to this dataset.
 type TagsDatasetModel struct {
-	Name        types.String `tfsdk:"name"`
-	Value       types.String `tfsdk:"value"`
-	Description types.String `tfsdk:"description"` // optional
+	Name  types.String `tfsdk:"name"`
+	Value types.String `tfsdk:"value"`
 }
 
 // ColumnLineageDatasetModel — facets.ColumnLineageDatasetFacet
@@ -252,19 +249,19 @@ type ColumnLineageFieldModel struct {
 // InputFieldModel — facets.DatasetElement (inside FieldValue)
 // A single input column contributing to an output column.
 type InputFieldModel struct {
-	Namespace      types.String          `tfsdk:"namespace"`
-	Name           types.String          `tfsdk:"name"`
-	Field          types.String          `tfsdk:"field"`
-	Transformation []TransformationModel `tfsdk:"transformation"` // optional, at most one
+	Namespace      types.String         `tfsdk:"namespace"`
+	Name           types.String         `tfsdk:"name"`
+	Field          types.String         `tfsdk:"field"`
+	Transformation *TransformationModel `tfsdk:"transformation"` // optional, at most one
 }
 
 // ColumnLineageDatasetElementModel — facets.DatasetElement (dataset-level)
 // Dataset-level contribution — input dataset feeds an output field but exact column unknown.
 type ColumnLineageDatasetElementModel struct {
-	Namespace      types.String          `tfsdk:"namespace"`
-	Name           types.String          `tfsdk:"name"`
-	Field          types.String          `tfsdk:"field"`
-	Transformation []TransformationModel `tfsdk:"transformation"` // optional, at most one
+	Namespace      types.String         `tfsdk:"namespace"`
+	Name           types.String         `tfsdk:"name"`
+	Field          types.String         `tfsdk:"field"`
+	Transformation *TransformationModel `tfsdk:"transformation"` // optional, at most one
 }
 
 // TransformationModel — facets.Transformation

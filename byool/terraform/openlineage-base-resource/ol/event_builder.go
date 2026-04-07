@@ -67,15 +67,22 @@ func buildJobFacets(data *OLJobConfig) []facets.JobFacet {
 	var fs []facets.JobFacet
 
 	if data.JobType != nil {
-		jt := facets.NewJobTypeJobFacet(
-			producer,
-			data.JobType.Integration.ValueString(),
-			data.JobType.ProcessingType.ValueString(),
-		)
-		if !data.JobType.JobType.IsNull() && !data.JobType.JobType.IsUnknown() {
-			jt = jt.WithJobType(data.JobType.JobType.ValueString())
+		// integration and processing_type are Required in the schema, but guard
+		// against null/unknown defensively (e.g. during import or plan phase).
+		if data.JobType.Integration.IsNull() || data.JobType.Integration.IsUnknown() ||
+			data.JobType.ProcessingType.IsNull() || data.JobType.ProcessingType.IsUnknown() {
+			// skip — cannot build a valid JobTypeJobFacet without required fields
+		} else {
+			jt := facets.NewJobTypeJobFacet(
+				producer,
+				data.JobType.Integration.ValueString(),
+				data.JobType.ProcessingType.ValueString(),
+			)
+			if !data.JobType.JobType.IsNull() && !data.JobType.JobType.IsUnknown() {
+				jt = jt.WithJobType(data.JobType.JobType.ValueString())
+			}
+			fs = append(fs, jt)
 		}
-		fs = append(fs, jt)
 	}
 
 	if data.Ownership != nil && len(data.Ownership.Owners) > 0 {
@@ -221,12 +228,11 @@ func buildDatasetFacets(dataset *DatasetModel) []facets.DatasetFacet {
 	}
 
 	if dataset.DatasetType != nil {
-		// MediaType and StorageLayer in DatasetTypeDatasetModel do not correspond
-		// to DatasetTypeDatasetFacet fields; they belong to StorageDatasetFacet.
-		facetsList = append(facetsList, facets.NewDatasetTypeDatasetFacet(
-			producer,
-			dataset.DatasetType.DatasetType.ValueString(),
-		))
+		dt := facets.NewDatasetTypeDatasetFacet(producer, dataset.DatasetType.DatasetType.ValueString())
+		if !dataset.DatasetType.SubType.IsNull() && !dataset.DatasetType.SubType.IsUnknown() {
+			dt = dt.WithSubType(dataset.DatasetType.SubType.ValueString())
+		}
+		facetsList = append(facetsList, dt)
 	}
 
 	if dataset.Version != nil {
@@ -438,12 +444,9 @@ func buildColumnLineageFacet(clm *ColumnLineageDatasetModel) *facets.ColumnLinea
 				Field:     inf.Field.ValueString(),
 			}
 
-			// Transformation is optional — only attach if the user declared it.
-			// We use index [0] because only one transformation per input field
-			// makes sense in the OL spec.
-			if len(inf.Transformation) > 0 {
+			if inf.Transformation != nil {
 				de.Transformations = []facets.Transformation{
-					buildTransformation(&inf.Transformation[0]),
+					buildTransformation(inf.Transformation),
 				}
 			}
 
@@ -467,9 +470,9 @@ func buildColumnLineageFacet(clm *ColumnLineageDatasetModel) *facets.ColumnLinea
 			Field:     ds.Field.ValueString(),
 		}
 
-		if len(ds.Transformation) > 0 {
+		if ds.Transformation != nil {
 			de.Transformations = []facets.Transformation{
-				buildTransformation(&ds.Transformation[0]),
+				buildTransformation(ds.Transformation),
 			}
 		}
 
