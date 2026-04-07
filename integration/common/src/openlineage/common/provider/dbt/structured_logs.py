@@ -23,6 +23,7 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
     sql_job,
     tags_run,
+    test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -470,6 +471,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         if resource_type == "test":
             success = node_status == "pass"
+            test_node = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
+            config = test_node.get("config", {})
+            severity = (config.get("severity") or "error").lower()
+
             if assertion := self._get_assertion(node_unique_id, success):
                 assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
                 inputs = []
@@ -481,6 +486,23 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                             facets={**attached_dataset.facets, "dataQualityAssertions": assertion_facet},  # type: ignore[dict-item]
                         )
                     )
+
+            # Singular tests have no test_metadata (plain SQL files).
+            # Generic tests (not_null, unique, etc.) have test_metadata with a name and
+            # are covered by the DataQualityAssertions facet on the dataset above.
+            test_metadata = test_node.get("test_metadata")
+            if test_metadata is None:
+                test_obj = test_run.TestExecution(
+                    name=node_unique_id,
+                    status="pass" if success else "fail",
+                    severity=severity,
+                )
+                test_obj.type = "singular"
+                test_obj.content = test_node.get("compiled_code") or test_node.get("raw_code")
+                test_obj.contentType = "sql"
+                if desc := test_node.get("description"):
+                    test_obj.description = desc
+                run_facets["test"] = test_run.TestRunFacet(tests=[test_obj])
 
         if extraction_error := self._get_extraction_error_facet(node_unique_id):
             run_facets["extractionError"] = extraction_error

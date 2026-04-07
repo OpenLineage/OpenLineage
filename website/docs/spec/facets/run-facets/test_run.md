@@ -8,13 +8,22 @@ The facet contains the results of test executions associated with a run, capturi
 
 Use this facet to record whether quality checks passed or failed alongside the job run that triggered them. Each `TestExecution` entry captures the test name, its execution outcome (`status`), and optionally the configured severity, expected vs. actual values, and the test body.
 
+### `status` vs `severity`
+
+These two fields are independent and serve different purposes:
+
+- **`status`** reflects whether the test *found issues*: `pass` means no issues were found, `fail` means issues were found (regardless of whether execution was blocked).
+- **`severity`** reflects the *configured consequence* of a failure: `error` means a failure blocks pipeline execution, `warn` means a failure produces a warning only and does not block.
+
+A test can have `status: "fail"` and `severity: "warn"` — meaning the test detected a violation, but execution continued. The overall run still succeeds. This combination is important to preserve in lineage metadata because it lets consumers distinguish between tests that are enforced hard constraints and tests that are advisory checks.
+
 Fields per test entry:
 
 | Field | Required | Description |
 |---|---|---|
 | `name` | yes | Identifier for the test (e.g. `assert_no_orphans`) |
-| `status` | yes | Execution outcome: `pass`, `fail`, `skip` |
-| `severity` | no | Configured severity: `error` (blocks pipeline) or `warn` (warning only) |
+| `status` | yes | Whether the test found issues: `pass` (no issues), `fail` (issues found), `skip` (not executed) |
+| `severity` | no | Configured consequence of failure: `error` (blocks pipeline) or `warn` (warning only, does not block) |
 | `type` | no | Test classification, e.g. `not_null`, `unique`, `row_count`, `custom_sql` |
 | `description` | no | Human-readable description of what the test checks |
 | `expected` | no | Expected value or threshold, serialized as a string |
@@ -32,7 +41,7 @@ Example:
         "facets": {
             "test": {
                 "_producer": "https://some.producer.com/version/1.0",
-                "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json",
+                "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/TestRunFacet.json",
                 "tests": [
                     {
                         "name": "assert_order_ids_unique",
@@ -58,4 +67,4 @@ Example:
 }
 ```
 
-The facet specification can be found [here](https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json)
+The facet specification can be found [here](https://openlineage.io/spec/facets/1-0-1/TestRunFacet.json)

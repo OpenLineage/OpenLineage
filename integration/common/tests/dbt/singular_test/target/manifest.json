@@ -1,0 +1,64 @@
+{
+    "metadata": {
+        "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v11.json",
+        "dbt_version": "1.7.0",
+        "generated_at": "2024-01-15T10:00:00.000000Z",
+        "invocation_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "env": {},
+        "adapter_type": "postgres"
+    },
+    "nodes": {
+        "test.my_project.assert_positive_amounts": {
+            "resource_type": "test",
+            "package_name": "my_project",
+            "unique_id": "test.my_project.assert_positive_amounts",
+            "name": "assert_positive_amounts",
+            "original_file_path": "tests/assert_positive_amounts.sql",
+            "path": "assert_positive_amounts.sql",
+            "database": "my_db",
+            "schema": "my_schema",
+            "alias": "assert_positive_amounts",
+            "test_metadata": null,
+            "config": {
+                "severity": "error",
+                "enabled": true
+            },
+            "description": "Ensures all order amounts are positive.",
+            "raw_code": "select * from {{ ref('orders') }} where amount < 0",
+            "compiled_code": "select * from my_schema.orders where amount < 0",
+            "tags": [],
+            "depends_on": {
+                "nodes": []
+            }
+        },
+        "test.my_project.assert_row_count_within_range": {
+            "resource_type": "test",
+            "package_name": "my_project",
+            "unique_id": "test.my_project.assert_row_count_within_range",
+            "name": "assert_row_count_within_range",
+            "original_file_path": "tests/assert_row_count_within_range.sql",
+            "path": "assert_row_count_within_range.sql",
+            "database": "my_db",
+            "schema": "my_schema",
+            "alias": "assert_row_count_within_range",
+            "test_metadata": null,
+            "config": {
+                "severity": "warn",
+                "enabled": true
+            },
+            "description": "",
+            "raw_code": "select * from {{ ref('orders') }} where amount not between 0 and 10000",
+            "compiled_code": "select * from my_schema.orders where amount not between 0 and 10000",
+            "tags": [],
+            "depends_on": {
+                "nodes": []
+            }
+        }
+    },
+    "sources": {},
+    "parent_map": {
+        "test.my_project.assert_positive_amounts": [],
+        "test.my_project.assert_row_count_within_range": []
+    },
+    "child_map": {}
+}
