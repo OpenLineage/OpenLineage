@@ -59,10 +59,15 @@ func GenerateJobSchema(cap JobCapability) schema.Schema {
 func GenerateDatasetSchema(cap DatasetCapability) schema.Schema {
 	attrs, blocks := datasetSchema(cap.capability)
 
-	// dataset identity is promoted to top-level (namespace + name are required)
-	// the other dataset attributes come from datasetSchema
+	// Start from the identity attributes, which carry RequiresReplace plan
+	// modifiers on namespace and name. datasetSchema() also returns namespace
+	// and name (without plan modifiers, for use in nested input/output blocks),
+	// so we skip those keys here to keep datasetIdentityAttributes() authoritative.
 	identityAttrs := datasetIdentityAttributes()
 	for k, v := range attrs {
+		if k == "namespace" || k == "name" {
+			continue
+		}
 		identityAttrs[k] = v
 	}
 
@@ -468,7 +473,7 @@ func hierarchyElementBlock(desc string) schema.SingleNestedBlock {
 			// OL HierarchyElement spec and is not included in emitted events.
 			"namespace": schema.StringAttribute{Optional: true, Description: "Namespace (accepted but not emitted — HierarchyElement has no namespace field in the OL spec)"},
 			"name":      schema.StringAttribute{Required: true, Description: "Name"},
-			"type":      schema.StringAttribute{Optional: true, Description: "e.g. TABLE, PARTITION"},
+			"type":      schema.StringAttribute{Required: true, Description: "e.g. TABLE, PARTITION"},
 		},
 	}
 }
@@ -482,7 +487,7 @@ func hierarchyElementListBlock(desc string) schema.ListNestedBlock {
 				// OL HierarchyElement spec and is not included in emitted events.
 				"namespace": schema.StringAttribute{Optional: true, Description: "Namespace (accepted but not emitted — HierarchyElement has no namespace field in the OL spec)"},
 				"name":      schema.StringAttribute{Required: true, Description: "Name"},
-				"type":      schema.StringAttribute{Optional: true, Description: "e.g. TABLE, PARTITION"},
+				"type":      schema.StringAttribute{Required: true, Description: "e.g. TABLE, PARTITION"},
 			},
 		},
 	}
