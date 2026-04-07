@@ -88,22 +88,22 @@ Consumer-specific schema parts are merged after generation by base resources.
 
 ## Event Builder
 
-`BuildJobEvent(data *JobResourceModel) *openlineage.JobEvent`,
-`BuildRunEvent(data *JobResourceModel) *openlineage.RunEvent`, and
-`BuildDatasetEvent(data *DatasetResourceModel) *openlineage.DatasetEvent`
+`BuildJobEvent(data *JobResourceModel, cap JobCapability) *openlineage.JobEvent`,
+`BuildRunEvent(data *JobResourceModel, cap JobCapability) *openlineage.RunEvent`, and
+`BuildDatasetEvent(data *DatasetResourceModel, cap DatasetCapability) *openlineage.DatasetEvent`
 map Terraform models to OpenLineage events.
 
 Current behavior:
 
-- `BuildJobEvent` builds the shared job payload,
-- `BuildRunEvent` is a compatibility wrapper for consumers that do not support static events yet,
+- `BuildJobEvent` builds the shared job payload; only facets enabled in `cap` are emitted,
 - `BuildRunEvent` wraps `BuildJobEvent`, sets `eventType = COMPLETE`, and generates `run.runId` internally,
 - `BuildRunEvent` does **not** populate run facets,
-- `BuildDatasetEvent` builds a standalone dataset event from `DatasetResourceModel`,
+- `BuildDatasetEvent` builds a standalone dataset event; only facets enabled in `cap` are emitted,
 - event type is `COMPLETE`,
 - job identity is built from `namespace` and `name`,
-- `inputs` and `outputs` are mapped to OL dataset elements with supported facets,
-- dataset events and dataset elements reuse the same dataset-facet mapping helpers.
+- `inputs` and `outputs` are mapped to OL dataset elements with capability-gated facets,
+- dataset events and dataset elements reuse the same dataset-facet mapping helpers,
+- disabled facets are skipped even when the corresponding model blocks are populated (portability stub values are ignored).
 
 ## Package Files
 
