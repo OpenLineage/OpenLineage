@@ -66,7 +66,7 @@ type OwnershipJobModel struct {
 	Owners []JobOwnerModel `tfsdk:"owners"`
 }
 
-// JobOwnerModel — facets.FluffyOwner
+// JobOwnerModel — facets.Owner (inside OwnershipJobFacet)
 // A single owner entry.
 type JobOwnerModel struct {
 	Name types.String `tfsdk:"name"` // e.g. "team:data-engineering"
@@ -179,7 +179,7 @@ type OwnershipDatasetModel struct {
 	Owners []DatasetOwnerModel `tfsdk:"owners"`
 }
 
-// DatasetOwnerModel — facets.PurpleOwner
+// DatasetOwnerModel — facets.Owner (inside OwnershipDatasetFacet)
 // A single owner of a dataset.
 type DatasetOwnerModel struct {
 	Name types.String `tfsdk:"name"`

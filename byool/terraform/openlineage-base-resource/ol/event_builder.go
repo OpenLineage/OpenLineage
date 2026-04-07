@@ -17,8 +17,10 @@ import (
 const producer = "https://github.com/OpenLineage/openlineage/byool/terraform"
 
 // BuildRunEvent wraps a JobEvent with run-specific fields (event type + generated run ID).
-func BuildRunEvent(data *JobResourceModel) *openlineage.RunEvent {
-	jobEvent := BuildJobEvent(data)
+// cap controls which job and dataset facets are emitted — disabled facets are skipped
+// even if the corresponding model blocks are populated.
+func BuildRunEvent(data *JobResourceModel, cap JobCapability) *openlineage.RunEvent {
+	jobEvent := BuildJobEvent(data, cap)
 	runID := uuid.New()
 
 	return &openlineage.RunEvent{
@@ -38,35 +40,37 @@ func BuildRunEvent(data *JobResourceModel) *openlineage.RunEvent {
 }
 
 // BuildJobEvent assembles an OpenLineage JobEvent from the Terraform job model.
-func BuildJobEvent(data *JobResourceModel) *openlineage.JobEvent {
+// cap controls which job and dataset facets are emitted — disabled facets are skipped
+// even if the corresponding model blocks are populated.
+func BuildJobEvent(data *JobResourceModel, cap JobCapability) *openlineage.JobEvent {
 	event := openlineage.NewJobEvent(
 		data.Name.ValueString(),
 		data.Namespace.ValueString(),
 		producer,
 	)
 
-	if jfs := buildJobFacets(&data.OLJobConfig); len(jfs) > 0 {
+	if jfs := buildJobFacets(&data.OLJobConfig, cap); len(jfs) > 0 {
 		event = event.WithFacets(jfs...)
 	}
 
 	for _, input := range data.Inputs {
-		event = event.WithInputs(buildInputElement(&input))
+		event = event.WithInputs(buildInputElement(&input, cap.capability))
 	}
 
 	for _, output := range data.Outputs {
-		event = event.WithOutputs(buildOutputElement(&output))
+		event = event.WithOutputs(buildOutputElement(&output, cap.capability))
 	}
 
 	return event
 }
 
 // buildJobFacets assembles all optional job facets from OLJobConfig.
-// Each facet is only appended when its corresponding model block is non-nil
-// (or its slice is non-empty) — no facet is emitted when the user omitted it.
-func buildJobFacets(data *OLJobConfig) []facets.JobFacet {
+// Only facets enabled in cap are emitted; disabled facets are skipped regardless
+// of whether the model block is populated (stub values from portability schema).
+func buildJobFacets(data *OLJobConfig, cap JobCapability) []facets.JobFacet {
 	var fs []facets.JobFacet
 
-	if data.JobType != nil {
+	if cap.IsEnabled(FacetJobType) && data.JobType != nil {
 		// integration and processing_type are Required in the schema, but guard
 		// against null/unknown defensively (e.g. during import or plan phase).
 		if data.JobType.Integration.IsNull() || data.JobType.Integration.IsUnknown() ||
@@ -85,7 +89,7 @@ func buildJobFacets(data *OLJobConfig) []facets.JobFacet {
 		}
 	}
 
-	if data.Ownership != nil && len(data.Ownership.Owners) > 0 {
+	if cap.IsEnabled(FacetJobOwnership) && data.Ownership != nil && len(data.Ownership.Owners) > 0 {
 		owners := make([]facets.Owner, 0, len(data.Ownership.Owners))
 		for _, o := range data.Ownership.Owners {
 			owner := facets.Owner{Name: o.Name.ValueString()}
@@ -97,14 +101,14 @@ func buildJobFacets(data *OLJobConfig) []facets.JobFacet {
 		fs = append(fs, facets.NewOwnershipJobFacet(producer).WithOwners(owners))
 	}
 
-	if data.Documentation != nil {
+	if cap.IsEnabled(FacetJobDocumentation) && data.Documentation != nil {
 		fs = append(fs, facets.NewDocumentationJobFacet(
 			producer,
 			data.Documentation.Description.ValueString(),
 		))
 	}
 
-	if data.SourceCode != nil {
+	if cap.IsEnabled(FacetJobSourceCode) && data.SourceCode != nil {
 		fs = append(fs, facets.NewSourceCodeJobFacet(
 			producer,
 			data.SourceCode.Language.ValueString(),
@@ -112,7 +116,7 @@ func buildJobFacets(data *OLJobConfig) []facets.JobFacet {
 		))
 	}
 
-	if data.SourceCodeLocation != nil {
+	if cap.IsEnabled(FacetJobSourceCodeLocation) && data.SourceCodeLocation != nil {
 		scl := facets.NewSourceCodeLocationJobFacet(
 			producer,
 			data.SourceCodeLocation.Type.ValueString(),
@@ -136,18 +140,17 @@ func buildJobFacets(data *OLJobConfig) []facets.JobFacet {
 		fs = append(fs, scl)
 	}
 
-	if data.SQL != nil {
+	if cap.IsEnabled(FacetJobSQL) && data.SQL != nil {
 		fs = append(fs, facets.NewSQLJobFacet(producer, data.SQL.Query.ValueString()))
 	}
 
-	if len(data.Tags) > 0 {
+	if cap.IsEnabled(FacetJobTags) && len(data.Tags) > 0 {
 		tags := make([]facets.TagClass, 0, len(data.Tags))
 		for _, t := range data.Tags {
-			tag := facets.TagClass{
+			tags = append(tags, facets.TagClass{
 				Key:   t.Name.ValueString(),
 				Value: t.Value.ValueString(),
-			}
-			tags = append(tags, tag)
+			})
 		}
 		fs = append(fs, facets.NewTagsJobFacet(producer).WithTags(tags))
 	}
@@ -156,8 +159,10 @@ func buildJobFacets(data *OLJobConfig) []facets.JobFacet {
 }
 
 // BuildDatasetEvent assembles an OpenLineage DatasetEvent from the standalone dataset model.
-func BuildDatasetEvent(data *DatasetResourceModel) *openlineage.DatasetEvent {
-	facetsList := buildDatasetFacets(&data.DatasetModel)
+// cap controls which dataset facets are emitted — disabled facets are skipped
+// even if the corresponding model blocks are populated.
+func BuildDatasetEvent(data *DatasetResourceModel, cap DatasetCapability) *openlineage.DatasetEvent {
+	facetsList := buildDatasetFacets(&data.DatasetModel, cap.capability)
 	event := openlineage.NewDatasetEvent(
 		data.Name.ValueString(),
 		data.Namespace.ValueString(),
@@ -169,65 +174,56 @@ func BuildDatasetEvent(data *DatasetResourceModel) *openlineage.DatasetEvent {
 }
 
 // buildInputElement converts a single Terraform InputModel into an OpenLineage InputElement.
-//
-// An InputElement = dataset identity (name + namespace) + optional dataset facets.
-// Facets are additional metadata blobs attached to the dataset — they're optional
-// and each facet type is independent (you can have symlinks without catalog, etc.).
-func buildInputElement(input *OLInputModel) openlineage.InputElement {
+func buildInputElement(input *OLInputModel, cap capability) openlineage.InputElement {
 	ie := openlineage.NewInputElement(
-		input.Name.ValueString(),      // promoted from embedded DatasetModel
-		input.Namespace.ValueString(), // promoted from embedded DatasetModel
+		input.Name.ValueString(),
+		input.Namespace.ValueString(),
 	)
 
-	ie = ie.WithFacets(buildDatasetFacets(&input.DatasetModel)...)
+	ie = ie.WithFacets(buildDatasetFacets(&input.DatasetModel, cap)...)
 
 	return ie
 }
 
 // buildOutputElement converts a single Terraform OutputModel into an OpenLineage OutputElement.
-//
-// Same as buildInputElement but outputs can additionally carry column-level lineage,
-// which describes exactly which input columns produced which output columns.
-func buildOutputElement(output *OLOutputModel) openlineage.OutputElement {
+func buildOutputElement(output *OLOutputModel, cap capability) openlineage.OutputElement {
 	oe := openlineage.NewOutputElement(
-		output.Name.ValueString(),      // promoted from embedded DatasetModel
-		output.Namespace.ValueString(), // promoted from embedded DatasetModel
+		output.Name.ValueString(),
+		output.Namespace.ValueString(),
 	)
 
-	oe = oe.WithFacets(buildDatasetFacets(&output.DatasetModel)...)
+	oe = oe.WithFacets(buildDatasetFacets(&output.DatasetModel, cap)...)
 
-	// Column lineage is only meaningful on outputs — it maps output columns
-	// back to the input columns that produced them.
-	if output.ColumnLineage != nil {
+	if cap.IsEnabled(FacetDatasetColumnLineage) && output.ColumnLineage != nil {
 		oe = oe.WithFacets(buildColumnLineageFacet(output.ColumnLineage))
 	}
 
 	return oe
 }
 
-func buildDatasetFacets(dataset *DatasetModel) []facets.DatasetFacet {
+func buildDatasetFacets(dataset *DatasetModel, cap capability) []facets.DatasetFacet {
 	var facetsList []facets.DatasetFacet
 
-	if len(dataset.Symlinks) > 0 {
+	if cap.IsEnabled(FacetDatasetSymlinks) && len(dataset.Symlinks) > 0 {
 		facetsList = append(facetsList, buildSymlinksFacet(dataset.Symlinks))
 	}
 
-	if dataset.Schema != nil {
+	if cap.IsEnabled(FacetDatasetSchema) && dataset.Schema != nil {
 		facetsList = append(facetsList, buildSchemaFacet(dataset.Schema))
 	}
 
-	if dataset.DataSource != nil {
+	if cap.IsEnabled(FacetDatasetDataSource) && dataset.DataSource != nil {
 		facetsList = append(facetsList, buildDataSourceFacet(dataset.DataSource))
 	}
 
-	if dataset.Documentation != nil {
+	if cap.IsEnabled(FacetDatasetDocumentation) && dataset.Documentation != nil {
 		facetsList = append(facetsList, facets.NewDocumentationDatasetFacet(
 			producer,
 			dataset.Documentation.Description.ValueString(),
 		))
 	}
 
-	if dataset.DatasetType != nil {
+	if cap.IsEnabled(FacetDatasetType) && dataset.DatasetType != nil {
 		dt := facets.NewDatasetTypeDatasetFacet(producer, dataset.DatasetType.DatasetType.ValueString())
 		if !dataset.DatasetType.SubType.IsNull() && !dataset.DatasetType.SubType.IsUnknown() {
 			dt = dt.WithSubType(dataset.DatasetType.SubType.ValueString())
@@ -235,34 +231,34 @@ func buildDatasetFacets(dataset *DatasetModel) []facets.DatasetFacet {
 		facetsList = append(facetsList, dt)
 	}
 
-	if dataset.Version != nil {
+	if cap.IsEnabled(FacetDatasetVersion) && dataset.Version != nil {
 		facetsList = append(facetsList, facets.NewDatasetVersionDatasetFacet(
 			producer,
 			dataset.Version.DatasetVersion.ValueString(),
 		))
 	}
 
-	if dataset.Storage != nil {
+	if cap.IsEnabled(FacetDatasetStorage) && dataset.Storage != nil {
 		facetsList = append(facetsList, buildStorageFacet(dataset.Storage))
 	}
 
-	if dataset.Ownership != nil && len(dataset.Ownership.Owners) > 0 {
+	if cap.IsEnabled(FacetDatasetOwnership) && dataset.Ownership != nil && len(dataset.Ownership.Owners) > 0 {
 		facetsList = append(facetsList, buildOwnershipDatasetFacet(dataset.Ownership))
 	}
 
-	if dataset.LifecycleStateChange != nil {
+	if cap.IsEnabled(FacetDatasetLifecycleStateChange) && dataset.LifecycleStateChange != nil {
 		facetsList = append(facetsList, buildLifecycleStateChangeFacet(dataset.LifecycleStateChange))
 	}
 
-	if dataset.Hierarchy != nil {
+	if cap.IsEnabled(FacetDatasetHierarchy) && dataset.Hierarchy != nil {
 		facetsList = append(facetsList, buildHierarchyFacet(dataset.Hierarchy))
 	}
 
-	if dataset.Catalog != nil {
+	if cap.IsEnabled(FacetDatasetCatalog) && dataset.Catalog != nil {
 		facetsList = append(facetsList, buildCatalogFacet(dataset.Catalog))
 	}
 
-	if len(dataset.Tags) > 0 {
+	if cap.IsEnabled(FacetDatasetTags) && len(dataset.Tags) > 0 {
 		facetsList = append(facetsList, buildTagsDatasetFacet(dataset.Tags))
 	}
 
