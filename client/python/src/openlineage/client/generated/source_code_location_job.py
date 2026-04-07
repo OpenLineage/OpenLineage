@@ -49,11 +49,18 @@ class SourceCodeLocationJobFacet(JobFacet):
     branch: str | None = attr.field(default=None)
     """optional branch name"""
 
+    pullRequestNumber: str | None = attr.field(default=None)  # noqa: N815
+    """
+    optional pull request or merge request number associated with a CI run, populated from CI platform
+    environment variables (e.g. GITHUB_REF, CI_MERGE_REQUEST_IID)
+
+    Example: 42
+    """
     _additional_skip_redact: ClassVar[list[str]] = ["type", "url"]
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-1/SourceCodeLocationJobFacet.json#/$defs/SourceCodeLocationJobFacet"
+        return "https://openlineage.io/spec/facets/1-1-0/SourceCodeLocationJobFacet.json#/$defs/SourceCodeLocationJobFacet"
 
     @url.validator
     def url_check(self, attribute: str, value: str) -> None:  # noqa: ARG002

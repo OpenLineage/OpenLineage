@@ -117,6 +117,37 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata,
 
 
 @mock.patch("openlineage.common.provider.dbt.processor.generate_new_uuid")
+@mock.patch("datetime.datetime")
+def test_dbt_parse_singular_test_event(mock_datetime, mock_uuid, parent_run_metadata):
+    """Singular tests (plain SQL, no test_metadata) emit per-test run events with TestRunFacet."""
+    mock_datetime.now.return_value.isoformat.return_value = "2024-01-15T10:00:00.000000+00:00"
+    mock_uuid.side_effect = [
+        "6edf42ed-d8d0-454a-b819-d09b9067ff99",
+        "aaaa0000-0000-0000-0000-000000000000",
+        "aaaa0001-0000-0000-0000-000000000000",
+        "aaaa0002-0000-0000-0000-000000000000",
+        "aaaa0003-0000-0000-0000-000000000000",
+    ]
+
+    path = CURRENT_DIR + "/singular_test"
+    processor = DbtLocalArtifactProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="job-namespace",
+        project_dir=path,
+        dbt_command_line=["dbt-ol", "test", "--profiles-dir", path],
+    )
+    processor.dbt_run_metadata = parent_run_metadata
+
+    dbt_events = processor.parse()
+    events = [
+        attr.asdict(event, value_serializer=serialize)
+        for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
+    ]
+    with open(f"{path}/result.json") as f:
+        assert match(json.load(f), events)
+
+
+@mock.patch("openlineage.common.provider.dbt.processor.generate_new_uuid")
 @mock.patch.dict(
     os.environ,
     {

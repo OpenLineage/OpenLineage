@@ -28,7 +28,7 @@ public final class KinesisConfig implements TransportConfig, MergeConfig<Kinesis
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Getter
   @Setter
-  private Properties properties;
+  private Properties properties = new Properties();
 
   @Override
   public KinesisConfig mergeWithNonNull(KinesisConfig other) {
