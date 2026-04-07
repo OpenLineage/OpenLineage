@@ -6,7 +6,7 @@ sidebar_position: 10
 
 The facet contains the results of test executions associated with a run, capturing test outcomes and configured severities independently of dataset attribution.
 
-Use this facet to record whether quality checks passed or failed alongside the job run that triggered them. Each `Test` entry captures the test name, its execution outcome (`status`), and optionally the configured severity, expected vs. actual values, and the test body.
+Use this facet to record whether quality checks passed or failed alongside the job run that triggered them. Each `TestExecution` entry captures the test name, its execution outcome (`status`), and optionally the configured severity, expected vs. actual values, and the test body.
 
 Fields per test entry:
 

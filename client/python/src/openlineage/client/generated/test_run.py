@@ -11,7 +11,7 @@ from openlineage.client.utils import RedactMixin
 
 
 @attr.define
-class Test(RedactMixin):
+class TestExecution(RedactMixin):
     """A single test execution and its result."""
 
     name: str
@@ -76,7 +76,7 @@ class Test(RedactMixin):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/Test"
+        return "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestExecution"
 
 
 @attr.define
@@ -86,7 +86,7 @@ class TestRunFacet(RunFacet):
     severities independently of dataset attribution.
     """
 
-    tests: list[Test]
+    tests: list[TestExecution]
     """List of test executions and their results."""
 
     @staticmethod

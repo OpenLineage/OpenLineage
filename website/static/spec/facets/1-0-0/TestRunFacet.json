@@ -15,7 +15,7 @@
               "description": "List of test executions and their results.",
               "type": "array",
               "items": {
-                "$ref": "#/$defs/Test"
+                "$ref": "#/$defs/TestExecution"
               }
             }
           },
@@ -24,7 +24,7 @@
       ],
       "type": "object"
     },
-    "Test": {
+    "TestExecution": {
       "type": "object",
       "description": "A single test execution and its result.",
       "properties": {

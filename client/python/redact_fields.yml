@@ -294,7 +294,7 @@
       redact_fields: [ ]
 - module: test_run
   classes:
-    - class_name: Test
+    - class_name: TestExecution
       redact_fields: []
     - class_name: TestRunFacet
       redact_fields: []
