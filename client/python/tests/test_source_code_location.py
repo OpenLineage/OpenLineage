@@ -14,6 +14,7 @@ from openlineage.client.git import (
     _read_head_content,
     _read_head_sha,
     _resolve_ref,
+    get_ci_pr_number,
     get_git_branch,
     get_git_repo_url,
     get_git_tag,
@@ -519,3 +520,46 @@ class TestAddSourceCodeLocationFacet:
             result = client.add_source_code_location_facet(_make_run_event())
 
         assert result.job.facets["sourceCodeLocation"].tag is None
+
+    def test_includes_pr_number_from_ci_env(self):
+        client = _make_client(repo_url="https://github.com/org/repo")
+        with (
+            patch("openlineage.client.client._find_git_dir", return_value=None),
+            patch("openlineage.client.client.get_ci_pr_number", return_value="42"),
+        ):
+            result = client.add_source_code_location_facet(_make_run_event())
+        assert result.job.facets["sourceCodeLocation"].pullRequestNumber == "42"
+
+    def test_pr_number_is_none_outside_ci(self):
+        client = _make_client(repo_url="https://github.com/org/repo")
+        with (
+            patch("openlineage.client.client._find_git_dir", return_value=None),
+            patch("openlineage.client.client.get_ci_pr_number", return_value=None),
+        ):
+            result = client.add_source_code_location_facet(_make_run_event())
+        assert result.job.facets["sourceCodeLocation"].pullRequestNumber is None
+
+
+# ---------------------------------------------------------------------------
+# get_ci_pr_number
+# ---------------------------------------------------------------------------
+class TestGetCiPrNumber:
+    @patch.dict("os.environ", {"GITHUB_REF": "refs/pull/42/merge"}, clear=True)
+    def test_github_actions_pull_request(self):
+        assert get_ci_pr_number() == "42"
+
+    @patch.dict("os.environ", {"GITHUB_REF": "refs/heads/main"}, clear=True)
+    def test_github_actions_push_returns_none(self):
+        assert get_ci_pr_number() is None
+
+    @patch.dict("os.environ", {"CI_MERGE_REQUEST_IID": "123"}, clear=True)
+    def test_gitlab_ci_merge_request(self):
+        assert get_ci_pr_number() == "123"
+
+    @patch.dict("os.environ", {}, clear=True)
+    def test_no_ci_env_vars_returns_none(self):
+        assert get_ci_pr_number() is None
+
+    @patch.dict("os.environ", {"CI_MERGE_REQUEST_IID": "99", "GITHUB_REF": "refs/pull/42/merge"}, clear=True)
+    def test_gitlab_takes_precedence_over_github(self):
+        assert get_ci_pr_number() == "99"

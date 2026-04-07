@@ -12,6 +12,7 @@ class SourceCodeLocationConfig:
     version: str | None = None
     tag: str | None = None
     branch: str | None = None
+    pull_request_number: str | None = None
 
 
 @attr.define
