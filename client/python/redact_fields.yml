@@ -292,6 +292,12 @@
       redact_fields: [ ]
     - class_name: Subset
       redact_fields: [ ]
+- module: test_run
+  classes:
+    - class_name: Test
+      redact_fields: []
+    - class_name: TestRunFacet
+      redact_fields: []
 - module: hierarchy_dataset
   classes:
     - class_name: HierarchyDatasetFacet

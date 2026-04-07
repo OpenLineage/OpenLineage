@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json",
+  "$defs": {
+    "TestRunFacet": {
+      "description": "Results of test executions associated with this run, capturing test outcomes and configured severities independently of dataset attribution.",
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "tests": {
+              "description": "List of test executions and their results.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Test"
+              }
+            }
+          },
+          "required": ["tests"]
+        }
+      ],
+      "type": "object"
+    },
+    "Test": {
+      "type": "object",
+      "description": "A single test execution and its result.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name identifying the test.",
+          "example": "assert_no_orphans"
+        },
+        "status": {
+          "type": "string",
+          "description": "The actual outcome of the test execution. Common values: 'pass' (test succeeded), 'fail' (test found issues), 'skip' (test was not executed).",
+          "example": "pass"
+        },
+        "severity": {
+          "type": "string",
+          "description": "The configured severity level of the test. Determines whether a failure blocks pipeline execution ('error') or produces a warning only ('warn').",
+          "example": "error"
+        },
+        "type": {
+          "type": "string",
+          "description": "Classification of the test, e.g. 'not_null', 'unique', 'row_count', 'freshness', 'custom_sql'.",
+          "example": "not_null"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what the test checks.",
+          "example": "Ensures all order IDs are unique across the table."
+        },
+        "expected": {
+          "type": "string",
+          "description": "The expected value or threshold for the test, serialized as a string.",
+          "example": "1000"
+        },
+        "actual": {
+          "type": "string",
+          "description": "The actual value observed during the test, serialized as a string.",
+          "example": "999"
+        },
+        "content": {
+          "type": "string",
+          "description": "The test body, e.g. a SQL query or expression.",
+          "example": "SELECT COUNT(*) FROM orders WHERE amount < 0"
+        },
+        "contentType": {
+          "type": "string",
+          "description": "The format of the content field, allowing consumers to interpret or filter test content. Common values include 'sql', 'json', 'expression'.",
+          "example": "sql"
+        },
+        "params": {
+          "type": "object",
+          "description": "Arbitrary key-value pairs for check-specific inputs.",
+          "additionalProperties": true
+        }
+      },
+      "required": ["name", "status"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "test": {
+      "$ref": "#/$defs/TestRunFacet"
+    }
+  }
+}
