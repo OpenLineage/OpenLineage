@@ -141,7 +141,7 @@ commands:
       py_env:
         type: string
         description: "Python env version"
-        default: "3.9"
+        default: "3.10"
     steps:
       - run:
           name: Install uv and Python << parameters.py_env >>
@@ -1229,7 +1229,7 @@ jobs:
             - v1.1-gradle-pre-commit-
 
       - run:
-          name: Install Python3.9 Dependencies
+          name: Install Python Dependencies
           command: |
             uv tool install prek
             uv tool run prek run --show-diff-on-failure --all-files
