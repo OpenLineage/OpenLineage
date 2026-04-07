@@ -32,11 +32,18 @@ jobs:
         shell: bash
         run: |
           includes=()
+
+          # GitHub Actions workflows (always present if the .github/workflows dir exists)
+          actions_files=$(find .github/workflows -name '*.yml' -print -quit 2>/dev/null)
+          [ -n "$actions_files" ] && includes+=('{"language":"actions","build-mode":"none"}')
+
+          # Go — conditionally scanned; autobuild works for this repo's Go module
           go_files=$(find . -not -path './.git/*' -name '*.go' -print -quit 2>/dev/null)
           [ -n "$go_files" ] && includes+=('{"language":"go","build-mode":"autobuild"}')
 
-          java_files=$(find . -not -path './.git/*' \( -name '*.java' -o -name '*.kt' \) -print -quit 2>/dev/null)
-          [ -n "$java_files" ] && includes+=('{"language":"java-kotlin","build-mode":"autobuild"}')
+          # Java/Kotlin — excluded: autobuild cannot handle OpenLineage's Gradle project
+          # without custom build steps. Add manual build steps here if Java scanning
+          # is needed in the future.
 
           py_files=$(find . -not -path './.git/*' -name '*.py' -print -quit 2>/dev/null)
           [ -n "$py_files" ] && includes+=('{"language":"python","build-mode":"none"}')
