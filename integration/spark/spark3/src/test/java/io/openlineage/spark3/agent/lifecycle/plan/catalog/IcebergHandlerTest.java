@@ -857,4 +857,3 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
   }
 }
-
