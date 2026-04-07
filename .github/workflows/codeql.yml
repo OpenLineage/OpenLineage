@@ -43,9 +43,12 @@ jobs:
           actions_files=$(find .github/workflows -name '*.yml' -print -quit 2>/dev/null)
           [ -n "$actions_files" ] && includes+=('{"language":"actions","build-mode":"none"}')
 
-          # Go — conditionally scanned; autobuild works for this repo's Go module
-          go_files=$(find . -not -path './.git/*' -name '*.go' -print -quit 2>/dev/null)
-          [ -n "$go_files" ] && includes+=('{"language":"go","build-mode":"autobuild"}')
+          # Go — excluded: CodeQL's autobuild fails to extract Go source code for
+          # this project ("no Go source code written") regardless of whether
+          # client/go/ is present. Re-enable once the Go module is compatible
+          # with CodeQL autobuild (see GitHub's troubleshooting guide for details).
+          # go_files=$(find . -not -path './.git/*' -name '*.go' -print -quit 2>/dev/null)
+          # [ -n "$go_files" ] && includes+=('{"language":"go","build-mode":"autobuild"}')
 
           # Java/Kotlin — excluded: autobuild cannot handle OpenLineage's Gradle project
           # without custom build steps. Add manual build steps here if Java scanning
