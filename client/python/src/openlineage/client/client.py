@@ -23,6 +23,7 @@ from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
 from openlineage.client.filter import Filter, FilterConfig, create_filter
 from openlineage.client.git import (
     _find_git_dir,
+    get_ci_pr_number,
     get_git_branch,
     get_git_repo_url,
     get_git_tag,
@@ -547,6 +548,7 @@ class OpenLineageClient:
         sha: str | None = scl.version
         branch: str | None = scl.branch
         tag: str | None = scl.tag
+        pr_number: str | None = scl.pull_request_number
 
         try:
             git_dir = _find_git_dir()
@@ -562,10 +564,13 @@ class OpenLineageClient:
         except Exception:
             log.warning("Failed to read git metadata for sourceCodeLocation facet", exc_info=True)
 
+        if pr_number is None:
+            pr_number = get_ci_pr_number()
+
         if url is None:
             return None
 
-        return {"url": url, "version": sha, "branch": branch, "tag": tag}
+        return {"url": url, "version": sha, "branch": branch, "tag": tag, "pullRequestNumber": pr_number}
 
     def add_source_code_location_facet(self, event: Event) -> Event:
         """Adds sourceCodeLocation job facet if not already present and not disabled."""
@@ -587,5 +592,6 @@ class OpenLineageClient:
                 version=scl["version"],
                 branch=scl["branch"],
                 tag=scl["tag"],
+                pullRequestNumber=scl["pullRequestNumber"],
             )
         return event

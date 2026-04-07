@@ -35,11 +35,6 @@
               "type": "string",
               "description": "dbt cloud account id",
               "example": "1234567890"
-            },
-            "pr_number": {
-              "type": "string",
-              "description": "Pull request or merge request number associated with a CI run. Populated from CI platform environment variables (e.g. GITHUB_REF, CI_MERGE_REQUEST_IID).",
-              "example": "42"
             }
           },
           "required": ["invocation_id"]

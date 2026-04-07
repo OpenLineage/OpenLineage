@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import configparser
 import logging
+import os
+import re
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -133,6 +135,27 @@ def get_git_branch(git_dir: Path) -> str | None:
     content = _read_head_content(git_dir)
     prefix = "ref: refs/heads/"
     return content.removeprefix(prefix) if content and content.startswith(prefix) else None
+
+
+def get_ci_pr_number() -> str | None:
+    """Detect the PR/MR number from CI platform environment variables.
+
+    Supports GitHub Actions (GITHUB_REF) and GitLab CI (CI_MERGE_REQUEST_IID).
+    Returns None if not running in a CI context or no PR is associated.
+    """
+    # GitLab CI: set automatically for merge request pipelines
+    gitlab_mr_iid = os.getenv("CI_MERGE_REQUEST_IID")
+    if gitlab_mr_iid:
+        return gitlab_mr_iid
+
+    # GitHub Actions: GITHUB_REF is "refs/pull/{number}/merge" for pull_request events
+    github_ref = os.getenv("GITHUB_REF")
+    if github_ref:
+        match = re.match(r"refs/pull/(\d+)/merge", github_ref)
+        if match:
+            return match.group(1)
+
+    return None
 
 
 def get_git_tag(git_dir: Path) -> str | None:

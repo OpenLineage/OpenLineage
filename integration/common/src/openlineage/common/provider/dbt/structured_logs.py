@@ -40,7 +40,6 @@ from openlineage.common.provider.dbt.utils import (
     DBT_LOG_FILE_MAX_BYTES,
     HANDLED_COMMANDS,
     generate_run_event,
-    get_ci_pr_number,
     get_dbt_command,
     get_dbt_log_path,
     get_dbt_profiles_dir,
@@ -724,7 +723,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 project_version=self.project_version,
                 profile_name=self.profile_name,
                 dbt_runtime="core",
-                pr_number=get_ci_pr_number(),
             )
         }
 

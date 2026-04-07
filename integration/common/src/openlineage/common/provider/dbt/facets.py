@@ -54,7 +54,6 @@ class DbtRunRunFacet(BaseFacet):
     project_version: str | None = attr.field(default=None)
     profile_name: str | None = attr.field(default=None)
     account_id: str | None = attr.field(default=None)
-    pr_number: str | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
