@@ -18,6 +18,12 @@ on:
 permissions:
   contents: read
 
+# Cancel any in-progress run for the same ref to avoid concurrent SARIF uploads
+# conflicting with each other or with GitHub's Default Setup.
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   detect-languages:
     name: Detect languages
