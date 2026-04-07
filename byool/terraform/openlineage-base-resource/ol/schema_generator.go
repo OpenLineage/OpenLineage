@@ -128,11 +128,11 @@ func jobTypeBlock() schema.SingleNestedBlock {
 		Description: "Job type classification (facets.JobType)",
 		Attributes: map[string]schema.Attribute{
 			"processing_type": schema.StringAttribute{
-				Optional:    true,
+				Required:    true,
 				Description: "BATCH or STREAMING",
 			},
 			"integration": schema.StringAttribute{
-				Optional:    true,
+				Required:    true,
 				Description: "Integration type e.g. SPARK, AIRFLOW, DBT, BYOL",
 			},
 			"job_type": schema.StringAttribute{
@@ -242,6 +242,8 @@ func sqlBlock() schema.SingleNestedBlock {
 	}
 }
 
+// jobTagsBlock: value is Required (TagClass.Value is a non-pointer string in the OL spec).
+// description is not part of the OL TagClass facet and is omitted.
 func jobTagsBlock() schema.ListNestedBlock {
 	return schema.ListNestedBlock{
 		Description: "Free-form tags attached to this job (facets.TagsJobFacet)",
@@ -249,15 +251,11 @@ func jobTagsBlock() schema.ListNestedBlock {
 			Attributes: map[string]schema.Attribute{
 				"name": schema.StringAttribute{
 					Required:    true,
-					Description: "Tag name",
+					Description: "Tag key",
 				},
 				"value": schema.StringAttribute{
-					Optional:    true,
+					Required:    true,
 					Description: "Tag value",
-				},
-				"description": schema.StringAttribute{
-					Optional:    true,
-					Description: "Tag description",
 				},
 			},
 		},
@@ -389,9 +387,8 @@ func datasetTypeBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "Dataset type classification (facets.DatasetType)",
 		Attributes: map[string]schema.Attribute{
-			"dataset_type":  schema.StringAttribute{Required: true, Description: "e.g. TABLE, VIEW, STREAM"},
-			"media_type":    schema.StringAttribute{Optional: true, Description: "e.g. application/json"},
-			"storage_layer": schema.StringAttribute{Optional: true, Description: "e.g. bigquery, hive"},
+			"dataset_type": schema.StringAttribute{Required: true, Description: "e.g. TABLE, VIEW, STREAM"},
+			"sub_type":     schema.StringAttribute{Optional: true, Description: "Optional sub-type e.g. MATERIALIZED, EXTERNAL, TEMPORARY"},
 		},
 	}
 }
@@ -467,7 +464,9 @@ func hierarchyElementBlock(desc string) schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: desc,
 		Attributes: map[string]schema.Attribute{
-			"namespace": schema.StringAttribute{Required: true, Description: "Namespace"},
+			// namespace is accepted for config portability but is not part of the
+			// OL HierarchyElement spec and is not included in emitted events.
+			"namespace": schema.StringAttribute{Optional: true, Description: "Namespace (accepted but not emitted — HierarchyElement has no namespace field in the OL spec)"},
 			"name":      schema.StringAttribute{Required: true, Description: "Name"},
 			"type":      schema.StringAttribute{Optional: true, Description: "e.g. TABLE, PARTITION"},
 		},
@@ -479,7 +478,9 @@ func hierarchyElementListBlock(desc string) schema.ListNestedBlock {
 		Description: desc,
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"namespace": schema.StringAttribute{Required: true, Description: "Namespace"},
+				// namespace is accepted for config portability but is not part of the
+				// OL HierarchyElement spec and is not included in emitted events.
+				"namespace": schema.StringAttribute{Optional: true, Description: "Namespace (accepted but not emitted — HierarchyElement has no namespace field in the OL spec)"},
 				"name":      schema.StringAttribute{Required: true, Description: "Name"},
 				"type":      schema.StringAttribute{Optional: true, Description: "e.g. TABLE, PARTITION"},
 			},
@@ -501,14 +502,15 @@ func catalogBlock() schema.SingleNestedBlock {
 	}
 }
 
+// datasetTagsBlock: value is Required (TagElement.Value is a non-pointer string in the OL spec).
+// description is not part of the OL TagElement facet and is omitted.
 func datasetTagsBlock() schema.ListNestedBlock {
 	return schema.ListNestedBlock{
 		Description: "Free-form tags on this dataset (facets.TagsDatasetFacet)",
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"name":        schema.StringAttribute{Required: true, Description: "Tag name"},
-				"value":       schema.StringAttribute{Optional: true, Description: "Tag value"},
-				"description": schema.StringAttribute{Optional: true, Description: "Tag description"},
+				"name":  schema.StringAttribute{Required: true, Description: "Tag key"},
+				"value": schema.StringAttribute{Required: true, Description: "Tag value"},
 			},
 		},
 	}
@@ -568,20 +570,21 @@ func columnLineageDatasetBlock() schema.ListNestedBlock {
 	}
 }
 
-func transformationBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+// transformationBlock is a SingleNestedBlock — the OL spec allows at most one
+// transformation per input field. Using a single block enforces this constraint
+// in the schema and aligns with the *TransformationModel pointer in the model.
+func transformationBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		Description: "How the input data was transformed to produce the output (facets.Transformation)",
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"type":        schema.StringAttribute{Required: true, Description: "DIRECT or INDIRECT"},
-				"subtype":     schema.StringAttribute{Optional: true, Description: "e.g. IDENTITY, AGGREGATION, FILTER"},
-				"description": schema.StringAttribute{Optional: true, Description: "Human-readable transformation description"},
-				"masking": schema.BoolAttribute{
-					Optional:    true,
-					Description: "True if this transformation masks/anonymises data",
-					PlanModifiers: []planmodifier.Bool{
-						boolplanmodifier.UseStateForUnknown(),
-					},
+		Attributes: map[string]schema.Attribute{
+			"type":        schema.StringAttribute{Required: true, Description: "DIRECT or INDIRECT"},
+			"subtype":     schema.StringAttribute{Optional: true, Description: "e.g. IDENTITY, AGGREGATION, FILTER"},
+			"description": schema.StringAttribute{Optional: true, Description: "Human-readable transformation description"},
+			"masking": schema.BoolAttribute{
+				Optional:    true,
+				Description: "True if this transformation masks/anonymises data",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
 		},
