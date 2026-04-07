@@ -120,7 +120,7 @@ Current behavior:
 This section is a step-by-step guide to building a Terraform provider that targets a new
 OpenLineage consumer (Marquez, Atlas, etc.) using this package as a base.
 
-See `PROVIDER_DEVELOPER_GUIDE.md` in the repo root for full code templates.
+The full provider-author guide and code templates are included in the steps below.
 
 ### Step 1 — Define a consumer model
 
