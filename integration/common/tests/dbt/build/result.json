@@ -48,7 +48,7 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "test": {
-          "_producer": "",
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
           "tests": [
             {
@@ -73,7 +73,7 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "test": {
-          "_producer": "",
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
           "tests": [
             {
@@ -98,7 +98,7 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "test": {
-          "_producer": "",
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
           "tests": [
             {
@@ -286,7 +286,7 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "test": {
-          "_producer": "",
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
           "tests": [
             {
@@ -311,7 +311,7 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "test": {
-          "_producer": "",
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
           "tests": [
             {
@@ -336,7 +336,7 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "test": {
-          "_producer": "",
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TestRunFacet.json#/$defs/TestRunFacet",
           "tests": [
             {

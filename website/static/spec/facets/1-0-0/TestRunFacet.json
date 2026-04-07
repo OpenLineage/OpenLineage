@@ -54,12 +54,14 @@
           "example": "Ensures all order IDs are unique across the table."
         },
         "expected": {
-          "description": "The expected value or threshold for the test. Accepts any JSON value.",
-          "example": 1000
+          "type": "string",
+          "description": "The expected value or threshold for the test, serialized as a string.",
+          "example": "1000"
         },
         "actual": {
-          "description": "The actual value observed during the test. Accepts any JSON value.",
-          "example": 999
+          "type": "string",
+          "description": "The actual value observed during the test, serialized as a string.",
+          "example": "999"
         },
         "content": {
           "type": "string",

@@ -46,15 +46,15 @@ class Test(RedactMixin):
 
     Example: Ensures all order IDs are unique across the table.
     """
-    expected: Any | None = attr.field(default=None)
+    expected: str | None = attr.field(default=None)
     """
-    The expected value or threshold for the test. Accepts any JSON value.
+    The expected value or threshold for the test, serialized as a string.
 
     Example: 1000
     """
-    actual: Any | None = attr.field(default=None)
+    actual: str | None = attr.field(default=None)
     """
-    The actual value observed during the test. Accepts any JSON value.
+    The actual value observed during the test, serialized as a string.
 
     Example: 999
     """
