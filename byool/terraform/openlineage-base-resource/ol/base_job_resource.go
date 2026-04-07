@@ -8,7 +8,6 @@ package ol
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -28,7 +27,7 @@ type JobResourceBackend interface {
 	// Capability declares which OL facets this consumer supports.
 	Capability() JobCapability
 
-	// ConsumerConfigure initialises the consumer client from dataplex config.
+	// ConsumerConfigure initialises the consumer client from provider config.
 	ConsumerConfigure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse)
 
 	// ConsumerAttributes returns schema attributes added by this consumer
@@ -42,7 +41,9 @@ type JobResourceBackend interface {
 	NewModel() any
 
 	// ConsumerEmit builds and sends the OL event, updating consumer state in model.
-	ConsumerEmit(ctx context.Context, model any, runID uuid.UUID) diag.Diagnostics
+	// Consumers that need the run ID (e.g. run resources) read it from the event
+	// returned by BuildRunEvent — the base no longer threads a UUID through here.
+	ConsumerEmit(ctx context.Context, model any) diag.Diagnostics
 
 	// ConsumerRead checks whether the entity exists and refreshes computed fields.
 	// Returns false if it no longer exists (triggers re-create).
@@ -99,7 +100,7 @@ func (r *BaseJobResource) Create(ctx context.Context, req resource.CreateRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model, uuid.New())...)
+	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -130,7 +131,7 @@ func (r *BaseJobResource) Update(ctx context.Context, req resource.UpdateRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model, uuid.New())...)
+	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -144,4 +145,7 @@ func (r *BaseJobResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 	resp.Diagnostics.Append(r.Backend.ConsumerDelete(ctx, model)...)
+	if !resp.Diagnostics.HasError() {
+		resp.State.RemoveResource(ctx)
+	}
 }

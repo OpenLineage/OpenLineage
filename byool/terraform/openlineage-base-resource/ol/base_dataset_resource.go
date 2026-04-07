@@ -8,7 +8,6 @@ package ol
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -21,7 +20,9 @@ type DatasetResourceBackend interface {
 	ConsumerAttributes() map[string]schema.Attribute
 	ConsumerBlocks() map[string]schema.Block
 	NewModel() any
-	ConsumerEmit(ctx context.Context, model any, runID uuid.UUID) diag.Diagnostics
+	// ConsumerEmit builds and sends the OL DatasetEvent, updating consumer state in model.
+	// Dataset events have no run identity, so no run ID is threaded through.
+	ConsumerEmit(ctx context.Context, model any) diag.Diagnostics
 	ConsumerRead(ctx context.Context, model any) (exists bool, diags diag.Diagnostics)
 	ConsumerDelete(ctx context.Context, model any) diag.Diagnostics
 }
@@ -57,7 +58,7 @@ func (r *BaseDatasetResource) Create(ctx context.Context, req resource.CreateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model, uuid.New())...)
+	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -88,7 +89,7 @@ func (r *BaseDatasetResource) Update(ctx context.Context, req resource.UpdateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model, uuid.New())...)
+	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -102,4 +103,7 @@ func (r *BaseDatasetResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 	resp.Diagnostics.Append(r.Backend.ConsumerDelete(ctx, model)...)
+	if !resp.Diagnostics.HasError() {
+		resp.State.RemoveResource(ctx)
+	}
 }
