@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 // JobResourceBackend defines the consumer-specific operations that BaseJobResource
@@ -50,11 +51,8 @@ func (r *BaseJobResource) Metadata(_ context.Context, req resource.MetadataReque
 	resp.TypeName = req.ProviderTypeName + "_job"
 }
 
-// Schema generates the job schema from the backend's JobCapability, then merges
-// in any consumer-specific attributes and blocks.
-func (r *BaseJobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	if !r.checkBackend(&resp.Diagnostics) {
-		return
-	}
-	r.mergeConsumerSchema(&resp.Schema, GenerateJobSchema(r.Backend.Capability()))
+// baseSchema implements ResourceBackend.baseSchema for job resources.
+// Consumers who embed BaseJobResource inherit this automatically.
+func (r *BaseJobResource) baseSchema() schema.Schema {
+	return GenerateJobSchema(r.Backend.Capability())
 }

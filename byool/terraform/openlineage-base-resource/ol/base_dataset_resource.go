@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 // DatasetResourceBackend defines the consumer-specific operations for dataset resources.
@@ -20,7 +21,7 @@ type DatasetResourceBackend interface {
 }
 
 // BaseDatasetResource is the generic base for all dataset resources.
-// Owns Metadata, Schema, and the full CRUD flow (Configure/Create/Read/Update/Delete
+// Owns Metadata and the full CRUD flow (Schema/Configure/Create/Read/Update/Delete
 // are promoted from resourceBase).
 type BaseDatasetResource struct {
 	resourceBase[DatasetResourceBackend]
@@ -30,11 +31,8 @@ func (r *BaseDatasetResource) Metadata(_ context.Context, req resource.MetadataR
 	resp.TypeName = req.ProviderTypeName + "_dataset"
 }
 
-// Schema generates the dataset schema from the backend's DatasetCapability, then merges
-// in any consumer-specific attributes and blocks.
-func (r *BaseDatasetResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	if !r.checkBackend(&resp.Diagnostics) {
-		return
-	}
-	r.mergeConsumerSchema(&resp.Schema, GenerateDatasetSchema(r.Backend.Capability()))
+// baseSchema implements ResourceBackend.baseSchema for dataset resources.
+// Consumers who embed BaseDatasetResource inherit this automatically.
+func (r *BaseDatasetResource) baseSchema() schema.Schema {
+	return GenerateDatasetSchema(r.Backend.Capability())
 }
