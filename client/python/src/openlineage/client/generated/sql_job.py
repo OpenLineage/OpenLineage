@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import JobFacet
 
@@ -14,6 +16,8 @@ class SQLJobFacet(JobFacet):
 
     dialect: str | None = attr.field(default=None)
     """Example: snowflake"""
+
+    key: ClassVar[str] = "sql"
 
     @staticmethod
     def _get_schema() -> str:

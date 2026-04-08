@@ -18,6 +18,7 @@ class SourceCodeJobFacet(JobFacet):
     """Source code of this job."""
 
     _additional_skip_redact: ClassVar[list[str]] = ["language"]
+    key: ClassVar[str] = "sourceCode"
 
     @staticmethod
     def _get_schema() -> str:

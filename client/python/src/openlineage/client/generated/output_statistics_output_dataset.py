@@ -21,6 +21,7 @@ class OutputStatisticsOutputDatasetFacet(OutputDatasetFacet):
     """The number of files written to the dataset"""
 
     _additional_skip_redact: ClassVar[list[str]] = ["rowCount", "size"]
+    key: ClassVar[str] = "outputStatistics"
 
     @staticmethod
     def _get_schema() -> str:
