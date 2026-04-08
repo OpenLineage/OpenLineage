@@ -10,18 +10,32 @@ Provide a reusable base where OpenLineage config is as interchangeable as possib
 
 ## Architecture (Strategy Pattern)
 
-`BaseJobResource` and `BaseDatasetResource` own Terraform lifecycle flow, while consumer-specific behavior is delegated to backend interfaces.
+The package uses a three-layer design:
 
-For job resources, `BaseJobResource` delegates to `JobResourceBackend`:
+```
+resourceBase[B]          — generic; holds Backend, CRUD lifecycle, nil-check
+  └─ BaseJobResource     — job-specific: Metadata ("_job"), Schema (GenerateJobSchema)
+  └─ BaseDatasetResource — dataset-specific: Metadata ("_dataset"), Schema (GenerateDatasetSchema)
 
-- `Capability()`
-- `ConsumerConfigure(...)`
-- `ConsumerAttributes()`
-- `ConsumerBlocks()`
-- `NewModel()`
-- `ConsumerEmit(...)`
-- `ConsumerRead(...)`
-- `ConsumerDelete(...)`
+ResourceBackend          — shared interface (7 lifecycle methods)
+  └─ JobResourceBackend  — adds Capability() JobCapability
+  └─ DatasetResourceBackend — adds Capability() DatasetCapability
+```
+
+`resourceBase[B]` owns all five CRUD methods (`Configure`, `Create`, `Read`, `Update`, `Delete`) and promotes them to both base types via embedding. `BaseJobResource` and `BaseDatasetResource` only add `Metadata` and `Schema`.
+
+Consumer-specific behaviour is entirely delegated through the `Backend` field:
+
+| Method | Defined on | Purpose |
+|---|---|---|
+| `Capability()` | `JobResourceBackend` / `DatasetResourceBackend` | declares supported facets |
+| `ConsumerConfigure(...)` | `ResourceBackend` | initialises client from provider config |
+| `ConsumerAttributes()` | `ResourceBackend` | extra schema attributes (e.g. system IDs) |
+| `ConsumerBlocks()` | `ResourceBackend` | extra schema blocks |
+| `NewModel()` | `ResourceBackend` | allocates a fresh state model |
+| `ConsumerEmit(...)` | `ResourceBackend` | builds and sends the OL event |
+| `ConsumerRead(...)` | `ResourceBackend` | checks existence, refreshes computed fields |
+| `ConsumerDelete(...)` | `ResourceBackend` | removes the entity from the consumer |
 
 Typical constructor pattern:
 
@@ -32,8 +46,6 @@ func NewMyJobResource() resource.Resource {
     return r
 }
 ```
-
-`BaseJobResource.Schema()` generates the generic schema from capability and then merges consumer-specific attributes/blocks.
 
 ## Data Models
 
@@ -60,9 +72,13 @@ Capabilities declare supported facets for a given consumer/resource:
 
 - `EmptyJobCapability()`
 - `EmptyDatasetCapability()`
-- `WithFacetEnabled(...)`
+- `JobCapability.WithFacetEnabled(...JobFacet)` — enables job-level facets
+- `JobCapability.WithDatasetFacetEnabled(...DatasetFacet)` — enables dataset facets for the job's inputs/outputs
+- `DatasetCapability.WithFacetEnabled(...DatasetFacet)` — enables dataset facets; job facets are not accepted (compile-time error)
 
-Facet constants are defined in `capability.go` and cover both job and dataset facets.
+Facet constants are defined in `capability.go` and split by type:
+`FacetJob*` constants are of type `JobFacet`; `FacetDataset*` constants are of type `DatasetFacet`.
+Passing a `JobFacet` to `DatasetCapability.WithFacetEnabled` is caught at compile time.
 
 Facets that are not explicitly enabled are represented as compatibility stubs in generated schema:
 
@@ -84,7 +100,7 @@ Current behavior:
 - `inputs` and `outputs` are always present and use capability-aware dataset facet blocks,
 - standalone dataset schema is also capability-driven.
 
-Consumer-specific schema parts are merged after generation by base resources.
+Consumer-specific schema parts are merged after generation by `resourceBase.mergeConsumerSchema`.
 
 ## Event Builder
 
@@ -107,11 +123,12 @@ Current behavior:
 
 ## Package Files
 
-- `base_job_resource.go` - generic CRUD/resource flow for job resources
-- `base_dataset_resource.go` - generic CRUD/resource flow for dataset resources
+- `base_resource.go` - `ResourceBackend` interface, `resourceBase[B]` generic struct, all shared CRUD methods
+- `base_job_resource.go` - `JobResourceBackend` interface, `BaseJobResource` (Metadata + Schema only)
+- `base_dataset_resource.go` - `DatasetResourceBackend` interface, `BaseDatasetResource` (Metadata + Schema only)
 - `models.go` - top-level Terraform state models
 - `ol_models.go` - OpenLineage-shaped models and facet structures
-- `capability.go` - facet enum and capability types
+- `capability.go` - `JobFacet`/`DatasetFacet` types, facet constants, `JobCapability`/`DatasetCapability`
 - `schema_generator.go` - capability-driven Terraform schema builders
 - `event_builder.go` - model to OpenLineage event mapping
 
@@ -162,20 +179,22 @@ func NewMyJobResource() resource.Resource {
 }
 ```
 
+`JobResourceBackend` requires only `Capability()` on top of the seven methods from `ResourceBackend`.
+
 ### Step 3 — Declare `Capability`
 
 Start from `EmptyJobCapability()` and enable only what the target system supports.
 Facets that are not enabled remain in the schema as `Optional + Computed` stubs —
 config copied from another consumer is accepted without error, values are ignored.
 
+Use `WithFacetEnabled` for job-level facets and `WithDatasetFacetEnabled` for facets
+that should be emitted on the job's inputs and outputs.
+
 ```go
 func (r *MyJobResource) Capability() ol.JobCapability {
-    return ol.EmptyJobCapability().WithFacetEnabled(
-        ol.FacetJobType,
-        ol.FacetJobOwnership,
-        ol.FacetDatasetSymlinks,
-        ol.FacetDatasetCatalog,
-    )
+    return ol.EmptyJobCapability().
+        WithFacetEnabled(ol.FacetJobType, ol.FacetJobOwnership).
+        WithDatasetFacetEnabled(ol.FacetDatasetSymlinks, ol.FacetDatasetCatalog)
 }
 ```
 
@@ -206,11 +225,11 @@ Build the OL event from the generic model, call the consumer API, and write
 consumer-specific IDs back into the model state.
 
 ```go
-func (r *MyJobResource) ConsumerEmit(ctx context.Context, modelAny any, runID uuid.UUID) diag.Diagnostics {
+func (r *MyJobResource) ConsumerEmit(ctx context.Context, modelAny any) diag.Diagnostics {
     var diags diag.Diagnostics
     model := modelAny.(*MyJobModel)
 
-    event := ol.BuildRunEvent(&model.JobResourceModel)
+    event := ol.BuildRunEvent(&model.JobResourceModel, r.Capability())
     emittedRunID := event.Run.RunID
 
     result, err := r.client.Emit(ctx, event)
@@ -228,7 +247,7 @@ func (r *MyJobResource) ConsumerEmit(ctx context.Context, modelAny any, runID uu
 ### Step 6 — Implement `ConsumerRead`
 
 Return `false` (not an error) when the entity no longer exists — this signals drift
-to `BaseJobResource`, which calls `RemoveResource()` to trigger re-create on next plan.
+to `resourceBase`, which calls `RemoveResource()` to trigger re-create on next plan.
 
 ```go
 func (r *MyJobResource) ConsumerRead(ctx context.Context, modelAny any) (bool, diag.Diagnostics) {
@@ -256,6 +275,24 @@ func (r *MyJobResource) ConsumerDelete(ctx context.Context, modelAny any) diag.D
 }
 ```
 
+### Step 8 — Implement `ConsumerConfigure`
+
+Initialise the consumer client from provider-level configuration data passed by the framework.
+
+```go
+func (r *MyJobResource) ConsumerConfigure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+    if req.ProviderData == nil {
+        return
+    }
+    client, ok := req.ProviderData.(*MyClient)
+    if !ok {
+        resp.Diagnostics.AddError("Unexpected provider data", fmt.Sprintf("expected *MyClient, got %T", req.ProviderData))
+        return
+    }
+    r.client = client
+}
+```
+
 ### `NewModel` factory
 
 Must return a pointer to the concrete consumer model, not `ol.JobResourceModel`:
@@ -274,4 +311,6 @@ func (r *MyJobResource) NewModel() any {
 | `nil pointer dereference` in emit | `r.Backend = r` missing | add self-reference in constructor |
 | Schema missing fields from embedded model | consumer redeclares generic keys | remove `namespace`, `name`, `description`, `inputs`, `outputs` from `ConsumerAttributes()` |
 | Drift not detected | `ConsumerRead` returns `error` instead of `false` for missing resource | return `false, nil` when not found |
-| Build fails after package update | consumer still calls `BuildRunEvent(..., runID)` | call `BuildRunEvent(&model.JobResourceModel)` and read `event.Run.RunID` from the returned event if needed |
+| Build fails after package update | consumer still passes a `runID` argument to `BuildRunEvent` | call `BuildRunEvent(&model.JobResourceModel, r.Capability())` — the run ID is generated internally and can be read from `event.Run.RunID` |
+| Dataset facets missing on job inputs/outputs | dataset facets enabled via `WithFacetEnabled` instead of `WithDatasetFacetEnabled` | use `WithDatasetFacetEnabled(ol.FacetDataset*)` for inputs/outputs facets |
+| Compile error passing `FacetJob*` to `DatasetCapability` | job facets used in a dataset capability | `FacetJob*` constants are type `JobFacet` and are only accepted by `JobCapability.WithFacetEnabled` |

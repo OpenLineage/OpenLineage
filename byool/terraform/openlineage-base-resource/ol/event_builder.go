@@ -16,6 +16,14 @@ import (
 // which system generated the lineage data.
 const producer = "https://github.com/OpenLineage/openlineage/byool/terraform"
 
+// datasetFacetSelector is the minimal interface required by the dataset-facet building
+// helpers. Both JobCapability and DatasetCapability satisfy it, so the helpers work
+// for both job inputs/outputs and standalone dataset events without depending on the
+// raw capability struct.
+type datasetFacetSelector interface {
+	IsDatasetEnabled(DatasetFacet) bool
+}
+
 // BuildRunEvent wraps a JobEvent with run-specific fields (event type + generated run ID).
 // cap controls which job and dataset facets are emitted — disabled facets are skipped
 // even if the corresponding model blocks are populated.
@@ -54,11 +62,11 @@ func BuildJobEvent(data *JobResourceModel, cap JobCapability) *openlineage.JobEv
 	}
 
 	for _, input := range data.Inputs {
-		event = event.WithInputs(buildInputElement(&input, cap.capability))
+		event = event.WithInputs(buildInputElement(&input, cap))
 	}
 
 	for _, output := range data.Outputs {
-		event = event.WithOutputs(buildOutputElement(&output, cap.capability))
+		event = event.WithOutputs(buildOutputElement(&output, cap))
 	}
 
 	return event
@@ -102,54 +110,71 @@ func buildJobFacets(data *OLJobConfig, cap JobCapability) []facets.JobFacet {
 	}
 
 	if cap.IsEnabled(FacetJobDocumentation) && data.Documentation != nil {
-		fs = append(fs, facets.NewDocumentationJobFacet(
-			producer,
-			data.Documentation.Description.ValueString(),
-		))
+		if !data.Documentation.Description.IsNull() && !data.Documentation.Description.IsUnknown() {
+			fs = append(fs, facets.NewDocumentationJobFacet(
+				producer,
+				data.Documentation.Description.ValueString(),
+			))
+		}
 	}
 
 	if cap.IsEnabled(FacetJobSourceCode) && data.SourceCode != nil {
-		fs = append(fs, facets.NewSourceCodeJobFacet(
-			producer,
-			data.SourceCode.Language.ValueString(),
-			data.SourceCode.SourceCode.ValueString(),
-		))
+		if !data.SourceCode.Language.IsNull() && !data.SourceCode.Language.IsUnknown() &&
+			!data.SourceCode.SourceCode.IsNull() && !data.SourceCode.SourceCode.IsUnknown() {
+			fs = append(fs, facets.NewSourceCodeJobFacet(
+				producer,
+				data.SourceCode.Language.ValueString(),
+				data.SourceCode.SourceCode.ValueString(),
+			))
+		}
 	}
 
 	if cap.IsEnabled(FacetJobSourceCodeLocation) && data.SourceCodeLocation != nil {
-		scl := facets.NewSourceCodeLocationJobFacet(
-			producer,
-			data.SourceCodeLocation.Type.ValueString(),
-			data.SourceCodeLocation.URL.ValueString(),
-		)
-		if !data.SourceCodeLocation.RepoURL.IsNull() && !data.SourceCodeLocation.RepoURL.IsUnknown() {
-			scl = scl.WithRepoURL(data.SourceCodeLocation.RepoURL.ValueString())
+		// type and url are Required in the schema but can be Unknown at plan time
+		// when derived from another resource — skip the facet rather than emitting
+		// empty strings into the event.
+		if !data.SourceCodeLocation.Type.IsNull() && !data.SourceCodeLocation.Type.IsUnknown() &&
+			!data.SourceCodeLocation.URL.IsNull() && !data.SourceCodeLocation.URL.IsUnknown() {
+			scl := facets.NewSourceCodeLocationJobFacet(
+				producer,
+				data.SourceCodeLocation.Type.ValueString(),
+				data.SourceCodeLocation.URL.ValueString(),
+			)
+			if !data.SourceCodeLocation.RepoURL.IsNull() && !data.SourceCodeLocation.RepoURL.IsUnknown() {
+				scl = scl.WithRepoURL(data.SourceCodeLocation.RepoURL.ValueString())
+			}
+			if !data.SourceCodeLocation.Path.IsNull() && !data.SourceCodeLocation.Path.IsUnknown() {
+				scl = scl.WithPath(data.SourceCodeLocation.Path.ValueString())
+			}
+			if !data.SourceCodeLocation.Version.IsNull() && !data.SourceCodeLocation.Version.IsUnknown() {
+				scl = scl.WithVersion(data.SourceCodeLocation.Version.ValueString())
+			}
+			if !data.SourceCodeLocation.Tag.IsNull() && !data.SourceCodeLocation.Tag.IsUnknown() {
+				scl = scl.WithTag(data.SourceCodeLocation.Tag.ValueString())
+			}
+			if !data.SourceCodeLocation.Branch.IsNull() && !data.SourceCodeLocation.Branch.IsUnknown() {
+				scl = scl.WithBranch(data.SourceCodeLocation.Branch.ValueString())
+			}
+			fs = append(fs, scl)
 		}
-		if !data.SourceCodeLocation.Path.IsNull() && !data.SourceCodeLocation.Path.IsUnknown() {
-			scl = scl.WithPath(data.SourceCodeLocation.Path.ValueString())
-		}
-		if !data.SourceCodeLocation.Version.IsNull() && !data.SourceCodeLocation.Version.IsUnknown() {
-			scl = scl.WithVersion(data.SourceCodeLocation.Version.ValueString())
-		}
-		if !data.SourceCodeLocation.Tag.IsNull() && !data.SourceCodeLocation.Tag.IsUnknown() {
-			scl = scl.WithTag(data.SourceCodeLocation.Tag.ValueString())
-		}
-		if !data.SourceCodeLocation.Branch.IsNull() && !data.SourceCodeLocation.Branch.IsUnknown() {
-			scl = scl.WithBranch(data.SourceCodeLocation.Branch.ValueString())
-		}
-		fs = append(fs, scl)
 	}
 
 	if cap.IsEnabled(FacetJobSQL) && data.SQL != nil {
-		fs = append(fs, facets.NewSQLJobFacet(producer, data.SQL.Query.ValueString()))
+		if !data.SQL.Query.IsNull() && !data.SQL.Query.IsUnknown() {
+			fs = append(fs, facets.NewSQLJobFacet(producer, data.SQL.Query.ValueString()))
+		}
 	}
 
 	if cap.IsEnabled(FacetJobTags) && len(data.Tags) > 0 {
 		tags := make([]facets.TagClass, 0, len(data.Tags))
 		for _, t := range data.Tags {
+			value := ""
+			if !t.Value.IsNull() && !t.Value.IsUnknown() {
+				value = t.Value.ValueString()
+			}
 			tags = append(tags, facets.TagClass{
 				Key:   t.Name.ValueString(),
-				Value: t.Value.ValueString(),
+				Value: value,
 			})
 		}
 		fs = append(fs, facets.NewTagsJobFacet(producer).WithTags(tags))
@@ -162,7 +187,7 @@ func buildJobFacets(data *OLJobConfig, cap JobCapability) []facets.JobFacet {
 // cap controls which dataset facets are emitted — disabled facets are skipped
 // even if the corresponding model blocks are populated.
 func BuildDatasetEvent(data *DatasetResourceModel, cap DatasetCapability) *openlineage.DatasetEvent {
-	facetsList := buildDatasetFacets(&data.DatasetModel, cap.capability)
+	facetsList := buildDatasetFacets(&data.DatasetModel, cap)
 	event := openlineage.NewDatasetEvent(
 		data.Name.ValueString(),
 		data.Namespace.ValueString(),
@@ -174,7 +199,7 @@ func BuildDatasetEvent(data *DatasetResourceModel, cap DatasetCapability) *openl
 }
 
 // buildInputElement converts a single Terraform InputModel into an OpenLineage InputElement.
-func buildInputElement(input *OLInputModel, cap capability) openlineage.InputElement {
+func buildInputElement(input *OLInputModel, cap datasetFacetSelector) openlineage.InputElement {
 	ie := openlineage.NewInputElement(
 		input.Name.ValueString(),
 		input.Namespace.ValueString(),
@@ -186,7 +211,7 @@ func buildInputElement(input *OLInputModel, cap capability) openlineage.InputEle
 }
 
 // buildOutputElement converts a single Terraform OutputModel into an OpenLineage OutputElement.
-func buildOutputElement(output *OLOutputModel, cap capability) openlineage.OutputElement {
+func buildOutputElement(output *OLOutputModel, cap datasetFacetSelector) openlineage.OutputElement {
 	oe := openlineage.NewOutputElement(
 		output.Name.ValueString(),
 		output.Namespace.ValueString(),
@@ -194,71 +219,83 @@ func buildOutputElement(output *OLOutputModel, cap capability) openlineage.Outpu
 
 	oe = oe.WithFacets(buildDatasetFacets(&output.DatasetModel, cap)...)
 
-	if cap.IsEnabled(FacetDatasetColumnLineage) && output.ColumnLineage != nil {
+	if cap.IsDatasetEnabled(FacetDatasetColumnLineage) && output.ColumnLineage != nil {
 		oe = oe.WithFacets(buildColumnLineageFacet(output.ColumnLineage))
 	}
 
 	return oe
 }
 
-func buildDatasetFacets(dataset *DatasetModel, cap capability) []facets.DatasetFacet {
+func buildDatasetFacets(dataset *DatasetModel, cap datasetFacetSelector) []facets.DatasetFacet {
 	var facetsList []facets.DatasetFacet
 
-	if cap.IsEnabled(FacetDatasetSymlinks) && len(dataset.Symlinks) > 0 {
+	if cap.IsDatasetEnabled(FacetDatasetSymlinks) && len(dataset.Symlinks) > 0 {
 		facetsList = append(facetsList, buildSymlinksFacet(dataset.Symlinks))
 	}
 
-	if cap.IsEnabled(FacetDatasetSchema) && dataset.Schema != nil {
+	if cap.IsDatasetEnabled(FacetDatasetSchema) && dataset.Schema != nil {
 		facetsList = append(facetsList, buildSchemaFacet(dataset.Schema))
 	}
 
-	if cap.IsEnabled(FacetDatasetDataSource) && dataset.DataSource != nil {
+	if cap.IsDatasetEnabled(FacetDatasetDataSource) && dataset.DataSource != nil {
 		facetsList = append(facetsList, buildDataSourceFacet(dataset.DataSource))
 	}
 
-	if cap.IsEnabled(FacetDatasetDocumentation) && dataset.Documentation != nil {
-		facetsList = append(facetsList, facets.NewDocumentationDatasetFacet(
-			producer,
-			dataset.Documentation.Description.ValueString(),
-		))
-	}
-
-	if cap.IsEnabled(FacetDatasetType) && dataset.DatasetType != nil {
-		dt := facets.NewDatasetTypeDatasetFacet(producer, dataset.DatasetType.DatasetType.ValueString())
-		if !dataset.DatasetType.SubType.IsNull() && !dataset.DatasetType.SubType.IsUnknown() {
-			dt = dt.WithSubType(dataset.DatasetType.SubType.ValueString())
+	if cap.IsDatasetEnabled(FacetDatasetDocumentation) && dataset.Documentation != nil {
+		// description is Required in the schema but can be Unknown at plan time
+		// when derived from another resource — skip rather than emitting an empty string.
+		if !dataset.Documentation.Description.IsNull() && !dataset.Documentation.Description.IsUnknown() {
+			facetsList = append(facetsList, facets.NewDocumentationDatasetFacet(
+				producer,
+				dataset.Documentation.Description.ValueString(),
+			))
 		}
-		facetsList = append(facetsList, dt)
 	}
 
-	if cap.IsEnabled(FacetDatasetVersion) && dataset.Version != nil {
-		facetsList = append(facetsList, facets.NewDatasetVersionDatasetFacet(
-			producer,
-			dataset.Version.DatasetVersion.ValueString(),
-		))
+	if cap.IsDatasetEnabled(FacetDatasetType) && dataset.DatasetType != nil {
+		// dataset_type is Required in the schema; guard against Unknown values at plan time.
+		if !dataset.DatasetType.DatasetType.IsNull() && !dataset.DatasetType.DatasetType.IsUnknown() {
+			dt := facets.NewDatasetTypeDatasetFacet(producer, dataset.DatasetType.DatasetType.ValueString())
+			if !dataset.DatasetType.SubType.IsNull() && !dataset.DatasetType.SubType.IsUnknown() {
+				dt = dt.WithSubType(dataset.DatasetType.SubType.ValueString())
+			}
+			facetsList = append(facetsList, dt)
+		}
 	}
 
-	if cap.IsEnabled(FacetDatasetStorage) && dataset.Storage != nil {
-		facetsList = append(facetsList, buildStorageFacet(dataset.Storage))
+	if cap.IsDatasetEnabled(FacetDatasetVersion) && dataset.Version != nil {
+		// dataset_version is Required in the schema; guard against Unknown values at plan time.
+		if !dataset.Version.DatasetVersion.IsNull() && !dataset.Version.DatasetVersion.IsUnknown() {
+			facetsList = append(facetsList, facets.NewDatasetVersionDatasetFacet(
+				producer,
+				dataset.Version.DatasetVersion.ValueString(),
+			))
+		}
 	}
 
-	if cap.IsEnabled(FacetDatasetOwnership) && dataset.Ownership != nil && len(dataset.Ownership.Owners) > 0 {
+	if cap.IsDatasetEnabled(FacetDatasetStorage) && dataset.Storage != nil {
+		if sf := buildStorageFacet(dataset.Storage); sf != nil {
+			facetsList = append(facetsList, sf)
+		}
+	}
+
+	if cap.IsDatasetEnabled(FacetDatasetOwnership) && dataset.Ownership != nil && len(dataset.Ownership.Owners) > 0 {
 		facetsList = append(facetsList, buildOwnershipDatasetFacet(dataset.Ownership))
 	}
 
-	if cap.IsEnabled(FacetDatasetLifecycleStateChange) && dataset.LifecycleStateChange != nil {
+	if cap.IsDatasetEnabled(FacetDatasetLifecycleStateChange) && dataset.LifecycleStateChange != nil {
 		facetsList = append(facetsList, buildLifecycleStateChangeFacet(dataset.LifecycleStateChange))
 	}
 
-	if cap.IsEnabled(FacetDatasetHierarchy) && dataset.Hierarchy != nil {
+	if cap.IsDatasetEnabled(FacetDatasetHierarchy) && dataset.Hierarchy != nil {
 		facetsList = append(facetsList, buildHierarchyFacet(dataset.Hierarchy))
 	}
 
-	if cap.IsEnabled(FacetDatasetCatalog) && dataset.Catalog != nil {
+	if cap.IsDatasetEnabled(FacetDatasetCatalog) && dataset.Catalog != nil {
 		facetsList = append(facetsList, buildCatalogFacet(dataset.Catalog))
 	}
 
-	if cap.IsEnabled(FacetDatasetTags) && len(dataset.Tags) > 0 {
+	if cap.IsDatasetEnabled(FacetDatasetTags) && len(dataset.Tags) > 0 {
 		facetsList = append(facetsList, buildTagsDatasetFacet(dataset.Tags))
 	}
 
@@ -294,7 +331,12 @@ func buildDataSourceFacet(ds *DataSourceDatasetModel) *facets.DatasourceDatasetF
 }
 
 // buildStorageFacet creates a StorageDatasetFacet from a StorageDatasetModel.
+// Returns nil if storage_layer is null or unknown (e.g. during plan), so callers
+// should check for nil and skip the facet rather than emitting an invalid event.
 func buildStorageFacet(s *StorageDatasetModel) *facets.StorageDatasetFacet {
+	if s.StorageLayer.IsNull() || s.StorageLayer.IsUnknown() {
+		return nil
+	}
 	f := facets.NewStorageDatasetFacet(producer, s.StorageLayer.ValueString())
 	if !s.FileFormat.IsNull() && !s.FileFormat.IsUnknown() {
 		f = f.WithFileFormat(s.FileFormat.ValueString())
@@ -451,8 +493,16 @@ func buildColumnLineageFacet(clm *ColumnLineageDatasetModel) *facets.ColumnLinea
 
 		// The output column name is the map key — this is how OL consumers
 		// look up "which inputs produced column X?"
-		fields[f.Name.ValueString()] = facets.FieldValue{
-			InputFields: inputFields,
+		// If the same output column appears in multiple fields blocks, aggregate
+		// their InputFields rather than silently overwriting the earlier entry.
+		fieldName := f.Name.ValueString()
+		if existing, ok := fields[fieldName]; ok {
+			existing.InputFields = append(existing.InputFields, inputFields...)
+			fields[fieldName] = existing
+		} else {
+			fields[fieldName] = facets.FieldValue{
+				InputFields: inputFields,
+			}
 		}
 	}
 

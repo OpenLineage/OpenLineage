@@ -8,54 +8,27 @@ package ol
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 // JobResourceBackend defines the consumer-specific operations that BaseJobResource
 // delegates to. Each consumer (Dataplex, Marquez, …) implements this interface.
+// The 7 shared methods are inherited from ResourceBackend; only Capability() is added here.
 //
 // Java analogy:
 //
-//	interface JobResourceBackend {
-//	    void consumerEmit();
-//	    void consumerRead();
-//	    void consumerDelete();
+//	interface JobResourceBackend extends ResourceBackend {
+//	    JobCapability capability();
 //	}
 type JobResourceBackend interface {
+	ResourceBackend
 	// Capability declares which OL facets this consumer supports.
 	Capability() JobCapability
-
-	// ConsumerConfigure initialises the consumer client from provider config.
-	ConsumerConfigure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse)
-
-	// ConsumerAttributes returns schema attributes added by this consumer
-	// (e.g. process_name, run_name) merged into the top-level schema.
-	ConsumerAttributes() map[string]schema.Attribute
-
-	// ConsumerBlocks returns schema blocks added by this consumer.
-	ConsumerBlocks() map[string]schema.Block
-
-	// NewModel returns a fresh zeroed state struct for this consumer.
-	NewModel() any
-
-	// ConsumerEmit builds and sends the OL event, updating consumer state in model.
-	// Consumers that need the run ID (e.g. run resources) read it from the event
-	// returned by BuildRunEvent — the base no longer threads a UUID through here.
-	ConsumerEmit(ctx context.Context, model any) diag.Diagnostics
-
-	// ConsumerRead checks whether the entity exists and refreshes computed fields.
-	// Returns false if it no longer exists (triggers re-create).
-	ConsumerRead(ctx context.Context, model any) (exists bool, diags diag.Diagnostics)
-
-	// ConsumerDelete removes the entity from the consumer.
-	ConsumerDelete(ctx context.Context, model any) diag.Diagnostics
 }
 
 // BaseJobResource is the generic base for all job resources.
-// Owns Metadata, Schema, and the full CRUD flow.
-// Consumer-specific behaviour is entirely delegated to JobResourceBackend.
+// Owns Metadata, Schema, and the full CRUD flow (Configure/Create/Read/Update/Delete
+// are promoted from resourceBase).
 //
 // Usage:
 //
@@ -70,82 +43,18 @@ type JobResourceBackend interface {
 //	    return r
 //	}
 type BaseJobResource struct {
-	Backend JobResourceBackend
+	resourceBase[JobResourceBackend]
 }
 
 func (r *BaseJobResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_job"
 }
 
-// Schema generates the schema from the backend's JobCapability, then merges
+// Schema generates the job schema from the backend's JobCapability, then merges
 // in any consumer-specific attributes and blocks.
 func (r *BaseJobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	s := GenerateJobSchema(r.Backend.Capability())
-	for k, v := range r.Backend.ConsumerAttributes() {
-		s.Attributes[k] = v
-	}
-	for k, v := range r.Backend.ConsumerBlocks() {
-		s.Blocks[k] = v
-	}
-	resp.Schema = s
-}
-
-func (r *BaseJobResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	r.Backend.ConsumerConfigure(ctx, req, resp)
-}
-
-func (r *BaseJobResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	model := r.Backend.NewModel()
-	resp.Diagnostics.Append(req.Plan.Get(ctx, model)...)
-	if resp.Diagnostics.HasError() {
+	if !r.checkBackend(&resp.Diagnostics) {
 		return
 	}
-	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
-}
-
-func (r *BaseJobResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	model := r.Backend.NewModel()
-	resp.Diagnostics.Append(req.State.Get(ctx, model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	exists, diags := r.Backend.ConsumerRead(ctx, model)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !exists {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
-}
-
-func (r *BaseJobResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	model := r.Backend.NewModel()
-	resp.Diagnostics.Append(req.Plan.Get(ctx, model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(r.Backend.ConsumerEmit(ctx, model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
-}
-
-func (r *BaseJobResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	model := r.Backend.NewModel()
-	resp.Diagnostics.Append(req.State.Get(ctx, model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(r.Backend.ConsumerDelete(ctx, model)...)
-	if !resp.Diagnostics.HasError() {
-		resp.State.RemoveResource(ctx)
-	}
+	r.mergeConsumerSchema(&resp.Schema, GenerateJobSchema(r.Backend.Capability()))
 }
