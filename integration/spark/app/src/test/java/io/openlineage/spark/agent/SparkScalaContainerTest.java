@@ -344,14 +344,13 @@ class SparkScalaContainerTest {
     final String className = "io.openlineage.spark.streaming.KinesisReadJob";
     Network localstackNetwork = newNetwork();
 
-    // latest left only because of issue with 3.6 version as 3.5, its planned to be fixed in 3.7
-    // (end of august)
     GenericContainer localStack =
-        new GenericContainer<>(DockerImageName.parse("localstack/localstack:latest"))
+        new GenericContainer<>(DockerImageName.parse("localstack/localstack:3.5.0"))
             .withNetwork(localstackNetwork)
             .withNetworkAliases("localstack")
             .withLogConsumer(SparkContainerUtils::consumeOutput)
             .withExposedPorts(4566)
+            .waitingFor(Wait.forHttp("/_localstack/health").forPort(4566))
             .withCommand();
 
     localStack.start();
@@ -407,7 +406,7 @@ class SparkScalaContainerTest {
             .withNetwork(localstackNetwork)
             .withLogConsumer(SparkContainerUtils::consumeOutput)
             .withEnv("AWS_ACCESS_KEY_ID", "test")
-            .withEnv("AWS_SECRET_ACCESS_KEY=", "test")
+            .withEnv("AWS_SECRET_ACCESS_KEY", "test")
             .withStartupTimeout(Duration.ofMinutes(2));
 
     List<String> command = new ArrayList<>();
