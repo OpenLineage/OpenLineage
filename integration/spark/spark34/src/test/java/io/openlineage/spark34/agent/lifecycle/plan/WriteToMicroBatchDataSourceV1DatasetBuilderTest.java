@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PathUtils;
@@ -52,10 +53,11 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
   private Sink unsupportedSink;
   private SparkListenerSQLExecutionEnd event;
   private StructType schema;
+  private OpenLineage openLineage;
 
   @BeforeEach
   void setUp() {
-    OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+    openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     SparkSession sparkSession = mock(SparkSession.class);
     SparkContext sparkContext = mock(SparkContext.class);
 
@@ -147,20 +149,23 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     when(writeToMicroBatchV1.sink()).thenReturn(fileStreamSink);
     when(writeToMicroBatchV1.schema()).thenReturn(schema);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.apply(catalogTable));
+    when(factory.createCompositeFacetBuilder())
+        .thenReturn(new DatasetCompositeFacetsBuilder(openLineage));
 
     try (MockedStatic<PathUtils> pathUtilsMock = mockStatic(PathUtils.class)) {
       pathUtilsMock
           .when(() -> PathUtils.fromCatalogTable(eq(catalogTable), any()))
           .thenReturn(catalogDatasetIdentifier);
 
-      when(factory.getDataset(eq(catalogDatasetIdentifier), eq(schema)))
+      when(factory.getDataset(eq(catalogDatasetIdentifier), any(DatasetCompositeFacetsBuilder.class)))
           .thenReturn(expectedDataset);
 
       List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
 
       assertEquals(1, result.size());
       assertEquals(expectedDataset, result.get(0));
-      verify(factory).getDataset(eq(catalogDatasetIdentifier), eq(schema));
+      verify(factory)
+          .getDataset(eq(catalogDatasetIdentifier), any(DatasetCompositeFacetsBuilder.class));
     }
   }
 }
