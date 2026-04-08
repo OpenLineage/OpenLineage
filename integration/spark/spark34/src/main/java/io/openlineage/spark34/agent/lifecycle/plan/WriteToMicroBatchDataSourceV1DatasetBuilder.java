@@ -16,6 +16,7 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -69,10 +70,15 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
         builder
             .getFacets()
             .schema(PlanUtils.schemaFacet(context.getOpenLineage(), writeToMicroBatchV1.schema()))
-            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()))
-            .hierarchy(
-                HierarchyDatasetFacetUtils.buildHierarchyFacet(
-                    context.getOpenLineage(), catalogTable.identifier()));
+            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
+        Optional.ofNullable(catalogTable.identifier())
+            .ifPresent(
+                identifier ->
+                    builder
+                        .getFacets()
+                        .hierarchy(
+                            HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                                context.getOpenLineage(), identifier)));
 
         return Collections.singletonList(factory.getDataset(di, builder));
       } else {
