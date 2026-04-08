@@ -5,22 +5,33 @@
 
 package ol
 
-// Facet identifies a single optional facet in the OL schema.
-// Used by JobCapability / DatasetCapability to declare what a consumer supports.
-type Facet int
+// JobFacet identifies a facet that applies to the job itself (not its inputs/outputs).
+// Only accepted by JobCapability.WithFacetEnabled — passing a JobFacet to
+// DatasetCapability.WithFacetEnabled is a compile-time error.
+type JobFacet int
+
+// DatasetFacet identifies a facet that applies to a dataset.
+// Accepted by DatasetCapability.WithFacetEnabled (standalone dataset resources) and by
+// JobCapability.WithDatasetFacetEnabled (to control facets emitted on a job's inputs/outputs).
+type DatasetFacet int
 
 const (
 	// ── Job facets ────────────────────────────────────────────────────────────
-	FacetJobType Facet = iota
+	// These are only meaningful for job resources.
+	FacetJobType JobFacet = iota
 	FacetJobOwnership
 	FacetJobDocumentation
 	FacetJobSourceCode
 	FacetJobSourceCodeLocation
 	FacetJobSQL
 	FacetJobTags
+)
 
-	// ── Dataset facets (shared by inputs, outputs and standalone datasets) ────
-	FacetDatasetSymlinks
+const (
+	// ── Dataset facets ────────────────────────────────────────────────────────
+	// Meaningful with DatasetCapability and with JobCapability.WithDatasetFacetEnabled
+	// (the latter controls facets emitted on a job's inputs and outputs).
+	FacetDatasetSymlinks DatasetFacet = iota
 	FacetDatasetSchema
 	FacetDatasetDataSource
 	FacetDatasetDocumentation
@@ -35,25 +46,45 @@ const (
 	FacetDatasetTags
 )
 
-// capability is the shared enabled-facet set.
-// Additive model: only explicitly enabled facets are active.
-// New facets added to the spec are stubs by default until a consumer opts in.
+// capability is the shared enabled-facet store.
+// Two separate maps prevent iota collisions between JobFacet and DatasetFacet.
 // Not exported directly — consumers use JobCapability or DatasetCapability.
 type capability struct {
-	enabled map[Facet]bool
+	jobEnabled     map[JobFacet]bool
+	datasetEnabled map[DatasetFacet]bool
 }
 
-func (c capability) IsEnabled(f Facet) bool { return c.enabled[f] }
+func (c capability) isJobEnabled(f JobFacet) bool         { return c.jobEnabled[f] }
+func (c capability) isDatasetEnabled(f DatasetFacet) bool { return c.datasetEnabled[f] }
 
-func (c capability) withFacetEnabled(facets ...Facet) capability {
-	next := make(map[Facet]bool, len(c.enabled)+len(facets))
-	for f := range c.enabled {
-		next[f] = true
+func (c capability) withJobFacets(fs ...JobFacet) capability {
+	jobNext := make(map[JobFacet]bool, len(c.jobEnabled)+len(fs))
+	for f := range c.jobEnabled {
+		jobNext[f] = true
 	}
-	for _, f := range facets {
-		next[f] = true
+	for _, f := range fs {
+		jobNext[f] = true
 	}
-	return capability{enabled: next}
+	dsNext := make(map[DatasetFacet]bool, len(c.datasetEnabled))
+	for f := range c.datasetEnabled {
+		dsNext[f] = true
+	}
+	return capability{jobEnabled: jobNext, datasetEnabled: dsNext}
+}
+
+func (c capability) withDatasetFacets(fs ...DatasetFacet) capability {
+	jobNext := make(map[JobFacet]bool, len(c.jobEnabled))
+	for f := range c.jobEnabled {
+		jobNext[f] = true
+	}
+	dsNext := make(map[DatasetFacet]bool, len(c.datasetEnabled)+len(fs))
+	for f := range c.datasetEnabled {
+		dsNext[f] = true
+	}
+	for _, f := range fs {
+		dsNext[f] = true
+	}
+	return capability{jobEnabled: jobNext, datasetEnabled: dsNext}
 }
 
 // ── JobCapability ─────────────────────────────────────────────────────────────
@@ -68,28 +99,57 @@ type JobCapability struct{ capability }
 // New facets introduced to the spec will be stubs by default, requiring
 // providers to opt in explicitly — preventing accidental support.
 func EmptyJobCapability() JobCapability {
-	return JobCapability{capability{enabled: map[Facet]bool{}}}
+	return JobCapability{capability{
+		jobEnabled:     map[JobFacet]bool{},
+		datasetEnabled: map[DatasetFacet]bool{},
+	}}
 }
 
-// WithFacetEnabled returns a new JobCapability with the given facets enabled.
-func (c JobCapability) WithFacetEnabled(facets ...Facet) JobCapability {
-	return JobCapability{c.capability.withFacetEnabled(facets...)}
+// WithFacetEnabled returns a new JobCapability with the given job facets enabled.
+// To control which dataset facets are emitted on inputs/outputs, use WithDatasetFacetEnabled.
+func (c JobCapability) WithFacetEnabled(facets ...JobFacet) JobCapability {
+	return JobCapability{c.capability.withJobFacets(facets...)}
 }
+
+// WithDatasetFacetEnabled returns a new JobCapability with the given dataset facets
+// enabled for this job's inputs and outputs.
+func (c JobCapability) WithDatasetFacetEnabled(facets ...DatasetFacet) JobCapability {
+	return JobCapability{c.capability.withDatasetFacets(facets...)}
+}
+
+// IsEnabled reports whether a job facet is active in this capability.
+func (c JobCapability) IsEnabled(f JobFacet) bool { return c.isJobEnabled(f) }
+
+// IsDatasetEnabled reports whether a dataset facet is active in this capability.
+func (c JobCapability) IsDatasetEnabled(f DatasetFacet) bool { return c.isDatasetEnabled(f) }
 
 // ── DatasetCapability ─────────────────────────────────────────────────────────
 
 // DatasetCapability declares which dataset facets a consumer supports for
 // standalone dataset resources.
+// Only DatasetFacet constants are accepted — passing a JobFacet is a compile-time error.
 type DatasetCapability struct{ capability }
 
 // EmptyDatasetCapability returns a DatasetCapability with no facets enabled.
 // New facets introduced to the spec will be stubs by default, requiring
 // providers to opt in explicitly — preventing accidental support.
 func EmptyDatasetCapability() DatasetCapability {
-	return DatasetCapability{capability{enabled: map[Facet]bool{}}}
+	return DatasetCapability{capability{
+		jobEnabled:     map[JobFacet]bool{},
+		datasetEnabled: map[DatasetFacet]bool{},
+	}}
 }
 
-// WithFacetEnabled returns a new DatasetCapability with the given facets enabled.
-func (c DatasetCapability) WithFacetEnabled(facets ...Facet) DatasetCapability {
-	return DatasetCapability{c.capability.withFacetEnabled(facets...)}
+// WithFacetEnabled returns a new DatasetCapability with the given dataset facets enabled.
+// Job facets (FacetJob*) are intentionally not accepted here — they have no meaning for
+// standalone dataset resources. Enable them via JobCapability.WithFacetEnabled instead.
+func (c DatasetCapability) WithFacetEnabled(facets ...DatasetFacet) DatasetCapability {
+	return DatasetCapability{c.capability.withDatasetFacets(facets...)}
 }
+
+// IsEnabled reports whether a dataset facet is active in this capability.
+func (c DatasetCapability) IsEnabled(f DatasetFacet) bool { return c.isDatasetEnabled(f) }
+
+// IsDatasetEnabled is an alias for IsEnabled, satisfying the datasetFacetSelector
+// interface so DatasetCapability can be passed alongside JobCapability to shared helpers.
+func (c DatasetCapability) IsDatasetEnabled(f DatasetFacet) bool { return c.isDatasetEnabled(f) }

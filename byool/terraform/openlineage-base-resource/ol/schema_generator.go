@@ -21,7 +21,7 @@ import (
 func GenerateJobSchema(cap JobCapability) schema.Schema {
 	blocks := map[string]schema.Block{}
 
-	addJobBlock := func(f Facet, key string, full schema.Block) {
+	addJobBlock := func(f JobFacet, key string, full schema.Block) {
 		if cap.IsEnabled(f) {
 			blocks[key] = full
 		} else {
@@ -282,7 +282,7 @@ func inputsBlock(cap capability) schema.ListNestedBlock {
 
 func outputsBlock(cap capability) schema.ListNestedBlock {
 	attrs, blocks := datasetSchema(cap)
-	if cap.IsEnabled(FacetDatasetColumnLineage) {
+	if cap.isDatasetEnabled(FacetDatasetColumnLineage) {
 		blocks["column_lineage"] = columnLineageBlock()
 	} else {
 		blocks["column_lineage"] = stubSingleBlock(columnLineageBlock())
@@ -307,8 +307,8 @@ func datasetSchema(cap capability) (map[string]schema.Attribute, map[string]sche
 	// the consumer's capability, it is registered as a no-op stub (all attributes
 	// Optional+Computed) so that configs shared between providers are accepted
 	// without error — the values are simply ignored by the consumer.
-	addBlock := func(f Facet, key string, full schema.Block) {
-		if cap.IsEnabled(f) {
+	addBlock := func(f DatasetFacet, key string, full schema.Block) {
+		if cap.isDatasetEnabled(f) {
 			blocks[key] = full
 		} else {
 			switch b := full.(type) {
