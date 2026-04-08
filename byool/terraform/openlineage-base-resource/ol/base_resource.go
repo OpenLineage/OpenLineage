@@ -20,6 +20,11 @@ const backendNilDetail = "Backend is nil. " +
 // ResourceBackend is the common contract shared by all resource backends.
 // JobResourceBackend and DatasetResourceBackend embed this interface and each
 // add their own Capability() method returning the appropriate capability type.
+//
+// The unexported baseSchema() method is satisfied through promotion: types
+// that embed BaseJobResource or BaseDatasetResource get the right implementation
+// automatically. This enforces the expected embedding pattern and lets
+// resourceBase.Schema be defined once for both resource types.
 type ResourceBackend interface {
 	// ConsumerConfigure initialises the consumer client from provider config.
 	ConsumerConfigure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse)
@@ -43,6 +48,11 @@ type ResourceBackend interface {
 
 	// ConsumerDelete removes the entity from the consumer.
 	ConsumerDelete(ctx context.Context, model any) diag.Diagnostics
+
+	// baseSchema returns the capability-driven base schema for this resource type.
+	// Implemented by BaseJobResource (GenerateJobSchema) and BaseDatasetResource
+	// (GenerateDatasetSchema) — consumers inherit it through embedding.
+	baseSchema() schema.Schema
 }
 
 // resourceBase is embedded in BaseJobResource and BaseDatasetResource.
@@ -79,6 +89,17 @@ func (r *resourceBase[B]) mergeConsumerSchema(out *schema.Schema, base schema.Sc
 		base.Blocks[k] = v
 	}
 	*out = base
+}
+
+// Schema calls Backend.baseSchema() to obtain the capability-driven base schema,
+// then merges in any consumer-specific attributes and blocks.
+// baseSchema() is implemented by BaseJobResource and BaseDatasetResource and
+// promoted to consumer types through embedding.
+func (r *resourceBase[B]) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	if !r.checkBackend(&resp.Diagnostics) {
+		return
+	}
+	r.mergeConsumerSchema(&resp.Schema, r.Backend.baseSchema())
 }
 
 func (r *resourceBase[B]) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
