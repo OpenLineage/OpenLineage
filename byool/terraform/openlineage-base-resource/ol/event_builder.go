@@ -168,16 +168,19 @@ func buildJobFacets(data *OLJobConfig, cap JobCapability) []facets.JobFacet {
 	if cap.IsEnabled(FacetJobTags) && len(data.Tags) > 0 {
 		tags := make([]facets.TagClass, 0, len(data.Tags))
 		for _, t := range data.Tags {
-			value := ""
-			if !t.Value.IsNull() && !t.Value.IsUnknown() {
-				value = t.Value.ValueString()
+			// Skip entries whose required fields are not yet known — emitting an empty
+			// key or value would silently corrupt the facet.
+			if t.Name.IsNull() || t.Name.IsUnknown() || t.Value.IsNull() || t.Value.IsUnknown() {
+				continue
 			}
 			tags = append(tags, facets.TagClass{
 				Key:   t.Name.ValueString(),
-				Value: value,
+				Value: t.Value.ValueString(),
 			})
 		}
-		fs = append(fs, facets.NewTagsJobFacet(producer).WithTags(tags))
+		if len(tags) > 0 {
+			fs = append(fs, facets.NewTagsJobFacet(producer).WithTags(tags))
+		}
 	}
 
 	return fs
@@ -284,19 +287,27 @@ func buildDatasetFacets(dataset *DatasetModel, cap datasetFacetSelector) []facet
 	}
 
 	if cap.IsDatasetEnabled(FacetDatasetLifecycleStateChange) && dataset.LifecycleStateChange != nil {
-		facetsList = append(facetsList, buildLifecycleStateChangeFacet(dataset.LifecycleStateChange))
+		if lf := buildLifecycleStateChangeFacet(dataset.LifecycleStateChange); lf != nil {
+			facetsList = append(facetsList, lf)
+		}
 	}
 
 	if cap.IsDatasetEnabled(FacetDatasetHierarchy) && dataset.Hierarchy != nil {
-		facetsList = append(facetsList, buildHierarchyFacet(dataset.Hierarchy))
+		if hf := buildHierarchyFacet(dataset.Hierarchy); hf != nil {
+			facetsList = append(facetsList, hf)
+		}
 	}
 
 	if cap.IsDatasetEnabled(FacetDatasetCatalog) && dataset.Catalog != nil {
-		facetsList = append(facetsList, buildCatalogFacet(dataset.Catalog))
+		if cf := buildCatalogFacet(dataset.Catalog); cf != nil {
+			facetsList = append(facetsList, cf)
+		}
 	}
 
 	if cap.IsDatasetEnabled(FacetDatasetTags) && len(dataset.Tags) > 0 {
-		facetsList = append(facetsList, buildTagsDatasetFacet(dataset.Tags))
+		if tf := buildTagsDatasetFacet(dataset.Tags); tf != nil {
+			facetsList = append(facetsList, tf)
+		}
 	}
 
 	return facetsList
@@ -358,7 +369,13 @@ func buildOwnershipDatasetFacet(o *OwnershipDatasetModel) *facets.OwnershipDatas
 }
 
 // buildLifecycleStateChangeFacet creates a LifecycleStateChangeDatasetFacet.
+// Returns nil if lifecycle_state_change is null/unknown (e.g. derived from another
+// resource at plan time) — the caller skips the facet rather than emitting an
+// invalid enum value.
 func buildLifecycleStateChangeFacet(lsc *LifecycleStateChangeDatasetModel) *facets.LifecycleStateChangeDatasetFacet {
+	if lsc.LifecycleStateChange.IsNull() || lsc.LifecycleStateChange.IsUnknown() {
+		return nil
+	}
 	f := facets.NewLifecycleStateChangeDatasetFacet(
 		producer,
 		facets.LifecycleStateChangeEnum(lsc.LifecycleStateChange.ValueString()),
@@ -377,11 +394,23 @@ func buildLifecycleStateChangeFacet(lsc *LifecycleStateChangeDatasetModel) *face
 // The OL HierarchyElement only carries Name and Type; Namespace from the
 // model is not part of the spec and is intentionally dropped here.
 // The hierarchy list is ordered highest → lowest: parent first, then children.
+//
+// Returns nil if the parent's required fields are null/unknown. Children with
+// unknown required fields are silently dropped.
 func buildHierarchyFacet(h *HierarchyDatasetModel) *facets.HierarchyDatasetFacet {
+	// Parent is required — skip the whole facet if it isn't known yet.
+	if h.Parent.Name.IsNull() || h.Parent.Name.IsUnknown() ||
+		h.Parent.Type.IsNull() || h.Parent.Type.IsUnknown() {
+		return nil
+	}
 	elements := []facets.HierarchyElement{
 		{Name: h.Parent.Name.ValueString(), Type: h.Parent.Type.ValueString()},
 	}
 	for _, child := range h.Children {
+		if child.Name.IsNull() || child.Name.IsUnknown() ||
+			child.Type.IsNull() || child.Type.IsUnknown() {
+			continue
+		}
 		elements = append(elements, facets.HierarchyElement{
 			Name: child.Name.ValueString(),
 			Type: child.Type.ValueString(),
@@ -391,13 +420,21 @@ func buildHierarchyFacet(h *HierarchyDatasetModel) *facets.HierarchyDatasetFacet
 }
 
 // buildTagsDatasetFacet creates a TagsDatasetFacet from a slice of TagsDatasetModel.
+// Entries with null/unknown name or value are skipped to avoid emitting empty strings
+// into the facet. Returns nil if no valid entries remain.
 func buildTagsDatasetFacet(tags []TagsDatasetModel) *facets.TagsDatasetFacet {
 	elements := make([]facets.TagElement, 0, len(tags))
 	for _, t := range tags {
+		if t.Name.IsNull() || t.Name.IsUnknown() || t.Value.IsNull() || t.Value.IsUnknown() {
+			continue
+		}
 		elements = append(elements, facets.TagElement{
 			Key:   t.Name.ValueString(),
 			Value: t.Value.ValueString(),
 		})
+	}
+	if len(elements) == 0 {
+		return nil
 	}
 	return facets.NewTagsDatasetFacet(producer).WithTags(elements)
 }
@@ -423,10 +460,17 @@ func buildSymlinksFacet(symlinks []SymlinksDatasetModel) *facets.SymlinksDataset
 //
 // This facet tells consumers where to find the dataset's schema/metadata:
 // which metastore (framework), what type, and the URIs to reach it.
-// Optional fields (MetadataURI, WarehouseURI, Source) are only set if
-// the user provided them — we guard with IsNull/IsUnknown to avoid
-// sending empty strings that would override valid defaults.
+//
+// Returns nil if any required field (framework, type, name) is null/unknown —
+// the same pattern used by buildStorageFacet. Optional fields (MetadataURI,
+// WarehouseURI, Source) are only set when the user provided a real value.
 func buildCatalogFacet(c *CatalogDatasetModel) *facets.CatalogDatasetFacet {
+	// Required fields — skip the whole facet if any are not yet known.
+	if c.Framework.IsNull() || c.Framework.IsUnknown() ||
+		c.Type.IsNull() || c.Type.IsUnknown() ||
+		c.Name.IsNull() || c.Name.IsUnknown() {
+		return nil
+	}
 	cat := facets.NewCatalogDatasetFacet(
 		producer,
 		c.Framework.ValueString(),
