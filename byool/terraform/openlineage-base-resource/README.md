@@ -112,10 +112,8 @@ map Terraform models to OpenLineage events.
 Current behavior:
 
 - `BuildJobEvent` builds the shared job payload; only facets enabled in `cap` are emitted,
-- `BuildRunEvent` wraps `BuildJobEvent`, sets `eventType = COMPLETE`, and generates `run.runId` internally,
-- `BuildRunEvent` does **not** populate run facets,
+- `BuildRunEvent` wraps `BuildJobEvent`, sets `eventType = COMPLETE`, generates `run.runId` internally, and does **not** populate run facets,
 - `BuildDatasetEvent` builds a standalone dataset event; only facets enabled in `cap` are emitted,
-- event type is `COMPLETE`,
 - job identity is built from `namespace` and `name`,
 - `inputs` and `outputs` are mapped to OL dataset elements with capability-gated facets,
 - dataset events and dataset elements reuse the same dataset-facet mapping helpers,
