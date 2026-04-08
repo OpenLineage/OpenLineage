@@ -173,11 +173,14 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         .ifPresent(
             v -> DatasetVersionUtils.buildVersionOutputFacets(context, datasetFacetsBuilder, v));
 
-    datasetFacetsBuilder
-        .getFacets()
-        .hierarchy(
-            HierarchyDatasetFacetUtils.buildHierarchyFacet(
-                context.getOpenLineage(), catalogTable.identifier()));
+    Optional.ofNullable(catalogTable.identifier())
+        .ifPresent(
+            identifier ->
+                datasetFacetsBuilder
+                    .getFacets()
+                    .hierarchy(
+                        HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                            context.getOpenLineage(), identifier)));
 
     addCatalogAndStorageFacets(catalogTable, datasetFacetsBuilder);
     return Collections.singletonList(datasetFactory.getDataset(di, datasetFacetsBuilder));
