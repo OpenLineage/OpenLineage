@@ -23,6 +23,13 @@ import scala.Option;
 
 class HierarchyDatasetFacetUtilsTest {
 
+  private static final String DATABASE = "DATABASE";
+  private static final String SCHEMA = "SCHEMA";
+  private static final String TABLE = "TABLE";
+  private static final String MY_DATABASE = "my_database";
+  private static final String MY_TABLE = "my_table";
+  private static final String MY_SCHEMA = "my_schema";
+
   OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
 
   TableCatalog tableCatalog;
@@ -35,85 +42,85 @@ class HierarchyDatasetFacetUtilsTest {
 
   @Test
   void testV2IdentifierWithOneNamespacePart() {
-    Identifier identifier = Identifier.of(new String[] {"my_database"}, "my_table");
+    Identifier identifier = Identifier.of(new String[] {MY_DATABASE}, MY_TABLE);
 
     HierarchyDatasetFacet facet =
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, tableCatalog, identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
     assertThat(levels).hasSize(2);
-    assertLevel(levels.get(0), "DATABASE", "my_database");
-    assertLevel(levels.get(1), "TABLE", "my_table");
+    assertLevel(levels.get(0), DATABASE, MY_DATABASE);
+    assertLevel(levels.get(1), TABLE, MY_TABLE);
   }
 
   @Test
   void testV2IdentifierWithTwoNamespaceParts() {
-    Identifier identifier = Identifier.of(new String[] {"my_database", "my_schema"}, "my_table");
+    Identifier identifier = Identifier.of(new String[] {MY_DATABASE, MY_SCHEMA}, MY_TABLE);
 
     HierarchyDatasetFacet facet =
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, tableCatalog, identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
     assertThat(levels).hasSize(3);
-    assertLevel(levels.get(0), "DATABASE", "my_database");
-    assertLevel(levels.get(1), "SCHEMA", "my_schema");
-    assertLevel(levels.get(2), "TABLE", "my_table");
+    assertLevel(levels.get(0), DATABASE, MY_DATABASE);
+    assertLevel(levels.get(1), SCHEMA, MY_SCHEMA);
+    assertLevel(levels.get(2), TABLE, MY_TABLE);
   }
 
   @Test
   void testV2IdentifierWithNoNamespaceParts() {
-    Identifier identifier = Identifier.of(new String[] {}, "my_table");
+    Identifier identifier = Identifier.of(new String[] {}, MY_TABLE);
 
     HierarchyDatasetFacet facet =
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, tableCatalog, identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
     assertThat(levels).hasSize(1);
-    assertLevel(levels.get(0), "TABLE", "my_table");
+    assertLevel(levels.get(0), TABLE, MY_TABLE);
   }
 
   @Test
   void testV1TableIdentifierWithDatabase() {
     TableIdentifier identifier = mock(TableIdentifier.class);
-    when(identifier.database()).thenReturn(Option.apply("my_database"));
-    when(identifier.table()).thenReturn("my_table");
+    when(identifier.database()).thenReturn(Option.apply(MY_DATABASE));
+    when(identifier.table()).thenReturn(MY_TABLE);
 
     HierarchyDatasetFacet facet =
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
     assertThat(levels).hasSize(2);
-    assertLevel(levels.get(0), "DATABASE", "my_database");
-    assertLevel(levels.get(1), "TABLE", "my_table");
+    assertLevel(levels.get(0), DATABASE, MY_DATABASE);
+    assertLevel(levels.get(1), TABLE, MY_TABLE);
   }
 
   @Test
   void testV1TableIdentifierWithoutDatabase() {
     TableIdentifier identifier = mock(TableIdentifier.class);
     when(identifier.database()).thenReturn(Option.empty());
-    when(identifier.table()).thenReturn("my_table");
+    when(identifier.table()).thenReturn(MY_TABLE);
 
     HierarchyDatasetFacet facet =
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
     assertThat(levels).hasSize(1);
-    assertLevel(levels.get(0), "TABLE", "my_table");
+    assertLevel(levels.get(0), TABLE, MY_TABLE);
   }
 
   @Test
   void testV1TableIdentifierWithCatalogName() {
     TableIdentifier identifier = mock(TableIdentifier.class);
-    when(identifier.database()).thenReturn(Option.apply("my_database"));
-    when(identifier.table()).thenReturn("my_table");
+    when(identifier.database()).thenReturn(Option.apply(MY_DATABASE));
+    when(identifier.table()).thenReturn(MY_TABLE);
 
     HierarchyDatasetFacet facet =
         HierarchyDatasetFacetUtils.buildHierarchyFacet(openLineage, "my_catalog", identifier);
 
     List<HierarchyDatasetFacetLevel> levels = facet.getHierarchy();
     assertThat(levels).hasSize(2);
-    assertLevel(levels.get(0), "DATABASE", "my_database");
-    assertLevel(levels.get(1), "TABLE", "my_table");
+    assertLevel(levels.get(0), DATABASE, MY_DATABASE);
+    assertLevel(levels.get(1), TABLE, MY_TABLE);
   }
 
   private void assertLevel(
