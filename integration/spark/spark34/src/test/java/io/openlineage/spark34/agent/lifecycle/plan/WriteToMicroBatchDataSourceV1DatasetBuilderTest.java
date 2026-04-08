@@ -157,7 +157,8 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
           .when(() -> PathUtils.fromCatalogTable(eq(catalogTable), any()))
           .thenReturn(catalogDatasetIdentifier);
 
-      when(factory.getDataset(eq(catalogDatasetIdentifier), any(DatasetCompositeFacetsBuilder.class)))
+      when(factory.getDataset(
+              eq(catalogDatasetIdentifier), any(DatasetCompositeFacetsBuilder.class)))
           .thenReturn(expectedDataset);
 
       List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
