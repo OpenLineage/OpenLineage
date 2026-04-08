@@ -71,9 +71,13 @@ Allows defining a subset by a list of partitions. Each partition is defined by i
 ## `CompareSubsetCondition` and `BinarySubsetCondition`
 
 The combination of `CompareSubsetCondition` and `BinarySubsetCondition` allows describing complex 
-logical conditions which are common for SQL `WHERE` clauses.
+logical conditions. These can represent SQL `WHERE` clauses, Web API request parameters, and similar filtering conditions.
 
-For example the facet below describes a condition `first_name = 'John' AND last_name = 'Smith'`.
+### Examples
+
+#### SQL WHERE Clause
+
+The facet below describes a condition `first_name = 'John' AND last_name = 'Smith'`.
 
 ```json
 {
@@ -110,5 +114,127 @@ For example the facet below describes a condition `first_name = 'John' AND last_
     "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/BaseSubsetDatasetFacet.json#/$defs/InputSubsetDatasetFacet"
   }
 }
-
 ```
+
+#### REST API Parameters
+
+For a request `GET https://api.github.com/repos/openlineage/openlineage/issues?state=open&labels=bug`, the dataset is:
+- **namespace:** `https://api.github.com`
+- **name:** `repos/{org}/{repo}/issues`
+
+Path parameters (`org`, `repo`) and query parameters (`state`, `labels`) are captured in the subset facet:
+
+```json
+{
+  "subset": {
+    "inputCondition": {
+      "type": "binary",
+      "operator": "AND",
+      "left": {
+        "type": "binary",
+        "operator": "AND",
+        "left": {
+          "type": "compare",
+          "comparison": "EQUAL",
+          "left": {
+            "type": "field",
+            "field": "org"
+          },
+          "right": {
+            "type": "literal",
+            "value": "openlineage"
+          }
+        },
+        "right": {
+          "type": "compare",
+          "comparison": "EQUAL",
+          "left": {
+            "type": "field",
+            "field": "repo"
+          },
+          "right": {
+            "type": "literal",
+            "value": "openlineage"
+          }
+        }
+      },
+      "right": {
+        "type": "binary",
+        "operator": "AND",
+        "left": {
+          "type": "compare",
+          "comparison": "EQUAL",
+          "left": {
+            "type": "field",
+            "field": "state"
+          },
+          "right": {
+            "type": "literal",
+            "value": "open"
+          }
+        },
+        "right": {
+          "type": "compare",
+          "comparison": "EQUAL",
+          "left": {
+            "type": "field",
+            "field": "labels"
+          },
+          "right": {
+            "type": "literal",
+            "value": "bug"
+          }
+        }
+      }
+    },
+    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/BaseSubsetDatasetFacet.json#/$defs/InputSubsetDatasetFacet"
+  }
+}
+```
+
+#### SOAP API Parameters
+
+For a SOAP request to `POST https://example.com/WeatherService` with body arguments `City=Berlin` and `Date=2024-12-25`, the dataset is:
+- **namespace:** `https://example.com/WeatherService`
+- **name:** `GetWeather`
+
+Operation arguments are captured in the subset facet:
+
+```json
+{
+  "subset": {
+    "inputCondition": {
+      "type": "binary",
+      "operator": "AND",
+      "left": {
+        "type": "compare",
+        "comparison": "EQUAL",
+        "left": {
+          "type": "field",
+          "field": "City"
+        },
+        "right": {
+          "type": "literal",
+          "value": "Berlin"
+        }
+      },
+      "right": {
+        "type": "compare",
+        "comparison": "EQUAL",
+        "left": {
+          "type": "field",
+          "field": "Date"
+        },
+        "right": {
+          "type": "literal",
+          "value": "2024-12-25"
+        }
+      }
+    },
+    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/BaseSubsetDatasetFacet.json#/$defs/InputSubsetDatasetFacet"
+  }
+}
+```
+
