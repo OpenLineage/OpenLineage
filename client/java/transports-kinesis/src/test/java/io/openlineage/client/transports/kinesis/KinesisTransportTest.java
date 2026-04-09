@@ -298,4 +298,14 @@ class KinesisTransportTest {
       verify(executor, times(1)).shutdown();
     }
   }
+
+  @Test
+  void kinesisConfigDefaultPropertiesIsNotNull() {
+    // Regression test for NPE: KinesisTransport(KinesisConfig) calls
+    // KinesisProducerConfiguration.fromProperties(config.getProperties()), which throws
+    // NullPointerException if properties is null. KinesisConfig must default to new Properties().
+    KinesisConfig config = new KinesisConfig();
+    assertThat(config.getProperties()).isNotNull();
+    assertThat(config.getProperties()).isEmpty();
+  }
 }

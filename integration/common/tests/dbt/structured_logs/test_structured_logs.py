@@ -1709,3 +1709,191 @@ class TestGetAssertionSingularTests:
 
         assert len(datasets) == 1
         assert datasets[0].name == "mydb.myschema.my_model"
+
+
+class TestTestRunFacet:
+    """Tests for TestRunFacet emission on test node finished events."""
+
+    @pytest.fixture
+    def processor(self):
+        processor = DbtStructuredLogsProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="dbt-test-namespace",
+            project_dir=CURRENT_DIR,
+            target="postgres",
+            dbt_command_line=["dbt", "test", "..."],
+        )
+        return processor
+
+    def _make_node_finished_event(self, node_id, node_status, resource_type="test"):
+        return {
+            "info": {"name": "NodeFinished", "ts": "2024-01-01T00:00:01.000000Z"},
+            "data": {
+                "node_info": {
+                    "unique_id": node_id,
+                    "node_name": node_id.split(".")[-1],
+                    "resource_type": resource_type,
+                    "node_status": node_status,
+                    "node_started_at": "2024-01-01T00:00:00.000000Z",
+                    "node_finished_at": "2024-01-01T00:00:01.000000Z",
+                },
+                "run_result": {"message": "Failure", "adapter_response": {}},
+            },
+        }
+
+    def _test_node(self, **overrides):
+        """Helper to create a minimal singular dbt test node for the manifest.
+
+        Singular tests have test_metadata=None (they are plain SQL files, not generic macros).
+        """
+        node = {
+            "test_metadata": None,
+            "config": {},
+            "depends_on": {"nodes": []},
+            "name": "test_node",
+            "description": "",
+            "columns": {},
+            "database": "mydb",
+            "schema": "myschema",
+            "alias": "test_node",
+            "unique_id": "test.project.test_node",
+            "fqn": ["project", "test_node"],
+        }
+        node.update(overrides)
+        return node
+
+    def test_passing_test_with_error_severity(self, processor):
+        """A passing singular test with error severity emits status=pass, severity=error."""
+        node_id = "test.project.assert_positive_amounts"
+        processor._compiled_manifest = {
+            "nodes": {
+                node_id: self._test_node(
+                    test_metadata=None,
+                    config={"severity": "error"},
+                    unique_id=node_id,
+                ),
+            },
+            "sources": {},
+            "parent_map": {node_id: []},
+        }
+        processor.node_id_to_ol_run_id = {node_id: DUMMY_UUID_4}
+        processor.dbt_run_metadata = mock.MagicMock()
+        processor.dbt_run_metadata.to_openlineage.return_value = mock.MagicMock()
+
+        event = self._make_node_finished_event(node_id, "pass")
+        result = ol_event_to_dict(processor.parse_node_finished_event(event))
+
+        assert "test" in result["run"]["facets"]
+        tr = result["run"]["facets"]["test"]["tests"][0]
+        assert tr["status"] == "pass"
+        assert tr["severity"] == "error"
+
+    def test_warn_test_emits_fail_severity_warn(self, processor):
+        """A warn singular test (failed but non-blocking) emits status=fail, severity=warn."""
+        node_id = "test.project.warn_high_value_orders"
+        processor._compiled_manifest = {
+            "nodes": {
+                node_id: self._test_node(
+                    test_metadata=None,
+                    config={"severity": "WARN"},
+                    unique_id=node_id,
+                ),
+            },
+            "sources": {},
+            "parent_map": {node_id: []},
+        }
+        processor.node_id_to_ol_run_id = {node_id: DUMMY_UUID_4}
+        processor.dbt_run_metadata = mock.MagicMock()
+        processor.dbt_run_metadata.to_openlineage.return_value = mock.MagicMock()
+
+        event = self._make_node_finished_event(node_id, "warn")
+        result = ol_event_to_dict(processor.parse_node_finished_event(event))
+
+        assert result["eventType"] == "COMPLETE"
+        assert "test" in result["run"]["facets"]
+        tr = result["run"]["facets"]["test"]["tests"][0]
+        assert tr["status"] == "fail"
+        assert tr["severity"] == "warn"
+
+    def test_failing_test_with_error_severity(self, processor):
+        """A failing singular test with error severity emits status=fail, severity=error."""
+        node_id = "test.project.error_orphaned_orders"
+        processor._compiled_manifest = {
+            "nodes": {
+                node_id: self._test_node(
+                    test_metadata=None,
+                    config={"severity": "error"},
+                    unique_id=node_id,
+                ),
+            },
+            "sources": {},
+            "parent_map": {node_id: []},
+        }
+        processor.node_id_to_ol_run_id = {node_id: DUMMY_UUID_4}
+        processor.dbt_run_metadata = mock.MagicMock()
+        processor.dbt_run_metadata.to_openlineage.return_value = mock.MagicMock()
+
+        event = self._make_node_finished_event(node_id, "fail")
+        result = ol_event_to_dict(processor.parse_node_finished_event(event))
+
+        assert result["eventType"] == "FAIL"
+        assert "test" in result["run"]["facets"]
+        tr = result["run"]["facets"]["test"]["tests"][0]
+        assert tr["status"] == "fail"
+        assert tr["severity"] == "error"
+
+    def test_no_severity_config_defaults_to_error(self, processor):
+        """When severity is not in config, singular tests default to 'error'."""
+        node_id = "test.project.assert_no_future_dates"
+        processor._compiled_manifest = {
+            "nodes": {
+                node_id: self._test_node(
+                    test_metadata=None,
+                    config={},
+                    unique_id=node_id,
+                ),
+            },
+            "sources": {},
+            "parent_map": {node_id: []},
+        }
+        processor.node_id_to_ol_run_id = {node_id: DUMMY_UUID_4}
+        processor.dbt_run_metadata = mock.MagicMock()
+        processor.dbt_run_metadata.to_openlineage.return_value = mock.MagicMock()
+
+        event = self._make_node_finished_event(node_id, "pass")
+        result = ol_event_to_dict(processor.parse_node_finished_event(event))
+
+        assert "test" in result["run"]["facets"]
+        tr = result["run"]["facets"]["test"]["tests"][0]
+        assert tr["status"] == "pass"
+        assert tr["severity"] == "error"
+
+    def test_non_test_resource_type_has_no_test_result(self, processor):
+        """Non-test resource types (models, seeds) should not emit TestRunFacet."""
+        node_id = "model.project.my_model"
+        processor._compiled_manifest = {
+            "nodes": {
+                node_id: {
+                    "config": {},
+                    "depends_on": {"nodes": []},
+                    "database": "mydb",
+                    "schema": "myschema",
+                    "alias": "my_model",
+                    "unique_id": node_id,
+                    "name": "my_model",
+                    "description": "",
+                    "columns": {},
+                    "fqn": ["project", "my_model"],
+                },
+            },
+            "sources": {},
+            "parent_map": {node_id: []},
+        }
+        processor.node_id_to_ol_run_id = {node_id: DUMMY_UUID_4}
+        processor.dbt_run_metadata = mock.MagicMock()
+        processor.dbt_run_metadata.to_openlineage.return_value = mock.MagicMock()
+
+        event = self._make_node_finished_event(node_id, "success", resource_type="model")
+        result = ol_event_to_dict(processor.parse_node_finished_event(event))
+
+        assert "test" not in result["run"]["facets"]

@@ -1,0 +1,59 @@
+{
+    "metadata": {
+        "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v5.json",
+        "dbt_version": "1.7.0",
+        "generated_at": "2024-01-15T10:00:00.000000Z",
+        "invocation_id": "aaaaaaaa-0000-0000-0000-000000000001",
+        "env": {}
+    },
+    "results": [
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2024-01-15T10:00:01.000000Z",
+                    "completed_at": "2024-01-15T10:00:01.100000Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2024-01-15T10:00:01.100000Z",
+                    "completed_at": "2024-01-15T10:00:02.000000Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 1.0,
+            "adapter_response": {},
+            "message": "1 of 1 OK",
+            "failures": 0,
+            "unique_id": "test.my_project.assert_positive_amounts",
+            "compiled_code": "select * from my_schema.orders where amount < 0"
+        },
+        {
+            "status": "fail",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2024-01-15T10:00:02.000000Z",
+                    "completed_at": "2024-01-15T10:00:02.100000Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2024-01-15T10:00:02.100000Z",
+                    "completed_at": "2024-01-15T10:00:03.000000Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 1.0,
+            "adapter_response": {},
+            "message": "Got 5 results, configured to warn if > 0",
+            "failures": 5,
+            "unique_id": "test.my_project.assert_row_count_within_range",
+            "compiled_code": "select * from my_schema.orders where amount not between 0 and 10000"
+        }
+    ],
+    "elapsed_time": 3.0,
+    "args": {
+        "which": "test"
+    }
+}
