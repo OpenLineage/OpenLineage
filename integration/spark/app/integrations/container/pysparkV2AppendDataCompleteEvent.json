@@ -55,6 +55,12 @@
               "type": "TABLE"
             }
           ]
+        },
+        "hierarchy": {
+          "hierarchy": [
+            { "type": "DATABASE", "name": "default" },
+            { "type": "TABLE", "name": "append_table" }
+          ]
         }
       }
     }

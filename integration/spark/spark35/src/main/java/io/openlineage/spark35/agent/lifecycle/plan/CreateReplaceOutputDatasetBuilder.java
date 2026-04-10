@@ -179,7 +179,7 @@ public class CreateReplaceOutputDatasetBuilder
           version -> DatasetVersionUtils.buildVersionOutputFacets(context, builder, version));
     }
 
-    CatalogUtils3.addStorageAndCatalogFacets(context, catalog, tableProperties, builder);
+    CatalogUtils3.addComplementaryFacets(context, catalog, identifier, tableProperties, builder);
     return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
   }
 

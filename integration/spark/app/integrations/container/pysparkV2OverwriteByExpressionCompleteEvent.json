@@ -44,6 +44,12 @@
         "version": {},
         "lifecycleStateChange": {
           "lifecycleStateChange": "OVERWRITE"
+        },
+        "hierarchy": {
+          "hierarchy": [
+            { "type": "DATABASE", "name": "default" },
+            { "type": "TABLE", "name": "tbl" }
+          ]
         }
       }
     }

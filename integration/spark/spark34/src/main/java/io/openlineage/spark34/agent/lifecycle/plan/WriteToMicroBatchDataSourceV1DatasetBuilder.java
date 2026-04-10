@@ -6,13 +6,17 @@
 package io.openlineage.spark34.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.HierarchyDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -57,11 +61,26 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
     // Currently, only FileStreamSink is supported
     if (writeToMicroBatchV1.sink() instanceof FileStreamSink) {
       if (writeToMicroBatchV1.catalogTable().isDefined()) {
+        org.apache.spark.sql.catalyst.catalog.CatalogTable catalogTable =
+            writeToMicroBatchV1.catalogTable().get();
         DatasetIdentifier di =
-            PathUtils.fromCatalogTable(
-                writeToMicroBatchV1.catalogTable().get(), context.getSparkSession().get());
+            PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get());
 
-        return Collections.singletonList(factory.getDataset(di, writeToMicroBatchV1.schema()));
+        DatasetCompositeFacetsBuilder builder = factory.createCompositeFacetBuilder();
+        builder
+            .getFacets()
+            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), writeToMicroBatchV1.schema()))
+            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
+        Optional.ofNullable(catalogTable.identifier())
+            .ifPresent(
+                identifier ->
+                    builder
+                        .getFacets()
+                        .hierarchy(
+                            HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                                context.getOpenLineage(), identifier)));
+
+        return Collections.singletonList(factory.getDataset(di, builder));
       } else {
         return Collections.emptyList();
       }
