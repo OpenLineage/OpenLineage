@@ -8,6 +8,8 @@ package io.openlineage.spark.agent.util;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
@@ -37,11 +39,31 @@ public class CatalogDatasetFacetUtils {
                       .name("default")
                       .framework("hive")
                       .type("hive")
-                      .source("spark");
+                      .source("spark")
+                      .catalogProperties(
+                          getDataprocMetastoreProperties(pair.getLeft().getConf(), context));
               PathUtils.getMetastoreUri(pair.getLeft())
                   .map(PathUtils::prepareHiveUri)
                   .ifPresent(uri -> builder.metadataUri(uri.toString()));
               return builder.warehouseUri(pair.getRight().toString()).build();
             });
+  }
+
+  private static OpenLineage.CatalogDatasetFacetCatalogProperties getDataprocMetastoreProperties(
+      SparkConf sparkConf, OpenLineageContext context) {
+    Map<String, String> properties = new HashMap<>();
+    SparkConfUtils.findSparkConfigKey(sparkConf, "spark.dataproc.metastore.project-id")
+        .ifPresent(v -> properties.put("spark.dataproc.metastore.project-id", v));
+    SparkConfUtils.findSparkConfigKey(sparkConf, "spark.dataproc.metastore.location")
+        .ifPresent(v -> properties.put("spark.dataproc.metastore.location", v));
+    SparkConfUtils.findSparkConfigKey(sparkConf, "spark.dataproc.metastore.instanceId")
+        .ifPresent(v -> properties.put("spark.dataproc.metastore.instanceId", v));
+    if (properties.isEmpty()) {
+      return null;
+    }
+    OpenLineage.CatalogDatasetFacetCatalogPropertiesBuilder catalogPropertiesBuilder =
+        context.getOpenLineage().newCatalogDatasetFacetCatalogPropertiesBuilder();
+    properties.forEach(catalogPropertiesBuilder::put);
+    return catalogPropertiesBuilder.build();
   }
 }

@@ -9,6 +9,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +58,8 @@ class BigQueryMetastoreCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
-  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+  Map<String, String> catalogProperties(
+      Map<String, String> catalogConf, OpenLineageContext context) {
     Map<String, String> properties = new HashMap<>();
 
     // Backward compatibility: prefer official Iceberg keys, fall back to Google's legacy keys

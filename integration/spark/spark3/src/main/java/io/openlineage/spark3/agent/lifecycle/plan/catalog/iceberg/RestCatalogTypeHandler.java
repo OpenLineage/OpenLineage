@@ -9,6 +9,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler.TYPE;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,12 +46,13 @@ class RestCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
-  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+  Map<String, String> catalogProperties(
+      Map<String, String> catalogConf, OpenLineageContext context) {
     if (catalogConf.getOrDefault(CatalogProperties.URI, "").startsWith(BIGLAKE_CATALOG_URI)) {
       Map<String, String> properties = new HashMap<>();
       properties.put("gcp_project_id", catalogConf.get("header.x-goog-user-project"));
       return properties;
     }
-    return super.catalogProperties(catalogConf);
+    return super.catalogProperties(catalogConf, context);
   }
 }
