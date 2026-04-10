@@ -13,14 +13,29 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.spark.sql.connector.read.streaming.Offset;
+import org.apache.spark.sql.connector.read.streaming.SparkDataStream;
 import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2Relation;
+import org.apache.spark.sql.types.StructType;
 
 public class KinesisMicroBatchStreamStrategy extends StreamStrategy {
 
+  // Constructor for Spark 3.x
   public KinesisMicroBatchStreamStrategy(
       DatasetFactory<OpenLineage.InputDataset> inputDatasetDatasetFactory,
       StreamingDataSourceV2Relation relation) {
     super(inputDatasetDatasetFactory, relation.schema(), relation.stream(), Optional.empty());
+
+    new HostListNamespaceResolverConfig();
+  }
+
+  // Constructor for Spark 4.0 (matches KafkaMicroBatchStreamStrategy signature)
+  public KinesisMicroBatchStreamStrategy(
+      DatasetFactory<OpenLineage.InputDataset> inputDatasetDatasetFactory,
+      StructType schema,
+      SparkDataStream stream,
+      Optional<Offset> offsetOption) {
+    super(inputDatasetDatasetFactory, schema, stream, offsetOption);
 
     new HostListNamespaceResolverConfig();
   }
