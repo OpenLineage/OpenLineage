@@ -110,7 +110,7 @@ public class IcebergHandler implements CatalogHandler {
       builder.metadataUri(catalogUri);
     }
 
-    Map<String, String> catalogProperties = catalogTypeHandler.catalogProperties(conf);
+    Map<String, String> catalogProperties = catalogTypeHandler.catalogProperties(conf, context);
     if (!catalogProperties.isEmpty()) {
       OpenLineage.CatalogDatasetFacetCatalogPropertiesBuilder catalogPropertiesBuilder =
           context.getOpenLineage().newCatalogDatasetFacetCatalogPropertiesBuilder();
