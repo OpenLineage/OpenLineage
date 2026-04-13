@@ -1,0 +1,4 @@
+dataset:
+  normalization_enabled: True
+  disabled_trimmers: "openlineage.client.dataset.trimmers.KeyValueTrimmer;openlineage.client.dataset.trimmers.MultiDirDateTrimmer"
+  extra_trimmers: "my.custom.trimmers.KeyValueTrimmer;my.custom.trimmers.MultiDirDateTrimmer"
