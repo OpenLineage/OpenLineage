@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import attr
 import yaml
 from openlineage.client import constants, event_v2
+from openlineage.client.dataset import DatasetConfig, DatasetNormalizer
 from openlineage.client.facet_v2 import (
     environment_variables_run,
     source_code_location_job,
@@ -68,6 +69,7 @@ class OpenLineageConfig:
     facets: FacetsConfig = attr.field(factory=FacetsConfig)
     filters: list[FilterConfig] = attr.field(factory=list)
     tags: TagsConfig = attr.field(factory=TagsConfig)
+    dataset: DatasetConfig = attr.field(factory=DatasetConfig)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:
@@ -90,6 +92,18 @@ class OpenLineageConfig:
                 job=params["tags"].get("job", {}),
                 run=params["tags"].get("run", {}),
             )
+        if "dataset" in params:
+
+            def split_into_list(value: str | list[str]) -> list[str]:
+                if isinstance(value, list):
+                    return value
+                return [item.strip() for item in value.split(";") if item.strip()]
+
+            ds = params["dataset"]
+            ds["disabled_trimmers"] = split_into_list(ds.get("disabled_trimmers", []))
+            ds["extra_trimmers"] = split_into_list(ds.get("extra_trimmers", []))
+            config.dataset = DatasetConfig(**ds)
+
         return config
 
 
@@ -142,6 +156,8 @@ class OpenLineageClient:
             if _filter:
                 self._filters.append(_filter)
 
+        self._dataset_normalizer = DatasetNormalizer(self.config.dataset)
+
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
         warnings.warn(
@@ -183,6 +199,8 @@ class OpenLineageClient:
         event = self.add_environment_facets(event)
         event = self.update_event_tags_facets(event)
         event = self.add_source_code_location_facet(event)
+        if self.config.dataset.normalization_enabled:
+            event = self.normalize_datasets(event)
 
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
@@ -594,4 +612,13 @@ class OpenLineageClient:
                 tag=scl["tag"],
                 pullRequestNumber=scl["pullRequestNumber"],
             )
+        return event
+
+    def normalize_datasets(self, event: Event) -> Event:
+        if not isinstance(event, (RunEvent, event_v2.RunEvent)):
+            return event
+        if event.inputs:
+            event.inputs[:] = self._dataset_normalizer.normalize_inputs(event.inputs)
+        if event.outputs:
+            event.outputs[:] = self._dataset_normalizer.normalize_outputs(event.outputs)
         return event

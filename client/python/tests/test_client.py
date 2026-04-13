@@ -14,6 +14,7 @@ import pytest
 from openlineage.client import event_v2
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions, OpenLineageConfig
 from openlineage.client.constants import __version__ as OPENLINEAGE_CLIENT_VERSION
+from openlineage.client.dataset import DatasetConfig
 from openlineage.client.facet_v2 import environment_variables_run, tags_job, tags_run
 from openlineage.client.facets import FacetsConfig
 from openlineage.client.run import (
@@ -419,12 +420,14 @@ def test_ol_config_from_dict():
         "transport": {"url": "http://localhost:5050"},
         "facets": {"environment_variables": ["VAR1", "VAR2"]},
         "filters": [{"type": "exact", "match": "job_name"}],
+        "dataset": {"normalization_enabled": True},
     }
     config = OpenLineageConfig.from_dict(config_dict)
     assert config.transport["url"] == "http://localhost:5050"
     assert config.facets.environment_variables == ["VAR1", "VAR2"]
     assert config.filters[0].type == "exact"
     assert config.filters[0].match == "job_name"
+    assert config.dataset.normalization_enabled
 
     # Test with missing keys
     config_dict = {}
@@ -432,6 +435,7 @@ def test_ol_config_from_dict():
     assert config.transport == {}
     assert config.facets == FacetsConfig()
     assert config.filters == []
+    assert config.dataset == DatasetConfig()
 
     # Test with invalid data type
     with pytest.raises((TypeError, ValueError)):
@@ -1072,6 +1076,28 @@ class TestOpenLineageConfigLoader:
                     }
                 },
             ),
+            (
+                {
+                    "OPENLINEAGE__DATASET__NORMALIZATION_ENABLED": "true",
+                    "OPENLINEAGE__DATASET__DISABLED_TRIMMERS": ""
+                    "openlineage.client.dataset.trimmers.KeyValueTrimmer;"
+                    "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
+                    "OPENLINEAGE__DATASET__EXTRA_TRIMMERS": ""
+                    "my.custom.trimmers.KeyValueTrimmer;"
+                    "my.custom.trimmers.MultiDirDateTrimmer",
+                },
+                {
+                    "dataset": {
+                        "normalization_enabled": True,
+                        "disabled_trimmers": ""
+                        "openlineage.client.dataset.trimmers.KeyValueTrimmer;"
+                        "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
+                        "extra_trimmers": ""
+                        "my.custom.trimmers.KeyValueTrimmer;"
+                        "my.custom.trimmers.MultiDirDateTrimmer",
+                    }
+                },
+            ),
         ],
     )
     @patch.dict(os.environ, {})
@@ -1660,3 +1686,67 @@ def test_client_http_transport_from_env_vars_with_separate_api_key_precedence(re
     assert transport.kind == "http"
     assert transport.url == "http://example.com"
     assert transport.config.auth.api_key == "secret2"
+
+
+def test_dataset_config_from_yaml(mocker: MockerFixture, root: Path):
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "dataset.yaml")})
+
+    dataset = OpenLineageClient().config.dataset
+
+    assert dataset.normalization_enabled
+    assert dataset.disabled_trimmers == [
+        "openlineage.client.dataset.trimmers.KeyValueTrimmer",
+        "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
+    ]
+    assert dataset.extra_trimmers == [
+        "my.custom.trimmers.KeyValueTrimmer",
+        "my.custom.trimmers.MultiDirDateTrimmer",
+    ]
+
+
+def test_dataset_config_from_env_vars(mocker: MockerFixture):
+    mocker.patch.dict(
+        os.environ,
+        {
+            "OPENLINEAGE__DATASET__NORMALIZATION_ENABLED": "true",
+            "OPENLINEAGE__DATASET__DISABLED_TRIMMERS": "openlineage.client.dataset.trimmers.KeyValueTrimmer;"
+            "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
+            "OPENLINEAGE__DATASET__EXTRA_TRIMMERS": "my.custom.trimmers.KeyValueTrimmer;"
+            "my.custom.trimmers.MultiDirDateTrimmer",
+        },
+    )
+
+    dataset = OpenLineageClient().config.dataset
+
+    assert dataset.normalization_enabled
+    assert dataset.disabled_trimmers == [
+        "openlineage.client.dataset.trimmers.KeyValueTrimmer",
+        "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
+    ]
+    assert dataset.extra_trimmers == [
+        "my.custom.trimmers.KeyValueTrimmer",
+        "my.custom.trimmers.MultiDirDateTrimmer",
+    ]
+
+
+def test_dataset_config_from_user_config():
+    user_config = {
+        "dataset": {
+            "normalization_enabled": True,
+            "disabled_trimmers": "openlineage.client.dataset.trimmers.KeyValueTrimmer;"
+            "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
+            "extra_trimmers": "my.custom.trimmers.KeyValueTrimmer;my.custom.trimmers.MultiDirDateTrimmer",
+        }
+    }
+
+    dataset = OpenLineageClient(config=user_config).config.dataset
+
+    assert dataset.normalization_enabled
+    assert dataset.disabled_trimmers == [
+        "openlineage.client.dataset.trimmers.KeyValueTrimmer",
+        "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
+    ]
+    assert dataset.extra_trimmers == [
+        "my.custom.trimmers.KeyValueTrimmer",
+        "my.custom.trimmers.MultiDirDateTrimmer",
+    ]
