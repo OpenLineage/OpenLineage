@@ -43,6 +43,12 @@
           ]
         },
         "version": {},
+        "hierarchy": {
+          "hierarchy": [
+            { "type": "DATABASE", "name": "default" },
+            { "type": "TABLE", "name": "target" }
+          ]
+        },
         "columnLineage": {
           "fields": {
             "a": {
