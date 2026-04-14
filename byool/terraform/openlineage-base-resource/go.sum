@@ -57,6 +57,8 @@ github.com/hashicorp/go-retryablehttp v0.7.8 h1:ylXZWnqa7Lhqpk0L1P1LzDtGcCR0rPVU
 github.com/hashicorp/go-retryablehttp v0.7.8/go.mod h1:rjiScheydd+CxvumBsIrFKlx3iS0jrZ7LvzFGFmuKbw=
 github.com/hashicorp/terraform-plugin-framework v1.18.0 h1:Xy6OfqSTZfAAKXSlJ810lYvuQvYkOpSUoNMQ9l2L1RA=
 github.com/hashicorp/terraform-plugin-framework v1.18.0/go.mod h1:eeFIf68PME+kenJeqSrIcpHhYQK0TOyv7ocKdN4Z35E=
+github.com/hashicorp/terraform-plugin-framework-validators v0.19.0 h1:Zz3iGgzxe/1XBkooZCewS0nJAaCFPFPHdNJd8FgE4Ow=
+github.com/hashicorp/terraform-plugin-framework-validators v0.19.0/go.mod h1:GBKTNGbGVJohU03dZ7U8wHqc2zYnMUawgCN+gC0itLc=
 github.com/hashicorp/terraform-plugin-go v0.30.0 h1:VmEiD0n/ewxbvV5VI/bYwNtlSEAXtHaZlSnyUUuQK6k=
 github.com/hashicorp/terraform-plugin-go v0.30.0/go.mod h1:8d523ORAW8OHgA9e8JKg0ezL3XUO84H0A25o4NY/jRo=
 github.com/hashicorp/terraform-plugin-log v0.10.0 h1:eu2kW6/QBVdN4P3Ju2WiB2W3ObjkAsyfBsL3Wh1fj3g=

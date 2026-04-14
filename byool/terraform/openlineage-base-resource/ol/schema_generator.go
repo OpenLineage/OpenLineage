@@ -6,10 +6,13 @@
 package ol
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 // GenerateJobSchema builds the Terraform schema for an openlineage_job resource.
@@ -133,17 +136,23 @@ func jobTypeBlock() schema.SingleNestedBlock {
 		Description: "Job type classification (facets.JobType)",
 		Attributes: map[string]schema.Attribute{
 			"processing_type": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "BATCH or STREAMING",
 			},
 			"integration": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "Integration type e.g. SPARK, AIRFLOW, DBT, BYOL",
 			},
 			"job_type": schema.StringAttribute{
 				Optional:    true,
 				Description: "Job type e.g. QUERY, DAG, TASK, JOB, MODEL",
 			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(
+				path.MatchRelative().AtName("processing_type"),
+				path.MatchRelative().AtName("integration"),
+			),
 		},
 	}
 }
@@ -157,11 +166,11 @@ func jobOwnershipBlock() schema.SingleNestedBlock {
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
-							Required:    true,
+							Optional:    true,
 							Description: "Owner identifier e.g. team:data-engineering",
 						},
 						"type": schema.StringAttribute{
-							Required:    true,
+							Optional:    true,
 							Description: "Owner type e.g. MAINTAINER, OWNER, STEWARD",
 						},
 					},
@@ -176,9 +185,12 @@ func jobDocumentationBlock() schema.SingleNestedBlock {
 		Description: "Human-readable documentation for this job (facets.DocumentationJobFacet)",
 		Attributes: map[string]schema.Attribute{
 			"description": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "Job documentation text",
 			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("description")),
 		},
 	}
 }
@@ -188,13 +200,19 @@ func sourceCodeBlock() schema.SingleNestedBlock {
 		Description: "Source code that implements this job (facets.SourceCode)",
 		Attributes: map[string]schema.Attribute{
 			"language": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "Programming language e.g. Python, Scala, SQL",
 			},
 			"source_code": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "The source code text or a URI pointing to it",
 			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(
+				path.MatchRelative().AtName("language"),
+				path.MatchRelative().AtName("source_code"),
+			),
 		},
 	}
 }
@@ -204,11 +222,11 @@ func sourceCodeLocationBlock() schema.SingleNestedBlock {
 		Description: "VCS location of the source code for this job (facets.SourceCodeLocation)",
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "VCS type e.g. git",
 			},
 			"url": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "URL of the repository or file e.g. https://github.com/org/repo",
 			},
 			"repo_url": schema.StringAttribute{
@@ -232,6 +250,12 @@ func sourceCodeLocationBlock() schema.SingleNestedBlock {
 				Description: "Branch name",
 			},
 		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(
+				path.MatchRelative().AtName("type"),
+				path.MatchRelative().AtName("url"),
+			),
+		},
 	}
 }
 
@@ -240,9 +264,12 @@ func sqlBlock() schema.SingleNestedBlock {
 		Description: "SQL query executed by this job (facets.SQL)",
 		Attributes: map[string]schema.Attribute{
 			"query": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "The SQL query string",
 			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("query")),
 		},
 	}
 }
@@ -255,13 +282,20 @@ func jobTagsBlock() schema.ListNestedBlock {
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
 				"name": schema.StringAttribute{
-					Required:    true,
+					Optional:    true,
 					Description: "Tag key",
 				},
 				"value": schema.StringAttribute{
-					Required:    true,
+					Optional:    true,
 					Description: "Tag value",
 				},
+			},
+			// Every tag entry must supply both name and value.
+			Validators: []validator.Object{
+				objectvalidator.AlsoRequires(
+					path.MatchRelative().AtName("name"),
+					path.MatchRelative().AtName("value"),
+				),
 			},
 		},
 	}
@@ -343,9 +377,26 @@ func symlinksBlock() schema.ListNestedBlock {
 		Description: "Alternate dataset identifiers (facets.Symlinks)",
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"namespace": schema.StringAttribute{Required: true, Description: "Alternate namespace"},
-				"name":      schema.StringAttribute{Required: true, Description: "Alternate name"},
-				"type":      schema.StringAttribute{Required: true, Description: "e.g. TABLE, VIEW"},
+				"namespace": schema.StringAttribute{
+					Optional:    true,
+					Description: "Alternate namespace",
+				},
+				"name": schema.StringAttribute{
+					Optional:    true,
+					Description: "Alternate name",
+				},
+				"type": schema.StringAttribute{
+					Optional:    true,
+					Description: "e.g. TABLE, VIEW",
+				},
+			},
+			// Every symlink entry must supply namespace, name, and type.
+			Validators: []validator.Object{
+				objectvalidator.AlsoRequires(
+					path.MatchRelative().AtName("namespace"),
+					path.MatchRelative().AtName("name"),
+					path.MatchRelative().AtName("type"),
+				),
 			},
 		},
 	}
@@ -359,12 +410,23 @@ func datasetSchemaBlock() schema.SingleNestedBlock {
 				Description: "Column definitions",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"name":        schema.StringAttribute{Required: true, Description: "Column name"},
+						"name": schema.StringAttribute{
+							Optional:    true,
+							Description: "Column name",
+						},
 						"type":        schema.StringAttribute{Optional: true, Description: "Data type e.g. VARCHAR, INT64"},
 						"description": schema.StringAttribute{Optional: true, Description: "Column description"},
 					},
+					// Each field entry must supply at least a column name.
+					Validators: []validator.Object{
+						objectvalidator.AlsoRequires(path.MatchRelative().AtName("name")),
+					},
 				},
 			},
+		},
+		// schema block present → at least one fields entry must be defined.
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("fields")),
 		},
 	}
 }
@@ -373,8 +435,20 @@ func dataSourceBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "Source system for this dataset (facets.DataSource)",
 		Attributes: map[string]schema.Attribute{
-			"name": schema.StringAttribute{Required: true, Description: "Source system name e.g. my-postgres"},
-			"uri":  schema.StringAttribute{Required: true, Description: "Source system URI e.g. postgresql://host:5432/db"},
+			"name": schema.StringAttribute{
+				Optional:    true,
+				Description: "Source system name e.g. my-postgres",
+			},
+			"uri": schema.StringAttribute{
+				Optional:    true,
+				Description: "Source system URI e.g. postgresql://host:5432/db",
+			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(
+				path.MatchRelative().AtName("name"),
+				path.MatchRelative().AtName("uri"),
+			),
 		},
 	}
 }
@@ -383,7 +457,13 @@ func datasetDocumentationBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "Human-readable documentation for this dataset (facets.DocumentationDatasetFacet)",
 		Attributes: map[string]schema.Attribute{
-			"description": schema.StringAttribute{Required: true, Description: "Dataset documentation"},
+			"description": schema.StringAttribute{
+				Optional:    true,
+				Description: "Dataset documentation",
+			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("description")),
 		},
 	}
 }
@@ -392,8 +472,14 @@ func datasetTypeBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "Dataset type classification (facets.DatasetType)",
 		Attributes: map[string]schema.Attribute{
-			"dataset_type": schema.StringAttribute{Required: true, Description: "e.g. TABLE, VIEW, STREAM"},
-			"sub_type":     schema.StringAttribute{Optional: true, Description: "Optional sub-type e.g. MATERIALIZED, EXTERNAL, TEMPORARY"},
+			"dataset_type": schema.StringAttribute{
+				Optional:    true,
+				Description: "e.g. TABLE, VIEW, STREAM",
+			},
+			"sub_type": schema.StringAttribute{Optional: true, Description: "Optional sub-type e.g. MATERIALIZED, EXTERNAL, TEMPORARY"},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("dataset_type")),
 		},
 	}
 }
@@ -402,7 +488,13 @@ func datasetVersionBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "Dataset version at the time of this run (facets.Version)",
 		Attributes: map[string]schema.Attribute{
-			"dataset_version": schema.StringAttribute{Required: true, Description: "Dataset version identifier"},
+			"dataset_version": schema.StringAttribute{
+				Optional:    true,
+				Description: "Dataset version identifier",
+			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("dataset_version")),
 		},
 	}
 }
@@ -411,8 +503,14 @@ func storageBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "Physical storage of this dataset (facets.Storage)",
 		Attributes: map[string]schema.Attribute{
-			"storage_layer": schema.StringAttribute{Required: true, Description: "e.g. iceberg, delta, hive"},
-			"file_format":   schema.StringAttribute{Optional: true, Description: "e.g. parquet, orc"},
+			"storage_layer": schema.StringAttribute{
+				Optional:    true,
+				Description: "e.g. iceberg, delta, hive",
+			},
+			"file_format": schema.StringAttribute{Optional: true, Description: "e.g. parquet, orc"},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("storage_layer")),
 		},
 	}
 }
@@ -425,7 +523,10 @@ func datasetOwnershipBlock() schema.SingleNestedBlock {
 				Description: "Owner entries",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{Required: true, Description: "Owner identifier"},
+						"name": schema.StringAttribute{
+							Optional:    true,
+							Description: "Owner identifier",
+						},
 						"type": schema.StringAttribute{Optional: true, Description: "Owner type e.g. MAINTAINER"},
 					},
 				},
@@ -439,7 +540,7 @@ func lifecycleStateChangeBlock() schema.SingleNestedBlock {
 		Description: "Dataset lifecycle state transition (facets.LifecycleStateChange)",
 		Attributes: map[string]schema.Attribute{
 			"lifecycle_state_change": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "e.g. CREATE, DROP, ALTER, RENAME, OVERWRITE",
 			},
 		},
@@ -447,13 +548,30 @@ func lifecycleStateChangeBlock() schema.SingleNestedBlock {
 			"previous_identifier": schema.SingleNestedBlock{
 				Description: "Previous namespace+name before a RENAME",
 				Attributes: map[string]schema.Attribute{
-					"namespace": schema.StringAttribute{Required: true, Description: "Previous namespace"},
-					"name":      schema.StringAttribute{Required: true, Description: "Previous name"},
+					"namespace": schema.StringAttribute{
+						Optional:    true,
+						Description: "Previous namespace",
+					},
+					"name": schema.StringAttribute{
+						Optional:    true,
+						Description: "Previous name",
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(
+						path.MatchRelative().AtName("namespace"),
+						path.MatchRelative().AtName("name"),
+					),
 				},
 			},
 		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("lifecycle_state_change")),
+		},
 	}
 }
+
+// ── Hierarchy facet blocks ───────────────────────────────────────────────────
 
 func hierarchyBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
@@ -469,11 +587,21 @@ func hierarchyElementBlock(desc string) schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: desc,
 		Attributes: map[string]schema.Attribute{
-			// namespace is accepted for config portability but is not part of the
-			// OL HierarchyElement spec and is not included in emitted events.
 			"namespace": schema.StringAttribute{Optional: true, Description: "Namespace (accepted but not emitted — HierarchyElement has no namespace field in the OL spec)"},
-			"name":      schema.StringAttribute{Required: true, Description: "Name"},
-			"type":      schema.StringAttribute{Required: true, Description: "e.g. TABLE, PARTITION"},
+			"name": schema.StringAttribute{
+				Optional:    true,
+				Description: "Name",
+			},
+			"type": schema.StringAttribute{
+				Optional:    true,
+				Description: "e.g. TABLE, PARTITION",
+			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(
+				path.MatchRelative().AtName("name"),
+				path.MatchRelative().AtName("type"),
+			),
 		},
 	}
 }
@@ -483,26 +611,52 @@ func hierarchyElementListBlock(desc string) schema.ListNestedBlock {
 		Description: desc,
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				// namespace is accepted for config portability but is not part of the
-				// OL HierarchyElement spec and is not included in emitted events.
 				"namespace": schema.StringAttribute{Optional: true, Description: "Namespace (accepted but not emitted — HierarchyElement has no namespace field in the OL spec)"},
-				"name":      schema.StringAttribute{Required: true, Description: "Name"},
-				"type":      schema.StringAttribute{Required: true, Description: "e.g. TABLE, PARTITION"},
+				"name": schema.StringAttribute{
+					Optional:    true,
+					Description: "Name",
+				},
+				"type": schema.StringAttribute{
+					Optional:    true,
+					Description: "e.g. TABLE, PARTITION",
+				},
 			},
 		},
 	}
 }
 
+// ── Catalog facet block ───────────────────────────────────────────────────────
+
 func catalogBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "Catalog/metastore registration (facets.Catalog)",
 		Attributes: map[string]schema.Attribute{
-			"framework":     schema.StringAttribute{Required: true, Description: "e.g. hive, iceberg"},
-			"type":          schema.StringAttribute{Required: true, Description: "Catalog type e.g. hive"},
-			"name":          schema.StringAttribute{Required: true, Description: "Catalog name"},
+			"framework": schema.StringAttribute{
+				Optional:    true,
+				Description: "e.g. hive, iceberg",
+			},
+			"type": schema.StringAttribute{
+				Optional:    true,
+				Description: "Catalog type e.g. hive",
+			},
+			"name": schema.StringAttribute{
+				Optional:    true,
+				Description: "Catalog name",
+			},
 			"metadata_uri":  schema.StringAttribute{Optional: true, Description: "e.g. hive://localhost:9083"},
 			"warehouse_uri": schema.StringAttribute{Optional: true, Description: "e.g. hdfs://localhost/warehouse"},
 			"source":        schema.StringAttribute{Optional: true, Description: "Source system e.g. spark"},
+		},
+		// When the catalog block is present, framework / type / name must all be
+		// provided. The individual LengthAtLeast(1) validators already guard
+		// against empty strings; AlsoRequires guards against the attribute being
+		// omitted entirely while the block is present.
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(
+				path.MatchRelative().AtName("framework"),
+				path.MatchRelative().AtName("type"),
+				path.MatchRelative().AtName("name"),
+			),
 		},
 	}
 }
@@ -514,8 +668,21 @@ func datasetTagsBlock() schema.ListNestedBlock {
 		Description: "Free-form tags on this dataset (facets.TagsDatasetFacet)",
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"name":  schema.StringAttribute{Required: true, Description: "Tag key"},
-				"value": schema.StringAttribute{Required: true, Description: "Tag value"},
+				"name": schema.StringAttribute{
+					Optional:    true,
+					Description: "Tag key",
+				},
+				"value": schema.StringAttribute{
+					Optional:    true,
+					Description: "Tag value",
+				},
+			},
+			// Every tag entry must supply both name and value.
+			Validators: []validator.Object{
+				objectvalidator.AlsoRequires(
+					path.MatchRelative().AtName("name"),
+					path.MatchRelative().AtName("value"),
+				),
 			},
 		},
 	}
@@ -530,6 +697,12 @@ func columnLineageBlock() schema.SingleNestedBlock {
 			"fields":  columnLineageFieldsBlock(),
 			"dataset": columnLineageDatasetBlock(),
 		},
+		// column_lineage present → at least one fields entry must exist.
+		// (A missing fields list is null, not an empty list, so AlsoRequires
+		// is the right tool — listvalidator.SizeAtLeast would skip null.)
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("fields")),
+		},
 	}
 }
 
@@ -538,22 +711,53 @@ func columnLineageFieldsBlock() schema.ListNestedBlock {
 		Description: "Field-level lineage: output column → input columns",
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"name": schema.StringAttribute{Required: true, Description: "Output column name"},
+				"name": schema.StringAttribute{
+					Optional:    true,
+					Description: "Output column name",
+				},
 			},
 			Blocks: map[string]schema.Block{
 				"input_field": schema.ListNestedBlock{
 					Description: "Input fields that contribute to this output column",
 					NestedObject: schema.NestedBlockObject{
 						Attributes: map[string]schema.Attribute{
-							"namespace": schema.StringAttribute{Required: true, Description: "Input dataset namespace"},
-							"name":      schema.StringAttribute{Required: true, Description: "Input dataset name"},
-							"field":     schema.StringAttribute{Required: true, Description: "Input column name"},
+							"namespace": schema.StringAttribute{
+								Optional:    true,
+								Description: "Input dataset namespace",
+							},
+							"name": schema.StringAttribute{
+								Optional:    true,
+								Description: "Input dataset name",
+							},
+							"field": schema.StringAttribute{
+								Optional:    true,
+								Description: "Input column name",
+							},
 						},
 						Blocks: map[string]schema.Block{
 							"transformation": transformationBlock(),
 						},
+						// Each input_field item must have namespace, name, field,
+						// AND a transformation block. A missing block is null so
+						// AlsoRequires correctly catches it.
+						Validators: []validator.Object{
+							objectvalidator.AlsoRequires(
+								path.MatchRelative().AtName("namespace"),
+								path.MatchRelative().AtName("name"),
+								path.MatchRelative().AtName("field"),
+								path.MatchRelative().AtName("transformation"),
+							),
+						},
 					},
 				},
+			},
+			// Each fields item must have name AND at least one input_field.
+			// A missing input_field list is null — AlsoRequires catches that.
+			Validators: []validator.Object{
+				objectvalidator.AlsoRequires(
+					path.MatchRelative().AtName("name"),
+					path.MatchRelative().AtName("input_field"),
+				),
 			},
 		},
 	}
@@ -564,9 +768,18 @@ func columnLineageDatasetBlock() schema.ListNestedBlock {
 		Description: "Dataset-level lineage: input dataset → output field (column unknown)",
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
-				"namespace": schema.StringAttribute{Required: true, Description: "Input dataset namespace"},
-				"name":      schema.StringAttribute{Required: true, Description: "Input dataset name"},
-				"field":     schema.StringAttribute{Required: true, Description: "Output field this dataset contributes to"},
+				"namespace": schema.StringAttribute{
+					Optional:    true,
+					Description: "Input dataset namespace",
+				},
+				"name": schema.StringAttribute{
+					Optional:    true,
+					Description: "Input dataset name",
+				},
+				"field": schema.StringAttribute{
+					Optional:    true,
+					Description: "Output field this dataset contributes to",
+				},
 			},
 			Blocks: map[string]schema.Block{
 				"transformation": transformationBlock(),
@@ -582,7 +795,10 @@ func transformationBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "How the input data was transformed to produce the output (facets.Transformation)",
 		Attributes: map[string]schema.Attribute{
-			"type":        schema.StringAttribute{Required: true, Description: "DIRECT or INDIRECT"},
+			"type": schema.StringAttribute{
+				Optional:    true,
+				Description: "DIRECT or INDIRECT",
+			},
 			"subtype":     schema.StringAttribute{Optional: true, Description: "e.g. IDENTITY, AGGREGATION, FILTER"},
 			"description": schema.StringAttribute{Optional: true, Description: "Human-readable transformation description"},
 			"masking": schema.BoolAttribute{
@@ -592,6 +808,9 @@ func transformationBlock() schema.SingleNestedBlock {
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
+		},
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
 		},
 	}
 }
