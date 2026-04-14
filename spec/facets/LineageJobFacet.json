@@ -14,7 +14,7 @@
               "description": "Lineage entries describing data flow declared for this job definition. Each entry identifies a target entity and the sources that feed into it.",
               "type": "array",
               "items": {
-                "$ref": "#/$defs/LineageEntry"
+                "$ref": "#/$defs/LineageJobEntry"
               }
             }
           },
@@ -24,7 +24,7 @@
       ],
       "type": "object"
     },
-    "LineageEntry": {
+    "LineageJobEntry": {
       "type": "object",
       "description": "Describes data flowing into a target entity from source entities, at entity and/or column granularity.",
       "properties": {
@@ -44,21 +44,21 @@
           "description": "Entity-level source inputs. An empty array explicitly means the target has no upstream source (e.g., a data generator).",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/LineageInput"
+            "$ref": "#/$defs/LineageJobInput"
           }
         },
         "fields": {
           "description": "Column-level lineage. Maps target field names to their source inputs. Only meaningful when the target type is DATASET.",
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/$defs/LineageFieldEntry"
+            "$ref": "#/$defs/LineageJobFieldEntry"
           }
         }
       },
       "additionalProperties": true,
       "required": ["namespace", "name", "type"]
     },
-    "LineageFieldEntry": {
+    "LineageJobFieldEntry": {
       "type": "object",
       "description": "Column-level lineage for a single target field.",
       "properties": {
@@ -66,14 +66,14 @@
           "description": "Source entities and/or fields that feed into this target field.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/LineageInput"
+            "$ref": "#/$defs/LineageJobInput"
           }
         }
       },
       "additionalProperties": true,
       "required": ["inputs"]
     },
-    "LineageInput": {
+    "LineageJobInput": {
       "type": "object",
       "description": "A source entity that feeds data into a lineage target.",
       "properties": {
@@ -97,14 +97,14 @@
           "description": "Transformations applied to the source data.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/LineageTransformation"
+            "$ref": "#/$defs/LineageJobTransformation"
           }
         }
       },
       "additionalProperties": true,
       "required": ["namespace", "name", "type"]
     },
-    "LineageTransformation": {
+    "LineageJobTransformation": {
       "type": "object",
       "description": "A transformation applied to source data in a lineage relationship.",
       "properties": {

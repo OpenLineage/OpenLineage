@@ -11,7 +11,7 @@ from openlineage.client.utils import RedactMixin
 
 
 @attr.define
-class LineageEntry(RedactMixin):
+class LineageJobEntry(RedactMixin):
     """
     Describes data flowing into a target entity from source entities, at entity and/or column
     granularity.
@@ -29,18 +29,18 @@ class LineageEntry(RedactMixin):
     itself is the data consumer (sink) or producer (generator) — i.e., when there are no output datasets
     (sink) or no input datasets (generator).
     """
-    inputs: list[LineageInput] | None = attr.field(factory=list)
+    inputs: list[LineageJobInput] | None = attr.field(factory=list)
     """
     Entity-level source inputs. An empty array explicitly means the target has no upstream source (e.g.,
     a data generator).
     """
-    fields: dict[str, LineageFieldEntry] | None = attr.field(factory=dict)
+    fields: dict[str, LineageJobFieldEntry] | None = attr.field(factory=dict)
     """
     Column-level lineage. Maps target field names to their source inputs. Only meaningful when the
     target type is DATASET.
     """
 
-    def with_additional_properties(self, **kwargs: Any) -> "LineageEntry":
+    def with_additional_properties(self, **kwargs: Any) -> "LineageJobEntry":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 
@@ -58,21 +58,34 @@ class LineageEntry(RedactMixin):
             init_name = a.alias
             if init_name not in kwargs:
                 kwargs[init_name] = getattr(self, attr_name)
-        return cast(LineageEntry, new_class(**kwargs))
+        return cast(LineageJobEntry, new_class(**kwargs))
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/LineageRunFacet.json#/$defs/LineageEntry"
+        return "https://openlineage.io/spec/facets/1-0-0/LineageJobFacet.json#/$defs/LineageJobEntry"
 
 
 @attr.define
-class LineageFieldEntry(RedactMixin):
+class LineageJobFacet(JobFacet):
+    lineage: list[LineageJobEntry]
+    """
+    Lineage entries describing data flow declared for this job definition. Each entry identifies a
+    target entity and the sources that feed into it.
+    """
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://openlineage.io/spec/facets/1-0-0/LineageJobFacet.json#/$defs/LineageJobFacet"
+
+
+@attr.define
+class LineageJobFieldEntry(RedactMixin):
     """Column-level lineage for a single target field."""
 
-    inputs: list[LineageInput]
+    inputs: list[LineageJobInput]
     """Source entities and/or fields that feed into this target field."""
 
-    def with_additional_properties(self, **kwargs: Any) -> "LineageFieldEntry":
+    def with_additional_properties(self, **kwargs: Any) -> "LineageJobFieldEntry":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 
@@ -90,15 +103,15 @@ class LineageFieldEntry(RedactMixin):
             init_name = a.alias
             if init_name not in kwargs:
                 kwargs[init_name] = getattr(self, attr_name)
-        return cast(LineageFieldEntry, new_class(**kwargs))
+        return cast(LineageJobFieldEntry, new_class(**kwargs))
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/LineageRunFacet.json#/$defs/LineageFieldEntry"
+        return "https://openlineage.io/spec/facets/1-0-0/LineageJobFacet.json#/$defs/LineageJobFieldEntry"
 
 
 @attr.define
-class LineageInput(RedactMixin):
+class LineageJobInput(RedactMixin):
     """A source entity that feeds data into a lineage target."""
 
     namespace: str
@@ -119,10 +132,10 @@ class LineageInput(RedactMixin):
     dataset-wide operation (e.g., GROUP BY column). When present at field-level inputs, represents the
     source column that feeds into the target column.
     """
-    transformations: list[LineageTransformation] | None = attr.field(factory=list)
+    transformations: list[LineageJobTransformation] | None = attr.field(factory=list)
     """Transformations applied to the source data."""
 
-    def with_additional_properties(self, **kwargs: Any) -> "LineageInput":
+    def with_additional_properties(self, **kwargs: Any) -> "LineageJobInput":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 
@@ -140,28 +153,15 @@ class LineageInput(RedactMixin):
             init_name = a.alias
             if init_name not in kwargs:
                 kwargs[init_name] = getattr(self, attr_name)
-        return cast(LineageInput, new_class(**kwargs))
+        return cast(LineageJobInput, new_class(**kwargs))
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/LineageRunFacet.json#/$defs/LineageInput"
+        return "https://openlineage.io/spec/facets/1-0-0/LineageJobFacet.json#/$defs/LineageJobInput"
 
 
 @attr.define
-class LineageJobFacet(JobFacet):
-    lineage: list[LineageEntry]
-    """
-    Lineage entries describing data flow declared for this job definition. Each entry identifies a
-    target entity and the sources that feed into it.
-    """
-
-    @staticmethod
-    def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/LineageJobFacet.json#/$defs/LineageJobFacet"
-
-
-@attr.define
-class LineageTransformation(RedactMixin):
+class LineageJobTransformation(RedactMixin):
     """A transformation applied to source data in a lineage relationship."""
 
     type: str  # noqa: A003
@@ -178,7 +178,7 @@ class LineageTransformation(RedactMixin):
     masking: bool | None = attr.field(default=None)
     """Whether the transformation masks the data (e.g., hashing PII)."""
 
-    def with_additional_properties(self, **kwargs: Any) -> "LineageTransformation":
+    def with_additional_properties(self, **kwargs: Any) -> "LineageJobTransformation":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 
@@ -196,8 +196,8 @@ class LineageTransformation(RedactMixin):
             init_name = a.alias
             if init_name not in kwargs:
                 kwargs[init_name] = getattr(self, attr_name)
-        return cast(LineageTransformation, new_class(**kwargs))
+        return cast(LineageJobTransformation, new_class(**kwargs))
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/LineageRunFacet.json#/$defs/LineageTransformation"
+        return "https://openlineage.io/spec/facets/1-0-0/LineageJobFacet.json#/$defs/LineageJobTransformation"

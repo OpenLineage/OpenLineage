@@ -14,14 +14,14 @@
               "description": "Dataset-level source inputs that feed into this dataset. When a source includes a 'field' property, it represents a dataset-wide operation (e.g., GROUP BY, FILTER) where that source column affects the entire target dataset.",
               "type": "array",
               "items": {
-                "$ref": "#/$defs/LineageInput"
+                "$ref": "#/$defs/LineageDatasetInput"
               }
             },
             "fields": {
               "description": "Column-level lineage. Maps target field names in this dataset to their source inputs.",
               "type": "object",
               "additionalProperties": {
-                "$ref": "#/$defs/LineageFieldEntry"
+                "$ref": "#/$defs/LineageDatasetFieldEntry"
               }
             }
           },
@@ -30,7 +30,7 @@
       ],
       "type": "object"
     },
-    "LineageFieldEntry": {
+    "LineageDatasetFieldEntry": {
       "type": "object",
       "description": "Column-level lineage for a single target field.",
       "properties": {
@@ -38,14 +38,14 @@
           "description": "Source entities and/or fields that feed into this target field.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/LineageInput"
+            "$ref": "#/$defs/LineageDatasetInput"
           }
         }
       },
       "additionalProperties": true,
       "required": ["inputs"]
     },
-    "LineageInput": {
+    "LineageDatasetInput": {
       "type": "object",
       "description": "A source entity that feeds data into a lineage target.",
       "properties": {
@@ -69,14 +69,14 @@
           "description": "Transformations applied to the source data.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/LineageTransformation"
+            "$ref": "#/$defs/LineageDatasetTransformation"
           }
         }
       },
       "additionalProperties": true,
       "required": ["namespace", "name", "type"]
     },
-    "LineageTransformation": {
+    "LineageDatasetTransformation": {
       "type": "object",
       "description": "A transformation applied to source data in a lineage relationship.",
       "properties": {

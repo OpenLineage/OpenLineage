@@ -6,8 +6,6 @@
 
 package facets
 
-import "time"
-
 // InputDatasetFacets holds all InputDatasetFacet facets for an OpenLineage event.
 type InputDatasetFacets struct {
 	InputStatisticsInputDatasetFacet   *InputStatisticsInputDatasetFacet   `json:"inputStatistics,omitempty"`
