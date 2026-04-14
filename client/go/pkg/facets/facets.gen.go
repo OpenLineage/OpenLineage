@@ -6,138 +6,93 @@
 
 package facets
 
-import (
-	"time"
-)
-
 // BaseSubsetDatasetFacet — An Input Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 //
 // An Output Dataset Facet
 type BaseSubsetDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL       string               `json:"_schemaURL"`
+	Producer        string               `json:"_producer"`  // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL       string               `json:"_schemaURL"` // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
 	InputCondition  *InputConditionClass `json:"inputCondition,omitempty"`
 	OutputCondition *InputConditionClass `json:"outputCondition,omitempty"`
 }
 
 // InputConditionClass — The condition to define a subset
 type InputConditionClass struct {
-	Locations  []string           `json:"locations,omitempty"`
-	Type       InputConditionType `json:"type"`
-	Partitions []Partition        `json:"partitions,omitempty"`
-	Left       *LeftClass         `json:"left,omitempty"`
-	// Allowed values: 'AND' or 'OR'
-	Operator *string    `json:"operator,omitempty"`
-	Right    *LeftClass `json:"right,omitempty"`
-	// Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN',
-	// 'LESS_EQUAL_THAN'
-	Comparison *string `json:"comparison,omitempty"`
+	Locations  []string    `json:"locations,omitempty"`
+	Type       interface{} `json:"type"`
+	Partitions []Partition `json:"partitions,omitempty"`
+	Left       *LeftClass  `json:"left,omitempty"`
+	Operator   *string     `json:"operator,omitempty"` // Allowed values: 'AND' or 'OR'
+	Right      *LeftClass  `json:"right,omitempty"`
+	Comparison *string     `json:"comparison,omitempty"` // Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN',; 'LESS_EQUAL_THAN'
 }
 
 // LeftClass — The condition to define a subset
 type LeftClass struct {
 	Locations  []string    `json:"locations,omitempty"`
-	Type       LeftType    `json:"type"`
+	Type       interface{} `json:"type"`
 	Partitions []Partition `json:"partitions,omitempty"`
 	Left       *LeftClass  `json:"left,omitempty"`
-	// Allowed values: 'AND' or 'OR'
-	Operator *string    `json:"operator,omitempty"`
-	Right    *LeftClass `json:"right,omitempty"`
-	// Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN',
-	// 'LESS_EQUAL_THAN'
-	Comparison *string `json:"comparison,omitempty"`
-	Field      *string `json:"field,omitempty"`
-	Value      *string `json:"value,omitempty"`
+	Operator   *string     `json:"operator,omitempty"` // Allowed values: 'AND' or 'OR'
+	Right      *LeftClass  `json:"right,omitempty"`
+	Comparison *string     `json:"comparison,omitempty"` // Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN',; 'LESS_EQUAL_THAN'
+	Field      *string     `json:"field,omitempty"`
+	Value      *string     `json:"value,omitempty"`
 }
 
 type Partition struct {
 	Dimensions map[string]interface{} `json:"dimensions"`
-	// Optionally provided identifier of the partition specified
-	Identifier *string `json:"identifier,omitempty"`
+	Identifier *string                `json:"identifier,omitempty"` // Optionally provided identifier of the partition specified
 }
 
 // CatalogDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type CatalogDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// Additional catalog properties
-	CatalogProperties map[string]string `json:"catalogProperties,omitempty"`
-	// The storage framework for which the catalog is configured
-	Framework string `json:"framework"`
-	// URI or connection string to the catalog, if applicable.
-	MetadataURI *string `json:"metadataUri,omitempty"`
-	// Name of the catalog, as configured in the source system.
-	Name string `json:"name"`
-	// Source system where the catalog is configured.
-	Source *string `json:"source,omitempty"`
-	// Type of the catalog.
-	Type string `json:"type"`
-	// URI or connection string to the physical location of the data that the catalog describes.
-	WarehouseURI *string `json:"warehouseUri,omitempty"`
+	Producer          string            `json:"_producer"`                   // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL         string            `json:"_schemaURL"`                  // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted           *bool             `json:"_deleted,omitempty"`          // set to true to delete a facet
+	CatalogProperties map[string]string `json:"catalogProperties,omitempty"` // Additional catalog properties
+	Framework         string            `json:"framework"`                   // The storage framework for which the catalog is configured
+	MetadataURI       *string           `json:"metadataUri,omitempty"`       // URI or connection string to the catalog, if applicable.
+	Name              string            `json:"name"`                        // Name of the catalog, as configured in the source system.
+	Source            *string           `json:"source,omitempty"`            // Source system where the catalog is configured.
+	Type              string            `json:"type"`                        // Type of the catalog.
+	WarehouseURI      *string           `json:"warehouseUri,omitempty"`      // URI or connection string to the physical location of the data that the catalog describes.
 }
 
 // ColumnLineageDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type ColumnLineageDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// Column level lineage that affects the whole dataset. This includes filtering, sorting,
-	// grouping (aggregates), joining, window functions, etc.
-	Dataset []DatasetElement `json:"dataset,omitempty"`
-	// Column level lineage that maps output fields into input fields used to evaluate them.
-	Fields map[string]FieldValue `json:"fields"`
+	Producer  string           `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string           `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool            `json:"_deleted,omitempty"` // set to true to delete a facet
+	Dataset   []DatasetElement `json:"dataset,omitempty"`  // Column level lineage that affects the whole dataset. This includes filtering, sorting,; grouping (aggregates), joining, window functions, etc.
+	Fields    map[string]Field `json:"fields"`             // Column level lineage that maps output fields into input fields used to evaluate them.
 }
 
 // DatasetElement — Represents a single dependency on some field (column).
 type DatasetElement struct {
-	// The input field
-	Field string `json:"field"`
-	// The input dataset name
-	Name string `json:"name"`
-	// The input dataset namespace
-	Namespace       string           `json:"namespace"`
+	Field           string           `json:"field"`     // The input field
+	Name            string           `json:"name"`      // The input dataset name
+	Namespace       string           `json:"namespace"` // The input dataset namespace
 	Transformations []Transformation `json:"transformations,omitempty"`
 }
 
 type Transformation struct {
-	// a string representation of the transformation applied
-	Description *string `json:"description,omitempty"`
-	// is transformation masking the data or not
-	Masking *bool `json:"masking,omitempty"`
-	// The subtype of the transformation
-	Subtype *string `json:"subtype,omitempty"`
-	// The type of the transformation. Allowed values are: DIRECT, INDIRECT
-	Type string `json:"type"`
+	Description *string `json:"description,omitempty"` // a string representation of the transformation applied
+	Masking     *bool   `json:"masking,omitempty"`     // is transformation masking the data or not
+	Subtype     *string `json:"subtype,omitempty"`     // The subtype of the transformation
+	Type        string  `json:"type"`                  // The type of the transformation. Allowed values are: DIRECT, INDIRECT
 }
 
-type FieldValue struct {
-	InputFields []DatasetElement `json:"inputFields"`
-	// a string representation of the transformation applied
-	TransformationDescription *string `json:"transformationDescription,omitempty"`
-	// IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input;
-	// MASKED: no original data available (like a hash of PII for example)
-	TransformationType *string `json:"transformationType,omitempty"`
+type Field struct {
+	InputFields               []DatasetElement `json:"inputFields"`
+	TransformationDescription *string          `json:"transformationDescription,omitempty"` // a string representation of the transformation applied
+	TransformationType        *string          `json:"transformationType,omitempty"`        // IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input;; MASKED: no original data available (like a hash of PII for example)
 }
 
 // DataQualityAssertionsDatasetFacet — list of tests performed on dataset or dataset columns, and their results
@@ -146,303 +101,189 @@ type FieldValue struct {
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type DataQualityAssertionsDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL  string      `json:"_schemaURL"`
+	Producer   string      `json:"_producer"`  // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL  string      `json:"_schemaURL"` // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
 	Assertions []Assertion `json:"assertions"`
 }
 
 type Assertion struct {
-	// Type of expectation test that dataset is subjected to
-	Assertion string `json:"assertion"`
-	// Column that expectation is testing. It should match the name provided in
-	// SchemaDatasetFacet. If column field is empty, then expectation refers to whole dataset.
-	Column *string `json:"column,omitempty"`
-	// The configured severity level of the assertion. Common values are 'error' (test failure
-	// blocks pipeline) or 'warn' (test failure produces warning only).
-	Severity *string `json:"severity,omitempty"`
-	Success  bool    `json:"success"`
+	Assertion string  `json:"assertion"`          // Type of expectation test that dataset is subjected to
+	Column    *string `json:"column,omitempty"`   // Column that expectation is testing. It should match the name provided in; SchemaDatasetFacet. If column field is empty, then expectation refers to whole dataset.
+	Severity  *string `json:"severity,omitempty"` // The configured severity level of the assertion. Common values are 'error' (test failure; blocks pipeline) or 'warn' (test failure produces warning only).
+	Success   bool    `json:"success"`
 }
 
 // DataQualityMetricsDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type DataQualityMetricsDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The size in bytes
-	Bytes *int64 `json:"bytes,omitempty"`
-	// The property key is the column name
-	ColumnMetrics map[string]ColumnMetric `json:"columnMetrics"`
-	// The number of files evaluated
-	FileCount *int64 `json:"fileCount,omitempty"`
-	// The last time the dataset was changed
-	LastUpdated *time.Time `json:"lastUpdated,omitempty"`
-	// The number of rows evaluated
-	RowCount *int64 `json:"rowCount,omitempty"`
+	Producer      string                  `json:"_producer"`             // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL     string                  `json:"_schemaURL"`            // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted       *bool                   `json:"_deleted,omitempty"`    // set to true to delete a facet
+	Bytes         *int64                  `json:"bytes,omitempty"`       // The size in bytes
+	ColumnMetrics map[string]ColumnMetric `json:"columnMetrics"`         // The property key is the column name
+	FileCount     *int64                  `json:"fileCount,omitempty"`   // The number of files evaluated
+	LastUpdated   *string                 `json:"lastUpdated,omitempty"` // The last time the dataset was changed
+	RowCount      *int64                  `json:"rowCount,omitempty"`    // The number of rows evaluated
 }
 
 type ColumnMetric struct {
-	// The number of values in this column
-	Count *float64 `json:"count,omitempty"`
-	// The number of distinct values in this column for the rows evaluated
-	DistinctCount *int64   `json:"distinctCount,omitempty"`
-	Max           *float64 `json:"max,omitempty"`
-	Min           *float64 `json:"min,omitempty"`
-	// The number of null values in this column for the rows evaluated
-	NullCount *int64 `json:"nullCount,omitempty"`
-	// The property key is the quantile. Examples: 0.1 0.25 0.5 0.75 1
-	Quantiles map[string]float64 `json:"quantiles,omitempty"`
-	// The total sum of values in this column for the rows evaluated
-	Sum *float64 `json:"sum,omitempty"`
+	Count         *float64           `json:"count,omitempty"`         // The number of values in this column
+	DistinctCount *int64             `json:"distinctCount,omitempty"` // The number of distinct values in this column for the rows evaluated
+	Max           *float64           `json:"max,omitempty"`
+	Min           *float64           `json:"min,omitempty"`
+	NullCount     *int64             `json:"nullCount,omitempty"` // The number of null values in this column for the rows evaluated
+	Quantiles     map[string]float64 `json:"quantiles,omitempty"` // The property key is the quantile. Examples: 0.1 0.25 0.5 0.75 1
+	Sum           *float64           `json:"sum,omitempty"`       // The total sum of values in this column for the rows evaluated
 }
 
 // DatasetTypeDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type DatasetTypeDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// Dataset type, for example: TABLE|VIEW|FILE|TOPIC|STREAM|MODEL|JOB_OUTPUT.
-	DatasetType string `json:"datasetType"`
-	// Optional sub-type within the dataset type (e.g., MATERIALIZED, EXTERNAL, TEMPORARY).
-	SubType *string `json:"subType,omitempty"`
+	Producer    string  `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL   string  `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted     *bool   `json:"_deleted,omitempty"` // set to true to delete a facet
+	DatasetType string  `json:"datasetType"`        // Dataset type, for example: TABLE|VIEW|FILE|TOPIC|STREAM|MODEL|JOB_OUTPUT.
+	SubType     *string `json:"subType,omitempty"`  // Optional sub-type within the dataset type (e.g., MATERIALIZED, EXTERNAL, TEMPORARY).
 }
 
 // DatasetVersionDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type DatasetVersionDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The version of the dataset.
-	DatasetVersion string `json:"datasetVersion"`
+	Producer       string `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL      string `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted        *bool  `json:"_deleted,omitempty"` // set to true to delete a facet
+	DatasetVersion string `json:"datasetVersion"`     // The version of the dataset.
 }
 
 // DatasourceDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type DatasourceDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool   `json:"_deleted,omitempty"`
-	Name    *string `json:"name,omitempty"`
-	URI     *string `json:"uri,omitempty"`
+	Producer  string  `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string  `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool   `json:"_deleted,omitempty"` // set to true to delete a facet
+	Name      *string `json:"name,omitempty"`
+	URI       *string `json:"uri,omitempty"`
 }
 
 // DocumentationDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type DocumentationDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// MIME type of the description field content.
-	ContentType *string `json:"contentType,omitempty"`
-	// The description of the dataset.
-	Description string `json:"description"`
+	Producer    string  `json:"_producer"`             // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL   string  `json:"_schemaURL"`            // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted     *bool   `json:"_deleted,omitempty"`    // set to true to delete a facet
+	ContentType *string `json:"contentType,omitempty"` // MIME type of the description field content.
+	Description string  `json:"description"`           // The description of the dataset.
 }
 
 // DocumentationJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type DocumentationJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// MIME type of the description field content.
-	ContentType *string `json:"contentType,omitempty"`
-	// The description of the job.
-	Description string `json:"description"`
+	Producer    string  `json:"_producer"`             // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL   string  `json:"_schemaURL"`            // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted     *bool   `json:"_deleted,omitempty"`    // set to true to delete a facet
+	ContentType *string `json:"contentType,omitempty"` // MIME type of the description field content.
+	Description string  `json:"description"`           // The description of the job.
 }
 
 // EnvironmentVariablesRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type EnvironmentVariablesRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// The environment variables for the run.
-	EnvironmentVariables []EnvironmentVariableElement `json:"environmentVariables"`
+	Producer             string                       `json:"_producer"`            // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL            string                       `json:"_schemaURL"`           // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	EnvironmentVariables []EnvironmentVariableElement `json:"environmentVariables"` // The environment variables for the run.
 }
 
 type EnvironmentVariableElement struct {
-	// The name of the environment variable.
-	Name string `json:"name"`
-	// The value of the environment variable.
-	Value string `json:"value"`
+	Name  string `json:"name"`  // The name of the environment variable.
+	Value string `json:"value"` // The value of the environment variable.
 }
 
 // ErrorMessageRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type ErrorMessageRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// A human-readable string representing error message generated by observed system
-	Message string `json:"message"`
-	// Programming language the observed system uses.
-	ProgrammingLanguage string `json:"programmingLanguage"`
-	// A language-specific stack trace generated by observed system
-	StackTrace *string `json:"stackTrace,omitempty"`
+	Producer            string  `json:"_producer"`            // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL           string  `json:"_schemaURL"`           // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Message             string  `json:"message"`              // A human-readable string representing error message generated by observed system
+	ProgrammingLanguage string  `json:"programmingLanguage"`  // Programming language the observed system uses.
+	StackTrace          *string `json:"stackTrace,omitempty"` // A language-specific stack trace generated by observed system
 }
 
 // ExecutionParametersRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type ExecutionParametersRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// The parameters passed to the Job at runtime
-	Parameters []ParameterElement `json:"parameters,omitempty"`
+	Producer   string             `json:"_producer"`            // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL  string             `json:"_schemaURL"`           // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Parameters []ParameterElement `json:"parameters,omitempty"` // The parameters passed to the Job at runtime
 }
 
 type ParameterElement struct {
-	// Human-readable description of the property.
-	Description *string `json:"description,omitempty"`
-	// Unique identifier of the property.
-	Key string `json:"key"`
-	// Human-readable name of the property.
-	Name *string `json:"name,omitempty"`
-	// Value of the property.
-	Value *string `json:"value,omitempty"`
+	Description *string `json:"description,omitempty"` // Human-readable description of the property.
+	Key         string  `json:"key"`                   // Unique identifier of the property.
+	Name        *string `json:"name,omitempty"`        // Human-readable name of the property.
+	Value       *string `json:"value,omitempty"`       // Value of the property.
 }
 
 // ExternalQueryRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type ExternalQueryRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// Identifier for the external system
-	ExternalQueryID string `json:"externalQueryId"`
-	// source of the external query
-	Source string `json:"source"`
+	Producer        string `json:"_producer"`       // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL       string `json:"_schemaURL"`      // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	ExternalQueryID string `json:"externalQueryId"` // Identifier for the external system
+	Source          string `json:"source"`          // source of the external query
 }
 
 // ExtractionErrorRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type ExtractionErrorRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string  `json:"_schemaURL"`
-	Errors    []Error `json:"errors"`
-	// The number of distinguishable tasks in a run that were processed not successfully by
-	// OpenLineage. Those could be, for example, distinct SQL statements.
-	FailedTasks int64 `json:"failedTasks"`
-	// The number of distinguishable tasks in a run that were processed by OpenLineage, whether
-	// successfully or not. Those could be, for example, distinct SQL statements.
-	TotalTasks int64 `json:"totalTasks"`
+	Producer    string  `json:"_producer"`  // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL   string  `json:"_schemaURL"` // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Errors      []Error `json:"errors"`
+	FailedTasks int64   `json:"failedTasks"` // The number of distinguishable tasks in a run that were processed not successfully by; OpenLineage. Those could be, for example, distinct SQL statements.
+	TotalTasks  int64   `json:"totalTasks"`  // The number of distinguishable tasks in a run that were processed by OpenLineage, whether; successfully or not. Those could be, for example, distinct SQL statements.
 }
 
 type Error struct {
-	// Text representation of extraction error message.
-	ErrorMessage string `json:"errorMessage"`
-	// Stack trace of extraction error message
-	StackTrace *string `json:"stackTrace,omitempty"`
-	// Text representation of task that failed. This can be, for example, SQL statement that
-	// parser could not interpret.
-	Task *string `json:"task,omitempty"`
-	// Order of task (counted from 0).
-	TaskNumber *int64 `json:"taskNumber,omitempty"`
+	ErrorMessage string  `json:"errorMessage"`         // Text representation of extraction error message.
+	StackTrace   *string `json:"stackTrace,omitempty"` // Stack trace of extraction error message
+	Task         *string `json:"task,omitempty"`       // Text representation of task that failed. This can be, for example, SQL statement that; parser could not interpret.
+	TaskNumber   *int64  `json:"taskNumber,omitempty"` // Order of task (counted from 0).
 }
 
 // HierarchyDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type HierarchyDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// Dataset hierarchy levels (e.g. DATABASE -> SCHEMA -> TABLE), from highest to lowest
-	// level. The order is important
-	Hierarchy []HierarchyElement `json:"hierarchy"`
+	Producer  string             `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string             `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool              `json:"_deleted,omitempty"` // set to true to delete a facet
+	Hierarchy []HierarchyElement `json:"hierarchy"`          // Dataset hierarchy levels (e.g. DATABASE -> SCHEMA -> TABLE), from highest to lowest; level. The order is important
 }
 
 type HierarchyElement struct {
-	// Dataset hierarchy level name
-	Name string `json:"name"`
-	// Dataset hierarchy level type
-	Type string `json:"type"`
+	Name string `json:"name"` // Dataset hierarchy level name
+	Type string `json:"type"` // Dataset hierarchy level type
 }
 
 // InputStatisticsInputDatasetFacet — An Input Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type InputStatisticsInputDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// The number of files read
-	FileCount *int64 `json:"fileCount,omitempty"`
-	// The number of rows read
-	RowCount *int64 `json:"rowCount,omitempty"`
-	// The size in bytes read
-	Size *int64 `json:"size,omitempty"`
+	Producer  string `json:"_producer"`           // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string `json:"_schemaURL"`          // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	FileCount *int64 `json:"fileCount,omitempty"` // The number of files read
+	RowCount  *int64 `json:"rowCount,omitempty"`  // The number of rows read
+	Size      *int64 `json:"size,omitempty"`      // The size in bytes read
 }
 
 // JobDependenciesRunFacet — Maps execution dependencies (control flow relationships) between upstream and downstream
@@ -452,89 +293,54 @@ type InputStatisticsInputDatasetFacet struct {
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type JobDependenciesRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// Job runs that will start after completion of the current run.
-	Downstream []DownstreamElement `json:"downstream,omitempty"`
-	// Specifies the condition under which this job will run based on the status of upstream
-	// jobs.
-	TriggerRule *string `json:"trigger_rule,omitempty"`
-	// Job runs that must complete before the current run can start.
-	Upstream []DownstreamElement `json:"upstream,omitempty"`
+	Producer    string              `json:"_producer"`              // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL   string              `json:"_schemaURL"`             // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Downstream  []DownstreamElement `json:"downstream,omitempty"`   // Job runs that will start after completion of the current run.
+	TriggerRule *string             `json:"trigger_rule,omitempty"` // Specifies the condition under which this job will run based on the status of upstream; jobs.
+	Upstream    []DownstreamElement `json:"upstream,omitempty"`     // Job runs that must complete before the current run can start.
 }
 
 // DownstreamElement — Used to store all information about job dependency (e.g., job, run, etc.).
 type DownstreamElement struct {
-	// Used to describe whether the upstream job directly triggers the downstream job, or
-	// whether the dependency is implicit (e.g. time-based).
-	DependencyType *string        `json:"dependency_type,omitempty"`
-	Job            DownstreamJob  `json:"job"`
-	Run            *DownstreamRun `json:"run,omitempty"`
-	// Used to describe the exact sequence condition on which the downstream job can be executed
-	// (FINISH_TO_START - downstream job can start when upstream finished; FINISH_TO_FINISH -
-	// job executions can overlap, but need to finish in specified order; START_TO_START - jobs
-	// need to start at the same time in parallel).
-	SequenceTriggerRule *string `json:"sequence_trigger_rule,omitempty"`
-	// Used to describe if the downstream job should be run based on the status of the upstream
-	// job.
-	StatusTriggerRule *string `json:"status_trigger_rule,omitempty"`
+	DependencyType      *string        `json:"dependency_type,omitempty"` // Used to describe whether the upstream job directly triggers the downstream job, or; whether the dependency is implicit (e.g. time-based).
+	Job                 DownstreamJob  `json:"job"`
+	Run                 *DownstreamRun `json:"run,omitempty"`
+	SequenceTriggerRule *string        `json:"sequence_trigger_rule,omitempty"` // Used to describe the exact sequence condition on which the downstream job can be executed; (FINISH_TO_START - downstream job can start when upstream finished; FINISH_TO_FINISH -; job executions can overlap, but need to finish in specified order; START_TO_START - jobs; need to start at the same time in parallel).
+	StatusTriggerRule   *string        `json:"status_trigger_rule,omitempty"`   // Used to describe if the downstream job should be run based on the status of the upstream; job.
 }
 
 // DownstreamJob — Used to store information about job (e.g., namespace and name).
 type DownstreamJob struct {
-	// The unique name of a job within that namespace
-	Name string `json:"name"`
-	// The namespace containing the job
-	Namespace string `json:"namespace"`
+	Name      string `json:"name"`      // The unique name of a job within that namespace
+	Namespace string `json:"namespace"` // The namespace containing the job
 }
 
 // DownstreamRun — Used to store information about run (e.g., runId).
 type DownstreamRun struct {
-	// The globally unique ID of the run.
-	RunID string `json:"runId"`
+	RunID string `json:"runId"` // The globally unique ID of the run.
 }
 
 // JobTypeJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type JobTypeJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// OpenLineage integration type of this job: for example SPARK|DBT|AIRFLOW|FLINK
-	Integration string `json:"integration"`
-	// Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is an integration-specific
-	// field.
-	JobType *string `json:"jobType,omitempty"`
-	// Job processing type like: BATCH or STREAMING
-	ProcessingType string `json:"processingType"`
+	Producer       string  `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL      string  `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted        *bool   `json:"_deleted,omitempty"` // set to true to delete a facet
+	Integration    string  `json:"integration"`        // OpenLineage integration type of this job: for example SPARK|DBT|AIRFLOW|FLINK
+	JobType        *string `json:"jobType,omitempty"`  // Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is an integration-specific; field.
+	ProcessingType string  `json:"processingType"`     // Job processing type like: BATCH or STREAMING
 }
 
 // LifecycleStateChangeDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type LifecycleStateChangeDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The lifecycle state change.
-	LifecycleStateChange LifecycleStateChangeEnum `json:"lifecycleStateChange"`
-	// Previous name of the dataset in case of renaming it.
-	PreviousIdentifier *PreviousIdentifier `json:"previousIdentifier,omitempty"`
+	Producer             string                   `json:"_producer"`                    // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL            string                   `json:"_schemaURL"`                   // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted              *bool                    `json:"_deleted,omitempty"`           // set to true to delete a facet
+	LifecycleStateChange LifecycleStateChangeEnum `json:"lifecycleStateChange"`         // The lifecycle state change.
+	PreviousIdentifier   *PreviousIdentifier      `json:"previousIdentifier,omitempty"` // Previous name of the dataset in case of renaming it.
 }
 
 // PreviousIdentifier — Previous name of the dataset in case of renaming it.
@@ -543,85 +349,169 @@ type PreviousIdentifier struct {
 	Namespace string `json:"namespace"`
 }
 
+// LineageDatasetFacet — A Dataset Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type LineageDatasetFacet struct {
+	Producer  string                `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string                `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool                 `json:"_deleted,omitempty"` // set to true to delete a facet
+	Fields    map[string]FieldValue `json:"fields,omitempty"`   // Column-level lineage. Maps target field names in this dataset to their source inputs.
+	Inputs    []InputElement        `json:"inputs,omitempty"`   // Dataset-level source inputs that feed into this dataset. When a source includes a 'field'; property, it represents a dataset-wide operation (e.g., GROUP BY, FILTER) where that; source column affects the entire target dataset.
+}
+
+// FieldValue — Column-level lineage for a single target field.
+type FieldValue struct {
+	Inputs []InputElement `json:"inputs"` // Source entities and/or fields that feed into this target field.
+}
+
+// InputElement — A source entity that feeds data into a lineage target.
+type InputElement struct {
+	Field           *string                 `json:"field,omitempty"`           // The specific field/column of the source dataset. When present at entity-level inputs,; represents a dataset-wide operation (e.g., GROUP BY column). When present at field-level; inputs, represents the source column that feeds into the target column.
+	Name            string                  `json:"name"`                      // The name of the source entity.
+	Namespace       string                  `json:"namespace"`                 // The namespace of the source entity.
+	Transformations []TransformationElement `json:"transformations,omitempty"` // Transformations applied to the source data.
+	Type            string                  `json:"type"`                      // The type of the source entity. DATASET for dataset entities. JOB for job entities, used; when a job is the origin of data (e.g., a generator job that creates data without reading; from any input dataset).
+}
+
+// TransformationElement — A transformation applied to source data in a lineage relationship.
+type TransformationElement struct {
+	Description *string `json:"description,omitempty"` // A string representation of the transformation applied.
+	Masking     *bool   `json:"masking,omitempty"`     // Whether the transformation masks the data (e.g., hashing PII).
+	Subtype     *string `json:"subtype,omitempty"`     // The subtype of the transformation, e.g., IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY,; WINDOW, SORT, CONDITIONAL.
+	Type        string  `json:"type"`                  // The type of the transformation. Allowed values are: DIRECT, INDIRECT.
+}
+
+// LineageJobFacet — A Job Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type LineageJobFacet struct {
+	Producer  string           `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string           `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool            `json:"_deleted,omitempty"` // set to true to delete a facet
+	Lineage   []LineageElement `json:"lineage"`            // Lineage entries describing data flow declared for this job definition. Each entry; identifies a target entity and the sources that feed into it.
+}
+
+// LineageElement — Describes data flowing into a target entity from source entities, at entity and/or column
+// granularity.
+type LineageElement struct {
+	Fields    map[string]FieldClass `json:"fields,omitempty"` // Column-level lineage. Maps target field names to their source inputs. Only meaningful; when the target type is DATASET.
+	Inputs    []InputClass          `json:"inputs,omitempty"` // Entity-level source inputs. An empty array explicitly means the target has no upstream; source (e.g., a data generator).
+	Name      string                `json:"name"`             // The name of the target entity.
+	Namespace string                `json:"namespace"`        // The namespace of the target entity.
+	Type      string                `json:"type"`             // The type of the target entity. DATASET for dataset entities. JOB for job entities, used; when the job itself is the data consumer (sink) or producer (generator) — i.e., when; there are no output datasets (sink) or no input datasets (generator).
+}
+
+// FieldClass — Column-level lineage for a single target field.
+type FieldClass struct {
+	Inputs []InputClass `json:"inputs"` // Source entities and/or fields that feed into this target field.
+}
+
+// InputClass — A source entity that feeds data into a lineage target.
+type InputClass struct {
+	Field           *string               `json:"field,omitempty"`           // The specific field/column of the source dataset. When present at entity-level inputs,; represents a dataset-wide operation (e.g., GROUP BY column). When present at field-level; inputs, represents the source column that feeds into the target column.
+	Name            string                `json:"name"`                      // The name of the source entity.
+	Namespace       string                `json:"namespace"`                 // The namespace of the source entity.
+	Transformations []TransformationClass `json:"transformations,omitempty"` // Transformations applied to the source data.
+	Type            string                `json:"type"`                      // The type of the source entity. DATASET for dataset entities. JOB for job entities, used; when a job is the origin of data (e.g., a generator job that creates data without reading; from any input dataset).
+}
+
+// TransformationClass — A transformation applied to source data in a lineage relationship.
+type TransformationClass struct {
+	Description *string `json:"description,omitempty"` // A string representation of the transformation applied.
+	Masking     *bool   `json:"masking,omitempty"`     // Whether the transformation masks the data (e.g., hashing PII).
+	Subtype     *string `json:"subtype,omitempty"`     // The subtype of the transformation, e.g., IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY,; WINDOW, SORT, CONDITIONAL.
+	Type        string  `json:"type"`                  // The type of the transformation. Allowed values are: DIRECT, INDIRECT.
+}
+
+// LineageRunFacet — A Run Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type LineageRunFacet struct {
+	Producer  string         `json:"_producer"`  // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string         `json:"_schemaURL"` // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Lineage   []LineageClass `json:"lineage"`    // Lineage entries describing data flow observed during this run. Each entry identifies a; target entity and the sources that feed into it.
+}
+
+// LineageClass — Describes data flowing into a target entity from source entities, at entity and/or column
+// granularity.
+type LineageClass struct {
+	Fields    map[string]LineageField `json:"fields,omitempty"` // Column-level lineage. Maps target field names to their source inputs. Only meaningful; when the target type is DATASET.
+	Inputs    []FieldInput            `json:"inputs,omitempty"` // Entity-level source inputs. An empty array explicitly means the target has no upstream; source (e.g., a data generator).
+	Name      string                  `json:"name"`             // The name of the target entity.
+	Namespace string                  `json:"namespace"`        // The namespace of the target entity.
+	Type      string                  `json:"type"`             // The type of the target entity. DATASET for dataset entities. JOB for job entities, used; when the job itself is the data consumer (sink) or producer (generator) — i.e., when; there are no output datasets (sink) or no input datasets (generator).
+}
+
+// LineageField — Column-level lineage for a single target field.
+type LineageField struct {
+	Inputs []FieldInput `json:"inputs"` // Source entities and/or fields that feed into this target field.
+}
+
+// FieldInput — A source entity that feeds data into a lineage target.
+type FieldInput struct {
+	Field           *string               `json:"field,omitempty"`           // The specific field/column of the source dataset. When present at entity-level inputs,; represents a dataset-wide operation (e.g., GROUP BY column). When present at field-level; inputs, represents the source column that feeds into the target column.
+	Name            string                `json:"name"`                      // The name of the source entity.
+	Namespace       string                `json:"namespace"`                 // The namespace of the source entity.
+	Transformations []InputTransformation `json:"transformations,omitempty"` // Transformations applied to the source data.
+	Type            string                `json:"type"`                      // The type of the source entity. DATASET for dataset entities. JOB for job entities, used; when a job is the origin of data (e.g., a generator job that creates data without reading; from any input dataset).
+}
+
+// InputTransformation — A transformation applied to source data in a lineage relationship.
+type InputTransformation struct {
+	Description *string `json:"description,omitempty"` // A string representation of the transformation applied.
+	Masking     *bool   `json:"masking,omitempty"`     // Whether the transformation masks the data (e.g., hashing PII).
+	Subtype     *string `json:"subtype,omitempty"`     // The subtype of the transformation, e.g., IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY,; WINDOW, SORT, CONDITIONAL.
+	Type        string  `json:"type"`                  // The type of the transformation. Allowed values are: DIRECT, INDIRECT.
+}
+
 // NominalTimeRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type NominalTimeRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal
-	// end time (excluded) of the run. (Should be the nominal start time of the next run)
-	NominalEndTime *time.Time `json:"nominalEndTime,omitempty"`
-	// An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal
-	// start time (included) of the run. AKA the schedule time
-	NominalStartTime time.Time `json:"nominalStartTime"`
+	Producer         string  `json:"_producer"`                // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL        string  `json:"_schemaURL"`               // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	NominalEndTime   *string `json:"nominalEndTime,omitempty"` // An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal; end time (excluded) of the run. (Should be the nominal start time of the next run)
+	NominalStartTime string  `json:"nominalStartTime"`         // An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal; start time (included) of the run. AKA the schedule time
 }
 
 // OutputStatisticsOutputDatasetFacet — An Output Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type OutputStatisticsOutputDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// The number of files written to the dataset
-	FileCount *int64 `json:"fileCount,omitempty"`
-	// The number of rows written to the dataset
-	RowCount *int64 `json:"rowCount,omitempty"`
-	// The size in bytes written to the dataset
-	Size *int64 `json:"size,omitempty"`
+	Producer  string `json:"_producer"`           // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string `json:"_schemaURL"`          // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	FileCount *int64 `json:"fileCount,omitempty"` // The number of files written to the dataset
+	RowCount  *int64 `json:"rowCount,omitempty"`  // The number of rows written to the dataset
+	Size      *int64 `json:"size,omitempty"`      // The size in bytes written to the dataset
 }
 
 // OwnershipDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type OwnershipDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The owners of the dataset.
-	Owners []Owner `json:"owners,omitempty"`
+	Producer  string  `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string  `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool   `json:"_deleted,omitempty"` // set to true to delete a facet
+	Owners    []Owner `json:"owners,omitempty"`   // The owners of the dataset.
 }
 
 type Owner struct {
-	// the identifier of the owner of the Dataset. It is recommended to define this as a URN.
-	// For example application:foo, user:jdoe, team:data
-	Name string `json:"name"`
-	// The type of ownership (optional)
-	Type *string `json:"type,omitempty"`
+	Name string  `json:"name"`           // the identifier of the owner of the Dataset. It is recommended to define this as a URN.; For example application:foo, user:jdoe, team:data
+	Type *string `json:"type,omitempty"` // The type of ownership (optional)
 }
 
 // OwnershipJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type OwnershipJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The owners of the job.
-	Owners []Owner `json:"owners,omitempty"`
+	Producer  string  `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string  `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool   `json:"_deleted,omitempty"` // set to true to delete a facet
+	Owners    []Owner `json:"owners,omitempty"`   // The owners of the job.
 }
 
-// the identifier of the owner of the Job. It is recommended to define this as a URN. For
-// example application:foo, user:jdoe, team:data
-
+// the identifier of the owner of the Job. It is recommended to define this as a URN. For; example application:foo, user:jdoe, team:data
 // The type of ownership (optional)
 
 // ParentRunFacet — the id of the parent run and job, iff this run was spawn from an other run (for example,
@@ -631,22 +521,16 @@ type OwnershipJobFacet struct {
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type ParentRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string    `json:"_schemaURL"`
+	Producer  string    `json:"_producer"`  // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string    `json:"_schemaURL"` // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
 	Job       ParentJob `json:"job"`
 	Root      *Root     `json:"root,omitempty"`
 	Run       ParentRun `json:"run"`
 }
 
 type ParentJob struct {
-	// The unique name for that job within that namespace
-	Name string `json:"name"`
-	// The namespace containing that job
-	Namespace string `json:"namespace"`
+	Name      string `json:"name"`      // The unique name for that job within that namespace
+	Namespace string `json:"namespace"` // The namespace containing that job
 }
 
 type Root struct {
@@ -655,517 +539,322 @@ type Root struct {
 }
 
 type RootJob struct {
-	// The unique name containing root job within that namespace
-	Name string `json:"name"`
-	// The namespace containing root job
-	Namespace string `json:"namespace"`
+	Name      string `json:"name"`      // The unique name containing root job within that namespace
+	Namespace string `json:"namespace"` // The namespace containing root job
 }
 
 type RootRun struct {
-	// The globally unique ID of the root run associated with the root job.
-	RunID string `json:"runId"`
+	RunID string `json:"runId"` // The globally unique ID of the root run associated with the root job.
 }
 
 type ParentRun struct {
-	// The globally unique ID of the run associated with the job.
-	RunID string `json:"runId"`
+	RunID string `json:"runId"` // The globally unique ID of the run associated with the job.
 }
 
 // ProcessingEngineRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type ProcessingEngineRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// Processing engine name, e.g. Airflow or Spark
-	Name *string `json:"name,omitempty"`
-	// OpenLineage adapter package version. Might be e.g. OpenLineage Airflow integration
-	// package version
-	OpenlineageAdapterVersion *string `json:"openlineageAdapterVersion,omitempty"`
-	// Processing engine version. Might be Airflow or Spark version.
-	Version string `json:"version"`
+	Producer                  string  `json:"_producer"`                           // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL                 string  `json:"_schemaURL"`                          // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Name                      *string `json:"name,omitempty"`                      // Processing engine name, e.g. Airflow or Spark
+	OpenlineageAdapterVersion *string `json:"openlineageAdapterVersion,omitempty"` // OpenLineage adapter package version. Might be e.g. OpenLineage Airflow integration; package version
+	Version                   string  `json:"version"`                             // Processing engine version. Might be Airflow or Spark version.
 }
 
 // SQLJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type SQLJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool   `json:"_deleted,omitempty"`
-	Dialect *string `json:"dialect,omitempty"`
-	Query   string  `json:"query"`
+	Producer  string  `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string  `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool   `json:"_deleted,omitempty"` // set to true to delete a facet
+	Dialect   *string `json:"dialect,omitempty"`
+	Query     string  `json:"query"`
 }
 
 // SchemaDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type SchemaDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The fields of the data source.
-	Fields []FieldElement `json:"fields,omitempty"`
+	Producer  string         `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string         `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool          `json:"_deleted,omitempty"` // set to true to delete a facet
+	Fields    []FieldElement `json:"fields,omitempty"`   // The fields of the data source.
 }
 
 type FieldElement struct {
-	// The description of the field.
-	Description *string `json:"description,omitempty"`
-	// Nested struct fields.
-	Fields []FieldElement `json:"fields,omitempty"`
-	// The name of the field.
-	Name string `json:"name"`
-	// The ordinal position of the field in the schema (1-indexed).
-	OrdinalPosition *int64 `json:"ordinal_position,omitempty"`
-	// The type of the field.
-	Type *string `json:"type,omitempty"`
+	Description     *string        `json:"description,omitempty"`      // The description of the field.
+	Fields          []FieldElement `json:"fields,omitempty"`           // Nested struct fields.
+	Name            string         `json:"name"`                       // The name of the field.
+	OrdinalPosition *int64         `json:"ordinal_position,omitempty"` // The ordinal position of the field in the schema (1-indexed).
+	Type            *string        `json:"type,omitempty"`             // The type of the field.
 }
 
 // SourceCodeJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type SourceCodeJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// Language in which source code of this job was written.
-	Language string `json:"language"`
-	// Source code of this job.
-	SourceCode string `json:"sourceCode"`
+	Producer   string `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL  string `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted    *bool  `json:"_deleted,omitempty"` // set to true to delete a facet
+	Language   string `json:"language"`           // Language in which source code of this job was written.
+	SourceCode string `json:"sourceCode"`         // Source code of this job.
 }
 
 // SourceCodeLocationJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type SourceCodeLocationJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// optional branch name
-	Branch *string `json:"branch,omitempty"`
-	// the path in the repo containing the source files
-	Path *string `json:"path,omitempty"`
-	// the URL to the repository
-	RepoURL *string `json:"repoUrl,omitempty"`
-	// optional tag name
-	Tag *string `json:"tag,omitempty"`
-	// the source control system
-	Type string `json:"type"`
-	// the full http URL to locate the file
-	URL string `json:"url"`
-	// the current version deployed (not a branch name, the actual unique version)
-	Version *string `json:"version,omitempty"`
+	Producer          string  `json:"_producer"`                   // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL         string  `json:"_schemaURL"`                  // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted           *bool   `json:"_deleted,omitempty"`          // set to true to delete a facet
+	Branch            *string `json:"branch,omitempty"`            // optional branch name
+	Path              *string `json:"path,omitempty"`              // the path in the repo containing the source files
+	PullRequestNumber *string `json:"pullRequestNumber,omitempty"` // optional pull request or merge request number associated with a CI run, populated from CI; platform environment variables (e.g. GITHUB_REF, CI_MERGE_REQUEST_IID)
+	RepoURL           *string `json:"repoUrl,omitempty"`           // the URL to the repository
+	Tag               *string `json:"tag,omitempty"`               // optional tag name
+	Type              string  `json:"type"`                        // the source control system
+	URL               string  `json:"url"`                         // the full http URL to locate the file
+	Version           *string `json:"version,omitempty"`           // the current version deployed (not a branch name, the actual unique version)
 }
 
 // StorageDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type StorageDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// File format with allowed values: parquet, orc, avro, json, csv, text, xml.
-	FileFormat *string `json:"fileFormat,omitempty"`
-	// Storage layer provider with allowed values: iceberg, delta.
-	StorageLayer string `json:"storageLayer"`
+	Producer     string  `json:"_producer"`            // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL    string  `json:"_schemaURL"`           // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted      *bool   `json:"_deleted,omitempty"`   // set to true to delete a facet
+	FileFormat   *string `json:"fileFormat,omitempty"` // File format with allowed values: parquet, orc, avro, json, csv, text, xml.
+	StorageLayer string  `json:"storageLayer"`         // Storage layer provider with allowed values: iceberg, delta.
 }
 
 // SymlinksDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type SymlinksDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted     *bool        `json:"_deleted,omitempty"`
+	Producer    string       `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL   string       `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted     *bool        `json:"_deleted,omitempty"` // set to true to delete a facet
 	Identifiers []Identifier `json:"identifiers,omitempty"`
 }
 
 type Identifier struct {
-	// The dataset name
-	Name string `json:"name"`
-	// The dataset namespace
-	Namespace string `json:"namespace"`
-	// Identifier type
-	Type string `json:"type"`
+	Name      string `json:"name"`      // The dataset name
+	Namespace string `json:"namespace"` // The dataset namespace
+	Type      string `json:"type"`      // Identifier type
 }
 
 // TagsDatasetFacet — A Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type TagsDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The tags applied to the dataset facet
-	Tags []TagElement `json:"tags,omitempty"`
+	Producer  string       `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string       `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool        `json:"_deleted,omitempty"` // set to true to delete a facet
+	Tags      []TagElement `json:"tags,omitempty"`     // The tags applied to the dataset facet
 }
 
 type TagElement struct {
-	// Identifies the field in a dataset if a tag applies to one
-	Field *string `json:"field,omitempty"`
-	// Key that identifies the tag
-	Key string `json:"key"`
-	// The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc.
-	Source *string `json:"source,omitempty"`
-	// The value of the field
-	Value string `json:"value"`
+	Field  *string `json:"field,omitempty"`  // Identifies the field in a dataset if a tag applies to one
+	Key    string  `json:"key"`              // Key that identifies the tag
+	Source *string `json:"source,omitempty"` // The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc.
+	Value  string  `json:"value"`            // The value of the field
 }
 
 // TagsJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type TagsJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The tags applied to the job facet
-	Tags []TagClass `json:"tags,omitempty"`
+	Producer  string     `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string     `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted   *bool      `json:"_deleted,omitempty"` // set to true to delete a facet
+	Tags      []TagClass `json:"tags,omitempty"`     // The tags applied to the job facet
 }
 
 type TagClass struct {
-	// Key that identifies the tag
-	Key string `json:"key"`
-	// The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc.
-	Source *string `json:"source,omitempty"`
-	// The value of the field
-	Value string `json:"value"`
+	Key    string  `json:"key"`              // Key that identifies the tag
+	Source *string `json:"source,omitempty"` // The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc.
+	Value  string  `json:"value"`            // The value of the field
 }
 
 // TagsRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type TagsRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// The tags applied to the run facet
-	Tags []TagsTag `json:"tags,omitempty"`
+	Producer  string    `json:"_producer"`      // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string    `json:"_schemaURL"`     // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Tags      []TagsTag `json:"tags,omitempty"` // The tags applied to the run facet
 }
 
 type TagsTag struct {
-	// Key that identifies the tag
-	Key string `json:"key"`
-	// The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc.
-	Source *string `json:"source,omitempty"`
-	// The value of the field
-	Value string `json:"value"`
+	Key    string  `json:"key"`              // Key that identifies the tag
+	Source *string `json:"source,omitempty"` // The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc.
+	Value  string  `json:"value"`            // The value of the field
+}
+
+// TestRunFacet — Results of test executions associated with this run, capturing test outcomes and
+// configured severities independently of dataset attribution.
+//
+// # A Run Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type TestRunFacet struct {
+	Producer  string        `json:"_producer"`  // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string        `json:"_schemaURL"` // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Tests     []TestElement `json:"tests"`      // List of test executions and their results.
+}
+
+// TestElement — A single test execution and its result.
+type TestElement struct {
+	Actual      *string                `json:"actual,omitempty"`      // The actual value observed during the test, serialized as a string.
+	Content     *string                `json:"content,omitempty"`     // The test body, e.g. a SQL query or expression.
+	ContentType *string                `json:"contentType,omitempty"` // The format of the content field, allowing consumers to interpret or filter test content.; Common values include 'sql', 'json', 'expression'.
+	Description *string                `json:"description,omitempty"` // Human-readable description of what the test checks.
+	Expected    *string                `json:"expected,omitempty"`    // The expected value or threshold for the test, serialized as a string.
+	Name        string                 `json:"name"`                  // Name identifying the test.
+	Params      map[string]interface{} `json:"params,omitempty"`      // Arbitrary key-value pairs for check-specific inputs.
+	Severity    *string                `json:"severity,omitempty"`    // The configured consequence of a test failure: 'error' (blocks pipeline execution) or; 'warn' (produces a warning only, does not block). A test with severity 'warn' and status; 'fail' means issues were found but execution continued.
+	Status      string                 `json:"status"`                // Whether the test found issues: 'pass' (no issues found), 'fail' (issues found), 'skip'; (not executed). Independent of severity — a test can fail without blocking the pipeline; when severity is 'warn'.
+	Type        *string                `json:"type,omitempty"`        // Classification of the test, e.g. 'not_null', 'unique', 'row_count', 'freshness',; 'custom_sql'.
 }
 
 // IcebergCommitReportOutputDatasetFacet — An Output Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type IcebergCommitReportOutputDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL     string                 `json:"_schemaURL"`
-	CommitMetrics *CommitMetrics         `json:"commitMetrics,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	// Operation that was performed on the iceberg table
-	Operation *string `json:"operation,omitempty"`
-	// Sequence number of the iceberg table
-	SequenceNumber *float64 `json:"sequenceNumber,omitempty"`
-	// Snapshot ID of the iceberg table
-	SnapshotID *float64 `json:"snapshotId,omitempty"`
+	Producer       string                 `json:"_producer"`  // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL      string                 `json:"_schemaURL"` // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	CommitMetrics  *CommitMetrics         `json:"commitMetrics,omitempty"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	Operation      *string                `json:"operation,omitempty"`      // Operation that was performed on the iceberg table
+	SequenceNumber *float64               `json:"sequenceNumber,omitempty"` // Sequence number of the iceberg table
+	SnapshotID     *float64               `json:"snapshotId,omitempty"`     // Snapshot ID of the iceberg table
 }
 
 type CommitMetrics struct {
-	// Number of data files that are added during the commit
-	AddedDataFiles *float64 `json:"addedDataFiles,omitempty"`
-	// Number of delete files that are added during the commit
-	AddedDeleteFiles *float64 `json:"addedDeleteFiles,omitempty"`
-	// Number of added DVs
-	AddedDVs *float64 `json:"addedDVs,omitempty"`
-	// Number of added equality delete files
-	AddedEqualityDeleteFiles *float64 `json:"addedEqualityDeleteFiles,omitempty"`
-	// Number of equality deletes that are added during the commit
-	AddedEqualityDeletes *float64 `json:"addedEqualityDeletes,omitempty"`
-	// Number of files size in bytes that are added during the commit
-	AddedFilesSizeInBytes *float64 `json:"addedFilesSizeInBytes,omitempty"`
-	// Number of added positional delete files
-	AddedPositionalDeleteFiles *float64 `json:"addedPositionalDeleteFiles,omitempty"`
-	// Number of positional deletes that are added during the commit
-	AddedPositionalDeletes *float64 `json:"addedPositionalDeletes,omitempty"`
-	// Number of records that are added during the commit
-	AddedRecords *float64 `json:"addedRecords,omitempty"`
-	// Number of attempts made to commit the iceberg table
-	Attempts *float64 `json:"attempts,omitempty"`
-	// Number of data files that are removed during the commit
-	RemovedDataFiles *float64 `json:"removedDataFiles,omitempty"`
-	// Number of delete files that are removed during the commit
-	RemovedDeleteFiles *float64 `json:"removedDeleteFiles,omitempty"`
-	// Number of removed DVs
-	RemovedDVs *float64 `json:"removedDVs,omitempty"`
-	// Number of removed equality delete files
-	RemovedEqualityDeleteFiles *float64 `json:"removedEqualityDeleteFiles,omitempty"`
-	// Number of equality deletes that are removed during the commit
-	RemovedEqualityDeletes *float64 `json:"removedEqualityDeletes,omitempty"`
-	// Number of files size in bytes that are removed during the commit
-	RemovedFilesSizeInBytes *float64 `json:"removedFilesSizeInBytes,omitempty"`
-	// Number of removed positional delete files
-	RemovedPositionalDeleteFiles *float64 `json:"removedPositionalDeleteFiles,omitempty"`
-	// Number of positional deletes that are removed during the commit
-	RemovedPositionalDeletes *float64 `json:"removedPositionalDeletes,omitempty"`
-	// Number of records that are removed during the commit
-	RemovedRecords *float64 `json:"removedRecords,omitempty"`
-	// Total number of data files that are present in the iceberg table
-	TotalDataFiles *float64 `json:"totalDataFiles,omitempty"`
-	// Total number of temporary delete files that are present in the iceberg table
-	TotalDeleteFiles *float64 `json:"totalDeleteFiles,omitempty"`
-	// Duration of the commit in MILLISECONDS
-	TotalDuration *float64 `json:"totalDuration,omitempty"`
-	// Number of equality deletes that are present in the iceberg table
-	TotalEqualityDeletes *float64 `json:"totalEqualityDeletes,omitempty"`
-	// Number of files size in bytes in the iceberg table
-	TotalFilesSizeInBytes *float64 `json:"totalFilesSizeInBytes,omitempty"`
-	// Number of positional deletes that are present in the iceberg table
-	TotalPositionalDeletes *float64 `json:"totalPositionalDeletes,omitempty"`
-	// Number of records that are present in the iceberg table
-	TotalRecords *float64 `json:"totalRecords,omitempty"`
+	AddedDataFiles               *float64 `json:"addedDataFiles,omitempty"`               // Number of data files that are added during the commit
+	AddedDeleteFiles             *float64 `json:"addedDeleteFiles,omitempty"`             // Number of delete files that are added during the commit
+	AddedDVs                     *float64 `json:"addedDVs,omitempty"`                     // Number of added DVs
+	AddedEqualityDeleteFiles     *float64 `json:"addedEqualityDeleteFiles,omitempty"`     // Number of added equality delete files
+	AddedEqualityDeletes         *float64 `json:"addedEqualityDeletes,omitempty"`         // Number of equality deletes that are added during the commit
+	AddedFilesSizeInBytes        *float64 `json:"addedFilesSizeInBytes,omitempty"`        // Number of files size in bytes that are added during the commit
+	AddedPositionalDeleteFiles   *float64 `json:"addedPositionalDeleteFiles,omitempty"`   // Number of added positional delete files
+	AddedPositionalDeletes       *float64 `json:"addedPositionalDeletes,omitempty"`       // Number of positional deletes that are added during the commit
+	AddedRecords                 *float64 `json:"addedRecords,omitempty"`                 // Number of records that are added during the commit
+	Attempts                     *float64 `json:"attempts,omitempty"`                     // Number of attempts made to commit the iceberg table
+	RemovedDataFiles             *float64 `json:"removedDataFiles,omitempty"`             // Number of data files that are removed during the commit
+	RemovedDeleteFiles           *float64 `json:"removedDeleteFiles,omitempty"`           // Number of delete files that are removed during the commit
+	RemovedDVs                   *float64 `json:"removedDVs,omitempty"`                   // Number of removed DVs
+	RemovedEqualityDeleteFiles   *float64 `json:"removedEqualityDeleteFiles,omitempty"`   // Number of removed equality delete files
+	RemovedEqualityDeletes       *float64 `json:"removedEqualityDeletes,omitempty"`       // Number of equality deletes that are removed during the commit
+	RemovedFilesSizeInBytes      *float64 `json:"removedFilesSizeInBytes,omitempty"`      // Number of files size in bytes that are removed during the commit
+	RemovedPositionalDeleteFiles *float64 `json:"removedPositionalDeleteFiles,omitempty"` // Number of removed positional delete files
+	RemovedPositionalDeletes     *float64 `json:"removedPositionalDeletes,omitempty"`     // Number of positional deletes that are removed during the commit
+	RemovedRecords               *float64 `json:"removedRecords,omitempty"`               // Number of records that are removed during the commit
+	TotalDataFiles               *float64 `json:"totalDataFiles,omitempty"`               // Total number of data files that are present in the iceberg table
+	TotalDeleteFiles             *float64 `json:"totalDeleteFiles,omitempty"`             // Total number of temporary delete files that are present in the iceberg table
+	TotalDuration                *float64 `json:"totalDuration,omitempty"`                // Duration of the commit in MILLISECONDS
+	TotalEqualityDeletes         *float64 `json:"totalEqualityDeletes,omitempty"`         // Number of equality deletes that are present in the iceberg table
+	TotalFilesSizeInBytes        *float64 `json:"totalFilesSizeInBytes,omitempty"`        // Number of files size in bytes in the iceberg table
+	TotalPositionalDeletes       *float64 `json:"totalPositionalDeletes,omitempty"`       // Number of positional deletes that are present in the iceberg table
+	TotalRecords                 *float64 `json:"totalRecords,omitempty"`                 // Number of records that are present in the iceberg table
 }
 
 // IcebergScanReportInputDatasetFacet — An Input Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type IcebergScanReportInputDatasetFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// Filter used to scan the iceberg table
-	FilterDescription *string                `json:"filterDescription,omitempty"`
-	Metadata          map[string]interface{} `json:"metadata,omitempty"`
-	// List of field names that are projected from the iceberg table
-	ProjectedFieldNames []string     `json:"projectedFieldNames,omitempty"`
-	ScanMetrics         *ScanMetrics `json:"scanMetrics,omitempty"`
-	// Schema ID of the iceberg table
-	SchemaID *float64 `json:"schemaId,omitempty"`
-	// Snapshot ID of the iceberg table
-	SnapshotID *float64 `json:"snapshotId,omitempty"`
+	Producer            string                 `json:"_producer"`                   // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL           string                 `json:"_schemaURL"`                  // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	FilterDescription   *string                `json:"filterDescription,omitempty"` // Filter used to scan the iceberg table
+	Metadata            map[string]interface{} `json:"metadata,omitempty"`
+	ProjectedFieldNames []string               `json:"projectedFieldNames,omitempty"` // List of field names that are projected from the iceberg table
+	ScanMetrics         *ScanMetrics           `json:"scanMetrics,omitempty"`
+	SchemaID            *float64               `json:"schemaId,omitempty"`   // Schema ID of the iceberg table
+	SnapshotID          *float64               `json:"snapshotId,omitempty"` // Snapshot ID of the iceberg table
 }
 
 type ScanMetrics struct {
-	// Number of delete files that are equality indexed during the scan
-	EqualityDeleteFiles *float64 `json:"equalityDeleteFiles,omitempty"`
-	// Number of delete files that are indexed during the scan
-	IndexedDeleteFiles *float64 `json:"indexedDeleteFiles,omitempty"`
-	// Number of delete files that are positional indexed during the scan
-	PositionalDeleteFiles *float64 `json:"positionalDeleteFiles,omitempty"`
-	// List of data files that are read during the scan
-	ResultDataFiles *float64 `json:"resultDataFiles,omitempty"`
-	// List of delete files that are read during the scan
-	ResultDeleteFiles *float64 `json:"resultDeleteFiles,omitempty"`
-	// Number of data manifests that are scanned during the scan
-	ScannedDataManifests *float64 `json:"scannedDataManifests,omitempty"`
-	// Number of delete manifests that are scanned during the scan
-	ScannedDeleteManifests *float64 `json:"scannedDeleteManifests,omitempty"`
-	// Number of data files that are skipped during the scan
-	SkippedDataFiles *float64 `json:"skippedDataFiles,omitempty"`
-	// Number of data manifests that are skipped during the scan
-	SkippedDataManifests *float64 `json:"skippedDataManifests,omitempty"`
-	// Number of delete files that are skipped during the scan
-	SkippedDeleteFiles *float64 `json:"skippedDeleteFiles,omitempty"`
-	// Number of delete manifests that are skipped during the scan
-	SkippedDeleteManifests *float64 `json:"skippedDeleteManifests,omitempty"`
-	// Total number of manifests that are scanned during the scan
-	TotalDataManifests *float64 `json:"totalDataManifests,omitempty"`
-	// Total delete file size in bytes that are read during the scan
-	TotalDeleteFileSizeInBytes *float64 `json:"totalDeleteFileSizeInBytes,omitempty"`
-	// Total number of delete manifests that are scanned during the scan
-	TotalDeleteManifests *float64 `json:"totalDeleteManifests,omitempty"`
-	// Total file size in bytes that are read during the scan
-	TotalFileSizeInBytes *float64 `json:"totalFileSizeInBytes,omitempty"`
-	// Duration of the scan in MILLISECONDS
-	TotalPlanningDuration *float64 `json:"totalPlanningDuration,omitempty"`
+	EqualityDeleteFiles        *float64 `json:"equalityDeleteFiles,omitempty"`        // Number of delete files that are equality indexed during the scan
+	IndexedDeleteFiles         *float64 `json:"indexedDeleteFiles,omitempty"`         // Number of delete files that are indexed during the scan
+	PositionalDeleteFiles      *float64 `json:"positionalDeleteFiles,omitempty"`      // Number of delete files that are positional indexed during the scan
+	ResultDataFiles            *float64 `json:"resultDataFiles,omitempty"`            // List of data files that are read during the scan
+	ResultDeleteFiles          *float64 `json:"resultDeleteFiles,omitempty"`          // List of delete files that are read during the scan
+	ScannedDataManifests       *float64 `json:"scannedDataManifests,omitempty"`       // Number of data manifests that are scanned during the scan
+	ScannedDeleteManifests     *float64 `json:"scannedDeleteManifests,omitempty"`     // Number of delete manifests that are scanned during the scan
+	SkippedDataFiles           *float64 `json:"skippedDataFiles,omitempty"`           // Number of data files that are skipped during the scan
+	SkippedDataManifests       *float64 `json:"skippedDataManifests,omitempty"`       // Number of data manifests that are skipped during the scan
+	SkippedDeleteFiles         *float64 `json:"skippedDeleteFiles,omitempty"`         // Number of delete files that are skipped during the scan
+	SkippedDeleteManifests     *float64 `json:"skippedDeleteManifests,omitempty"`     // Number of delete manifests that are skipped during the scan
+	TotalDataManifests         *float64 `json:"totalDataManifests,omitempty"`         // Total number of manifests that are scanned during the scan
+	TotalDeleteFileSizeInBytes *float64 `json:"totalDeleteFileSizeInBytes,omitempty"` // Total delete file size in bytes that are read during the scan
+	TotalDeleteManifests       *float64 `json:"totalDeleteManifests,omitempty"`       // Total number of delete manifests that are scanned during the scan
+	TotalFileSizeInBytes       *float64 `json:"totalFileSizeInBytes,omitempty"`       // Total file size in bytes that are read during the scan
+	TotalPlanningDuration      *float64 `json:"totalPlanningDuration,omitempty"`      // Duration of the scan in MILLISECONDS
 }
 
 // GcpComposerJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type GcpComposerJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// Version of Airflow, suffixed by `+composer`
-	AirflowVersion string `json:"airflowVersion"`
-	// Version of the Cloud Composer environment
-	ComposerVersion string `json:"composerVersion"`
-	// The id of the DAG
-	DagID string `json:"dagId"`
-	// Cloud Composer Environment name
-	EnvironmentName string `json:"environmentName"`
-	// Operator class name. Only present for tasks, not for DAGs. For example `PythonOperator`
-	Operator *string `json:"operator,omitempty"`
-	// The id of the task. Only present for tasks, not for DAGs
-	TaskID *string `json:"taskId,omitempty"`
+	Producer        string  `json:"_producer"`          // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL       string  `json:"_schemaURL"`         // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted         *bool   `json:"_deleted,omitempty"` // set to true to delete a facet
+	AirflowVersion  string  `json:"airflowVersion"`     // Version of Airflow, suffixed by `+composer`
+	ComposerVersion string  `json:"composerVersion"`    // Version of the Cloud Composer environment
+	DagID           string  `json:"dagId"`              // The id of the DAG
+	EnvironmentName string  `json:"environmentName"`    // Cloud Composer Environment name
+	Operator        *string `json:"operator,omitempty"` // Operator class name. Only present for tasks, not for DAGs. For example `PythonOperator`
+	TaskID          *string `json:"taskId,omitempty"`   // The id of the task. Only present for tasks, not for DAGs
 }
 
 // GcpComposerRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type GcpComposerRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// The id of the DAG run
-	DagRunID string `json:"dagRunId"`
+	Producer  string `json:"_producer"`  // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL string `json:"_schemaURL"` // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	DagRunID  string `json:"dagRunId"`   // The id of the DAG run
 }
 
 // GcpDataprocRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type GcpDataprocRunFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// Application ID set by the resource manager. For spark jobs, it is set in the spark
-	// configuration of the current context.
-	AppID string `json:"appId"`
-	// App name which may be provided by the user, or some default is used by the resource
-	// manager. For spark jobs, it is set in the spark configuration of the current context.
-	AppName string `json:"appName"`
-	// Populated only for Dataproc serverless batches. The resource id of the batch.
-	BatchID *string `json:"batchId,omitempty"`
-	// Populated only for Dataproc serverless batches. A UUID generated by the service when it
-	// creates the batch.
-	BatchUUID *string `json:"batchUuid,omitempty"`
-	// Populated only for Dataproc GCE workloads. The cluster name is unique within a GCP
-	// project.
-	ClusterName *string `json:"clusterName,omitempty"`
-	// Populated only for Dataproc GCE workloads. A UUID generated by the service at the time of
-	// cluster creation.
-	ClusterUUID *string `json:"clusterUuid,omitempty"`
-	// Populated only for Dataproc GCE workloads. If not specified by the user, the job ID will
-	// be provided by the service.
-	JobID *string `json:"jobId,omitempty"`
-	// Identifies whether the process is a job (on a Dataproc cluster), a batch or a session.
-	JobType *string `json:"jobType,omitempty"`
-	// Populated only for Dataproc GCE workloads. A UUID that uniquely identifies a job within
-	// the project over time.
-	JobUUID *string `json:"jobUuid,omitempty"`
-	// The GCP project ID that the resource belongs to.
-	ProjectID string `json:"projectId"`
-	// The name of the query node in the executed Spark Plan. Often used to describe the command
-	// being executed.
-	QueryNodeName *string `json:"queryNodeName,omitempty"`
-	// Populated only for Dataproc serverless interactive sessions. The resource id of the
-	// session, used for URL generation.
-	SessionID *string `json:"sessionId,omitempty"`
-	// Populated only for Dataproc serverless interactive sessions. A UUID generated by the
-	// service when it creates the session.
-	SessionUUID *string `json:"sessionUuid,omitempty"`
+	Producer      string  `json:"_producer"`               // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL     string  `json:"_schemaURL"`              // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	AppID         string  `json:"appId"`                   // Application ID set by the resource manager. For spark jobs, it is set in the spark; configuration of the current context.
+	AppName       string  `json:"appName"`                 // App name which may be provided by the user, or some default is used by the resource; manager. For spark jobs, it is set in the spark configuration of the current context.
+	BatchID       *string `json:"batchId,omitempty"`       // Populated only for Dataproc serverless batches. The resource id of the batch.
+	BatchUUID     *string `json:"batchUuid,omitempty"`     // Populated only for Dataproc serverless batches. A UUID generated by the service when it; creates the batch.
+	ClusterName   *string `json:"clusterName,omitempty"`   // Populated only for Dataproc GCE workloads. The cluster name is unique within a GCP; project.
+	ClusterUUID   *string `json:"clusterUuid,omitempty"`   // Populated only for Dataproc GCE workloads. A UUID generated by the service at the time of; cluster creation.
+	JobID         *string `json:"jobId,omitempty"`         // Populated only for Dataproc GCE workloads. If not specified by the user, the job ID will; be provided by the service.
+	JobType       *string `json:"jobType,omitempty"`       // Identifies whether the process is a job (on a Dataproc cluster), a batch or a session.
+	JobUUID       *string `json:"jobUuid,omitempty"`       // Populated only for Dataproc GCE workloads. A UUID that uniquely identifies a job within; the project over time.
+	ProjectID     string  `json:"projectId"`               // The GCP project ID that the resource belongs to.
+	QueryNodeName *string `json:"queryNodeName,omitempty"` // The name of the query node in the executed Spark Plan. Often used to describe the command; being executed.
+	SessionID     *string `json:"sessionId,omitempty"`     // Populated only for Dataproc serverless interactive sessions. The resource id of the; session, used for URL generation.
+	SessionUUID   *string `json:"sessionUuid,omitempty"`   // Populated only for Dataproc serverless interactive sessions. A UUID generated by the; service when it creates the session.
 }
 
 // GcpLineageJobFacet — A Job Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
 type GcpLineageJobFacet struct {
-	// URI identifying the producer of this metadata. For example this could be a git url with a
-	// given tag or sha
-	Producer string `json:"_producer"`
-	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
-	// of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	// The name of the job to be used on UI
-	DisplayName *string `json:"displayName,omitempty"`
+	Producer    string  `json:"_producer"`             // URI identifying the producer of this metadata. For example this could be a git url with a; given tag or sha
+	SchemaURL   string  `json:"_schemaURL"`            // The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version; of the schema definition for this facet
+	Deleted     *bool   `json:"_deleted,omitempty"`    // set to true to delete a facet
+	DisplayName *string `json:"displayName,omitempty"` // The name of the job to be used on UI
 	Origin      *Origin `json:"origin,omitempty"`
 }
 
 type Origin struct {
-	// If the sourceType isn't CUSTOM, the value of this field should be a GCP resource name of
-	// the system, which reports lineage. The project and location parts of the resource name
-	// must match the project and location of the lineage resource being created. More details
-	// in GCP documentation
-	// https://cloud.google.com/data-catalog/docs/reference/data-lineage/rest/v1/projects.locations.processes#origin
-	Name *string `json:"name,omitempty"`
-	// Type of the source. Possible values can be found in GCP documentation
-	// (https://cloud.google.com/data-catalog/docs/reference/data-lineage/rest/v1/projects.locations.processes#SourceType)
-	SourceType *string `json:"sourceType,omitempty"`
+	Name       *string `json:"name,omitempty"`       // If the sourceType isn't CUSTOM, the value of this field should be a GCP resource name of; the system, which reports lineage. The project and location parts of the resource name; must match the project and location of the lineage resource being created. More details; in GCP documentation; https://cloud.google.com/data-catalog/docs/reference/data-lineage/rest/v1/projects.locations.processes#origin
+	SourceType *string `json:"sourceType,omitempty"` // Type of the source. Possible values can be found in GCP documentation; (https://cloud.google.com/data-catalog/docs/reference/data-lineage/rest/v1/projects.locations.processes#SourceType)
 }
-
-type LeftType string
-
-const (
-	Field         LeftType = "field"
-	Literal       LeftType = "literal"
-	LeftBinary    LeftType = "binary"
-	LeftCompare   LeftType = "compare"
-	LeftLocation  LeftType = "location"
-	LeftPartition LeftType = "partition"
-)
-
-type InputConditionType string
-
-const (
-	InputConditionBinary    InputConditionType = "binary"
-	InputConditionCompare   InputConditionType = "compare"
-	InputConditionLocation  InputConditionType = "location"
-	InputConditionPartition InputConditionType = "partition"
-)
 
 // LifecycleStateChangeEnum — The lifecycle state change.
 type LifecycleStateChangeEnum string

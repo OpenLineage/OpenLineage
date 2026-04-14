@@ -304,3 +304,37 @@
       redact_fields: []
     - class_name: HierarchyDatasetFacetLevel
       redact_fields: []
+- module: lineage_run
+  classes:
+    - class_name: LineageEntry
+      redact_fields: []
+    - class_name: LineageFieldEntry
+      redact_fields: []
+    - class_name: LineageInput
+      redact_fields: []
+    - class_name: LineageRunFacet
+      redact_fields: []
+    - class_name: LineageTransformation
+      redact_fields: []
+- module: lineage_dataset
+  classes:
+    - class_name: LineageDatasetFacet
+      redact_fields: []
+    - class_name: LineageFieldEntry
+      redact_fields: []
+    - class_name: LineageInput
+      redact_fields: []
+    - class_name: LineageTransformation
+      redact_fields: []
+- module: lineage_job
+  classes:
+    - class_name: LineageEntry
+      redact_fields: []
+    - class_name: LineageFieldEntry
+      redact_fields: []
+    - class_name: LineageInput
+      redact_fields: []
+    - class_name: LineageJobFacet
+      redact_fields: []
+    - class_name: LineageTransformation
+      redact_fields: []

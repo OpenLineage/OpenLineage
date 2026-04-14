@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/LineageDatasetFacet.json",
+  "$defs": {
+    "LineageDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "inputs": {
+              "description": "Dataset-level source inputs that feed into this dataset. When a source includes a 'field' property, it represents a dataset-wide operation (e.g., GROUP BY, FILTER) where that source column affects the entire target dataset.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LineageInput"
+              }
+            },
+            "fields": {
+              "description": "Column-level lineage. Maps target field names in this dataset to their source inputs.",
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/LineageFieldEntry"
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      ],
+      "type": "object"
+    },
+    "LineageFieldEntry": {
+      "type": "object",
+      "description": "Column-level lineage for a single target field.",
+      "properties": {
+        "inputs": {
+          "description": "Source entities and/or fields that feed into this target field.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LineageInput"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": ["inputs"]
+    },
+    "LineageInput": {
+      "type": "object",
+      "description": "A source entity that feeds data into a lineage target.",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "The namespace of the source entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the source entity."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of the source entity. DATASET for dataset entities. JOB for job entities, used when a job is the origin of data (e.g., a generator job that creates data without reading from any input dataset)."
+        },
+        "field": {
+          "type": "string",
+          "description": "The specific field/column of the source dataset. When present at entity-level inputs, represents a dataset-wide operation (e.g., GROUP BY column). When present at field-level inputs, represents the source column that feeds into the target column."
+        },
+        "transformations": {
+          "description": "Transformations applied to the source data.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LineageTransformation"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": ["namespace", "name", "type"]
+    },
+    "LineageTransformation": {
+      "type": "object",
+      "description": "A transformation applied to source data in a lineage relationship.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The type of the transformation. Allowed values are: DIRECT, INDIRECT."
+        },
+        "subtype": {
+          "type": "string",
+          "description": "The subtype of the transformation, e.g., IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY, WINDOW, SORT, CONDITIONAL."
+        },
+        "description": {
+          "type": "string",
+          "description": "A string representation of the transformation applied."
+        },
+        "masking": {
+          "type": "boolean",
+          "description": "Whether the transformation masks the data (e.g., hashing PII)."
+        }
+      },
+      "additionalProperties": true,
+      "required": ["type"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "lineage": {
+      "$ref": "#/$defs/LineageDatasetFacet"
+    }
+  }
+}
