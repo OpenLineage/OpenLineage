@@ -189,3 +189,10 @@ release-*
 website/.pnp.cjs
 website/.pnp.loader.mjs
 website/.yarn/**
+
+# go work files
+**/go.work
+**/go.work.sum
+
+# gitignored directories
+**/gitignored
