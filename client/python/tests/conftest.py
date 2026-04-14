@@ -21,7 +21,10 @@ from openlineage.client.transport.transport import Config, Transport
 def _no_git_autodetect():
     """Prevent git autodetection from injecting sourceCodeLocation facets
     based on the repo where tests happen to run."""
-    with patch("openlineage.client.client.get_git_repo_url", return_value=None):
+    with (
+        patch("openlineage.client.client.get_git_repo_url", return_value=None),
+        patch("openlineage.client.client._find_git_dir", return_value=None),
+    ):
         yield
 
 

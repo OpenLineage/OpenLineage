@@ -1,0 +1,394 @@
+[
+  {
+    "eventTime": "2024-01-15T10:00:00.000000+00:00",
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run": {
+      "runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
+      "facets": {
+        "test": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.my_project.assert_positive_amounts",
+              "status": "pass",
+              "severity": "error",
+              "type": "singular",
+              "description": "Ensures all order amounts are positive.",
+              "expected": null,
+              "actual": null,
+              "content": "select * from my_schema.orders where amount < 0",
+              "contentType": "sql",
+              "params": {}
+            }
+          ]
+        },
+        "dbt_version": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.7.0"
+        },
+        "dbt_run": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
+          "invocation_id": "aaaaaaaa-0000-0000-0000-000000000001",
+          "project_name": "my_project",
+          "dbt_runtime": "core",
+          "project_version": "1.0.0",
+          "profile_name": "my_project",
+          "account_id": null
+        },
+        "processing_engine": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "version": "1.7.0",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "parent": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          },
+          "root": {
+            "run": {
+              "runId": "f99310b4-3c3c-4d4d-2b2b-c1b95c24ff11"
+            },
+            "job": {
+              "namespace": "root-parent-job-namespace",
+              "name": "root-parent-job-name"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "test.my_project.assert_positive_amounts",
+      "facets": {
+        "jobType": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "TEST"
+        },
+        "dbt_node": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-node-job-facet.json",
+          "_deleted": null,
+          "original_file_path": "tests/assert_positive_amounts.sql",
+          "database": "my_db",
+          "schema": "my_schema",
+          "alias": "assert_positive_amounts",
+          "unique_id": "test.my_project.assert_positive_amounts",
+          "test_type": null
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2024-01-15T10:00:00.000000+00:00",
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run": {
+      "runId": "aaaa0000-0000-0000-0000-000000000000",
+      "facets": {
+        "test": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.my_project.assert_row_count_within_range",
+              "status": "fail",
+              "severity": "warn",
+              "type": "singular",
+              "description": null,
+              "expected": null,
+              "actual": null,
+              "content": "select * from my_schema.orders where amount not between 0 and 10000",
+              "contentType": "sql",
+              "params": {}
+            }
+          ]
+        },
+        "dbt_version": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.7.0"
+        },
+        "dbt_run": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
+          "invocation_id": "aaaaaaaa-0000-0000-0000-000000000001",
+          "project_name": "my_project",
+          "dbt_runtime": "core",
+          "project_version": "1.0.0",
+          "profile_name": "my_project",
+          "account_id": null
+        },
+        "processing_engine": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "version": "1.7.0",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "parent": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          },
+          "root": {
+            "run": {
+              "runId": "f99310b4-3c3c-4d4d-2b2b-c1b95c24ff11"
+            },
+            "job": {
+              "namespace": "root-parent-job-namespace",
+              "name": "root-parent-job-name"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "test.my_project.assert_row_count_within_range",
+      "facets": {
+        "jobType": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "TEST"
+        },
+        "dbt_node": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-node-job-facet.json",
+          "_deleted": null,
+          "original_file_path": "tests/assert_row_count_within_range.sql",
+          "database": "my_db",
+          "schema": "my_schema",
+          "alias": "assert_row_count_within_range",
+          "unique_id": "test.my_project.assert_row_count_within_range",
+          "test_type": null
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2024-01-15T10:00:00.000000+00:00",
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run": {
+      "runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
+      "facets": {
+        "test": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.my_project.assert_positive_amounts",
+              "status": "pass",
+              "severity": "error",
+              "type": "singular",
+              "description": "Ensures all order amounts are positive.",
+              "expected": null,
+              "actual": null,
+              "content": "select * from my_schema.orders where amount < 0",
+              "contentType": "sql",
+              "params": {}
+            }
+          ]
+        },
+        "dbt_version": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.7.0"
+        },
+        "dbt_run": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
+          "invocation_id": "aaaaaaaa-0000-0000-0000-000000000001",
+          "project_name": "my_project",
+          "dbt_runtime": "core",
+          "project_version": "1.0.0",
+          "profile_name": "my_project",
+          "account_id": null
+        },
+        "processing_engine": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "version": "1.7.0",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "parent": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          },
+          "root": {
+            "run": {
+              "runId": "f99310b4-3c3c-4d4d-2b2b-c1b95c24ff11"
+            },
+            "job": {
+              "namespace": "root-parent-job-namespace",
+              "name": "root-parent-job-name"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "test.my_project.assert_positive_amounts",
+      "facets": {
+        "jobType": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "TEST"
+        },
+        "dbt_node": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-node-job-facet.json",
+          "_deleted": null,
+          "original_file_path": "tests/assert_positive_amounts.sql",
+          "database": "my_db",
+          "schema": "my_schema",
+          "alias": "assert_positive_amounts",
+          "unique_id": "test.my_project.assert_positive_amounts",
+          "test_type": null
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2024-01-15T10:00:00.000000+00:00",
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run": {
+      "runId": "aaaa0000-0000-0000-0000-000000000000",
+      "facets": {
+        "test": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/TestRunFacet.json#/$defs/TestRunFacet",
+          "tests": [
+            {
+              "name": "test.my_project.assert_row_count_within_range",
+              "status": "fail",
+              "severity": "warn",
+              "type": "singular",
+              "description": null,
+              "expected": null,
+              "actual": null,
+              "content": "select * from my_schema.orders where amount not between 0 and 10000",
+              "contentType": "sql",
+              "params": {}
+            }
+          ]
+        },
+        "dbt_version": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.7.0"
+        },
+        "dbt_run": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
+          "invocation_id": "aaaaaaaa-0000-0000-0000-000000000001",
+          "project_name": "my_project",
+          "dbt_runtime": "core",
+          "project_version": "1.0.0",
+          "profile_name": "my_project",
+          "account_id": null
+        },
+        "processing_engine": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "version": "1.7.0",
+          "name": "dbt",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "parent": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          },
+          "root": {
+            "run": {
+              "runId": "f99310b4-3c3c-4d4d-2b2b-c1b95c24ff11"
+            },
+            "job": {
+              "namespace": "root-parent-job-namespace",
+              "name": "root-parent-job-name"
+            }
+          }
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "test.my_project.assert_row_count_within_range",
+      "facets": {
+        "jobType": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "TEST"
+        },
+        "dbt_node": {
+          "_producer": "{{ any(result) }}",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-node-job-facet.json",
+          "_deleted": null,
+          "original_file_path": "tests/assert_row_count_within_range.sql",
+          "database": "my_db",
+          "schema": "my_schema",
+          "alias": "assert_row_count_within_range",
+          "unique_id": "test.my_project.assert_row_count_within_range",
+          "test_type": null
+        }
+      }
+    },
+    "eventType": "FAIL",
+    "inputs": [],
+    "outputs": []
+  }
+]

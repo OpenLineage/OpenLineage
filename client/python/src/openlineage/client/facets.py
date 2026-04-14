@@ -7,11 +7,12 @@ import attr
 
 @attr.define
 class SourceCodeLocationConfig:
-    disabled: bool = False
+    disabled: bool = True
     repo_url: str | None = None
     version: str | None = None
     tag: str | None = None
     branch: str | None = None
+    pull_request_number: str | None = None
 
 
 @attr.define

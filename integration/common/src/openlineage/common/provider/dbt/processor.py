@@ -30,6 +30,7 @@ from openlineage.client.facet_v2 import (
     schema_dataset,
     sql_job,
     tags_run,
+    test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -436,7 +437,118 @@ class DbtArtifactProcessor:
                     None,
                 )
             )
+
+        # Emit per-test events with TestRunFacet
+        parent_map = context.manifest.get("parent_map", {})
+        for run in context.run_results["results"]:
+            if not run["unique_id"].startswith("test."):
+                continue
+            test_node = nodes.get(run["unique_id"])
+            if not test_node:
+                continue
+
+            # Singular tests have no test_metadata (they are plain SQL files).
+            # Generic tests (not_null, unique, custom generic) have test_metadata with a name.
+            # Only singular tests get a per-test run event with TestRunFacet; generic tests
+            # are covered by the DataQualityAssertions dataset facet emitted in the loop above.
+            if test_node.get("test_metadata") is not None:
+                continue
+
+            inputs = self._resolve_test_inputs(run["unique_id"], parent_map, manifest_nodes)
+            test_obj = self._build_test_execution(run, test_node, inputs)
+
+            # A test run "succeeds" (does not block the pipeline) when status is
+            # "pass" or "warn". The warn/error severity distinction is captured in
+            # TestExecution.severity — "warn" tests don't raise the run-level error.
+            run_status = "success" if run["status"] in {"pass", "warn"} else "error"
+
+            run_facets_per_test: dict[str, RunFacet] = {
+                "test": test_run.TestRunFacet(tests=[test_obj]),
+            }
+            if tags := test_node.get("tags", None):
+                run_facets_per_test["tags"] = tags_run.TagsRunFacet(
+                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
+                )
+
+            job_facets_per_test: dict[str, JobFacet] = {
+                "jobType": job_type_job.JobTypeJobFacet(
+                    jobType="TEST",
+                    integration="DBT",
+                    processingType="BATCH",
+                    producer=self.producer,
+                ),
+                "dbt_node": DbtNodeJobFacet(
+                    original_file_path=test_node.get("original_file_path"),
+                    database=test_node.get("database"),
+                    schema=test_node.get("schema"),
+                    alias=test_node.get("alias"),
+                    unique_id=test_node.get("unique_id"),
+                ),
+            }
+
+            events.add(
+                self.to_openlineage_events(
+                    run_status,
+                    started_at,
+                    completed_at,
+                    self.get_run(run_id=str(generate_new_uuid()), run_facets=run_facets_per_test),
+                    Job(namespace=self.job_namespace, name=run["unique_id"], facets=job_facets_per_test),
+                    inputs,
+                    None,
+                )
+            )
+
         return events
+
+    def _resolve_test_inputs(
+        self, unique_id: str, parent_map: dict, manifest_nodes: dict
+    ) -> list[InputDataset]:
+        """Return InputDatasets for the model/source/seed parents of a test node."""
+        inputs: list[InputDataset] = []
+        for parent_id in parent_map.get(unique_id, []):
+            if not any(parent_id.startswith(p) for p in ["model.", "source.", "seed."]):
+                continue
+            parent_node = manifest_nodes.get(parent_id)
+            if parent_node:
+                ptype = "model" if parent_id.startswith("model.") else "source"
+                ns, nm, _, _ = self.extract_dataset_data(
+                    ModelNode(type=ptype, metadata_node=parent_node), None, has_facets=False
+                )
+                inputs.append(InputDataset(namespace=ns, name=nm))
+        return inputs
+
+    def _build_test_execution(
+        self, run: dict, test_node: dict, inputs: list[InputDataset]
+    ) -> test_run.TestExecution:
+        """Build a TestExecution from a run result and its manifest node.
+
+        When no input datasets could be resolved (e.g. singular tests), enriches
+        the object with type, SQL content, params, and description.
+        """
+        config = test_node.get("config", {})
+        severity = (config.get("severity") or "error").lower()
+        test_metadata = test_node.get("test_metadata")
+
+        obj = test_run.TestExecution(
+            name=run["unique_id"],
+            status="pass" if run["status"] == "pass" else "fail",
+            severity=severity,
+        )
+
+        if not inputs:
+            obj.type = test_metadata["name"] if test_metadata else "singular"
+            obj.content = (
+                run.get("compiled_code") or test_node.get("compiled_code") or test_node.get("raw_code")
+            )
+            obj.contentType = "sql"
+            if test_metadata:
+                params = {k: v for k, v in test_metadata.get("kwargs", {}).items() if k != "model"}
+                if params:
+                    obj.params = params
+            if desc := test_node.get("description"):
+                obj.description = desc
+
+        return obj
 
     def parse_assertions(
         self, context: DbtRunContext, nodes: dict
