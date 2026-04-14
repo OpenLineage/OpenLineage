@@ -6,6 +6,8 @@
 
 package facets
 
+import "time"
+
 // InputDatasetFacets holds all InputDatasetFacet facets for an OpenLineage event.
 type InputDatasetFacets struct {
 	InputStatisticsInputDatasetFacet   *InputStatisticsInputDatasetFacet   `json:"inputStatistics,omitempty"`
@@ -621,7 +623,7 @@ func (f *ColumnLineageDatasetFacet) WithDataset(dataset []DatasetElement) *Colum
 }
 
 // WithFields sets the Fields field on this ColumnLineageDatasetFacet.
-func (f *ColumnLineageDatasetFacet) WithFields(fields map[string]Field) *ColumnLineageDatasetFacet {
+func (f *ColumnLineageDatasetFacet) WithFields(fields map[string]FieldValue) *ColumnLineageDatasetFacet {
 	f.Fields = fields
 
 	return f
@@ -683,8 +685,8 @@ func (f *DataQualityMetricsDatasetFacet) WithFileCount(fileCount int64) *DataQua
 }
 
 // WithLastUpdated sets the LastUpdated field on this DataQualityMetricsDatasetFacet.
-func (f *DataQualityMetricsDatasetFacet) WithLastUpdated(lastUpdated string) *DataQualityMetricsDatasetFacet {
-	f.LastUpdated = &lastUpdated
+func (f *DataQualityMetricsDatasetFacet) WithLastUpdated(lastUpdated *time.Time) *DataQualityMetricsDatasetFacet {
+	f.LastUpdated = lastUpdated
 
 	return f
 }
@@ -1072,14 +1074,14 @@ func (f *LineageDatasetFacet) WithDeleted(deleted bool) *LineageDatasetFacet {
 }
 
 // WithFields sets the Fields field on this LineageDatasetFacet.
-func (f *LineageDatasetFacet) WithFields(fields map[string]FieldValue) *LineageDatasetFacet {
+func (f *LineageDatasetFacet) WithFields(fields map[string]FieldClass) *LineageDatasetFacet {
 	f.Fields = fields
 
 	return f
 }
 
 // WithInputs sets the Inputs field on this LineageDatasetFacet.
-func (f *LineageDatasetFacet) WithInputs(inputs []InputElement) *LineageDatasetFacet {
+func (f *LineageDatasetFacet) WithInputs(inputs []InputClass) *LineageDatasetFacet {
 	f.Inputs = inputs
 
 	return f
@@ -1129,7 +1131,7 @@ func (f *LineageRunFacet) WithLineage(lineage []LineageClass) *LineageRunFacet {
 // NewNominalTimeRunFacet creates a new NominalTimeRunFacet facet.
 func NewNominalTimeRunFacet(
 	producer string,
-	nominalStartTime string,
+	nominalStartTime time.Time,
 ) *NominalTimeRunFacet {
 	return &NominalTimeRunFacet{
 		Producer:         producer,
@@ -1139,8 +1141,8 @@ func NewNominalTimeRunFacet(
 }
 
 // WithNominalEndTime sets the NominalEndTime field on this NominalTimeRunFacet.
-func (f *NominalTimeRunFacet) WithNominalEndTime(nominalEndTime string) *NominalTimeRunFacet {
-	f.NominalEndTime = &nominalEndTime
+func (f *NominalTimeRunFacet) WithNominalEndTime(nominalEndTime *time.Time) *NominalTimeRunFacet {
+	f.NominalEndTime = nominalEndTime
 
 	return f
 }

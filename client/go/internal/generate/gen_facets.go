@@ -75,8 +75,13 @@ func generateFacets() (string, error) {
 		"../../spec/registry/*/*/facets/*Facet.json",
 	}
 
-	// Resolve globs to individual file paths, filtering skipped facets
+	// Include the base OpenLineage spec so quicktype can resolve $ref URIs
+	// (e.g. https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet)
+	// locally by matching the $id, without needing network access.
 	var srcArgs []string
+	srcArgs = append(srcArgs, "--src", "../../spec/OpenLineage.json")
+
+	// Resolve globs to individual file paths, filtering skipped facets
 	for _, pattern := range globs {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
