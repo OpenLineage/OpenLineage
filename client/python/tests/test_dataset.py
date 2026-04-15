@@ -27,6 +27,7 @@ from openlineage.client.naming.dataset import (
     OceanBase,
     Oracle,
     Postgres,
+    Paimon,
     PubSubNaming,
     PubSubResourceType,
     Redshift,
@@ -240,6 +241,24 @@ class TestWASBS:
         wasbs = WASBS("my-container", "my-service", "path/to/object")
         assert wasbs.get_namespace() == "wasbs://my-container@my-service.dfs.core.windows.net"
         assert wasbs.get_name() == "path/to/object"
+
+
+class TestPaimon:
+    def test_paimon_naming(self):
+        paimon = Paimon(
+            "file:/tmp/paimon-warehouse/my_db/my_table",
+            "my_catalog",
+            "my_db",
+            "my_table",
+        )
+        assert paimon.get_namespace() == "paimon://file:/tmp/paimon-warehouse/my_db/my_table"
+        assert paimon.get_name() == "my_catalog.my_db.my_table"
+
+    def test_paimon_validation(self):
+        with pytest.raises(ValueError, match="warehouse_path cannot be None"):
+            Paimon(None, "paimon", "my-database", "my-table")
+        with pytest.raises(ValueError, match="catalog cannot be empty"):
+            Paimon("file:/tmp/warehouse", "", "my-database", "my-table")
 
 
 class TestPubSubNaming:

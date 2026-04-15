@@ -484,6 +484,22 @@ class WASBS(DatasetNaming):
         return self.object_key
 
 
+@attr.define
+class Paimon(DatasetNaming):
+    """Naming implementation for Paimon."""
+
+    warehouse_path: str = attr.field(validator=_check_not_empty)
+    catalog: str = attr.field(validator=_check_not_empty)
+    database: str = attr.field(validator=_check_not_empty)
+    table: str = attr.field(validator=_check_not_empty)
+
+    def get_namespace(self) -> str:
+        return f"paimon://{self.warehouse_path}"
+
+    def get_name(self) -> str:
+        return f"{self.catalog}.{self.database}.{self.table}"
+
+
 class PubSubResourceType(Enum):
     """Enum representing supported Pub/Sub resource types."""
 
