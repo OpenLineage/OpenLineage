@@ -96,6 +96,10 @@ run.omit = [
     "test_*.py",
     "*_test.py"
 ]
+report.exclude_also = [
+    "def with_additional_properties",
+    "def _get_schema",
+]
 
 [tool.mypy]
 disable_error_code = "no-redef"

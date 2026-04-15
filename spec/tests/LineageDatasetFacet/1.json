@@ -1,0 +1,53 @@
+{
+  "lineage": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.0.0/integration/common",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageDatasetFacet.json",
+    "inputs": [
+      {
+        "namespace": "postgresql://warehouse:5432",
+        "name": "public.customers",
+        "type": "DATASET"
+      },
+      {
+        "namespace": "postgresql://warehouse:5432",
+        "name": "public.orders",
+        "type": "DATASET"
+      }
+    ],
+    "fields": {
+      "customer_name": {
+        "inputs": [
+          {
+            "namespace": "postgresql://warehouse:5432",
+            "name": "public.customers",
+            "type": "DATASET",
+            "field": "name",
+            "transformations": [
+              {
+                "type": "DIRECT",
+                "subtype": "IDENTITY"
+              }
+            ]
+          }
+        ]
+      },
+      "total_orders": {
+        "inputs": [
+          {
+            "namespace": "postgresql://warehouse:5432",
+            "name": "public.orders",
+            "type": "DATASET",
+            "field": "order_id",
+            "transformations": [
+              {
+                "type": "INDIRECT",
+                "subtype": "AGGREGATION",
+                "description": "COUNT(order_id)"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
