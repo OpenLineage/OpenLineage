@@ -98,7 +98,7 @@ Lives on the run object in RunEvent. Contains an array of `LineageEntry` objects
   "description": "Explicit lineage observed during this run. Describes data flow between entities at entity and/or column granularity.",
   "allOf": [{ "$ref": "#/$defs/RunFacet" }],
   "properties": {
-    "lineage": {
+    "entries": {
       "type": "array",
       "description": "Lineage entries describing data flow observed during this run.",
       "items": {
@@ -106,7 +106,7 @@ Lives on the run object in RunEvent. Contains an array of `LineageEntry` objects
       }
     }
   },
-  "required": ["lineage"]
+  "required": ["entries"]
 }
 ```
 
@@ -120,7 +120,7 @@ Lives on the job object in JobEvent. Same structure as LineageRunFacet.
   "description": "Explicit lineage declared for this job definition. Describes designed/static data flow at entity and/or column granularity.",
   "allOf": [{ "$ref": "#/$defs/JobFacet" }],
   "properties": {
-    "lineage": {
+    "entries": {
       "type": "array",
       "description": "Lineage entries describing data flow designed for this job.",
       "items": {
@@ -128,7 +128,7 @@ Lives on the job object in JobEvent. Same structure as LineageRunFacet.
       }
     }
   },
-  "required": ["lineage"]
+  "required": ["entries"]
 }
 ```
 
@@ -192,7 +192,7 @@ A lineage target that is a dataset. Supports both entity-level and column-level 
 
 #### LineageJobEntry
 
-A lineage target that is a job. Used for **sink** scenarios where a job consumes data without producing a tracked output dataset. Does not support column-level lineage (`fields`), but supports an optional `runId` to tie to a specific execution:
+A lineage target that is a job. This is the **target/sink** side of `type: JOB` support — used when a job consumes data without producing a tracked output dataset. (The source/generator side uses `LineageJobInput`.) Does not support column-level lineage (`fields`), but supports an optional `runId` to tie to a specific execution:
 
 ```json
 "LineageJobEntry": {
@@ -433,7 +433,7 @@ ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. LineageRunF
       "lineage": {
         "_producer": "https://example.com/etl",
         "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
-        "lineage": [
+        "entries": [
           { "namespace": "postgresql://warehouse:5432", "name": "table_c", "type": "DATASET",
             "inputs": [{ "namespace": "postgresql://warehouse:5432", "name": "table_a", "type": "DATASET" }] },
           { "namespace": "postgresql://warehouse:5432", "name": "table_d", "type": "DATASET",
@@ -465,7 +465,7 @@ ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. LineageRunF
     "lineage": {
       "_producer": "...",
       "_schemaURL": "...",
-      "lineage": [
+      "entries": [
         { "namespace": "postgresql://analytics:5432", "name": "output", "type": "DATASET",
           "fields": {
             "total": {
@@ -485,7 +485,7 @@ ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. LineageRunF
 ### 3. Mixed granularity (dataset + column + dataset-wide ops)
 
 ```json
-"lineage": [
+"entries": [
   { "namespace": "postgresql://analytics:5432", "name": "output_X", "type": "DATASET",
     "inputs": [
       { "namespace": "postgresql://analytics:5432", "name": "input_A", "type": "DATASET" },
@@ -520,6 +520,8 @@ A VIEW derives from base tables. No job involved. LineageDatasetFacet on the dat
 
 ```json
 {
+  "eventType": "COMPLETE",
+  "eventTime": "2026-03-25T10:00:00.000Z",
   "dataset": {
     "namespace": "postgresql://warehouse:5432",
     "name": "public.customer_view",
@@ -552,7 +554,7 @@ A catalog declares what a job is designed to do. LineageJobFacet on the job:
       "lineage": {
         "_producer": "https://example.com/catalog",
         "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
-        "lineage": [
+        "entries": [
           { "namespace": "postgresql://warehouse:5432", "name": "output_table", "type": "DATASET",
             "inputs": [
               { "namespace": "postgresql://warehouse:5432", "name": "source_table", "type": "DATASET" }
@@ -580,7 +582,7 @@ A fraud detection job reads transactions and sends alerts, but doesn't write to 
       "lineage": {
         "_producer": "https://example.com/validation",
         "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
-        "lineage": [
+        "entries": [
           { "namespace": "validation", "name": "fraud_detector", "type": "JOB",
             "inputs": [
               { "namespace": "postgres://prod", "name": "transactions", "type": "DATASET" }
@@ -611,7 +613,7 @@ An extract task pulls data from an external API (not modeled as a dataset) and w
       "lineage": {
         "_producer": "https://example.com/etl",
         "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
-        "lineage": [
+        "entries": [
           { "namespace": "postgres://prod", "name": "extracted_data", "type": "DATASET",
             "inputs": [
               { "namespace": "airflow://prod", "name": "data_pipeline.extract_task", "type": "JOB" }
@@ -642,7 +644,7 @@ Reading specific columns from a structured table and writing to an unstructured 
       "lineage": {
         "_producer": "https://example.com/export",
         "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
-        "lineage": [
+        "entries": [
           { "namespace": "file://", "name": "R.pdf", "type": "DATASET",
             "inputs": [
               { "namespace": "postgres://prod", "name": "X", "type": "DATASET", "field": "A" },
@@ -669,8 +671,8 @@ The facet-based approach is a structural reshuffling of the top-level proposal, 
 
 | Top-level proposal | Facet proposal | Difference |
 |---|---|---|
-| `event.lineage[]` on RunEvent | `event.run.facets.lineage.lineage[]` | Deeper nesting, lives on run entity |
-| `event.lineage[]` on JobEvent | `event.job.facets.lineage.lineage[]` | Deeper nesting, lives on job entity |
+| `event.lineage[]` on RunEvent | `event.run.facets.lineage.entries[]` | Deeper nesting, lives on run entity |
+| `event.lineage[]` on JobEvent | `event.job.facets.lineage.entries[]` | Deeper nesting, lives on job entity |
 | `event.lineage[]` on DatasetEvent | `event.dataset.facets.lineage.{inputs,fields}` | Flattened — target is implicit |
 | Semantic constraints per event type | Built into the facet type itself | Same semantics, different enforcement |
 
@@ -711,6 +713,8 @@ These constraints are documented in spec text rather than enforced by JSON Schem
 ### ParentRunFacet (hierarchy)
 
 Remains orthogonal. Hierarchy expresses containment and scheduling (task X is part of DAG Y). Lineage facets express data flow. A consumer combines both dimensions.
+
+The optional `runId` on `LineageJobEntry` and `LineageJobInput` is also orthogonal to ParentRunFacet — it identifies which execution of a job the lineage edge refers to, not the parent-child relationship between runs.
 
 ### JobDependenciesRunFacet (control flow)
 
@@ -835,6 +839,6 @@ When this restriction is relaxed, a **lineage-type attribute** (runtime vs stati
 
 ### New entity types
 
-The `type` field is a plain string, not an enum, specifically to enable future extension. Entity types like `MODEL`, `DASHBOARD`, or `PIPELINE` could be added without a breaking schema change — only spec prose updates and client library support.
+Adding new entity types (e.g., `MODEL`, `DASHBOARD`, `PIPELINE`) requires adding a new subtype definition to the `oneOf` in `LineageEntry` and/or `LineageInput`, along with spec prose updates and client library support. This is a non-breaking schema change — existing entries remain valid.
 
 **The principle is**: grow the existing facets rather than proliferate new ones. Each lineage facet is a home for lineage information scoped to its entity type. New capabilities land as new fields or relaxed constraints within the same facet, keeping the model simple and the number of moving parts small.
