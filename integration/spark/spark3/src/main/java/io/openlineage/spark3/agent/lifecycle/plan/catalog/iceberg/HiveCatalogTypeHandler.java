@@ -10,8 +10,10 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -47,5 +49,24 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
       metastoreUri = new URI(confUri);
     }
     return new DatasetIdentifier(table, PathUtils.prepareHiveUri(metastoreUri).toString());
+  }
+
+  @Override
+  Map<String, String> catalogProperties(
+      Map<String, String> catalogConf, OpenLineageContext context) {
+    Map<String, String> properties = new HashMap<>();
+    context
+        .getSparkSession()
+        .ifPresent(
+            session -> {
+              org.apache.spark.SparkConf conf = session.sparkContext().conf();
+              SparkConfUtils.findSparkConfigKey(conf, "spark.dataproc.metastore.project-id")
+                  .ifPresent(v -> properties.put("spark.dataproc.metastore.project-id", v));
+              SparkConfUtils.findSparkConfigKey(conf, "spark.dataproc.metastore.location")
+                  .ifPresent(v -> properties.put("spark.dataproc.metastore.location", v));
+              SparkConfUtils.findSparkConfigKey(conf, "spark.dataproc.metastore.instanceId")
+                  .ifPresent(v -> properties.put("spark.dataproc.metastore.instanceId", v));
+            });
+    return properties;
   }
 }
