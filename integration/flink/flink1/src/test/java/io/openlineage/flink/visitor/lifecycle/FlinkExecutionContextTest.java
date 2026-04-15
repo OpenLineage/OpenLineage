@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.metrics.MicrometerProvider;
@@ -19,7 +18,6 @@ import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
@@ -46,13 +44,13 @@ public class FlinkExecutionContextTest {
   }
 
   @Test
-  void testBuildEventForEventTypeWithJobOwnershipFacet() {
+  void testBuildEventForEventTypeOwnershipNotBuiltInFlinkContext() {
+    // Ownership is now handled centrally in OpenLineageClient, not in Flink context.
     ConfigOption transportTypeOption =
         ConfigOptions.key("openlineage.transport.type").mapType().noDefaultValue();
 
     config.setString(transportTypeOption, "console");
     config.setString("openlineage.job.owners.team", "MyTeam");
-    config.setString("openlineage.job.owners.person", "John Smith");
 
     FlinkExecutionContext context =
         FlinkExecutionContextFactory.getContext(
@@ -60,12 +58,8 @@ public class FlinkExecutionContextTest {
 
     RunEvent runEvent = context.buildEventForEventType(EventType.COMPLETE).build();
 
-    List<OwnershipJobFacetOwners> owners = runEvent.getJob().getFacets().getOwnership().getOwners();
-    assertThat(owners).hasSize(2);
-    assertThat(owners.stream().filter(o -> o.getType().equals("team")).findAny().get().getName())
-        .isEqualTo("MyTeam");
-    assertThat(owners.stream().filter(o -> o.getType().equals("person")).findAny().get().getName())
-        .isEqualTo("John Smith");
+    // Ownership facet is NOT built by Flink context anymore - it's built by OpenLineageClient
+    assertThat(runEvent.getJob().getFacets().getOwnership()).isNull();
   }
 
   @Test
