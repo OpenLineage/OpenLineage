@@ -8,33 +8,21 @@
 
 ## Problem Statement
 
-OpenLineage's current model infers dataset-level lineage from the cartesian product of inputs x outputs on a run. When a single job reads datasets A,B and writes to C,D, the inferred lineage is {A,B} -> {C,D} — four edges. If the real flow is only A -> C and B -> D, two of those edges are false positives. For a bulk ETL job processing 10 independent tables, the lineage graph becomes 90% false positives.
+OpenLineage's current model captures lineage through two mechanisms: `inputs`/`outputs` arrays on Run and Job events, and `ColumnLineageDatasetFacet` (CLL) for column-level detail on individual outputs. Most integrations today (Spark, dbt, Flink) emit one output per job, so the implicit assumption that all inputs feed all outputs happens to be correct — dataset-level lineage works fine.
 
-The existing `ColumnLineageDatasetFacet` (CLL) solves this at column granularity, but leaves a gap at dataset granularity: integrators often know "Table A derived Table B" without column-level detail. If they can't provide CLL, they fall back to the cartesian product.
+The problem appears when a single job reads and writes multiple independent datasets. The model infers the cartesian product of inputs x outputs: reading A,B and writing C,D produces four edges, even if the real flow is only A -> C and B -> D. In some cases, this makes it difficult to express a bulk ETL job processing 10 independent tables without artificially splitting it into separate jobs. CLL can resolve this at column granularity, but many integrations know "Table A feeds Table C" without column-level detail — and without CLL, the only fallback is the cartesian product.
 
-Additionally, the current model cannot express:
+Beyond this precision gap, the current model cannot express several common patterns:
 
 - **Dataset-to-dataset derivation** — no mechanism for views, aliases, or manually documented lineage without an intermediate job
-- **Mixed granularity** — CLL is all-or-nothing per output; no way to provide dataset-level for some outputs and column-level for others
+- **Mixed granularity** — CLL is all-or-nothing per output; no way to provide dataset-level lineage for some outputs and column-level for others in the same event
 - **Job-to-job data flow** — no way to express that one job feeds data to another without an intermediate dataset (e.g., non-materialized views, stored procedures calling functions, in-memory data passing)
 
 ## Goals
 
-**Narrow goal**: Enable producers to explicitly define which inputs feed which outputs at dataset granularity, solving the false-positive problem.
+Create a unified lineage structure that handles all the cases outlined above on dataset-level, column-level, or mixed-level in a single model — eventually deprecating CLL. The structure should also be extensible to handle additional lineage types in the future without requiring new facets or model changes.
 
-**Wide goal**: Create a unified lineage structure that handles dataset-level, column-level, and dataset-to-dataset lineage in a single model — eventually deprecating CLL. The structure should also be extensible to handle additional lineage types in the future (e.g., job-to-job data flow) without requiring new facets or model changes.
-
-This proposal aims for the wide goal, as the incremental effort over the narrow goal is small and the payoff is large. Full job-to-job data flow chains are out of scope for this initial version, but `type: JOB` is supported for **sink and generator** use cases — jobs that consume data without a tracked output, or produce data without a tracked input. The design accommodates full job-to-job lineage as a future extension (see [Future Evolution](#future-evolution)).
-
-## Why Facets Instead of a Top-Level Property
-
-The top-level proposal places lineage as a top-level `lineage` array on `BaseEvent`. This is semantically clean, but working group members raised concerns about changing the model shape:
-
-> **Julien**: "Unless we have a strong reason to change the mechanism... I think we should avoid creating situations where we have 2 ways to do the same thing. Could you describe an alternative design where this is captured in facets?"
-
-> **Nelson**: "I was the initial proposer of the new top level property, but with the current state of the facet approach, I find it indifferent. All cases seem to be covered by a datasetLineage facet."
-
-The facet-based approach preserves the exact same semantics and capabilities as the top-level property, but works within the existing extensibility mechanism (facets) instead of adding a new top-level field. The trade-off: we need three facets (one per entity type) with semantic restrictions on which event type each appears in.
+Full job-to-job data flow chains are out of scope for this initial version, but `type: JOB` is supported for **sink and generator** use cases — jobs that consume data without a tracked output, or produce data without a tracked input. The design accommodates full job-to-job lineage as a future extension (see [Future Evolution](#future-evolution)).
 
 ## Proposed Solution
 
@@ -665,19 +653,6 @@ Reading specific columns from a structured table and writing to an unstructured 
 }
 ```
 
-## How the Three Facets Map to the Top-Level Proposal
-
-The facet-based approach is a structural reshuffling of the top-level proposal, not a semantic change:
-
-| Top-level proposal | Facet proposal | Difference |
-|---|---|---|
-| `event.lineage[]` on RunEvent | `event.run.facets.lineage.entries[]` | Deeper nesting, lives on run entity |
-| `event.lineage[]` on JobEvent | `event.job.facets.lineage.entries[]` | Deeper nesting, lives on job entity |
-| `event.lineage[]` on DatasetEvent | `event.dataset.facets.lineage.{inputs,fields}` | Flattened — target is implicit |
-| Semantic constraints per event type | Built into the facet type itself | Same semantics, different enforcement |
-
-The capabilities and extensibility are identical — both approaches can express the same lineage information and accommodate the same future extensions.
-
 ## Precedence Rules
 
 1. **If a lineage facet is present on the event**, it is the complete picture of lineage for that event. Consumers should derive all lineage edges from the facet and should not infer additional edges from `inputs`/`outputs` arrays or CLL facets. The `inputs`/`outputs` arrays remain as dataset facet carriers and backward-compatibility fallback, but are not a lineage source when a lineage facet is present.
@@ -842,3 +817,9 @@ When this restriction is relaxed, a **lineage-type attribute** (runtime vs stati
 Adding new entity types (e.g., `MODEL`, `DASHBOARD`, `PIPELINE`) requires adding a new subtype definition to the `oneOf` in `LineageEntry` and/or `LineageInput`, along with spec prose updates and client library support. This is a non-breaking schema change — existing entries remain valid.
 
 **The principle is**: grow the existing facets rather than proliferate new ones. Each lineage facet is a home for lineage information scoped to its entity type. New capabilities land as new fields or relaxed constraints within the same facet, keeping the model simple and the number of moving parts small.
+
+## Appendix: Alternative Considered — Top-Level Property
+
+An earlier version of this proposal placed lineage as a top-level `lineage` array directly on `BaseEvent`, alongside `inputs` and `outputs`. This would make lineage a first-class structural element of the event model rather than a facet.
+
+Working group members raised concerns that a new top-level property would change the fundamental shape of the event model and create two parallel ways to express the same information (top-level arrays vs. facets). Since OpenLineage already has facets as its standard extensibility mechanism, the group concluded that lineage information fits naturally within that mechanism — avoiding a model-level change while preserving identical semantics and capabilities. The trade-off is slightly deeper nesting in the JSON structure and the need for three facets (one per entity type) rather than a single top-level array.
