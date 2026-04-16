@@ -141,7 +141,7 @@ public class PathUtils {
     }
 
     // /warehouse/mydb.db/mytable
-    return new Path(warehouse, database + ".db", name);
+    return new Path(new Path(warehouse, database + ".db"), name);
   }
 
   public static Optional<URI> getMetastoreUri(SparkContext context) {
