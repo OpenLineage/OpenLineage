@@ -22,7 +22,7 @@ ext {
 }
 
 dependencies {
-    implementation("com.amazonaws:amazon-kinesis-producer:0.15.12")
+    implementation("software.amazon.kinesis:amazon-kinesis-producer:1.0.7")
 }
 
 apply from: '../transports.build.gradle'

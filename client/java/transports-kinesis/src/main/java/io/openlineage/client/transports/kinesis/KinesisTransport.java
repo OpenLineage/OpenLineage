@@ -5,11 +5,6 @@
 
 package io.openlineage.client.transports.kinesis;
 
-import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
-import com.amazonaws.services.kinesis.producer.KinesisProducer;
-import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
-import com.amazonaws.services.kinesis.producer.UserRecord;
-import com.amazonaws.services.kinesis.producer.UserRecordResult;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -22,6 +17,14 @@ import java.util.concurrent.Executors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
+import software.amazon.kinesis.producer.KinesisProducer;
+import software.amazon.kinesis.producer.KinesisProducerConfiguration;
+import software.amazon.kinesis.producer.UserRecord;
+import software.amazon.kinesis.producer.UserRecordResult;
 
 @Slf4j
 public class KinesisTransport extends Transport {
@@ -31,6 +34,9 @@ public class KinesisTransport extends Transport {
 
   private final KinesisProducer producer;
 
+  private final StsClient stsClient;
+  private final StsAssumeRoleCredentialsProvider assumeRoleCredentialsProvider;
+
   private final ExecutorService listeningExecutor;
 
   public KinesisTransport(
@@ -39,6 +45,8 @@ public class KinesisTransport extends Transport {
     this.region = kinesisConfig.getRegion();
     this.roleArn = kinesisConfig.getRoleArn();
     this.producer = kinesisProducer;
+    this.stsClient = null;
+    this.assumeRoleCredentialsProvider = null;
     this.listeningExecutor = Executors.newSingleThreadExecutor();
   }
 
@@ -49,10 +57,25 @@ public class KinesisTransport extends Transport {
     KinesisProducerConfiguration config =
         KinesisProducerConfiguration.fromProperties(kinesisConfig.getProperties());
     config.setRegion(this.region);
+
+    StsClient localStsClient = null;
+    StsAssumeRoleCredentialsProvider localAssumeRoleCredentialsProvider = null;
     if (StringUtils.isNotBlank(roleArn)) {
-      config.setCredentialsProvider(
-          new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, "OLProducer").build());
+      localStsClient = StsClient.builder().region(Region.of(this.region)).build();
+      localAssumeRoleCredentialsProvider =
+          StsAssumeRoleCredentialsProvider.builder()
+              .stsClient(localStsClient)
+              .refreshRequest(
+                  AssumeRoleRequest.builder()
+                      .roleArn(roleArn)
+                      .roleSessionName("OLProducer")
+                      .build())
+              .build();
+      config.setCredentialsProvider(localAssumeRoleCredentialsProvider);
     }
+
+    this.stsClient = localStsClient;
+    this.assumeRoleCredentialsProvider = localAssumeRoleCredentialsProvider;
     this.producer = new KinesisProducer(config);
     this.listeningExecutor = Executors.newSingleThreadExecutor();
   }
@@ -147,7 +170,16 @@ public class KinesisTransport extends Transport {
 
   @Override
   public void close() throws Exception {
-    this.producer.flushSync();
-    this.listeningExecutor.shutdown();
+    try {
+      this.producer.flushSync();
+    } finally {
+      this.listeningExecutor.shutdown();
+      if (assumeRoleCredentialsProvider != null) {
+        assumeRoleCredentialsProvider.close();
+      }
+      if (stsClient != null) {
+        stsClient.close();
+      }
+    }
   }
 }
