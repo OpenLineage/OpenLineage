@@ -444,4 +444,37 @@ class PathUtilsTest {
     // name
     assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
   }
+
+  @Test
+  void testReconstructDefaultLocationWithS3Path() {
+    assertThat(
+            PathUtils.reconstructDefaultLocation(
+                    "s3://bucket/prefix", new String[] {"spark_catalog", "database"}, "table")
+                .toString())
+        .isEqualTo("s3://bucket/prefix/database.db/table");
+    assertThat(
+            PathUtils.reconstructDefaultLocation(
+                    "s3://bucket", new String[] {"spark_catalog", "database"}, "table")
+                .toString())
+        .isEqualTo("s3://bucket/database.db/table");
+    assertThat(
+            PathUtils.reconstructDefaultLocation(
+                    "hdfs://namenode:8020/warehouse", new String[] {"spark_catalog", "db"}, "table")
+                .toString())
+        .isEqualTo("hdfs://namenode:8020/warehouse/db.db/table");
+    assertThat(
+            PathUtils.reconstructDefaultLocation(
+                    "s3://bucket/prefix", new String[] {"spark_catalog", "default"}, "table")
+                .toString())
+        .isEqualTo("s3://bucket/prefix/table");
+    assertThat(
+            PathUtils.reconstructDefaultLocation(
+                    "s3://bucket/prefix", new String[] {"database"}, "table")
+                .toString())
+        .isEqualTo("s3://bucket/prefix/database.db/table");
+    assertThat(
+            PathUtils.reconstructDefaultLocation("s3://bucket/prefix", new String[] {}, "table")
+                .toString())
+        .isEqualTo("s3://bucket/prefix/table");
+  }
 }
