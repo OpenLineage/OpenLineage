@@ -58,7 +58,6 @@ from openlineage.common.utils import (
     add_command_line_args,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
-    has_lines,
 )
 
 
@@ -141,6 +140,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         # will be populated when some dbt events are collected
         self._compiled_manifest: dict = {}
+        self._dbt_started_at: float | None = None
         self._dbt_version: str | None = None
         self._dbt_invocation_id: str | None = None
         self._dbt_log_file: TextIO | None = None
@@ -190,6 +190,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if self._compiled_manifest != {}:
             return self._compiled_manifest
         elif os.path.isfile(self.manifest_path):
+            if self._dbt_started_at is not None:
+                mtime = os.path.getmtime(self.manifest_path)
+                # Allow 2s tolerance for coarse filesystem mtime granularity.
+                if mtime < self._dbt_started_at - 2.0:
+                    self.logger.warning(
+                        "manifest.json at %s predates this dbt invocation (mtime=%.1f, started=%.1f); "
+                        "skipping load to avoid stale dataset identities",
+                        self.manifest_path,
+                        mtime,
+                        self._dbt_started_at,
+                    )
+                    return {}
             self._compiled_manifest = self.load_metadata(self.manifest_path, list(range(2, 13)), self.logger)
             manifest_data = self._validate_manifest_integrity()
             self.logger.debug(manifest_data)
@@ -257,6 +269,13 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             end_event = self._parse_command_completed_event(dbt_event)
             self.received_dbt_command_completed = True
             return end_event
+
+        elif dbt_event_name == "ArtifactWritten":
+            # dbt >= 1.9 emits this after writing each artifact. Load the manifest as soon as
+            # dbt confirms it wrote a fresh one so we don't have to wait until the first NodeStart.
+            if dbt_event.get("data", {}).get("artifact_type") == "WritableManifest":
+                _ = self.compiled_manifest
+            return None
 
         if get_node_unique_id(dbt_event) is None:
             return None
@@ -814,8 +833,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         last_size = os.stat(self.dbt_log_file_path).st_size
         self.logger.debug("Running dbt command: %s", " ".join(dbt_command_line))
 
+        self._dbt_started_at = time.time()
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
-        parse_manifest = True
         last_log = datetime.datetime.now()
 
         try:
@@ -823,11 +842,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 if (datetime.datetime.now() - last_log) >= datetime.timedelta(seconds=10):
                     self.logger.debug("dbt process is still running: waiting for logs to appear")
                     last_log = datetime.datetime.now()
-                if parse_manifest and has_lines(self._dbt_log_file) > 0:  # type: ignore[arg-type]
-                    # Load the manifest as soon as it exists
-                    self.compiled_manifest
-                    parse_manifest = False
-                    self.logger.debug("Parsed manifest file")
 
                 current_size = os.stat(self.dbt_log_file_path).st_size
                 if current_size > last_size:
