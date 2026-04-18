@@ -10,6 +10,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.StreamingMicroBatchThrottler;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -35,6 +36,7 @@ public class ContextFactory {
   @Getter private final MeterRegistry meterRegistry;
   @Getter private final SparkOpenLineageConfig config;
   private final OpenLineageEventHandlerFactory handlerFactory;
+  private final StreamingMicroBatchThrottler streamingThrottler;
 
   public ContextFactory(
       EventEmitter openLineageEventEmitter,
@@ -44,6 +46,23 @@ public class ContextFactory {
     this.meterRegistry = meterRegistry;
     this.config = config;
     handlerFactory = new InternalEventHandlerFactory();
+    this.streamingThrottler = buildThrottler(config);
+  }
+
+  private static StreamingMicroBatchThrottler buildThrottler(SparkOpenLineageConfig config) {
+    if (config == null || config.getFilterConfig() == null) {
+      return null;
+    }
+    SparkOpenLineageConfig.FilterConfig.StreamingConfig sc =
+        config.getFilterConfig().getStreamingConfig();
+    if (sc == null) {
+      return null;
+    }
+    if (sc.getMicrobatchThrottle() == null && sc.getMicrobatchThrottleMinutes() == null) {
+      return null;
+    }
+    return new StreamingMicroBatchThrottler(
+        sc.getMicrobatchThrottle(), sc.getMicrobatchThrottleMinutes());
   }
 
   public ExecutionContext createSparkApplicationExecutionContext(SparkContext sparkContext) {
@@ -114,6 +133,7 @@ public class ContextFactory {
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
+    olContext.setStreamingThrottler(streamingThrottler);
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
     return Optional.of(
@@ -143,6 +163,7 @@ public class ContextFactory {
                       .sparkExtensionVisitorWrapper(
                           new SparkOpenLineageExtensionVisitorWrapper(config))
                       .build();
+              olContext.setStreamingThrottler(streamingThrottler);
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);
               return new SparkSQLExecutionContext(
