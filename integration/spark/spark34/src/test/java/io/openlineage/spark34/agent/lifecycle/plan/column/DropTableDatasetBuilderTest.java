@@ -91,8 +91,7 @@ class DropTableDatasetBuilderTest {
       List<OpenLineage.OutputDataset> datasets = builder.apply(dropTable);
 
       assertThat(datasets).hasSize(1);
-      assertThat(
-              datasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange())
+      assertThat(datasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange())
           .isEqualTo(DROP);
       assertThat(datasets.get(0).getName()).isEqualTo(TABLE);
       assertThat(datasets.get(0).getNamespace()).isEqualTo("db");
@@ -102,7 +101,8 @@ class DropTableDatasetBuilderTest {
   @Test
   void testApplyReturnsEmptyWhenNoCatalogPlugin() {
     CatalogPlugin nonTableCatalog = mock(CatalogPlugin.class);
-    ResolvedIdentifier nonTableCatalogIdentifier = new ResolvedIdentifier(nonTableCatalog, identifier);
+    ResolvedIdentifier nonTableCatalogIdentifier =
+        new ResolvedIdentifier(nonTableCatalog, identifier);
     DropTable dropTableWithNonTableCatalog = mock(DropTable.class);
     when(dropTableWithNonTableCatalog.child()).thenReturn(nonTableCatalogIdentifier);
 
