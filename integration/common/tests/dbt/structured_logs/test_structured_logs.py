@@ -1053,6 +1053,98 @@ def test_validate_manifest_integrity_empty_manifest(caplog):
     assert "Manifest integrity check failed" not in caplog.text
 
 
+##################
+# Stale manifest resilience tests
+##################
+
+
+def _make_processor():
+    return DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir=CURRENT_DIR,
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+
+
+def test_artifact_written_triggers_manifest_load(monkeypatch):
+    """ArtifactWritten with WritableManifest causes compiled_manifest to be populated."""
+    processor = _make_processor()
+    processor.manifest_path = CURRENT_DIR + "/postgres/run/target/manifest.json"
+    # No _dbt_started_at set — mtime guard is skipped, simulating ArtifactWritten path.
+
+    artifact_written_event = json.dumps(
+        {
+            "data": {"artifact_path": processor.manifest_path, "artifact_type": "WritableManifest"},
+            "info": {"name": "ArtifactWritten", "invocation_id": "abc", "ts": "2024-01-01T00:00:00Z"},
+        }
+    )
+
+    # Simulate MainReportVersion first so dbt_run_metadata is set up.
+    main_report = json.dumps(
+        {
+            "data": {"version": "=1.10.0", "log_version": 3},
+            "info": {"name": "MainReportVersion", "invocation_id": "abc", "ts": "2024-01-01T00:00:00Z"},
+        }
+    )
+
+    def parsed(self):
+        self.received_dbt_command_completed = True
+        return [main_report, artifact_written_event]
+
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
+        parsed,
+    )
+
+    list(processor.parse())
+
+    assert processor._compiled_manifest != {}
+    assert "nodes" in processor._compiled_manifest
+
+
+def test_stale_manifest_mtime_guard_warns_and_skips(caplog, monkeypatch, tmp_path):
+    """compiled_manifest returns {} and warns when manifest mtime predates dbt start."""
+    import os
+    import shutil
+
+    processor = _make_processor()
+
+    # Write a manifest file then backdate its mtime.
+    stale_manifest = tmp_path / "manifest.json"
+    shutil.copy(CURRENT_DIR + "/postgres/run/target/manifest.json", stale_manifest)
+    old_time = 1000.0  # Unix epoch + 1000s — definitely older than any real run
+    os.utime(stale_manifest, (old_time, old_time))
+
+    processor.manifest_path = str(stale_manifest)
+    processor._dbt_started_at = old_time + 100.0  # started well after manifest was written
+
+    result = processor.compiled_manifest
+
+    assert result == {}
+    assert "predates this dbt invocation" in caplog.text
+
+
+def test_fresh_manifest_mtime_guard_loads_normally(monkeypatch, tmp_path):
+    """compiled_manifest loads normally when manifest mtime is after dbt start."""
+    import shutil
+    import time as time_mod
+
+    processor = _make_processor()
+
+    fresh_manifest = tmp_path / "manifest.json"
+    shutil.copy(CURRENT_DIR + "/postgres/run/target/manifest.json", fresh_manifest)
+
+    processor.manifest_path = str(fresh_manifest)
+    processor._dbt_started_at = time_mod.time() - 60.0  # started 60s ago; manifest is newer
+
+    result = processor.compiled_manifest
+
+    assert result != {}
+    assert "nodes" in result
+
+
 def test_validate_manifest_integrity_missing_sections(caplog):
     """Test validation with manifest missing key sections."""
     processor = DbtStructuredLogsProcessor(
