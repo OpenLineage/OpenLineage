@@ -85,11 +85,11 @@ class DropTableCommandVisitorTest {
         .hasFieldOrPropertyWithValue("namespace", "file");
 
     assertThat(
-        datasets
-            .get(0)
-            .getFacets()
-            .getLifecycleStateChange()
-            .getLifecycleStateChange()
-            .equals(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP));
+            datasets
+                .get(0)
+                .getFacets()
+                .getLifecycleStateChange()
+                .getLifecycleStateChange())
+        .isEqualTo(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP);
   }
 }
