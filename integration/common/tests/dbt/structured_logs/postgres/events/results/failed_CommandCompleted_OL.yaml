@@ -5,9 +5,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -43,9 +40,6 @@
           "message":"Command `dbt run` failed at 15:58:09.771069 after 6.60 seconds",
           "programmingLanguage":"sql",
           "stackTrace":null
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",

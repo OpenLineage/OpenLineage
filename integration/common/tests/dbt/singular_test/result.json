@@ -24,11 +24,6 @@
             }
           ]
         },
-        "dbt_version": {
-          "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-          "version": "1.7.0"
-        },
         "dbt_run": {
           "_producer": "{{ any(result) }}",
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
@@ -121,11 +116,6 @@
               "params": {}
             }
           ]
-        },
-        "dbt_version": {
-          "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-          "version": "1.7.0"
         },
         "dbt_run": {
           "_producer": "{{ any(result) }}",
@@ -220,11 +210,6 @@
             }
           ]
         },
-        "dbt_version": {
-          "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-          "version": "1.7.0"
-        },
         "dbt_run": {
           "_producer": "{{ any(result) }}",
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
@@ -317,11 +302,6 @@
               "params": {}
             }
           ]
-        },
-        "dbt_version": {
-          "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-          "version": "1.7.0"
         },
         "dbt_run": {
           "_producer": "{{ any(result) }}",
