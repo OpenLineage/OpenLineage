@@ -139,6 +139,12 @@ def _rebuild_with_additional_properties(
     return instance
 
 
+def split_into_list(value: str | list[str]) -> list[str]:
+    if isinstance(value, list):
+        return value
+    return [item.strip() for item in value.split(";") if item.strip()]
+
+
 class RedactMixin:
     _skip_redact: ClassVar[list[str]] = []
 

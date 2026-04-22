@@ -77,7 +77,7 @@ class KeyValueTrimmer(DatasetNameTrimmer):
 
         last = self._get_last_part(name)
 
-        if last.count("=") != 1:
+        if last.count(self.EQUALITY_SIGN) != 1:
             return name
 
         return self._remove_last_part(name)
@@ -109,6 +109,8 @@ class DateTrimmer(DatasetNameTrimmer):
         ("%Y%m%d", re.compile(r"\d{8}")),
     ]
 
+    # Matches 'T', 'Z', whitespace, ':', '.', '-' and all digits,
+    # so characters commonly found in timestamps or surrounding noise.
     NOISE_REGEX = re.compile(r"[TZ\s:.\-\d]*")
 
     def trim(self, name: str) -> str:
