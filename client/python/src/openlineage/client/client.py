@@ -39,7 +39,7 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import deep_merge_dicts
+from openlineage.client.utils import deep_merge_dicts, split_into_list
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -93,13 +93,7 @@ class OpenLineageConfig:
                 run=params["tags"].get("run", {}),
             )
         if "dataset" in params:
-
-            def split_into_list(value: str | list[str]) -> list[str]:
-                if isinstance(value, list):
-                    return value
-                return [item.strip() for item in value.split(";") if item.strip()]
-
-            ds = params["dataset"]
+            ds = dict(params["dataset"])
             ds["disabled_trimmers"] = split_into_list(ds.get("disabled_trimmers", []))
             ds["extra_trimmers"] = split_into_list(ds.get("extra_trimmers", []))
             config.dataset = DatasetConfig(**ds)
