@@ -4,9 +4,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -45,9 +42,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -100,9 +94,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -146,9 +137,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -190,9 +178,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -236,9 +221,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -280,9 +262,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -326,9 +305,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -370,9 +346,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -416,9 +389,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -460,9 +430,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -506,9 +473,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",

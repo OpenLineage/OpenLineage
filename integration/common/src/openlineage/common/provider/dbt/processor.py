@@ -897,7 +897,6 @@ class DbtArtifactProcessor:
 
         run_facets.update(
             {
-                **self.dbt_version_facet(),
                 **self.dbt_run_run_facet(),
                 **self.processing_engine_facet(),
             }
@@ -915,17 +914,7 @@ class DbtArtifactProcessor:
             facets=run_facets,
         )
 
-    # TODO: remove after deprecation period
-    def dbt_version_facet(self) -> dict[str, DbtVersionRunFacet]:
-        dbt_version = self.run_metadata.get("dbt_version")
-        if not dbt_version:
-            return {}
 
-        self.logger.debug(
-            "dbt_version facet is deprecated, and will be removed in future versions. "
-            "Use processing_engine facet instead."
-        )
-        return {"dbt_version": DbtVersionRunFacet(version=dbt_version)}
 
     @abstractmethod
     def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]: ...

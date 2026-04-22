@@ -4,9 +4,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -45,9 +42,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -111,9 +105,6 @@
             "name": "test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -155,9 +146,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -201,9 +189,6 @@
             "name": "test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -246,9 +231,6 @@
             "name": "test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -290,9 +272,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -357,9 +336,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",

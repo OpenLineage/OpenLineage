@@ -37,14 +37,6 @@ class ParentRunMetadata:
         )
 
 
-@attr.define
-class DbtVersionRunFacet(BaseFacet):
-    version: str
-
-    @staticmethod
-    def _get_schema() -> str:
-        return GITHUB_LOCATION + "dbt-version-run-facet.json"
-
 
 @attr.define
 class DbtRunRunFacet(BaseFacet):

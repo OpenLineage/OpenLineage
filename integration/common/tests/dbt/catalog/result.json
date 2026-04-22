@@ -5,9 +5,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "{{ any(result) }}"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "{{ any(result) }}",
@@ -43,11 +40,13 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "parent": {
-          "job": { "name": "dbt-job-name", "namespace": "dbt" },
-          "run": { "runId": "{{ any(result) }}" }
-        },
-        "dbt_version": {
-          "version": "{{ any(result) }}"
+          "job": {
+            "name": "dbt-job-name",
+            "namespace": "dbt"
+          },
+          "run": {
+            "runId": "{{ any(result) }}"
+          }
         },
         "processing_engine": {
           "name": "dbt",

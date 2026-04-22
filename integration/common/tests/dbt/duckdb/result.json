@@ -66,9 +66,6 @@
     ],
     "run": {
       "facets": {
-        "dbt_version": {
-          "version": "1.8.9"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.9",
@@ -153,9 +150,6 @@
     ],
     "run": {
       "facets": {
-        "dbt_version": {
-          "version": "1.8.9"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.9",

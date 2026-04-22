@@ -4,9 +4,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -45,9 +42,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -100,9 +94,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -144,9 +135,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -190,9 +178,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -234,9 +219,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -280,9 +262,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -324,9 +303,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -370,9 +346,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -415,9 +388,6 @@
             "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -459,9 +429,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -514,9 +481,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -568,9 +532,6 @@
             "name": "seed.jaffle_shop.raw_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -612,9 +573,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_orders"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -658,9 +616,6 @@
             "name": "seed.jaffle_shop.raw_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -702,9 +657,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_orders"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -748,9 +700,6 @@
             "name": "seed.jaffle_shop.raw_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -792,9 +741,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_orders"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -838,9 +784,6 @@
             "name": "seed.jaffle_shop.raw_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -883,9 +826,6 @@
             "name": "seed.jaffle_shop.raw_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -927,9 +867,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -982,9 +919,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1036,9 +970,6 @@
             "name": "seed.jaffle_shop.raw_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1080,9 +1011,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_payments"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1126,9 +1054,6 @@
             "name": "seed.jaffle_shop.raw_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1170,9 +1095,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_payments"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1216,9 +1138,6 @@
             "name": "seed.jaffle_shop.raw_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1260,9 +1179,6 @@
             "namespace": "dbt-test-namespace",
             "name": "seed.jaffle_shop.raw_payments"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1306,9 +1222,6 @@
             "name": "seed.jaffle_shop.raw_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1351,9 +1264,6 @@
             "name": "seed.jaffle_shop.raw_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1395,9 +1305,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1449,9 +1356,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1523,9 +1427,6 @@
             "name": "model.jaffle_shop.stg_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1567,9 +1468,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1613,9 +1511,6 @@
             "name": "model.jaffle_shop.stg_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1657,9 +1552,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1703,9 +1595,6 @@
             "name": "model.jaffle_shop.stg_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1747,9 +1636,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1793,9 +1679,6 @@
             "name": "model.jaffle_shop.stg_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1837,9 +1720,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1883,9 +1763,6 @@
             "name": "model.jaffle_shop.stg_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -1927,9 +1804,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -1973,9 +1847,6 @@
             "name": "model.jaffle_shop.stg_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2018,9 +1889,6 @@
             "name": "model.jaffle_shop.stg_customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2062,9 +1930,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2135,9 +2000,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2213,9 +2075,6 @@
             "name": "model.jaffle_shop.stg_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2257,9 +2116,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_orders"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2303,9 +2159,6 @@
             "name": "model.jaffle_shop.stg_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2347,9 +2200,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_orders"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2393,9 +2243,6 @@
             "name": "model.jaffle_shop.stg_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2437,9 +2284,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_orders"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2483,9 +2327,6 @@
             "name": "model.jaffle_shop.stg_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2527,9 +2368,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_orders"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2573,9 +2411,6 @@
             "name": "model.jaffle_shop.stg_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2617,9 +2452,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_orders"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2663,9 +2495,6 @@
             "name": "model.jaffle_shop.stg_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2708,9 +2537,6 @@
             "name": "model.jaffle_shop.stg_orders"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2752,9 +2578,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2830,9 +2653,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2895,9 +2715,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -2939,9 +2756,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -2985,9 +2799,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3029,9 +2840,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3075,9 +2883,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3119,9 +2924,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3165,9 +2967,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3209,9 +3008,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3255,9 +3051,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3299,9 +3092,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3345,9 +3135,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3389,9 +3176,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3435,9 +3219,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3479,9 +3260,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3525,9 +3303,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3569,9 +3344,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3615,9 +3387,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3659,9 +3428,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3705,9 +3471,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3749,9 +3512,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3795,9 +3555,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3839,9 +3596,6 @@
             "namespace": "dbt-test-namespace",
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -3885,9 +3639,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3930,9 +3681,6 @@
             "name": "snapshot.jaffle_shop.orders_snapshot"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -3974,9 +3722,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4039,9 +3784,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4117,9 +3859,6 @@
             "name": "model.jaffle_shop.stg_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4161,9 +3900,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_payments"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4207,9 +3943,6 @@
             "name": "model.jaffle_shop.stg_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4251,9 +3984,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_payments"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4297,9 +4027,6 @@
             "name": "model.jaffle_shop.stg_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4341,9 +4068,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_payments"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4387,9 +4111,6 @@
             "name": "model.jaffle_shop.stg_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4431,9 +4152,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_payments"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4477,9 +4195,6 @@
             "name": "model.jaffle_shop.stg_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4521,9 +4236,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.stg_payments"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4567,9 +4279,6 @@
             "name": "model.jaffle_shop.stg_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4612,9 +4321,6 @@
             "name": "model.jaffle_shop.stg_payments"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4656,9 +4362,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4734,9 +4437,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4807,9 +4507,6 @@
             "name": "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4851,9 +4548,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -4897,9 +4591,6 @@
             "name": "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4942,9 +4633,6 @@
             "name": "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -4986,9 +4674,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -5069,9 +4754,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5142,9 +4824,6 @@
             "name": "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5186,9 +4865,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -5232,9 +4908,6 @@
             "name": "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5277,9 +4950,6 @@
             "name": "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5321,9 +4991,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -5404,9 +5071,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5481,9 +5145,6 @@
             "name": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5525,9 +5186,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -5571,9 +5229,6 @@
             "name": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5616,9 +5271,6 @@
             "name": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5660,9 +5312,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -5747,9 +5396,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5824,9 +5470,6 @@
             "name": "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5868,9 +5511,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -5914,9 +5554,6 @@
             "name": "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -5959,9 +5596,6 @@
             "name": "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6003,9 +5637,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -6090,9 +5721,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6167,9 +5795,6 @@
             "name": "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6211,9 +5836,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -6257,9 +5879,6 @@
             "name": "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6302,9 +5921,6 @@
             "name": "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6346,9 +5962,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -6433,9 +6046,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6510,9 +6120,6 @@
             "name": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6554,9 +6161,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -6600,9 +6204,6 @@
             "name": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6645,9 +6246,6 @@
             "name": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6689,9 +6287,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -6776,9 +6371,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6853,9 +6445,6 @@
             "name": "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6897,9 +6486,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -6943,9 +6529,6 @@
             "name": "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -6988,9 +6571,6 @@
             "name": "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7032,9 +6612,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -7119,9 +6696,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7196,9 +6770,6 @@
             "name": "test.jaffle_shop.unique_stg_payments_payment_id.3744510712"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7240,9 +6811,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.unique_stg_payments_payment_id.3744510712"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -7286,9 +6854,6 @@
             "name": "test.jaffle_shop.unique_stg_payments_payment_id.3744510712"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7331,9 +6896,6 @@
             "name": "test.jaffle_shop.unique_stg_payments_payment_id.3744510712"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7375,9 +6937,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -7461,9 +7020,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -7621,9 +7177,6 @@
             "name": "model.jaffle_shop.customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7665,9 +7218,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -7711,9 +7261,6 @@
             "name": "model.jaffle_shop.customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7755,9 +7302,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -7801,9 +7345,6 @@
             "name": "model.jaffle_shop.customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7845,9 +7386,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -7891,9 +7429,6 @@
             "name": "model.jaffle_shop.customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -7935,9 +7470,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -7981,9 +7513,6 @@
             "name": "model.jaffle_shop.customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8025,9 +7554,6 @@
             "namespace": "dbt-test-namespace",
             "name": "model.jaffle_shop.customers"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -8071,9 +7597,6 @@
             "name": "model.jaffle_shop.customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8116,9 +7639,6 @@
             "name": "model.jaffle_shop.customers"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8160,9 +7680,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -8320,9 +7837,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8427,9 +7941,6 @@
             "name": "test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8471,9 +7982,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -8517,9 +8025,6 @@
             "name": "test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8562,9 +8067,6 @@
             "name": "test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8606,9 +8108,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -8728,9 +8227,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8835,9 +8331,6 @@
             "name": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8879,9 +8372,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -8925,9 +8415,6 @@
             "name": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -8970,9 +8457,6 @@
             "name": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -9014,9 +8498,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -9130,9 +8611,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -9300,9 +8778,6 @@
             "name": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -9344,9 +8819,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -9390,9 +8862,6 @@
             "name": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -9435,9 +8904,6 @@
             "name": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -9479,9 +8945,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -9606,9 +9069,6 @@
             "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -9713,9 +9173,6 @@
             "name": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -9757,9 +9214,6 @@
             "namespace": "dbt-test-namespace",
             "name": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -9803,9 +9257,6 @@
             "name": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -9848,9 +9299,6 @@
             "name": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
           }
         },
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "processing_engine": {
           "name": "dbt",
           "version": "1.8.2",
@@ -9892,9 +9340,6 @@
             "namespace": "dbt-test-namespace",
             "name": "dbt-run-jaffle_shop"
           }
-        },
-        "dbt_version": {
-          "version": "1.8.2"
         },
         "processing_engine": {
           "name": "dbt",
@@ -10000,9 +9445,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.8.2"
-        },
         "errorMessage": {
           "message": "Command `dbt build` failed at 12:54:01.759654 after 26.02 seconds",
           "programmingLanguage": "sql",

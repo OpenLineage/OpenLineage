@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from openlineage.client.facet_v2 import external_query_run, processing_engine_run
 from openlineage.client.uuid import generate_new_uuid
-from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
+from openlineage.common.provider.dbt.facets import DbtRunRunFacet
 from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 
@@ -42,7 +42,7 @@ def dbt_artifact_processor():
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace=JOB_NAMESPACE,
     )
-    _dbt_artifact_processor.run_metadata = {"dbt_version": DBT_VERSION, "invocation_id": "1"}
+    _dbt_artifact_processor.run_metadata = {"invocation_id": "1"}
 
     return _dbt_artifact_processor
 
@@ -75,7 +75,6 @@ def test_get_query_id(
 
     assert generated_query_id == QUERY_ID
     assert generated_run.facets == {
-        "dbt_version": DbtVersionRunFacet(version=DBT_VERSION),
         "dbt_run": DbtRunRunFacet(invocation_id="1", project_name="test", dbt_runtime="core"),
         "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
             name="dbt",
@@ -100,7 +99,6 @@ def test_invalid_adapter(dbt_artifact_processor, run_result):
 
     assert generated_query_id is None
     assert generated_run.facets == {
-        "dbt_version": DbtVersionRunFacet(version=DBT_VERSION),
         "dbt_run": DbtRunRunFacet(invocation_id="1", project_name="test", dbt_runtime="core"),
         "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
             name="dbt",

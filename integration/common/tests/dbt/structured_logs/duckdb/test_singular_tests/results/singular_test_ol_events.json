@@ -4,9 +4,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -42,9 +39,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -164,9 +158,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -224,9 +215,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -284,9 +272,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -344,9 +329,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -404,9 +386,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -536,9 +515,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -658,9 +634,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -718,9 +691,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -778,9 +748,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -838,9 +805,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -898,9 +862,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
@@ -1030,9 +991,6 @@
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
-        "dbt_version": {
-          "version": "1.10.15"
-        },
         "processing_engine": {
           "version": "1.10.15",
           "name": "dbt",
