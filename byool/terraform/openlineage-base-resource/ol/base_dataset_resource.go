@@ -31,8 +31,8 @@ func (r *BaseDatasetResource) Metadata(_ context.Context, req resource.MetadataR
 	resp.TypeName = req.ProviderTypeName + "_dataset"
 }
 
-// baseSchema implements ResourceBackend.baseSchema for dataset resources.
+// BaseSchema implements ResourceBackend.baseSchema for dataset resources.
 // Consumers who embed BaseDatasetResource inherit this automatically.
-func (r *BaseDatasetResource) baseSchema() schema.Schema {
+func (r *BaseDatasetResource) BaseSchema() schema.Schema {
 	return GenerateDatasetSchema(r.Backend.Capability())
 }

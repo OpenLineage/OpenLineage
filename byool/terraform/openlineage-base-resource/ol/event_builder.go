@@ -6,9 +6,14 @@
 package ol
 
 import (
+	"fmt"
+
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // producer is the URI that identifies this provider as the source of OL events.
@@ -16,19 +21,45 @@ import (
 // which system generated the lineage data.
 const producer = "https://github.com/OpenLineage/openlineage/byool/terraform"
 
-// datasetFacetSelector is the minimal interface required by the dataset-facet building
-// helpers. Both JobCapability and DatasetCapability satisfy it, so the helpers work
-// for both job inputs/outputs and standalone dataset events without depending on the
-// raw capability struct.
-type datasetFacetSelector interface {
-	IsDatasetEnabled(DatasetFacet) bool
+// OpenLineageEventBuilder assembles OpenLineage events from Terraform models.
+// All build methods are receivers so they share the Diagnostics sink and capability,
+// and can attach precise path-aware errors for missing required attributes.
+type OpenLineageEventBuilder struct {
+	Diagnostics *diag.Diagnostics
+	cap         capability
 }
 
-// BuildRunEvent wraps a JobEvent with run-specific fields (event type + generated run ID).
-// cap controls which job and dataset facets are emitted — disabled facets are skipped
-// even if the corresponding model blocks are populated.
+// NewJobEventBuilder creates a builder for job events (and their input/output datasets).
+func NewJobEventBuilder(diags *diag.Diagnostics, cap JobCapability) *OpenLineageEventBuilder {
+	return &OpenLineageEventBuilder{Diagnostics: diags, cap: cap.capability}
+}
+
+// NewDatasetEventBuilder creates a builder for standalone dataset events.
+func NewDatasetEventBuilder(diags *diag.Diagnostics, cap DatasetCapability) *OpenLineageEventBuilder {
+	return &OpenLineageEventBuilder{Diagnostics: diags, cap: cap.capability}
+}
+
+// ── Package-level convenience wrappers ───────────────────────────────────────
+
+// BuildRunEvent is a package-level convenience wrapper around
+// NewJobEventBuilder(...).BuildRunEvent(...).
 func BuildRunEvent(data *JobResourceModel, cap JobCapability) *openlineage.RunEvent {
-	jobEvent := BuildJobEvent(data, cap)
+	var diags diag.Diagnostics
+	return NewJobEventBuilder(&diags, cap).BuildRunEvent(data)
+}
+
+// BuildDatasetEvent is a package-level convenience wrapper around
+// NewDatasetEventBuilder(...).BuildDatasetEvent(...).
+func BuildDatasetEvent(data *DatasetResourceModel, cap DatasetCapability) *openlineage.DatasetEvent {
+	var diags diag.Diagnostics
+	return NewDatasetEventBuilder(&diags, cap).BuildDatasetEvent(data)
+}
+
+// ── Top-level event builders ──────────────────────────────────────────────────
+
+// BuildRunEvent wraps a JobEvent with run-specific fields (event type + run ID).
+func (e *OpenLineageEventBuilder) BuildRunEvent(data *JobResourceModel) *openlineage.RunEvent {
+	jobEvent := e.BuildJobEvent(data)
 	runID := uuid.New()
 
 	return &openlineage.RunEvent{
@@ -37,9 +68,7 @@ func BuildRunEvent(data *JobResourceModel, cap JobCapability) *openlineage.RunEv
 			SchemaURL: openlineage.RunEventSchemaURL,
 			EventTime: jobEvent.EventTime,
 		},
-		Run: openlineage.RunInfo{
-			RunID: runID.String(),
-		},
+		Run:       openlineage.RunInfo{RunID: runID.String()},
 		Job:       jobEvent.Job,
 		EventType: openlineage.EventTypeComplete,
 		Inputs:    jobEvent.Inputs,
@@ -48,563 +77,454 @@ func BuildRunEvent(data *JobResourceModel, cap JobCapability) *openlineage.RunEv
 }
 
 // BuildJobEvent assembles an OpenLineage JobEvent from the Terraform job model.
-// cap controls which job and dataset facets are emitted — disabled facets are skipped
-// even if the corresponding model blocks are populated.
-func BuildJobEvent(data *JobResourceModel, cap JobCapability) *openlineage.JobEvent {
+func (e *OpenLineageEventBuilder) BuildJobEvent(data *JobResourceModel) *openlineage.JobEvent {
+	base := path.Empty()
+
 	event := openlineage.NewJobEvent(
-		data.Name.ValueString(),
-		data.Namespace.ValueString(),
+		e.requireString(data.Name, base.AtName("name")),
+		e.requireString(data.Namespace, base.AtName("namespace")),
 		producer,
 	)
 
-	if jfs := buildJobFacets(&data.OLJobConfig, cap); len(jfs) > 0 {
+	if jfs := e.buildJobFacets(&data.OLJobConfig, base); len(jfs) > 0 {
 		event = event.WithFacets(jfs...)
 	}
 
-	for _, input := range data.Inputs {
-		event = event.WithInputs(buildInputElement(&input, cap))
+	for i, input := range data.Inputs {
+		event = event.WithInputs(e.buildInputElement(&input, base.AtName("inputs").AtListIndex(i)))
 	}
 
-	for _, output := range data.Outputs {
-		event = event.WithOutputs(buildOutputElement(&output, cap))
+	for i, output := range data.Outputs {
+		event = event.WithOutputs(e.buildOutputElement(&output, base.AtName("outputs").AtListIndex(i)))
 	}
 
 	return event
 }
 
-// buildJobFacets assembles all optional job facets from OLJobConfig.
-// Only facets enabled in cap are emitted; disabled facets are skipped regardless
-// of whether the model block is populated (stub values from portability schema).
-func buildJobFacets(data *OLJobConfig, cap JobCapability) []facets.JobFacet {
+// BuildDatasetEvent assembles an OpenLineage DatasetEvent from the standalone dataset model.
+func (e *OpenLineageEventBuilder) BuildDatasetEvent(data *DatasetResourceModel) *openlineage.DatasetEvent {
+	base := path.Empty()
+	facetsList := e.buildDatasetFacets(&data.DatasetModel, base)
+	return openlineage.NewDatasetEvent(
+		e.requireString(data.Name, base.AtName("name")),
+		e.requireString(data.Namespace, base.AtName("namespace")),
+		producer,
+		facetsList...,
+	)
+}
+
+// ── Job facets ────────────────────────────────────────────────────────────────
+
+func (e *OpenLineageEventBuilder) buildJobFacets(data *OLJobConfig, base path.Path) []facets.JobFacet {
 	var fs []facets.JobFacet
 
-	if cap.IsEnabled(FacetJobType) && data.JobType != nil {
-		// integration and processing_type are Required in the schema, but guard
-		// against null/unknown defensively (e.g. during import or plan phase).
-		if data.JobType.Integration.IsNull() || data.JobType.Integration.IsUnknown() ||
-			data.JobType.ProcessingType.IsNull() || data.JobType.ProcessingType.IsUnknown() {
-			// skip — cannot build a valid JobTypeJobFacet without required fields
-		} else {
-			jt := facets.NewJobTypeJobFacet(
-				producer,
-				data.JobType.Integration.ValueString(),
-				data.JobType.ProcessingType.ValueString(),
-			)
-			if !data.JobType.JobType.IsNull() && !data.JobType.JobType.IsUnknown() {
-				jt = jt.WithJobType(data.JobType.JobType.ValueString())
-			}
-			fs = append(fs, jt)
-		}
+	if e.cap.isJobEnabled(FacetJobType) && data.JobType != nil &&
+		isKnownString(data.JobType.Integration) && isKnownString(data.JobType.ProcessingType) {
+		fs = append(fs, e.buildJobTypeFacet(data.JobType, base.AtName("job_type")))
 	}
-
-	if cap.IsEnabled(FacetJobOwnership) && data.Ownership != nil && len(data.Ownership.Owners) > 0 {
-		owners := make([]facets.Owner, 0, len(data.Ownership.Owners))
-		for _, o := range data.Ownership.Owners {
-			owner := facets.Owner{Name: o.Name.ValueString()}
-			if !o.Type.IsNull() && !o.Type.IsUnknown() {
-				owner.Type = openlineage.Ptr(o.Type.ValueString())
-			}
-			owners = append(owners, owner)
-		}
-		fs = append(fs, facets.NewOwnershipJobFacet(producer).WithOwners(owners))
+	if e.cap.isJobEnabled(FacetJobOwnership) && data.Ownership != nil {
+		fs = append(fs, e.buildOwnershipJobFacet(data.Ownership, base.AtName("ownership")))
 	}
-
-	if cap.IsEnabled(FacetJobDocumentation) && data.Documentation != nil {
-		if !data.Documentation.Description.IsNull() && !data.Documentation.Description.IsUnknown() {
-			fs = append(fs, facets.NewDocumentationJobFacet(
-				producer,
-				data.Documentation.Description.ValueString(),
-			))
-		}
+	if e.cap.isJobEnabled(FacetJobDocumentation) && data.Documentation != nil &&
+		isKnownString(data.Documentation.Description) {
+		fs = append(fs, e.buildDocumentationJobFacet(data.Documentation, base.AtName("documentation")))
 	}
-
-	if cap.IsEnabled(FacetJobSourceCode) && data.SourceCode != nil {
-		if !data.SourceCode.Language.IsNull() && !data.SourceCode.Language.IsUnknown() &&
-			!data.SourceCode.SourceCode.IsNull() && !data.SourceCode.SourceCode.IsUnknown() {
-			fs = append(fs, facets.NewSourceCodeJobFacet(
-				producer,
-				data.SourceCode.Language.ValueString(),
-				data.SourceCode.SourceCode.ValueString(),
-			))
-		}
+	if e.cap.isJobEnabled(FacetJobSourceCode) && data.SourceCode != nil {
+		fs = append(fs, e.buildSourceCodeJobFacet(data.SourceCode, base.AtName("source_code")))
 	}
-
-	if cap.IsEnabled(FacetJobSourceCodeLocation) && data.SourceCodeLocation != nil {
-		// type and url are Required in the schema but can be Unknown at plan time
-		// when derived from another resource — skip the facet rather than emitting
-		// empty strings into the event.
-		if !data.SourceCodeLocation.Type.IsNull() && !data.SourceCodeLocation.Type.IsUnknown() &&
-			!data.SourceCodeLocation.URL.IsNull() && !data.SourceCodeLocation.URL.IsUnknown() {
-			scl := facets.NewSourceCodeLocationJobFacet(
-				producer,
-				data.SourceCodeLocation.Type.ValueString(),
-				data.SourceCodeLocation.URL.ValueString(),
-			)
-			if !data.SourceCodeLocation.RepoURL.IsNull() && !data.SourceCodeLocation.RepoURL.IsUnknown() {
-				scl = scl.WithRepoURL(data.SourceCodeLocation.RepoURL.ValueString())
-			}
-			if !data.SourceCodeLocation.Path.IsNull() && !data.SourceCodeLocation.Path.IsUnknown() {
-				scl = scl.WithPath(data.SourceCodeLocation.Path.ValueString())
-			}
-			if !data.SourceCodeLocation.Version.IsNull() && !data.SourceCodeLocation.Version.IsUnknown() {
-				scl = scl.WithVersion(data.SourceCodeLocation.Version.ValueString())
-			}
-			if !data.SourceCodeLocation.Tag.IsNull() && !data.SourceCodeLocation.Tag.IsUnknown() {
-				scl = scl.WithTag(data.SourceCodeLocation.Tag.ValueString())
-			}
-			if !data.SourceCodeLocation.Branch.IsNull() && !data.SourceCodeLocation.Branch.IsUnknown() {
-				scl = scl.WithBranch(data.SourceCodeLocation.Branch.ValueString())
-			}
-			fs = append(fs, scl)
-		}
+	if e.cap.isJobEnabled(FacetJobSourceCodeLocation) && data.SourceCodeLocation != nil &&
+		isKnownString(data.SourceCodeLocation.Type) {
+		fs = append(fs, e.buildSourceCodeLocationJobFacet(data.SourceCodeLocation, base.AtName("source_code_location")))
 	}
-
-	if cap.IsEnabled(FacetJobSQL) && data.SQL != nil {
-		if !data.SQL.Query.IsNull() && !data.SQL.Query.IsUnknown() {
-			fs = append(fs, facets.NewSQLJobFacet(producer, data.SQL.Query.ValueString()))
-		}
+	if e.cap.isJobEnabled(FacetJobSQL) && data.SQL != nil {
+		fs = append(fs, e.buildSQLJobFacet(data.SQL, base.AtName("sql")))
 	}
-
-	if cap.IsEnabled(FacetJobTags) && len(data.Tags) > 0 {
-		tags := make([]facets.TagClass, 0, len(data.Tags))
-		for _, t := range data.Tags {
-			// Skip entries whose required fields are not yet known — emitting an empty
-			// key or value would silently corrupt the facet.
-			if t.Name.IsNull() || t.Name.IsUnknown() || t.Value.IsNull() || t.Value.IsUnknown() {
-				continue
-			}
-			tags = append(tags, facets.TagClass{
-				Key:   t.Name.ValueString(),
-				Value: t.Value.ValueString(),
-			})
-		}
-		if len(tags) > 0 {
-			fs = append(fs, facets.NewTagsJobFacet(producer).WithTags(tags))
+	if e.cap.isJobEnabled(FacetJobTags) && len(data.Tags) > 0 {
+		if f := e.buildTagsJobFacet(data.Tags, base.AtName("tags")); f != nil {
+			fs = append(fs, f)
 		}
 	}
 
 	return fs
 }
 
-// BuildDatasetEvent assembles an OpenLineage DatasetEvent from the standalone dataset model.
-// cap controls which dataset facets are emitted — disabled facets are skipped
-// even if the corresponding model blocks are populated.
-func BuildDatasetEvent(data *DatasetResourceModel, cap DatasetCapability) *openlineage.DatasetEvent {
-	facetsList := buildDatasetFacets(&data.DatasetModel, cap)
-	event := openlineage.NewDatasetEvent(
-		data.Name.ValueString(),
-		data.Namespace.ValueString(),
+func (e *OpenLineageEventBuilder) buildJobTypeFacet(data *JobTypeJobModel, base path.Path) *facets.JobTypeJobFacet {
+	jt := facets.NewJobTypeJobFacet(
 		producer,
-		facetsList...,
+		e.requireString(data.Integration, base.AtName("integration")),
+		e.requireString(data.ProcessingType, base.AtName("processing_type")),
 	)
-
-	return event
+	jt.JobType = stringPtrIfKnown(data.JobType)
+	return jt
 }
 
-// buildInputElement converts a single Terraform InputModel into an OpenLineage InputElement.
-func buildInputElement(input *OLInputModel, cap datasetFacetSelector) openlineage.InputElement {
-	ie := openlineage.NewInputElement(
-		input.Name.ValueString(),
-		input.Namespace.ValueString(),
+func (e *OpenLineageEventBuilder) buildOwnershipJobFacet(data *OwnershipJobModel, base path.Path) *facets.OwnershipJobFacet {
+	owners := make([]facets.Owner, 0, len(data.Owners))
+	for i, o := range data.Owners {
+		owners = append(owners, e.buildOwner(o.Name, o.Type, base.AtName("owners").AtListIndex(i)))
+	}
+	return facets.NewOwnershipJobFacet(producer).WithOwners(owners)
+}
+
+func (e *OpenLineageEventBuilder) buildDocumentationJobFacet(data *DocumentationModel, base path.Path) *facets.DocumentationJobFacet {
+	df := facets.NewDocumentationJobFacet(producer, e.requireString(data.Description, base.AtName("description")))
+	df.ContentType = stringPtrIfKnown(data.ContentType)
+	return df
+}
+
+func (e *OpenLineageEventBuilder) buildSourceCodeJobFacet(data *SourceCodeJobModel, base path.Path) *facets.SourceCodeJobFacet {
+	return facets.NewSourceCodeJobFacet(
+		producer,
+		e.requireString(data.Language, base.AtName("language")),
+		e.requireString(data.SourceCode, base.AtName("source_code")),
 	)
+}
 
-	ie = ie.WithFacets(buildDatasetFacets(&input.DatasetModel, cap)...)
+func (e *OpenLineageEventBuilder) buildSourceCodeLocationJobFacet(data *SourceCodeLocationJobModel, base path.Path) *facets.SourceCodeLocationJobFacet {
+	scl := facets.NewSourceCodeLocationJobFacet(
+		producer,
+		e.requireString(data.Type, base.AtName("type")),
+		e.requireString(data.URL, base.AtName("url")),
+	)
+	scl.RepoURL = stringPtrIfKnown(data.RepoURL)
+	scl.Path = stringPtrIfKnown(data.Path)
+	scl.Version = stringPtrIfKnown(data.Version)
+	scl.Tag = stringPtrIfKnown(data.Tag)
+	scl.Branch = stringPtrIfKnown(data.Branch)
+	return scl
+}
 
+func (e *OpenLineageEventBuilder) buildSQLJobFacet(data *SQLJobModel, base path.Path) *facets.SQLJobFacet {
+	sf := facets.NewSQLJobFacet(producer, e.requireString(data.Query, base.AtName("query")))
+	if isKnownString(data.Dialect) {
+		sf = sf.WithDialect(data.Dialect.ValueString())
+	}
+	return sf
+}
+
+func (e *OpenLineageEventBuilder) buildTagsJobFacet(tags []TagsJobModel, base path.Path) *facets.TagsJobFacet {
+	ts := make([]facets.TagClass, 0, len(tags))
+	for i, t := range tags {
+		if !isKnownString(t.Name) || !isKnownString(t.Value) {
+			continue
+		}
+		tp := base.AtListIndex(i)
+		tc := facets.TagClass{
+			Key:   e.requireString(t.Name, tp.AtName("name")),
+			Value: e.requireString(t.Value, tp.AtName("value")),
+		}
+		tc.Source = stringPtrIfKnown(t.Source)
+		ts = append(ts, tc)
+	}
+	if len(ts) == 0 {
+		return nil
+	}
+	return facets.NewTagsJobFacet(producer).WithTags(ts)
+}
+
+// ── Dataset / input / output builders ────────────────────────────────────────
+
+func (e *OpenLineageEventBuilder) buildInputElement(input *OLInputModel, base path.Path) openlineage.InputElement {
+	ie := openlineage.NewInputElement(
+		e.requireString(input.Name, base.AtName("name")),
+		e.requireString(input.Namespace, base.AtName("namespace")),
+	)
+	ie = ie.WithFacets(e.buildDatasetFacets(&input.DatasetModel, base)...)
 	return ie
 }
 
-// buildOutputElement converts a single Terraform OutputModel into an OpenLineage OutputElement.
-func buildOutputElement(output *OLOutputModel, cap datasetFacetSelector) openlineage.OutputElement {
+func (e *OpenLineageEventBuilder) buildOutputElement(output *OLOutputModel, base path.Path) openlineage.OutputElement {
 	oe := openlineage.NewOutputElement(
-		output.Name.ValueString(),
-		output.Namespace.ValueString(),
+		e.requireString(output.Name, base.AtName("name")),
+		e.requireString(output.Namespace, base.AtName("namespace")),
 	)
+	oe = oe.WithFacets(e.buildDatasetFacets(&output.DatasetModel, base)...)
 
-	oe = oe.WithFacets(buildDatasetFacets(&output.DatasetModel, cap)...)
-
-	if cap.IsDatasetEnabled(FacetDatasetColumnLineage) && output.ColumnLineage != nil {
-		oe = oe.WithFacets(buildColumnLineageFacet(output.ColumnLineage))
+	if e.cap.isDatasetEnabled(FacetDatasetColumnLineage) && output.ColumnLineage != nil {
+		oe = oe.WithFacets(e.buildColumnLineageFacet(output.ColumnLineage, base.AtName("column_lineage")))
 	}
-
 	return oe
 }
 
-func buildDatasetFacets(dataset *DatasetModel, cap datasetFacetSelector) []facets.DatasetFacet {
-	var facetsList []facets.DatasetFacet
+func (e *OpenLineageEventBuilder) buildDatasetFacets(dataset *DatasetModel, base path.Path) []facets.DatasetFacet {
+	var fs []facets.DatasetFacet
 
-	if cap.IsDatasetEnabled(FacetDatasetSymlinks) && len(dataset.Symlinks) > 0 {
-		facetsList = append(facetsList, buildSymlinksFacet(dataset.Symlinks))
+	if e.cap.isDatasetEnabled(FacetDatasetSymlinks) && len(dataset.Symlinks) > 0 {
+		fs = append(fs, e.buildSymlinksFacet(dataset.Symlinks, base.AtName("symlinks")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetSchema) && dataset.Schema != nil {
+		fs = append(fs, e.buildSchemaFacet(dataset.Schema, base.AtName("schema")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetDataSource) && dataset.DataSource != nil {
+		fs = append(fs, e.buildDataSourceFacet(dataset.DataSource, base.AtName("data_source")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetDocumentation) && dataset.Documentation != nil {
+		fs = append(fs, e.buildDocumentationDatasetFacet(dataset.Documentation, base.AtName("documentation")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetType) && dataset.DatasetType != nil {
+		fs = append(fs, e.buildDatasetTypeFacet(dataset.DatasetType, base.AtName("dataset_type")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetVersion) && dataset.Version != nil {
+		fs = append(fs, e.buildDatasetVersionFacet(dataset.Version, base.AtName("version")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetStorage) && dataset.Storage != nil &&
+		isKnownString(dataset.Storage.StorageLayer) {
+		fs = append(fs, e.buildStorageFacet(dataset.Storage, base.AtName("storage")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetOwnership) && dataset.Ownership != nil {
+		fs = append(fs, e.buildOwnershipDatasetFacet(dataset.Ownership, base.AtName("ownership")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetLifecycleStateChange) && dataset.LifecycleStateChange != nil {
+		fs = append(fs, e.buildLifecycleStateChangeFacet(dataset.LifecycleStateChange, base.AtName("lifecycle_state_change")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetHierarchy) && dataset.Hierarchy != nil {
+		fs = append(fs, e.buildHierarchyFacet(dataset.Hierarchy, base.AtName("hierarchy")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetCatalog) && dataset.Catalog != nil &&
+		isKnownString(dataset.Catalog.Framework) {
+		fs = append(fs, e.buildCatalogFacet(dataset.Catalog, base.AtName("catalog")))
+	}
+	if e.cap.isDatasetEnabled(FacetDatasetTags) && len(dataset.Tags) > 0 {
+		fs = append(fs, e.buildTagsDatasetFacet(dataset.Tags, base.AtName("tags")))
 	}
 
-	if cap.IsDatasetEnabled(FacetDatasetSchema) && dataset.Schema != nil {
-		facetsList = append(facetsList, buildSchemaFacet(dataset.Schema))
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetDataSource) && dataset.DataSource != nil {
-		facetsList = append(facetsList, buildDataSourceFacet(dataset.DataSource))
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetDocumentation) && dataset.Documentation != nil {
-		// description is Required in the schema but can be Unknown at plan time
-		// when derived from another resource — skip rather than emitting an empty string.
-		if !dataset.Documentation.Description.IsNull() && !dataset.Documentation.Description.IsUnknown() {
-			facetsList = append(facetsList, facets.NewDocumentationDatasetFacet(
-				producer,
-				dataset.Documentation.Description.ValueString(),
-			))
-		}
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetType) && dataset.DatasetType != nil {
-		// dataset_type is Required in the schema; guard against Unknown values at plan time.
-		if !dataset.DatasetType.DatasetType.IsNull() && !dataset.DatasetType.DatasetType.IsUnknown() {
-			dt := facets.NewDatasetTypeDatasetFacet(producer, dataset.DatasetType.DatasetType.ValueString())
-			if !dataset.DatasetType.SubType.IsNull() && !dataset.DatasetType.SubType.IsUnknown() {
-				dt = dt.WithSubType(dataset.DatasetType.SubType.ValueString())
-			}
-			facetsList = append(facetsList, dt)
-		}
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetVersion) && dataset.Version != nil {
-		// dataset_version is Required in the schema; guard against Unknown values at plan time.
-		if !dataset.Version.DatasetVersion.IsNull() && !dataset.Version.DatasetVersion.IsUnknown() {
-			facetsList = append(facetsList, facets.NewDatasetVersionDatasetFacet(
-				producer,
-				dataset.Version.DatasetVersion.ValueString(),
-			))
-		}
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetStorage) && dataset.Storage != nil {
-		if sf := buildStorageFacet(dataset.Storage); sf != nil {
-			facetsList = append(facetsList, sf)
-		}
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetOwnership) && dataset.Ownership != nil && len(dataset.Ownership.Owners) > 0 {
-		facetsList = append(facetsList, buildOwnershipDatasetFacet(dataset.Ownership))
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetLifecycleStateChange) && dataset.LifecycleStateChange != nil {
-		if lf := buildLifecycleStateChangeFacet(dataset.LifecycleStateChange); lf != nil {
-			facetsList = append(facetsList, lf)
-		}
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetHierarchy) && dataset.Hierarchy != nil {
-		if hf := buildHierarchyFacet(dataset.Hierarchy); hf != nil {
-			facetsList = append(facetsList, hf)
-		}
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetCatalog) && dataset.Catalog != nil {
-		if cf := buildCatalogFacet(dataset.Catalog); cf != nil {
-			facetsList = append(facetsList, cf)
-		}
-	}
-
-	if cap.IsDatasetEnabled(FacetDatasetTags) && len(dataset.Tags) > 0 {
-		if tf := buildTagsDatasetFacet(dataset.Tags); tf != nil {
-			facetsList = append(facetsList, tf)
-		}
-	}
-
-	return facetsList
+	return fs
 }
 
-// buildSchemaFacet creates a SchemaDatasetFacet from a SchemaDatasetModel.
-func buildSchemaFacet(s *SchemaDatasetModel) *facets.SchemaDatasetFacet {
-	fields := make([]facets.FieldElement, 0, len(s.Fields))
-	for _, f := range s.Fields {
-		fe := facets.FieldElement{Name: f.Name.ValueString()}
-		if !f.Type.IsNull() && !f.Type.IsUnknown() {
-			fe.Type = openlineage.Ptr(f.Type.ValueString())
-		}
-		if !f.Description.IsNull() && !f.Description.IsUnknown() {
-			fe.Description = openlineage.Ptr(f.Description.ValueString())
-		}
-		fields = append(fields, fe)
-	}
-	return facets.NewSchemaDatasetFacet(producer).WithFields(fields)
-}
+// ── Individual dataset facet builders ────────────────────────────────────────
 
-// buildDataSourceFacet creates a DatasourceDatasetFacet from a DataSourceDatasetModel.
-func buildDataSourceFacet(ds *DataSourceDatasetModel) *facets.DatasourceDatasetFacet {
-	f := facets.NewDatasourceDatasetFacet(producer)
-	if !ds.Name.IsNull() && !ds.Name.IsUnknown() {
-		f = f.WithName(ds.Name.ValueString())
-	}
-	if !ds.URI.IsNull() && !ds.URI.IsUnknown() {
-		f = f.WithURI(ds.URI.ValueString())
-	}
-	return f
-}
-
-// buildStorageFacet creates a StorageDatasetFacet from a StorageDatasetModel.
-// Returns nil if storage_layer is null or unknown (e.g. during plan), so callers
-// should check for nil and skip the facet rather than emitting an invalid event.
-func buildStorageFacet(s *StorageDatasetModel) *facets.StorageDatasetFacet {
-	if s.StorageLayer.IsNull() || s.StorageLayer.IsUnknown() {
-		return nil
-	}
-	f := facets.NewStorageDatasetFacet(producer, s.StorageLayer.ValueString())
-	if !s.FileFormat.IsNull() && !s.FileFormat.IsUnknown() {
-		f = f.WithFileFormat(s.FileFormat.ValueString())
-	}
-	return f
-}
-
-// buildOwnershipDatasetFacet creates an OwnershipDatasetFacet from an OwnershipDatasetModel.
-func buildOwnershipDatasetFacet(o *OwnershipDatasetModel) *facets.OwnershipDatasetFacet {
-	owners := make([]facets.Owner, 0, len(o.Owners))
-	for _, owner := range o.Owners {
-		ow := facets.Owner{Name: owner.Name.ValueString()}
-		if !owner.Type.IsNull() && !owner.Type.IsUnknown() {
-			ow.Type = openlineage.Ptr(owner.Type.ValueString())
-		}
-		owners = append(owners, ow)
-	}
-	return facets.NewOwnershipDatasetFacet(producer).WithOwners(owners)
-}
-
-// buildLifecycleStateChangeFacet creates a LifecycleStateChangeDatasetFacet.
-// Returns nil if lifecycle_state_change is null/unknown (e.g. derived from another
-// resource at plan time) — the caller skips the facet rather than emitting an
-// invalid enum value.
-func buildLifecycleStateChangeFacet(lsc *LifecycleStateChangeDatasetModel) *facets.LifecycleStateChangeDatasetFacet {
-	if lsc.LifecycleStateChange.IsNull() || lsc.LifecycleStateChange.IsUnknown() {
-		return nil
-	}
-	f := facets.NewLifecycleStateChangeDatasetFacet(
-		producer,
-		facets.LifecycleStateChangeEnum(lsc.LifecycleStateChange.ValueString()),
-	)
-	if lsc.PreviousIdentifier != nil {
-		f = f.WithPreviousIdentifier(&facets.PreviousIdentifier{
-			Name:      lsc.PreviousIdentifier.Name.ValueString(),
-			Namespace: lsc.PreviousIdentifier.Namespace.ValueString(),
-		})
-	}
-	return f
-}
-
-// buildHierarchyFacet creates a HierarchyDatasetFacet from a HierarchyDatasetModel.
-//
-// The OL HierarchyElement only carries Name and Type; Namespace from the
-// model is not part of the spec and is intentionally dropped here.
-// The hierarchy list is ordered highest → lowest: parent first, then children.
-//
-// Returns nil if the parent's required fields are null/unknown. Children with
-// unknown required fields are silently dropped.
-func buildHierarchyFacet(h *HierarchyDatasetModel) *facets.HierarchyDatasetFacet {
-	// Parent is required — skip the whole facet if it isn't known yet.
-	if h.Parent.Name.IsNull() || h.Parent.Name.IsUnknown() ||
-		h.Parent.Type.IsNull() || h.Parent.Type.IsUnknown() {
-		return nil
-	}
-	elements := []facets.HierarchyElement{
-		{Name: h.Parent.Name.ValueString(), Type: h.Parent.Type.ValueString()},
-	}
-	for _, child := range h.Children {
-		if child.Name.IsNull() || child.Name.IsUnknown() ||
-			child.Type.IsNull() || child.Type.IsUnknown() {
-			continue
-		}
-		elements = append(elements, facets.HierarchyElement{
-			Name: child.Name.ValueString(),
-			Type: child.Type.ValueString(),
-		})
-	}
-	return facets.NewHierarchyDatasetFacet(producer).WithHierarchy(elements)
-}
-
-// buildTagsDatasetFacet creates a TagsDatasetFacet from a slice of TagsDatasetModel.
-// Entries with null/unknown name or value are skipped to avoid emitting empty strings
-// into the facet. Returns nil if no valid entries remain.
-func buildTagsDatasetFacet(tags []TagsDatasetModel) *facets.TagsDatasetFacet {
-	elements := make([]facets.TagElement, 0, len(tags))
-	for _, t := range tags {
-		if t.Name.IsNull() || t.Name.IsUnknown() || t.Value.IsNull() || t.Value.IsUnknown() {
-			continue
-		}
-		elements = append(elements, facets.TagElement{
-			Key:   t.Name.ValueString(),
-			Value: t.Value.ValueString(),
-		})
-	}
-	if len(elements) == 0 {
-		return nil
-	}
-	return facets.NewTagsDatasetFacet(producer).WithTags(elements)
-}
-
-// buildSymlinksFacet creates a SymlinksDatasetFacet from a list of SymlinkModels.
-//
-// A symlink says: "this dataset can also be found at this other name/namespace".
-// Useful when the same physical table is registered in multiple catalogs
-// (e.g. the same data appears in both BigQuery and Hive).
-func buildSymlinksFacet(symlinks []SymlinksDatasetModel) *facets.SymlinksDatasetFacet {
+func (e *OpenLineageEventBuilder) buildSymlinksFacet(symlinks []SymlinksDatasetModel, base path.Path) *facets.SymlinksDatasetFacet {
 	identifiers := make([]facets.Identifier, 0, len(symlinks))
-	for _, s := range symlinks {
+	for i, s := range symlinks {
+		p := base.AtListIndex(i)
 		identifiers = append(identifiers, facets.Identifier{
-			Name:      s.Name.ValueString(),
-			Namespace: s.Namespace.ValueString(),
-			Type:      s.Type.ValueString(), // e.g. "TABLE"
+			Name:      e.requireString(s.Name, p.AtName("name")),
+			Namespace: e.requireString(s.Namespace, p.AtName("namespace")),
+			Type:      e.requireString(s.Type, p.AtName("type")),
 		})
 	}
 	return facets.NewSymlinksDatasetFacet(producer).WithIdentifiers(identifiers)
 }
 
-// buildCatalogFacet creates a CatalogDatasetFacet from a CatalogModel.
-//
-// This facet tells consumers where to find the dataset's schema/metadata:
-// which metastore (framework), what type, and the URIs to reach it.
-//
-// Returns nil if any required field (framework, type, name) is null/unknown —
-// the same pattern used by buildStorageFacet. Optional fields (MetadataURI,
-// WarehouseURI, Source) are only set when the user provided a real value.
-func buildCatalogFacet(c *CatalogDatasetModel) *facets.CatalogDatasetFacet {
-	// Required fields — skip the whole facet if any are not yet known.
-	if c.Framework.IsNull() || c.Framework.IsUnknown() ||
-		c.Type.IsNull() || c.Type.IsUnknown() ||
-		c.Name.IsNull() || c.Name.IsUnknown() {
-		return nil
+func (e *OpenLineageEventBuilder) buildSchemaFacet(s *SchemaDatasetModel, base path.Path) *facets.SchemaDatasetFacet {
+	fields := make([]facets.FieldElement, 0, len(s.Fields))
+	for i, f := range s.Fields {
+		p := base.AtName("fields").AtListIndex(i)
+		fe := facets.FieldElement{Name: e.requireString(f.Name, p.AtName("name"))}
+		fe.Type = stringPtrIfKnown(f.Type)
+		fe.Description = stringPtrIfKnown(f.Description)
+		fields = append(fields, fe)
 	}
+	return facets.NewSchemaDatasetFacet(producer).WithFields(fields)
+}
+
+func (e *OpenLineageEventBuilder) buildDocumentationDatasetFacet(data *DocumentationModel, base path.Path) *facets.DocumentationDatasetFacet {
+	df := facets.NewDocumentationDatasetFacet(producer, e.requireString(data.Description, base.AtName("description")))
+	df.ContentType = stringPtrIfKnown(data.ContentType)
+	return df
+}
+
+func (e *OpenLineageEventBuilder) buildDataSourceFacet(ds *DataSourceDatasetModel, base path.Path) *facets.DatasourceDatasetFacet {
+	f := facets.NewDatasourceDatasetFacet(producer)
+	f = f.WithName(e.requireString(ds.Name, base.AtName("name")))
+	f = f.WithURI(e.requireString(ds.URI, base.AtName("uri")))
+	return f
+}
+
+func (e *OpenLineageEventBuilder) buildDatasetTypeFacet(dt *DatasetTypeDatasetModel, base path.Path) *facets.DatasetTypeDatasetFacet {
+	f := facets.NewDatasetTypeDatasetFacet(producer, e.requireString(dt.DatasetType, base.AtName("dataset_type")))
+	if isKnownString(dt.SubType) {
+		f = f.WithSubType(dt.SubType.ValueString())
+	}
+	return f
+}
+
+func (e *OpenLineageEventBuilder) buildDatasetVersionFacet(data *DatasetVersionDatasetModel, base path.Path) *facets.DatasetVersionDatasetFacet {
+	return facets.NewDatasetVersionDatasetFacet(producer,
+		e.requireString(data.DatasetVersion, base.AtName("dataset_version")))
+}
+
+func (e *OpenLineageEventBuilder) buildStorageFacet(s *StorageDatasetModel, base path.Path) *facets.StorageDatasetFacet {
+	f := facets.NewStorageDatasetFacet(producer, e.requireString(s.StorageLayer, base.AtName("storage_layer")))
+	if isKnownString(s.FileFormat) {
+		f = f.WithFileFormat(s.FileFormat.ValueString())
+	}
+	return f
+}
+
+func (e *OpenLineageEventBuilder) buildOwnershipDatasetFacet(o *OwnershipDatasetModel, base path.Path) *facets.OwnershipDatasetFacet {
+	owners := make([]facets.Owner, 0, len(o.Owners))
+	for i, owner := range o.Owners {
+		owners = append(owners, e.buildOwner(owner.Name, owner.Type, base.AtName("owners").AtListIndex(i)))
+	}
+	return facets.NewOwnershipDatasetFacet(producer).WithOwners(owners)
+}
+
+func (e *OpenLineageEventBuilder) buildOwner(name types.String, ownerType types.String, base path.Path) facets.Owner {
+	owner := facets.Owner{Name: e.requireString(name, base.AtName("name"))}
+	owner.Type = stringPtrIfKnown(ownerType)
+	return owner
+}
+
+func (e *OpenLineageEventBuilder) buildLifecycleStateChangeFacet(lsc *LifecycleStateChangeDatasetModel, base path.Path) *facets.LifecycleStateChangeDatasetFacet {
+	f := facets.NewLifecycleStateChangeDatasetFacet(
+		producer,
+		facets.LifecycleStateChangeEnum(e.requireString(lsc.LifecycleStateChange, base.AtName("lifecycle_state_change"))),
+	)
+	if lsc.PreviousIdentifier != nil {
+		p := base.AtName("previous_identifier")
+		f = f.WithPreviousIdentifier(&facets.PreviousIdentifier{
+			Name:      e.requireString(lsc.PreviousIdentifier.Name, p.AtName("name")),
+			Namespace: e.requireString(lsc.PreviousIdentifier.Namespace, p.AtName("namespace")),
+		})
+	}
+	return f
+}
+
+func (e *OpenLineageEventBuilder) buildHierarchyFacet(h *HierarchyDatasetModel, base path.Path) *facets.HierarchyDatasetFacet {
+	elements := make([]facets.HierarchyElement, 0, len(h.Hierarchy))
+	for i, level := range h.Hierarchy {
+		p := base.AtName("hierarchy").AtListIndex(i)
+		elements = append(elements, facets.HierarchyElement{
+			Name: e.requireString(level.Name, p.AtName("name")),
+			Type: e.requireString(level.Type, p.AtName("type")),
+		})
+	}
+	return facets.NewHierarchyDatasetFacet(producer).WithHierarchy(elements)
+}
+
+func (e *OpenLineageEventBuilder) buildTagsDatasetFacet(tags []TagsDatasetModel, base path.Path) *facets.TagsDatasetFacet {
+	elements := make([]facets.TagElement, 0, len(tags))
+	for i, t := range tags {
+		p := base.AtListIndex(i)
+		tagElement := facets.TagElement{
+			Key:   e.requireString(t.Name, p.AtName("name")),
+			Value: e.requireString(t.Value, p.AtName("value")),
+		}
+		tagElement.Source = stringPtrIfKnown(t.Source)
+		tagElement.Field = stringPtrIfKnown(t.Field)
+		elements = append(elements, tagElement)
+	}
+	return facets.NewTagsDatasetFacet(producer).WithTags(elements)
+}
+
+func (e *OpenLineageEventBuilder) buildCatalogFacet(c *CatalogDatasetModel, base path.Path) *facets.CatalogDatasetFacet {
 	cat := facets.NewCatalogDatasetFacet(
 		producer,
-		c.Framework.ValueString(),
-		c.Type.ValueString(),
-		c.Name.ValueString(),
+		e.requireString(c.Framework, base.AtName("framework")),
+		e.requireString(c.Type, base.AtName("type")),
+		e.requireString(c.Name, base.AtName("name")),
 	)
+	cat.MetadataURI = stringPtrIfKnown(c.MetadataURI)
+	cat.WarehouseURI = stringPtrIfKnown(c.WarehouseURI)
+	cat.Source = stringPtrIfKnown(c.Source)
 
-	// IsNull() → the attribute was not set in the config at all
-	// IsUnknown() → the value isn't known yet at plan time (computed from another resource)
-	// We only call the setter if we actually have a real value.
-	if !c.MetadataURI.IsNull() && !c.MetadataURI.IsUnknown() {
-		cat = cat.WithMetadataURI(c.MetadataURI.ValueString())
+	if !c.CatalogProperties.IsNull() && !c.CatalogProperties.IsUnknown() && len(c.CatalogProperties.Elements()) > 0 {
+		props := make(map[string]string, len(c.CatalogProperties.Elements()))
+		for k, v := range c.CatalogProperties.Elements() {
+			if sv, ok := v.(types.String); ok && !sv.IsNull() && !sv.IsUnknown() {
+				props[k] = sv.ValueString()
+			}
+		}
+		if len(props) > 0 {
+			cat = cat.WithCatalogProperties(props)
+		}
 	}
-	if !c.WarehouseURI.IsNull() && !c.WarehouseURI.IsUnknown() {
-		cat = cat.WithWarehouseURI(c.WarehouseURI.ValueString())
-	}
-	if !c.Source.IsNull() && !c.Source.IsUnknown() {
-		cat = cat.WithSource(c.Source.ValueString())
-	}
-
 	return cat
 }
+
+// ── Column lineage ────────────────────────────────────────────────────────────
 
 // buildColumnLineageFacet creates a ColumnLineageFacet from the Terraform column_lineage blocks.
 //
 // The OL ColumnLineageFacet has two parts:
-//
 //  1. Fields map[string]FieldValue — keyed by output column name.
-//     Each FieldValue contains a list of input DatasetElements (which input
-//     dataset + column contributed to this output column, and how).
-//
-//  2. Dataset []DatasetElement — dataset-level lineage where we know the input
-//     dataset contributed to an output field but don't know the exact column.
-//
-// The Terraform schema mirrors this: `fields {}` blocks → Fields map,
-// `dataset {}` blocks → Dataset slice.
-func buildColumnLineageFacet(clm *ColumnLineageDatasetModel) *facets.ColumnLineageDatasetFacet {
-	// fields will be keyed by output column name, matching the OL spec.
+//  2. Dataset []DatasetElement — dataset-level lineage (input dataset → output field).
+func (e *OpenLineageEventBuilder) buildColumnLineageFacet(clm *ColumnLineageDatasetModel, base path.Path) *facets.ColumnLineageDatasetFacet {
 	fields := make(map[string]facets.FieldValue)
 	var datasetElements []facets.DatasetElement
 
-	// ── fields blocks → Fields map ─────────────────────────────────────
-	for _, f := range clm.Fields {
+	fieldsBase := base.AtName("fields")
+	for fi, f := range clm.Fields {
+		fp := fieldsBase.AtListIndex(fi)
 		var inputFields []facets.DatasetElement
-
-		// Each `input_field {}` sub-block is one DatasetElement:
-		// the input dataset (name+namespace) and the specific column (field)
-		// that contributed to this output column.
-		for _, inf := range f.InputFields {
-			de := facets.DatasetElement{
-				Name:      inf.Name.ValueString(),
-				Namespace: inf.Namespace.ValueString(),
-				Field:     inf.Field.ValueString(),
-			}
-
-			if inf.Transformation != nil {
-				de.Transformations = []facets.Transformation{
-					buildTransformation(inf.Transformation),
-				}
-			}
-
-			inputFields = append(inputFields, de)
+		for ii, inf := range f.InputFields {
+			ip := fp.AtName("input_fields").AtListIndex(ii)
+			inputFields = append(inputFields, e.buildDatasetElement(inf.Name, inf.Namespace, inf.Field, inf.Transformations, ip))
 		}
 
-		// The output column name is the map key — this is how OL consumers
-		// look up "which inputs produced column X?"
-		// If the same output column appears in multiple fields blocks, aggregate
-		// their InputFields rather than silently overwriting the earlier entry.
-		fieldName := f.Name.ValueString()
+		fieldName := e.requireString(f.Name, fp.AtName("name"))
+		fv := facets.FieldValue{InputFields: inputFields}
 		if existing, ok := fields[fieldName]; ok {
 			existing.InputFields = append(existing.InputFields, inputFields...)
 			fields[fieldName] = existing
 		} else {
-			fields[fieldName] = facets.FieldValue{
-				InputFields: inputFields,
-			}
+			fields[fieldName] = fv
 		}
 	}
 
-	// ── dataset blocks → DatasetElement slice ─────────────────────────
-	// Dataset-level lineage: we know input dataset X contributed to output
-	// field Y, but we don't know the exact input column.
-	for _, ds := range clm.Dataset {
-		de := facets.DatasetElement{
-			Name:      ds.Name.ValueString(),
-			Namespace: ds.Namespace.ValueString(),
-			Field:     ds.Field.ValueString(),
-		}
-
-		if ds.Transformation != nil {
-			de.Transformations = []facets.Transformation{
-				buildTransformation(ds.Transformation),
-			}
-		}
-
-		datasetElements = append(datasetElements, de)
+	datasetBase := base.AtName("dataset")
+	for di, ds := range clm.Dataset {
+		dp := datasetBase.AtListIndex(di)
+		datasetElements = append(datasetElements, e.buildDatasetElement(ds.Name, ds.Namespace, ds.Field, ds.Transformations, dp))
 	}
 
 	cl := facets.NewColumnLineageDatasetFacet(producer).WithFields(fields)
-
-	// WithDataset is only called if there are dataset-level entries —
-	// the OL client may treat an empty slice differently from no call at all.
 	if len(datasetElements) > 0 {
 		cl = cl.WithDataset(datasetElements)
 	}
 	return cl
 }
 
-// buildTransformation converts a Terraform TransformationModel to the OL Transformation type.
-//
-// Transformation describes *how* data flowed from input to output:
-//   - DIRECT: the output field is derived directly from the input (e.g. copied, cast)
-//   - INDIRECT: the output field is influenced by the input but not a direct copy
-//     (e.g. a filter condition, an aggregation key)
-//
-// Subtype, Description, and Masking are optional — we only set them if the user
-// provided non-null values. openlineage.Ptr() wraps a value in a pointer,
-// which is how the OL spec marks optional scalar fields.
-func buildTransformation(t *TransformationModel) facets.Transformation {
+func (e *OpenLineageEventBuilder) buildDatasetElement(name types.String, namespace types.String, field types.String, transformations []TransformationModel, base path.Path) facets.DatasetElement {
+	de := facets.DatasetElement{
+		Name:      e.requireString(name, base.AtName("name")),
+		Namespace: e.requireString(namespace, base.AtName("namespace")),
+		Field:     e.requireString(field, base.AtName("field")),
+	}
+	for i, t := range transformations {
+		tr := t
+		de.Transformations = append(de.Transformations, e.buildTransformation(&tr, base.AtName("transformations").AtListIndex(i)))
+	}
+	return de
+}
+
+func (e *OpenLineageEventBuilder) buildTransformation(t *TransformationModel, base path.Path) facets.Transformation {
 	tr := facets.Transformation{
-		Type: t.Type.ValueString(), // "DIRECT" or "INDIRECT" — always required
+		Type: e.requireString(t.Type, base.AtName("type")),
 	}
-
-	if !t.Subtype.IsNull() && !t.Subtype.IsUnknown() {
-		tr.Subtype = openlineage.Ptr(t.Subtype.ValueString()) // e.g. "IDENTITY", "FILTER"
-	}
-
-	if !t.Description.IsNull() && !t.Description.IsUnknown() {
-		tr.Description = openlineage.Ptr(t.Description.ValueString())
-	}
-
-	if !t.Masking.IsNull() && !t.Masking.IsUnknown() {
-		tr.Masking = openlineage.Ptr(t.Masking.ValueBool()) // true = this transform masks PII etc.
-	}
-
+	tr.Subtype = stringPtrIfKnown(t.Subtype)
+	tr.Description = stringPtrIfKnown(t.Description)
+	tr.Masking = boolPtrIfKnown(t.Masking)
 	return tr
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+// requireString returns the string value of attr. If it is null or unknown,
+// an attribute error is added to Diagnostics with the supplied path.
+func (e *OpenLineageEventBuilder) requireString(attr types.String, p path.Path) string {
+	if attr.IsNull() || attr.IsUnknown() {
+		e.Diagnostics.AddAttributeError(p, "Missing required attribute",
+			fmt.Sprintf("Attribute %q must be set. The attribute is validated in config so it shouldn't happen", p))
+	}
+	return attr.ValueString()
+}
+
+func isKnownString(v types.String) bool {
+	return !v.IsNull() && !v.IsUnknown()
+}
+
+func stringPtrIfKnown(v types.String) *string {
+	if !isKnownString(v) {
+		return nil
+	}
+	return openlineage.Ptr(v.ValueString())
+}
+
+func boolPtrIfKnown(v types.Bool) *bool {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	return openlineage.Ptr(v.ValueBool())
 }

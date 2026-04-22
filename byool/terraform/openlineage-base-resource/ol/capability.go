@@ -108,13 +108,13 @@ func EmptyJobCapability() JobCapability {
 // WithFacetEnabled returns a new JobCapability with the given job facets enabled.
 // To control which dataset facets are emitted on inputs/outputs, use WithDatasetFacetEnabled.
 func (c JobCapability) WithFacetEnabled(facets ...JobFacet) JobCapability {
-	return JobCapability{c.capability.withJobFacets(facets...)}
+	return JobCapability{c.withJobFacets(facets...)}
 }
 
 // WithDatasetFacetEnabled returns a new JobCapability with the given dataset facets
 // enabled for this job's inputs and outputs.
 func (c JobCapability) WithDatasetFacetEnabled(facets ...DatasetFacet) JobCapability {
-	return JobCapability{c.capability.withDatasetFacets(facets...)}
+	return JobCapability{c.withDatasetFacets(facets...)}
 }
 
 // IsEnabled reports whether a job facet is active in this capability.
@@ -144,7 +144,7 @@ func EmptyDatasetCapability() DatasetCapability {
 // Job facets (FacetJob*) are intentionally not accepted here — they have no meaning for
 // standalone dataset resources. Enable them via JobCapability.WithFacetEnabled instead.
 func (c DatasetCapability) WithFacetEnabled(facets ...DatasetFacet) DatasetCapability {
-	return DatasetCapability{c.capability.withDatasetFacets(facets...)}
+	return DatasetCapability{c.withDatasetFacets(facets...)}
 }
 
 // IsEnabled reports whether a dataset facet is active in this capability.

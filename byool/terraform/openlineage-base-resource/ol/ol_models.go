@@ -20,7 +20,7 @@ type OLJobConfig struct {
 	Description        types.String                `tfsdk:"description"`
 	JobType            *JobTypeJobModel            `tfsdk:"job_type"`
 	Ownership          *OwnershipJobModel          `tfsdk:"ownership"`
-	Documentation      *DocumentationJobModel      `tfsdk:"documentation"`
+	Documentation      *DocumentationModel         `tfsdk:"documentation"`
 	SourceCode         *SourceCodeJobModel         `tfsdk:"source_code"`
 	SourceCodeLocation *SourceCodeLocationJobModel `tfsdk:"source_code_location"`
 	SQL                *SQLJobModel                `tfsdk:"sql"`
@@ -37,7 +37,7 @@ type DatasetModel struct {
 	Symlinks             []SymlinksDatasetModel            `tfsdk:"symlinks"`
 	Schema               *SchemaDatasetModel               `tfsdk:"schema"`
 	DataSource           *DataSourceDatasetModel           `tfsdk:"data_source"`
-	Documentation        *DocumentationDatasetModel        `tfsdk:"documentation"`
+	Documentation        *DocumentationModel               `tfsdk:"documentation"`
 	DatasetType          *DatasetTypeDatasetModel          `tfsdk:"dataset_type"`
 	Version              *DatasetVersionDatasetModel       `tfsdk:"version"`
 	Storage              *StorageDatasetModel              `tfsdk:"storage"`
@@ -73,10 +73,11 @@ type JobOwnerModel struct {
 	Type types.String `tfsdk:"type"` // e.g. "MAINTAINER", "OWNER", "STEWARD"
 }
 
-// DocumentationJobModel — facets.DocumentationJobFacet
-// Human-readable documentation for this job.
-type DocumentationJobModel struct {
+// DocumentationModel — facets.DocumentationJobFacet / facets.DocumentationDatasetFacet
+// Shared documentation model used by both job and dataset facets.
+type DocumentationModel struct {
 	Description types.String `tfsdk:"description"`
+	ContentType types.String `tfsdk:"content_type"`
 }
 
 // SourceCodeJobModel — facets.SourceCodeJobFacet
@@ -101,14 +102,16 @@ type SourceCodeLocationJobModel struct {
 // SQLJobModel — facets.SQLJobFacet
 // The SQL query executed by this job.
 type SQLJobModel struct {
-	Query types.String `tfsdk:"query"`
+	Query   types.String `tfsdk:"query"`
+	Dialect types.String `tfsdk:"dialect"` // optional e.g. "hive", "spark", "bigquery"
 }
 
 // TagsJobModel — facets.TagsJobFacet
 // A free-form tag attached to this job.
 type TagsJobModel struct {
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
+	Name   types.String `tfsdk:"name"`
+	Value  types.String `tfsdk:"value"`
+	Source types.String `tfsdk:"source"` // optional — e.g. "USER", "INTEGRATION"
 }
 
 // ============================================================================
@@ -143,12 +146,6 @@ type SchemaFieldModel struct {
 type DataSourceDatasetModel struct {
 	Name types.String `tfsdk:"name"` // e.g. "my-postgres"
 	URI  types.String `tfsdk:"uri"`  // e.g. "postgresql://host:5432/db"
-}
-
-// DocumentationDatasetModel — facets.DocumentationDatasetFacet
-// Human-readable documentation for this dataset.
-type DocumentationDatasetModel struct {
-	Description types.String `tfsdk:"description"`
 }
 
 // DatasetTypeDatasetModel — facets.DatasetTypeDatasetFacet
@@ -201,35 +198,36 @@ type PreviousIdentifierModel struct {
 }
 
 // HierarchyDatasetModel — facets.HierarchyDatasetFacet
-// Describes the position of this dataset in a hierarchy (e.g. a partition within a table).
+// Ordered hierarchy levels for this dataset, highest -> lowest.
 type HierarchyDatasetModel struct {
-	Parent   HierarchyElementModel   `tfsdk:"parent"`
-	Children []HierarchyElementModel `tfsdk:"children"` // optional
+	Hierarchy []HierarchyElementModel `tfsdk:"hierarchy"`
 }
 
 // HierarchyElementModel — facets.HierarchyElement
 type HierarchyElementModel struct {
-	Namespace types.String `tfsdk:"namespace"`
-	Name      types.String `tfsdk:"name"`
-	Type      types.String `tfsdk:"type"` // e.g. "TABLE", "PARTITION"
+	Name types.String `tfsdk:"name"`
+	Type types.String `tfsdk:"type"` // e.g. "DATABASE", "SCHEMA", "TABLE", "PARTITION"
 }
 
 // CatalogDatasetModel — facets.CatalogDatasetFacet
 // Describes the catalog/metastore where this dataset is registered.
 type CatalogDatasetModel struct {
-	Framework    types.String `tfsdk:"framework"`     // e.g. "hive", "iceberg"
-	Type         types.String `tfsdk:"type"`          // e.g. "hive"
-	Name         types.String `tfsdk:"name"`          // catalog name
-	MetadataURI  types.String `tfsdk:"metadata_uri"`  // e.g. "hive://localhost:9083", optional
-	WarehouseURI types.String `tfsdk:"warehouse_uri"` // e.g. "hdfs://localhost/warehouse", optional
-	Source       types.String `tfsdk:"source"`        // e.g. "spark", optional
+	Framework         types.String `tfsdk:"framework"`          // e.g. "hive", "iceberg"
+	Type              types.String `tfsdk:"type"`               // e.g. "hive"
+	Name              types.String `tfsdk:"name"`               // catalog name
+	MetadataURI       types.String `tfsdk:"metadata_uri"`       // e.g. "hive://localhost:9083", optional
+	WarehouseURI      types.String `tfsdk:"warehouse_uri"`      // e.g. "hdfs://localhost/warehouse", optional
+	Source            types.String `tfsdk:"source"`             // e.g. "spark", optional
+	CatalogProperties types.Map    `tfsdk:"catalog_properties"` // optional map[string]string of extra properties
 }
 
 // TagsDatasetModel — facets.TagsDatasetFacet
 // A free-form tag attached to this dataset.
 type TagsDatasetModel struct {
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
+	Name   types.String `tfsdk:"name"`
+	Value  types.String `tfsdk:"value"`
+	Source types.String `tfsdk:"source"` // optional — e.g. "USER", "INTEGRATION"
+	Field  types.String `tfsdk:"field"`  // optional — identifies a specific dataset column
 }
 
 // ColumnLineageDatasetModel — facets.ColumnLineageDatasetFacet
@@ -242,26 +240,26 @@ type ColumnLineageDatasetModel struct {
 // ColumnLineageFieldModel — facets.FieldValue (keyed by output column name)
 // Maps a single output column to its contributing input fields.
 type ColumnLineageFieldModel struct {
-	Name        types.String      `tfsdk:"name"`        // output column name — becomes the map key
-	InputFields []InputFieldModel `tfsdk:"input_field"` // which input columns feed this output column
+	Name        types.String      `tfsdk:"name"`         // output column name — becomes the map key
+	InputFields []InputFieldModel `tfsdk:"input_fields"` // which input columns feed this output column
 }
 
 // InputFieldModel — facets.DatasetElement (inside FieldValue)
 // A single input column contributing to an output column.
 type InputFieldModel struct {
-	Namespace      types.String         `tfsdk:"namespace"`
-	Name           types.String         `tfsdk:"name"`
-	Field          types.String         `tfsdk:"field"`
-	Transformation *TransformationModel `tfsdk:"transformation"` // optional, at most one
+	Namespace       types.String          `tfsdk:"namespace"`
+	Name            types.String          `tfsdk:"name"`
+	Field           types.String          `tfsdk:"field"`
+	Transformations []TransformationModel `tfsdk:"transformations"`
 }
 
 // ColumnLineageDatasetElementModel — facets.DatasetElement (dataset-level)
 // Dataset-level contribution — input dataset feeds an output field but exact column unknown.
 type ColumnLineageDatasetElementModel struct {
-	Namespace      types.String         `tfsdk:"namespace"`
-	Name           types.String         `tfsdk:"name"`
-	Field          types.String         `tfsdk:"field"`
-	Transformation *TransformationModel `tfsdk:"transformation"` // optional, at most one
+	Namespace       types.String          `tfsdk:"namespace"`
+	Name            types.String          `tfsdk:"name"`
+	Field           types.String          `tfsdk:"field"`
+	Transformations []TransformationModel `tfsdk:"transformation"`
 }
 
 // TransformationModel — facets.Transformation

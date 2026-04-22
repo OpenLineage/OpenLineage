@@ -51,8 +51,8 @@ func (r *BaseJobResource) Metadata(_ context.Context, req resource.MetadataReque
 	resp.TypeName = req.ProviderTypeName + "_job"
 }
 
-// baseSchema implements ResourceBackend.baseSchema for job resources.
+// BaseSchema implements ResourceBackend.BaseSchema for job resources.
 // Consumers who embed BaseJobResource inherit this automatically.
-func (r *BaseJobResource) baseSchema() schema.Schema {
+func (r *BaseJobResource) BaseSchema() schema.Schema {
 	return GenerateJobSchema(r.Backend.Capability())
 }

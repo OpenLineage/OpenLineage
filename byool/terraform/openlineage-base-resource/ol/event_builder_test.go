@@ -6,10 +6,9 @@
 package ol
 
 import (
-	"encoding/json"
-	"strings"
 	"testing"
 
+	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -26,17 +25,29 @@ func minimalModel() *JobResourceModel {
 	}
 }
 
-// asJSON marshals event.AsEmittable() to a JSON string.
-// Fails the test immediately if marshaling fails.
-func asJSON(t *testing.T, event interface {
-	AsEmittable() openlineage.Event
-}) string {
-	t.Helper()
-	data, err := json.Marshal(event.AsEmittable())
-	if err != nil {
-		t.Fatalf("json.Marshal(event.AsEmittable()) failed: %v", err)
+// jobFacets returns event.Job.Facets, or an empty JobFacets if nil — lets tests
+// access fields without nil-checking every time.
+func jobFacets(event *openlineage.RunEvent) *facets.JobFacets {
+	if event.Job.Facets == nil {
+		return &facets.JobFacets{}
 	}
-	return string(data)
+	return event.Job.Facets
+}
+
+// inputFacets returns event.Inputs[i].Facets, or an empty DatasetFacets if nil.
+func inputFacets(event *openlineage.RunEvent, i int) *facets.DatasetFacets {
+	if event.Inputs[i].Facets == nil {
+		return &facets.DatasetFacets{}
+	}
+	return event.Inputs[i].Facets
+}
+
+// outputFacets returns event.Outputs[i].Facets, or an empty DatasetFacets if nil.
+func outputFacets(event *openlineage.RunEvent, i int) *facets.DatasetFacets {
+	if event.Outputs[i].Facets == nil {
+		return &facets.DatasetFacets{}
+	}
+	return event.Outputs[i].Facets
 }
 
 // ── BuildRunEvent — basic fields ──────────────────────────────────────────────
@@ -77,23 +88,22 @@ func TestBuildRunEvent_GeneratesUniqueRunIDs(t *testing.T) {
 	}
 }
 
-func TestBuildRunEvent_SetsSchemaURLOnEmittable(t *testing.T) {
+func TestBuildRunEvent_SetsSchemaURL(t *testing.T) {
 	event := BuildRunEvent(minimalModel(), EmptyJobCapability())
-	js := asJSON(t, event)
 
-	if !strings.Contains(js, "schemaURL") {
-		t.Error("expected serialized event to contain 'schemaURL'")
+	if event.SchemaURL == "" {
+		t.Error("expected SchemaURL to be set")
 	}
-	if !strings.Contains(js, "openlineage") {
-		t.Error("expected schemaURL to reference openlineage")
+	if event.SchemaURL != openlineage.RunEventSchemaURL {
+		t.Errorf("expected SchemaURL = %q, got %q", openlineage.RunEventSchemaURL, event.SchemaURL)
 	}
 }
 
 func TestBuildRunEvent_EventTypeIsComplete(t *testing.T) {
-	js := asJSON(t, BuildRunEvent(minimalModel(), EmptyJobCapability()))
+	event := BuildRunEvent(minimalModel(), EmptyJobCapability())
 
-	if !strings.Contains(js, "COMPLETE") {
-		t.Error("expected eventType COMPLETE in serialized event")
+	if event.EventType != openlineage.EventTypeComplete {
+		t.Errorf("expected EventType = %q, got %q", openlineage.EventTypeComplete, event.EventType)
 	}
 }
 
@@ -106,9 +116,9 @@ func TestBuildRunEvent_JobType_OmittedWhenFacetDisabled(t *testing.T) {
 		Integration:    types.StringValue("SPARK"),
 	}
 
-	js := asJSON(t, BuildRunEvent(model, EmptyJobCapability())) // FacetJobType NOT enabled
+	event := BuildRunEvent(model, EmptyJobCapability())
 
-	if strings.Contains(js, "jobType") {
+	if jobFacets(event).JobTypeJobFacet != nil {
 		t.Error("expected jobType facet to be absent when FacetJobType is disabled")
 	}
 }
@@ -121,31 +131,28 @@ func TestBuildRunEvent_JobType_IncludedWhenFacetEnabled(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobType)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	jt := jobFacets(BuildRunEvent(model, cap)).JobTypeJobFacet
 
-	if !strings.Contains(js, "jobType") {
-		t.Error("expected jobType facet in serialized event when FacetJobType is enabled")
+	if jt == nil {
+		t.Fatal("expected jobType facet to be present when FacetJobType is enabled")
 	}
-	if !strings.Contains(js, "BATCH") {
-		t.Error("expected processingType BATCH in serialized event")
+	if jt.ProcessingType != "BATCH" {
+		t.Errorf("expected ProcessingType = %q, got %q", "BATCH", jt.ProcessingType)
 	}
-	if !strings.Contains(js, "SPARK") {
-		t.Error("expected integration SPARK in serialized event")
+	if jt.Integration != "SPARK" {
+		t.Errorf("expected Integration = %q, got %q", "SPARK", jt.Integration)
 	}
 }
 
 func TestBuildRunEvent_JobType_SkippedWhenRequiredFieldIsNull(t *testing.T) {
-	// Null Integration — facet must be silently skipped, not emit empty string.
 	model := minimalModel()
 	model.JobType = &JobTypeJobModel{
 		ProcessingType: types.StringValue("BATCH"),
-		Integration:    types.StringNull(), // null — not yet known
+		Integration:    types.StringNull(), // null — facet must be skipped
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobType)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
-
-	if strings.Contains(js, "jobType") {
+	if jobFacets(BuildRunEvent(model, cap)).JobTypeJobFacet != nil {
 		t.Error("expected jobType facet to be skipped when Integration is null")
 	}
 }
@@ -159,10 +166,13 @@ func TestBuildRunEvent_JobType_OptionalJobTypeField(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobType)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	jt := jobFacets(BuildRunEvent(model, cap)).JobTypeJobFacet
 
-	if !strings.Contains(js, "DAG") {
-		t.Error("expected optional job_type=DAG in serialized event")
+	if jt == nil {
+		t.Fatal("expected jobType facet to be present")
+	}
+	if jt.JobType == nil || *jt.JobType != "DAG" {
+		t.Errorf("expected optional JobType = %q, got %v", "DAG", jt.JobType)
 	}
 }
 
@@ -175,13 +185,13 @@ func TestBuildRunEvent_Ownership_IncludedWhenEnabled(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobOwnership)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	ow := jobFacets(BuildRunEvent(model, cap)).OwnershipJobFacet
 
-	if !strings.Contains(js, "ownership") {
-		t.Error("expected ownership facet in serialized event")
+	if ow == nil {
+		t.Fatal("expected ownership facet to be present")
 	}
-	if !strings.Contains(js, "team:data-engineering") {
-		t.Error("expected owner name in serialized event")
+	if len(ow.Owners) != 1 || ow.Owners[0].Name != "team:data-engineering" {
+		t.Errorf("expected owner name %q, got %v", "team:data-engineering", ow.Owners)
 	}
 }
 
@@ -193,40 +203,38 @@ func TestBuildRunEvent_Ownership_OmittedWhenDisabled(t *testing.T) {
 		},
 	}
 
-	js := asJSON(t, BuildRunEvent(model, EmptyJobCapability()))
-
-	if strings.Contains(js, "ownership") {
+	if jobFacets(BuildRunEvent(model, EmptyJobCapability())).OwnershipJobFacet != nil {
 		t.Error("expected ownership facet to be absent when FacetJobOwnership is disabled")
 	}
 }
 
 func TestBuildRunEvent_Documentation_IncludedWhenEnabled(t *testing.T) {
 	model := minimalModel()
-	model.Documentation = &DocumentationJobModel{
+	model.Documentation = &DocumentationModel{
 		Description: types.StringValue("My job docs"),
+		ContentType: types.StringValue("text/markdown"),
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobDocumentation)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	doc := jobFacets(BuildRunEvent(model, cap)).DocumentationJobFacet
 
-	if !strings.Contains(js, "documentation") {
-		t.Error("expected documentation facet in serialized event")
+	if doc == nil {
+		t.Fatal("expected documentation facet to be present")
 	}
-	if !strings.Contains(js, "My job docs") {
-		t.Error("expected description text in serialized event")
+	if doc.Description != "My job docs" {
+		t.Errorf("expected Description = %q, got %q", "My job docs", doc.Description)
+	}
+	if doc.ContentType == nil || *doc.ContentType != "text/markdown" {
+		t.Errorf("expected ContentType = %q, got %v", "text/markdown", doc.ContentType)
 	}
 }
 
 func TestBuildRunEvent_Documentation_SkippedWhenDescriptionIsNull(t *testing.T) {
 	model := minimalModel()
-	model.Documentation = &DocumentationJobModel{
-		Description: types.StringNull(),
-	}
+	model.Documentation = &DocumentationModel{Description: types.StringNull()}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobDocumentation)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
-
-	if strings.Contains(js, "documentation") {
+	if jobFacets(BuildRunEvent(model, cap)).DocumentationJobFacet != nil {
 		t.Error("expected documentation facet to be skipped when description is null")
 	}
 }
@@ -239,10 +247,13 @@ func TestBuildRunEvent_SourceCode_IncludedWhenEnabled(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobSourceCode)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	sc := jobFacets(BuildRunEvent(model, cap)).SourceCodeJobFacet
 
-	if !strings.Contains(js, "sourceCode") {
-		t.Error("expected sourceCode facet in serialized event")
+	if sc == nil {
+		t.Fatal("expected sourceCode facet to be present")
+	}
+	if sc.Language != "Python" {
+		t.Errorf("expected Language = %q, got %q", "Python", sc.Language)
 	}
 }
 
@@ -251,13 +262,13 @@ func TestBuildRunEvent_SQL_IncludedWhenEnabled(t *testing.T) {
 	model.SQL = &SQLJobModel{Query: types.StringValue("SELECT 1")}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobSQL)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	sf := jobFacets(BuildRunEvent(model, cap)).SQLJobFacet
 
-	if !strings.Contains(js, "sql") {
-		t.Error("expected sql facet in serialized event")
+	if sf == nil {
+		t.Fatal("expected sql facet to be present")
 	}
-	if !strings.Contains(js, "SELECT 1") {
-		t.Error("expected SQL query in serialized event")
+	if sf.Query != "SELECT 1" {
+		t.Errorf("expected Query = %q, got %q", "SELECT 1", sf.Query)
 	}
 }
 
@@ -269,13 +280,16 @@ func TestBuildRunEvent_Tags_SkipsNullEntries(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobTags)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	tf := jobFacets(BuildRunEvent(model, cap)).TagsJobFacet
 
-	if !strings.Contains(js, "env") {
-		t.Error("expected valid tag 'env' in serialized event")
+	if tf == nil {
+		t.Fatal("expected tags facet to be present")
 	}
-	if strings.Contains(js, "orphaned") {
-		t.Error("expected tag with null name to be skipped")
+	if len(tf.Tags) != 1 {
+		t.Fatalf("expected 1 tag (null entry skipped), got %d", len(tf.Tags))
+	}
+	if tf.Tags[0].Key != "env" {
+		t.Errorf("expected tag key = %q, got %q", "env", tf.Tags[0].Key)
 	}
 }
 
@@ -286,10 +300,7 @@ func TestBuildRunEvent_Tags_OmittedWhenAllEntriesAreNull(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobTags)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
-
-	// tags facet should not appear if all entries were skipped
-	if strings.Contains(js, `"tags"`) {
+	if jobFacets(BuildRunEvent(model, cap)).TagsJobFacet != nil {
 		t.Error("expected tags facet to be absent when all entries have null name/value")
 	}
 }
@@ -303,27 +314,28 @@ func TestBuildRunEvent_SourceCodeLocation_IncludedWhenEnabled(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobSourceCodeLocation)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	scl := jobFacets(BuildRunEvent(model, cap)).SourceCodeLocationJobFacet
 
-	if !strings.Contains(js, "sourceCodeLocation") {
-		t.Error("expected sourceCodeLocation facet in serialized event")
+	if scl == nil {
+		t.Fatal("expected sourceCodeLocation facet to be present")
 	}
-	if !strings.Contains(js, "main") {
-		t.Error("expected branch name in serialized event")
+	if scl.Type != "git" {
+		t.Errorf("expected Type = %q, got %q", "git", scl.Type)
+	}
+	if scl.Branch == nil || *scl.Branch != "main" {
+		t.Errorf("expected Branch = %q, got %v", "main", scl.Branch)
 	}
 }
 
 func TestBuildRunEvent_SourceCodeLocation_SkippedWhenTypeIsNull(t *testing.T) {
 	model := minimalModel()
 	model.SourceCodeLocation = &SourceCodeLocationJobModel{
-		Type: types.StringNull(), // required — null → skip
+		Type: types.StringNull(),
 		URL:  types.StringValue("https://github.com/org/repo"),
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobSourceCodeLocation)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
-
-	if strings.Contains(js, "sourceCodeLocation") {
+	if jobFacets(BuildRunEvent(model, cap)).SourceCodeLocationJobFacet != nil {
 		t.Error("expected sourceCodeLocation to be skipped when Type is null")
 	}
 }
@@ -410,10 +422,7 @@ func TestBuildRunEvent_MultipleInputsAndOutputs(t *testing.T) {
 
 func TestBuildRunEvent_Symlinks_IncludedOnInputWhenEnabled(t *testing.T) {
 	model := &JobResourceModel{
-		OLJobConfig: OLJobConfig{
-			Namespace: types.StringValue("ns"),
-			Name:      types.StringValue("job"),
-		},
+		OLJobConfig: OLJobConfig{Namespace: types.StringValue("ns"), Name: types.StringValue("job")},
 		Inputs: []OLInputModel{
 			{DatasetModel: DatasetModel{
 				Namespace: types.StringValue("hive"),
@@ -426,10 +435,14 @@ func TestBuildRunEvent_Symlinks_IncludedOnInputWhenEnabled(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetSymlinks)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	event := BuildRunEvent(model, cap)
+	sl := inputFacets(event, 0).SymlinksDatasetFacet
 
-	if !strings.Contains(js, "symlinks") {
-		t.Error("expected symlinks facet in serialized event")
+	if sl == nil {
+		t.Fatal("expected symlinks facet to be present")
+	}
+	if len(sl.Identifiers) != 1 || sl.Identifiers[0].Namespace != "bigquery" {
+		t.Errorf("expected symlink namespace = %q, got %v", "bigquery", sl.Identifiers)
 	}
 }
 
@@ -447,9 +460,9 @@ func TestBuildRunEvent_Symlinks_OmittedOnInputWhenDisabled(t *testing.T) {
 		},
 	}
 
-	js := asJSON(t, BuildRunEvent(model, EmptyJobCapability()))
+	event := BuildRunEvent(model, EmptyJobCapability())
 
-	if strings.Contains(js, "symlinks") {
+	if inputFacets(event, 0).SymlinksDatasetFacet != nil {
 		t.Error("expected symlinks facet to be absent when FacetDatasetSymlinks is disabled")
 	}
 }
@@ -459,20 +472,13 @@ func TestBuildRunEvent_ColumnLineage_IncludedOnOutputWhenEnabled(t *testing.T) {
 		OLJobConfig: OLJobConfig{Namespace: types.StringValue("ns"), Name: types.StringValue("job")},
 		Outputs: []OLOutputModel{
 			{
-				DatasetModel: DatasetModel{
-					Namespace: types.StringValue("bq"),
-					Name:      types.StringValue("bq.output"),
-				},
+				DatasetModel: DatasetModel{Namespace: types.StringValue("bq"), Name: types.StringValue("bq.output")},
 				ColumnLineage: &ColumnLineageDatasetModel{
 					Fields: []ColumnLineageFieldModel{
 						{
 							Name: types.StringValue("output_col"),
 							InputFields: []InputFieldModel{
-								{
-									Namespace: types.StringValue("bq"),
-									Name:      types.StringValue("bq.input"),
-									Field:     types.StringValue("input_col"),
-								},
+								{Namespace: types.StringValue("bq"), Name: types.StringValue("bq.input"), Field: types.StringValue("input_col")},
 							},
 						},
 					},
@@ -482,16 +488,18 @@ func TestBuildRunEvent_ColumnLineage_IncludedOnOutputWhenEnabled(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetColumnLineage)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	event := BuildRunEvent(model, cap)
+	cl := outputFacets(event, 0).ColumnLineageDatasetFacet
 
-	if !strings.Contains(js, "columnLineage") {
-		t.Error("expected columnLineage facet in serialized event")
+	if cl == nil {
+		t.Fatal("expected columnLineage facet to be present")
 	}
-	if !strings.Contains(js, "output_col") {
-		t.Error("expected output column name in serialized event")
+	fv, ok := cl.Fields["output_col"]
+	if !ok {
+		t.Fatal("expected 'output_col' in column lineage fields")
 	}
-	if !strings.Contains(js, "input_col") {
-		t.Error("expected input column name in serialized event")
+	if len(fv.InputFields) != 1 || fv.InputFields[0].Field != "input_col" {
+		t.Errorf("expected input field %q, got %v", "input_col", fv.InputFields)
 	}
 }
 
@@ -512,15 +520,14 @@ func TestBuildRunEvent_ColumnLineage_OmittedOnOutputWhenDisabled(t *testing.T) {
 		},
 	}
 
-	js := asJSON(t, BuildRunEvent(model, EmptyJobCapability()))
+	event := BuildRunEvent(model, EmptyJobCapability())
 
-	if strings.Contains(js, "columnLineage") {
+	if outputFacets(event, 0).ColumnLineageDatasetFacet != nil {
 		t.Error("expected columnLineage to be absent when FacetDatasetColumnLineage is disabled")
 	}
 }
 
 func TestBuildRunEvent_ColumnLineage_NotEmittedOnInputs(t *testing.T) {
-	// column_lineage is output-only per OL spec — inputs don't carry it.
 	model := &JobResourceModel{
 		OLJobConfig: OLJobConfig{Namespace: types.StringValue("ns"), Name: types.StringValue("job")},
 		Inputs: []OLInputModel{
@@ -529,18 +536,19 @@ func TestBuildRunEvent_ColumnLineage_NotEmittedOnInputs(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetColumnLineage)
 
-	// no panic, no columnLineage on inputs (the model doesn't have it on inputs)
 	event := BuildRunEvent(model, cap)
 	if len(event.Inputs) != 1 {
 		t.Fatalf("expected 1 input, got %d", len(event.Inputs))
+	}
+	// column_lineage is output-only — inputs have no ColumnLineageDatasetFacet
+	if inputFacets(event, 0).ColumnLineageDatasetFacet != nil {
+		t.Error("expected columnLineage to be absent on inputs")
 	}
 }
 
 // ── buildColumnLineageFacet — duplicate field name aggregation ────────────────
 
 func TestBuildRunEvent_ColumnLineage_DuplicateFieldNamesAreAggregated(t *testing.T) {
-	// Two fields blocks with the same output column name must be merged,
-	// not silently overwritten — the spec says InputFields is a list.
 	model := &JobResourceModel{
 		OLJobConfig: OLJobConfig{Namespace: types.StringValue("ns"), Name: types.StringValue("job")},
 		Outputs: []OLOutputModel{
@@ -549,13 +557,13 @@ func TestBuildRunEvent_ColumnLineage_DuplicateFieldNamesAreAggregated(t *testing
 				ColumnLineage: &ColumnLineageDatasetModel{
 					Fields: []ColumnLineageFieldModel{
 						{
-							Name: types.StringValue("out_col"), // first block for out_col
+							Name: types.StringValue("out_col"),
 							InputFields: []InputFieldModel{
 								{Namespace: types.StringValue("bq"), Name: types.StringValue("bq.in"), Field: types.StringValue("col_a")},
 							},
 						},
 						{
-							Name: types.StringValue("out_col"), // second block, same output column
+							Name: types.StringValue("out_col"), // same output column — must merge
 							InputFields: []InputFieldModel{
 								{Namespace: types.StringValue("bq"), Name: types.StringValue("bq.in"), Field: types.StringValue("col_b")},
 							},
@@ -567,18 +575,42 @@ func TestBuildRunEvent_ColumnLineage_DuplicateFieldNamesAreAggregated(t *testing
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetColumnLineage)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	event := BuildRunEvent(model, cap)
+	cl := outputFacets(event, 0).ColumnLineageDatasetFacet
 
-	// Both input columns must appear — not just col_b (which would indicate overwrite).
-	if !strings.Contains(js, "col_a") {
-		t.Error("expected col_a to be present after duplicate field name aggregation")
+	if cl == nil {
+		t.Fatal("expected columnLineage facet to be present")
 	}
-	if !strings.Contains(js, "col_b") {
-		t.Error("expected col_b to be present after duplicate field name aggregation")
+	fv := cl.Fields["out_col"]
+	if len(fv.InputFields) != 2 {
+		t.Fatalf("expected 2 merged input fields, got %d", len(fv.InputFields))
+	}
+	fields := map[string]bool{fv.InputFields[0].Field: true, fv.InputFields[1].Field: true}
+	if !fields["col_a"] {
+		t.Error("expected col_a after aggregation")
+	}
+	if !fields["col_b"] {
+		t.Error("expected col_b after aggregation")
 	}
 }
 
 // ── buildTransformation ───────────────────────────────────────────────────────
+
+func getTransformation(t *testing.T, event *openlineage.RunEvent, outputIdx int, fieldName string) facets.Transformation {
+	t.Helper()
+	cl := outputFacets(event, outputIdx).ColumnLineageDatasetFacet
+	if cl == nil {
+		t.Fatal("expected columnLineage facet to be present")
+	}
+	fv, ok := cl.Fields[fieldName]
+	if !ok || len(fv.InputFields) == 0 {
+		t.Fatalf("expected input fields for %q", fieldName)
+	}
+	if len(fv.InputFields[0].Transformations) == 0 {
+		t.Fatal("expected at least one transformation")
+	}
+	return fv.InputFields[0].Transformations[0]
+}
 
 func TestBuildRunEvent_Transformation_DirectType(t *testing.T) {
 	model := &JobResourceModel{
@@ -592,12 +624,9 @@ func TestBuildRunEvent_Transformation_DirectType(t *testing.T) {
 							Name: types.StringValue("out_col"),
 							InputFields: []InputFieldModel{
 								{
-									Namespace: types.StringValue("bq"),
-									Name:      types.StringValue("bq.in"),
-									Field:     types.StringValue("in_col"),
-									Transformation: &TransformationModel{
-										Type:    types.StringValue("DIRECT"),
-										Subtype: types.StringValue("IDENTITY"),
+									Namespace: types.StringValue("bq"), Name: types.StringValue("bq.in"), Field: types.StringValue("in_col"),
+									Transformations: []TransformationModel{
+										{Type: types.StringValue("DIRECT"), Subtype: types.StringValue("IDENTITY")},
 									},
 								},
 							},
@@ -609,13 +638,13 @@ func TestBuildRunEvent_Transformation_DirectType(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetColumnLineage)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	tr := getTransformation(t, BuildRunEvent(model, cap), 0, "out_col")
 
-	if !strings.Contains(js, "DIRECT") {
-		t.Error("expected transformation type DIRECT in serialized event")
+	if tr.Type != "DIRECT" {
+		t.Errorf("expected Type = %q, got %q", "DIRECT", tr.Type)
 	}
-	if !strings.Contains(js, "IDENTITY") {
-		t.Error("expected transformation subtype IDENTITY in serialized event")
+	if tr.Subtype == nil || *tr.Subtype != "IDENTITY" {
+		t.Errorf("expected Subtype = %q, got %v", "IDENTITY", tr.Subtype)
 	}
 }
 
@@ -631,12 +660,9 @@ func TestBuildRunEvent_Transformation_MaskingFlag(t *testing.T) {
 							Name: types.StringValue("masked_col"),
 							InputFields: []InputFieldModel{
 								{
-									Namespace: types.StringValue("bq"),
-									Name:      types.StringValue("bq.in"),
-									Field:     types.StringValue("pii_col"),
-									Transformation: &TransformationModel{
-										Type:    types.StringValue("INDIRECT"),
-										Masking: types.BoolValue(true),
+									Namespace: types.StringValue("bq"), Name: types.StringValue("bq.in"), Field: types.StringValue("pii_col"),
+									Transformations: []TransformationModel{
+										{Type: types.StringValue("INDIRECT"), Masking: types.BoolValue(true)},
 									},
 								},
 							},
@@ -648,15 +674,14 @@ func TestBuildRunEvent_Transformation_MaskingFlag(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetColumnLineage)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	tr := getTransformation(t, BuildRunEvent(model, cap), 0, "masked_col")
 
-	if !strings.Contains(js, "masking") {
-		t.Error("expected masking field in serialized transformation")
+	if tr.Masking == nil || !*tr.Masking {
+		t.Errorf("expected Masking = true, got %v", tr.Masking)
 	}
 }
 
 func TestBuildRunEvent_Transformation_NullOptionalFieldsOmitted(t *testing.T) {
-	// Subtype, Description, Masking are optional — null values must not emit empty strings.
 	model := &JobResourceModel{
 		OLJobConfig: OLJobConfig{Namespace: types.StringValue("ns"), Name: types.StringValue("job")},
 		Outputs: []OLOutputModel{
@@ -668,14 +693,9 @@ func TestBuildRunEvent_Transformation_NullOptionalFieldsOmitted(t *testing.T) {
 							Name: types.StringValue("col"),
 							InputFields: []InputFieldModel{
 								{
-									Namespace: types.StringValue("bq"),
-									Name:      types.StringValue("bq.in"),
-									Field:     types.StringValue("src"),
-									Transformation: &TransformationModel{
-										Type:        types.StringValue("DIRECT"),
-										Subtype:     types.StringNull(),
-										Description: types.StringNull(),
-										Masking:     types.BoolNull(),
+									Namespace: types.StringValue("bq"), Name: types.StringValue("bq.in"), Field: types.StringValue("src"),
+									Transformations: []TransformationModel{
+										{Type: types.StringValue("DIRECT"), Subtype: types.StringNull(), Description: types.StringNull(), Masking: types.BoolNull()},
 									},
 								},
 							},
@@ -687,14 +707,16 @@ func TestBuildRunEvent_Transformation_NullOptionalFieldsOmitted(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetColumnLineage)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	tr := getTransformation(t, BuildRunEvent(model, cap), 0, "col")
 
-	// 'subtype' and 'description' should not appear as null or empty string
-	if strings.Contains(js, `"subtype":null`) {
-		t.Error("expected null subtype to be omitted, not serialized as null")
+	if tr.Subtype != nil {
+		t.Errorf("expected Subtype to be nil, got %q", *tr.Subtype)
 	}
-	if strings.Contains(js, `"description":null`) {
-		t.Error("expected null description to be omitted, not serialized as null")
+	if tr.Description != nil {
+		t.Errorf("expected Description to be nil, got %q", *tr.Description)
+	}
+	if tr.Masking != nil {
+		t.Errorf("expected Masking to be nil, got %v", *tr.Masking)
 	}
 }
 
@@ -705,20 +727,16 @@ func TestBuildRunEvent_Storage_SkippedWhenStorageLayerIsNull(t *testing.T) {
 		OLJobConfig: OLJobConfig{Namespace: types.StringValue("ns"), Name: types.StringValue("job")},
 		Inputs: []OLInputModel{
 			{DatasetModel: DatasetModel{
-				Namespace: types.StringValue("bq"),
-				Name:      types.StringValue("bq.in"),
-				Storage: &StorageDatasetModel{
-					StorageLayer: types.StringNull(), // null — skip facet
-					FileFormat:   types.StringValue("parquet"),
-				},
+				Namespace: types.StringValue("bq"), Name: types.StringValue("bq.in"),
+				Storage: &StorageDatasetModel{StorageLayer: types.StringNull(), FileFormat: types.StringValue("parquet")},
 			}},
 		},
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetStorage)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	event := BuildRunEvent(model, cap)
 
-	if strings.Contains(js, "storage") {
+	if inputFacets(event, 0).StorageDatasetFacet != nil {
 		t.Error("expected storage facet to be skipped when StorageLayer is null")
 	}
 }
@@ -730,10 +748,9 @@ func TestBuildRunEvent_Catalog_SkippedWhenRequiredFieldIsNull(t *testing.T) {
 		OLJobConfig: OLJobConfig{Namespace: types.StringValue("ns"), Name: types.StringValue("job")},
 		Inputs: []OLInputModel{
 			{DatasetModel: DatasetModel{
-				Namespace: types.StringValue("bq"),
-				Name:      types.StringValue("bq.in"),
+				Namespace: types.StringValue("bq"), Name: types.StringValue("bq.in"),
 				Catalog: &CatalogDatasetModel{
-					Framework: types.StringNull(), // null required field → skip whole facet
+					Framework: types.StringNull(), // null required field → skip
 					Type:      types.StringValue("hive"),
 					Name:      types.StringValue("my-catalog"),
 				},
@@ -742,9 +759,9 @@ func TestBuildRunEvent_Catalog_SkippedWhenRequiredFieldIsNull(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetCatalog)
 
-	js := asJSON(t, BuildRunEvent(model, cap))
+	event := BuildRunEvent(model, cap)
 
-	if strings.Contains(js, "catalog") {
+	if inputFacets(event, 0).CatalogDatasetFacet != nil {
 		t.Error("expected catalog facet to be skipped when Framework is null")
 	}
 }
@@ -753,25 +770,17 @@ func TestBuildRunEvent_Catalog_SkippedWhenRequiredFieldIsNull(t *testing.T) {
 
 func TestBuildDatasetEvent_ReturnsNonNil(t *testing.T) {
 	model := &DatasetResourceModel{
-		DatasetModel: DatasetModel{
-			Namespace: types.StringValue("bq"),
-			Name:      types.StringValue("bq.table"),
-		},
+		DatasetModel: DatasetModel{Namespace: types.StringValue("bq"), Name: types.StringValue("bq.table")},
 	}
 
-	event := BuildDatasetEvent(model, EmptyDatasetCapability())
-
-	if event == nil {
+	if BuildDatasetEvent(model, EmptyDatasetCapability()) == nil {
 		t.Fatal("BuildDatasetEvent returned nil")
 	}
 }
 
 func TestBuildDatasetEvent_SetsNameAndNamespace(t *testing.T) {
 	model := &DatasetResourceModel{
-		DatasetModel: DatasetModel{
-			Namespace: types.StringValue("bq"),
-			Name:      types.StringValue("project.dataset.table"),
-		},
+		DatasetModel: DatasetModel{Namespace: types.StringValue("bq"), Name: types.StringValue("project.dataset.table")},
 	}
 
 	event := BuildDatasetEvent(model, EmptyDatasetCapability())
@@ -800,16 +809,18 @@ func TestBuildDatasetEvent_Schema_IncludedWhenEnabled(t *testing.T) {
 	cap := EmptyDatasetCapability().WithFacetEnabled(FacetDatasetSchema)
 
 	event := BuildDatasetEvent(model, cap)
-	data, err := json.Marshal(event)
-	if err != nil {
-		t.Fatalf("json.Marshal failed: %v", err)
-	}
-	js := string(data)
 
-	if !strings.Contains(js, "schema") {
-		t.Error("expected schema facet in serialized dataset event")
+	if event.Dataset.Facets == nil || event.Dataset.Facets.SchemaDatasetFacet == nil {
+		t.Fatal("expected schema facet to be present")
 	}
-	if !strings.Contains(js, "INT64") {
-		t.Error("expected column type INT64 in serialized dataset event")
+	sf := event.Dataset.Facets.SchemaDatasetFacet
+	if len(sf.Fields) != 2 {
+		t.Fatalf("expected 2 fields, got %d", len(sf.Fields))
+	}
+	if sf.Fields[0].Name != "id" {
+		t.Errorf("expected first field name = %q, got %q", "id", sf.Fields[0].Name)
+	}
+	if sf.Fields[0].Type == nil || *sf.Fields[0].Type != "INT64" {
+		t.Errorf("expected first field type = %q, got %v", "INT64", sf.Fields[0].Type)
 	}
 }

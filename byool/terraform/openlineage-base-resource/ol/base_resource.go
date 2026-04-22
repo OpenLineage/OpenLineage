@@ -49,10 +49,10 @@ type ResourceBackend interface {
 	// ConsumerDelete removes the entity from the consumer.
 	ConsumerDelete(ctx context.Context, model any) diag.Diagnostics
 
-	// baseSchema returns the capability-driven base schema for this resource type.
+	// BaseSchema returns the capability-driven base schema for this resource type.
 	// Implemented by BaseJobResource (GenerateJobSchema) and BaseDatasetResource
 	// (GenerateDatasetSchema) — consumers inherit it through embedding.
-	baseSchema() schema.Schema
+	BaseSchema() schema.Schema
 }
 
 // resourceBase is embedded in BaseJobResource and BaseDatasetResource.
@@ -99,7 +99,7 @@ func (r *resourceBase[B]) Schema(_ context.Context, _ resource.SchemaRequest, re
 	if !r.checkBackend(&resp.Diagnostics) {
 		return
 	}
-	r.mergeConsumerSchema(&resp.Schema, r.Backend.baseSchema())
+	r.mergeConsumerSchema(&resp.Schema, r.Backend.BaseSchema())
 }
 
 func (r *resourceBase[B]) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

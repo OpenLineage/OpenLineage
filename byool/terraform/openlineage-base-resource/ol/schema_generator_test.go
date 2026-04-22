@@ -26,6 +26,12 @@ func isStubBoolAttr(a schema.Attribute) bool {
 	return ok && ba.Optional && ba.Computed
 }
 
+// isStubMapAttr returns true when a MapAttribute is Optional+Computed.
+func isStubMapAttr(a schema.Attribute) bool {
+	ma, ok := a.(schema.MapAttribute)
+	return ok && ma.Optional && ma.Computed
+}
+
 // allAttrsAreStubs returns true when every attribute in the map is a stub.
 func allAttrsAreStubs(attrs map[string]schema.Attribute) bool {
 	for _, a := range attrs {
@@ -36,6 +42,10 @@ func allAttrsAreStubs(attrs map[string]schema.Attribute) bool {
 			}
 		case schema.BoolAttribute:
 			if !isStubBoolAttr(a) {
+				return false
+			}
+		case schema.MapAttribute:
+			if !isStubMapAttr(a) {
 				return false
 			}
 		default:
@@ -86,19 +96,6 @@ func isBlockStub(b schema.Block) bool {
 		return isSingleBlockStub(b)
 	case schema.ListNestedBlock:
 		return isListBlockStub(b)
-	}
-	return false
-}
-
-// hasActiveStringAttr returns true when at least one attribute in the map is
-// Optional+NotComputed — the signature of an enabled (active) facet attribute
-// after Option A: formerly-Required attrs become Optional with a validator,
-// keeping Computed=false so removed blocks still produce a plan diff.
-func hasActiveStringAttr(attrs map[string]schema.Attribute) bool {
-	for _, a := range attrs {
-		if sa, ok := a.(schema.StringAttribute); ok && sa.Optional && !sa.Computed {
-			return true
-		}
 	}
 	return false
 }
