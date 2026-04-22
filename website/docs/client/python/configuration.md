@@ -2003,7 +2003,12 @@ Dataset name normalization is **disabled by default**. It must be explicitly ena
 The list of enabled trimmers can be managed using `disabled_trimmers` and `extra_trimmers` configuration parameters.
 
 In most cases, trimmers work on the last directory segment of the dataset name.
-The trimming process runs iteratively, applying trimmers repeatedly until no additional segments can be removed.
+
+The trimming process runs repeatedly (in a loop), applying trimmers one by one
+in an undefined order until no additional segments of the path can be removed.
+The iterative nature of the process allows for trimming of multiple segments of the path,
+e.g. `/path/2025-09-01/hour=05/` → `/path` (both `dt=2025-09-01` and `hour=05` segments are removed).
+If one of the trimmers fails for any reason, it is skipped and the process continues with the next trimmer.
 
 ### Built-in Trimmers
 By default, the OpenLineage Python client comes with the following trimmers:

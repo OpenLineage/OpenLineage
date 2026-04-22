@@ -27,7 +27,13 @@ class TrailingDataPathTrimmer(DatasetNameTrimmer):
         return base if last == "data" else name
 
 
+class FailingTrimmer(DatasetNameTrimmer):
+    def trim(self, name: str) -> str:
+        raise Exception("Intentional failure for testing")
+
+
 TRAILING_DATA_PATH_TRIMMER = f"{TrailingDataPathTrimmer.__module__}.{TrailingDataPathTrimmer.__name__}"
+FAILING_TRIMMER = f"{FailingTrimmer.__module__}.{FailingTrimmer.__name__}"
 
 
 def _normalizer(**kwargs) -> DatasetNormalizer:
@@ -174,6 +180,20 @@ class TestNormalizeInputs:
         assert len(result) == 1
         assert result[0].name == "/data/table"
         assert result[0].inputFacets.get("inputStatistics") == stats
+
+    def test_failing_trimmer_does_not_prevent_normalization(self):
+        result = _normalizer(
+            extra_trimmers=[FAILING_TRIMMER],
+        ).normalize_inputs(
+            [
+                InputDataset(namespace="ns", name="/data/table/day=1"),
+                InputDataset(namespace="ns", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 1
+        assert result[0].name == "/data/table"
+        self.assert_has_input_subset_locations(result[0], ["/data/table/day=1", "/data/table/day=2"])
 
     @staticmethod
     def assert_does_not_have_input_subset(input_dataset):
@@ -422,6 +442,20 @@ class TestNormalizeOutputs:
         )
 
         assert result[0].facets["columnLineage"].fields["col_a"].inputFields[0].name == "plain_table"
+
+    def test_failing_trimmer_does_not_prevent_normalization(self):
+        result = _normalizer(
+            extra_trimmers=[FAILING_TRIMMER],
+        ).normalize_outputs(
+            [
+                OutputDataset(namespace="ns", name="/data/table/day=1"),
+                OutputDataset(namespace="ns", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 1
+        assert result[0].name == "/data/table"
+        self.assert_has_output_subset_locations(result[0], ["/data/table/day=1", "/data/table/day=2"])
 
     @staticmethod
     def assert_does_not_have_output_subset(output_dataset):
