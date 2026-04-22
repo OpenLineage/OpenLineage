@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import attr
 from openlineage.client.dataset.trimmers import (
@@ -74,6 +74,7 @@ class DatasetConfig:
 class ReducedDataset:
     dataset: Dataset
     original_names: set[str]
+    dataset_type: Literal["input", "output"]
 
     def as_dataset(self) -> Dataset:
         if not self.original_names:
@@ -82,15 +83,20 @@ class ReducedDataset:
         dataset = copy.deepcopy(self.dataset)
         condition = base_subset_dataset.LocationSubsetCondition(locations=sorted(self.original_names))
 
-        if isinstance(dataset, InputDataset):
-            i_facets = dataset.inputFacets if dataset.inputFacets is not None else {}
+        if self.dataset_type == "input":
+            i_facets = getattr(dataset, "inputFacets", None) or {}
             i_facets["subset"] = base_subset_dataset.InputSubsetInputDatasetFacet(inputCondition=condition)
-            dataset.inputFacets = i_facets
-        elif isinstance(dataset, OutputDataset):
-            o_facets = dataset.outputFacets if dataset.outputFacets is not None else {}
-            o_facets["subset"] = base_subset_dataset.OutputSubsetOutputDatasetFacet(outputCondition=condition)
-            dataset.outputFacets = o_facets
 
+            base_dict = attr.asdict(dataset, recurse=False)
+            base_dict.pop("inputFacets", None)
+            return InputDataset(**base_dict, inputFacets=i_facets)
+        elif self.dataset_type == "output":
+            o_facets = getattr(dataset, "outputFacets", None) or {}
+            o_facets["subset"] = base_subset_dataset.OutputSubsetOutputDatasetFacet(outputCondition=condition)
+
+            base_dict = attr.asdict(dataset, recurse=False)
+            base_dict.pop("outputFacets", None)
+            return OutputDataset(**base_dict, outputFacets=o_facets)
         return dataset
 
     def matches(self, other_dataset: Dataset) -> bool:
@@ -115,33 +121,17 @@ class DatasetNormalizer:
         self.trimmers = config.get_dataset_name_trimmers()
 
     def normalize_inputs(self, datasets: list[Any]) -> list[Any]:
-        input_datasets = [
-            InputDataset(
-                inputFacets={},
-                **attr.asdict(ds, recurse=False),
-            )
-            if not hasattr(ds, "inputFacets")
-            else ds
-            for ds in datasets
-        ]
-        return self._reduce_datasets(input_datasets)
+        return self._reduce_datasets(datasets, dataset_type="input")
 
     def normalize_outputs(self, datasets: list[Any]) -> list[Any]:
-        output_datasets = [
-            OutputDataset(
-                outputFacets={},
-                **attr.asdict(ds, recurse=False),
-            )
-            if not hasattr(ds, "outputFacets")
-            else ds
-            for ds in datasets
-        ]
-        for dataset in output_datasets:
-            self._trim_cll_input_dataset_names(dataset)
+        for ds in datasets:
+            self._trim_cll_input_dataset_names(ds)
 
-        return self._reduce_datasets(output_datasets)
+        return self._reduce_datasets(datasets, dataset_type="output")
 
-    def _reduce_datasets(self, datasets: list[Dataset]) -> list[Dataset]:
+    def _reduce_datasets(
+        self, datasets: list[Dataset], dataset_type: Literal["input", "output"]
+    ) -> list[Dataset]:
         reduced_datasets: list[ReducedDataset] = []
 
         for ds in datasets:
@@ -158,6 +148,7 @@ class DatasetNormalizer:
                     ReducedDataset(
                         dataset=ds,
                         original_names={original_name} if name_was_normalized else set(),
+                        dataset_type=dataset_type,
                     )
                 )
 
