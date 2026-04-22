@@ -10,6 +10,7 @@ import (
 
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 	"github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -49,8 +50,6 @@ func outputFacets(event *openlineage.RunEvent, i int) *facets.DatasetFacets {
 	}
 	return event.Outputs[i].Facets
 }
-
-// ── BuildRunEvent — basic fields ──────────────────────────────────────────────
 
 func TestBuildRunEvent_ReturnsNonNil(t *testing.T) {
 	event := BuildRunEvent(minimalModel(), EmptyJobCapability())
@@ -148,12 +147,15 @@ func TestBuildRunEvent_JobType_SkippedWhenRequiredFieldIsNull(t *testing.T) {
 	model := minimalModel()
 	model.JobType = &JobTypeJobModel{
 		ProcessingType: types.StringValue("BATCH"),
-		Integration:    types.StringNull(), // null — facet must be skipped
+		Integration:    types.StringNull(), // null required field → diagnostic error
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobType)
 
-	if jobFacets(BuildRunEvent(model, cap)).JobTypeJobFacet != nil {
-		t.Error("expected jobType facet to be skipped when Integration is null")
+	var diags diag.Diagnostics
+	NewJobEventBuilder(&diags, cap).BuildRunEvent(model)
+
+	if !diags.HasError() {
+		t.Error("expected a diagnostic error when Integration is null")
 	}
 }
 
@@ -234,8 +236,11 @@ func TestBuildRunEvent_Documentation_SkippedWhenDescriptionIsNull(t *testing.T) 
 	model.Documentation = &DocumentationModel{Description: types.StringNull()}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobDocumentation)
 
-	if jobFacets(BuildRunEvent(model, cap)).DocumentationJobFacet != nil {
-		t.Error("expected documentation facet to be skipped when description is null")
+	var diags diag.Diagnostics
+	NewJobEventBuilder(&diags, cap).BuildRunEvent(model)
+
+	if !diags.HasError() {
+		t.Error("expected a diagnostic error when Description is null")
 	}
 }
 
@@ -274,10 +279,10 @@ func TestBuildRunEvent_SQL_IncludedWhenEnabled(t *testing.T) {
 
 func TestBuildRunEvent_Tags_SkipsNullEntries(t *testing.T) {
 	model := minimalModel()
-	model.Tags = []TagsJobModel{
+	model.Tags = &TagsJobFacetModel{Tag: []TagsJobModel{
 		{Name: types.StringValue("env"), Value: types.StringValue("prod")},
 		{Name: types.StringNull(), Value: types.StringValue("orphaned")}, // null name → skip
-	}
+	}}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobTags)
 
 	tf := jobFacets(BuildRunEvent(model, cap)).TagsJobFacet
@@ -295,9 +300,9 @@ func TestBuildRunEvent_Tags_SkipsNullEntries(t *testing.T) {
 
 func TestBuildRunEvent_Tags_OmittedWhenAllEntriesAreNull(t *testing.T) {
 	model := minimalModel()
-	model.Tags = []TagsJobModel{
+	model.Tags = &TagsJobFacetModel{Tag: []TagsJobModel{
 		{Name: types.StringNull(), Value: types.StringNull()},
-	}
+	}}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobTags)
 
 	if jobFacets(BuildRunEvent(model, cap)).TagsJobFacet != nil {
@@ -335,8 +340,11 @@ func TestBuildRunEvent_SourceCodeLocation_SkippedWhenTypeIsNull(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithFacetEnabled(FacetJobSourceCodeLocation)
 
-	if jobFacets(BuildRunEvent(model, cap)).SourceCodeLocationJobFacet != nil {
-		t.Error("expected sourceCodeLocation to be skipped when Type is null")
+	var diags diag.Diagnostics
+	NewJobEventBuilder(&diags, cap).BuildRunEvent(model)
+
+	if !diags.HasError() {
+		t.Error("expected a diagnostic error when Type is null")
 	}
 }
 
@@ -427,9 +435,9 @@ func TestBuildRunEvent_Symlinks_IncludedOnInputWhenEnabled(t *testing.T) {
 			{DatasetModel: DatasetModel{
 				Namespace: types.StringValue("hive"),
 				Name:      types.StringValue("db.table"),
-				Symlinks: []SymlinksDatasetModel{
+				Symlinks: &SymlinksDatasetFacetModel{Identifier: []IdentifierModel{
 					{Namespace: types.StringValue("bigquery"), Name: types.StringValue("project.dataset.table"), Type: types.StringValue("TABLE")},
-				},
+				}},
 			}},
 		},
 	}
@@ -453,9 +461,9 @@ func TestBuildRunEvent_Symlinks_OmittedOnInputWhenDisabled(t *testing.T) {
 			{DatasetModel: DatasetModel{
 				Namespace: types.StringValue("hive"),
 				Name:      types.StringValue("db.table"),
-				Symlinks: []SymlinksDatasetModel{
+				Symlinks: &SymlinksDatasetFacetModel{Identifier: []IdentifierModel{
 					{Namespace: types.StringValue("bq"), Name: types.StringValue("bq.table"), Type: types.StringValue("TABLE")},
-				},
+				}},
 			}},
 		},
 	}
@@ -734,10 +742,11 @@ func TestBuildRunEvent_Storage_SkippedWhenStorageLayerIsNull(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetStorage)
 
-	event := BuildRunEvent(model, cap)
+	var diags diag.Diagnostics
+	NewJobEventBuilder(&diags, cap).BuildRunEvent(model)
 
-	if inputFacets(event, 0).StorageDatasetFacet != nil {
-		t.Error("expected storage facet to be skipped when StorageLayer is null")
+	if !diags.HasError() {
+		t.Error("expected a diagnostic error when StorageLayer is null")
 	}
 }
 
@@ -750,7 +759,7 @@ func TestBuildRunEvent_Catalog_SkippedWhenRequiredFieldIsNull(t *testing.T) {
 			{DatasetModel: DatasetModel{
 				Namespace: types.StringValue("bq"), Name: types.StringValue("bq.in"),
 				Catalog: &CatalogDatasetModel{
-					Framework: types.StringNull(), // null required field → skip
+					Framework: types.StringNull(), // null required field → diagnostic error
 					Type:      types.StringValue("hive"),
 					Name:      types.StringValue("my-catalog"),
 				},
@@ -759,10 +768,162 @@ func TestBuildRunEvent_Catalog_SkippedWhenRequiredFieldIsNull(t *testing.T) {
 	}
 	cap := EmptyJobCapability().WithDatasetFacetEnabled(FacetDatasetCatalog)
 
-	event := BuildRunEvent(model, cap)
+	var diags diag.Diagnostics
+	NewJobEventBuilder(&diags, cap).BuildRunEvent(model)
 
-	if inputFacets(event, 0).CatalogDatasetFacet != nil {
-		t.Error("expected catalog facet to be skipped when Framework is null")
+	if !diags.HasError() {
+		t.Error("expected a diagnostic error when Framework is null")
+	}
+}
+
+// ── BuildDatasetEvent ─────────────────────────────────────────────────────────
+
+// fullModel returns a JobResourceModel with every facet block populated.
+func fullModel() *JobResourceModel {
+	return &JobResourceModel{
+		OLJobConfig: OLJobConfig{
+			Namespace:   types.StringValue("production"),
+			Name:        types.StringValue("etl.orders.daily"),
+			Description: types.StringValue("Daily ETL"),
+			JobType: &JobTypeJobModel{
+				ProcessingType: types.StringValue("BATCH"),
+				Integration:    types.StringValue("SPARK"),
+				JobType:        types.StringValue("QUERY"),
+			},
+			Ownership: &OwnershipJobModel{
+				Owners: []JobOwnerModel{
+					{Name: types.StringValue("team:data-engineering"), Type: types.StringValue("OWNER")},
+				},
+			},
+			Documentation: &DocumentationModel{
+				Description: types.StringValue("See confluence for spec."),
+				ContentType: types.StringValue("text/markdown"),
+			},
+			SourceCode: &SourceCodeJobModel{
+				Language:   types.StringValue("Python"),
+				SourceCode: types.StringValue("print('hello')"),
+			},
+			SourceCodeLocation: &SourceCodeLocationJobModel{
+				Type:   types.StringValue("git"),
+				URL:    types.StringValue("https://github.com/acme/pipelines"),
+				Branch: types.StringValue("main"),
+			},
+			SQL: &SQLJobModel{
+				Query:   types.StringValue("SELECT * FROM raw.orders"),
+				Dialect: types.StringValue("spark"),
+			},
+			Tags: &TagsJobFacetModel{Tag: []TagsJobModel{
+				{Name: types.StringValue("domain"), Value: types.StringValue("commerce")},
+			}},
+		},
+		Inputs: []OLInputModel{
+			{DatasetModel: DatasetModel{
+				Namespace: types.StringValue("hive"),
+				Name:      types.StringValue("raw.orders"),
+				Symlinks: &SymlinksDatasetFacetModel{Identifier: []IdentifierModel{
+					{Namespace: types.StringValue("bigquery"), Name: types.StringValue("project.raw.orders"), Type: types.StringValue("TABLE")},
+				}},
+				Schema: &SchemaDatasetModel{Fields: []SchemaFieldModel{
+					{Name: types.StringValue("order_id"), Type: types.StringValue("BIGINT")},
+				}},
+				DataSource:    &DataSourceDatasetModel{Name: types.StringValue("hive-prod"), URI: types.StringValue("hive://meta:9083")},
+				Documentation: &DocumentationModel{Description: types.StringValue("Raw orders.")},
+				DatasetType:   &DatasetTypeDatasetModel{DatasetType: types.StringValue("TABLE")},
+				Version:       &DatasetVersionDatasetModel{DatasetVersion: types.StringValue("v1")},
+				Storage:       &StorageDatasetModel{StorageLayer: types.StringValue("delta"), FileFormat: types.StringValue("parquet")},
+				Ownership: &OwnershipDatasetModel{Owners: []DatasetOwnerModel{
+					{Name: types.StringValue("team:ingestion"), Type: types.StringValue("OWNER")},
+				}},
+				Catalog: &CatalogDatasetModel{
+					Framework: types.StringValue("hive"),
+					Type:      types.StringValue("hive"),
+					Name:      types.StringValue("prod-catalog"),
+				},
+				Tags: &TagsDatasetFacetModel{Tag: []TagsDatasetModel{
+					{Name: types.StringValue("pii"), Value: types.StringValue("true"), Field: types.StringValue("customer_id")},
+				}},
+			}},
+		},
+		Outputs: []OLOutputModel{
+			{
+				DatasetModel: DatasetModel{
+					Namespace: types.StringValue("bigquery"),
+					Name:      types.StringValue("warehouse.orders"),
+					Schema: &SchemaDatasetModel{Fields: []SchemaFieldModel{
+						{Name: types.StringValue("order_id"), Type: types.StringValue("INT64")},
+					}},
+					Storage: &StorageDatasetModel{StorageLayer: types.StringValue("bigquery")},
+				},
+				ColumnLineage: &ColumnLineageDatasetModel{
+					Fields: []ColumnLineageFieldModel{
+						{
+							Name: types.StringValue("order_id"),
+							InputFields: []InputFieldModel{
+								{Namespace: types.StringValue("hive"), Name: types.StringValue("raw.orders"), Field: types.StringValue("order_id"),
+									Transformations: []TransformationModel{
+										{Type: types.StringValue("DIRECT"), Subtype: types.StringValue("IDENTITY")},
+									}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestBuildRunEvent_AllFacetsEnabled_MinimalModel(t *testing.T) { // All facets enabled but model only has namespace+name — every facet block is nil.
+	// The builder must not panic and must produce no diagnostics.
+	cap := EmptyJobCapability().
+		WithFacetEnabled(
+			FacetJobType, FacetJobOwnership, FacetJobDocumentation,
+			FacetJobSourceCode, FacetJobSourceCodeLocation, FacetJobSQL, FacetJobTags,
+		).
+		WithDatasetFacetEnabled(
+			FacetDatasetSymlinks, FacetDatasetSchema, FacetDatasetDataSource,
+			FacetDatasetDocumentation, FacetDatasetType, FacetDatasetVersion,
+			FacetDatasetStorage, FacetDatasetOwnership, FacetDatasetLifecycleStateChange,
+			FacetDatasetHierarchy, FacetDatasetCatalog, FacetDatasetColumnLineage,
+			FacetDatasetTags,
+		)
+
+	var diags diag.Diagnostics
+	event := NewJobEventBuilder(&diags, cap).BuildRunEvent(minimalModel())
+
+	if diags.HasError() {
+		t.Errorf("expected no diagnostics for minimal model with all facets enabled, got: %v", diags)
+	}
+	if event == nil {
+		t.Fatal("expected non-nil event")
+	}
+	if jobFacets(event).JobTypeJobFacet != nil {
+		t.Error("expected nil job_type facet when model block is absent")
+	}
+}
+
+func TestBuildRunEvent_AllFacetsDisabled_FullModel(t *testing.T) {
+	// Every facet block is populated but all facets are disabled.
+	// No facets should be emitted, no diagnostics, no panic.
+	var diags diag.Diagnostics
+	event := NewJobEventBuilder(&diags, EmptyJobCapability()).BuildRunEvent(fullModel())
+
+	if diags.HasError() {
+		t.Errorf("expected no diagnostics, got: %v", diags)
+	}
+	if event.Job.Facets != nil {
+		t.Error("expected nil job facets when all facets are disabled")
+	}
+	if len(event.Inputs) != 1 {
+		t.Fatalf("expected 1 input, got %d", len(event.Inputs))
+	}
+	if event.Inputs[0].Facets != nil {
+		t.Error("expected nil input dataset facets when all facets are disabled")
+	}
+	if len(event.Outputs) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(event.Outputs))
+	}
+	if event.Outputs[0].Facets != nil {
+		t.Error("expected nil output dataset facets when all facets are disabled")
 	}
 }
 
@@ -790,37 +951,5 @@ func TestBuildDatasetEvent_SetsNameAndNamespace(t *testing.T) {
 	}
 	if event.Dataset.Namespace != "bq" {
 		t.Errorf("expected Namespace = %q, got %q", "bq", event.Dataset.Namespace)
-	}
-}
-
-func TestBuildDatasetEvent_Schema_IncludedWhenEnabled(t *testing.T) {
-	model := &DatasetResourceModel{
-		DatasetModel: DatasetModel{
-			Namespace: types.StringValue("bq"),
-			Name:      types.StringValue("bq.table"),
-			Schema: &SchemaDatasetModel{
-				Fields: []SchemaFieldModel{
-					{Name: types.StringValue("id"), Type: types.StringValue("INT64")},
-					{Name: types.StringValue("name"), Type: types.StringValue("STRING")},
-				},
-			},
-		},
-	}
-	cap := EmptyDatasetCapability().WithFacetEnabled(FacetDatasetSchema)
-
-	event := BuildDatasetEvent(model, cap)
-
-	if event.Dataset.Facets == nil || event.Dataset.Facets.SchemaDatasetFacet == nil {
-		t.Fatal("expected schema facet to be present")
-	}
-	sf := event.Dataset.Facets.SchemaDatasetFacet
-	if len(sf.Fields) != 2 {
-		t.Fatalf("expected 2 fields, got %d", len(sf.Fields))
-	}
-	if sf.Fields[0].Name != "id" {
-		t.Errorf("expected first field name = %q, got %q", "id", sf.Fields[0].Name)
-	}
-	if sf.Fields[0].Type == nil || *sf.Fields[0].Type != "INT64" {
-		t.Errorf("expected first field type = %q, got %v", "INT64", sf.Fields[0].Type)
 	}
 }

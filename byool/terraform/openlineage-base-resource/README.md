@@ -14,15 +14,15 @@ The package uses a three-layer design:
 
 ```
 resourceBase[B]          — generic; holds Backend, CRUD lifecycle, nil-check
-  └─ BaseJobResource     — job-specific: Metadata ("_job"), Schema (GenerateJobSchema)
-  └─ BaseDatasetResource — dataset-specific: Metadata ("_dataset"), Schema (GenerateDatasetSchema)
+  └─ BaseJobResource     — job-specific: Metadata ("_job"), BaseSchema (GenerateJobSchema)
+  └─ BaseDatasetResource — dataset-specific: Metadata ("_dataset"), BaseSchema (GenerateDatasetSchema)
 
-ResourceBackend          — shared interface (7 lifecycle methods)
+ResourceBackend          — shared interface (8 methods: 7 lifecycle + BaseSchema)
   └─ JobResourceBackend  — adds Capability() JobCapability
   └─ DatasetResourceBackend — adds Capability() DatasetCapability
 ```
 
-`resourceBase[B]` owns all five CRUD methods (`Configure`, `Create`, `Read`, `Update`, `Delete`) and promotes them to both base types via embedding. `BaseJobResource` and `BaseDatasetResource` only add `Metadata` and `Schema`.
+`resourceBase[B]` owns all five CRUD methods (`Configure`, `Create`, `Read`, `Update`, `Delete`) and promotes them to both base types via embedding. `BaseJobResource` and `BaseDatasetResource` only add `Metadata` and `BaseSchema`.
 
 Consumer-specific behaviour is entirely delegated through the `Backend` field:
 
@@ -36,6 +36,7 @@ Consumer-specific behaviour is entirely delegated through the `Backend` field:
 | `ConsumerEmit(...)` | `ResourceBackend` | builds and sends the OL event |
 | `ConsumerRead(...)` | `ResourceBackend` | checks existence, refreshes computed fields |
 | `ConsumerDelete(...)` | `ResourceBackend` | removes the entity from the consumer |
+| `BaseSchema()` | `BaseJobResource` / `BaseDatasetResource` | returns capability-driven schema; inherited via embedding, **not** implemented by consumers |
 
 Typical constructor pattern:
 
@@ -54,11 +55,19 @@ Top-level Terraform state models:
 - `JobResourceModel` in `models.go`
 - `DatasetResourceModel` in `models.go`
 
-OpenLineage-shaped nested models:
+OpenLineage-shaped nested models in `ol_models.go`:
 
-- `OLJobConfig` in `ol_models.go`
-- `DatasetModel` in `ol_models.go`
-- facet models in `ol_models.go` (job facets, dataset facets, column lineage)
+- `OLJobConfig` — job identity + all job facet blocks
+- `DatasetModel` — dataset identity + all dataset facet blocks (shared by inputs, outputs, and standalone dataset resources)
+- individual facet structs (job facets, dataset facets, column lineage)
+
+**Facet wrapper models** — three facets use an outer `SingleNestedBlock` wrapping an inner list, consistent with the `OwnershipJobModel / owners` pattern:
+
+| Model | Outer block | Inner list key | Element model |
+|---|---|---|---|
+| `TagsJobFacetModel` | `tags` | `tag` | `TagsJobModel` |
+| `TagsDatasetFacetModel` | `tags` | `tag` | `TagsDatasetModel` |
+| `SymlinksDatasetFacetModel` | `symlinks` | `symlink` | `IdentifierModel` |
 
 Important embedding rule:
 
@@ -104,10 +113,29 @@ Consumer-specific schema parts are merged after generation by `resourceBase.merg
 
 ## Event Builder
 
-`BuildJobEvent(data *JobResourceModel, cap JobCapability) *openlineage.JobEvent`,
-`BuildRunEvent(data *JobResourceModel, cap JobCapability) *openlineage.RunEvent`, and
-`BuildDatasetEvent(data *DatasetResourceModel, cap DatasetCapability) *openlineage.DatasetEvent`
-map Terraform models to OpenLineage events.
+The `OpenLineageEventBuilder` struct assembles OpenLineage events from Terraform models.
+It is created via constructor functions that bind a `Diagnostics` sink and a capability:
+
+```go
+builder := ol.NewJobEventBuilder(&diags, cap)     // for job resources
+builder := ol.NewDatasetEventBuilder(&diags, cap) // for standalone dataset resources
+```
+
+Builder methods (on `*OpenLineageEventBuilder`):
+- `BuildJobEvent(data *JobResourceModel) *openlineage.JobEvent` — assembles the job payload with capability-gated facets.
+- `BuildRunEvent(data *JobResourceModel) *openlineage.RunEvent` — wraps `BuildJobEvent`, sets `eventType = COMPLETE`, generates `run.runId` internally.
+- `BuildDatasetEvent(data *DatasetResourceModel) *openlineage.DatasetEvent` — assembles a standalone dataset event.
+
+Package-level convenience wrappers (diagnostics are silently discarded — use the builder directly when you need error reporting):
+
+```go
+ol.BuildRunEvent(data *JobResourceModel, cap JobCapability) *openlineage.RunEvent
+ol.BuildDatasetEvent(data *DatasetResourceModel, cap DatasetCapability) *openlineage.DatasetEvent
+```
+
+The builder delegates facet construction to the models themselves via `JobFacetBuilder` and `DatasetFacetBuilder` interfaces (defined in `facet_builders.go`). Each facet model implements the appropriate interface. Disabled facets are never called — the `present bool` guard in the dispatch tables catches nil model pointers before they are boxed into the interface, avoiding the classic nil-pointer-in-interface panic.
+
+Required-field validation is performed by `requireString`: when a required attribute is null or unknown, a path-aware diagnostic error is added to the `Diagnostics` sink and building continues. Use `NewJobEventBuilder(&diags, cap)` directly (not the package-level wrappers) when you need those errors surfaced to Terraform.
 
 Current behavior:
 
@@ -121,21 +149,24 @@ Current behavior:
 
 ## Package Files
 
-- `base_resource.go` - `ResourceBackend` interface, `resourceBase[B]` generic struct, all shared CRUD methods
-- `base_job_resource.go` - `JobResourceBackend` interface, `BaseJobResource` (Metadata + Schema only)
-- `base_dataset_resource.go` - `DatasetResourceBackend` interface, `BaseDatasetResource` (Metadata + Schema only)
-- `models.go` - top-level Terraform state models
-- `ol_models.go` - OpenLineage-shaped models and facet structures
-- `capability.go` - `JobFacet`/`DatasetFacet` types, facet constants, `JobCapability`/`DatasetCapability`
-- `schema_generator.go` - capability-driven Terraform schema builders
-- `event_builder.go` - model to OpenLineage event mapping
+| File | ~Lines | Contents |
+|---|---|---|
+| `base_resource.go` | ~190 | `ResourceBackend` interface, `resourceBase[B]` generic struct, all shared CRUD methods |
+| `base_job_resource.go` | ~60 | `JobResourceBackend` interface, `BaseJobResource` (Metadata + BaseSchema) |
+| `base_dataset_resource.go` | ~40 | `DatasetResourceBackend` interface, `BaseDatasetResource` (Metadata + BaseSchema) |
+| `capability.go` | ~155 | `JobFacet`/`DatasetFacet` types, facet constants, `JobCapability`/`DatasetCapability` |
+| `schema_generator.go` | ~715 | capability-driven Terraform schema builders for job and dataset resources |
+| `facet_builders.go` | ~315 | `JobFacetBuilder` / `DatasetFacetBuilder` interfaces; `Build` methods on every facet model |
+| `event_builder.go` | ~235 | `OpenLineageEventBuilder`, constructors, dispatch tables, package-level wrappers, helpers |
+| `models.go` | ~35 | top-level Terraform state models (`JobResourceModel`, `DatasetResourceModel`) |
+| `ol_models.go` | ~295 | all OpenLineage-shaped nested models (job facets, dataset facets, column lineage) |
+
+Test files: `capability_test.go` (~205 lines), `schema_generator_test.go` (~450 lines), `event_builder_test.go` (~955 lines).
 
 ## For Provider Authors
 
 This section is a step-by-step guide to building a Terraform provider that targets a new
 OpenLineage consumer (Marquez, Atlas, etc.) using this package as a base.
-
-The full provider-author guide and code templates are included in the steps below.
 
 ### Step 1 — Define a consumer model
 
@@ -227,7 +258,10 @@ func (r *MyJobResource) ConsumerEmit(ctx context.Context, modelAny any) diag.Dia
     var diags diag.Diagnostics
     model := modelAny.(*MyJobModel)
 
-    event := ol.BuildRunEvent(&model.JobResourceModel, r.Capability())
+    event := ol.NewJobEventBuilder(&diags, r.Capability()).BuildRunEvent(&model.JobResourceModel)
+    if diags.HasError() {
+        return diags
+    }
     emittedRunID := event.Run.RunID
 
     result, err := r.client.Emit(ctx, event)
@@ -309,6 +343,7 @@ func (r *MyJobResource) NewModel() any {
 | `nil pointer dereference` in emit | `r.Backend = r` missing | add self-reference in constructor |
 | Schema missing fields from embedded model | consumer redeclares generic keys | remove `namespace`, `name`, `description`, `inputs`, `outputs` from `ConsumerAttributes()` |
 | Drift not detected | `ConsumerRead` returns `error` instead of `false` for missing resource | return `false, nil` when not found |
-| Build fails after package update | consumer still passes a `runID` argument to `BuildRunEvent` | call `BuildRunEvent(&model.JobResourceModel, r.Capability())` — the run ID is generated internally and can be read from `event.Run.RunID` |
+| Build fails after package update | consumer still uses old package-level `BuildRunEvent` with mismatched signature | use `ol.NewJobEventBuilder(&diags, r.Capability()).BuildRunEvent(&model.JobResourceModel)` — diagnostics are surfaced and run ID can be read from `event.Run.RunID` |
 | Dataset facets missing on job inputs/outputs | dataset facets enabled via `WithFacetEnabled` instead of `WithDatasetFacetEnabled` | use `WithDatasetFacetEnabled(ol.FacetDataset*)` for inputs/outputs facets |
 | Compile error passing `FacetJob*` to `DatasetCapability` | job facets used in a dataset capability | `FacetJob*` constants are type `JobFacet` and are only accepted by `JobCapability.WithFacetEnabled` |
+| `nil pointer dereference` in `BuildJobFacet` / `BuildDatasetFacet` | storing a nil model pointer in a `JobFacetBuilder` / `DatasetFacetBuilder` interface variable | always use the `present bool` guard before boxing a pointer into the interface — see `buildJobFacets` in `event_builder.go` |

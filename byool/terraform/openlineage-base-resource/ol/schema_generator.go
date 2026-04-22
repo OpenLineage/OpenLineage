@@ -218,19 +218,22 @@ func sqlBlock() schema.SingleNestedBlock {
 
 // jobTagsBlock: value is Required (TagClass.Value is a non-pointer string in the OL spec).
 // description is not part of the OL TagClass facet and is omitted.
-func jobTagsBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func jobTagsBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		Description: "Free-form tags attached to this job (facets.TagsJobFacet)",
-		Validators: []validator.List{
-			listvalidator.SizeAtLeast(1),
-		},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"name":   optionalString("Tag key"),
-				"value":  optionalString("Tag value"),
-				"source": optionalString("Tag source e.g. USER, INTEGRATION, DBT"),
+		Blocks: map[string]schema.Block{
+			"tag": schema.ListNestedBlock{
+				Description: "Individual tag entries",
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name":   optionalString("Tag key"),
+						"value":  optionalString("Tag value"),
+						"source": optionalString("Tag source e.g. USER, INTEGRATION, DBT"),
+					},
+					Validators: requireFields("name", "value"),
+				},
 			},
-			Validators: requireFields("name", "value"),
 		},
 	}
 }
@@ -306,17 +309,22 @@ func datasetSchema(cap capability) (map[string]schema.Attribute, map[string]sche
 
 // ── Dataset facet blocks ──────────────────────────────────────────────────────
 
-func symlinksBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func symlinksBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		Description: "Alternate dataset identifiers (facets.Symlinks)",
-		Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"namespace": optionalString("Alternate namespace"),
-				"name":      optionalString("Alternate name"),
-				"type":      optionalString("e.g. TABLE, VIEW"),
+		Blocks: map[string]schema.Block{
+			"identifier": schema.ListNestedBlock{
+				Description: "Individual symlink entries",
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"namespace": optionalString("Alternate namespace"),
+						"name":      optionalString("Alternate name"),
+						"type":      optionalString("e.g. TABLE, VIEW"),
+					},
+					Validators: requireFields("namespace", "name", "type"),
+				},
 			},
-			Validators: requireFields("namespace", "name", "type"),
 		},
 	}
 }
@@ -486,18 +494,23 @@ func catalogBlock() schema.SingleNestedBlock {
 	}
 }
 
-func datasetTagsBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func datasetTagsBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		Description: "Free-form tags on this dataset (facets.TagsDatasetFacet)",
-		Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"name":   optionalString("Tag key"),
-				"value":  optionalString("Tag value"),
-				"source": optionalString("Tag source e.g. USER, INTEGRATION, DBT"),
-				"field":  optionalString("Dataset field/column this tag applies to"),
+		Blocks: map[string]schema.Block{
+			"tag": schema.ListNestedBlock{
+				Description: "Individual tag entries",
+				Validators:  []validator.List{listvalidator.SizeAtLeast(1)},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name":   optionalString("Tag key"),
+						"value":  optionalString("Tag value"),
+						"source": optionalString("Tag source e.g. USER, INTEGRATION, DBT"),
+						"field":  optionalString("Dataset field/column this tag applies to"),
+					},
+					Validators: requireFields("name", "value"),
+				},
 			},
-			Validators: requireFields("name", "value"),
 		},
 	}
 }

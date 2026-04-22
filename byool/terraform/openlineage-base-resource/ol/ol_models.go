@@ -24,7 +24,7 @@ type OLJobConfig struct {
 	SourceCode         *SourceCodeJobModel         `tfsdk:"source_code"`
 	SourceCodeLocation *SourceCodeLocationJobModel `tfsdk:"source_code_location"`
 	SQL                *SQLJobModel                `tfsdk:"sql"`
-	Tags               []TagsJobModel              `tfsdk:"tags"`
+	Tags               *TagsJobFacetModel          `tfsdk:"tags"`
 }
 
 // OLInputModel and OLOutputModel are defined in models.go (they embed DatasetModel).
@@ -34,7 +34,7 @@ type DatasetModel struct {
 	Namespace types.String `tfsdk:"namespace"`
 	Name      types.String `tfsdk:"name"`
 
-	Symlinks             []SymlinksDatasetModel            `tfsdk:"symlinks"`
+	Symlinks             *SymlinksDatasetFacetModel        `tfsdk:"symlinks"`
 	Schema               *SchemaDatasetModel               `tfsdk:"schema"`
 	DataSource           *DataSourceDatasetModel           `tfsdk:"data_source"`
 	Documentation        *DocumentationModel               `tfsdk:"documentation"`
@@ -45,7 +45,7 @@ type DatasetModel struct {
 	LifecycleStateChange *LifecycleStateChangeDatasetModel `tfsdk:"lifecycle_state_change"`
 	Hierarchy            *HierarchyDatasetModel            `tfsdk:"hierarchy"`
 	Catalog              *CatalogDatasetModel              `tfsdk:"catalog"`
-	Tags                 []TagsDatasetModel                `tfsdk:"tags"`
+	Tags                 *TagsDatasetFacetModel            `tfsdk:"tags"`
 }
 
 // ============================================================================
@@ -118,9 +118,9 @@ type TagsJobModel struct {
 // OL Config — Dataset facets
 // ============================================================================
 
-// SymlinksDatasetModel — facets.SymlinksDatasetFacet
+// IdentifierModel — facets.SymlinksDatasetFacet
 // An alternate name/namespace this dataset is also known as.
-type SymlinksDatasetModel struct {
+type IdentifierModel struct {
 	Namespace types.String `tfsdk:"namespace"`
 	Name      types.String `tfsdk:"name"`
 	Type      types.String `tfsdk:"type"` // e.g. "TABLE", "VIEW"
@@ -260,6 +260,27 @@ type ColumnLineageDatasetElementModel struct {
 	Name            types.String          `tfsdk:"name"`
 	Field           types.String          `tfsdk:"field"`
 	Transformations []TransformationModel `tfsdk:"transformation"`
+}
+
+// TagsJobFacetModel — facets.TagsJobFacet
+// Wraps the list of job tags. Uses a nested "tag" list so the outer block name
+// ("tags") and the inner repeated element name ("tag") don't collide, consistent
+// with the OwnershipJobModel / owners pattern.
+type TagsJobFacetModel struct {
+	Tag []TagsJobModel `tfsdk:"tag"`
+}
+
+// TagsDatasetFacetModel — facets.TagsDatasetFacet
+// Wraps the list of dataset tags, mirroring TagsJobFacetModel.
+type TagsDatasetFacetModel struct {
+	Tag []TagsDatasetModel `tfsdk:"tag"`
+}
+
+// SymlinksDatasetFacetModel — facets.SymlinksDatasetFacet
+// Wraps the list of alternate dataset identifiers. Uses a nested "symlink" list
+// so the outer block name ("symlinks") and the element name ("symlink") are distinct.
+type SymlinksDatasetFacetModel struct {
+	Identifier []IdentifierModel `tfsdk:"identifiers"`
 }
 
 // TransformationModel — facets.Transformation
