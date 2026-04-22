@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/AgentAttributionRunFacet.json",
+  "$defs": {
+    "AgentAttributionRunFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "agentId": {
+              "description": "The identifier of the agent that executed this run. It is recommended to define this as a URN or DID. For example did:aps:z6Mk..., did:web:agent.example.com, agent:foo",
+              "type": "string",
+              "example": "did:aps:z6MkTestAgent001"
+            },
+            "accessedAt": {
+              "description": "The timestamp at which the agent accessed the input data source. ISO 8601 UTC.",
+              "type": "string",
+              "format": "date-time"
+            },
+            "covenantInEffect": {
+              "description": "The governance attestation that was in force at execution time. The digest is the hash of the signed attestation bytes; the type indicates which governance framework emitted it. Consumers verify the digest against a resolvable attestation to confirm what the agent was allowed to do during this run.",
+              "type": "object",
+              "properties": {
+                "digest": {
+                  "description": "Hash of the governance attestation that was in force at execution time. SHA-256 by default; the algorithm can be declared explicitly in the digestAlgorithm field or prefixed in the value (e.g. sha256:abc...).",
+                  "type": "string",
+                  "example": "sha256:3c9e9d2c6b7e8a1f4d5c6b7a8f9e0d1c2b3a4f5e6d7c8b9a0f1e2d3c4b5a6978"
+                },
+                "digestAlgorithm": {
+                  "description": "The hash algorithm used to compute the digest. Defaults to sha-256 if omitted.",
+                  "type": "string",
+                  "default": "sha-256",
+                  "example": "sha-256"
+                },
+                "type": {
+                  "description": "The governance signal type. Open enum; vendor-agnostic reference value is 'governance_attestation'. Implementers MAY emit a vendor-specific string as long as the digest remains a hash of a signed object that a compliance consumer can resolve and verify.",
+                  "type": "string",
+                  "example": "governance_attestation"
+                },
+                "resolver": {
+                  "description": "Optional URL or DID of the signed attestation from which the digest is computed. When present, a compliance consumer MAY fetch the resolved object and verify the hash matches the digest. Absence of a resolver is acceptable; the digest alone is sufficient for tamper-evidence.",
+                  "type": "string",
+                  "format": "uri",
+                  "example": "https://gateway.example.com/api/v1/public/trust/agent001"
+                }
+              },
+              "required": ["digest", "type"],
+              "additionalProperties": true
+            }
+          },
+          "required": ["agentId", "covenantInEffect"]
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "agentAttribution": {
+      "$ref": "#/$defs/AgentAttributionRunFacet"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "agentAttribution": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/main/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/AgentAttributionRunFacet.json",
+    "agentId": "did:example:agent:001",
+    "accessedAt": "2026-04-21T15:44:22.000Z",
+    "covenantInEffect": {
+      "digest": "sha256:3c9e9d2c6b7e8a1f4d5c6b7a8f9e0d1c2b3a4f5e6d7c8b9a0f1e2d3c4b5a6978",
+      "digestAlgorithm": "sha-256",
+      "type": "governance_attestation",
+      "resolver": "https://example.com/api/v1/public/trust/agent001"
+    }
+  }
+}
