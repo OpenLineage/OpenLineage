@@ -1,0 +1,84 @@
+{
+  "lineage": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.0.0/integration/spark",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageRunFacet.json",
+    "lineage": [
+      {
+        "namespace": "postgresql://analytics:5432",
+        "name": "public.daily_sales",
+        "type": "DATASET",
+        "inputs": [
+          {
+            "namespace": "postgresql://analytics:5432",
+            "name": "public.orders",
+            "type": "DATASET"
+          },
+          {
+            "namespace": "postgresql://analytics:5432",
+            "name": "public.orders",
+            "type": "DATASET",
+            "field": "order_date",
+            "transformations": [
+              {
+                "type": "INDIRECT",
+                "subtype": "GROUP_BY"
+              }
+            ]
+          }
+        ],
+        "fields": {
+          "total_revenue": {
+            "inputs": [
+              {
+                "namespace": "postgresql://analytics:5432",
+                "name": "public.orders",
+                "type": "DATASET",
+                "field": "amount",
+                "transformations": [
+                  {
+                    "type": "INDIRECT",
+                    "subtype": "AGGREGATION",
+                    "description": "SUM(amount)"
+                  }
+                ]
+              }
+            ]
+          },
+          "order_count": {
+            "inputs": [
+              {
+                "namespace": "postgresql://analytics:5432",
+                "name": "public.orders",
+                "type": "DATASET",
+                "field": "order_id",
+                "transformations": [
+                  {
+                    "type": "INDIRECT",
+                    "subtype": "AGGREGATION",
+                    "description": "COUNT(order_id)"
+                  }
+                ]
+              }
+            ]
+          },
+          "sale_date": {
+            "inputs": [
+              {
+                "namespace": "postgresql://analytics:5432",
+                "name": "public.orders",
+                "type": "DATASET",
+                "field": "order_date",
+                "transformations": [
+                  {
+                    "type": "DIRECT",
+                    "subtype": "IDENTITY"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

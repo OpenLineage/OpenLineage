@@ -33,6 +33,7 @@ type DatasetFacets struct {
 	DocumentationDatasetFacet         *DocumentationDatasetFacet         `json:"documentation,omitempty"`
 	HierarchyDatasetFacet             *HierarchyDatasetFacet             `json:"hierarchy,omitempty"`
 	LifecycleStateChangeDatasetFacet  *LifecycleStateChangeDatasetFacet  `json:"lifecycleStateChange,omitempty"`
+	LineageDatasetFacet               *LineageDatasetFacet               `json:"lineage,omitempty"`
 	OwnershipDatasetFacet             *OwnershipDatasetFacet             `json:"ownership,omitempty"`
 	SchemaDatasetFacet                *SchemaDatasetFacet                `json:"schema,omitempty"`
 	StorageDatasetFacet               *StorageDatasetFacet               `json:"storage,omitempty"`
@@ -44,6 +45,7 @@ type DatasetFacets struct {
 type JobFacets struct {
 	DocumentationJobFacet      *DocumentationJobFacet      `json:"documentation,omitempty"`
 	JobTypeJobFacet            *JobTypeJobFacet            `json:"jobType,omitempty"`
+	LineageJobFacet            *LineageJobFacet            `json:"lineage,omitempty"`
 	OwnershipJobFacet          *OwnershipJobFacet          `json:"ownership,omitempty"`
 	SQLJobFacet                *SQLJobFacet                `json:"sql,omitempty"`
 	SourceCodeJobFacet         *SourceCodeJobFacet         `json:"sourceCode,omitempty"`
@@ -61,10 +63,12 @@ type RunFacets struct {
 	ExternalQueryRunFacet        *ExternalQueryRunFacet        `json:"externalQuery,omitempty"`
 	ExtractionErrorRunFacet      *ExtractionErrorRunFacet      `json:"extractionError,omitempty"`
 	JobDependenciesRunFacet      *JobDependenciesRunFacet      `json:"jobDependencies,omitempty"`
+	LineageRunFacet              *LineageRunFacet              `json:"lineage,omitempty"`
 	NominalTimeRunFacet          *NominalTimeRunFacet          `json:"nominalTime,omitempty"`
 	ParentRunFacet               *ParentRunFacet               `json:"parent,omitempty"`
 	ProcessingEngineRunFacet     *ProcessingEngineRunFacet     `json:"processing_engine,omitempty"`
 	TagsRunFacet                 *TagsRunFacet                 `json:"tags,omitempty"`
+	TestRunFacet                 *TestRunFacet                 `json:"test,omitempty"`
 	GcpComposerRunFacet          *GcpComposerRunFacet          `json:"gcp_composer_run,omitempty"`
 	GcpDataprocRunFacet          *GcpDataprocRunFacet          `json:"gcp_dataproc,omitempty"`
 }
@@ -219,6 +223,16 @@ func (f *LifecycleStateChangeDatasetFacet) Apply(facets **DatasetFacets) {
 	(*facets).LifecycleStateChangeDatasetFacet = f
 }
 
+var _ DatasetFacet = (*LineageDatasetFacet)(nil)
+
+// Apply sets this LineageDatasetFacet facet in the DatasetFacets container.
+func (f *LineageDatasetFacet) Apply(facets **DatasetFacets) {
+	if *facets == nil {
+		*facets = &DatasetFacets{}
+	}
+	(*facets).LineageDatasetFacet = f
+}
+
 var _ DatasetFacet = (*OwnershipDatasetFacet)(nil)
 
 // Apply sets this OwnershipDatasetFacet facet in the DatasetFacets container.
@@ -287,6 +301,16 @@ func (f *JobTypeJobFacet) Apply(facets **JobFacets) {
 		*facets = &JobFacets{}
 	}
 	(*facets).JobTypeJobFacet = f
+}
+
+var _ JobFacet = (*LineageJobFacet)(nil)
+
+// Apply sets this LineageJobFacet facet in the JobFacets container.
+func (f *LineageJobFacet) Apply(facets **JobFacets) {
+	if *facets == nil {
+		*facets = &JobFacets{}
+	}
+	(*facets).LineageJobFacet = f
 }
 
 var _ JobFacet = (*OwnershipJobFacet)(nil)
@@ -419,6 +443,16 @@ func (f *JobDependenciesRunFacet) Apply(facets **RunFacets) {
 	(*facets).JobDependenciesRunFacet = f
 }
 
+var _ RunFacet = (*LineageRunFacet)(nil)
+
+// Apply sets this LineageRunFacet facet in the RunFacets container.
+func (f *LineageRunFacet) Apply(facets **RunFacets) {
+	if *facets == nil {
+		*facets = &RunFacets{}
+	}
+	(*facets).LineageRunFacet = f
+}
+
 var _ RunFacet = (*NominalTimeRunFacet)(nil)
 
 // Apply sets this NominalTimeRunFacet facet in the RunFacets container.
@@ -457,6 +491,16 @@ func (f *TagsRunFacet) Apply(facets **RunFacets) {
 		*facets = &RunFacets{}
 	}
 	(*facets).TagsRunFacet = f
+}
+
+var _ RunFacet = (*TestRunFacet)(nil)
+
+// Apply sets this TestRunFacet facet in the RunFacets container.
+func (f *TestRunFacet) Apply(facets **RunFacets) {
+	if *facets == nil {
+		*facets = &RunFacets{}
+	}
+	(*facets).TestRunFacet = f
 }
 
 var _ RunFacet = (*GcpComposerRunFacet)(nil)
@@ -1012,6 +1056,78 @@ func (f *LifecycleStateChangeDatasetFacet) WithPreviousIdentifier(previousIdenti
 	return f
 }
 
+// NewLineageDatasetFacet creates a new LineageDatasetFacet facet.
+func NewLineageDatasetFacet(
+	producer string,
+) *LineageDatasetFacet {
+	return &LineageDatasetFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/LineageDatasetFacet.json",
+	}
+}
+
+// WithDeleted sets the Deleted field on this LineageDatasetFacet.
+func (f *LineageDatasetFacet) WithDeleted(deleted bool) *LineageDatasetFacet {
+	f.Deleted = &deleted
+
+	return f
+}
+
+// WithFields sets the Fields field on this LineageDatasetFacet.
+func (f *LineageDatasetFacet) WithFields(fields map[string]FieldClass) *LineageDatasetFacet {
+	f.Fields = fields
+
+	return f
+}
+
+// WithInputs sets the Inputs field on this LineageDatasetFacet.
+func (f *LineageDatasetFacet) WithInputs(inputs []InputClass) *LineageDatasetFacet {
+	f.Inputs = inputs
+
+	return f
+}
+
+// NewLineageJobFacet creates a new LineageJobFacet facet.
+func NewLineageJobFacet(
+	producer string,
+) *LineageJobFacet {
+	return &LineageJobFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/LineageJobFacet.json",
+	}
+}
+
+// WithDeleted sets the Deleted field on this LineageJobFacet.
+func (f *LineageJobFacet) WithDeleted(deleted bool) *LineageJobFacet {
+	f.Deleted = &deleted
+
+	return f
+}
+
+// WithLineage sets the Lineage field on this LineageJobFacet.
+func (f *LineageJobFacet) WithLineage(lineage []LineageElement) *LineageJobFacet {
+	f.Lineage = lineage
+
+	return f
+}
+
+// NewLineageRunFacet creates a new LineageRunFacet facet.
+func NewLineageRunFacet(
+	producer string,
+) *LineageRunFacet {
+	return &LineageRunFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/LineageRunFacet.json",
+	}
+}
+
+// WithLineage sets the Lineage field on this LineageRunFacet.
+func (f *LineageRunFacet) WithLineage(lineage []LineageClass) *LineageRunFacet {
+	f.Lineage = lineage
+
+	return f
+}
+
 // NewNominalTimeRunFacet creates a new NominalTimeRunFacet facet.
 func NewNominalTimeRunFacet(
 	producer string,
@@ -1236,7 +1352,7 @@ func NewSourceCodeLocationJobFacet(
 ) *SourceCodeLocationJobFacet {
 	return &SourceCodeLocationJobFacet{
 		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/SourceCodeLocationJobFacet.json",
+		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/SourceCodeLocationJobFacet.json",
 		Type:      typ,
 		URL:       url,
 	}
@@ -1259,6 +1375,13 @@ func (f *SourceCodeLocationJobFacet) WithBranch(branch string) *SourceCodeLocati
 // WithPath sets the Path field on this SourceCodeLocationJobFacet.
 func (f *SourceCodeLocationJobFacet) WithPath(path string) *SourceCodeLocationJobFacet {
 	f.Path = &path
+
+	return f
+}
+
+// WithPullRequestNumber sets the PullRequestNumber field on this SourceCodeLocationJobFacet.
+func (f *SourceCodeLocationJobFacet) WithPullRequestNumber(pullRequestNumber string) *SourceCodeLocationJobFacet {
+	f.PullRequestNumber = &pullRequestNumber
 
 	return f
 }
@@ -1395,6 +1518,23 @@ func NewTagsRunFacet(
 // WithTags sets the Tags field on this TagsRunFacet.
 func (f *TagsRunFacet) WithTags(tags []TagsTag) *TagsRunFacet {
 	f.Tags = tags
+
+	return f
+}
+
+// NewTestRunFacet creates a new TestRunFacet facet.
+func NewTestRunFacet(
+	producer string,
+) *TestRunFacet {
+	return &TestRunFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/TestRunFacet.json",
+	}
+}
+
+// WithTests sets the Tests field on this TestRunFacet.
+func (f *TestRunFacet) WithTests(tests []TestElement) *TestRunFacet {
+	f.Tests = tests
 
 	return f
 }
