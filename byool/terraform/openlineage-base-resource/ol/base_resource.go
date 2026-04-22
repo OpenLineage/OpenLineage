@@ -21,10 +21,10 @@ const backendNilDetail = "Backend is nil. " +
 // JobResourceBackend and DatasetResourceBackend embed this interface and each
 // add their own Capability() method returning the appropriate capability type.
 //
-// The unexported baseSchema() method is satisfied through promotion: types
-// that embed BaseJobResource or BaseDatasetResource get the right implementation
-// automatically. This enforces the expected embedding pattern and lets
-// resourceBase.Schema be defined once for both resource types.
+// BaseSchema() is satisfied through promotion: types that embed BaseJobResource
+// or BaseDatasetResource get the right implementation automatically. This enforces
+// the expected embedding pattern and lets resourceBase.Schema be defined once for
+// both resource types.
 type ResourceBackend interface {
 	// ConsumerConfigure initialises the consumer client from provider config.
 	ConsumerConfigure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse)
@@ -91,9 +91,9 @@ func (r *resourceBase[B]) mergeConsumerSchema(out *schema.Schema, base schema.Sc
 	*out = base
 }
 
-// Schema calls Backend.baseSchema() to obtain the capability-driven base schema,
+// Schema calls Backend.BaseSchema() to obtain the capability-driven base schema,
 // then merges in any consumer-specific attributes and blocks.
-// baseSchema() is implemented by BaseJobResource and BaseDatasetResource and
+// BaseSchema() is implemented by BaseJobResource and BaseDatasetResource and
 // promoted to consumer types through embedding.
 func (r *resourceBase[B]) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	if !r.checkBackend(&resp.Diagnostics) {

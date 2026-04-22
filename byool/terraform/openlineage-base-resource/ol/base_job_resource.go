@@ -12,15 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-// JobResourceBackend defines the consumer-specific operations that BaseJobResource
-// delegates to. Each consumer (Dataplex, Marquez, …) implements this interface.
+// JobResourceBackend defines the consumer-specific operations for job resources.
 // The 7 shared methods are inherited from ResourceBackend; only Capability() is added here.
-//
-// Java analogy:
-//
-//	interface JobResourceBackend extends ResourceBackend {
-//	    JobCapability capability();
-//	}
 type JobResourceBackend interface {
 	ResourceBackend
 	// Capability declares which OL facets this consumer supports.
@@ -28,21 +21,8 @@ type JobResourceBackend interface {
 }
 
 // BaseJobResource is the generic base for all job resources.
-// Owns Metadata, Schema, and the full CRUD flow (Configure/Create/Read/Update/Delete
-// are promoted from resourceBase).
-//
-// Usage:
-//
-//	type DataplexJobResource struct {
-//	    ol.BaseJobResource
-//	    dpClient *dataplexClient
-//	}
-//
-//	func NewDataplexJobResource() resource.Resource {
-//	    r := &DataplexJobResource{}
-//	    r.Backend = r  // self-reference: concrete struct IS the backend
-//	    return r
-//	}
+// Directly owns Metadata and BaseSchema; Configure/Create/Read/Update/Delete/Schema
+// are promoted from resourceBase.
 type BaseJobResource struct {
 	resourceBase[JobResourceBackend]
 }

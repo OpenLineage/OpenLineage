@@ -46,9 +46,6 @@ func (m *OwnershipJobModel) BuildJobFacet(producer string, diags *diag.Diagnosti
 	return facets.NewOwnershipJobFacet(producer).WithOwners(owners)
 }
 
-// BuildJobFacet builds a DocumentationJobFacet.
-// DocumentationModel also implements DatasetFacetBuilder — both methods share the struct,
-// but produce different facet types.
 func (m *DocumentationModel) BuildJobFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.JobFacet {
 	df := facets.NewDocumentationJobFacet(producer, requireString(diags, m.Description, base.AtName("description")))
 	df.ContentType = stringPtrIfKnown(m.ContentType)
@@ -85,16 +82,15 @@ func (m *SQLJobModel) BuildJobFacet(producer string, diags *diag.Diagnostics, ba
 	return sf
 }
 
-// tagsJobModels is an unexported named type that lets []TagsJobModel satisfy JobFacetBuilder.
-// REPLACED — see TagsJobFacetModel.BuildJobFacet below.
-
 func (m *TagsJobFacetModel) BuildJobFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.JobFacet {
 	tags := make([]facets.TagClass, 0, len(m.Tag))
 	for i, t := range m.Tag {
+		tp := base.AtName("tag").AtListIndex(i)
 		if !isKnownString(t.Name) || !isKnownString(t.Value) {
+			_ = requireString(diags, t.Name, tp.AtName("name"))
+			_ = requireString(diags, t.Value, tp.AtName("value"))
 			continue
 		}
-		tp := base.AtName("tag").AtListIndex(i)
 		tc := facets.TagClass{
 			Key:   requireString(diags, t.Name, tp.AtName("name")),
 			Value: requireString(diags, t.Value, tp.AtName("value")),
@@ -110,8 +106,6 @@ func (m *TagsJobFacetModel) BuildJobFacet(producer string, diags *diag.Diagnosti
 
 // ── Dataset facet models ──────────────────────────────────────────────────────
 
-// BuildDatasetFacet builds a DocumentationDatasetFacet.
-// DocumentationModel also implements JobFacetBuilder.
 func (m *DocumentationModel) BuildDatasetFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.DatasetFacet {
 	df := facets.NewDocumentationDatasetFacet(producer, requireString(diags, m.Description, base.AtName("description")))
 	df.ContentType = stringPtrIfKnown(m.ContentType)
@@ -245,8 +239,6 @@ func (m *TagsDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag.D
 	return facets.NewTagsDatasetFacet(producer).WithTags(elements)
 }
 
-// BuildDatasetFacet builds a ColumnLineageDatasetFacet.
-// ColumnLineageDatasetModel is output-only — it lives on OLOutputModel, not DatasetModel.
 func (m *ColumnLineageDatasetModel) BuildDatasetFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.DatasetFacet {
 	fields := make(map[string]facets.FieldValue)
 	var datasetElements []facets.DatasetElement

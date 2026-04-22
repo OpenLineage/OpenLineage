@@ -150,6 +150,6 @@ func (c DatasetCapability) WithFacetEnabled(facets ...DatasetFacet) DatasetCapab
 // IsEnabled reports whether a dataset facet is active in this capability.
 func (c DatasetCapability) IsEnabled(f DatasetFacet) bool { return c.isDatasetEnabled(f) }
 
-// IsDatasetEnabled is an alias for IsEnabled, satisfying the datasetFacetSelector
-// interface so DatasetCapability can be passed alongside JobCapability to shared helpers.
+// IsDatasetEnabled is an alias for IsEnabled, provided for consistency with
+// JobCapability so both types can be used interchangeably in shared helpers.
 func (c DatasetCapability) IsDatasetEnabled(f DatasetFacet) bool { return c.isDatasetEnabled(f) }
