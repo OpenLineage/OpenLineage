@@ -615,7 +615,7 @@ class OpenLineageClient:
         return event
 
     def normalize_datasets(self, event: Event) -> Event:
-        if not isinstance(event, (RunEvent, event_v2.RunEvent)):
+        if not isinstance(event, event_v2.RunEvent):
             return event
         if event.inputs:
             event.inputs[:] = self._dataset_normalizer.normalize_inputs(event.inputs)
