@@ -176,7 +176,16 @@ class DatasetNormalizer:
         while True:
             new_name = name
             for trimmer in self.trimmers:
-                new_name = trimmer.trim(new_name)
+                try:
+                    new_name = trimmer.trim(new_name)
+                except Exception as e:
+                    log.debug(
+                        "Skipping trimmer '%s' due to an error when trimming dataset name '%s': %s.",
+                        f"{trimmer.__class__.__module__}.{trimmer.__class__.__name__}",
+                        name,
+                        e,
+                    )
+                    continue
 
             if new_name == name:
                 return name, was_trimmed
