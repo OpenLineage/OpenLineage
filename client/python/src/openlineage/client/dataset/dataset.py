@@ -21,12 +21,12 @@ from openlineage.client.utils import import_from_string
 
 log = logging.getLogger(__name__)
 
-BUILTIN_TRIMMERS = [
+BUILTIN_TRIMMERS = (
     KeyValueTrimmer,
     DateTrimmer,
     MultiDirDateTrimmer,
     YearMonthTrimmer,
-]
+)
 
 
 @attr.define

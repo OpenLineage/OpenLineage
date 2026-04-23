@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
+from abc import ABC, abstractmethod
 from datetime import datetime
 
 
@@ -13,7 +14,7 @@ def _valid_date(text: str, fmt: str) -> bool:
         return False
 
 
-class DatasetNameTrimmer:
+class DatasetNameTrimmer(ABC):
     """
     DatasetNameTrimmer interface for dataset name trimmers in OpenLineage events.
 
@@ -23,8 +24,8 @@ class DatasetNameTrimmer:
 
     SEPARATOR = "/"
 
-    def trim(self, name: str) -> str:
-        raise NotImplementedError
+    @abstractmethod
+    def trim(self, name: str) -> str: ...
 
     def _get_last_part(self, name: str) -> str:
         if not name or self.SEPARATOR not in name:
