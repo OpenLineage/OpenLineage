@@ -63,7 +63,6 @@ public class CreateReplaceDatasetBuilder
     Identifier identifier;
     StructType schema;
     OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange;
-
     if (x instanceof CreateTableAsSelect) {
       CreateTableAsSelect command = (CreateTableAsSelect) x;
       tableCatalog = command.catalog();
