@@ -55,6 +55,12 @@ def deep_merge_dicts(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[Any, 
     return merged
 
 
+def split_into_list(value: str | list[str]) -> list[str]:
+    if isinstance(value, list):
+        return value
+    return [item.strip() for item in value.split(";") if item.strip()]
+
+
 class RedactMixin:
     _skip_redact: ClassVar[list[str]] = []
 

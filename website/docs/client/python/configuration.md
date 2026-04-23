@@ -15,6 +15,7 @@ The OpenLineage Python client supports four main configuration sections that con
 2. **Facets** - Configures some facets (e.g., which environment variables are attached to events as facet)
 3. **Filters** - Defines rules to selectively exclude certain events from being emitted
 4. **Tags** - Configures custom tags added to jobs and runs entities as custom facet.
+5. **Dataset Name Normalization** - Configures dataset name trimmers that strip trailing name segments from path-like names.
 
 Configuration can be provided in several ways:
 
@@ -1970,4 +1971,154 @@ client = OpenLineageClient(config=config)
 
 </TabItem>
 </Tabs>
+
+
+## Dataset Name Normalization
+
+Dataset names may sometimes not represent an actual dataset, but rather it's subset.
+This is mainly an issue with object storage paths with partitioning,
+e.g. `s3://bucket/dataset/dt=2025-09-01/`, where the actual dataset is `s3://bucket/dataset`,
+while the trailing `/dt=2025-09-01/` segment represents a subset of the dataset.
+
+To address this, a **dataset name trimmer** can be applied to trim trailing name segments that are not part of the actual dataset name.
+
+### How It Works
+- The **trimmed dataset name** becomes the dataset name.
+- The **full, non-trimmed dataset name** is stored in the **subset definition facet** as a `LocationSubsetCondition`.
+- All datasets with the same name after trimming are treated as a single dataset (assuming they do not differ in other ways).
+
+### Why It Matters
+This approach is especially useful for input datasets, where multiple paths may point to the same directory.
+
+- The **subset definition facet** captures all directories read.
+- This reduces the size of OpenLineage events by avoiding duplication, since otherwise each directory would be treated as a separate dataset.
+
+### Reducing Datasets in Python Client
+Datasets are reduced into a single dataset only if:
+1. Their names are trimmed to the same dataset name.
+2. They share identical facets.
+
+Dataset name normalization is **disabled by default**. It must be explicitly enabled via the `normalization_enabled` flag.
+
+The list of enabled trimmers can be managed using `disabled_trimmers` and `extra_trimmers` configuration parameters.
+
+In most cases, trimmers work on the last directory segment of the dataset name.
+
+The trimming process runs repeatedly (in a loop), applying trimmers one by one
+in an undefined order until no additional segments of the path can be removed.
+The iterative nature of the process allows for trimming of multiple segments of the path,
+e.g. `/path/2025-09-01/hour=05/` → `/path` (both `dt=2025-09-01` and `hour=05` segments are removed).
+If one of the trimmers fails for any reason, it is skipped and the process continues with the next trimmer.
+
+### Built-in Trimmers
+By default, the OpenLineage Python client comes with the following trimmers:
+* `openlineage.client.dataset.trimmers.KeyValueTrimmer`
+* `openlineage.client.dataset.trimmers.DateTrimmer`
+* `openlineage.client.dataset.trimmers.MultiDirDateTrimmer`
+* `openlineage.client.dataset.trimmers.YearMonthTrimmer`
+
+#### KeyValueTrimmer
+
+Removes the last segment of the dataset name if it follows a `key=value` pattern.
+
+* `/path/dt=2025-09-01/` → becomes `/path`
+* `/path/key=value/example/hour=05/` → becomes `/path/key=value/example`
+
+#### DateTrimmer
+
+Removes the last segment of the dataset name is a date-like. It must be a valid and recognized date pattern (`yyyy-MM-dd`, `dd.MM.yyyy`, `yyyyMMdd`).
+Additionally, it can contain extra digits and the following non-numeric characters:`T`, `Z`, `:`, `.`, `-`.
+
+* `/path/20250901/` → becomes `/path`
+* `/path/2025-09-01/` → becomes `/path`
+* `/path/20250722T901Z/` → becomes `/path`
+* `/path/2025-09-01/example/20250901/` → becomes `/path/2025-09-01/example`
+* `/path/2025-25-01/` → remains unchanged as it is not a valid date
+
+#### MultiDirDateTrimmer
+
+Remove multiple trailing segments at once if they represent a valid date or year/month.
+
+* `/path/2025/09/01/` → becomes `/path`
+* `/path/2025/09/` → becomes `/path`
+* `/path/2025/13/` → remains unchanged as it is not a valid date
+
+#### YearMonthTrimmer
+
+Removes the last segment if it is a valid year and month (in format of `yyyyMM` or `yyyy-MM`).
+
+* `/path/202509/` → becomes `/path`
+* `/path/2025-09/` → becomes `/path`
+* `/path/2025-09/example/202509` → becomes `/path/2025-09/example`
+* `/path/202533/` → remains unchanged as it is not a valid date
+
+### Configuration
+
+Dataset name normalization is configured under the `dataset` key. The following options are available:
+
+| Option                  | Type                         | Default | Description                                                                        |
+|-------------------------|------------------------------|---------|------------------------------------------------------------------------------------|
+| `normalization_enabled` | `bool`                       | `false` | Enables dataset name normalization.                                                |
+| `disabled_trimmers`     | `str` (comma-separated list) |         | Fully qualified class names of [built-in trimmers](#built-in-trimmers) to disable. |
+| `extra_trimmers`        | `str` (comma-separated list) |         | Fully qualified class names of additional custom trimmers to enable.               |
+
+#### Examples
+
+<Tabs groupId="dataset-normalization">
+<TabItem value="env-vars" label="Environment Variables">
+
+```sh
+OPENLINEAGE__DATASET__NORMALIZATION_ENABLED=true
+OPENLINEAGE__DATASET__DISABLED_TRIMMERS="openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer"
+OPENLINEAGE__DATASET__EXTRA_TRIMMERS="mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer"
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML Config">
+
+```yaml
+dataset:
+  normalization_enabled: true
+  disabled_trimmers: "openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer"
+  extra_trimmers: "mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer"
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+
+config = {
+    "dataset": {
+        "normalization_enabled": True,
+        "disabled_trimmers": "openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer",
+        "extra_trimmers": "mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer",
+    },
+    "transport": {"type": "console"}
+}
+client = OpenLineageClient(config=config)
+```
+
+</TabItem>
+</Tabs>
+
+### Custom Trimmers
+
+You can implement your own trimmer by subclassing `DatasetNameTrimmer`:
+
+```python
+from openlineage.client.dataset.trimmers import DatasetNameTrimmer
+
+class CustomTrimmer(DatasetNameTrimmer):
+    def trim(self, name: str) -> str:
+        # Custom trimming logic
+        last = self._get_last_part(name)
+        if last.startswith("custom_prefix_"):
+            return self._remove_last_part(name)
+        return name
+```
+
+Register the trimmer using its fully qualified class name in the `extra_trimmers` configuration.
+
 
