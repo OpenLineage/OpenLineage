@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
+import io.openlineage.spark.agent.util.HierarchyDatasetFacetUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -85,5 +86,11 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                     tableCatalog,
                     ScalaConversionUtils.fromMap(catalogTable.properties()),
                     builder));
+
+    builder
+        .getFacets()
+        .hierarchy(
+            HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                context.getOpenLineage(), catalogName, catalogTable.identifier()));
   }
 }
