@@ -54,6 +54,7 @@ TEMPLATES_LOCATION = FILE_LOCATION / "templates"
 # Contains schema URLs and base IDs parsed from specification files
 SCHEMA_URLS: dict[str, str] = {}
 BASE_IDS: dict[str, str] = {}
+FACET_KEYS: dict[str, str] = {}
 
 
 def deep_merge_dicts(dict1: dict[str, Any], dict2: dict[str, Any]) -> dict[str, Any]:
@@ -75,20 +76,49 @@ def deep_merge_dicts(dict1: dict[str, Any], dict2: dict[str, Any]) -> dict[str, 
     return merged
 
 
+def _collect_facet_field_names(class_def: dict[str, Any]) -> set[str]:
+    """Return all property names defined directly on a facet class.
+
+    Handles both flat ``properties`` and ``allOf`` schemas.
+    """
+    names: set[str] = set()
+    names.update(class_def.get("properties", {}).keys())
+    for sub in class_def.get("allOf", []):
+        names.update(sub.get("properties", {}).keys())
+    return names
+
+
 def parse_additional_data(spec: dict[str, Any], file_name: str) -> None:
     """Parse additional data from spec files.
 
     Parses:
         * schema URLs
         * base IDs
+        * facet keys
 
-    Updates the module-level SCHEMA_URLS and BASE_IDS dictionaries
+    Updates the module-level SCHEMA_URLS, BASE_IDS, and FACET_KEYS dictionaries
     that can be imported by other modules.
+
+    Raises ValueError if a facet class defines a field named ``key``, which would
+    conflict with the generated ``key: ClassVar[str]`` attribute.
     """
     base_id = spec["$id"]
     for name, _ in spec["$defs"].items():
         SCHEMA_URLS[name] = f"{base_id}#/$defs/{name}"
         BASE_IDS[file_name] = spec["$id"]
+    for facet_key, ref_obj in spec.get("properties", {}).items():
+        if "$ref" in ref_obj:
+            class_name = ref_obj["$ref"].split("/")[-1]
+            FACET_KEYS[class_name] = facet_key
+            class_def = spec["$defs"].get(class_name, {})
+            field_names = _collect_facet_field_names(class_def)
+            if "key" in field_names:
+                msg = (
+                    f"Facet '{class_name}' in '{file_name}' defines a field named 'key', "
+                    f"which conflicts with the generated 'key: ClassVar[str]' attribute. "
+                    f"Please rename the field in the spec."
+                )
+                raise ValueError(msg)
 
 
 def load_specs(base_spec_location: pathlib.Path, facets_spec_location: pathlib.Path) -> list[pathlib.Path]:

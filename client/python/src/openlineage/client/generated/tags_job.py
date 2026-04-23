@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import JobFacet
 from openlineage.client.utils import RedactMixin
@@ -12,6 +14,8 @@ from openlineage.client.utils import RedactMixin
 class TagsJobFacet(JobFacet):
     tags: list[TagsJobFacetFields] | None = attr.field(factory=list)
     """The tags applied to the job facet"""
+
+    key: ClassVar[str] = "tags"
 
     @staticmethod
     def _get_schema() -> str:
