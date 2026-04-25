@@ -57,6 +57,12 @@ def dbt_artifact_processor():
             {"account": "gp12345.us-east-1"},
         ),  # Snowflake
         ("job_id", Adapter.BIGQUERY, "bigquery", {}),  # BigQuery
+        (
+            "query_id",
+            Adapter.FABRIC,
+            "fabric://myworkspace.datawarehouse.fabric.microsoft.com",
+            {"server": "myworkspace.datawarehouse.fabric.microsoft.com"},
+        ),  # Microsoft Fabric
     ],
 )
 def test_get_query_id(
@@ -115,6 +121,18 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     generated_query_id = dbt_artifact_processor.get_query_id(run_result)
 
     assert generated_query_id is None
+
+
+def test_fabric_namespace_with_port(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.FABRIC
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433}
+    )
+
+    assert (
+        dbt_artifact_processor.dataset_namespace
+        == "fabric://myworkspace.datawarehouse.fabric.microsoft.com:1433"
+    )
 
 
 class TestParseSeverity:
