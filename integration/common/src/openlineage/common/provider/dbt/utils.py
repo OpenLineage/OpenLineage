@@ -169,6 +169,8 @@ def get_job_type(event) -> str | None:
         return "SQL"
     elif node_type in ("MainReportVersion", "CommandCompleted"):
         return "JOB"
+    elif node_unique_id is None:
+        return None
     elif node_unique_id.startswith("model."):
         return "MODEL"
     elif node_unique_id.startswith("snapshot."):

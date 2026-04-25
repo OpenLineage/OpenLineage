@@ -1,7 +1,7 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import pytest
-from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION
+from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, get_job_type
 from openlineage.common.utils import (
     IncrementalFileReader,
     add_command_line_arg,
@@ -196,3 +196,48 @@ def test_incremental_file_reader(incremental_reads, expected_lines):
         actual_lines_read.append(line)
 
     assert expected_lines == actual_lines_read
+
+
+def _make_event(node_name: str, node_unique_id: str | None = None) -> dict:
+    """Helper to build a minimal dbt structured-log event for get_job_type tests."""
+    event: dict = {"info": {"name": node_name}, "data": {}}
+    if node_unique_id is not None:
+        event["data"]["node_info"] = {"unique_id": node_unique_id}
+    return event
+
+
+@pytest.mark.parametrize(
+    "node_name, node_unique_id, expected",
+    [
+        ("SQLQuery", None, "SQL"),
+        ("SQLQuery", "model.project.my_model", "SQL"),
+        ("MainReportVersion", None, "JOB"),
+        ("CommandCompleted", None, "JOB"),
+        # None guard: should return None instead of raising AttributeError
+        ("NodeStart", None, None),
+        ("NodeFinished", None, None),
+        # Valid unique_id prefixes
+        ("NodeFinished", "model.project.my_model", "MODEL"),
+        ("NodeFinished", "snapshot.project.my_snapshot", "SNAPSHOT"),
+        ("NodeFinished", "seed.project.my_seed", "SEED"),
+        ("NodeFinished", "test.project.my_test", "TEST"),
+        # Unknown prefix should return None
+        ("NodeFinished", "source.project.my_source", None),
+    ],
+    ids=[
+        "sql_query_no_uid",
+        "sql_query_with_uid",
+        "main_report_version",
+        "command_completed",
+        "node_start_none_uid",
+        "node_finished_none_uid",
+        "model_prefix",
+        "snapshot_prefix",
+        "seed_prefix",
+        "test_prefix",
+        "unknown_prefix",
+    ],
+)
+def test_get_job_type(node_name, node_unique_id, expected):
+    event = _make_event(node_name, node_unique_id)
+    assert get_job_type(event) == expected
