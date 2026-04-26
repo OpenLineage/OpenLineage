@@ -430,8 +430,7 @@ class DbtArtifactProcessor:
                             namespace=namespace,
                             name=name,
                             inputFacets=dataset_facets,
-                            # TODO: remove this next release
-                            facets=dataset_facets,  # type: ignore
+
                         )
                     ],
                     None,
