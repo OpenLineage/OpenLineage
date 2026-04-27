@@ -151,6 +151,15 @@ export const Producers: Array<Partner> = [
     org_url: "https://matillion.com/",
   },
   {
+    image: "provero_logo.svg",
+    org: "Provero",
+    full_name: "Provero",
+    description:
+      "Provero is a declarative data quality engine (Apache 2.0) that natively emits spec-compliant OpenLineage RunEvents with DataQualityAssertionsDatasetFacet and DataQualityMetricsInputDatasetFacet.",
+    docs_url: "https://github.com/provero-org/provero/blob/main/provero-core/src/provero/exporters/openlineage.py",
+    org_url: "https://github.com/provero-org/provero",
+  },
+  {
     image: "oleander_logo_full.png",
     org: "oleander",
     full_name: "oleander",
