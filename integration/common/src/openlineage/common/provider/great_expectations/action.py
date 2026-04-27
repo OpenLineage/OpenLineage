@@ -6,7 +6,7 @@ import logging
 import os
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List, Literal, Optional
+from typing import Literal
 from urllib.parse import urlparse
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
@@ -93,19 +93,19 @@ class OpenLineageValidationAction(ValidationAction):
 
     # Pydantic field definitions with defaults
     type: Literal["openlineage"] = "openlineage"
-    openlineage_host: Optional[str] = None
-    openlineage_namespace: Optional[str] = None
-    openlineage_apiKey: Optional[str] = None
-    openlineage_parent_run_id: Optional[str] = None
-    openlineage_parent_job_namespace: Optional[str] = None
-    openlineage_parent_job_name: Optional[str] = None
-    openlineage_root_parent_run_id: Optional[str] = None
-    openlineage_root_parent_job_namespace: Optional[str] = None
-    openlineage_root_parent_job_name: Optional[str] = None
-    job_name: Optional[str] = None
-    job_description: Optional[str] = None
-    code_location: Optional[str] = None
-    openlineage_run_id: Optional[str] = None
+    openlineage_host: str | None = None
+    openlineage_namespace: str | None = None
+    openlineage_apiKey: str | None = None
+    openlineage_parent_run_id: str | None = None
+    openlineage_parent_job_namespace: str | None = None
+    openlineage_parent_job_name: str | None = None
+    openlineage_root_parent_run_id: str | None = None
+    openlineage_root_parent_job_namespace: str | None = None
+    openlineage_root_parent_job_name: str | None = None
+    job_name: str | None = None
+    job_description: str | None = None
+    code_location: str | None = None
+    openlineage_run_id: str | None = None
     do_publish: bool = True
 
     @validator("openlineage_namespace", pre=True, always=True)
@@ -151,7 +151,7 @@ class OpenLineageValidationAction(ValidationAction):
         else:
             log.warning(f"Unsupported execution engine type: {type(data_asset.execution_engine)}")
             datasets = []
-        run_facets: Dict[str, RunFacet] = {}
+        run_facets: dict[str, RunFacet] = {}
         if self.openlineage_parent_run_id is not None:
             root = None
             if self.openlineage_root_parent_run_id is not None:
@@ -190,7 +190,7 @@ class OpenLineageValidationAction(ValidationAction):
                 )
             }
         )
-        job_facets: Dict[str, JobFacet] = {}
+        job_facets: dict[str, JobFacet] = {}
         if self.job_description:
             job_facets["documentation"] = documentation_job.DocumentationJobFacet(self.job_description)
         if self.code_location:
@@ -229,7 +229,7 @@ class OpenLineageValidationAction(ValidationAction):
         self,
         data_asset: Validator,  # Modern GE v3 Validator only
         validation_result_suite: ExpectationSuiteValidationResult,
-    ) -> List[OLDataset]:
+    ) -> list[OLDataset]:
         """
         Generate a list of OpenLineage Datasets from a Validator with PandasExecutionEngine
         :param data_asset: Validator with PandasExecutionEngine
@@ -292,7 +292,7 @@ class OpenLineageValidationAction(ValidationAction):
         self,
         data_asset: Validator,  # Modern GE v3 Validator only
         validation_result_suite: ExpectationSuiteValidationResult,
-    ) -> List[OLDataset]:
+    ) -> list[OLDataset]:
         """
         Generate a list of OpenLineage Datasets from a Validator with SqlAlchemyExecutionEngine.
         :param data_asset: Validator with SqlAlchemyExecutionEngine
@@ -363,10 +363,10 @@ class OpenLineageValidationAction(ValidationAction):
         self,
         batch_data: SqlAlchemyBatchData,  # Modern GE v3 SqlAlchemyBatchData only
         meta: MetaData,
-        schema: Optional[str],
+        schema: str | None,
         table_name: str,
         validation_result_suite: ExpectationSuiteValidationResult,
-    ) -> Optional[OLDataset]:
+    ) -> OLDataset | None:
         """
         Construct a Dataset from the connection url and the columns returned from SqlAlchemyBatchData
         :param batch_data: SqlAlchemyBatchData from the active batch
@@ -461,13 +461,13 @@ class OpenLineageValidationAction(ValidationAction):
 
     def parse_data_quality_facet(
         self, validation_result: ExpectationSuiteValidationResult
-    ) -> Optional[data_quality_metrics_input_dataset.DataQualityMetricsInputDatasetFacet]:
+    ) -> data_quality_metrics_input_dataset.DataQualityMetricsInputDatasetFacet | None:
         """
         Parse the validation result and extract a DataQualityDatasetFacet
         :param validation_result:
         :return:
         """
-        facet_data: Dict[str, defaultdict] = {"columnMetrics": defaultdict(dict)}
+        facet_data: dict[str, defaultdict] = {"columnMetrics": defaultdict(dict)}
 
         # try to get to actual expectations results
         try:
@@ -494,7 +494,7 @@ class OpenLineageValidationAction(ValidationAction):
 
     def parse_assertions(
         self, validation_result: ExpectationSuiteValidationResult
-    ) -> Optional[GreatExpectationsAssertionsDatasetFacet]:
+    ) -> GreatExpectationsAssertionsDatasetFacet | None:
         assertions = []
 
         try:

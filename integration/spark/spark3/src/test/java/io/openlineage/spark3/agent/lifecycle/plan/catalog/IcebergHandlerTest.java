@@ -253,6 +253,51 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
+  @Test
+  @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
+  void testGetDatasetIdentifierForIcebergGlueCatalog() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    sparkConf.set("spark.glue.accountId", "1122334455");
+    sparkConf.set(
+        "spark.sql.catalog.iceberg.catalog-impl", "org.apache.iceberg.aws.glue.GlueCatalog");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.iceberg.catalog-impl",
+                "org.apache.iceberg.aws.glue.GlueCatalog",
+                "spark.sql.catalog.iceberg.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("iceberg");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"database"}, "table"),
+            new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-west-2:1122334455")
+        .hasFieldOrPropertyWithValue("name", "table/database/table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
   private static Stream<Arguments> missingTableOptions() {
     return Stream.of(
         Arguments.of(Identifier.of(new String[] {}, "table"), "table", "/tmp/iceberg/table"),
@@ -651,5 +696,164 @@ class IcebergHandlerTest {
     assertThat(facet.getCatalogProperties().getAdditionalProperties())
         .hasFieldOrPropertyWithValue("gcp_location", "eu")
         .hasFieldOrPropertyWithValue("gcp_project_id", "my-gcp-project");
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierWithSparkChangelogTable() {
+    // Test handling of table types that have a table() method but are not SparkTable
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                "file:/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "changelog_table");
+
+    // Create a mock table that is NOT a SparkTable
+    // This simulates SparkChangelogTable or other table implementations
+    org.apache.spark.sql.connector.catalog.Table mockChangelogTable =
+        mock(org.apache.spark.sql.connector.catalog.Table.class);
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(mockChangelogTable);
+
+    // When table type is unknown and has no table() method, should fallback to warehouse location
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    // Should use default location based on warehouse when table type is not recognized
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/changelog_table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
+        .hasFieldOrPropertyWithValue("name", "database.changelog_table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierWithUnknownTableType() {
+    // Test handling of completely unknown table types
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                "file:/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "unknown_table");
+
+    // Create a mock table that is NOT a SparkTable and has no table() method
+    org.apache.spark.sql.connector.catalog.Table mockUnknownTable =
+        mock(org.apache.spark.sql.connector.catalog.Table.class);
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(mockUnknownTable);
+
+    // Should fallback to warehouse location when table type is unknown
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    // Should use default location based on warehouse
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/unknown_table");
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetVersionWithSparkTable() {
+    // Test that version extraction works with SparkTable
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().currentSnapshot().snapshotId()).thenReturn(9876543210L);
+
+    Optional<String> version =
+        icebergHandler.getDatasetVersion(sparkCatalog, identifier, Collections.emptyMap());
+
+    assertThat(version.isPresent()).isTrue();
+    assertThat(version.get()).isEqualTo("9876543210");
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetVersionWithNonSparkTable() {
+    // Test that version extraction handles non-SparkTable gracefully
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    org.apache.spark.sql.connector.catalog.Table mockTable =
+        mock(org.apache.spark.sql.connector.catalog.Table.class);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.loadTable(identifier)).thenReturn(mockTable);
+
+    Optional<String> version =
+        icebergHandler.getDatasetVersion(sparkCatalog, identifier, Collections.emptyMap());
+
+    // Should return empty when table type is not supported
+    assertThat(version.isPresent()).isFalse();
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetIcebergTableWithNullTable() {
+    // Test handling of null table
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table()).thenReturn(null);
+
+    Optional<String> version =
+        icebergHandler.getDatasetVersion(sparkCatalog, identifier, Collections.emptyMap());
+
+    // Should handle null gracefully
+    assertThat(version.isPresent()).isFalse();
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetIcebergTableWithSparkSessionCatalogClassCastException() {
+    // Test handling of ClassCastException with unknown catalog type
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                "file:/tmp/warehouse"));
+
+    // Use a catalog that is neither SparkCatalog nor SparkSessionCatalog
+    org.apache.spark.sql.connector.catalog.TableCatalog unknownCatalog =
+        mock(org.apache.spark.sql.connector.catalog.TableCatalog.class);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(unknownCatalog.name()).thenReturn("test");
+
+    // Should fallback to warehouse location
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, unknownCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
   }
 }

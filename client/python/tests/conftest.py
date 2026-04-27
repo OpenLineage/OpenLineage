@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import subprocess
 import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Union
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -15,6 +15,17 @@ from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.transport.async_http import AsyncHttpTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.transport import Config, Transport
+
+
+@pytest.fixture(autouse=True)
+def _no_git_autodetect():
+    """Prevent git autodetection from injecting sourceCodeLocation facets
+    based on the repo where tests happen to run."""
+    with (
+        patch("openlineage.client.client.get_git_repo_url", return_value=None),
+        patch("openlineage.client.client._find_git_dir", return_value=None),
+    ):
+        yield
 
 
 @pytest.fixture(scope="session")
@@ -34,9 +45,9 @@ def _setup_producer(test_producer) -> None:
 
 # For testing events emitted by the client
 
-Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
-Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
-Event = Union[Event_v1, Event_v2]
+Event_v1 = RunEvent | DatasetEvent | JobEvent
+Event_v2 = event_v2.RunEvent | event_v2.DatasetEvent | event_v2.JobEvent
+Event = Event_v1 | Event_v2
 
 
 class NoOutputConfig(Config): ...

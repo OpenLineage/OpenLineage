@@ -16,8 +16,18 @@
 			"compiled": true,
 			"resource_type": "model",
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.set_query_tag", "macro.dbt.run_hooks", "macro.dbt.statement", "macro.dbt.persist_docs", "macro.dbt_snowflake.unset_query_tag"],
-				"nodes": ["model.jaffle_shop.stg_customers", "model.jaffle_shop.stg_orders", "model.jaffle_shop.stg_payments"]
+				"macros": [
+					"macro.dbt_snowflake.set_query_tag",
+					"macro.dbt.run_hooks",
+					"macro.dbt.statement",
+					"macro.dbt.persist_docs",
+					"macro.dbt_snowflake.unset_query_tag"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_customers",
+					"model.jaffle_shop.stg_orders",
+					"model.jaffle_shop.stg_payments"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -36,7 +46,10 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public",
-			"fqn": ["jaffle_shop", "customers"],
+			"fqn": [
+				"jaffle_shop",
+				"customers"
+			],
 			"unique_id": "model.jaffle_shop.customers",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -50,9 +63,15 @@
 			},
 			"tags": [],
 			"refs": [
-				["stg_customers"],
-				["stg_orders"],
-				["stg_payments"]
+				[
+					"stg_customers"
+				],
+				[
+					"stg_orders"
+				],
+				[
+					"stg_payments"
+				]
 			],
 			"sources": [],
 			"description": "This table has basic information about a customer, as well as some derived facts based on a customer's orders",
@@ -136,8 +155,17 @@
 			"compiled": true,
 			"resource_type": "model",
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.set_query_tag", "macro.dbt.run_hooks", "macro.dbt.statement", "macro.dbt.persist_docs", "macro.dbt_snowflake.unset_query_tag"],
-				"nodes": ["model.jaffle_shop.stg_orders", "model.jaffle_shop.stg_payments"]
+				"macros": [
+					"macro.dbt_snowflake.set_query_tag",
+					"macro.dbt.run_hooks",
+					"macro.dbt.statement",
+					"macro.dbt.persist_docs",
+					"macro.dbt_snowflake.unset_query_tag"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_orders",
+					"model.jaffle_shop.stg_payments"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -156,7 +184,10 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public",
-			"fqn": ["jaffle_shop", "orders"],
+			"fqn": [
+				"jaffle_shop",
+				"orders"
+			],
 			"unique_id": "model.jaffle_shop.orders",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -170,8 +201,12 @@
 			},
 			"tags": [],
 			"refs": [
-				["stg_orders"],
-				["stg_payments"]
+				[
+					"stg_orders"
+				],
+				[
+					"stg_payments"
+				]
 			],
 			"sources": [],
 			"description": "This table has basic information about orders, as well as some derived facts based on payments",
@@ -271,8 +306,14 @@
 			"compiled": true,
 			"resource_type": "model",
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.set_query_tag", "macro.dbt.create_or_replace_view", "macro.dbt.persist_docs"],
-				"nodes": ["seed.jaffle_shop.raw_customers"]
+				"macros": [
+					"macro.dbt_snowflake.set_query_tag",
+					"macro.dbt.create_or_replace_view",
+					"macro.dbt.persist_docs"
+				],
+				"nodes": [
+					"seed.jaffle_shop.raw_customers"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -291,7 +332,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public",
-			"fqn": ["jaffle_shop", "staging", "stg_customers"],
+			"fqn": [
+				"jaffle_shop",
+				"staging",
+				"stg_customers"
+			],
 			"unique_id": "model.jaffle_shop.stg_customers",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -305,7 +350,9 @@
 			},
 			"tags": [],
 			"refs": [
-				["raw_customers"]
+				[
+					"raw_customers"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -341,8 +388,14 @@
 			"compiled": true,
 			"resource_type": "model",
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.set_query_tag", "macro.dbt.create_or_replace_view", "macro.dbt.persist_docs"],
-				"nodes": ["seed.jaffle_shop.raw_payments"]
+				"macros": [
+					"macro.dbt_snowflake.set_query_tag",
+					"macro.dbt.create_or_replace_view",
+					"macro.dbt.persist_docs"
+				],
+				"nodes": [
+					"seed.jaffle_shop.raw_payments"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -361,7 +414,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public",
-			"fqn": ["jaffle_shop", "staging", "stg_payments"],
+			"fqn": [
+				"jaffle_shop",
+				"staging",
+				"stg_payments"
+			],
 			"unique_id": "model.jaffle_shop.stg_payments",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -375,7 +432,9 @@
 			},
 			"tags": [],
 			"refs": [
-				["raw_payments"]
+				[
+					"raw_payments"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -419,8 +478,14 @@
 			"compiled": true,
 			"resource_type": "model",
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.set_query_tag", "macro.dbt.create_or_replace_view", "macro.dbt.persist_docs"],
-				"nodes": ["seed.jaffle_shop.raw_orders"]
+				"macros": [
+					"macro.dbt_snowflake.set_query_tag",
+					"macro.dbt.create_or_replace_view",
+					"macro.dbt.persist_docs"
+				],
+				"nodes": [
+					"seed.jaffle_shop.raw_orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -439,7 +504,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public",
-			"fqn": ["jaffle_shop", "staging", "stg_orders"],
+			"fqn": [
+				"jaffle_shop",
+				"staging",
+				"stg_orders"
+			],
 			"unique_id": "model.jaffle_shop.stg_orders",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -453,7 +522,9 @@
 			},
 			"tags": [],
 			"refs": [
-				["raw_orders"]
+				[
+					"raw_orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -517,7 +588,10 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public",
-			"fqn": ["jaffle_shop", "raw_customers"],
+			"fqn": [
+				"jaffle_shop",
+				"raw_customers"
+			],
 			"unique_id": "seed.jaffle_shop.raw_customers",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -570,7 +644,10 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public",
-			"fqn": ["jaffle_shop", "raw_orders"],
+			"fqn": [
+				"jaffle_shop",
+				"raw_orders"
+			],
 			"unique_id": "seed.jaffle_shop.raw_orders",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -623,7 +700,10 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public",
-			"fqn": ["jaffle_shop", "raw_payments"],
+			"fqn": [
+				"jaffle_shop",
+				"raw_payments"
+			],
 			"unique_id": "seed.jaffle_shop.raw_payments",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -655,8 +735,12 @@
 			"raw_sql": "{{ test_unique(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_unique"],
-				"nodes": ["model.jaffle_shop.customers"]
+				"macros": [
+					"macro.dbt.test_unique"
+				],
+				"nodes": [
+					"model.jaffle_shop.customers"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -682,7 +766,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "unique_customers_customer_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"unique_customers_customer_id"
+			],
 			"unique_id": "test.jaffle_shop.unique_customers_customer_id.d48e126d80",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -694,9 +782,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["customers"]
+				[
+					"customers"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -711,14 +803,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "customer_id"
+			"column_name": "customer_id",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_customers_customer_id.923d2d910a": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.customers"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.customers"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -744,7 +847,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_customers_customer_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_customers_customer_id"
+			],
 			"unique_id": "test.jaffle_shop.not_null_customers_customer_id.923d2d910a",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -756,9 +863,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["customers"]
+				[
+					"customers"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -773,14 +884,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "customer_id"
+			"column_name": "customer_id",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.unique_orders_order_id.0d77ddcf59": {
 			"raw_sql": "{{ test_unique(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_unique"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_unique"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -806,7 +928,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "unique_orders_order_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"unique_orders_order_id"
+			],
 			"unique_id": "test.jaffle_shop.unique_orders_order_id.0d77ddcf59",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -818,9 +944,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -835,14 +965,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "order_id"
+			"column_name": "order_id",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_orders_order_id.4daff5eed7": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -868,7 +1009,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_orders_order_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_orders_order_id"
+			],
 			"unique_id": "test.jaffle_shop.not_null_orders_order_id.4daff5eed7",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -880,9 +1025,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -897,14 +1046,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "order_id"
+			"column_name": "order_id",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_orders_customer_id.70722cc05f": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -930,7 +1090,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_orders_customer_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_orders_customer_id"
+			],
 			"unique_id": "test.jaffle_shop.not_null_orders_customer_id.70722cc05f",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -942,9 +1106,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -959,14 +1127,27 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "customer_id"
+			"column_name": "customer_id",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4": {
 			"raw_sql": "{{ test_relationships(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_relationships", "macro.dbt.default__test_relationships"],
-				"nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_relationships",
+					"macro.dbt.default__test_relationships"
+				],
+				"nodes": [
+					"model.jaffle_shop.customers",
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -992,7 +1173,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "relationships_orders_customer_id__customer_id__ref_customers_"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"relationships_orders_customer_id__customer_id__ref_customers_"
+			],
 			"unique_id": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1004,10 +1189,16 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["customers"],
-				["orders"]
+				[
+					"customers"
+				],
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1022,14 +1213,24 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "customer_id"
+			"column_name": "customer_id",
+			"test_metadata": {
+				"name": "relationships",
+				"kwargs": {},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.2e6d271b93": {
 			"raw_sql": "{{ test_accepted_values(**_dbt_schema_test_kwargs) }}{{ config(alias=\"accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758\") }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_accepted_values", "macro.dbt.default__test_accepted_values"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_accepted_values",
+					"macro.dbt.default__test_accepted_values"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1055,7 +1256,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"accepted_values_orders_status__placed__shipped__completed__return_pending__returned"
+			],
 			"unique_id": "test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.2e6d271b93",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1067,9 +1272,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1086,14 +1295,23 @@
 				"alias": "accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758"
 			},
 			"created_at": 1625485389,
-			"column_name": "status"
+			"column_name": "status",
+			"test_metadata": {
+				"name": "accepted_values",
+				"kwargs": {},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_orders_amount.f7bae8de1b": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1119,7 +1337,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_orders_amount"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_orders_amount"
+			],
 			"unique_id": "test.jaffle_shop.not_null_orders_amount.f7bae8de1b",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1131,9 +1353,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1148,14 +1374,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "amount"
+			"column_name": "amount",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "amount"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_orders_credit_card_amount.f6f7978042": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1181,7 +1418,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_orders_credit_card_amount"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_orders_credit_card_amount"
+			],
 			"unique_id": "test.jaffle_shop.not_null_orders_credit_card_amount.f6f7978042",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1193,9 +1434,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1210,14 +1455,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "credit_card_amount"
+			"column_name": "credit_card_amount",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "amount"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_orders_coupon_amount.edd08a4b47": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1243,7 +1499,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_orders_coupon_amount"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_orders_coupon_amount"
+			],
 			"unique_id": "test.jaffle_shop.not_null_orders_coupon_amount.edd08a4b47",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1255,9 +1515,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1272,14 +1536,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "coupon_amount"
+			"column_name": "coupon_amount",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "amount"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_orders_bank_transfer_amount.402a8a1daa": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1305,7 +1580,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_orders_bank_transfer_amount"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_orders_bank_transfer_amount"
+			],
 			"unique_id": "test.jaffle_shop.not_null_orders_bank_transfer_amount.402a8a1daa",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1317,9 +1596,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1334,14 +1617,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "bank_transfer_amount"
+			"column_name": "bank_transfer_amount",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "amount"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_orders_gift_card_amount.6205906a88": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.orders"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1367,7 +1661,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_orders_gift_card_amount"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_orders_gift_card_amount"
+			],
 			"unique_id": "test.jaffle_shop.not_null_orders_gift_card_amount.6205906a88",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1379,9 +1677,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["orders"]
+				[
+					"orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1396,14 +1698,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "gift_card_amount"
+			"column_name": "gift_card_amount",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "amount"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.unique_stg_customers_customer_id.5530022331": {
 			"raw_sql": "{{ test_unique(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_unique"],
-				"nodes": ["model.jaffle_shop.stg_customers"]
+				"macros": [
+					"macro.dbt.test_unique"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_customers"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1429,7 +1742,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "unique_stg_customers_customer_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"unique_stg_customers_customer_id"
+			],
 			"unique_id": "test.jaffle_shop.unique_stg_customers_customer_id.5530022331",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1441,9 +1758,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["stg_customers"]
+				[
+					"stg_customers"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1458,14 +1779,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "customer_id"
+			"column_name": "customer_id",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_stg_customers_customer_id.4ab9034fe1": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.stg_customers"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_customers"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1491,7 +1823,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_stg_customers_customer_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_stg_customers_customer_id"
+			],
 			"unique_id": "test.jaffle_shop.not_null_stg_customers_customer_id.4ab9034fe1",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1503,9 +1839,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["stg_customers"]
+				[
+					"stg_customers"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1520,14 +1860,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "customer_id"
+			"column_name": "customer_id",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.unique_stg_orders_order_id.99e62d7d48": {
 			"raw_sql": "{{ test_unique(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_unique"],
-				"nodes": ["model.jaffle_shop.stg_orders"]
+				"macros": [
+					"macro.dbt.test_unique"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1553,7 +1904,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "unique_stg_orders_order_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"unique_stg_orders_order_id"
+			],
 			"unique_id": "test.jaffle_shop.unique_stg_orders_order_id.99e62d7d48",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1565,9 +1920,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["stg_orders"]
+				[
+					"stg_orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1582,14 +1941,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "order_id"
+			"column_name": "order_id",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_stg_orders_order_id.052f14ae90": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.stg_orders"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1615,7 +1985,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_stg_orders_order_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_stg_orders_order_id"
+			],
 			"unique_id": "test.jaffle_shop.not_null_stg_orders_order_id.052f14ae90",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1627,9 +2001,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["stg_orders"]
+				[
+					"stg_orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1644,14 +2022,26 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "order_id"
+			"column_name": "order_id",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.1b7358ad3f": {
 			"raw_sql": "{{ test_accepted_values(**_dbt_schema_test_kwargs) }}{{ config(alias=\"accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58\") }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_accepted_values", "macro.dbt.default__test_accepted_values"],
-				"nodes": ["model.jaffle_shop.stg_orders"]
+				"macros": [
+					"macro.dbt.test_accepted_values",
+					"macro.dbt.default__test_accepted_values"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_orders"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1677,7 +2067,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"
+			],
 			"unique_id": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.1b7358ad3f",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1689,9 +2083,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["stg_orders"]
+				[
+					"stg_orders"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1708,14 +2106,23 @@
 				"alias": "accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58"
 			},
 			"created_at": 1625485389,
-			"column_name": "status"
+			"column_name": "status",
+			"test_metadata": {
+				"name": "accepted_values",
+				"kwargs": {},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.unique_stg_payments_payment_id.5f5522e7d6": {
 			"raw_sql": "{{ test_unique(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_unique"],
-				"nodes": ["model.jaffle_shop.stg_payments"]
+				"macros": [
+					"macro.dbt.test_unique"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_payments"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1741,7 +2148,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "unique_stg_payments_payment_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"unique_stg_payments_payment_id"
+			],
 			"unique_id": "test.jaffle_shop.unique_stg_payments_payment_id.5f5522e7d6",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1753,9 +2164,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["stg_payments"]
+				[
+					"stg_payments"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1770,14 +2185,25 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "payment_id"
+			"column_name": "payment_id",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.not_null_stg_payments_payment_id.ece096e012": {
 			"raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_not_null"],
-				"nodes": ["model.jaffle_shop.stg_payments"]
+				"macros": [
+					"macro.dbt.test_not_null"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_payments"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1803,7 +2229,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "not_null_stg_payments_payment_id"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"not_null_stg_payments_payment_id"
+			],
 			"unique_id": "test.jaffle_shop.not_null_stg_payments_payment_id.ece096e012",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1815,9 +2245,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["stg_payments"]
+				[
+					"stg_payments"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1832,14 +2266,26 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625485389,
-			"column_name": "payment_id"
+			"column_name": "payment_id",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "id"
+				},
+				"namespace": null
+			}
 		},
 		"test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.59d3da1081": {
 			"raw_sql": "{{ test_accepted_values(**_dbt_schema_test_kwargs) }}{{ config(alias=\"accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef\") }}",
 			"resource_type": "test",
 			"depends_on": {
-				"macros": ["macro.dbt.test_accepted_values", "macro.dbt.default__test_accepted_values"],
-				"nodes": ["model.jaffle_shop.stg_payments"]
+				"macros": [
+					"macro.dbt.test_accepted_values",
+					"macro.dbt.default__test_accepted_values"
+				],
+				"nodes": [
+					"model.jaffle_shop.stg_payments"
+				]
 			},
 			"config": {
 				"enabled": true,
@@ -1865,7 +2311,11 @@
 			},
 			"database": "DEMO_DB",
 			"schema": "public_dbt_test__audit",
-			"fqn": ["jaffle_shop", "schema_test", "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"],
+			"fqn": [
+				"jaffle_shop",
+				"schema_test",
+				"accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"
+			],
 			"unique_id": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.59d3da1081",
 			"package_name": "jaffle_shop",
 			"root_path": "/home/example/code/jaffle-shop",
@@ -1877,9 +2327,13 @@
 				"name": "none",
 				"checksum": ""
 			},
-			"tags": ["schema"],
+			"tags": [
+				"schema"
+			],
 			"refs": [
-				["stg_payments"]
+				[
+					"stg_payments"
+				]
 			],
 			"sources": [],
 			"description": "",
@@ -1896,7 +2350,12 @@
 				"alias": "accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef"
 			},
 			"created_at": 1625485389,
-			"column_name": "payment_method"
+			"column_name": "payment_method",
+			"test_metadata": {
+				"name": "accepted_values",
+				"kwargs": {},
+				"namespace": null
+			}
 		}
 	},
 	"sources": {},
@@ -1912,7 +2371,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -1978,7 +2439,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2000,7 +2463,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2022,7 +2487,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2044,7 +2511,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2110,7 +2579,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.current_timestamp"]
+				"macros": [
+					"macro.dbt.current_timestamp"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2132,7 +2603,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2154,7 +2627,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2220,7 +2695,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2242,7 +2719,10 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.get_current_query_tag", "macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt_snowflake.get_current_query_tag",
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2264,7 +2744,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2308,7 +2790,10 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.get_merge_sql", "macro.dbt.get_delete_insert_merge_sql"]
+				"macros": [
+					"macro.dbt.get_merge_sql",
+					"macro.dbt.get_delete_insert_merge_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2330,7 +2815,20 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.set_query_tag", "macro.dbt.should_full_refresh", "macro.dbt.load_relation", "macro.dbt.make_temp_relation", "macro.dbt_snowflake.dbt_snowflake_validate_get_incremental_strategy", "macro.dbt.run_hooks", "macro.dbt.create_table_as", "macro.dbt.run_query", "macro.dbt_snowflake.dbt_snowflake_get_incremental_sql", "macro.dbt.statement", "macro.dbt.persist_docs", "macro.dbt_snowflake.unset_query_tag"]
+				"macros": [
+					"macro.dbt_snowflake.set_query_tag",
+					"macro.dbt.should_full_refresh",
+					"macro.dbt.load_relation",
+					"macro.dbt.make_temp_relation",
+					"macro.dbt_snowflake.dbt_snowflake_validate_get_incremental_strategy",
+					"macro.dbt.run_hooks",
+					"macro.dbt.create_table_as",
+					"macro.dbt.run_query",
+					"macro.dbt_snowflake.dbt_snowflake_get_incremental_sql",
+					"macro.dbt.statement",
+					"macro.dbt.persist_docs",
+					"macro.dbt_snowflake.unset_query_tag"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2352,7 +2850,15 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.set_query_tag", "macro.dbt.run_hooks", "macro.dbt.drop_relation_if_exists", "macro.dbt.statement", "macro.dbt.create_table_as", "macro.dbt.persist_docs", "macro.dbt_snowflake.unset_query_tag"]
+				"macros": [
+					"macro.dbt_snowflake.set_query_tag",
+					"macro.dbt.run_hooks",
+					"macro.dbt.drop_relation_if_exists",
+					"macro.dbt.statement",
+					"macro.dbt.create_table_as",
+					"macro.dbt.persist_docs",
+					"macro.dbt_snowflake.unset_query_tag"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2374,7 +2880,12 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.set_query_tag", "macro.dbt.create_or_replace_view", "macro.dbt.persist_docs", "macro.dbt_snowflake.unset_query_tag"]
+				"macros": [
+					"macro.dbt_snowflake.set_query_tag",
+					"macro.dbt.create_or_replace_view",
+					"macro.dbt.persist_docs",
+					"macro.dbt_snowflake.unset_query_tag"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2396,7 +2907,10 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.get_quoted_csv", "macro.dbt.default__get_merge_sql"]
+				"macros": [
+					"macro.dbt.get_quoted_csv",
+					"macro.dbt.default__get_merge_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2462,7 +2976,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__get_test_sql"]
+				"macros": [
+					"macro.dbt.default__get_test_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2506,7 +3022,12 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.should_store_failures", "macro.dbt.statement", "macro.dbt.create_table_as", "macro.dbt.get_test_sql"]
+				"macros": [
+					"macro.dbt.should_store_failures",
+					"macro.dbt.statement",
+					"macro.dbt.create_table_as",
+					"macro.dbt.get_test_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2528,7 +3049,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2616,7 +3139,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.make_hook_config"]
+				"macros": [
+					"macro.dbt.make_hook_config"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2638,7 +3163,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.make_hook_config"]
+				"macros": [
+					"macro.dbt.make_hook_config"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2660,7 +3187,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.make_hook_config"]
+				"macros": [
+					"macro.dbt.make_hook_config"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2770,7 +3299,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__snapshot_merge_sql"]
+				"macros": [
+					"macro.dbt.default__snapshot_merge_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2814,7 +3345,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__create_columns"]
+				"macros": [
+					"macro.dbt.default__create_columns"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2836,7 +3369,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2858,7 +3393,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__post_snapshot"]
+				"macros": [
+					"macro.dbt.default__post_snapshot"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2902,7 +3439,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.snapshot_get_time"]
+				"macros": [
+					"macro.dbt.snapshot_get_time"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2968,7 +3507,12 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.make_temp_relation", "macro.dbt.snapshot_staging_table", "macro.dbt.statement", "macro.dbt.create_table_as"]
+				"macros": [
+					"macro.dbt.make_temp_relation",
+					"macro.dbt.snapshot_staging_table",
+					"macro.dbt.statement",
+					"macro.dbt.create_table_as"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -2990,7 +3534,21 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.create_schema", "macro.dbt.get_or_create_relation", "macro.dbt.run_hooks", "macro.dbt.strategy_dispatch", "macro.dbt.build_snapshot_table", "macro.dbt.create_table_as", "macro.dbt.build_snapshot_staging_table", "macro.dbt.create_columns", "macro.dbt.snapshot_merge_sql", "macro.dbt.statement", "macro.dbt.persist_docs", "macro.dbt.create_indexes", "macro.dbt.post_snapshot"]
+				"macros": [
+					"macro.dbt.create_schema",
+					"macro.dbt.get_or_create_relation",
+					"macro.dbt.run_hooks",
+					"macro.dbt.strategy_dispatch",
+					"macro.dbt.build_snapshot_table",
+					"macro.dbt.create_table_as",
+					"macro.dbt.build_snapshot_staging_table",
+					"macro.dbt.create_columns",
+					"macro.dbt.snapshot_merge_sql",
+					"macro.dbt.statement",
+					"macro.dbt.persist_docs",
+					"macro.dbt.create_indexes",
+					"macro.dbt.post_snapshot"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3034,7 +3592,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__snapshot_hash_arguments"]
+				"macros": [
+					"macro.dbt.default__snapshot_hash_arguments"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3078,7 +3638,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__snapshot_get_time"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__snapshot_get_time"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3100,7 +3662,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.current_timestamp"]
+				"macros": [
+					"macro.dbt.current_timestamp"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3122,7 +3686,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.snapshot_hash_arguments"]
+				"macros": [
+					"macro.dbt.snapshot_hash_arguments"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3144,7 +3710,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__snapshot_string_as_time"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__snapshot_string_as_time"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3188,7 +3756,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.get_columns_in_query"]
+				"macros": [
+					"macro.dbt.get_columns_in_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3210,7 +3780,13 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.snapshot_get_time", "macro.dbt.run_query", "macro.dbt.snapshot_string_as_time", "macro.dbt.snapshot_check_all_get_existing_columns", "macro.dbt.snapshot_hash_arguments"]
+				"macros": [
+					"macro.dbt.snapshot_get_time",
+					"macro.dbt.run_query",
+					"macro.dbt.snapshot_string_as_time",
+					"macro.dbt.snapshot_check_all_get_existing_columns",
+					"macro.dbt.snapshot_hash_arguments"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3232,7 +3808,18 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.load_relation", "macro.dbt.run_hooks", "macro.dbt.create_table_as", "macro.dbt.should_full_refresh", "macro.dbt.make_temp_relation", "macro.dbt.run_query", "macro.dbt.incremental_upsert", "macro.dbt.statement", "macro.dbt.persist_docs", "macro.dbt.create_indexes"]
+				"macros": [
+					"macro.dbt.load_relation",
+					"macro.dbt.run_hooks",
+					"macro.dbt.create_table_as",
+					"macro.dbt.should_full_refresh",
+					"macro.dbt.make_temp_relation",
+					"macro.dbt.run_query",
+					"macro.dbt.incremental_upsert",
+					"macro.dbt.statement",
+					"macro.dbt.persist_docs",
+					"macro.dbt.create_indexes"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3276,7 +3863,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__create_csv_table"]
+				"macros": [
+					"macro.dbt.default__create_csv_table"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3298,7 +3887,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__reset_csv_table"]
+				"macros": [
+					"macro.dbt.default__reset_csv_table"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3320,7 +3911,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__load_csv_rows"]
+				"macros": [
+					"macro.dbt.default__load_csv_rows"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3342,7 +3935,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3364,7 +3959,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.create_csv_table"]
+				"macros": [
+					"macro.dbt.create_csv_table"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3408,7 +4005,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.get_seed_column_quoted_csv"]
+				"macros": [
+					"macro.dbt.get_seed_column_quoted_csv"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3430,7 +4029,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.basic_load_csv_rows"]
+				"macros": [
+					"macro.dbt.basic_load_csv_rows"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3452,7 +4053,16 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.should_full_refresh", "macro.dbt.run_hooks", "macro.dbt.reset_csv_table", "macro.dbt.create_csv_table", "macro.dbt.load_csv_rows", "macro.dbt.noop_statement", "macro.dbt.persist_docs", "macro.dbt.create_indexes"]
+				"macros": [
+					"macro.dbt.should_full_refresh",
+					"macro.dbt.run_hooks",
+					"macro.dbt.reset_csv_table",
+					"macro.dbt.create_csv_table",
+					"macro.dbt.load_csv_rows",
+					"macro.dbt.noop_statement",
+					"macro.dbt.persist_docs",
+					"macro.dbt.create_indexes"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3474,7 +4084,14 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_hooks", "macro.dbt.statement", "macro.dbt.create_table_as", "macro.dbt.create_indexes", "macro.dbt.persist_docs", "macro.dbt.drop_relation_if_exists"]
+				"macros": [
+					"macro.dbt.run_hooks",
+					"macro.dbt.statement",
+					"macro.dbt.create_table_as",
+					"macro.dbt.create_indexes",
+					"macro.dbt.persist_docs",
+					"macro.dbt.drop_relation_if_exists"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3496,7 +4113,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__get_merge_sql"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__get_merge_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3518,7 +4137,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__get_delete_insert_merge_sql"]
+				"macros": [
+					"macro.dbt.default__get_delete_insert_merge_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3540,7 +4161,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__get_insert_overwrite_merge_sql"]
+				"macros": [
+					"macro.dbt.default__get_insert_overwrite_merge_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3562,7 +4185,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.get_quoted_csv"]
+				"macros": [
+					"macro.dbt.get_quoted_csv"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3606,7 +4231,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.get_quoted_csv"]
+				"macros": [
+					"macro.dbt.get_quoted_csv"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3628,7 +4255,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.common_get_delete_insert_merge_sql"]
+				"macros": [
+					"macro.dbt.common_get_delete_insert_merge_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3650,7 +4279,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.get_quoted_csv"]
+				"macros": [
+					"macro.dbt.get_quoted_csv"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3672,7 +4303,13 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_hooks", "macro.dbt.statement", "macro.dbt.create_view_as", "macro.dbt.persist_docs", "macro.dbt.drop_relation_if_exists"]
+				"macros": [
+					"macro.dbt.run_hooks",
+					"macro.dbt.statement",
+					"macro.dbt.create_view_as",
+					"macro.dbt.persist_docs",
+					"macro.dbt.drop_relation_if_exists"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3694,7 +4331,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__handle_existing_table"]
+				"macros": [
+					"macro.dbt.default__handle_existing_table"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3738,7 +4377,13 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_hooks", "macro.dbt.handle_existing_table", "macro.dbt.should_full_refresh", "macro.dbt.statement", "macro.dbt.create_view_as"]
+				"macros": [
+					"macro.dbt.run_hooks",
+					"macro.dbt.handle_existing_table",
+					"macro.dbt.should_full_refresh",
+					"macro.dbt.statement",
+					"macro.dbt.create_view_as"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3760,7 +4405,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__get_columns_in_query"]
+				"macros": [
+					"macro.dbt.default__get_columns_in_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3782,7 +4429,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3804,7 +4453,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__create_schema"]
+				"macros": [
+					"macro.dbt.default__create_schema"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3826,7 +4477,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3848,7 +4501,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__drop_schema"]
+				"macros": [
+					"macro.dbt.default__drop_schema"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3870,7 +4525,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3892,7 +4549,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__create_table_as"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__create_table_as"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3936,7 +4595,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__get_create_index_sql"]
+				"macros": [
+					"macro.dbt.default__get_create_index_sql"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -3980,7 +4641,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__create_indexes"]
+				"macros": [
+					"macro.dbt.default__create_indexes"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4002,7 +4665,10 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.get_create_index_sql", "macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.get_create_index_sql",
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4024,7 +4690,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__create_view_as"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__create_view_as"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4068,7 +4736,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__get_catalog"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__get_catalog"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4112,7 +4782,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__get_columns_in_relation"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__get_columns_in_relation"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4178,7 +4850,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__alter_column_type"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__alter_column_type"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4200,7 +4874,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__alter_column_comment"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__alter_column_comment"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4244,7 +4920,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__alter_relation_comment"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__alter_relation_comment"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4288,7 +4966,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__persist_docs"]
+				"macros": [
+					"macro.dbt.default__persist_docs"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4310,7 +4990,11 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_query", "macro.dbt.alter_relation_comment", "macro.dbt.alter_column_comment"]
+				"macros": [
+					"macro.dbt.run_query",
+					"macro.dbt.alter_relation_comment",
+					"macro.dbt.alter_column_comment"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4332,7 +5016,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4354,7 +5040,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__drop_relation"]
+				"macros": [
+					"macro.dbt.default__drop_relation"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4376,7 +5064,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4398,7 +5088,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__truncate_relation"]
+				"macros": [
+					"macro.dbt.default__truncate_relation"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4420,7 +5112,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4442,7 +5136,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__rename_relation"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__rename_relation"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4464,7 +5160,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4486,7 +5184,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__information_schema_name"]
+				"macros": [
+					"macro.dbt.default__information_schema_name"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4530,7 +5230,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__list_schemas"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__list_schemas"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4552,7 +5254,10 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.information_schema_name", "macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.information_schema_name",
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4574,7 +5279,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__check_schema_exists"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__check_schema_exists"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4596,7 +5303,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.run_query"]
+				"macros": [
+					"macro.dbt.run_query"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4618,7 +5327,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__list_relations_without_caching"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__list_relations_without_caching"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4662,7 +5373,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt_snowflake.snowflake__current_timestamp"]
+				"macros": [
+					"macro.dbt_snowflake.snowflake__current_timestamp"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4706,7 +5419,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__collect_freshness"]
+				"macros": [
+					"macro.dbt.default__collect_freshness"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4728,7 +5443,10 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement", "macro.dbt.current_timestamp"]
+				"macros": [
+					"macro.dbt.statement",
+					"macro.dbt.current_timestamp"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4750,7 +5468,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__make_temp_relation"]
+				"macros": [
+					"macro.dbt.default__make_temp_relation"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4838,7 +5558,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.convert_datetime"]
+				"macros": [
+					"macro.dbt.convert_datetime"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4860,7 +5582,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.dates_in_range"]
+				"macros": [
+					"macro.dbt.dates_in_range"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4948,7 +5672,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.statement"]
+				"macros": [
+					"macro.dbt.statement"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4970,7 +5696,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.should_full_refresh"]
+				"macros": [
+					"macro.dbt.should_full_refresh"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -4992,7 +5720,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__generate_database_name"]
+				"macros": [
+					"macro.dbt.default__generate_database_name"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -5080,7 +5810,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__test_accepted_values"]
+				"macros": [
+					"macro.dbt.default__test_accepted_values"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -5124,7 +5856,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__test_relationships"]
+				"macros": [
+					"macro.dbt.default__test_relationships"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -5168,7 +5902,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__test_not_null"]
+				"macros": [
+					"macro.dbt.default__test_not_null"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -5212,7 +5948,9 @@
 			"resource_type": "macro",
 			"tags": [],
 			"depends_on": {
-				"macros": ["macro.dbt.default__test_unique"]
+				"macros": [
+					"macro.dbt.default__test_unique"
+				]
 			},
 			"description": "",
 			"meta": {},
@@ -5257,44 +5995,135 @@
 	"selectors": {},
 	"disabled": [],
 	"parent_map": {
-		"model.jaffle_shop.customers": ["model.jaffle_shop.stg_customers", "model.jaffle_shop.stg_orders", "model.jaffle_shop.stg_payments"],
-		"model.jaffle_shop.orders": ["model.jaffle_shop.stg_orders", "model.jaffle_shop.stg_payments"],
-		"model.jaffle_shop.stg_customers": ["seed.jaffle_shop.raw_customers"],
-		"model.jaffle_shop.stg_payments": ["seed.jaffle_shop.raw_payments"],
-		"model.jaffle_shop.stg_orders": ["seed.jaffle_shop.raw_orders"],
+		"model.jaffle_shop.customers": [
+			"model.jaffle_shop.stg_customers",
+			"model.jaffle_shop.stg_orders",
+			"model.jaffle_shop.stg_payments"
+		],
+		"model.jaffle_shop.orders": [
+			"model.jaffle_shop.stg_orders",
+			"model.jaffle_shop.stg_payments"
+		],
+		"model.jaffle_shop.stg_customers": [
+			"seed.jaffle_shop.raw_customers"
+		],
+		"model.jaffle_shop.stg_payments": [
+			"seed.jaffle_shop.raw_payments"
+		],
+		"model.jaffle_shop.stg_orders": [
+			"seed.jaffle_shop.raw_orders"
+		],
 		"seed.jaffle_shop.raw_customers": [],
 		"seed.jaffle_shop.raw_orders": [],
 		"seed.jaffle_shop.raw_payments": [],
-		"test.jaffle_shop.unique_customers_customer_id.d48e126d80": ["model.jaffle_shop.customers"],
-		"test.jaffle_shop.not_null_customers_customer_id.923d2d910a": ["model.jaffle_shop.customers"],
-		"test.jaffle_shop.unique_orders_order_id.0d77ddcf59": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.not_null_orders_order_id.4daff5eed7": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.not_null_orders_customer_id.70722cc05f": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"],
-		"test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.2e6d271b93": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.not_null_orders_amount.f7bae8de1b": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.not_null_orders_credit_card_amount.f6f7978042": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.not_null_orders_coupon_amount.edd08a4b47": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.not_null_orders_bank_transfer_amount.402a8a1daa": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.not_null_orders_gift_card_amount.6205906a88": ["model.jaffle_shop.orders"],
-		"test.jaffle_shop.unique_stg_customers_customer_id.5530022331": ["model.jaffle_shop.stg_customers"],
-		"test.jaffle_shop.not_null_stg_customers_customer_id.4ab9034fe1": ["model.jaffle_shop.stg_customers"],
-		"test.jaffle_shop.unique_stg_orders_order_id.99e62d7d48": ["model.jaffle_shop.stg_orders"],
-		"test.jaffle_shop.not_null_stg_orders_order_id.052f14ae90": ["model.jaffle_shop.stg_orders"],
-		"test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.1b7358ad3f": ["model.jaffle_shop.stg_orders"],
-		"test.jaffle_shop.unique_stg_payments_payment_id.5f5522e7d6": ["model.jaffle_shop.stg_payments"],
-		"test.jaffle_shop.not_null_stg_payments_payment_id.ece096e012": ["model.jaffle_shop.stg_payments"],
-		"test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.59d3da1081": ["model.jaffle_shop.stg_payments"]
+		"test.jaffle_shop.unique_customers_customer_id.d48e126d80": [
+			"model.jaffle_shop.customers"
+		],
+		"test.jaffle_shop.not_null_customers_customer_id.923d2d910a": [
+			"model.jaffle_shop.customers"
+		],
+		"test.jaffle_shop.unique_orders_order_id.0d77ddcf59": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.not_null_orders_order_id.4daff5eed7": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.not_null_orders_customer_id.70722cc05f": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4": [
+			"model.jaffle_shop.customers",
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.2e6d271b93": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.not_null_orders_amount.f7bae8de1b": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.not_null_orders_credit_card_amount.f6f7978042": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.not_null_orders_coupon_amount.edd08a4b47": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.not_null_orders_bank_transfer_amount.402a8a1daa": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.not_null_orders_gift_card_amount.6205906a88": [
+			"model.jaffle_shop.orders"
+		],
+		"test.jaffle_shop.unique_stg_customers_customer_id.5530022331": [
+			"model.jaffle_shop.stg_customers"
+		],
+		"test.jaffle_shop.not_null_stg_customers_customer_id.4ab9034fe1": [
+			"model.jaffle_shop.stg_customers"
+		],
+		"test.jaffle_shop.unique_stg_orders_order_id.99e62d7d48": [
+			"model.jaffle_shop.stg_orders"
+		],
+		"test.jaffle_shop.not_null_stg_orders_order_id.052f14ae90": [
+			"model.jaffle_shop.stg_orders"
+		],
+		"test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.1b7358ad3f": [
+			"model.jaffle_shop.stg_orders"
+		],
+		"test.jaffle_shop.unique_stg_payments_payment_id.5f5522e7d6": [
+			"model.jaffle_shop.stg_payments"
+		],
+		"test.jaffle_shop.not_null_stg_payments_payment_id.ece096e012": [
+			"model.jaffle_shop.stg_payments"
+		],
+		"test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.59d3da1081": [
+			"model.jaffle_shop.stg_payments"
+		]
 	},
 	"child_map": {
-		"model.jaffle_shop.customers": ["test.jaffle_shop.not_null_customers_customer_id.923d2d910a", "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4", "test.jaffle_shop.unique_customers_customer_id.d48e126d80"],
-		"model.jaffle_shop.orders": ["test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.2e6d271b93", "test.jaffle_shop.not_null_orders_amount.f7bae8de1b", "test.jaffle_shop.not_null_orders_bank_transfer_amount.402a8a1daa", "test.jaffle_shop.not_null_orders_coupon_amount.edd08a4b47", "test.jaffle_shop.not_null_orders_credit_card_amount.f6f7978042", "test.jaffle_shop.not_null_orders_customer_id.70722cc05f", "test.jaffle_shop.not_null_orders_gift_card_amount.6205906a88", "test.jaffle_shop.not_null_orders_order_id.4daff5eed7", "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4", "test.jaffle_shop.unique_orders_order_id.0d77ddcf59"],
-		"model.jaffle_shop.stg_customers": ["model.jaffle_shop.customers", "test.jaffle_shop.not_null_stg_customers_customer_id.4ab9034fe1", "test.jaffle_shop.unique_stg_customers_customer_id.5530022331"],
-		"model.jaffle_shop.stg_payments": ["model.jaffle_shop.customers", "model.jaffle_shop.orders", "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.59d3da1081", "test.jaffle_shop.not_null_stg_payments_payment_id.ece096e012", "test.jaffle_shop.unique_stg_payments_payment_id.5f5522e7d6"],
-		"model.jaffle_shop.stg_orders": ["model.jaffle_shop.customers", "model.jaffle_shop.orders", "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.1b7358ad3f", "test.jaffle_shop.not_null_stg_orders_order_id.052f14ae90", "test.jaffle_shop.unique_stg_orders_order_id.99e62d7d48"],
-		"seed.jaffle_shop.raw_customers": ["model.jaffle_shop.stg_customers"],
-		"seed.jaffle_shop.raw_orders": ["model.jaffle_shop.stg_orders"],
-		"seed.jaffle_shop.raw_payments": ["model.jaffle_shop.stg_payments"],
+		"model.jaffle_shop.customers": [
+			"test.jaffle_shop.not_null_customers_customer_id.923d2d910a",
+			"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4",
+			"test.jaffle_shop.unique_customers_customer_id.d48e126d80"
+		],
+		"model.jaffle_shop.orders": [
+			"test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.2e6d271b93",
+			"test.jaffle_shop.not_null_orders_amount.f7bae8de1b",
+			"test.jaffle_shop.not_null_orders_bank_transfer_amount.402a8a1daa",
+			"test.jaffle_shop.not_null_orders_coupon_amount.edd08a4b47",
+			"test.jaffle_shop.not_null_orders_credit_card_amount.f6f7978042",
+			"test.jaffle_shop.not_null_orders_customer_id.70722cc05f",
+			"test.jaffle_shop.not_null_orders_gift_card_amount.6205906a88",
+			"test.jaffle_shop.not_null_orders_order_id.4daff5eed7",
+			"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.e153c026e4",
+			"test.jaffle_shop.unique_orders_order_id.0d77ddcf59"
+		],
+		"model.jaffle_shop.stg_customers": [
+			"model.jaffle_shop.customers",
+			"test.jaffle_shop.not_null_stg_customers_customer_id.4ab9034fe1",
+			"test.jaffle_shop.unique_stg_customers_customer_id.5530022331"
+		],
+		"model.jaffle_shop.stg_payments": [
+			"model.jaffle_shop.customers",
+			"model.jaffle_shop.orders",
+			"test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.59d3da1081",
+			"test.jaffle_shop.not_null_stg_payments_payment_id.ece096e012",
+			"test.jaffle_shop.unique_stg_payments_payment_id.5f5522e7d6"
+		],
+		"model.jaffle_shop.stg_orders": [
+			"model.jaffle_shop.customers",
+			"model.jaffle_shop.orders",
+			"test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.1b7358ad3f",
+			"test.jaffle_shop.not_null_stg_orders_order_id.052f14ae90",
+			"test.jaffle_shop.unique_stg_orders_order_id.99e62d7d48"
+		],
+		"seed.jaffle_shop.raw_customers": [
+			"model.jaffle_shop.stg_customers"
+		],
+		"seed.jaffle_shop.raw_orders": [
+			"model.jaffle_shop.stg_orders"
+		],
+		"seed.jaffle_shop.raw_payments": [
+			"model.jaffle_shop.stg_payments"
+		],
 		"test.jaffle_shop.unique_customers_customer_id.d48e126d80": [],
 		"test.jaffle_shop.not_null_customers_customer_id.923d2d910a": [],
 		"test.jaffle_shop.unique_orders_order_id.0d77ddcf59": [],

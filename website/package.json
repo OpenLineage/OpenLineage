@@ -17,7 +17,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@babel/runtime": "^7.28.6",
+    "@babel/runtime": "^7.29.2",
     "@docusaurus/core": "^3.9.2",
     "@docusaurus/plugin-content-blog": "^3.9.2",
     "@docusaurus/plugin-content-docs": "^3.9.2",
@@ -30,13 +30,13 @@
     "@mdx-js/react": "^3.1.0",
     "@mui/icons-material": "^5.14.19",
     "@mui/material": "^5.14.18",
-    "autoprefixer": "^10.4.24",
+    "autoprefixer": "^10.4.27",
     "classnames": "^2.5.1",
     "docusaurus-lunr-search": "^3.5.0",
-    "lodash": "^4.17.23",
+    "lodash": "^4.18.1",
     "lunr": "^2.3.9",
-    "motion": "^12.34.3",
-    "postcss": "^8.4.38",
+    "motion": "^12.38.0",
+    "postcss": "^8.5.8",
     "prism-react-renderer": "^2.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -50,7 +50,7 @@
     "@docusaurus/module-type-aliases": "^3.9.2",
     "@tsconfig/docusaurus": "^2.0.8",
     "@types/react": "^18.3.12",
-    "typescript": "^5.6.3"
+    "typescript": "^6.0.2"
   },
   "browserslist": {
     "production": [

@@ -1,0 +1,15 @@
+# Compiled binaries
+/gen_bin
+/generate
+/main
+/run_event
+
+# Go build cache
+*.test
+*.out
+coverage.out
+
+# IDE
+.idea/
+*.iml
+

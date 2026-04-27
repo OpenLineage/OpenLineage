@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 
@@ -39,7 +39,7 @@ class TestServerClient:
         except requests.RequestException:
             return False
 
-    def get_events(self) -> List[Dict[str, Any]]:
+    def get_events(self) -> list[dict[str, Any]]:
         """Get all events from the test server."""
         try:
             response = self.session.get(f"{self.base_url}/events")
@@ -62,12 +62,12 @@ class TestServerClient:
             time.sleep(1)
         return False
 
-    def get_events_by_job(self, job_name: str) -> List[Dict[str, Any]]:
+    def get_events_by_job(self, job_name: str) -> list[dict[str, Any]]:
         """Get events for a specific job."""
         events = self.get_events()
         return [event for event in events if event.get("job", {}).get("name") == job_name]
 
-    def get_latest_event(self) -> Optional[Dict[str, Any]]:
+    def get_latest_event(self) -> dict[str, Any] | None:
         """Get the most recent event."""
         events = self.get_events()
         if events:

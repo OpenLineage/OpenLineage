@@ -251,24 +251,101 @@ public class IcebergHandler implements CatalogHandler {
     try {
       if (tableCatalog instanceof SparkCatalog) {
         SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
-        SparkTable sparkTable = (SparkTable) sparkCatalog.loadTable(identifier);
-        return Optional.ofNullable(sparkTable.table());
-      } else {
+        org.apache.spark.sql.connector.catalog.Table loadedTable =
+            sparkCatalog.loadTable(identifier);
+
+        // Handle different table implementations safely
+        if (loadedTable instanceof SparkTable) {
+          SparkTable sparkTable = (SparkTable) loadedTable;
+          return Optional.ofNullable(sparkTable.table());
+        } else {
+          // Handle SparkChangelogTable and other unknown table types
+          log.warn(
+              "Loaded table is not a SparkTable instance. Table type: {}, identifier: {}. "
+                  + "Attempting to extract Iceberg Table using reflection.",
+              loadedTable.getClass().getName(),
+              identifier);
+
+          // Try to extract the underlying Iceberg Table using reflection
+          // SparkChangelogTable and other wrappers typically have a table() method
+          Optional<Table> reflectedTable = extractIcebergTableViaReflection(loadedTable);
+          if (reflectedTable.isPresent()) {
+            log.debug(
+                "Successfully extracted Iceberg Table via reflection for identifier: {}",
+                identifier);
+            return reflectedTable;
+          }
+
+          log.warn(
+              "Unable to extract Iceberg Table from table type: {} for identifier: {}. "
+                  + "Returning empty to avoid ClassCastException.",
+              loadedTable.getClass().getName(),
+              identifier);
+          return Optional.empty();
+        }
+      } else if (tableCatalog instanceof SparkSessionCatalog) {
         TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
         SparkSessionCatalog sparkCatalog = (SparkSessionCatalog) tableCatalog;
         return Optional.ofNullable(sparkCatalog.icebergCatalog().loadTable(tableIdentifier));
+      } else {
+        log.warn(
+            "Unknown catalog type: {} for identifier: {}. Expected SparkCatalog or SparkSessionCatalog.",
+            tableCatalog.getClass().getName(),
+            identifier);
+        return Optional.empty();
       }
     } catch (ClassCastException e) {
-      log.error("Failed to load table from catalog: {}", identifier, e);
+      log.error(
+          "ClassCastException while loading table from catalog. Catalog type: {}, identifier: {}",
+          tableCatalog.getClass().getName(),
+          identifier,
+          e);
       return Optional.empty();
     } catch (Exception e) {
       if (e instanceof org.apache.spark.sql.catalyst.analysis.NoSuchTableException
           || e instanceof org.apache.iceberg.exceptions.NoSuchTableException) {
         // probably trying to obtain table details on START event while table does not exist
+        log.debug("Table does not exist: {}", identifier);
         return Optional.empty();
       }
+      log.error("Unexpected error while loading table: {}", identifier, e);
       throw e;
     }
+  }
+
+  /**
+   * Attempts to extract an Iceberg Table from unknown table implementations using reflection. This
+   * handles cases like SparkChangelogTable and future table types that wrap an Iceberg Table.
+   *
+   * @param table The loaded Spark table
+   * @return Optional containing the Iceberg Table if successfully extracted, empty otherwise
+   */
+  private Optional<Table> extractIcebergTableViaReflection(
+      org.apache.spark.sql.connector.catalog.Table table) {
+    try {
+      // Try to invoke table() method which is common across Iceberg table implementations
+      java.lang.reflect.Method tableMethod = table.getClass().getMethod("table");
+      Object result = tableMethod.invoke(table);
+
+      if (result instanceof Table) {
+        return Optional.of((Table) result);
+      } else if (result != null) {
+        log.warn(
+            "table() method returned non-Table type: {} for table class: {}",
+            result.getClass().getName(),
+            table.getClass().getName());
+      }
+    } catch (NoSuchMethodException e) {
+      log.debug(
+          "No table() method found on table type: {}. This may not be an Iceberg table wrapper.",
+          table.getClass().getName());
+    } catch (Exception e) {
+      log.warn(
+          "Failed to extract Iceberg Table via reflection from table type: {}",
+          table.getClass().getName(),
+          e);
+    }
+    return Optional.empty();
   }
 
   @Override

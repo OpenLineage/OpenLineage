@@ -141,7 +141,7 @@ commands:
       py_env:
         type: string
         description: "Python env version"
-        default: "3.9"
+        default: "3.10"
     steps:
       - run:
           name: Install uv and Python << parameters.py_env >>
@@ -304,7 +304,7 @@ jobs:
   build-client-python:
     working_directory: ~/openlineage/client/python
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.10
     steps:
       - *checkout_project_root
       - install_uv_python
@@ -320,7 +320,7 @@ jobs:
   unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.10
     steps:
       - *checkout_project_root
       - attach_workspace:
@@ -328,9 +328,9 @@ jobs:
       - install_uv_python
       - run: uv sync --extra dev
       - run: |
-          uv run --python 3.9 --with tox python -m tox r -e "py3-common-dbt-1.0" --notest
-          uv run --python 3.9 --with tox python -m tox r -e "py3-common-dbt-1.0" --skip-pkg-install
-          uv run --python 3.9 mypy --install-types --non-interactive --ignore-missing-imports src
+          uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.0" --notest
+          uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.0" --skip-pkg-install
+          uv run --python 3.10 mypy --install-types --non-interactive --ignore-missing-imports src
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
@@ -351,7 +351,7 @@ jobs:
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.10
     steps:
       - *checkout_project_root
       - install_uv_python
@@ -367,7 +367,7 @@ jobs:
   build-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.10
     steps:
       - *checkout_project_root
       - install_uv_python
@@ -383,7 +383,7 @@ jobs:
   release-python:
     working_directory: ~/openlineage
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.10
     steps:
       - *checkout_project_root
       - attach_workspace:
@@ -1229,7 +1229,7 @@ jobs:
             - v1.1-gradle-pre-commit-
 
       - run:
-          name: Install Python3.9 Dependencies
+          name: Install Python Dependencies
           command: |
             uv tool install prek
             uv tool run prek run --show-diff-on-failure --all-files
@@ -1250,6 +1250,61 @@ jobs:
             - ~/.gradle
             - client/java/.gradle
             - integration/spark/.gradle
+
+  # Go Client Jobs
+  build-client-go:
+    working_directory: ~/openlineage/client/go
+    docker:
+      - image: cimg/go:1.26
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-go-mod-{{ checksum "client/go/go.sum" }}
+      - run:
+          name: Run linter
+          command: |
+            golangci-lint run ./...
+      - run:
+          name: Download dependencies
+          command: go mod download
+      - run:
+          name: Build
+          command: go build ./...
+      - run:
+          name: Run tests
+          command: go test ./... -v -race -coverprofile=coverage.out
+      - save_cache:
+          key: v1-go-mod-{{ checksum "client/go/go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
+
+  release-client-go:
+    working_directory: ~/openlineage/client/go
+    docker:
+      - image: cimg/go:1.26
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-go-mod-{{ checksum "client/go/go.sum" }}
+      - run:
+          name: Download dependencies
+          command: go mod download
+      - run:
+          name: Build release
+          command: go build ./...
+      - run:
+          name: Verify module
+          command: |
+            go mod verify
+            go list -m github.com/OpenLineage/openlineage/client/go
+      # Go modules are released via git tags, no artifact upload needed
+      - run:
+          name: Release complete
+          command: echo "Go client release complete. Module available via git tag."
 
   build-website:
     # Build Openlineage website to make sure npm packages match

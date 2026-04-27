@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 import os
-from typing import Any, Dict, Generator, List, Optional, TextIO
+from collections.abc import Generator
+from typing import Any, TextIO
 
 logger = logging.getLogger(__name__)
 
 
-def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
+def get_from_nullable_chain(source: Any, chain: list[str]) -> Any | None:
     """
     Get object from nested structure of objects, where it's not guaranteed that
     all keys in the nested structure exist.
@@ -38,7 +39,7 @@ def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
         return None
 
 
-def get_from_multiple_chains(source: Dict[str, Any], chains: List[List[str]]) -> Optional[Any]:
+def get_from_multiple_chains(source: dict[str, Any], chains: list[list[str]]) -> Any | None:
     for chain in chains:
         result = get_from_nullable_chain(source, chain)
         if result:
@@ -46,7 +47,7 @@ def get_from_multiple_chains(source: Dict[str, Any], chains: List[List[str]]) ->
     return None
 
 
-def parse_single_arg(args, keys: List[str], default=None) -> Optional[str]:
+def parse_single_arg(args, keys: list[str], default=None) -> str | None:
     """
     In provided argument list, find first key that has value and return that value.
     Values can be passed either as one argument {key}={value}, or two: {key} {value}
@@ -60,7 +61,7 @@ def parse_single_arg(args, keys: List[str], default=None) -> Optional[str]:
     return default
 
 
-def parse_multiple_args(args, keys: List[str], default=None) -> List[str]:
+def parse_multiple_args(args, keys: list[str], default=None) -> list[str]:
     """
     Given a list of arguments that support syntax such as `--key=value1 value2`
     (like `--model`), return a list of values associated with the given keys.
@@ -94,7 +95,7 @@ def parse_multiple_args(args, keys: List[str], default=None) -> List[str]:
     return parsed_values or default or []
 
 
-def add_command_line_arg(command_line: List[str], arg_name: str, arg_value: str):
+def add_command_line_arg(command_line: list[str], arg_name: str, arg_value: str):
     command_line = list(command_line)
     arg_name_index = None
     try:
@@ -116,7 +117,7 @@ def add_command_line_arg(command_line: List[str], arg_name: str, arg_value: str)
     return command_line
 
 
-def add_command_line_args(command_line: List[str], arg_names: List[str], arg_values: List[str]):
+def add_command_line_args(command_line: list[str], arg_names: list[str], arg_values: list[str]):
     for i in range(len(arg_names)):
         arg_name = arg_names[i]
         arg_value = arg_values[i]
@@ -125,8 +126,8 @@ def add_command_line_args(command_line: List[str], arg_names: List[str], arg_val
 
 
 def add_or_replace_command_line_option(
-    command_line: List[str], option: str, replace_option: Optional[str] = None
-) -> List[str]:
+    command_line: list[str], option: str, replace_option: str | None = None
+) -> list[str]:
     """
     If replace_option is ignored then the option is simply added
     """
@@ -143,13 +144,13 @@ def add_or_replace_command_line_option(
     return command_line
 
 
-def has_command_line_option(command_line: List[str], command_option: str) -> bool:
+def has_command_line_option(command_line: list[str], command_option: str) -> bool:
     return command_option in command_line
 
 
 def remove_command_line_option(
-    command_line: List[str], command_option: str, remove_value: bool = False
-) -> List[str]:
+    command_line: list[str], command_option: str, remove_value: bool = False
+) -> list[str]:
     if not has_command_line_option(command_line, command_option):
         return command_line
 
@@ -185,7 +186,7 @@ class IncrementalFileReader:
         This class is responsible of reading complete lines only and returns them via its methods.
         """
         self.text_file = text_file
-        self.incomplete_chunks: List[str] = []
+        self.incomplete_chunks: list[str] = []
         self.chunk_size = 65536
 
     def read_lines(self, max_read_size: int) -> Generator[str, Any, None]:

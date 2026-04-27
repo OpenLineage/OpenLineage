@@ -5,6 +5,11 @@ config:
 jaffle_shop:
   target: postgres
   outputs:
+    duckdb:
+      type: duckdb
+      path: duckdb.db
+      schema: raw_data
+
     postgres:
       type: postgres
       host: postgres

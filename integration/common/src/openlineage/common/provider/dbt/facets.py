@@ -1,7 +1,6 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional
 
 import attr
 from openlineage.client.facet_v2 import (
@@ -17,9 +16,9 @@ class ParentRunMetadata:
     run_id: str
     job_name: str
     job_namespace: str
-    root_parent_job_name: Optional[str] = attr.field(default=None)
-    root_parent_job_namespace: Optional[str] = attr.field(default=None)
-    root_parent_run_id: Optional[str] = attr.field(default=None)
+    root_parent_job_name: str | None = attr.field(default=None)
+    root_parent_job_namespace: str | None = attr.field(default=None)
+    root_parent_run_id: str | None = attr.field(default=None)
 
     def to_openlineage(self) -> parent_run.ParentRunFacet:
         root = None
@@ -50,11 +49,11 @@ class DbtVersionRunFacet(BaseFacet):
 @attr.define
 class DbtRunRunFacet(BaseFacet):
     invocation_id: str
-    project_name: Optional[str] = attr.field(default=None)
-    dbt_runtime: Optional[str] = attr.field(default=None)
-    project_version: Optional[str] = attr.field(default=None)
-    profile_name: Optional[str] = attr.field(default=None)
-    account_id: Optional[str] = attr.field(default=None)
+    project_name: str | None = attr.field(default=None)
+    dbt_runtime: str | None = attr.field(default=None)
+    project_version: str | None = attr.field(default=None)
+    profile_name: str | None = attr.field(default=None)
+    account_id: str | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
@@ -73,11 +72,12 @@ class DbtNodeJobFacet(JobFacet):
     context about the dbt model/node being executed.
     """
 
-    original_file_path: Optional[str] = attr.field(default=None)
-    database: Optional[str] = attr.field(default=None)
-    schema: Optional[str] = attr.field(default=None)
-    alias: Optional[str] = attr.field(default=None)
-    unique_id: Optional[str] = attr.field(default=None)
+    original_file_path: str | None = attr.field(default=None)
+    database: str | None = attr.field(default=None)
+    schema: str | None = attr.field(default=None)
+    alias: str | None = attr.field(default=None)
+    unique_id: str | None = attr.field(default=None)
+    test_type: str | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:

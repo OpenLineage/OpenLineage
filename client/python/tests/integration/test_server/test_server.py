@@ -9,7 +9,7 @@ import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
@@ -32,8 +32,8 @@ class BaseFacet(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    producer: Optional[str] = Field(alias="_producer", default=None)
-    schemaURL: Optional[str] = Field(alias="_schemaURL", default=None)
+    producer: str | None = Field(alias="_producer", default=None)
+    schemaURL: str | None = Field(alias="_schemaURL", default=None)
 
 
 class RunFacets(BaseModel):
@@ -59,7 +59,7 @@ class Dataset(BaseModel):
 
     namespace: str = Field(..., min_length=1, description="Dataset namespace")
     name: str = Field(..., min_length=1, description="Dataset name")
-    facets: Optional[DatasetFacets] = Field(default_factory=dict)
+    facets: DatasetFacets | None = Field(default_factory=dict)
 
     @field_validator("namespace", "name")
     @classmethod
@@ -73,7 +73,7 @@ class Run(BaseModel):
     """OpenLineage Run model."""
 
     runId: str = Field(..., min_length=1, description="Unique run identifier")
-    facets: Optional[RunFacets] = Field(default_factory=dict)
+    facets: RunFacets | None = Field(default_factory=dict)
 
     @field_validator("runId")
     @classmethod
@@ -88,7 +88,7 @@ class Job(BaseModel):
 
     namespace: str = Field(..., min_length=1, description="Job namespace")
     name: str = Field(..., min_length=1, description="Job name")
-    facets: Optional[JobFacets] = Field(default_factory=dict)
+    facets: JobFacets | None = Field(default_factory=dict)
 
     @field_validator("namespace", "name")
     @classmethod
@@ -105,10 +105,10 @@ class RunEvent(BaseModel):
     eventType: RunState = Field(..., description="Type of run event")
     run: Run = Field(..., description="Run information")
     job: Job = Field(..., description="Job information")
-    inputs: Optional[List[Dataset]] = Field(default_factory=list, description="Input datasets")
-    outputs: Optional[List[Dataset]] = Field(default_factory=list, description="Output datasets")
+    inputs: list[Dataset] | None = Field(default_factory=list, description="Input datasets")
+    outputs: list[Dataset] | None = Field(default_factory=list, description="Output datasets")
     producer: str = Field(..., min_length=1, description="Producer identifier")
-    schemaURL: Optional[str] = Field(default=None, description="Schema URL")
+    schemaURL: str | None = Field(default=None, description="Schema URL")
 
     @field_validator("producer")
     @classmethod
@@ -124,7 +124,7 @@ class DatasetEvent(BaseModel):
     eventTime: datetime = Field(..., description="Event timestamp in ISO 8601 format")
     dataset: Dataset = Field(..., description="Dataset information")
     producer: str = Field(..., min_length=1, description="Producer identifier")
-    schemaURL: Optional[str] = Field(default=None, description="Schema URL")
+    schemaURL: str | None = Field(default=None, description="Schema URL")
 
     @field_validator("producer")
     @classmethod
@@ -139,10 +139,10 @@ class JobEvent(BaseModel):
 
     eventTime: datetime = Field(..., description="Event timestamp in ISO 8601 format")
     job: Job = Field(..., description="Job information")
-    inputs: Optional[List[Dataset]] = Field(default_factory=list, description="Input datasets")
-    outputs: Optional[List[Dataset]] = Field(default_factory=list, description="Output datasets")
+    inputs: list[Dataset] | None = Field(default_factory=list, description="Input datasets")
+    outputs: list[Dataset] | None = Field(default_factory=list, description="Output datasets")
     producer: str = Field(..., min_length=1, description="Producer identifier")
-    schemaURL: Optional[str] = Field(default=None, description="Schema URL")
+    schemaURL: str | None = Field(default=None, description="Schema URL")
 
     @field_validator("producer")
     @classmethod
@@ -153,32 +153,32 @@ class JobEvent(BaseModel):
 
 
 # Union type for any OpenLineage event
-OpenLineageEvent = Union[RunEvent, DatasetEvent, JobEvent]
+OpenLineageEvent = RunEvent | DatasetEvent | JobEvent
 
 
 class EventRecord(BaseModel):
     """Record of a received OpenLineage event."""
 
     event_id: str
-    run_id: Optional[str]
-    event_type: Optional[str]
-    job_name: Optional[str]
-    job_namespace: Optional[str]
-    payload: Dict[str, Any]
-    headers: Dict[str, str]
+    run_id: str | None
+    event_type: str | None
+    job_name: str | None
+    job_namespace: str | None
+    payload: dict[str, Any]
+    headers: dict[str, str]
     timestamp: float
-    content_encoding: Optional[str] = None
-    validation_errors: List[str] = []
-    parsed_event: Optional[Dict[str, Any]] = None
-    event_class: Optional[str] = None
+    content_encoding: str | None = None
+    validation_errors: list[str] = []
+    parsed_event: dict[str, Any] | None = None
+    event_class: str | None = None
 
 
 class ServerStats(BaseModel):
     """Statistics about events received by the test server."""
 
     total_events: int
-    events_by_type: Dict[str, int]
-    events_by_run: Dict[str, int]
+    events_by_type: dict[str, int]
+    events_by_run: dict[str, int]
     successful_requests: int
     failed_requests: int
     validation_errors: int
@@ -192,7 +192,7 @@ class ErrorSimulation(BaseModel):
     enabled: bool = False
     delay_ms: int = Field(default=0, ge=0)
     # Deterministic sequence support
-    response_sequence: Optional[List[int]] = Field(
+    response_sequence: list[int] | None = Field(
         default=None, description="Deterministic sequence of HTTP status codes to return"
     )
     sequence_position: int = Field(default=0, description="Current position in the response sequence")
@@ -202,7 +202,7 @@ class OpenLineageTestServer:
     """FastAPI-based test server for OpenLineage HTTP transport testing."""
 
     def __init__(self):
-        self.events: List[EventRecord] = []
+        self.events: list[EventRecord] = []
         self.stats = ServerStats(
             total_events=0,
             events_by_type={},
@@ -233,7 +233,7 @@ class OpenLineageTestServer:
         self.error_simulation = ErrorSimulation()
         self._request_counter = 0
 
-    def _should_simulate_error(self) -> tuple[bool, Optional[int]]:
+    def _should_simulate_error(self) -> tuple[bool, int | None]:
         """Determine if we should simulate an error for this request.
 
         Returns:
@@ -272,7 +272,7 @@ class OpenLineageTestServer:
         if self.error_simulation.delay_ms > 0:
             await asyncio.sleep(self.error_simulation.delay_ms / 1000.0)
 
-    def _detect_and_validate_event(self, payload: Dict[str, Any]):
+    def _detect_and_validate_event(self, payload: dict[str, Any]):
         """Detect event type and validate using Pydantic models."""
         validation_errors = []
         parsed_event = None
@@ -303,7 +303,7 @@ class OpenLineageTestServer:
 
         return parsed_event, validation_errors, event_class
 
-    def _extract_event_info(self, payload: Dict[str, Any], parsed_event: Optional[OpenLineageEvent]):
+    def _extract_event_info(self, payload: dict[str, Any], parsed_event: OpenLineageEvent | None):
         """Extract run_id, event_type, job_name, job_namespace from event payload."""
         run_id = None
         event_type = None
@@ -335,7 +335,7 @@ class OpenLineageTestServer:
 
         return run_id, event_type, job_name, job_namespace
 
-    def _update_stats(self, run_id: Optional[str], event_type: Optional[str], has_validation_errors: bool):
+    def _update_stats(self, run_id: str | None, event_type: str | None, has_validation_errors: bool):
         """Update server statistics."""
         self.stats.total_events += 1
 
@@ -350,7 +350,7 @@ class OpenLineageTestServer:
 
         self.stats.unique_runs = len(self.stats.events_by_run)
 
-    async def receive_lineage_event(self, request: Request) -> Dict[str, Any]:
+    async def receive_lineage_event(self, request: Request) -> dict[str, Any]:
         """Handle incoming OpenLineage events."""
         self._request_counter += 1
 
@@ -458,20 +458,20 @@ app = FastAPI(
 
 
 @app.post("/api/v1/lineage")
-async def receive_event(request: Request) -> Dict[str, Any]:
+async def receive_event(request: Request) -> dict[str, Any]:
     """Receive OpenLineage events - main endpoint."""
     return await test_server.receive_lineage_event(request)
 
 
 @app.get("/events")
 async def get_events(
-    run_id: Optional[str] = None,
-    event_type: Optional[str] = None,
-    job_name: Optional[str] = None,
-    has_validation_errors: Optional[bool] = None,
-    event_class: Optional[str] = None,
-    limit: Optional[int] = None,
-) -> List[EventRecord]:
+    run_id: str | None = None,
+    event_type: str | None = None,
+    job_name: str | None = None,
+    has_validation_errors: bool | None = None,
+    event_class: str | None = None,
+    limit: int | None = None,
+) -> list[EventRecord]:
     """Get received events with optional filtering."""
     events = test_server.events
 
@@ -502,13 +502,13 @@ async def get_events(
 
 
 @app.get("/events/{run_id}")
-async def get_events_for_run(run_id: str) -> List[EventRecord]:
+async def get_events_for_run(run_id: str) -> list[EventRecord]:
     """Get all events for a specific run ID."""
     return [e for e in test_server.events if e.run_id == run_id]
 
 
 @app.get("/events/{run_id}/sequence")
-async def get_run_event_sequence(run_id: str) -> Dict[str, Any]:
+async def get_run_event_sequence(run_id: str) -> dict[str, Any]:
     """Get event sequence for a run and validate ordering."""
     events = [e for e in test_server.events if e.run_id == run_id]
     events.sort(key=lambda x: x.timestamp)
@@ -549,7 +549,7 @@ async def get_run_event_sequence(run_id: str) -> Dict[str, Any]:
 
 
 @app.get("/validation/summary")
-async def get_validation_summary() -> Dict[str, Any]:
+async def get_validation_summary() -> dict[str, Any]:
     """Get summary of validation results."""
     total_events = len(test_server.events)
     events_with_errors = [e for e in test_server.events if len(e.validation_errors) > 0]
@@ -582,12 +582,12 @@ class ErrorSequenceConfig(BaseModel):
     """Configuration for error sequence simulation."""
 
     enabled: bool = True
-    response_sequence: Optional[List[int]] = None
+    response_sequence: list[int] | None = None
     delay_ms: int = Field(default=0, ge=0)
 
 
 @app.post("/simulate/sequence")
-async def configure_error_sequence(config: ErrorSequenceConfig) -> Dict[str, Any]:
+async def configure_error_sequence(config: ErrorSequenceConfig) -> dict[str, Any]:
     """Configure deterministic error sequence simulation."""
     try:
         test_server.error_simulation = ErrorSimulation(
@@ -608,20 +608,20 @@ async def configure_error_sequence(config: ErrorSequenceConfig) -> Dict[str, Any
 
 
 @app.post("/reset")
-async def reset_server() -> Dict[str, str]:
+async def reset_server() -> dict[str, str]:
     """Reset server state."""
     test_server.reset()
     return {"status": "reset"}
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy", "uptime": str(time.time() - test_server.stats.start_time)}
 
 
 @app.get("/")
-async def root() -> Dict[str, str]:
+async def root() -> dict[str, str]:
     """Root endpoint with basic info."""
     return {
         "service": "OpenLineage HTTP Transport Test Server",

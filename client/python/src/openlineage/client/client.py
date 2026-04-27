@@ -7,14 +7,28 @@ import json
 import logging
 import os
 import warnings
-from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import attr
 import yaml
 from openlineage.client import constants, event_v2
-from openlineage.client.facet_v2 import environment_variables_run, tags_job, tags_run
-from openlineage.client.facets import FacetsConfig
+from openlineage.client.facet_v2 import (
+    environment_variables_run,
+    source_code_location_job,
+    tags_job,
+    tags_run,
+)
+from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
 from openlineage.client.filter import Filter, FilterConfig, create_filter
+from openlineage.client.git import (
+    _find_git_dir,
+    get_ci_pr_number,
+    get_git_branch,
+    get_git_repo_url,
+    get_git_tag,
+    get_git_version,
+)
 from openlineage.client.serde import Serde
 from openlineage.client.tags import TagsConfig
 from openlineage.client.transport import (
@@ -35,9 +49,9 @@ if TYPE_CHECKING:
     from requests.adapters import HTTPAdapter
 
 
-Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
-Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
-Event = Union[Event_v1, Event_v2]
+Event_v1 = RunEvent | DatasetEvent | JobEvent
+Event_v2 = event_v2.RunEvent | event_v2.DatasetEvent | event_v2.JobEvent
+Event = Event_v1 | Event_v2
 
 
 @attr.define
@@ -61,7 +75,14 @@ class OpenLineageConfig:
         if "transport" in params:
             config.transport = params["transport"]
         if "facets" in params:
-            config.facets = FacetsConfig(**params["facets"])
+            facets_dict = dict(params["facets"])
+            scl_dict = facets_dict.pop("source_code_location", {})
+            config.facets = FacetsConfig(
+                **facets_dict,
+                source_code_location=(
+                    SourceCodeLocationConfig(**scl_dict) if scl_dict else SourceCodeLocationConfig()
+                ),
+            )
         if "filters" in params:
             config.filters = [FilterConfig(**filter_config) for filter_config in params["filters"]]
         if "tags" in params:
@@ -161,6 +182,7 @@ class OpenLineageClient:
 
         event = self.add_environment_facets(event)
         event = self.update_event_tags_facets(event)
+        event = self.add_source_code_location_facet(event)
 
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
@@ -517,3 +539,59 @@ class OpenLineageClient:
         all_tags = keep_tags + user_tags
         tags_facet.tags = all_tags  # type: ignore [assignment]
         return tags_facet
+
+    @cached_property
+    def _source_code_location(self) -> dict[str, str | None] | None:
+        scl = self.config.facets.source_code_location
+
+        url: str | None = scl.repo_url
+        sha: str | None = scl.version
+        branch: str | None = scl.branch
+        tag: str | None = scl.tag
+        pr_number: str | None = scl.pull_request_number
+
+        try:
+            git_dir = _find_git_dir()
+            if git_dir:
+                if url is None:
+                    url = get_git_repo_url(git_dir=git_dir)
+                if sha is None:
+                    sha = get_git_version(git_dir)
+                if branch is None:
+                    branch = get_git_branch(git_dir)
+                if tag is None:
+                    tag = get_git_tag(git_dir)
+        except Exception:
+            log.warning("Failed to read git metadata for sourceCodeLocation facet", exc_info=True)
+
+        if pr_number is None:
+            pr_number = get_ci_pr_number()
+
+        if url is None:
+            return None
+
+        return {"url": url, "version": sha, "branch": branch, "tag": tag, "pullRequestNumber": pr_number}
+
+    def add_source_code_location_facet(self, event: Event) -> Event:
+        """Adds sourceCodeLocation job facet if not already present and not disabled."""
+        if self.config.facets.source_code_location.disabled:
+            return event
+        if not isinstance(event, (RunEvent, event_v2.RunEvent)):
+            return event
+
+        scl = self._source_code_location
+        if not scl or not scl["url"]:
+            return event
+
+        event.job.facets = event.job.facets or {}
+        if "sourceCodeLocation" not in event.job.facets:
+            event.job.facets["sourceCodeLocation"] = source_code_location_job.SourceCodeLocationJobFacet(
+                type="git",
+                url=scl["url"],
+                repoUrl=scl["url"],
+                version=scl["version"],
+                branch=scl["branch"],
+                tag=scl["tag"],
+                pullRequestNumber=scl["pullRequestNumber"],
+            )
+        return event

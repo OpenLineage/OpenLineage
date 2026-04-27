@@ -4,7 +4,7 @@
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import docker
 import pytest
@@ -174,15 +174,15 @@ def dbt_runner(dbt_container, test_server_url):
             self.container = container
             self.server_url = server_url
 
-        def run_dbt_command(self, args: List[str], expect_failure=False) -> Dict[str, Any]:
+        def run_dbt_command(self, args: list[str], expect_failure=False) -> dict[str, Any]:
             """Run dbt-ol command in container."""
             return self._run_command("dbt", args, expect_failure)
 
-        def run_dbt_ol_command(self, args: List[str], expect_failure=False) -> Dict[str, Any]:
+        def run_dbt_ol_command(self, args: list[str], expect_failure=False) -> dict[str, Any]:
             """Run dbt-ol command in container."""
             return self._run_command("dbt-ol", args, expect_failure)
 
-        def _run_command(self, cmd: str, args: List[str], expect_failure=False) -> Dict[str, Any]:
+        def _run_command(self, cmd: str, args: list[str], expect_failure=False) -> dict[str, Any]:
             cmd = [cmd] + args
 
             internal_server_url = "http://test-server:8080"
@@ -203,18 +203,18 @@ def dbt_runner(dbt_container, test_server_url):
 
             return {"exit_code": result.exit_code, "output": output, "success": success}
 
-        def get_events(self) -> List[Dict[str, Any]]:
+        def get_events(self) -> list[dict[str, Any]]:
             """Get events from test server."""
             response = requests.get(f"{self.server_url}/events")
             response.raise_for_status()
             return self._process_events(response.json())
 
-        def get_events_for_job(self, job_name: str) -> List[Dict[str, Any]]:
+        def get_events_for_job(self, job_name: str) -> list[dict[str, Any]]:
             response = requests.get(f"{self.server_url}/events", params={"job_name": job_name})
             response.raise_for_status()
             return self._process_events(response.json())
 
-        def _process_events(self, data: Any) -> List[Dict[str, Any]]:
+        def _process_events(self, data: Any) -> list[dict[str, Any]]:
             if isinstance(data, list):
                 if data and isinstance(data[0], dict):
                     if "payload" in data[0]:
@@ -223,7 +223,7 @@ def dbt_runner(dbt_container, test_server_url):
                         return data
             return []
 
-        def get_validation_summary(self) -> Dict[str, Any]:
+        def get_validation_summary(self) -> dict[str, Any]:
             """Get validation summary from test server."""
             response = requests.get(f"{self.server_url}/validation/summary")
             response.raise_for_status()

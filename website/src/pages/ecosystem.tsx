@@ -11,7 +11,7 @@ import CardMedia from "@mui/material/CardMedia";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Unstable_Grid2";
 import Collapse from "@mui/material/Collapse";
-import IconButton, { IconButtonProps } from "@mui/material/IconButton";
+import { IconButtonProps } from "@mui/material/IconButton";
 import { Consumers, Partner } from "@site/static/ecosystem/consumers";
 import { Producers } from "@site/static/ecosystem/producers";
 
@@ -22,7 +22,7 @@ interface ExpandMoreProps extends IconButtonProps {
 const ExpandMore = styled((props: ExpandMoreProps) => {
   const key = Math.random();
   const { expand, ...other } = props;
-  return <IconButton key={key} {...other} />;
+  return <div key={key} {...other} />;
 })(({ theme }) => ({
   marginX: "auto",
   transition: theme.transitions.create("transform", {
@@ -41,20 +41,14 @@ const LogoCard = (partner: Partner) => {
     if (partner.docs_url) {
       return (
         <CardActions className="eco-card-btns" disableSpacing>
-          <Button size="small" href={partner.docs_url}>
-            Learn More
-          </Button>
-          <Button size="small" href={partner.org_url} sx={{ marginLeft: 2 }}>
-            Website
-          </Button>
+          <a href={partner.docs_url}>Learn more</a>
+          <a href={partner.org_url}>Website</a>
         </CardActions>
       );
     } else {
       return (
         <CardActions className="eco-card-btns" disableSpacing>
-          <Button size="small" href={partner.org_url}>
-            Website
-          </Button>
+          <a href={partner.org_url}>Website</a>
         </CardActions>
       );
     }
@@ -64,6 +58,7 @@ const LogoCard = (partner: Partner) => {
     <Card raised={true} sx={{ minWidth: 340 }}>
       <CardActions disableSpacing sx={{ padding: 0 }}>
         <ExpandMore
+          className={expanded ? "eco-expanded-card" : ""}
           expand={expanded}
           onClick={handleExpandClick}
           aria-expanded={expanded}
@@ -82,7 +77,7 @@ const LogoCard = (partner: Partner) => {
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent className="eco-cardcontent" sx={{ maxWidth: 340 }}>
-          <p>{partner.description}</p>
+          <span className="eco-cardcontent-text">{partner.description}</span>
         </CardContent>
         {DisplayLinks()}
       </Collapse>

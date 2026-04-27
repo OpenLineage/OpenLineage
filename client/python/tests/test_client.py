@@ -434,7 +434,7 @@ def test_ol_config_from_dict():
     assert config.filters == []
 
     # Test with invalid data type
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, ValueError)):
         OpenLineageConfig.from_dict({"facets": "invalid_data"})
 
 
