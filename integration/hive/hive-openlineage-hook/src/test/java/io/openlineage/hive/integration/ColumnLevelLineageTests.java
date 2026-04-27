@@ -204,8 +204,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
             + "SELECT a, c FROM t2\n"
             + "UNION ALL\n"
             + "SELECT a, d FROM t3");
-    assertThat(
-            mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+    assertThat(mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
         .as(
             "lineage events must be emitted for a 3-way UNION ALL; "
                 + "today's master records zero because Parsing.buildQueryTree NPEs")
