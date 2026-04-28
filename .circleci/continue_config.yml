@@ -1263,6 +1263,22 @@ jobs:
           keys:
             - v1-go-mod-{{ checksum "client/go/go.sum" }}
       - run:
+          name: Download generator dependencies
+          command: cd ~/openlineage/generator/go && go mod download
+      - run:
+          name: Run facet generator
+          command: cd ~/openlineage/generator/go && go run .
+      - run:
+          name: Check generated files are up to date
+          command: |
+            if ! git diff --quiet -- pkg/facets/; then
+              echo "ERROR: Generated facet files are out of sync with the spec."
+              echo "Run 'cd generator/go && go run .' from the repo root and commit the result."
+              echo ""
+              git diff -- pkg/facets/
+              exit 1
+            fi
+      - run:
           name: Run linter
           command: |
             golangci-lint run ./...
