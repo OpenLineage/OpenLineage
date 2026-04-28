@@ -7,11 +7,16 @@
 package main
 
 import (
+	"flag"
 	"go/format"
 	"log"
 	"os"
 	"reflect"
 
+	"github.com/OpenLineage/openlineage/generator/go/render/terraform/capability"
+	"github.com/OpenLineage/openlineage/generator/go/render/terraform/descriptors"
+	"github.com/OpenLineage/openlineage/generator/go/render/terraform/events"
+	"github.com/OpenLineage/openlineage/generator/go/render/terraform/model"
 	"github.com/atombender/go-jsonschema/pkg/schemas"
 
 	"github.com/OpenLineage/openlineage/generator/go/discover"
@@ -22,6 +27,13 @@ import (
 )
 
 func main() {
+	target := flag.String("target", "all", "What to generate: client, terraform, or all")
+	flag.Parse()
+
+	if *target != "client" && *target != "terraform" && *target != "all" {
+		log.Fatalf("invalid --target %q: must be client, terraform, or all", *target)
+	}
+
 	globs := []string{
 		"../../spec/facets/*Facet.json",
 		"../../spec/registry/*/facets/*Facet.json",
@@ -35,6 +47,7 @@ func main() {
 
 	definitions := map[string]*schemas.Type{}
 	var discoveredOL []discover.Facet
+	var discoveredTF []discover.Facet
 
 	loader := schemas.NewDefaultCacheLoader([]string{"json"}, nil)
 	for _, path := range paths {
@@ -51,11 +64,24 @@ func main() {
 			}
 			definitions[name] = def
 		}
-		discoveredOL = append(discoveredOL, discover.FindAllFacets(schema)...)
+		discoveredFacets := discover.FindAllFacets(schema)
+		discoveredOL = append(discoveredOL, discoveredFacets...)
+		if !discover.IsTerraformExcluded(discoveredFacets) {
+			discoveredTF = append(discoveredTF, discoveredFacets...)
+		}
 	}
 
 	resolver := resolve.New(definitions)
 
+	if *target == "client" || *target == "all" {
+		emitOpenLineage(discoveredOL, resolver)
+	}
+	if *target == "terraform" || *target == "all" {
+		emitTerraform(discoveredTF, resolver)
+	}
+}
+
+func emitOpenLineage(discoveredOL []discover.Facet, resolver *resolve.Resolver) {
 	// OL client facets: all kinds, no field filtering
 	var olFacets []ir.Facet
 	for _, f := range discoveredOL {
@@ -76,6 +102,38 @@ func main() {
 	olDir := "../../client/go/pkg/openlineage"
 	_ = os.MkdirAll(olDir, 0o755)
 	write(olDir+"/spec.gen.go", spec.RenderSpec(specSchema))
+}
+
+func emitTerraform(discoveredTF []discover.Facet, resolver *resolve.Resolver) {
+	// Terraform facets: job + dataset only, with field filtering
+	var tfFacets []ir.Facet
+	for _, f := range discoveredTF {
+		tfFacets = append(tfFacets, ir.BuildFacet(f, resolver, true))
+	}
+	terraformGeneratedDir := "../../byool/terraform/openlineage-base-resource/ol/"
+	_ = os.MkdirAll(terraformGeneratedDir, 0o755)
+
+	// -------------------------------------------------------------------------
+	// Terraform: Models
+	// -------------------------------------------------------------------------
+	write(terraformGeneratedDir+"models.gen.go", model.RenderModelsFile(tfFacets))
+	write(terraformGeneratedDir+"resource_models.gen.go", model.RenderResourceModels(tfFacets))
+
+	// -------------------------------------------------------------------------
+	// Schema descriptors + blocks
+	// -------------------------------------------------------------------------
+	write(terraformGeneratedDir+"facet_schema_descriptors.gen.go", descriptors.RenderFacetSchemaFile(tfFacets))
+
+	// -------------------------------------------------------------------------
+	// Capability
+	// -------------------------------------------------------------------------
+	write(terraformGeneratedDir+"capability.gen.go", capability.RenderCapabilityFile(tfFacets))
+
+	// -------------------------------------------------------------------------
+	// Facet Builders
+	// -------------------------------------------------------------------------
+	write(terraformGeneratedDir+"facet_builders.gen.go", events.RenderFacetBuilders(tfFacets))
+	write(terraformGeneratedDir+"facet_build_methods.gen.go", events.RenderBuildFacetMethods(tfFacets))
 }
 
 func write(path, contents string) {
