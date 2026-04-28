@@ -1,0 +1,58 @@
+{{- if eq .Kind "single" -}}
+schema.SingleNestedBlock{
+{{- if .Description }}
+Description: {{ printf "%q" .Description }},
+{{- end -}}
+{{- if .Attrs }}
+Attributes: map[string]schema.Attribute{
+{{- range .Attrs }}
+{{ printf "%q" .Name }}: {{ .Literal }},
+{{- end }}
+},
+{{- end -}}
+{{- if .Blocks }}
+Blocks: map[string]schema.Block{
+{{- range .Blocks }}
+{{ printf "%q" .Name }}: {{ .Literal }},
+{{- end }}
+},
+{{- end -}}
+{{- if .RequiredFields }}
+Validators: requireFields(
+{{- range .RequiredFields }}
+{{ printf "%q" . }},
+{{- end }}
+),
+{{- end }}
+}
+{{- else -}}
+schema.ListNestedBlock{
+{{- if .Description }}
+Description: {{ printf "%q" .Description }},
+{{- end }}
+Validators: []validator.List{listvalidator.SizeAtLeast(1)},
+NestedObject: schema.NestedBlockObject{
+{{- if .Attrs }}
+Attributes: map[string]schema.Attribute{
+{{- range .Attrs }}
+{{ printf "%q" .Name }}: {{ .Literal }},
+{{- end }}
+},
+{{- end -}}
+{{- if .Blocks }}
+Blocks: map[string]schema.Block{
+{{- range .Blocks }}
+{{ printf "%q" .Name }}: {{ .Literal }},
+{{- end }}
+},
+{{- end -}}
+{{- if .RequiredFields }}
+Validators: requireFields(
+{{- range .RequiredFields }}
+{{ printf "%q" . }},
+{{- end }}
+),
+{{- end }}
+},
+}
+{{- end -}}
