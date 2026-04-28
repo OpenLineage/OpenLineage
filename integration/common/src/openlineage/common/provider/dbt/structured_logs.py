@@ -915,10 +915,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if not os.path.exists(self.dbt_log_file_path):
             logs_directory = os.path.dirname(self.dbt_log_file_path)
             os.makedirs(logs_directory, exist_ok=True)
-            with open(self.dbt_log_file_path, "w"):
+            with open(self.dbt_log_file_path, "w", encoding="utf-8"):
                 pass
 
-        self._dbt_log_file = open(self.dbt_log_file_path)
+        self._dbt_log_file = open(self.dbt_log_file_path, encoding="utf-8")
         while self._dbt_log_file.readlines():
             pass
 
