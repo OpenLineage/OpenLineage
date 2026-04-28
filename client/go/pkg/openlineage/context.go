@@ -117,12 +117,12 @@ func (r *run) NewEvent(eventType EventType) *RunEvent {
 	if _, isNoop := parent.(*noopRun); parent != nil && !isNoop {
 		parentFacet := facets.NewParentRunFacet(
 			r.client.producer,
-			facets.ParentJob{
+			facets.ParentRunFacetJob{
 				Name:      parent.JobName(),
 				Namespace: parent.JobNamespace(),
 			},
-			facets.ParentRun{
-				RunID: parent.RunID().String(),
+			facets.ParentRunFacetRun{
+				RunId: parent.RunID().String(),
 			},
 		)
 
