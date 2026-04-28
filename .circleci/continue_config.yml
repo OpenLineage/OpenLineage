@@ -1261,7 +1261,7 @@ jobs:
       - *checkout_project_root
       - restore_cache:
           keys:
-            - v1-go-mod-{{ checksum "client/go/go.sum" }}
+            - v1-go-mod-{{ checksum "go.sum" }}
       - run:
           name: Download generator dependencies
           command: cd ~/openlineage/generator/go && go mod download
@@ -1292,7 +1292,7 @@ jobs:
           name: Run tests
           command: go test ./... -v -race -coverprofile=coverage.out
       - save_cache:
-          key: v1-go-mod-{{ checksum "client/go/go.sum" }}
+          key: v1-go-mod-{{ checksum "go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
 
@@ -1305,7 +1305,7 @@ jobs:
       - *checkout_project_root
       - restore_cache:
           keys:
-            - v1-go-mod-{{ checksum "client/go/go.sum" }}
+            - v1-go-mod-{{ checksum "go.sum" }}
       - run:
           name: Download dependencies
           command: go mod download
