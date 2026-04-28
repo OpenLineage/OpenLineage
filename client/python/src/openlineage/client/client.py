@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import attr
 import yaml
 from openlineage.client import constants, event_v2
-from openlineage.client.dataset import DatasetConfig, DatasetNormalizer
+from openlineage.client.dataset import DatasetConfig, DatasetReducer
 from openlineage.client.facet_v2 import (
     environment_variables_run,
     source_code_location_job,
@@ -150,7 +150,7 @@ class OpenLineageClient:
             if _filter:
                 self._filters.append(_filter)
 
-        self._dataset_normalizer = DatasetNormalizer(self.config.dataset)
+        self._dataset_reducer = DatasetReducer(self.config.dataset)
 
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
@@ -193,8 +193,8 @@ class OpenLineageClient:
         event = self.add_environment_facets(event)
         event = self.update_event_tags_facets(event)
         event = self.add_source_code_location_facet(event)
-        if self.config.dataset.normalization_enabled:
-            event = self.normalize_datasets(event)
+        if self.config.dataset.reducing_enabled:
+            event = self.reduce_datasets(event)
 
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
@@ -608,11 +608,11 @@ class OpenLineageClient:
             )
         return event
 
-    def normalize_datasets(self, event: Event) -> Event:
+    def reduce_datasets(self, event: Event) -> Event:
         if not isinstance(event, event_v2.RunEvent):
             return event
         if event.inputs:
-            event.inputs[:] = self._dataset_normalizer.normalize_inputs(event.inputs)
+            event.inputs[:] = self._dataset_reducer.reduce_inputs(event.inputs)
         if event.outputs:
-            event.outputs[:] = self._dataset_normalizer.normalize_outputs(event.outputs)
+            event.outputs[:] = self._dataset_reducer.reduce_outputs(event.outputs)
         return event

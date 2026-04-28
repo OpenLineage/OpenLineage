@@ -420,14 +420,14 @@ def test_ol_config_from_dict():
         "transport": {"url": "http://localhost:5050"},
         "facets": {"environment_variables": ["VAR1", "VAR2"]},
         "filters": [{"type": "exact", "match": "job_name"}],
-        "dataset": {"normalization_enabled": True},
+        "dataset": {"reducing_enabled": True},
     }
     config = OpenLineageConfig.from_dict(config_dict)
     assert config.transport["url"] == "http://localhost:5050"
     assert config.facets.environment_variables == ["VAR1", "VAR2"]
     assert config.filters[0].type == "exact"
     assert config.filters[0].match == "job_name"
-    assert config.dataset.normalization_enabled
+    assert config.dataset.reducing_enabled
 
     # Test with missing keys
     config_dict = {}
@@ -1078,7 +1078,7 @@ class TestOpenLineageConfigLoader:
             ),
             (
                 {
-                    "OPENLINEAGE__DATASET__NORMALIZATION_ENABLED": "true",
+                    "OPENLINEAGE__DATASET__REDUCING_ENABLED": "true",
                     "OPENLINEAGE__DATASET__DISABLED_TRIMMERS": ""
                     "openlineage.client.dataset.trimmers.KeyValueTrimmer;"
                     "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
@@ -1088,7 +1088,7 @@ class TestOpenLineageConfigLoader:
                 },
                 {
                     "dataset": {
-                        "normalization_enabled": True,
+                        "reducing_enabled": True,
                         "disabled_trimmers": ""
                         "openlineage.client.dataset.trimmers.KeyValueTrimmer;"
                         "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
@@ -1693,7 +1693,7 @@ def test_dataset_config_from_yaml(mocker: MockerFixture, root: Path):
 
     dataset = OpenLineageClient().config.dataset
 
-    assert dataset.normalization_enabled
+    assert dataset.reducing_enabled
     assert dataset.disabled_trimmers == [
         "openlineage.client.dataset.trimmers.KeyValueTrimmer",
         "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
@@ -1708,7 +1708,7 @@ def test_dataset_config_from_env_vars(mocker: MockerFixture):
     mocker.patch.dict(
         os.environ,
         {
-            "OPENLINEAGE__DATASET__NORMALIZATION_ENABLED": "true",
+            "OPENLINEAGE__DATASET__REDUCING_ENABLED": "true",
             "OPENLINEAGE__DATASET__DISABLED_TRIMMERS": "openlineage.client.dataset.trimmers.KeyValueTrimmer;"
             "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
             "OPENLINEAGE__DATASET__EXTRA_TRIMMERS": "my.custom.trimmers.KeyValueTrimmer;"
@@ -1718,7 +1718,7 @@ def test_dataset_config_from_env_vars(mocker: MockerFixture):
 
     dataset = OpenLineageClient().config.dataset
 
-    assert dataset.normalization_enabled
+    assert dataset.reducing_enabled
     assert dataset.disabled_trimmers == [
         "openlineage.client.dataset.trimmers.KeyValueTrimmer",
         "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
@@ -1732,7 +1732,7 @@ def test_dataset_config_from_env_vars(mocker: MockerFixture):
 def test_dataset_config_from_user_config():
     user_config = {
         "dataset": {
-            "normalization_enabled": True,
+            "reducing_enabled": True,
             "disabled_trimmers": "openlineage.client.dataset.trimmers.KeyValueTrimmer;"
             "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
             "extra_trimmers": "my.custom.trimmers.KeyValueTrimmer;my.custom.trimmers.MultiDirDateTrimmer",
@@ -1741,7 +1741,7 @@ def test_dataset_config_from_user_config():
 
     dataset = OpenLineageClient(config=user_config).config.dataset
 
-    assert dataset.normalization_enabled
+    assert dataset.reducing_enabled
     assert dataset.disabled_trimmers == [
         "openlineage.client.dataset.trimmers.KeyValueTrimmer",
         "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from openlineage.client.dataset import DatasetConfig, DatasetNormalizer
+from openlineage.client.dataset import DatasetConfig, DatasetReducer
 from openlineage.client.dataset.trimmers import DatasetNameTrimmer
 from openlineage.client.event_v2 import (
     InputDataset,
@@ -36,13 +36,13 @@ TRAILING_DATA_PATH_TRIMMER = f"{TrailingDataPathTrimmer.__module__}.{TrailingDat
 FAILING_TRIMMER = f"{FailingTrimmer.__module__}.{FailingTrimmer.__name__}"
 
 
-def _normalizer(**kwargs) -> DatasetNormalizer:
-    return DatasetNormalizer(DatasetConfig(**kwargs))
+def _reducer(**kwargs) -> DatasetReducer:
+    return DatasetReducer(DatasetConfig(**kwargs))
 
 
-class TestNormalizeInputs:
+class TestReduceInputs:
     def test_different_datasets_left_unchanged(self):
-        result = _normalizer().normalize_inputs(
+        result = _reducer().reduce_inputs(
             [
                 InputDataset(namespace="ns", name="/data/a"),
                 InputDataset(namespace="ns", name="/data/b"),
@@ -56,7 +56,7 @@ class TestNormalizeInputs:
         self.assert_does_not_have_input_subset(result[1])
 
     def test_duplicated_trimmed_datasets_are_reduced(self):
-        result = _normalizer().normalize_inputs(
+        result = _reducer().reduce_inputs(
             [
                 InputDataset(namespace="ns", name="/data/table/day=1"),
                 InputDataset(namespace="ns", name="/data/table/day=2"),
@@ -68,7 +68,7 @@ class TestNormalizeInputs:
         self.assert_has_input_subset_locations(result[0], ["/data/table/day=1", "/data/table/day=2"])
 
     def test_duplicated_datasets_without_trimming_are_reduced(self):
-        result = _normalizer().normalize_inputs(
+        result = _reducer().reduce_inputs(
             [
                 InputDataset(namespace="ns", name="/data/table"),
                 InputDataset(namespace="ns", name="/data/table"),
@@ -80,7 +80,7 @@ class TestNormalizeInputs:
         self.assert_does_not_have_input_subset(result[0])
 
     def test_name_is_trimmed_even_when_not_reducing(self):
-        result = _normalizer().normalize_inputs([InputDataset(namespace="ns", name="/data/table/day=1")])
+        result = _reducer().reduce_inputs([InputDataset(namespace="ns", name="/data/table/day=1")])
 
         assert len(result) == 1
         assert result[0].name == "/data/table"
@@ -94,7 +94,7 @@ class TestNormalizeInputs:
             fields=[schema_dataset.SchemaDatasetFacetFields(name="col_b", type="INT")],
         )
 
-        result = _normalizer().normalize_inputs(
+        result = _reducer().reduce_inputs(
             [
                 InputDataset(namespace="ns", name="/data/table/day=1", facets={"schema": schema_a}),
                 InputDataset(namespace="ns", name="/data/table/day=2", facets={"schema": schema_b}),
@@ -109,12 +109,12 @@ class TestNormalizeInputs:
         self.assert_has_input_subset_locations(result[1], ["/data/table/day=2"])
 
     def test_applies_all_active_trimmers(self):
-        result = _normalizer(
+        result = _reducer(
             disabled_trimmers=[
                 "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
                 "openlineage.client.dataset.trimmers.YearMonthTrimmer",
             ]
-        ).normalize_inputs(
+        ).reduce_inputs(
             [
                 InputDataset(namespace="ns", name="/data/table/2024-05-23/key=a"),
                 InputDataset(namespace="ns", name="/data/table/2024-06-12/key=b"),
@@ -128,9 +128,9 @@ class TestNormalizeInputs:
         )
 
     def test_disabling_trimmer_keeps_partitions(self):
-        result = _normalizer(
+        result = _reducer(
             disabled_trimmers=["openlineage.client.dataset.trimmers.KeyValueTrimmer"],
-        ).normalize_inputs(
+        ).reduce_inputs(
             [
                 InputDataset(namespace="ns", name="/data/table/day=1"),
                 InputDataset(namespace="ns", name="/data/table/day=2"),
@@ -142,9 +142,9 @@ class TestNormalizeInputs:
         assert result[1].name == "/data/table/day=2"
 
     def test_extra_trimmers_are_applied(self):
-        result = _normalizer(
+        result = _reducer(
             extra_trimmers=[TRAILING_DATA_PATH_TRIMMER],
-        ).normalize_inputs([InputDataset(namespace="ns", name="/tmp/table/data")])
+        ).reduce_inputs([InputDataset(namespace="ns", name="/tmp/table/data")])
 
         assert len(result) == 1
         assert result[0].name == "/tmp/table"
@@ -155,7 +155,7 @@ class TestNormalizeInputs:
             fields=[schema_dataset.SchemaDatasetFacetFields(name="col_a", type="STRING")],
         )
 
-        result = _normalizer().normalize_inputs(
+        result = _reducer().reduce_inputs(
             [
                 InputDataset(namespace="ns", name="/data/table/day=1", facets={"schema": schema}),
                 InputDataset(namespace="ns", name="/data/table/day=2", facets={"schema": schema}),
@@ -169,7 +169,7 @@ class TestNormalizeInputs:
     def test_preexisting_input_facets_are_retained(self):
         stats = input_statistics_input_dataset.InputStatisticsInputDatasetFacet(rowCount=100, size=2048)
 
-        result = _normalizer().normalize_inputs(
+        result = _reducer().reduce_inputs(
             [
                 InputDataset(
                     namespace="ns", name="/data/table/day=1", inputFacets={"inputStatistics": stats}
@@ -181,10 +181,10 @@ class TestNormalizeInputs:
         assert result[0].name == "/data/table"
         assert result[0].inputFacets.get("inputStatistics") == stats
 
-    def test_failing_trimmer_does_not_prevent_normalization(self):
-        result = _normalizer(
+    def test_failing_trimmer_does_not_prevent_reducing(self):
+        result = _reducer(
             extra_trimmers=[FAILING_TRIMMER],
-        ).normalize_inputs(
+        ).reduce_inputs(
             [
                 InputDataset(namespace="ns", name="/data/table/day=1"),
                 InputDataset(namespace="ns", name="/data/table/day=2"),
@@ -208,9 +208,9 @@ class TestNormalizeInputs:
         assert subset.inputCondition.locations == locations
 
 
-class TestNormalizeOutputs:
+class TestReduceOutputs:
     def test_different_datasets_left_unchanged(self):
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/a"),
                 OutputDataset(namespace="ns", name="/data/b"),
@@ -224,7 +224,7 @@ class TestNormalizeOutputs:
         self.assert_does_not_have_output_subset(result[1])
 
     def test_duplicated_trimmed_datasets_are_reduced(self):
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/table/day=1"),
                 OutputDataset(namespace="ns", name="/data/table/day=2"),
@@ -239,7 +239,7 @@ class TestNormalizeOutputs:
         )
 
     def test_duplicated_datasets_without_trimming_are_reduced(self):
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/table"),
                 OutputDataset(namespace="ns", name="/data/table"),
@@ -251,7 +251,7 @@ class TestNormalizeOutputs:
         self.assert_does_not_have_output_subset(result[0])
 
     def test_name_is_trimmed_even_when_not_reducing(self):
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/table/day=1"),
             ]
@@ -272,7 +272,7 @@ class TestNormalizeOutputs:
             fields=[schema_dataset.SchemaDatasetFacetFields(name="col_b", type="INT")],
         )
 
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/table/day=1", facets={"schema": schema_a}),
                 OutputDataset(namespace="ns", name="/data/table/day=2", facets={"schema": schema_b}),
@@ -293,12 +293,12 @@ class TestNormalizeOutputs:
         )
 
     def test_applies_all_active_trimmers(self):
-        result = _normalizer(
+        result = _reducer(
             disabled_trimmers=[
                 "openlineage.client.dataset.trimmers.MultiDirDateTrimmer",
                 "openlineage.client.dataset.trimmers.YearMonthTrimmer",
             ]
-        ).normalize_outputs(
+        ).reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/table/2024-05-23/key=a"),
                 OutputDataset(namespace="ns", name="/data/table/2024-06-12/key=b"),
@@ -313,9 +313,9 @@ class TestNormalizeOutputs:
         )
 
     def test_disabling_trimmer_keeps_partitions(self):
-        result = _normalizer(
+        result = _reducer(
             disabled_trimmers=["openlineage.client.dataset.trimmers.KeyValueTrimmer"],
-        ).normalize_outputs(
+        ).reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/table/day=1"),
                 OutputDataset(namespace="ns", name="/data/table/day=2"),
@@ -327,9 +327,9 @@ class TestNormalizeOutputs:
         assert result[1].name == "/data/table/day=2"
 
     def test_extra_trimmers_are_applied(self):
-        result = _normalizer(
+        result = _reducer(
             extra_trimmers=[TRAILING_DATA_PATH_TRIMMER],
-        ).normalize_outputs(
+        ).reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/tmp/table/data"),
             ]
@@ -347,7 +347,7 @@ class TestNormalizeOutputs:
             fields=[schema_dataset.SchemaDatasetFacetFields(name="col_a", type="STRING")],
         )
 
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/table/day=1", facets={"schema": schema}),
                 OutputDataset(namespace="ns", name="/data/table/day=2", facets={"schema": schema}),
@@ -361,7 +361,7 @@ class TestNormalizeOutputs:
     def test_preexisting_output_facets_are_retained(self):
         stats = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(rowCount=200, size=4096)
 
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(
                     namespace="ns", name="/data/table/day=1", outputFacets={"outputStatistics": stats}
@@ -393,7 +393,7 @@ class TestNormalizeOutputs:
             },
         )
 
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="output", facets={"columnLineage": cll}),
             ]
@@ -413,7 +413,7 @@ class TestNormalizeOutputs:
             ],
         )
 
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="output", facets={"columnLineage": cll}),
             ]
@@ -435,7 +435,7 @@ class TestNormalizeOutputs:
             },
         )
 
-        result = _normalizer().normalize_outputs(
+        result = _reducer().reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="output", facets={"columnLineage": cll}),
             ]
@@ -443,10 +443,10 @@ class TestNormalizeOutputs:
 
         assert result[0].facets["columnLineage"].fields["col_a"].inputFields[0].name == "plain_table"
 
-    def test_failing_trimmer_does_not_prevent_normalization(self):
-        result = _normalizer(
+    def test_failing_trimmer_does_not_prevent_reducing(self):
+        result = _reducer(
             extra_trimmers=[FAILING_TRIMMER],
-        ).normalize_outputs(
+        ).reduce_outputs(
             [
                 OutputDataset(namespace="ns", name="/data/table/day=1"),
                 OutputDataset(namespace="ns", name="/data/table/day=2"),

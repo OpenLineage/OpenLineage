@@ -69,12 +69,12 @@ def _event_with_partitioned_datasets() -> RunEvent:
     )
 
 
-class TestEventNormalizationEnabled:
+class TestEventReducingEnabled:
     @staticmethod
     def _client(**kwargs):
-        return OpenLineageClient(config={"dataset": {"normalization_enabled": True}}, **kwargs)
+        return OpenLineageClient(config={"dataset": {"reducing_enabled": True}}, **kwargs)
 
-    def test_inputs_normalized(self, transport):
+    def test_inputs_reduced(self, transport):
         self._client(transport=transport).emit(_event_with_partitioned_datasets())
         emitted = transport.event
 
@@ -88,7 +88,7 @@ class TestEventNormalizationEnabled:
             "/data/events/date=2024-01-16",
         ]
 
-    def test_outputs_normalized(self, transport):
+    def test_outputs_reduced(self, transport):
         self._client(transport=transport).emit(_event_with_partitioned_datasets())
         emitted = transport.event
 
@@ -102,7 +102,7 @@ class TestEventNormalizationEnabled:
             "/data/processed_events/date=2024-01-16",
         ]
 
-    def test_cll_normalized(self, transport):
+    def test_cll_input_names_trimmed(self, transport):
         self._client(transport=transport).emit(_event_with_partitioned_datasets())
         emitted = transport.event
 
@@ -116,7 +116,7 @@ class TestDefaultClient:
     def _client(**kwargs):
         return OpenLineageClient(**kwargs)
 
-    def test_inputs_not_normalized(self, transport):
+    def test_inputs_not_reduced(self, transport):
         self._client(transport=transport).emit(_event_with_partitioned_datasets())
         emitted = transport.event
 
@@ -124,7 +124,7 @@ class TestDefaultClient:
         assert emitted.inputs[0].name == "/data/events/date=2024-01-15"
         assert emitted.inputs[1].name == "/data/events/date=2024-01-16"
 
-    def test_outputs_not_normalized(self, transport):
+    def test_outputs_not_reduced(self, transport):
         self._client(transport=transport).emit(_event_with_partitioned_datasets())
         emitted = transport.event
 
@@ -132,7 +132,7 @@ class TestDefaultClient:
         assert emitted.outputs[0].name == "/data/processed_events/date=2024-01-15"
         assert emitted.outputs[1].name == "/data/processed_events/date=2024-01-16"
 
-    def test_cll_not_normalized(self, transport):
+    def test_cll_input_names_not_trimmed(self, transport):
         self._client(transport=transport).emit(_event_with_partitioned_datasets())
         emitted = transport.event
 

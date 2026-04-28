@@ -21,9 +21,9 @@ class SomeClass:
 DEFAULT_TRIMMERS = [KeyValueTrimmer, DateTrimmer, MultiDirDateTrimmer, YearMonthTrimmer]
 
 
-def test_normalization_disabled_by_default():
+def test_reducing_disabled_by_default():
     config = DatasetConfig()
-    assert not config.normalization_enabled
+    assert not config.reducing_enabled
 
 
 def test_default_trimmers():

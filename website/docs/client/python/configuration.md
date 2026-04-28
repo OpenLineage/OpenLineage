@@ -15,7 +15,7 @@ The OpenLineage Python client supports four main configuration sections that con
 2. **Facets** - Configures some facets (e.g., which environment variables are attached to events as facet)
 3. **Filters** - Defines rules to selectively exclude certain events from being emitted
 4. **Tags** - Configures custom tags added to jobs and runs entities as custom facet.
-5. **Dataset Name Normalization** - Configures dataset name trimmers that strip trailing name segments from path-like names.
+5. **Dataset Reducing** - Configures dataset reducing, including name trimmers that can strip trailing segments from path-like names.
 
 Configuration can be provided in several ways:
 
@@ -1973,7 +1973,7 @@ client = OpenLineageClient(config=config)
 </Tabs>
 
 
-## Dataset Name Normalization
+## Dataset Reducing
 
 Dataset names may sometimes not represent an actual dataset, but rather it's subset.
 This is mainly an issue with object storage paths with partitioning,
@@ -1998,7 +1998,7 @@ Datasets are reduced into a single dataset only if:
 1. Their names are trimmed to the same dataset name.
 2. They share identical facets.
 
-Dataset name normalization is **disabled by default**. It must be explicitly enabled via the `normalization_enabled` flag.
+Dataset reducing is **disabled by default**. It must be explicitly enabled via the `reducing_enabled` flag.
 
 The list of enabled trimmers can be managed using `disabled_trimmers` and `extra_trimmers` configuration parameters.
 
@@ -2054,21 +2054,21 @@ Removes the last segment if it is a valid year and month (in format of `yyyyMM` 
 
 ### Configuration
 
-Dataset name normalization is configured under the `dataset` key. The following options are available:
+Dataset reducing is configured under the `dataset` key. The following options are available:
 
-| Option                  | Type                         | Default | Description                                                                        |
-|-------------------------|------------------------------|---------|------------------------------------------------------------------------------------|
-| `normalization_enabled` | `bool`                       | `false` | Enables dataset name normalization.                                                |
-| `disabled_trimmers`     | `str` (comma-separated list) |         | Fully qualified class names of [built-in trimmers](#built-in-trimmers) to disable. |
-| `extra_trimmers`        | `str` (comma-separated list) |         | Fully qualified class names of additional custom trimmers to enable.               |
+| Option              | Type                         | Default | Description                                                                        |
+|---------------------|------------------------------|---------|------------------------------------------------------------------------------------|
+| `reducing_enabled`  | `bool`                       | `false` | Enables dataset reducing with name trimming.                                       |
+| `disabled_trimmers` | `str` (comma-separated list) |         | Fully qualified class names of [built-in trimmers](#built-in-trimmers) to disable. |
+| `extra_trimmers`    | `str` (comma-separated list) |         | Fully qualified class names of additional custom trimmers to enable.               |
 
 #### Examples
 
-<Tabs groupId="dataset-normalization">
+<Tabs groupId="dataset-reducing">
 <TabItem value="env-vars" label="Environment Variables">
 
 ```sh
-OPENLINEAGE__DATASET__NORMALIZATION_ENABLED=true
+OPENLINEAGE__DATASET__REDUCING_ENABLED=true
 OPENLINEAGE__DATASET__DISABLED_TRIMMERS="openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer"
 OPENLINEAGE__DATASET__EXTRA_TRIMMERS="mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer"
 ```
@@ -2078,7 +2078,7 @@ OPENLINEAGE__DATASET__EXTRA_TRIMMERS="mypackage.CustomTrimmer;mypackage.AnotherC
 
 ```yaml
 dataset:
-  normalization_enabled: true
+  reducing_enabled: true
   disabled_trimmers: "openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer"
   extra_trimmers: "mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer"
 ```
@@ -2091,7 +2091,7 @@ from openlineage.client import OpenLineageClient
 
 config = {
     "dataset": {
-        "normalization_enabled": True,
+        "reducing_enabled": True,
         "disabled_trimmers": "openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer",
         "extra_trimmers": "mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer",
     },
