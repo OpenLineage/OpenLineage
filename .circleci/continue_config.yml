@@ -1295,6 +1295,62 @@ jobs:
           key: v1-go-mod-{{ checksum "go.sum" }}-{{ checksum "../../generator/go/go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - go/pkg/mod
+            - openlineage/client/go
+
+  # Byool Terraform Jobs
+  build-byool-terraform:
+    working_directory: ~/openlineage/byool/terraform/openlineage-base-resource
+    docker:
+      - image: cimg/go:1.26
+    resource_class: medium
+    environment:
+      GOWORK: ~/openlineage/byool/terraform/go.work
+    steps:
+      - *checkout_project_root
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Create go.work file
+          command: |
+            cd ~/openlineage/byool/terraform
+            go work init
+            go work use ../../client/go ./openlineage-base-resource
+      - restore_cache:
+          keys:
+            - v1-byool-terraform-{{ checksum "go.sum" }}-{{ checksum "../../../generator/go/go.sum" }}
+      - run:
+          name: Download generator dependencies
+          command: cd ~/openlineage/generator/go && go mod download
+      - run:
+          name: Run Terraform facet generator
+          command: cd ~/openlineage/generator/go && go run . --target terraform
+      - run:
+          name: Check generated files are up to date
+          command: |
+            if ! git diff --quiet -- ol/; then
+              echo "ERROR: Generated Terraform files are out of sync with the spec."
+              echo "Run 'cd generator/go && go run . --target terraform' from the repo root and commit the result."
+              echo ""
+              git diff -- ol/
+              exit 1
+            fi
+      - run:
+          name: Download dependencies
+          command: go mod download
+      - run:
+          name: Run linter
+          command: golangci-lint run ./...
+      - run:
+          name: Build
+          command: go build ./...
+      - save_cache:
+          key: v1-byool-terraform-{{ checksum "go.sum" }}-{{ checksum "../../../generator/go/go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
 
   release-client-go:
     working_directory: ~/openlineage/client/go
