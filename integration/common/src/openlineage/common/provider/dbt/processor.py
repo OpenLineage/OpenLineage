@@ -747,7 +747,7 @@ class DbtArtifactProcessor:
                 ),
             }
 
-            documentation = node.metadata_node["description"]
+            documentation = node.metadata_node.get("description", "")
             if documentation:
                 facets["documentation"] = documentation_dataset.DocumentationDatasetFacet(
                     description=documentation
