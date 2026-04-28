@@ -104,16 +104,6 @@ class DateTrimmer(DatasetNameTrimmer):
         "/20250721"           -> "/20250721"
     """
 
-    DATE_PATTERNS = [
-        ("%Y-%m-%d", re.compile(r"\d{4}-\d{2}-\d{2}")),
-        ("%d.%m.%Y", re.compile(r"\d{2}\.\d{2}\.\d{4}")),
-        ("%Y%m%d", re.compile(r"\d{8}")),
-    ]
-
-    # Matches 'T', 'Z', whitespace, ':', '.', '-' and all digits,
-    # so characters commonly found in timestamps or surrounding noise.
-    NOISE_REGEX = re.compile(r"[TZ\s:.\-\d]*")
-
     def trim(self, name: str) -> str:
         if not self._has_multiple_directories(name):
             return name
@@ -124,12 +114,36 @@ class DateTrimmer(DatasetNameTrimmer):
             return self._remove_last_part(name)
         return name
 
-    def _looks_like_date(self, segment: str) -> bool:
-        for fmt, pattern in self.DATE_PATTERNS:
+    @staticmethod
+    def _looks_like_date(segment: str) -> bool:
+        """Check whether *segment* is essentially a date, possibly with timestamp noise.
+
+        Strategy: try every known date format against the segment.  When a
+        valid date is found, remove it and then strip characters that commonly
+        appear around embedded dates in path segments (e.g. ``T``, ``Z``,
+        digits for time components, ``:``, ``.``, ``-``, whitespace).  If
+        nothing meaningful remains the whole segment is considered date-like.
+
+        This lets us recognize segments such as ``20250722T0901Z``,
+        ``2025-07-22T09:01:00.000Z``, or bare ``2025-07-22``.
+        """
+
+        date_patterns = [
+            ("%Y-%m-%d", re.compile(r"\d{4}-\d{2}-\d{2}")),
+            ("%d.%m.%Y", re.compile(r"\d{2}\.\d{2}\.\d{4}")),
+            ("%Y%m%d", re.compile(r"\d{8}")),
+        ]
+
+        # Characters that are expected "noise" surrounding an embedded date:
+        # time-separator 'T', UTC marker 'Z', digits (hours/minutes/seconds),
+        # and the punctuation ':', '.', '-' used inside timestamps.
+        noise_regex = re.compile(r"[TZ\s:.\-\d]*")
+
+        for fmt, pattern in date_patterns:
             for match in pattern.findall(segment):
                 if _valid_date(match, fmt):
                     leftover = segment.replace(match, "", 1)
-                    leftover = self.NOISE_REGEX.sub("", leftover)
+                    leftover = noise_regex.sub("", leftover)
 
                     if leftover == "":
                         return True
