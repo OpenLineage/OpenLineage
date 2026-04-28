@@ -6,6 +6,8 @@
 package io.openlineage.client.utils;
 
 public class SnowflakeUtils {
+  public static final String SNOWFLAKE_NAMESPACE_PREFIX = "snowflake://";
+
   /**
    * Parses the Snowflake full URL to extract the account identifier according to OpenLineage naming
    * specification.

@@ -51,6 +51,7 @@ public class IcebergHandler implements CatalogHandler {
         Arrays.asList(
             new NessieCatalogTypeHandler(),
             new GlueCatalogTypeHandler(),
+            new SnowflakeCatalogTypeHandler(),
             new RestCatalogTypeHandler(),
             new BigQueryMetastoreCatalogTypeHandler(),
             new HadoopCatalogTypeHandler(),

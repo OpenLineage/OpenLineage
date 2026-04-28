@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.SnowflakeUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler;
@@ -627,6 +628,77 @@ class IcebergHandlerTest {
             sparkSession, sparkCatalog, identifier, new HashMap<>());
 
     assertThat(secondDatasetIdentifier).isEqualTo(datasetIdentifier);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForSnowflakeRestCatalog() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.test.type",
+                "rest",
+                "spark.sql.catalog.test.uri",
+                "https://myorg-myaccount.snowflakecomputing.com/polaris/api/catalog",
+                "spark.sql.catalog.test.warehouse",
+                "s3://my-bucket/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"MY_DATABASE", "MY_SCHEMA"}, "MY_TABLE");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("s3://my-bucket/warehouse/MY_TABLE");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "s3://my-bucket")
+        .hasFieldOrPropertyWithValue("name", "warehouse/MY_TABLE");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + "myorg-myaccount")
+        .hasFieldOrPropertyWithValue("name", "MY_DATABASE.MY_SCHEMA.MY_TABLE")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  void testGetSnowflakeRestCatalogData() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn("snowflake_catalog");
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3(
+                "spark.sql.catalog.snowflake_catalog.type",
+                "rest",
+                "spark.sql.catalog.snowflake_catalog.uri",
+                "https://myorg-myaccount.snowflakecomputing.com/polaris/api/catalog",
+                "spark.sql.catalog.snowflake_catalog.warehouse",
+                "s3://my-bucket/warehouse"));
+
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
+
+    assertEquals("snowflake_catalog", facet.getName());
+    assertEquals("rest", facet.getType());
+    assertEquals("s3://my-bucket/warehouse", facet.getWarehouseUri());
+    assertEquals(
+        "https://myorg-myaccount.snowflakecomputing.com/polaris/api/catalog",
+        facet.getMetadataUri());
+    assertEquals("iceberg", facet.getFramework());
+    assertThat(facet.getCatalogProperties().getAdditionalProperties())
+        .hasFieldOrPropertyWithValue("account_identifier", "myorg-myaccount");
   }
 
   @Test
