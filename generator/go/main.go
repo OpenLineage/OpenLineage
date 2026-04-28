@@ -10,11 +10,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/OpenLineage/openlineage/generator/go/render/client"
 	"github.com/atombender/go-jsonschema/pkg/schemas"
 
 	"github.com/OpenLineage/openlineage/generator/go/discover"
 	"github.com/OpenLineage/openlineage/generator/go/ir"
+	"github.com/OpenLineage/openlineage/generator/go/render/client"
+	"github.com/OpenLineage/openlineage/generator/go/render/spec"
 	"github.com/OpenLineage/openlineage/generator/go/resolve"
 )
 
@@ -55,11 +56,20 @@ func main() {
 		olFacets = append(olFacets, ir.BuildFacet(f, resolver, false))
 	}
 
-	outDir := "../../client/go/pkg/facets"
-	_ = os.MkdirAll(outDir, 0o755)
+	facetsDir := "../../client/go/pkg/facets"
+	_ = os.MkdirAll(facetsDir, 0o755)
+	write(facetsDir+"/facets.gen.go", client.RenderStructs(olFacets))
+	write(facetsDir+"/facet_helpers.gen.go", client.RenderHelpers(olFacets))
 
-	write(outDir+"/facets.gen.go", client.RenderStructs(olFacets))
-	write(outDir+"/facet_helpers.gen.go", client.RenderHelpers(olFacets))
+	// Core spec types from OpenLineage.json
+	specLoader := schemas.NewDefaultCacheLoader([]string{"json"}, nil)
+	specSchema, err := specLoader.Load("../../spec/OpenLineage.json", "")
+	if err != nil {
+		log.Fatalf("load OpenLineage.json: %v", err)
+	}
+	olDir := "../../client/go/pkg/openlineage"
+	_ = os.MkdirAll(olDir, 0o755)
+	write(olDir+"/spec.gen.go", spec.RenderSpec(specSchema))
 }
 
 func write(path, contents string) {

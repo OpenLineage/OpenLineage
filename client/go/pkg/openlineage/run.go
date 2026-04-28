@@ -21,7 +21,7 @@ type EventTypes interface {
 
 // RunEvent represents an OpenLineage run event.
 type RunEvent struct {
-	Run RunInfo
+	Run Run
 	Job Job
 
 	EventType EventType
@@ -68,8 +68,8 @@ func NewNamespacedRunEvent(
 			SchemaURL: RunEventSchemaURL,
 			EventTime: time.Now(),
 		},
-		Run: RunInfo{
-			RunID: runID.String(),
+		Run: Run{
+			RunId: runID.String(),
 		},
 		EventType: eventType,
 		Job: Job{
