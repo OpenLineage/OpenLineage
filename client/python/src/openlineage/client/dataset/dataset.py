@@ -31,7 +31,7 @@ BUILTIN_TRIMMERS = (
 
 @attr.define
 class DatasetConfig:
-    normalization_enabled: bool = False
+    reducing_enabled: bool = False
     disabled_trimmers: list[str] = attr.field(factory=list)
     extra_trimmers: list[str] = attr.field(factory=list)
 
@@ -115,15 +115,15 @@ class ReducedDataset:
         return True
 
 
-class DatasetNormalizer:
+class DatasetReducer:
     def __init__(self, config: DatasetConfig) -> None:
         self.config = config
         self.trimmers = config.get_dataset_name_trimmers()
 
-    def normalize_inputs(self, datasets: list[Any]) -> list[Any]:
+    def reduce_inputs(self, datasets: list[Any]) -> list[Any]:
         return self._reduce_datasets(datasets, dataset_type="input")
 
-    def normalize_outputs(self, datasets: list[Any]) -> list[Any]:
+    def reduce_outputs(self, datasets: list[Any]) -> list[Any]:
         for ds in datasets:
             self._trim_cll_input_dataset_names(ds)
 
@@ -136,18 +136,18 @@ class DatasetNormalizer:
 
         for ds in datasets:
             original_name = ds.name
-            normalized_name, name_was_normalized = self._apply_trimmers(ds.name)
-            ds.name = normalized_name
+            trimmed_name, name_was_trimmed = self._apply_trimmers(ds.name)
+            ds.name = trimmed_name
 
             reduced = self._find_matching_reduced(ds, reduced_datasets)
             if reduced:
-                if name_was_normalized:
+                if name_was_trimmed:
                     reduced.original_names.add(original_name)
             else:
                 reduced_datasets.append(
                     ReducedDataset(
                         dataset=ds,
-                        original_names={original_name} if name_was_normalized else set(),
+                        original_names={original_name} if name_was_trimmed else set(),
                         dataset_type=dataset_type,
                     )
                 )

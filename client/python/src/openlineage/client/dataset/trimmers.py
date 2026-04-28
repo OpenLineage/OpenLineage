@@ -64,7 +64,7 @@ class DatasetNameTrimmer(ABC):
 
 class KeyValueTrimmer(DatasetNameTrimmer):
     """
-    Normalizes paths whose last segment is a key=value pair and removes the last segment.
+    Removes the last segment of a path if it is a `key=value` pair.
 
     Example:
         "/data/table/day=2024-01-01" -> "/data/table"
@@ -86,7 +86,7 @@ class KeyValueTrimmer(DatasetNameTrimmer):
 
 class DateTrimmer(DatasetNameTrimmer):
     """
-    Normalizes paths whose last segment represents a date-like value. If the last
+    Removes the last segment of a path representing a date-like value. If the last
     segment is recognized as a valid date (possibly with 'T'/'Z' timestamp fragments
     or surrounding noise), it is removed; otherwise the original path is returned.
 
@@ -138,7 +138,7 @@ class DateTrimmer(DatasetNameTrimmer):
 
 class MultiDirDateTrimmer(DatasetNameTrimmer):
     """
-    Normalizes paths by removing trailing date directories in yyyy/MM or yyyy/MM/dd formats.
+    Removes trailing date directories in yyyy/MM or yyyy/MM/dd formats.
     """
 
     def trim(self, name: str) -> str:
@@ -163,7 +163,7 @@ class MultiDirDateTrimmer(DatasetNameTrimmer):
 
 class YearMonthTrimmer(DatasetNameTrimmer):
     """
-    Normalizes paths by removing a trailing segment if it contains a year‑month
+    Removes the last segment of a path if it contains a year‑month
     pattern (e.g., yyyyMM or yyyy-MM).
     """
 
