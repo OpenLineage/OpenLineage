@@ -151,17 +151,23 @@
                             {
                                 "column": "id",
                                 "assertion": "expect_column_median_to_be_between",
-                                "success": true
+                                "success": true,
+                                "actual": "0",
+                                "expected": "0"
                             },
                             {
                                 "column": "id",
                                 "assertion": "expect_column_quantile_values_to_be_between",
-                                "success": true
+                                "success": true,
+                                "actual": "0",
+                                "expected": "0"
                             },
                             {
                                 "column": "id",
                                 "assertion": "unique",
-                                "success": true
+                                "success": true,
+                                "actual": "0",
+                                "expected": "0"
                             }
                         ]
                     }

@@ -81,6 +81,21 @@ class UnsupportedDbtCommand(Exception):
     pass
 
 
+def expected_from_test_config(config: dict | None, severity: str | None) -> str:
+    """Translate dbt's ``error_if``/``warn_if`` threshold into the spec's ``expected`` value.
+
+    dbt's default is ``"!= 0"`` (any failing row trips the test) — semantically the
+    expected count is 0. A non-default threshold like ``"> 10"`` is carried through
+    so a consumer can distinguish "expected zero failures, got N" from "expected at
+    most 10 failures, got N".
+    """
+    threshold_key = "warn_if" if (severity or "").lower() == "warn" else "error_if"
+    threshold = (config or {}).get(threshold_key)
+    if threshold is None or "".join(str(threshold).split()) == "!=0":
+        return "0"
+    return str(threshold)
+
+
 @attr.define
 class ModelNode:
     # in reality Literal["model", "test", "snapshot", "source", "seed"]
@@ -535,6 +550,13 @@ class DbtArtifactProcessor:
             severity=severity,
         )
 
+        # dbt reports the count of violating rows as `failures` in run_results.json.
+        # `expected` mirrors the test's error_if/warn_if threshold (default "!= 0" → "0").
+        failures = run.get("failures")
+        if failures is not None:
+            obj.actual = str(failures)
+            obj.expected = expected_from_test_config(config, severity)
+
         if not inputs:
             obj.type = test_metadata["name"] if test_metadata else "singular"
             obj.content = (
@@ -584,12 +606,18 @@ class DbtArtifactProcessor:
             if severity:
                 severity = severity.lower()
 
+            failures = run.get("failures")
+            actual = str(failures) if failures is not None else None
+            expected = expected_from_test_config(config, severity) if failures is not None else None
+
             assertions[model_node].append(
                 data_quality_assertions_dataset.Assertion(
                     assertion=name,
                     success=True if run["status"] == "pass" else False,
                     column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
                     severity=severity,
+                    actual=actual,
+                    expected=expected,
                 )
             )
 

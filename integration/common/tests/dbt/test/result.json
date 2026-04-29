@@ -258,25 +258,33 @@
                 "column": "id",
                 "assertion": "not_null",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               },
               {
                 "column": "second_id",
                 "assertion": "not_null",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               },
               {
                 "column": "id",
                 "assertion": "unique",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               },
               {
                 "column": "second_id",
                 "assertion": "unique",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               }
             ]
           }
@@ -338,13 +346,17 @@
                 "column": "id",
                 "assertion": "not_null",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               },
               {
                 "column": "id",
                 "assertion": "unique",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               }
             ]
           }
@@ -407,13 +419,17 @@
                 "column": "id",
                 "assertion": "not_null",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               },
               {
                 "column": "id",
                 "assertion": "unique",
                 "success": false,
-                "severity": "error"
+                "severity": "error",
+                "actual": "1",
+                "expected": "0"
               }
             ]
           }
@@ -477,31 +493,41 @@
                 "column": "id",
                 "assertion": "expect_column_quantile_values_to_be_between",
                 "success": false,
-                "severity": "error"
+                "severity": "error",
+                "actual": "6",
+                "expected": "0"
               },
               {
                 "column": "id",
                 "assertion": "expect_column_median_to_be_between",
                 "success": false,
-                "severity": "error"
+                "severity": "error",
+                "actual": "6",
+                "expected": "0"
               },
               {
                 "column": "id",
                 "assertion": "expect_column_values_to_not_be_null",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               },
               {
                 "column": "id",
                 "assertion": "not_null",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               },
               {
                 "column": "id",
                 "assertion": "unique",
                 "success": false,
-                "severity": "error"
+                "severity": "error",
+                "actual": "1",
+                "expected": "0"
               }
             ]
           }
@@ -565,7 +591,9 @@
                 "column": "id",
                 "assertion": "not_null",
                 "success": true,
-                "severity": "error"
+                "severity": "error",
+                "actual": "0",
+                "expected": "0"
               }
             ]
           }
