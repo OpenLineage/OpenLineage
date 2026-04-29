@@ -295,9 +295,6 @@ func emitConstructor(b *strings.Builder, f ir.Facet) {
 		params = append(params, param{paramName, scalar})
 		goField := genutil.FormatGoFieldName(field.GoName)
 		assign := paramName
-		if _, isDateTime := field.Type.(ir.DateTime); isDateTime {
-			assign = "&" + paramName
-		}
 		bodyLines = append(bodyLines, fmt.Sprintf("\t\t%s: %s,", goField, assign))
 	}
 
@@ -370,7 +367,7 @@ func withSetterParam(field *ir.Field, paramName string) (paramType, assignExpr s
 	case ir.Float:
 		return "float64", "&" + paramName
 	case ir.DateTime:
-		return "*time.Time", paramName
+		return olGoType(field), paramName
 	case ir.List:
 		return olGoType(field), paramName
 	case ir.Map:
@@ -424,6 +421,9 @@ func olTypeExpr(t ir.Type, required bool) string {
 		}
 		return "*float64"
 	case ir.DateTime:
+		if required {
+			return "time.Time"
+		}
 		return "*time.Time"
 	case ir.List:
 		return "[]" + olElemTypeExpr(typ.Elem)
