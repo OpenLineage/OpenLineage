@@ -11,23 +11,6 @@ import (
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
-// DatasetEvent represents an OpenLineage dataset event.
-type DatasetEvent struct {
-	Dataset Dataset
-
-	BaseEvent
-}
-
-// AsEmittable converts this DatasetEvent to an emittable Event.
-func (e *DatasetEvent) AsEmittable() Event {
-	return Event{
-		EventTime: e.EventTime,
-		Dataset:   &e.Dataset,
-		Producer:  e.Producer,
-		SchemaURL: e.SchemaURL,
-	}
-}
-
 // NewDatasetEvent creates a new DatasetEvent with the given dataset and producer.
 func NewDatasetEvent(
 	name string,
