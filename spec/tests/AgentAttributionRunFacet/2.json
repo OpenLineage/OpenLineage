@@ -1,0 +1,18 @@
+{
+  "agentAttribution": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/main/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/AgentAttributionRunFacet.json",
+    "agentId": "did:example:agent:scribe-42",
+    "accessedAt": "2026-04-21T14:29:12.000Z",
+    "covenantInEffect": {
+      "digest": "sha256:7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+      "type": "vendor_specific_covenant",
+      "resolver": "https://example.com/api/v1/covenants/cov-a8f3b2",
+      "authorizationHash": "sha256:0a5bc9a9941286da6bb365d6a25ea5412fa014583e2b99cb1ccc92af556f580a",
+      "authorizationSignature": "APRQxuV0SOorX-Bol50NWtLdltqbw_uhFAyKs-i1WhhNUZdssauZkuDrhykQG2_i53dVybydSQc06dRt2EBQBQ",
+      "resultHash": "sha256:0fbdb588d8d7f25af779424b9238628fd25489af125a446e4daeb7257ec555ea",
+      "resultSignature": "R-yd0OJxVB01-cnSoDir-SeGOt3WBsb57OyZgBMzt_KxNDij-NDFANSvEBRDuCKjo1N3cv4zyh6-9w3zeGhACw",
+      "signerKeyId": "did:example:agent:scribe-42#key-ed25519-1"
+    }
+  }
+}

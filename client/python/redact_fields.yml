@@ -304,3 +304,9 @@
       redact_fields: []
     - class_name: HierarchyDatasetFacetLevel
       redact_fields: []
+- module: agent_attribution_run
+  classes:
+    - class_name: AgentAttributionRunFacet
+      redact_fields: []
+    - class_name: CovenantInEffect
+      redact_fields: []
