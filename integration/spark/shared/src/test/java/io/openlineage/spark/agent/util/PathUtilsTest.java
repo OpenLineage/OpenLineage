@@ -444,4 +444,20 @@ class PathUtilsTest {
     // name
     assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
   }
+
+  @Test
+  void testReconstructDefaultLocationS3WarehouseProducesValidUri() {
+    // Regression test for https://github.com/OpenLineage/OpenLineage/issues/4414
+    // The 3-arg Path(scheme, authority, path) constructor was mistakenly used, producing
+    // a malformed URI like "s3://warehouse/mydb.db" instead of
+    // "s3://my-bucket/warehouse/mydb.db/mytable".
+    Path result =
+        PathUtils.reconstructDefaultLocation(
+            "s3://my-bucket/warehouse", new String[] {"mydb"}, "mytable");
+
+    assertThat(result.toUri().getScheme()).isEqualTo("s3");
+    assertThat(result.toUri().getAuthority()).isEqualTo("my-bucket");
+    assertThat(result.toUri().getPath()).isEqualTo("/warehouse/mydb.db/mytable");
+    assertThat(result.toString()).isEqualTo("s3://my-bucket/warehouse/mydb.db/mytable");
+  }
 }
