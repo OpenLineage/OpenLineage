@@ -60,6 +60,7 @@ class Adapter(Enum):
     TRINO = "trino"
     GLUE = "glue"
     CLICKHOUSE = "clickhouse"
+    FABRIC_WAREHOUSE = "fabric"
 
     @staticmethod
     def adapters() -> str:
@@ -878,6 +879,10 @@ class DbtArtifactProcessor:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:
             return f"mssql://{profile['server']}:{profile['port']}"
+        elif self.adapter_type == Adapter.FABRIC_WAREHOUSE:
+            if "port" in profile:
+                return f"fabric-warehouse://{profile['server']}:{profile['port']}"
+            return f"fabric-warehouse://{profile['server']}"
         elif self.adapter_type == Adapter.DREMIO:
             return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.ATHENA:

@@ -30,6 +30,7 @@ Right now, `openlineage-dbt` supports only these dbt adapters:
 * `trino`
 * `databricks`
 * `sqlserver`
+* `fabric`
 * `dremio`
 * `duckdb`
 
