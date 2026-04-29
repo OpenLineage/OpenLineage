@@ -27,7 +27,7 @@ Right now, `openlineage-dbt` supports only these dbt adapters:
 * `trino`
 * `databricks`
 * `sqlserver`
-* `fabric`
+* `fabric` (Microsoft Fabric Warehouse)
 * `dremio`
 * `duckdb`
 

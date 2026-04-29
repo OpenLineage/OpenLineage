@@ -59,10 +59,10 @@ def dbt_artifact_processor():
         ("job_id", Adapter.BIGQUERY, "bigquery", {}),  # BigQuery
         (
             "query_id",
-            Adapter.FABRIC,
-            "fabric://myworkspace.datawarehouse.fabric.microsoft.com",
+            Adapter.FABRIC_WAREHOUSE,
+            "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com",
             {"server": "myworkspace.datawarehouse.fabric.microsoft.com"},
-        ),  # Microsoft Fabric
+        ),  # Microsoft Fabric Warehouse
     ],
 )
 def test_get_query_id(
@@ -123,15 +123,15 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     assert generated_query_id is None
 
 
-def test_fabric_namespace_with_port(dbt_artifact_processor):
-    dbt_artifact_processor.adapter_type = Adapter.FABRIC
+def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.FABRIC_WAREHOUSE
     dbt_artifact_processor.extract_dataset_namespace(
         {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433}
     )
 
     assert (
         dbt_artifact_processor.dataset_namespace
-        == "fabric://myworkspace.datawarehouse.fabric.microsoft.com:1433"
+        == "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1433"
     )
 
 
