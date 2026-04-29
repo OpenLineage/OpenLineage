@@ -10,66 +10,66 @@ import "time"
 
 // InputDatasetFacets holds all InputDatasetFacet facets for an OpenLineage event.
 type InputDatasetFacets struct {
-	DataQualityAssertionsDatasetFacet *DataQualityAssertionsDatasetFacet `json:"dataQualityAssertions,omitempty"`
+	DataQualityAssertionsDatasetFacet   *DataQualityAssertionsDatasetFacet   `json:"dataQualityAssertions,omitempty"`
 	DataQualityMetricsInputDatasetFacet *DataQualityMetricsInputDatasetFacet `json:"dataQualityMetrics,omitempty"`
-	IcebergScanReportInputDatasetFacet *IcebergScanReportInputDatasetFacet `json:"icebergScanReport,omitempty"`
-	InputStatisticsInputDatasetFacet *InputStatisticsInputDatasetFacet `json:"inputStatistics,omitempty"`
-	InputSubsetInputDatasetFacet *InputSubsetInputDatasetFacet `json:"inputSubset,omitempty"`
+	IcebergScanReportInputDatasetFacet  *IcebergScanReportInputDatasetFacet  `json:"icebergScanReport,omitempty"`
+	InputStatisticsInputDatasetFacet    *InputStatisticsInputDatasetFacet    `json:"inputStatistics,omitempty"`
+	InputSubsetInputDatasetFacet        *InputSubsetInputDatasetFacet        `json:"inputSubset,omitempty"`
 }
 
 // OutputDatasetFacets holds all OutputDatasetFacet facets for an OpenLineage event.
 type OutputDatasetFacets struct {
 	IcebergCommitReportOutputDatasetFacet *IcebergCommitReportOutputDatasetFacet `json:"icebergCommitReport,omitempty"`
-	OutputStatisticsOutputDatasetFacet *OutputStatisticsOutputDatasetFacet `json:"outputStatistics,omitempty"`
-	OutputSubsetOutputDatasetFacet *OutputSubsetOutputDatasetFacet `json:"outputSubset,omitempty"`
+	OutputStatisticsOutputDatasetFacet    *OutputStatisticsOutputDatasetFacet    `json:"outputStatistics,omitempty"`
+	OutputSubsetOutputDatasetFacet        *OutputSubsetOutputDatasetFacet        `json:"outputSubset,omitempty"`
 }
 
 // DatasetFacets holds all DatasetFacet facets for an OpenLineage event.
 type DatasetFacets struct {
-	CatalogDatasetFacet *CatalogDatasetFacet `json:"catalog,omitempty"`
-	ColumnLineageDatasetFacet *ColumnLineageDatasetFacet `json:"columnLineage,omitempty"`
-	DataQualityMetricsDatasetFacet *DataQualityMetricsDatasetFacet `json:"dataQualityMetrics,omitempty"`
-	DatasetTypeDatasetFacet *DatasetTypeDatasetFacet `json:"datasetType,omitempty"`
-	DatasetVersionDatasetFacet *DatasetVersionDatasetFacet `json:"version,omitempty"`
-	DatasourceDatasetFacet *DatasourceDatasetFacet `json:"dataSource,omitempty"`
-	DocumentationDatasetFacet *DocumentationDatasetFacet `json:"documentation,omitempty"`
-	HierarchyDatasetFacet *HierarchyDatasetFacet `json:"hierarchy,omitempty"`
+	CatalogDatasetFacet              *CatalogDatasetFacet              `json:"catalog,omitempty"`
+	ColumnLineageDatasetFacet        *ColumnLineageDatasetFacet        `json:"columnLineage,omitempty"`
+	DataQualityMetricsDatasetFacet   *DataQualityMetricsDatasetFacet   `json:"dataQualityMetrics,omitempty"`
+	DatasetTypeDatasetFacet          *DatasetTypeDatasetFacet          `json:"datasetType,omitempty"`
+	DatasetVersionDatasetFacet       *DatasetVersionDatasetFacet       `json:"version,omitempty"`
+	DatasourceDatasetFacet           *DatasourceDatasetFacet           `json:"dataSource,omitempty"`
+	DocumentationDatasetFacet        *DocumentationDatasetFacet        `json:"documentation,omitempty"`
+	HierarchyDatasetFacet            *HierarchyDatasetFacet            `json:"hierarchy,omitempty"`
 	LifecycleStateChangeDatasetFacet *LifecycleStateChangeDatasetFacet `json:"lifecycleStateChange,omitempty"`
-	OwnershipDatasetFacet *OwnershipDatasetFacet `json:"ownership,omitempty"`
-	SchemaDatasetFacet *SchemaDatasetFacet `json:"schema,omitempty"`
-	StorageDatasetFacet *StorageDatasetFacet `json:"storage,omitempty"`
-	SymlinksDatasetFacet *SymlinksDatasetFacet `json:"symlinks,omitempty"`
-	TagsDatasetFacet *TagsDatasetFacet `json:"tags,omitempty"`
+	OwnershipDatasetFacet            *OwnershipDatasetFacet            `json:"ownership,omitempty"`
+	SchemaDatasetFacet               *SchemaDatasetFacet               `json:"schema,omitempty"`
+	StorageDatasetFacet              *StorageDatasetFacet              `json:"storage,omitempty"`
+	SymlinksDatasetFacet             *SymlinksDatasetFacet             `json:"symlinks,omitempty"`
+	TagsDatasetFacet                 *TagsDatasetFacet                 `json:"tags,omitempty"`
 }
 
 // JobFacets holds all JobFacet facets for an OpenLineage event.
 type JobFacets struct {
-	DocumentationJobFacet *DocumentationJobFacet `json:"documentation,omitempty"`
-	GcpComposerJobFacet *GcpComposerJobFacet `json:"gcp_composer_job,omitempty"`
-	GcpLineageJobFacet *GcpLineageJobFacet `json:"gcp_lineage,omitempty"`
-	JobTypeJobFacet *JobTypeJobFacet `json:"jobType,omitempty"`
-	OwnershipJobFacet *OwnershipJobFacet `json:"ownership,omitempty"`
-	SQLJobFacet *SQLJobFacet `json:"sql,omitempty"`
-	SourceCodeJobFacet *SourceCodeJobFacet `json:"sourceCode,omitempty"`
+	DocumentationJobFacet      *DocumentationJobFacet      `json:"documentation,omitempty"`
+	GcpComposerJobFacet        *GcpComposerJobFacet        `json:"gcp_composer_job,omitempty"`
+	GcpLineageJobFacet         *GcpLineageJobFacet         `json:"gcp_lineage,omitempty"`
+	JobTypeJobFacet            *JobTypeJobFacet            `json:"jobType,omitempty"`
+	OwnershipJobFacet          *OwnershipJobFacet          `json:"ownership,omitempty"`
+	SQLJobFacet                *SQLJobFacet                `json:"sql,omitempty"`
+	SourceCodeJobFacet         *SourceCodeJobFacet         `json:"sourceCode,omitempty"`
 	SourceCodeLocationJobFacet *SourceCodeLocationJobFacet `json:"sourceCodeLocation,omitempty"`
-	TagsJobFacet *TagsJobFacet `json:"tags,omitempty"`
+	TagsJobFacet               *TagsJobFacet               `json:"tags,omitempty"`
 }
 
 // RunFacets holds all RunFacet facets for an OpenLineage event.
 type RunFacets struct {
 	EnvironmentVariablesRunFacet *EnvironmentVariablesRunFacet `json:"environmentVariables,omitempty"`
-	ErrorMessageRunFacet *ErrorMessageRunFacet `json:"errorMessage,omitempty"`
-	ExecutionParametersRunFacet *ExecutionParametersRunFacet `json:"executionParameters,omitempty"`
-	ExternalQueryRunFacet *ExternalQueryRunFacet `json:"externalQuery,omitempty"`
-	ExtractionErrorRunFacet *ExtractionErrorRunFacet `json:"extractionError,omitempty"`
-	GcpComposerRunFacet *GcpComposerRunFacet `json:"gcp_composer_run,omitempty"`
-	GcpDataprocRunFacet *GcpDataprocRunFacet `json:"gcp_dataproc,omitempty"`
-	JobDependenciesRunFacet *JobDependenciesRunFacet `json:"jobDependencies,omitempty"`
-	NominalTimeRunFacet *NominalTimeRunFacet `json:"nominalTime,omitempty"`
-	ParentRunFacet *ParentRunFacet `json:"parent,omitempty"`
-	ProcessingEngineRunFacet *ProcessingEngineRunFacet `json:"processing_engine,omitempty"`
-	TagsRunFacet *TagsRunFacet `json:"tags,omitempty"`
-	TestRunFacet *TestRunFacet `json:"test,omitempty"`
+	ErrorMessageRunFacet         *ErrorMessageRunFacet         `json:"errorMessage,omitempty"`
+	ExecutionParametersRunFacet  *ExecutionParametersRunFacet  `json:"executionParameters,omitempty"`
+	ExternalQueryRunFacet        *ExternalQueryRunFacet        `json:"externalQuery,omitempty"`
+	ExtractionErrorRunFacet      *ExtractionErrorRunFacet      `json:"extractionError,omitempty"`
+	GcpComposerRunFacet          *GcpComposerRunFacet          `json:"gcp_composer_run,omitempty"`
+	GcpDataprocRunFacet          *GcpDataprocRunFacet          `json:"gcp_dataproc,omitempty"`
+	JobDependenciesRunFacet      *JobDependenciesRunFacet      `json:"jobDependencies,omitempty"`
+	NominalTimeRunFacet          *NominalTimeRunFacet          `json:"nominalTime,omitempty"`
+	ParentRunFacet               *ParentRunFacet               `json:"parent,omitempty"`
+	ProcessingEngineRunFacet     *ProcessingEngineRunFacet     `json:"processing_engine,omitempty"`
+	TagsRunFacet                 *TagsRunFacet                 `json:"tags,omitempty"`
+	TestRunFacet                 *TestRunFacet                 `json:"test,omitempty"`
 }
 
 var _ DatasetFacet = (*CatalogDatasetFacet)(nil)
@@ -87,14 +87,14 @@ func NewCatalogDatasetFacet(
 	producer string,
 	framework string,
 	name string,
-	typ string,
+	type_ string,
 ) *CatalogDatasetFacet {
 	return &CatalogDatasetFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/CatalogDatasetFacet.json",
 		Framework: framework,
-		Name: name,
-		Type: typ,
+		Name:      name,
+		Type:      type_,
 	}
 }
 
@@ -146,10 +146,12 @@ func (f *ColumnLineageDatasetFacet) Apply(facets **DatasetFacets) {
 // NewColumnLineageDatasetFacet creates a new ColumnLineageDatasetFacet facet.
 func NewColumnLineageDatasetFacet(
 	producer string,
+	fields map[string]ColumnLineageDatasetFacetFieldsValue,
 ) *ColumnLineageDatasetFacet {
 	return &ColumnLineageDatasetFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json",
+		Fields:    fields,
 	}
 }
 
@@ -167,13 +169,6 @@ func (f *ColumnLineageDatasetFacet) WithDataset(dataset []InputField) *ColumnLin
 	return f
 }
 
-// WithFields sets the Fields field on this ColumnLineageDatasetFacet.
-func (f *ColumnLineageDatasetFacet) WithFields(fields map[string]ColumnLineageDatasetFacetFieldsValue) *ColumnLineageDatasetFacet {
-	f.Fields = fields
-
-	return f
-}
-
 var _ DatasetFacet = (*DataQualityMetricsDatasetFacet)(nil)
 
 // Apply sets this DataQualityMetricsDatasetFacet facet in the DatasetFacets container.
@@ -187,10 +182,12 @@ func (f *DataQualityMetricsDatasetFacet) Apply(facets **DatasetFacets) {
 // NewDataQualityMetricsDatasetFacet creates a new DataQualityMetricsDatasetFacet facet.
 func NewDataQualityMetricsDatasetFacet(
 	producer string,
+	columnMetrics map[string]DataQualityMetricsDatasetFacetColumnMetricsValue,
 ) *DataQualityMetricsDatasetFacet {
 	return &DataQualityMetricsDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json",
+		Producer:      producer,
+		SchemaURL:     "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json",
+		ColumnMetrics: columnMetrics,
 	}
 }
 
@@ -204,13 +201,6 @@ func (f *DataQualityMetricsDatasetFacet) WithDeleted(deleted bool) *DataQualityM
 // WithBytes sets the Bytes field on this DataQualityMetricsDatasetFacet.
 func (f *DataQualityMetricsDatasetFacet) WithBytes(bytes int64) *DataQualityMetricsDatasetFacet {
 	f.Bytes = &bytes
-
-	return f
-}
-
-// WithColumnMetrics sets the ColumnMetrics field on this DataQualityMetricsDatasetFacet.
-func (f *DataQualityMetricsDatasetFacet) WithColumnMetrics(columnMetrics map[string]DataQualityMetricsDatasetFacetColumnMetricsValue) *DataQualityMetricsDatasetFacet {
-	f.ColumnMetrics = columnMetrics
 
 	return f
 }
@@ -252,8 +242,8 @@ func NewDatasetTypeDatasetFacet(
 	datasetType string,
 ) *DatasetTypeDatasetFacet {
 	return &DatasetTypeDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/DatasetTypeDatasetFacet.json",
+		Producer:    producer,
+		SchemaURL:   "https://openlineage.io/spec/facets/1-0-1/DatasetTypeDatasetFacet.json",
 		DatasetType: datasetType,
 	}
 }
@@ -288,8 +278,8 @@ func NewDatasetVersionDatasetFacet(
 	datasetVersion string,
 ) *DatasetVersionDatasetFacet {
 	return &DatasetVersionDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/DatasetVersionDatasetFacet.json",
+		Producer:       producer,
+		SchemaURL:      "https://openlineage.io/spec/facets/1-0-1/DatasetVersionDatasetFacet.json",
 		DatasetVersion: datasetVersion,
 	}
 }
@@ -358,8 +348,8 @@ func NewDocumentationDatasetFacet(
 	description string,
 ) *DocumentationDatasetFacet {
 	return &DocumentationDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/DocumentationDatasetFacet.json",
+		Producer:    producer,
+		SchemaURL:   "https://openlineage.io/spec/facets/1-1-0/DocumentationDatasetFacet.json",
 		Description: description,
 	}
 }
@@ -391,23 +381,18 @@ func (f *HierarchyDatasetFacet) Apply(facets **DatasetFacets) {
 // NewHierarchyDatasetFacet creates a new HierarchyDatasetFacet facet.
 func NewHierarchyDatasetFacet(
 	producer string,
+	hierarchy []HierarchyDatasetFacetLevel,
 ) *HierarchyDatasetFacet {
 	return &HierarchyDatasetFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/HierarchyDatasetFacet.json",
+		Hierarchy: hierarchy,
 	}
 }
 
 // WithDeleted sets the Deleted field on this HierarchyDatasetFacet.
 func (f *HierarchyDatasetFacet) WithDeleted(deleted bool) *HierarchyDatasetFacet {
 	f.Deleted = &deleted
-
-	return f
-}
-
-// WithHierarchy sets the Hierarchy field on this HierarchyDatasetFacet.
-func (f *HierarchyDatasetFacet) WithHierarchy(hierarchy []HierarchyDatasetFacetLevel) *HierarchyDatasetFacet {
-	f.Hierarchy = hierarchy
 
 	return f
 }
@@ -428,8 +413,8 @@ func NewLifecycleStateChangeDatasetFacet(
 	lifecycleStateChange LifecycleStateChangeDatasetFacetLifecycleStateChange,
 ) *LifecycleStateChangeDatasetFacet {
 	return &LifecycleStateChangeDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/LifecycleStateChangeDatasetFacet.json",
+		Producer:             producer,
+		SchemaURL:            "https://openlineage.io/spec/facets/1-0-1/LifecycleStateChangeDatasetFacet.json",
 		LifecycleStateChange: lifecycleStateChange,
 	}
 }
@@ -476,7 +461,7 @@ func (f *OwnershipDatasetFacet) WithDeleted(deleted bool) *OwnershipDatasetFacet
 }
 
 // WithOwners sets the Owners field on this OwnershipDatasetFacet.
-func (f *OwnershipDatasetFacet) WithOwners(owners []OwnershipDatasetFacetOwners) *OwnershipDatasetFacet {
+func (f *OwnershipDatasetFacet) WithOwners(owners []OwnershipDatasetFacetOwner) *OwnershipDatasetFacet {
 	f.Owners = owners
 
 	return f
@@ -532,8 +517,8 @@ func NewStorageDatasetFacet(
 	storageLayer string,
 ) *StorageDatasetFacet {
 	return &StorageDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/StorageDatasetFacet.json",
+		Producer:     producer,
+		SchemaURL:    "https://openlineage.io/spec/facets/1-0-1/StorageDatasetFacet.json",
 		StorageLayer: storageLayer,
 	}
 }
@@ -580,7 +565,7 @@ func (f *SymlinksDatasetFacet) WithDeleted(deleted bool) *SymlinksDatasetFacet {
 }
 
 // WithIdentifiers sets the Identifiers field on this SymlinksDatasetFacet.
-func (f *SymlinksDatasetFacet) WithIdentifiers(identifiers []SymlinksDatasetFacetIdentifiers) *SymlinksDatasetFacet {
+func (f *SymlinksDatasetFacet) WithIdentifiers(identifiers []SymlinksDatasetFacetIdentifier) *SymlinksDatasetFacet {
 	f.Identifiers = identifiers
 
 	return f
@@ -633,18 +618,13 @@ func (f *DataQualityAssertionsDatasetFacet) Apply(facets **InputDatasetFacets) {
 // NewDataQualityAssertionsDatasetFacet creates a new DataQualityAssertionsDatasetFacet facet.
 func NewDataQualityAssertionsDatasetFacet(
 	producer string,
+	assertions []DataQualityAssertionsDatasetFacetAssertion,
 ) *DataQualityAssertionsDatasetFacet {
 	return &DataQualityAssertionsDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json",
+		Producer:   producer,
+		SchemaURL:  "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json",
+		Assertions: assertions,
 	}
-}
-
-// WithAssertions sets the Assertions field on this DataQualityAssertionsDatasetFacet.
-func (f *DataQualityAssertionsDatasetFacet) WithAssertions(assertions []DataQualityAssertionsDatasetFacetAssertions) *DataQualityAssertionsDatasetFacet {
-	f.Assertions = assertions
-
-	return f
 }
 
 var _ InputDatasetFacet = (*DataQualityMetricsInputDatasetFacet)(nil)
@@ -660,23 +640,18 @@ func (f *DataQualityMetricsInputDatasetFacet) Apply(facets **InputDatasetFacets)
 // NewDataQualityMetricsInputDatasetFacet creates a new DataQualityMetricsInputDatasetFacet facet.
 func NewDataQualityMetricsInputDatasetFacet(
 	producer string,
+	columnMetrics map[string]DataQualityMetricsInputDatasetFacetColumnMetricsValue,
 ) *DataQualityMetricsInputDatasetFacet {
 	return &DataQualityMetricsInputDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-3/DataQualityMetricsInputDatasetFacet.json",
+		Producer:      producer,
+		SchemaURL:     "https://openlineage.io/spec/facets/1-0-3/DataQualityMetricsInputDatasetFacet.json",
+		ColumnMetrics: columnMetrics,
 	}
 }
 
 // WithBytes sets the Bytes field on this DataQualityMetricsInputDatasetFacet.
 func (f *DataQualityMetricsInputDatasetFacet) WithBytes(bytes int64) *DataQualityMetricsInputDatasetFacet {
 	f.Bytes = &bytes
-
-	return f
-}
-
-// WithColumnMetrics sets the ColumnMetrics field on this DataQualityMetricsInputDatasetFacet.
-func (f *DataQualityMetricsInputDatasetFacet) WithColumnMetrics(columnMetrics map[string]DataQualityMetricsInputDatasetFacetColumnMetricsValue) *DataQualityMetricsInputDatasetFacet {
-	f.ColumnMetrics = columnMetrics
 
 	return f
 }
@@ -730,7 +705,7 @@ func (f *IcebergScanReportInputDatasetFacet) WithFilterDescription(filterDescrip
 }
 
 // WithMetadata sets the Metadata field on this IcebergScanReportInputDatasetFacet.
-func (f *IcebergScanReportInputDatasetFacet) WithMetadata(metadata map[string]string) *IcebergScanReportInputDatasetFacet {
+func (f *IcebergScanReportInputDatasetFacet) WithMetadata(metadata map[string]interface{}) *IcebergScanReportInputDatasetFacet {
 	f.Metadata = metadata
 
 	return f
@@ -750,16 +725,16 @@ func (f *IcebergScanReportInputDatasetFacet) WithScanMetrics(scanMetrics *Iceber
 	return f
 }
 
-// WithSchemaId sets the SchemaId field on this IcebergScanReportInputDatasetFacet.
-func (f *IcebergScanReportInputDatasetFacet) WithSchemaId(schemaId float64) *IcebergScanReportInputDatasetFacet {
-	f.SchemaId = &schemaId
+// WithSchemaID sets the SchemaID field on this IcebergScanReportInputDatasetFacet.
+func (f *IcebergScanReportInputDatasetFacet) WithSchemaID(schemaID float64) *IcebergScanReportInputDatasetFacet {
+	f.SchemaID = &schemaID
 
 	return f
 }
 
-// WithSnapshotId sets the SnapshotId field on this IcebergScanReportInputDatasetFacet.
-func (f *IcebergScanReportInputDatasetFacet) WithSnapshotId(snapshotId float64) *IcebergScanReportInputDatasetFacet {
-	f.SnapshotId = &snapshotId
+// WithSnapshotID sets the SnapshotID field on this IcebergScanReportInputDatasetFacet.
+func (f *IcebergScanReportInputDatasetFacet) WithSnapshotID(snapshotID float64) *IcebergScanReportInputDatasetFacet {
+	f.SnapshotID = &snapshotID
 
 	return f
 }
@@ -821,8 +796,8 @@ func NewInputSubsetInputDatasetFacet(
 	inputCondition RawBaseSubsetCondition,
 ) *InputSubsetInputDatasetFacet {
 	return &InputSubsetInputDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/BaseSubsetDatasetFacet.json",
+		Producer:       producer,
+		SchemaURL:      "https://openlineage.io/spec/facets/1-0-0/BaseSubsetDatasetFacet.json",
 		InputCondition: inputCondition,
 	}
 }
@@ -843,8 +818,8 @@ func NewDocumentationJobFacet(
 	description string,
 ) *DocumentationJobFacet {
 	return &DocumentationJobFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/DocumentationJobFacet.json",
+		Producer:    producer,
+		SchemaURL:   "https://openlineage.io/spec/facets/1-1-0/DocumentationJobFacet.json",
 		Description: description,
 	}
 }
@@ -878,15 +853,15 @@ func NewGcpComposerJobFacet(
 	producer string,
 	airflowVersion string,
 	composerVersion string,
-	dagId string,
+	dagID string,
 	environmentName string,
 ) *GcpComposerJobFacet {
 	return &GcpComposerJobFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/GcpComposerJobFacet.json",
-		AirflowVersion: airflowVersion,
+		Producer:        producer,
+		SchemaURL:       "https://openlineage.io/spec/facets/1-0-0/GcpComposerJobFacet.json",
+		AirflowVersion:  airflowVersion,
 		ComposerVersion: composerVersion,
-		DagId: dagId,
+		DagID:           dagID,
 		EnvironmentName: environmentName,
 	}
 }
@@ -905,9 +880,9 @@ func (f *GcpComposerJobFacet) WithOperator(operator string) *GcpComposerJobFacet
 	return f
 }
 
-// WithTaskId sets the TaskId field on this GcpComposerJobFacet.
-func (f *GcpComposerJobFacet) WithTaskId(taskId string) *GcpComposerJobFacet {
-	f.TaskId = &taskId
+// WithTaskID sets the TaskID field on this GcpComposerJobFacet.
+func (f *GcpComposerJobFacet) WithTaskID(taskID string) *GcpComposerJobFacet {
+	f.TaskID = &taskID
 
 	return f
 }
@@ -970,9 +945,9 @@ func NewJobTypeJobFacet(
 	processingType string,
 ) *JobTypeJobFacet {
 	return &JobTypeJobFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json",
-		Integration: integration,
+		Producer:       producer,
+		SchemaURL:      "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json",
+		Integration:    integration,
 		ProcessingType: processingType,
 	}
 }
@@ -1019,7 +994,7 @@ func (f *OwnershipJobFacet) WithDeleted(deleted bool) *OwnershipJobFacet {
 }
 
 // WithOwners sets the Owners field on this OwnershipJobFacet.
-func (f *OwnershipJobFacet) WithOwners(owners []OwnershipJobFacetOwners) *OwnershipJobFacet {
+func (f *OwnershipJobFacet) WithOwners(owners []OwnershipJobFacetOwner) *OwnershipJobFacet {
 	f.Owners = owners
 
 	return f
@@ -1043,7 +1018,7 @@ func NewSQLJobFacet(
 	return &SQLJobFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json",
-		Query: query,
+		Query:     query,
 	}
 }
 
@@ -1078,9 +1053,9 @@ func NewSourceCodeJobFacet(
 	sourceCode string,
 ) *SourceCodeJobFacet {
 	return &SourceCodeJobFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/SourceCodeJobFacet.json",
-		Language: language,
+		Producer:   producer,
+		SchemaURL:  "https://openlineage.io/spec/facets/1-0-1/SourceCodeJobFacet.json",
+		Language:   language,
 		SourceCode: sourceCode,
 	}
 }
@@ -1105,14 +1080,14 @@ func (f *SourceCodeLocationJobFacet) Apply(facets **JobFacets) {
 // NewSourceCodeLocationJobFacet creates a new SourceCodeLocationJobFacet facet.
 func NewSourceCodeLocationJobFacet(
 	producer string,
-	typ string,
+	type_ string,
 	uRL string,
 ) *SourceCodeLocationJobFacet {
 	return &SourceCodeLocationJobFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/SourceCodeLocationJobFacet.json",
-		Type: typ,
-		URL: uRL,
+		Type:      type_,
+		URL:       uRL,
 	}
 }
 
@@ -1227,7 +1202,7 @@ func (f *IcebergCommitReportOutputDatasetFacet) WithCommitMetrics(commitMetrics 
 }
 
 // WithMetadata sets the Metadata field on this IcebergCommitReportOutputDatasetFacet.
-func (f *IcebergCommitReportOutputDatasetFacet) WithMetadata(metadata map[string]string) *IcebergCommitReportOutputDatasetFacet {
+func (f *IcebergCommitReportOutputDatasetFacet) WithMetadata(metadata map[string]interface{}) *IcebergCommitReportOutputDatasetFacet {
 	f.Metadata = metadata
 
 	return f
@@ -1247,9 +1222,9 @@ func (f *IcebergCommitReportOutputDatasetFacet) WithSequenceNumber(sequenceNumbe
 	return f
 }
 
-// WithSnapshotId sets the SnapshotId field on this IcebergCommitReportOutputDatasetFacet.
-func (f *IcebergCommitReportOutputDatasetFacet) WithSnapshotId(snapshotId float64) *IcebergCommitReportOutputDatasetFacet {
-	f.SnapshotId = &snapshotId
+// WithSnapshotID sets the SnapshotID field on this IcebergCommitReportOutputDatasetFacet.
+func (f *IcebergCommitReportOutputDatasetFacet) WithSnapshotID(snapshotID float64) *IcebergCommitReportOutputDatasetFacet {
+	f.SnapshotID = &snapshotID
 
 	return f
 }
@@ -1311,8 +1286,8 @@ func NewOutputSubsetOutputDatasetFacet(
 	outputCondition RawBaseSubsetCondition,
 ) *OutputSubsetOutputDatasetFacet {
 	return &OutputSubsetOutputDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/BaseSubsetDatasetFacet.json",
+		Producer:        producer,
+		SchemaURL:       "https://openlineage.io/spec/facets/1-0-0/BaseSubsetDatasetFacet.json",
 		OutputCondition: outputCondition,
 	}
 }
@@ -1330,18 +1305,13 @@ func (f *EnvironmentVariablesRunFacet) Apply(facets **RunFacets) {
 // NewEnvironmentVariablesRunFacet creates a new EnvironmentVariablesRunFacet facet.
 func NewEnvironmentVariablesRunFacet(
 	producer string,
+	environmentVariables []EnvironmentVariable,
 ) *EnvironmentVariablesRunFacet {
 	return &EnvironmentVariablesRunFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/EnvironmentVariablesRunFacet.json",
+		Producer:             producer,
+		SchemaURL:            "https://openlineage.io/spec/facets/1-0-0/EnvironmentVariablesRunFacet.json",
+		EnvironmentVariables: environmentVariables,
 	}
-}
-
-// WithEnvironmentVariables sets the EnvironmentVariables field on this EnvironmentVariablesRunFacet.
-func (f *EnvironmentVariablesRunFacet) WithEnvironmentVariables(environmentVariables []EnvironmentVariable) *EnvironmentVariablesRunFacet {
-	f.EnvironmentVariables = environmentVariables
-
-	return f
 }
 
 var _ RunFacet = (*ErrorMessageRunFacet)(nil)
@@ -1361,9 +1331,9 @@ func NewErrorMessageRunFacet(
 	programmingLanguage string,
 ) *ErrorMessageRunFacet {
 	return &ErrorMessageRunFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/ErrorMessageRunFacet.json",
-		Message: message,
+		Producer:            producer,
+		SchemaURL:           "https://openlineage.io/spec/facets/1-0-1/ErrorMessageRunFacet.json",
+		Message:             message,
 		ProgrammingLanguage: programmingLanguage,
 	}
 }
@@ -1415,14 +1385,14 @@ func (f *ExternalQueryRunFacet) Apply(facets **RunFacets) {
 // NewExternalQueryRunFacet creates a new ExternalQueryRunFacet facet.
 func NewExternalQueryRunFacet(
 	producer string,
-	externalQueryId string,
+	externalQueryID string,
 	source string,
 ) *ExternalQueryRunFacet {
 	return &ExternalQueryRunFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-2/ExternalQueryRunFacet.json",
-		ExternalQueryId: externalQueryId,
-		Source: source,
+		Producer:        producer,
+		SchemaURL:       "https://openlineage.io/spec/facets/1-0-2/ExternalQueryRunFacet.json",
+		ExternalQueryID: externalQueryID,
+		Source:          source,
 	}
 }
 
@@ -1439,22 +1409,17 @@ func (f *ExtractionErrorRunFacet) Apply(facets **RunFacets) {
 // NewExtractionErrorRunFacet creates a new ExtractionErrorRunFacet facet.
 func NewExtractionErrorRunFacet(
 	producer string,
+	errors []ExtractionErrorRunFacetError,
 	failedTasks int64,
 	totalTasks int64,
 ) *ExtractionErrorRunFacet {
 	return &ExtractionErrorRunFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-1-2/ExtractionErrorRunFacet.json",
+		Producer:    producer,
+		SchemaURL:   "https://openlineage.io/spec/facets/1-1-2/ExtractionErrorRunFacet.json",
+		Errors:      errors,
 		FailedTasks: failedTasks,
-		TotalTasks: totalTasks,
+		TotalTasks:  totalTasks,
 	}
-}
-
-// WithErrors sets the Errors field on this ExtractionErrorRunFacet.
-func (f *ExtractionErrorRunFacet) WithErrors(errors []ExtractionErrorRunFacetErrors) *ExtractionErrorRunFacet {
-	f.Errors = errors
-
-	return f
 }
 
 var _ RunFacet = (*GcpComposerRunFacet)(nil)
@@ -1470,12 +1435,12 @@ func (f *GcpComposerRunFacet) Apply(facets **RunFacets) {
 // NewGcpComposerRunFacet creates a new GcpComposerRunFacet facet.
 func NewGcpComposerRunFacet(
 	producer string,
-	dagRunId string,
+	dagRunID string,
 ) *GcpComposerRunFacet {
 	return &GcpComposerRunFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/GcpComposerRunFacet.json",
-		DagRunId: dagRunId,
+		DagRunID:  dagRunID,
 	}
 }
 
@@ -1492,22 +1457,22 @@ func (f *GcpDataprocRunFacet) Apply(facets **RunFacets) {
 // NewGcpDataprocRunFacet creates a new GcpDataprocRunFacet facet.
 func NewGcpDataprocRunFacet(
 	producer string,
-	appId string,
+	appID string,
 	appName string,
-	projectId string,
+	projectID string,
 ) *GcpDataprocRunFacet {
 	return &GcpDataprocRunFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/GcpDataprocRunFacet.json",
-		AppId: appId,
-		AppName: appName,
-		ProjectId: projectId,
+		AppID:     appID,
+		AppName:   appName,
+		ProjectID: projectID,
 	}
 }
 
-// WithBatchId sets the BatchId field on this GcpDataprocRunFacet.
-func (f *GcpDataprocRunFacet) WithBatchId(batchId string) *GcpDataprocRunFacet {
-	f.BatchId = &batchId
+// WithBatchID sets the BatchID field on this GcpDataprocRunFacet.
+func (f *GcpDataprocRunFacet) WithBatchID(batchID string) *GcpDataprocRunFacet {
+	f.BatchID = &batchID
 
 	return f
 }
@@ -1533,9 +1498,9 @@ func (f *GcpDataprocRunFacet) WithClusterUuid(clusterUuid string) *GcpDataprocRu
 	return f
 }
 
-// WithJobId sets the JobId field on this GcpDataprocRunFacet.
-func (f *GcpDataprocRunFacet) WithJobId(jobId string) *GcpDataprocRunFacet {
-	f.JobId = &jobId
+// WithJobID sets the JobID field on this GcpDataprocRunFacet.
+func (f *GcpDataprocRunFacet) WithJobID(jobID string) *GcpDataprocRunFacet {
+	f.JobID = &jobID
 
 	return f
 }
@@ -1561,9 +1526,9 @@ func (f *GcpDataprocRunFacet) WithQueryNodeName(queryNodeName string) *GcpDatapr
 	return f
 }
 
-// WithSessionId sets the SessionId field on this GcpDataprocRunFacet.
-func (f *GcpDataprocRunFacet) WithSessionId(sessionId string) *GcpDataprocRunFacet {
-	f.SessionId = &sessionId
+// WithSessionID sets the SessionID field on this GcpDataprocRunFacet.
+func (f *GcpDataprocRunFacet) WithSessionID(sessionID string) *GcpDataprocRunFacet {
+	f.SessionID = &sessionID
 
 	return f
 }
@@ -1602,9 +1567,9 @@ func (f *JobDependenciesRunFacet) WithDownstream(downstream []JobDependency) *Jo
 	return f
 }
 
-// WithTrigger_rule sets the Trigger_rule field on this JobDependenciesRunFacet.
-func (f *JobDependenciesRunFacet) WithTrigger_rule(trigger_rule string) *JobDependenciesRunFacet {
-	f.Trigger_rule = &trigger_rule
+// WithTriggerRule sets the TriggerRule field on this JobDependenciesRunFacet.
+func (f *JobDependenciesRunFacet) WithTriggerRule(triggerRule string) *JobDependenciesRunFacet {
+	f.TriggerRule = &triggerRule
 
 	return f
 }
@@ -1632,8 +1597,8 @@ func NewNominalTimeRunFacet(
 	nominalStartTime time.Time,
 ) *NominalTimeRunFacet {
 	return &NominalTimeRunFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/NominalTimeRunFacet.json",
+		Producer:         producer,
+		SchemaURL:        "https://openlineage.io/spec/facets/1-0-1/NominalTimeRunFacet.json",
 		NominalStartTime: &nominalStartTime,
 	}
 }
@@ -1664,8 +1629,8 @@ func NewParentRunFacet(
 	return &ParentRunFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json",
-		Job: job,
-		Run: run,
+		Job:       job,
+		Run:       run,
 	}
 }
 
@@ -1694,7 +1659,7 @@ func NewProcessingEngineRunFacet(
 	return &ProcessingEngineRunFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json",
-		Version: version,
+		Version:   version,
 	}
 }
 
@@ -1752,17 +1717,79 @@ func (f *TestRunFacet) Apply(facets **RunFacets) {
 // NewTestRunFacet creates a new TestRunFacet facet.
 func NewTestRunFacet(
 	producer string,
+	tests []TestExecution,
 ) *TestRunFacet {
 	return &TestRunFacet{
 		Producer:  producer,
 		SchemaURL: "https://openlineage.io/spec/facets/1-0-1/TestRunFacet.json",
+		Tests:     tests,
 	}
 }
 
-// WithTests sets the Tests field on this TestRunFacet.
-func (f *TestRunFacet) WithTests(tests []TestExecution) *TestRunFacet {
-	f.Tests = tests
-
-	return f
+// NewLocationSubsetCondition creates a LocationSubsetCondition with the discriminator pre-set to "location".
+func NewLocationSubsetCondition(
+	locations []string,
+) LocationSubsetCondition {
+	return LocationSubsetCondition{
+		Type:      "location",
+		Locations: locations,
+	}
 }
 
+// NewPartitionSubsetCondition creates a PartitionSubsetCondition with the discriminator pre-set to "partition".
+func NewPartitionSubsetCondition(
+	partitions []PartitionSubsetConditionPartition,
+) PartitionSubsetCondition {
+	return PartitionSubsetCondition{
+		Type:       "partition",
+		Partitions: partitions,
+	}
+}
+
+// NewBinarySubsetCondition creates a BinarySubsetCondition with the discriminator pre-set to "binary".
+func NewBinarySubsetCondition(
+	left RawBaseSubsetCondition,
+	operator string,
+	right RawBaseSubsetCondition,
+) BinarySubsetCondition {
+	return BinarySubsetCondition{
+		Type:     "binary",
+		Left:     left,
+		Operator: operator,
+		Right:    right,
+	}
+}
+
+// NewCompareSubsetCondition creates a CompareSubsetCondition with the discriminator pre-set to "compare".
+func NewCompareSubsetCondition(
+	comparison string,
+	left RawCompareSubsetConditionLeft,
+	right RawCompareSubsetConditionRight,
+) CompareSubsetCondition {
+	return CompareSubsetCondition{
+		Type:       "compare",
+		Comparison: comparison,
+		Left:       left,
+		Right:      right,
+	}
+}
+
+// NewFieldBaseCompareExpression creates a FieldBaseCompareExpression with the discriminator pre-set to "field".
+func NewFieldBaseCompareExpression(
+	field string,
+) FieldBaseCompareExpression {
+	return FieldBaseCompareExpression{
+		Type:  "field",
+		Field: field,
+	}
+}
+
+// NewLiteralCompareExpression creates a LiteralCompareExpression with the discriminator pre-set to "literal".
+func NewLiteralCompareExpression(
+	value string,
+) LiteralCompareExpression {
+	return LiteralCompareExpression{
+		Type:  "literal",
+		Value: value,
+	}
+}

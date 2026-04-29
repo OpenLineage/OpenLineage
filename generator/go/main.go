@@ -7,8 +7,10 @@
 package main
 
 import (
+	"go/format"
 	"log"
 	"os"
+	"reflect"
 
 	"github.com/atombender/go-jsonschema/pkg/schemas"
 
@@ -34,16 +36,20 @@ func main() {
 	definitions := map[string]*schemas.Type{}
 	var discoveredOL []discover.Facet
 
+	loader := schemas.NewDefaultCacheLoader([]string{"json"}, nil)
 	for _, path := range paths {
-		loader := schemas.NewDefaultCacheLoader([]string{"json"}, nil)
 		schema, err := loader.Load(path, "")
 		if err != nil {
 			log.Fatalf("load schema %s: %v", path, err)
 		}
 		for name, def := range schema.Definitions {
-			if _, ok := definitions[name]; !ok {
-				definitions[name] = def
+			if existing, ok := definitions[name]; ok {
+				if !reflect.DeepEqual(existing, def) {
+					log.Fatalf("conflicting $defs %q across schema files (second occurrence in %s)", name, path)
+				}
+				continue
 			}
+			definitions[name] = def
 		}
 		discoveredOL = append(discoveredOL, discover.FindAllFacets(schema)...)
 	}
@@ -73,7 +79,11 @@ func main() {
 }
 
 func write(path, contents string) {
-	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+	formatted, err := format.Source([]byte(contents))
+	if err != nil {
+		log.Fatalf("format %s: %v\n----\n%s", path, err, contents)
+	}
+	if err := os.WriteFile(path, formatted, 0o644); err != nil {
 		log.Fatal(err)
 	}
 }

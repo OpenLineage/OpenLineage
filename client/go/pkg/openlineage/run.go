@@ -19,41 +19,6 @@ type EventTypes interface {
 	RunEvent | DatasetEvent | JobEvent
 }
 
-// RunEvent represents an OpenLineage run event.
-type RunEvent struct {
-	Run Run
-	Job Job
-
-	EventType EventType
-
-	// The set of **input** datasets.
-	Inputs []InputElement
-
-	// The set of **output** datasets.
-	Outputs []OutputElement
-
-	BaseEvent
-}
-
-// AsEmittable converts this RunEvent to an emittable Event.
-func (e *RunEvent) AsEmittable() Event {
-	eventType := e.EventType
-	if eventType == "" {
-		eventType = EventTypeOther
-	}
-
-	return Event{
-		EventTime: e.EventTime,
-		EventType: &eventType,
-		Run:       &e.Run,
-		Job:       &e.Job,
-		Inputs:    e.Inputs,
-		Outputs:   e.Outputs,
-		Producer:  e.Producer,
-		SchemaURL: e.SchemaURL,
-	}
-}
-
 // NewNamespacedRunEvent creates a new RunEvent with an explicit namespace.
 func NewNamespacedRunEvent(
 	eventType EventType,
@@ -62,6 +27,7 @@ func NewNamespacedRunEvent(
 	jobNamespace string,
 	producer string,
 ) *RunEvent {
+	et := eventType
 	return &RunEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
@@ -69,9 +35,9 @@ func NewNamespacedRunEvent(
 			EventTime: time.Now(),
 		},
 		Run: Run{
-			RunId: runID.String(),
+			RunID: runID.String(),
 		},
-		EventType: eventType,
+		EventType: &et,
 		Job: Job{
 			Name:      jobName,
 			Namespace: jobNamespace,
@@ -125,7 +91,7 @@ func (r *RunEvent) WithParent(parentID uuid.UUID, jobName, namespace string) *Ru
 			Namespace: namespace,
 		},
 		facets.ParentRunFacetRun{
-			RunId: parentID.String(),
+			RunID: parentID.String(),
 		},
 	)
 

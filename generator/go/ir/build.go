@@ -9,6 +9,7 @@ package ir
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/atombender/go-jsonschema/pkg/schemas"
 
@@ -102,7 +103,14 @@ func buildObject(
 	// 2) Properties — from all schemas (required + optional), first definition wins
 	seen := map[string]bool{}
 	for _, o := range append(requiredSchemas, optionalSchemas...) {
-		for name, prop := range o.Properties {
+		propNames := make([]string, 0, len(o.Properties))
+		for n := range o.Properties {
+			propNames = append(propNames, n)
+		}
+		sort.Strings(propNames)
+
+		for _, name := range propNames {
+			prop := o.Properties[name]
 
 			if ctx.filterFields && isExplicitlyExcludedField(name) {
 				continue
@@ -149,7 +157,7 @@ func buildType(
 ) Type {
 
 	if t == nil {
-		return String{}
+		return Any{}
 	}
 
 	// oneOf always wins — must be checked before the type switch so that
@@ -180,23 +188,27 @@ func buildType(
 		return Float{}
 
 	case "array":
-		// Array element inherits the same suggested name; the inverseMap will
-		// override it with the $defs name if the items type is a named ref.
+		// Depluralize the suggested name for array elements so that an inline
+		// anonymous object in e.g. "owners: [{...}]" gets the name "Owner"
+		// rather than "Owners". The inverseMap will still override with the
+		// $defs name when the element type is a named definition.
+		elemName := depluralize(suggestedTypeName)
 		return List{
-			Elem: buildType(ctx, r.Resolve(t.Items), r, suggestedTypeName),
+			Elem: buildType(ctx, r.Resolve(t.Items), r, elemName),
 		}
 
 	case "object":
-		// map-like object
+		// map-like object: additionalProperties present and no explicit properties.
 		if t.AdditionalProperties != nil && len(t.Properties) == 0 {
-			return Map{
-				Elem: buildType(
-					ctx,
-					r.Resolve(t.AdditionalProperties),
-					r,
-					suggestedTypeName+"Value",
-				),
+			// additionalProperties: true (or an empty schema) → map[string]interface{}
+			ap := r.Resolve(t.AdditionalProperties)
+			var elem Type
+			if ap == nil || (len(ap.Type) == 0 && ap.Ref == "" && len(ap.Properties) == 0) {
+				elem = Any{}
+			} else {
+				elem = buildType(ctx, ap, r, suggestedTypeName+"Value")
 			}
+			return Map{Elem: elem}
 		}
 
 		return Object{
@@ -204,7 +216,7 @@ func buildType(
 		}
 	}
 
-	return String{}
+	return Any{}
 }
 
 // -----------------------------------------------------------------------------
@@ -323,7 +335,15 @@ func detectDiscriminatorField(variants []*schemas.Type, r *resolve.Resolver) (fi
 		return "", nil
 	}
 
-	for propName, propSchema := range flatProperties(variants[0], r) {
+	firstProps := flatProperties(variants[0], r)
+	propNames := make([]string, 0, len(firstProps))
+	for n := range firstProps {
+		propNames = append(propNames, n)
+	}
+	sort.Strings(propNames)
+
+	for _, propName := range propNames {
+		propSchema := firstProps[propName]
 		res := r.Resolve(propSchema)
 		if res == nil || res.Const == nil {
 			continue
@@ -379,11 +399,47 @@ func flatProperties(t *schemas.Type, r *resolve.Resolver) map[string]*schemas.Ty
 	return props
 }
 
+// export converts a JSON property name to a PascalCase Go identifier.
+// It handles camelCase, snake_case, and kebab-case inputs:
+//   - "myField"     → "MyField"
+//   - "trigger_rule" → "TriggerRule"
+//   - "some-name"   → "SomeName"
 func export(s string) string {
 	if s == "" {
 		return s
 	}
-	return string(s[0]&^0x20) + s[1:]
+	words := strings.FieldsFunc(s, func(r rune) bool { return r == '_' || r == '-' })
+	if len(words) == 0 {
+		return s
+	}
+	var b strings.Builder
+	for _, w := range words {
+		if w == "" {
+			continue
+		}
+		// Uppercase first byte; leave the rest as-is (preserves camelCase interior casing).
+		b.WriteByte(w[0] &^ 0x20)
+		b.WriteString(w[1:])
+	}
+	return b.String()
+}
+
+// depluralize returns a singular form of a PascalCase type name by stripping
+// common English plural suffixes. Used to give array element types idiomatic
+// singular names (e.g. "Owners" → "Owner", "Entries" → "Entry").
+// The inverseMap will override the result when the element is a named $defs type.
+func depluralize(s string) string {
+	switch {
+	case strings.HasSuffix(s, "ies"):
+		return s[:len(s)-3] + "y"
+	case strings.HasSuffix(s, "ses") || strings.HasSuffix(s, "xes") ||
+		strings.HasSuffix(s, "zes") || strings.HasSuffix(s, "ches") ||
+		strings.HasSuffix(s, "shes"):
+		return s[:len(s)-2]
+	case strings.HasSuffix(s, "s") && len(s) > 1:
+		return s[:len(s)-1]
+	}
+	return s
 }
 
 // -----------------------------------------------------------------------------

@@ -10,6 +10,7 @@ package client
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -17,6 +18,25 @@ import (
 	"github.com/OpenLineage/openlineage/generator/go/genutil"
 	"github.com/OpenLineage/openlineage/generator/go/ir"
 )
+
+// goReserved is the complete set of Go reserved keywords.
+// Any generated parameter or variable name that matches a keyword is suffixed with "_".
+var goReserved = map[string]bool{
+	"break": true, "case": true, "chan": true, "const": true, "continue": true,
+	"default": true, "defer": true, "else": true, "fallthrough": true, "for": true,
+	"func": true, "go": true, "goto": true, "if": true, "import": true,
+	"interface": true, "map": true, "package": true, "range": true, "return": true,
+	"select": true, "struct": true, "switch": true, "type": true, "var": true,
+}
+
+// safeParamName returns a Go-safe parameter name, appending "_" when the name
+// collides with a reserved keyword.
+func safeParamName(name string) string {
+	if goReserved[name] {
+		return name + "_"
+	}
+	return name
+}
 
 // RenderStructs generates the content of facets.gen.go (package facets).
 // It emits all facet root structs and nested helper types.
@@ -96,6 +116,13 @@ import "time"
 	// ── 2. Apply + constructor + With* per facet ──────────────────────────────
 	for _, f := range sorted {
 		emitFacetAPI(&b, f)
+	}
+
+	// ── 3. Variant constructors for all union types ───────────────────────────
+	unions := collectUnionTypes(sorted)
+	seenVariant := map[string]bool{}
+	for _, u := range unions {
+		emitVariantConstructors(&b, u, seenVariant)
 	}
 
 	return b.String()
@@ -264,11 +291,7 @@ func emitConstructor(b *strings.Builder, f ir.Facet) {
 		if !ok {
 			continue
 		}
-		paramName := genutil.LowerFirst(genutil.FormatGoFieldName(field.GoName))
-		// Avoid collision with reserved words
-		if paramName == "type" {
-			paramName = "typ"
-		}
+		paramName := safeParamName(genutil.LowerFirst(genutil.FormatGoFieldName(field.GoName)))
 		params = append(params, param{paramName, scalar})
 		goField := genutil.FormatGoFieldName(field.GoName)
 		assign := paramName
@@ -323,10 +346,7 @@ func shouldSkipWithSetter(field *ir.Field) bool {
 
 func emitWithSetter(b *strings.Builder, facetName string, field *ir.Field) {
 	goField := genutil.FormatGoFieldName(field.GoName)
-	paramName := genutil.LowerFirst(goField)
-	if paramName == "type" {
-		paramName = "typ"
-	}
+	paramName := safeParamName(genutil.LowerFirst(goField))
 
 	paramType, assignExpr := withSetterParam(field, paramName)
 	if paramType == "" {
@@ -368,6 +388,8 @@ func withSetterParam(field *ir.Field, paramName string) (paramType, assignExpr s
 			return typ.Enum.TypeName, "&" + paramName
 		}
 		return "string", "&" + paramName
+	case ir.Any:
+		return "interface{}", paramName
 	}
 	return "", ""
 }
@@ -430,6 +452,8 @@ func olTypeExpr(t ir.Type, required bool) string {
 			return "*" + typ.Enum.TypeName
 		}
 		return "string"
+	case ir.Any:
+		return "interface{}"
 	}
 	return "interface{}"
 }
@@ -465,6 +489,8 @@ func olElemTypeExpr(t ir.Type) string {
 		return "map[string]" + olElemTypeExpr(typ.Elem)
 	case ir.List:
 		return "[]" + olElemTypeExpr(typ.Elem)
+	case ir.Any:
+		return "interface{}"
 	}
 	return "interface{}"
 }
@@ -483,7 +509,8 @@ func olJSONTag(jsonName string, required bool, t ir.Type) string {
 
 // scalarConstructorParam returns (goTypeString, true) if the field type should
 // appear as a constructor parameter, or ("", false) otherwise.
-// Scalars, enums, and required union/object fields all go in the constructor.
+// Scalars, enums, required union/object, and required collection fields all go
+// in the constructor. Optional collections use With* setters instead.
 func scalarConstructorParam(field *ir.Field) (string, bool) {
 	switch typ := field.Type.(type) {
 	case ir.String:
@@ -501,6 +528,18 @@ func scalarConstructorParam(field *ir.Field) (string, bool) {
 			return typ.Enum.TypeName, true
 		}
 		return "string", true
+	case ir.List:
+		// Required collection fields belong in the constructor.
+		if !field.Required {
+			return "", false
+		}
+		return olGoType(field), true
+	case ir.Map:
+		// Required collection fields belong in the constructor.
+		if !field.Required {
+			return "", false
+		}
+		return olGoType(field), true
 	case ir.Union:
 		// Required union fields belong in the constructor (e.g. inputCondition, outputCondition).
 		if !field.Required {
@@ -525,6 +564,51 @@ func scalarConstructorParam(field *ir.Field) (string, bool) {
 }
 
 // ── Nested type collection ────────────────────────────────────────────────────
+
+// sameObjectShape returns true when two ObjectDefs have the same ordered set of
+// JSON field names. Fields are already sorted by the IR builder, so a linear
+// comparison is sufficient. Used to detect TypeName collisions at generation time.
+func sameObjectShape(a, b *ir.ObjectDef) bool {
+	if len(a.Fields) != len(b.Fields) {
+		return false
+	}
+	for i := range a.Fields {
+		if a.Fields[i].JSONName != b.Fields[i].JSONName {
+			return false
+		}
+	}
+	return true
+}
+
+// sameEnumShape returns true when two EnumDefs have the same ordered set of values.
+func sameEnumShape(a, b *ir.EnumDef) bool {
+	if len(a.Values) != len(b.Values) {
+		return false
+	}
+	for i := range a.Values {
+		if a.Values[i] != b.Values[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// sameUnionShape returns true when two UnionDefs have the same discriminator
+// field and the same ordered set of discriminator values.
+func sameUnionShape(a, b *ir.UnionDef) bool {
+	if a.DiscriminatorField != b.DiscriminatorField {
+		return false
+	}
+	if len(a.Variants) != len(b.Variants) {
+		return false
+	}
+	for i := range a.Variants {
+		if a.Variants[i].DiscriminatorValue != b.Variants[i].DiscriminatorValue {
+			return false
+		}
+	}
+	return true
+}
 
 // collectNestedTypes walks all facet IR trees, collects unique ObjectDef instances
 // (by TypeName) that are NOT the root facet struct, and returns them sorted by name.
@@ -573,7 +657,11 @@ func collectNestedTypes(facets []ir.Facet) []*ir.ObjectDef {
 		defer func() { delete(inProgress, obj) }()
 
 		if !isRoot && obj.TypeName != "" {
-			if _, exists := seen[obj.TypeName]; !exists {
+			if existing, exists := seen[obj.TypeName]; exists {
+				if !sameObjectShape(existing, obj) {
+					log.Fatalf("type name collision: two ObjectDefs named %q have different field sets", obj.TypeName)
+				}
+			} else {
 				seen[obj.TypeName] = obj
 			}
 		}
@@ -615,7 +703,11 @@ func collectEnumTypes(facets []ir.Facet) []*ir.EnumDef {
 			walkUnion(typ.Union)
 		case ir.Enum:
 			if typ.Enum != nil && typ.Enum.TypeName != "" {
-				if _, exists := seen[typ.Enum.TypeName]; !exists {
+				if existing, exists := seen[typ.Enum.TypeName]; exists {
+					if !sameEnumShape(existing, typ.Enum) {
+						log.Fatalf("type name collision: two EnumDefs named %q have different value sets", typ.Enum.TypeName)
+					}
+				} else {
 					seen[typ.Enum.TypeName] = typ.Enum
 				}
 			}
@@ -691,7 +783,11 @@ func collectUnionTypes(facets []ir.Facet) []*ir.UnionDef {
 		defer func() { delete(inProgressU, u) }()
 
 		if u.TypeName != "" {
-			if _, exists := seen[u.TypeName]; !exists {
+			if existing, exists := seen[u.TypeName]; exists {
+				if !sameUnionShape(existing, u) {
+					log.Fatalf("type name collision: two UnionDefs named %q have different shapes", u.TypeName)
+				}
+			} else {
 				seen[u.TypeName] = u
 			}
 		}
@@ -804,6 +900,86 @@ func emitUnionTypes(b *strings.Builder, u *ir.UnionDef) {
 		}
 	}
 	b.WriteString("\n")
+
+}
+
+// emitVariantConstructors emits a New<VariantName>(...) constructor for every
+// variant in a union. Each constructor pre-sets the discriminator field to the
+// variant's constant value so callers never produce a zero-discriminator struct
+// that would fail to round-trip through UnmarshalJSON.
+// seen tracks already-emitted constructor names to guard against duplicates when
+// the same concrete type appears as a variant in multiple unions.
+func emitVariantConstructors(b *strings.Builder, u *ir.UnionDef, seen map[string]bool) {
+	for _, v := range u.Variants {
+		if v.Object == nil || v.Object.TypeName == "" || v.DiscriminatorValue == "" {
+			continue
+		}
+		// Skip if already emitted for this concrete type name.
+		if seen[v.Object.TypeName] {
+			continue
+		}
+
+		// Find the Go field name of the discriminator within this variant's ObjectDef.
+		discGoName := ""
+		for _, f := range v.Object.Fields {
+			if f.JSONName == u.DiscriminatorField {
+				discGoName = genutil.FormatGoFieldName(f.GoName)
+				break
+			}
+		}
+		if discGoName == "" {
+			continue // can't emit a valid constructor without knowing the field name
+		}
+
+		// Collect required non-discriminator fields as constructor params.
+		type param struct {
+			paramName string
+			paramType string
+			goField   string
+			isDate    bool
+		}
+		var params []param
+		for i := range v.Object.Fields {
+			f := &v.Object.Fields[i]
+			if f.JSONName == u.DiscriminatorField {
+				continue // pre-set by constructor, not a caller param
+			}
+			if !f.Required {
+				continue
+			}
+			scalar, ok := scalarConstructorParam(f)
+			if !ok {
+				continue
+			}
+			_, isDate := f.Type.(ir.DateTime)
+			params = append(params, param{
+				paramName: safeParamName(genutil.LowerFirst(genutil.FormatGoFieldName(f.GoName))),
+				paramType: scalar,
+				goField:   genutil.FormatGoFieldName(f.GoName),
+				isDate:    isDate,
+			})
+		}
+
+		// Emit constructor.
+		seen[v.Object.TypeName] = true
+		fmt.Fprintf(b, "// New%s creates a %s with the discriminator pre-set to %q.\n",
+			v.Object.TypeName, v.Object.TypeName, v.DiscriminatorValue)
+		b.WriteString("func New" + v.Object.TypeName + "(\n")
+		for _, p := range params {
+			fmt.Fprintf(b, "\t%s %s,\n", p.paramName, p.paramType)
+		}
+		fmt.Fprintf(b, ") %s {\n", v.Object.TypeName)
+		fmt.Fprintf(b, "\treturn %s{\n", v.Object.TypeName)
+		fmt.Fprintf(b, "\t\t%s: %q,\n", discGoName, v.DiscriminatorValue)
+		for _, p := range params {
+			assign := p.paramName
+			if p.isDate {
+				assign = "&" + p.paramName
+			}
+			fmt.Fprintf(b, "\t\t%s: %s,\n", p.goField, assign)
+		}
+		b.WriteString("\t}\n}\n\n")
+	}
 }
 
 // ── Naming / kind helpers ─────────────────────────────────────────────────────

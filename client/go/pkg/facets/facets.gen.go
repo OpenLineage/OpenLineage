@@ -103,9 +103,9 @@ type DatasourceDatasetFacet struct {
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
 	SchemaURL string `json:"_schemaURL"`
 	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	Name *string `json:"name,omitempty"`
-	URI *string `json:"uri,omitempty"`
+	Deleted *bool   `json:"_deleted,omitempty"`
+	Name    *string `json:"name,omitempty"`
+	URI     *string `json:"uri,omitempty"`
 }
 
 // DocumentationDatasetFacet
@@ -157,7 +157,7 @@ type OwnershipDatasetFacet struct {
 	// set to true to delete a facet
 	Deleted *bool `json:"_deleted,omitempty"`
 	// The owners of the dataset.
-	Owners []OwnershipDatasetFacetOwners `json:"owners,omitempty"`
+	Owners []OwnershipDatasetFacetOwner `json:"owners,omitempty"`
 }
 
 // SchemaDatasetFacet
@@ -193,8 +193,8 @@ type SymlinksDatasetFacet struct {
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
 	SchemaURL string `json:"_schemaURL"`
 	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
-	Identifiers []SymlinksDatasetFacetIdentifiers `json:"identifiers,omitempty"`
+	Deleted     *bool                            `json:"_deleted,omitempty"`
+	Identifiers []SymlinksDatasetFacetIdentifier `json:"identifiers,omitempty"`
 }
 
 // TagsDatasetFacet
@@ -214,8 +214,8 @@ type DataQualityAssertionsDatasetFacet struct {
 	// URI identifying the producer of this metadata.
 	Producer string `json:"_producer"`
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	Assertions []DataQualityAssertionsDatasetFacetAssertions `json:"assertions"`
+	SchemaURL  string                                       `json:"_schemaURL"`
+	Assertions []DataQualityAssertionsDatasetFacetAssertion `json:"assertions"`
 }
 
 // DataQualityMetricsInputDatasetFacet
@@ -243,15 +243,15 @@ type IcebergScanReportInputDatasetFacet struct {
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
 	SchemaURL string `json:"_schemaURL"`
 	// Filter used to scan the iceberg table
-	FilterDescription *string `json:"filterDescription,omitempty"`
-	Metadata map[string]string `json:"metadata,omitempty"`
+	FilterDescription *string                `json:"filterDescription,omitempty"`
+	Metadata          map[string]interface{} `json:"metadata,omitempty"`
 	// List of field names that are projected from the iceberg table
-	ProjectedFieldNames []string `json:"projectedFieldNames,omitempty"`
-	ScanMetrics *IcebergScanReportInputDatasetFacetScanMetrics `json:"scanMetrics,omitempty"`
+	ProjectedFieldNames []string                                       `json:"projectedFieldNames,omitempty"`
+	ScanMetrics         *IcebergScanReportInputDatasetFacetScanMetrics `json:"scanMetrics,omitempty"`
 	// Schema ID of the iceberg table
-	SchemaId *float64 `json:"schemaId,omitempty"`
+	SchemaID *float64 `json:"schemaId,omitempty"`
 	// Snapshot ID of the iceberg table
-	SnapshotId *float64 `json:"snapshotId,omitempty"`
+	SnapshotID *float64 `json:"snapshotId,omitempty"`
 }
 
 // InputStatisticsInputDatasetFacet
@@ -273,7 +273,7 @@ type InputSubsetInputDatasetFacet struct {
 	// URI identifying the producer of this metadata.
 	Producer string `json:"_producer"`
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
+	SchemaURL      string                 `json:"_schemaURL"`
 	InputCondition RawBaseSubsetCondition `json:"inputCondition"`
 }
 
@@ -304,13 +304,13 @@ type GcpComposerJobFacet struct {
 	// Version of the Cloud Composer environment
 	ComposerVersion string `json:"composerVersion"`
 	// The id of the DAG
-	DagId string `json:"dagId"`
+	DagID string `json:"dagId"`
 	// Cloud Composer Environment name
 	EnvironmentName string `json:"environmentName"`
 	// Operator class name. Only present for tasks, not for DAGs. For example `PythonOperator`
 	Operator *string `json:"operator,omitempty"`
 	// The id of the task. Only present for tasks, not for DAGs
-	TaskId *string `json:"taskId,omitempty"`
+	TaskID *string `json:"taskId,omitempty"`
 }
 
 // GcpLineageJobFacet
@@ -322,8 +322,8 @@ type GcpLineageJobFacet struct {
 	// set to true to delete a facet
 	Deleted *bool `json:"_deleted,omitempty"`
 	// The name of the job to be used on UI
-	DisplayName *string `json:"displayName,omitempty"`
-	Origin *GcpLineageJobFacetOrigin `json:"origin,omitempty"`
+	DisplayName *string                   `json:"displayName,omitempty"`
+	Origin      *GcpLineageJobFacetOrigin `json:"origin,omitempty"`
 }
 
 // JobTypeJobFacet
@@ -351,7 +351,7 @@ type OwnershipJobFacet struct {
 	// set to true to delete a facet
 	Deleted *bool `json:"_deleted,omitempty"`
 	// The owners of the job.
-	Owners []OwnershipJobFacetOwners `json:"owners,omitempty"`
+	Owners []OwnershipJobFacetOwner `json:"owners,omitempty"`
 }
 
 // SQLJobFacet
@@ -361,9 +361,9 @@ type SQLJobFacet struct {
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
 	SchemaURL string `json:"_schemaURL"`
 	// set to true to delete a facet
-	Deleted *bool `json:"_deleted,omitempty"`
+	Deleted *bool   `json:"_deleted,omitempty"`
 	Dialect *string `json:"dialect,omitempty"`
-	Query string `json:"query"`
+	Query   string  `json:"query"`
 }
 
 // SourceCodeJobFacet
@@ -423,15 +423,15 @@ type IcebergCommitReportOutputDatasetFacet struct {
 	// URI identifying the producer of this metadata.
 	Producer string `json:"_producer"`
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
+	SchemaURL     string                                              `json:"_schemaURL"`
 	CommitMetrics *IcebergCommitReportOutputDatasetFacetCommitMetrics `json:"commitMetrics,omitempty"`
-	Metadata map[string]string `json:"metadata,omitempty"`
+	Metadata      map[string]interface{}                              `json:"metadata,omitempty"`
 	// Operation that was performed on the iceberg table
 	Operation *string `json:"operation,omitempty"`
 	// Sequence number of the iceberg table
 	SequenceNumber *float64 `json:"sequenceNumber,omitempty"`
 	// Snapshot ID of the iceberg table
-	SnapshotId *float64 `json:"snapshotId,omitempty"`
+	SnapshotID *float64 `json:"snapshotId,omitempty"`
 }
 
 // OutputStatisticsOutputDatasetFacet
@@ -453,7 +453,7 @@ type OutputSubsetOutputDatasetFacet struct {
 	// URI identifying the producer of this metadata.
 	Producer string `json:"_producer"`
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
+	SchemaURL       string                 `json:"_schemaURL"`
 	OutputCondition RawBaseSubsetCondition `json:"outputCondition"`
 }
 
@@ -498,7 +498,7 @@ type ExternalQueryRunFacet struct {
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
 	SchemaURL string `json:"_schemaURL"`
 	// Identifier for the external system
-	ExternalQueryId string `json:"externalQueryId"`
+	ExternalQueryID string `json:"externalQueryId"`
 	// source of the external query
 	Source string `json:"source"`
 }
@@ -508,8 +508,8 @@ type ExtractionErrorRunFacet struct {
 	// URI identifying the producer of this metadata.
 	Producer string `json:"_producer"`
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	Errors []ExtractionErrorRunFacetErrors `json:"errors"`
+	SchemaURL string                         `json:"_schemaURL"`
+	Errors    []ExtractionErrorRunFacetError `json:"errors"`
 	// The number of distinguishable tasks in a run that were processed not successfully by OpenLineage. Those could be, for example, distinct SQL statements.
 	FailedTasks int64 `json:"failedTasks"`
 	// The number of distinguishable tasks in a run that were processed by OpenLineage, whether successfully or not. Those could be, for example, distinct SQL statements.
@@ -523,7 +523,7 @@ type GcpComposerRunFacet struct {
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
 	SchemaURL string `json:"_schemaURL"`
 	// The id of the DAG run
-	DagRunId string `json:"dagRunId"`
+	DagRunID string `json:"dagRunId"`
 }
 
 // GcpDataprocRunFacet
@@ -533,11 +533,11 @@ type GcpDataprocRunFacet struct {
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
 	SchemaURL string `json:"_schemaURL"`
 	// Application ID set by the resource manager. For spark jobs, it is set in the spark configuration of the current context.
-	AppId string `json:"appId"`
+	AppID string `json:"appId"`
 	// App name which may be provided by the user, or some default is used by the resource manager. For spark jobs, it is set in the spark configuration of the current context.
 	AppName string `json:"appName"`
 	// Populated only for Dataproc serverless batches. The resource id of the batch.
-	BatchId *string `json:"batchId,omitempty"`
+	BatchID *string `json:"batchId,omitempty"`
 	// Populated only for Dataproc serverless batches. A UUID generated by the service when it creates the batch.
 	BatchUuid *string `json:"batchUuid,omitempty"`
 	// Populated only for Dataproc GCE workloads. The cluster name is unique within a GCP project.
@@ -545,17 +545,17 @@ type GcpDataprocRunFacet struct {
 	// Populated only for Dataproc GCE workloads. A UUID generated by the service at the time of cluster creation.
 	ClusterUuid *string `json:"clusterUuid,omitempty"`
 	// Populated only for Dataproc GCE workloads. If not specified by the user, the job ID will be provided by the service.
-	JobId *string `json:"jobId,omitempty"`
+	JobID *string `json:"jobId,omitempty"`
 	// Identifies whether the process is a job (on a Dataproc cluster), a batch or a session.
 	JobType *string `json:"jobType,omitempty"`
 	// Populated only for Dataproc GCE workloads. A UUID that uniquely identifies a job within the project over time.
 	JobUuid *string `json:"jobUuid,omitempty"`
 	// The GCP project ID that the resource belongs to.
-	ProjectId string `json:"projectId"`
+	ProjectID string `json:"projectId"`
 	// The name of the query node in the executed Spark Plan. Often used to describe the command being executed.
 	QueryNodeName *string `json:"queryNodeName,omitempty"`
 	// Populated only for Dataproc serverless interactive sessions. The resource id of the session, used for URL generation.
-	SessionId *string `json:"sessionId,omitempty"`
+	SessionID *string `json:"sessionId,omitempty"`
 	// Populated only for Dataproc serverless interactive sessions. A UUID generated by the service when it creates the session.
 	SessionUuid *string `json:"sessionUuid,omitempty"`
 }
@@ -569,7 +569,7 @@ type JobDependenciesRunFacet struct {
 	// Job runs that will start after completion of the current run.
 	Downstream []JobDependency `json:"downstream,omitempty"`
 	// Specifies the condition under which this job will run based on the status of upstream jobs.
-	Trigger_rule *string `json:"trigger_rule,omitempty"`
+	TriggerRule *string `json:"trigger_rule,omitempty"`
 	// Job runs that must complete before the current run can start.
 	Upstream []JobDependency `json:"upstream,omitempty"`
 }
@@ -591,10 +591,10 @@ type ParentRunFacet struct {
 	// URI identifying the producer of this metadata.
 	Producer string `json:"_producer"`
 	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
-	SchemaURL string `json:"_schemaURL"`
-	Job ParentRunFacetJob `json:"job"`
-	Root *ParentRunFacetRoot `json:"root,omitempty"`
-	Run ParentRunFacetRun `json:"run"`
+	SchemaURL string              `json:"_schemaURL"`
+	Job       ParentRunFacetJob   `json:"job"`
+	Root      *ParentRunFacetRoot `json:"root,omitempty"`
+	Run       ParentRunFacetRun   `json:"run"`
 }
 
 // ProcessingEngineRunFacet
@@ -635,12 +635,12 @@ type TestRunFacet struct {
 type LifecycleStateChangeDatasetFacetLifecycleStateChange string
 
 const (
-	LifecycleStateChangeDatasetFacetLifecycleStateChangeAlter LifecycleStateChangeDatasetFacetLifecycleStateChange = "ALTER"
-	LifecycleStateChangeDatasetFacetLifecycleStateChangeCreate LifecycleStateChangeDatasetFacetLifecycleStateChange = "CREATE"
-	LifecycleStateChangeDatasetFacetLifecycleStateChangeDrop LifecycleStateChangeDatasetFacetLifecycleStateChange = "DROP"
+	LifecycleStateChangeDatasetFacetLifecycleStateChangeAlter     LifecycleStateChangeDatasetFacetLifecycleStateChange = "ALTER"
+	LifecycleStateChangeDatasetFacetLifecycleStateChangeCreate    LifecycleStateChangeDatasetFacetLifecycleStateChange = "CREATE"
+	LifecycleStateChangeDatasetFacetLifecycleStateChangeDrop      LifecycleStateChangeDatasetFacetLifecycleStateChange = "DROP"
 	LifecycleStateChangeDatasetFacetLifecycleStateChangeOverwrite LifecycleStateChangeDatasetFacetLifecycleStateChange = "OVERWRITE"
-	LifecycleStateChangeDatasetFacetLifecycleStateChangeRename LifecycleStateChangeDatasetFacetLifecycleStateChange = "RENAME"
-	LifecycleStateChangeDatasetFacetLifecycleStateChangeTruncate LifecycleStateChangeDatasetFacetLifecycleStateChange = "TRUNCATE"
+	LifecycleStateChangeDatasetFacetLifecycleStateChangeRename    LifecycleStateChangeDatasetFacetLifecycleStateChange = "RENAME"
+	LifecycleStateChangeDatasetFacetLifecycleStateChangeTruncate  LifecycleStateChangeDatasetFacetLifecycleStateChange = "TRUNCATE"
 )
 
 // BaseSubsetCondition — The condition to define a subset
@@ -675,10 +675,10 @@ func (r *RawBaseSubsetCondition) UnmarshalJSON(data []byte) error {
 
 func (r RawBaseSubsetCondition) MarshalJSON() ([]byte, error) { return json.Marshal(r.V) }
 
-func (LocationSubsetCondition) isBaseSubsetCondition() {}
+func (LocationSubsetCondition) isBaseSubsetCondition()  {}
 func (PartitionSubsetCondition) isBaseSubsetCondition() {}
-func (BinarySubsetCondition) isBaseSubsetCondition() {}
-func (CompareSubsetCondition) isBaseSubsetCondition() {}
+func (BinarySubsetCondition) isBaseSubsetCondition()    {}
+func (CompareSubsetCondition) isBaseSubsetCondition()   {}
 
 // CompareSubsetConditionLeft is a discriminated union.
 type CompareSubsetConditionLeft interface {
@@ -709,7 +709,7 @@ func (r *RawCompareSubsetConditionLeft) UnmarshalJSON(data []byte) error {
 func (r RawCompareSubsetConditionLeft) MarshalJSON() ([]byte, error) { return json.Marshal(r.V) }
 
 func (FieldBaseCompareExpression) isCompareSubsetConditionLeft() {}
-func (LiteralCompareExpression) isCompareSubsetConditionLeft() {}
+func (LiteralCompareExpression) isCompareSubsetConditionLeft()   {}
 
 // CompareSubsetConditionRight is a discriminated union.
 type CompareSubsetConditionRight interface {
@@ -740,15 +740,15 @@ func (r *RawCompareSubsetConditionRight) UnmarshalJSON(data []byte) error {
 func (r RawCompareSubsetConditionRight) MarshalJSON() ([]byte, error) { return json.Marshal(r.V) }
 
 func (FieldBaseCompareExpression) isCompareSubsetConditionRight() {}
-func (LiteralCompareExpression) isCompareSubsetConditionRight() {}
+func (LiteralCompareExpression) isCompareSubsetConditionRight()   {}
 
 // BinarySubsetCondition
 type BinarySubsetCondition struct {
 	Left RawBaseSubsetCondition `json:"left"`
 	// Allowed values: 'AND' or 'OR'
-	Operator string `json:"operator"`
-	Right RawBaseSubsetCondition `json:"right"`
-	Type string `json:"type"`
+	Operator string                 `json:"operator"`
+	Right    RawBaseSubsetCondition `json:"right"`
+	Type     interface{}            `json:"type"`
 }
 
 // ColumnLineageDatasetFacetFieldsValue
@@ -763,14 +763,14 @@ type ColumnLineageDatasetFacetFieldsValue struct {
 // CompareSubsetCondition
 type CompareSubsetCondition struct {
 	// Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN', 'LESS_EQUAL_THAN'
-	Comparison string `json:"comparison"`
-	Left RawCompareSubsetConditionLeft `json:"left"`
-	Right RawCompareSubsetConditionRight `json:"right"`
-	Type string `json:"type"`
+	Comparison string                         `json:"comparison"`
+	Left       RawCompareSubsetConditionLeft  `json:"left"`
+	Right      RawCompareSubsetConditionRight `json:"right"`
+	Type       interface{}                    `json:"type"`
 }
 
-// DataQualityAssertionsDatasetFacetAssertions
-type DataQualityAssertionsDatasetFacetAssertions struct {
+// DataQualityAssertionsDatasetFacetAssertion
+type DataQualityAssertionsDatasetFacetAssertion struct {
 	// The actual value observed during the assertion, serialized as a string.
 	Actual *string `json:"actual,omitempty"`
 	// Classification of the test, e.g. 'not_null', 'unique', 'row_count', 'freshness', 'custom_sql'.
@@ -788,7 +788,7 @@ type DataQualityAssertionsDatasetFacetAssertions struct {
 	// Name identifying the test.
 	Name *string `json:"name,omitempty"`
 	// Arbitrary key-value pairs for assertion-specific inputs.
-	Params map[string]string `json:"params,omitempty"`
+	Params map[string]interface{} `json:"params,omitempty"`
 	// The configured severity level of the assertion. Common values are 'error' (test failure blocks pipeline) or 'warn' (test failure produces warning only).
 	Severity *string `json:"severity,omitempty"`
 	// Whether the test found issues: 'true' (no issues found), 'false' (issues found). Independent of severity - a test can fail without blocking the pipeline when severity is 'warn'.
@@ -800,9 +800,9 @@ type DataQualityMetricsDatasetFacetColumnMetricsValue struct {
 	// The number of values in this column
 	Count *float64 `json:"count,omitempty"`
 	// The number of distinct values in this column for the rows evaluated
-	DistinctCount *int64 `json:"distinctCount,omitempty"`
-	Max *float64 `json:"max,omitempty"`
-	Min *float64 `json:"min,omitempty"`
+	DistinctCount *int64   `json:"distinctCount,omitempty"`
+	Max           *float64 `json:"max,omitempty"`
+	Min           *float64 `json:"min,omitempty"`
 	// The number of null values in this column for the rows evaluated
 	NullCount *int64 `json:"nullCount,omitempty"`
 	// The property key is the quantile. Examples: 0.1 0.25 0.5 0.75 1
@@ -816,9 +816,9 @@ type DataQualityMetricsInputDatasetFacetColumnMetricsValue struct {
 	// The number of values in this column
 	Count *float64 `json:"count,omitempty"`
 	// The number of distinct values in this column for the rows evaluated
-	DistinctCount *int64 `json:"distinctCount,omitempty"`
-	Max *float64 `json:"max,omitempty"`
-	Min *float64 `json:"min,omitempty"`
+	DistinctCount *int64   `json:"distinctCount,omitempty"`
+	Max           *float64 `json:"max,omitempty"`
+	Min           *float64 `json:"min,omitempty"`
 	// The number of null values in this column for the rows evaluated
 	NullCount *int64 `json:"nullCount,omitempty"`
 	// The property key is the quantile. Examples: 0.1 0.25 0.5 0.75 1
@@ -847,8 +847,8 @@ type ExecutionParameter struct {
 	Value *string `json:"value,omitempty"`
 }
 
-// ExtractionErrorRunFacetErrors
-type ExtractionErrorRunFacetErrors struct {
+// ExtractionErrorRunFacetError
+type ExtractionErrorRunFacetError struct {
 	// Text representation of extraction error message.
 	ErrorMessage string `json:"errorMessage"`
 	// Stack trace of extraction error message
@@ -861,8 +861,8 @@ type ExtractionErrorRunFacetErrors struct {
 
 // FieldBaseCompareExpression
 type FieldBaseCompareExpression struct {
-	Field string `json:"field"`
-	Type string `json:"type"`
+	Field string      `json:"field"`
+	Type  interface{} `json:"type"`
 }
 
 // GcpLineageJobFacetOrigin
@@ -980,12 +980,12 @@ type InputField struct {
 	// The input dataset name
 	Name string `json:"name"`
 	// The input dataset namespace
-	Namespace string `json:"namespace"`
-	Transformations []InputFieldTransformations `json:"transformations,omitempty"`
+	Namespace       string                     `json:"namespace"`
+	Transformations []InputFieldTransformation `json:"transformations,omitempty"`
 }
 
-// InputFieldTransformations
-type InputFieldTransformations struct {
+// InputFieldTransformation
+type InputFieldTransformation struct {
 	// a string representation of the transformation applied
 	Description *string `json:"description,omitempty"`
 	// is transformation masking the data or not
@@ -999,13 +999,13 @@ type InputFieldTransformations struct {
 // JobDependency — Used to store all information about job dependency (e.g., job, run, etc.).
 type JobDependency struct {
 	// Used to describe whether the upstream job directly triggers the downstream job, or whether the dependency is implicit (e.g. time-based).
-	Dependency_type *string `json:"dependency_type,omitempty"`
-	Job JobIdentifier `json:"job"`
-	Run *RunIdentifier `json:"run,omitempty"`
+	DependencyType *string        `json:"dependency_type,omitempty"`
+	Job            JobIdentifier  `json:"job"`
+	Run            *RunIdentifier `json:"run,omitempty"`
 	// Used to describe the exact sequence condition on which the downstream job can be executed (FINISH_TO_START - downstream job can start when upstream finished; FINISH_TO_FINISH - job executions can overlap, but need to finish in specified order; START_TO_START - jobs need to start at the same time in parallel).
-	Sequence_trigger_rule *string `json:"sequence_trigger_rule,omitempty"`
+	SequenceTriggerRule *string `json:"sequence_trigger_rule,omitempty"`
 	// Used to describe if the downstream job should be run based on the status of the upstream job.
-	Status_trigger_rule *string `json:"status_trigger_rule,omitempty"`
+	StatusTriggerRule *string `json:"status_trigger_rule,omitempty"`
 }
 
 // JobIdentifier — Used to store information about job (e.g., namespace and name).
@@ -1018,32 +1018,32 @@ type JobIdentifier struct {
 
 // LifecycleStateChangeDatasetFacetPreviousIdentifier — Previous name of the dataset in case of renaming it.
 type LifecycleStateChangeDatasetFacetPreviousIdentifier struct {
-	Name string `json:"name"`
+	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 }
 
 // LiteralCompareExpression
 type LiteralCompareExpression struct {
-	Type string `json:"type"`
-	Value string `json:"value"`
+	Type  interface{} `json:"type"`
+	Value string      `json:"value"`
 }
 
 // LocationSubsetCondition
 type LocationSubsetCondition struct {
-	Locations []string `json:"locations"`
-	Type string `json:"type"`
+	Locations []string    `json:"locations"`
+	Type      interface{} `json:"type"`
 }
 
-// OwnershipDatasetFacetOwners
-type OwnershipDatasetFacetOwners struct {
+// OwnershipDatasetFacetOwner
+type OwnershipDatasetFacetOwner struct {
 	// the identifier of the owner of the Dataset. It is recommended to define this as a URN. For example application:foo, user:jdoe, team:data
 	Name string `json:"name"`
 	// The type of ownership (optional)
 	Type *string `json:"type,omitempty"`
 }
 
-// OwnershipJobFacetOwners
-type OwnershipJobFacetOwners struct {
+// OwnershipJobFacetOwner
+type OwnershipJobFacetOwner struct {
 	// the identifier of the owner of the Job. It is recommended to define this as a URN. For example application:foo, user:jdoe, team:data
 	Name string `json:"name"`
 	// The type of ownership (optional)
@@ -1067,18 +1067,18 @@ type ParentRunFacetRoot struct {
 // ParentRunFacetRun
 type ParentRunFacetRun struct {
 	// The globally unique ID of the run associated with the job.
-	RunId string `json:"runId"`
+	RunID string `json:"runId"`
 }
 
 // PartitionSubsetCondition
 type PartitionSubsetCondition struct {
-	Partitions []PartitionSubsetConditionPartitions `json:"partitions"`
-	Type string `json:"type"`
+	Partitions []PartitionSubsetConditionPartition `json:"partitions"`
+	Type       interface{}                         `json:"type"`
 }
 
-// PartitionSubsetConditionPartitions
-type PartitionSubsetConditionPartitions struct {
-	Dimensions map[string]string `json:"dimensions"`
+// PartitionSubsetConditionPartition
+type PartitionSubsetConditionPartition struct {
+	Dimensions map[string]interface{} `json:"dimensions"`
 	// Optionally provided identifier of the partition specified
 	Identifier *string `json:"identifier,omitempty"`
 }
@@ -1094,13 +1094,13 @@ type RootJob struct {
 // RootRun
 type RootRun struct {
 	// The globally unique ID of the root run associated with the root job.
-	RunId string `json:"runId"`
+	RunID string `json:"runId"`
 }
 
 // RunIdentifier — Used to store information about run (e.g., runId).
 type RunIdentifier struct {
 	// The globally unique ID of the run.
-	RunId string `json:"runId"`
+	RunID string `json:"runId"`
 }
 
 // SchemaDatasetFacetFields
@@ -1112,13 +1112,13 @@ type SchemaDatasetFacetFields struct {
 	// The name of the field.
 	Name string `json:"name"`
 	// The ordinal position of the field in the schema (1-indexed).
-	Ordinal_position *int64 `json:"ordinal_position,omitempty"`
+	OrdinalPosition *int64 `json:"ordinal_position,omitempty"`
 	// The type of the field.
 	Type *string `json:"type,omitempty"`
 }
 
-// SymlinksDatasetFacetIdentifiers
-type SymlinksDatasetFacetIdentifiers struct {
+// SymlinksDatasetFacetIdentifier
+type SymlinksDatasetFacetIdentifier struct {
 	// The dataset name
 	Name string `json:"name"`
 	// The dataset namespace
@@ -1174,7 +1174,7 @@ type TestExecution struct {
 	// Name identifying the test.
 	Name string `json:"name"`
 	// Arbitrary key-value pairs for check-specific inputs.
-	Params map[string]string `json:"params,omitempty"`
+	Params map[string]interface{} `json:"params,omitempty"`
 	// The configured consequence of a test failure: 'error' (blocks pipeline execution) or 'warn' (produces a warning only, does not block). A test with severity 'warn' and status 'fail' means issues were found but execution continued.
 	Severity *string `json:"severity,omitempty"`
 	// Whether the test found issues: 'pass' (no issues found), 'fail' (issues found), 'skip' (not executed). Independent of severity — a test can fail without blocking the pipeline when severity is 'warn'.
@@ -1182,4 +1182,3 @@ type TestExecution struct {
 	// Classification of the test, e.g. 'not_null', 'unique', 'row_count', 'freshness', 'custom_sql'.
 	Type *string `json:"type,omitempty"`
 }
-

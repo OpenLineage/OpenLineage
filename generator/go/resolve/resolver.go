@@ -7,6 +7,7 @@
 package resolve
 
 import (
+	"log"
 	"strings"
 
 	"github.com/atombender/go-jsonschema/pkg/schemas"
@@ -23,12 +24,17 @@ func New(defs map[string]*schemas.Type) *Resolver {
 }
 
 // Resolve follows $ref chains and returns the final pointed-to schema.
+// Returns nil for ignorable base-facet refs, unresolvable refs, or if the
+// chain exceeds 32 hops (guards against self-referential / cyclic schemas).
 func (r *Resolver) Resolve(t *schemas.Type) *schemas.Type {
 	if t == nil {
 		return nil
 	}
 
-	for t.Ref != "" {
+	for depth := 0; t.Ref != ""; depth++ {
+		if depth > 32 {
+			log.Fatalf("resolve: $ref chain exceeds 32 hops at %q — possible cycle", t.Ref)
+		}
 		if isIgnorableBaseFacetRef(t.Ref) {
 			return nil
 		}

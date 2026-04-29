@@ -24,31 +24,55 @@ const (
 	EventTypeOther    EventType = "OTHER"
 )
 
-// Event represents an OpenLineage event.
-type Event struct {
-	Dataset *Dataset `json:"dataset,omitempty"`
+// BaseEvent contains the fields common to all OpenLineage event types.
+type BaseEvent struct {
 	// the time the event occurred at
 	EventTime time.Time `json:"eventTime"`
-	// the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete
-	EventType *EventType `json:"eventType,omitempty"`
-	// The set of **input** datasets.
-	Inputs []InputElement `json:"inputs,omitempty"`
-	Job    *Job           `json:"job,omitempty"`
-	// The set of **output** datasets.
-	Outputs []OutputElement `json:"outputs,omitempty"`
 	// URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha
 	Producer string `json:"producer"`
-	Run      *Run   `json:"run,omitempty"`
 	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this RunEvent
 	SchemaURL string `json:"schemaURL"`
 }
 
-// RunWrapper
+// RunEvent — RunEvent represents an OpenLineage run lifecycle event.
+type RunEvent struct {
+	BaseEvent
+	// the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete
+	EventType *EventType `json:"eventType,omitempty"`
+	// The set of **input** datasets.
+	Inputs []InputElement `json:"inputs,omitempty"`
+	Job    Job            `json:"job"`
+	// The set of **output** datasets.
+	Outputs []OutputElement `json:"outputs,omitempty"`
+	Run     Run             `json:"run"`
+}
+
+// DatasetEvent — DatasetEvent represents an OpenLineage static dataset metadata event.
+type DatasetEvent struct {
+	BaseEvent
+	Dataset Dataset `json:"dataset"`
+}
+
+// JobEvent — JobEvent represents an OpenLineage job metadata event.
+type JobEvent struct {
+	BaseEvent
+	// The set of **input** datasets.
+	Inputs []InputElement `json:"inputs,omitempty"`
+	Job    Job            `json:"job"`
+	// The set of **output** datasets.
+	Outputs []OutputElement `json:"outputs,omitempty"`
+}
+
+func (*RunEvent) openlineageEvent()     {}
+func (*DatasetEvent) openlineageEvent() {}
+func (*JobEvent) openlineageEvent()     {}
+
+// Run
 type Run struct {
 	// The run facets.
 	Facets *facets.RunFacets `json:"facets,omitempty"`
 	// The globally unique ID of the run associated with the job.
-	RunId string `json:"runId"`
+	RunID string `json:"runId"`
 }
 
 // Job

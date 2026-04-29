@@ -14,9 +14,7 @@ import (
 	"github.com/atombender/go-jsonschema/pkg/schemas"
 
 	"github.com/OpenLineage/openlineage/generator/go/genutil"
-)
-
-// schemaToGoName maps $defs names that differ from their Go type names.
+)// schemaToGoName maps $defs names that differ from their Go type names.
 var schemaToGoName = map[string]string{
 	"Run":           "Run",
 	"InputDataset":  "InputElement",
@@ -55,7 +53,7 @@ import (
 `)
 
 	emitEventTypeEnum(&b, defs)
-	emitMergedEventStruct(&b, defs)
+	emitEventStructs(&b, defs)
 
 	for _, entry := range []struct{ defName, goName string }{
 		{"Run", "Run"},
@@ -112,7 +110,7 @@ func emitEventTypeEnum(b *strings.Builder, defs map[string]*schemas.Type) {
 	b.WriteString("const (\n")
 	for _, v := range enumProp.Enum {
 		s, ok := v.(string)
-		if !ok {
+		if !ok || s == "" {
 			continue
 		}
 		// Title-case the suffix: "ABORT" → "Abort"
@@ -122,60 +120,97 @@ func emitEventTypeEnum(b *strings.Builder, defs map[string]*schemas.Type) {
 	b.WriteString(")\n\n")
 }
 
-// emitMergedEventStruct emits the combined Event struct from BaseEvent +
-// RunEvent + DatasetEvent + JobEvent. Fields from BaseEvent are required;
-// all event-specific fields are optional (any given event may lack them).
-func emitMergedEventStruct(b *strings.Builder, defs map[string]*schemas.Type) {
-	required := map[string]bool{}
-	props := map[string]*schemas.Type{}
-
-	if base := defs["BaseEvent"]; base != nil {
+// emitEventStructs emits BaseEvent and the three typed event structs
+// (RunEvent, DatasetEvent, JobEvent), each embedding BaseEvent.
+// This replaces the old merged Event struct and makes required fields
+// visible at the type level for each event variant.
+func emitEventStructs(b *strings.Builder, defs map[string]*schemas.Type) {
+	// ── BaseEvent ────────────────────────────────────────────────────────────
+	base := defs["BaseEvent"]
+	if base != nil {
+		baseRequired := map[string]bool{}
 		for _, r := range base.Required {
-			required[r] = true
+			baseRequired[r] = true
 		}
-		for k, v := range base.Properties {
-			props[k] = v
+		var fields []fieldSpec
+		for jsonName, prop := range base.Properties {
+			isReq := baseRequired[jsonName]
+			fields = append(fields, fieldSpec{
+				jsonName:    jsonName,
+				goName:      genutil.FormatGoFieldName(export(jsonName)),
+				goType:      propGoTypeNamed(prop, isReq, jsonName),
+				required:    isReq,
+				description: description(prop),
+			})
 		}
+		sortFields(fields)
+		b.WriteString("// BaseEvent contains the fields common to all OpenLineage event types.\n")
+		b.WriteString("type BaseEvent struct {\n")
+		for _, f := range fields {
+			emitField(b, f)
+		}
+		b.WriteString("}\n\n")
 	}
 
-	for _, eventName := range []string{"RunEvent", "DatasetEvent", "JobEvent"} {
-		def := defs[eventName]
+	// ── Typed event structs ──────────────────────────────────────────────────
+	eventDescs := map[string]string{
+		"RunEvent":     "RunEvent represents an OpenLineage run lifecycle event.",
+		"DatasetEvent": "DatasetEvent represents an OpenLineage static dataset metadata event.",
+		"JobEvent":     "JobEvent represents an OpenLineage job metadata event.",
+	}
+	for _, defName := range []string{"RunEvent", "DatasetEvent", "JobEvent"} {
+		def := defs[defName]
 		if def == nil {
 			continue
 		}
+		required := map[string]bool{}
+		props := map[string]*schemas.Type{}
 		for _, sub := range def.AllOf {
 			if sub.Ref != "" {
 				continue // skip $ref to BaseEvent
 			}
+			for _, r := range sub.Required {
+				required[r] = true
+			}
 			for k, v := range sub.Properties {
-				if _, exists := props[k]; !exists {
+				if _, ok := props[k]; !ok {
 					props[k] = v
 				}
 			}
 		}
+		var fields []fieldSpec
+		for jsonName, prop := range props {
+			isReq := required[jsonName]
+			fields = append(fields, fieldSpec{
+				jsonName:    jsonName,
+				goName:      genutil.FormatGoFieldName(export(jsonName)),
+				goType:      propGoTypeNamed(prop, isReq, jsonName),
+				required:    isReq,
+				description: description(prop),
+			})
+		}
+		sortFields(fields)
+		desc := oneLine(def.Description)
+		if desc == "" {
+			desc = eventDescs[defName]
+		}
+		fmt.Fprintf(b, "// %s — %s\n", defName, desc)
+		fmt.Fprintf(b, "type %s struct {\n", defName)
+		b.WriteString("\tBaseEvent\n")
+		for _, f := range fields {
+			emitField(b, f)
+		}
+		b.WriteString("}\n\n")
 	}
 
-	var fields []fieldSpec
-	for jsonName, prop := range props {
-		isReq := required[jsonName]
-		fields = append(fields, fieldSpec{
-			jsonName:    jsonName,
-			goName:      genutil.FormatGoFieldName(export(jsonName)),
-			goType:      propGoType(prop, isReq),
-			required:    isReq,
-			description: description(prop),
-		})
+	// ── Emittable marker methods ─────────────────────────────────────────────
+	for _, name := range []string{"RunEvent", "DatasetEvent", "JobEvent"} {
+		fmt.Fprintf(b, "func (*%s) openlineageEvent() {}\n", name)
 	}
-	sortFields(fields)
-
-	b.WriteString("// Event represents an OpenLineage event.\n")
-	b.WriteString("type Event struct {\n")
-	for _, f := range fields {
-		emitField(b, f)
-	}
-	b.WriteString("}\n\n")
+	b.WriteString("\n")
 }
 
+// emitEventStructs replaces the old merged Event struct.
 func emitStruct(b *strings.Builder, goTypeName, desc string, fields []fieldSpec) {
 	if desc != "" {
 		fmt.Fprintf(b, "// %s — %s\n", goTypeName, oneLine(desc))
@@ -251,7 +286,16 @@ func gatherProps(t *schemas.Type, defs map[string]*schemas.Type, props map[strin
 
 // ── Type resolution ───────────────────────────────────────────────────────────
 
+// propGoType resolves the Go type for a JSON Schema property.
+// propName is the JSON property name; it is used to scope string-enum types
+// (currently only "eventType" maps to the generated EventType named type).
 func propGoType(t *schemas.Type, required bool) string {
+	return propGoTypeNamed(t, required, "")
+}
+
+// propGoTypeNamed is the internal version that also receives propName so it can
+// avoid typing every string enum as *EventType.
+func propGoTypeNamed(t *schemas.Type, required bool, propName string) string {
 	if t == nil {
 		return "interface{}"
 	}
@@ -282,7 +326,10 @@ func propGoType(t *schemas.Type, required bool) string {
 			}
 			return "*time.Time"
 		}
-		if len(t.Enum) > 0 {
+		if len(t.Enum) > 0 && propName == "eventType" {
+			if required {
+				return "EventType"
+			}
 			return "*EventType"
 		}
 		if required {

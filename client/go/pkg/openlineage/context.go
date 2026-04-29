@@ -122,7 +122,7 @@ func (r *run) NewEvent(eventType EventType) *RunEvent {
 				Namespace: parent.JobNamespace(),
 			},
 			facets.ParentRunFacetRun{
-				RunId: parent.RunID().String(),
+				RunID: parent.RunID().String(),
 			},
 		)
 

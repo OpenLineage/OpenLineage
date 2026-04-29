@@ -7,6 +7,7 @@
 package discover
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/atombender/go-jsonschema/pkg/schemas"
@@ -39,19 +40,26 @@ func detectFacetType(t *schemas.Type) (FacetType, bool) {
 			continue
 		}
 		switch {
-		case strings.HasSuffix(sub.Ref, "/JobFacet"):
+		case isBaseFacetRef(sub.Ref, "JobFacet"):
 			return FacetJob, true
-		case strings.HasSuffix(sub.Ref, "/DatasetFacet"):
+		case isBaseFacetRef(sub.Ref, "DatasetFacet"):
 			return FacetDataset, true
-		case strings.HasSuffix(sub.Ref, "/RunFacet"):
+		case isBaseFacetRef(sub.Ref, "RunFacet"):
 			return FacetRun, true
-		case strings.HasSuffix(sub.Ref, "/InputDatasetFacet"):
+		case isBaseFacetRef(sub.Ref, "InputDatasetFacet"):
 			return FacetInputDataset, true
-		case strings.HasSuffix(sub.Ref, "/OutputDatasetFacet"):
+		case isBaseFacetRef(sub.Ref, "OutputDatasetFacet"):
 			return FacetOutputDataset, true
 		}
 	}
 	return "", false
+}
+
+// isBaseFacetRef returns true when ref points exactly to the canonical OL base
+// facet type (e.g. "…OpenLineage.json#/$defs/JobFacet").
+// Using the full path prevents false positives for names like "MyExtensionJobFacet".
+func isBaseFacetRef(ref, baseName string) bool {
+	return strings.HasSuffix(ref, "OpenLineage.json#/$defs/"+baseName)
 }
 
 // containerKeys returns a map from definition name → its top-level container JSON key.
@@ -62,7 +70,13 @@ func containerKeys(schema *schemas.Schema) map[string]string {
 	if schema.ObjectAsType == nil {
 		return out
 	}
-	for key, prop := range schema.Properties {
+	keys := make([]string, 0, len(schema.Properties))
+	for k := range schema.Properties {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		prop := schema.Properties[key]
 		if prop.Ref != "" {
 			name := extractDefName(prop.Ref)
 			if name != "" {
@@ -82,34 +96,6 @@ func extractDefName(ref string) string {
 	return ref[i+len(suffix):]
 }
 
-// FindFacets returns only the Job and Dataset facets (used for Terraform model generation).
-func FindFacets(schema *schemas.Schema) []Facet {
-	keys := containerKeys(schema)
-	var out []Facet
-
-	for name, def := range schema.Definitions {
-		ft, ok := detectFacetType(def)
-		if !ok {
-			continue
-		}
-		// For Terraform: only job and dataset facets.
-		if ft != FacetJob && ft != FacetDataset {
-			continue
-		}
-		if isExcluded(name) {
-			continue
-		}
-
-		out = append(out, Facet{
-			Name:         name,
-			Type:         ft,
-			Schema:       def,
-			SchemaURL:    schema.ID,
-			ContainerKey: keys[name],
-		})
-	}
-	return out
-}
 
 // FindAllFacets returns all facet types (job, dataset, run, input, output) without
 // any exclusion filter. Used for OL client code generation.
@@ -117,7 +103,14 @@ func FindAllFacets(schema *schemas.Schema) []Facet {
 	keys := containerKeys(schema)
 	var out []Facet
 
-	for name, def := range schema.Definitions {
+	names := make([]string, 0, len(schema.Definitions))
+	for n := range schema.Definitions {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		def := schema.Definitions[name]
 		ft, ok := detectFacetType(def)
 		if !ok {
 			continue
@@ -133,13 +126,3 @@ func FindAllFacets(schema *schemas.Schema) []Facet {
 	return out
 }
 
-func isExcluded(name string) bool {
-	switch name {
-	case "DataQualityMetricsDatasetFacet",
-		"LifecycleStateChangeDatasetFacet",
-		"GcpComposerJobFacet",
-		"GcpLineageJobFacet":
-		return true
-	}
-	return false
-}

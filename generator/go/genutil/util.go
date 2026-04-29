@@ -38,13 +38,18 @@ func ToSnake(s string) string {
 }
 
 // FormatGoFieldName applies OpenLineage acronym-capitalization rules to a PascalCase
-// Go field name: URI and URL suffixes are uppercased; Id is kept as-is (not promoted to ID).
+// Go field name: URI, URL, and Id suffixes are promoted to their canonical Go
+// initialisations (URI → URI, URL → URL, Id → ID) per the Go naming conventions
+// documented in https://github.com/golang/go/wiki/CodeReviewComments#initialisms.
 func FormatGoFieldName(name string) string {
 	if strings.HasSuffix(name, "Uri") {
 		return strings.TrimSuffix(name, "Uri") + "URI"
 	}
 	if strings.HasSuffix(name, "Url") {
 		return strings.TrimSuffix(name, "Url") + "URL"
+	}
+	if strings.HasSuffix(name, "Id") {
+		return strings.TrimSuffix(name, "Id") + "ID"
 	}
 	return name
 }
