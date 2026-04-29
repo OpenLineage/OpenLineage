@@ -1599,7 +1599,7 @@ func NewNominalTimeRunFacet(
 	return &NominalTimeRunFacet{
 		Producer:         producer,
 		SchemaURL:        "https://openlineage.io/spec/facets/1-0-1/NominalTimeRunFacet.json",
-		NominalStartTime: &nominalStartTime,
+		NominalStartTime: nominalStartTime,
 	}
 }
 
