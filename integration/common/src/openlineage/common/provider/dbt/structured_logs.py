@@ -36,6 +36,7 @@ from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.common.provider.dbt.processor import (
     ModelNode,
     UnsupportedDbtCommand,
+    expected_from_test_config,
 )
 from openlineage.common.provider.dbt.utils import (
     DBT_LOG_FILE_MAX_BYTES,
@@ -494,7 +495,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             config = test_node.get("config", {})
             severity = (config.get("severity") or "error").lower()
 
-            if assertion := self._get_assertion(node_unique_id, success):
+            # Structured-log NodeFinished events name the count `num_failures`
+            # (run_results.json calls the same value `failures`).
+            num_failures = (event["data"].get("run_result") or {}).get("num_failures")
+
+            if assertion := self._get_assertion(node_unique_id, success, num_failures):
                 assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
                 inputs = []
                 for attached_dataset in self._get_attached_datasets(node_unique_id):
@@ -521,6 +526,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 test_obj.contentType = "sql"
                 if desc := test_node.get("description"):
                     test_obj.description = desc
+                if num_failures is not None:
+                    test_obj.actual = str(num_failures)
+                    test_obj.expected = expected_from_test_config(config, severity)
                 run_facets["test"] = test_run.TestRunFacet(tests=[test_obj])
 
         if extraction_error := self._get_extraction_error_facet(node_unique_id):
@@ -563,7 +571,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         ]
 
     @handle_keyerror
-    def _get_assertion(self, node_id: str, success: bool) -> dq.Assertion | None:
+    def _get_assertion(
+        self, node_id: str, success: bool, num_failures: int | None = None
+    ) -> dq.Assertion | None:
         manifest_test_node = self.compiled_manifest["nodes"][node_id]
         test_metadata = manifest_test_node.get("test_metadata")
         if test_metadata:
@@ -581,11 +591,16 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if severity:
             severity = severity.lower()
 
+        actual = str(num_failures) if num_failures is not None else None
+        expected = expected_from_test_config(config, severity) if num_failures is not None else None
+
         return dq.Assertion(
             assertion=name,
             success=success,
             column=column,
             severity=severity,
+            actual=actual,
+            expected=expected,
         )
 
     def _parse_sql_query_event(self, event) -> RunEvent:
@@ -915,10 +930,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if not os.path.exists(self.dbt_log_file_path):
             logs_directory = os.path.dirname(self.dbt_log_file_path)
             os.makedirs(logs_directory, exist_ok=True)
-            with open(self.dbt_log_file_path, "w"):
+            with open(self.dbt_log_file_path, "w", encoding="utf-8"):
                 pass
 
-        self._dbt_log_file = open(self.dbt_log_file_path)
+        self._dbt_log_file = open(self.dbt_log_file_path, encoding="utf-8")
         while self._dbt_log_file.readlines():
             pass
 

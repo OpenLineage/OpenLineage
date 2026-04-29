@@ -299,3 +299,105 @@ class TestParseSingularTests:
         assert assertion.assertion == "assert_no_future_dates"
         assert assertion.success is True
         assert assertion.column is None
+
+
+class TestParseFailures:
+    """Tests for failure-count extraction in parse_assertions (generic tests)."""
+
+    @pytest.fixture
+    def processor(self):
+        processor = DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="test-namespace",
+        )
+        processor.manifest_version = 11  # Use version < 12 for test_metadata path
+        return processor
+
+    def test_warning_test_with_nine_failures(self, processor):
+        """Mirrors the dbt-test-env scenario: accepted_values test with severity=warn, failures=9."""
+        nodes = {
+            "test.project.accepted_values_country": {
+                "test_metadata": {
+                    "name": "accepted_values",
+                    "kwargs": {"column_name": "country", "values": ["USA", "Canada"]},
+                },
+                "config": {"severity": "warn"},
+            }
+        }
+        manifest = {
+            "parent_map": {
+                "test.project.accepted_values_country": ["model.project.stg_customers"],
+            }
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "test.project.accepted_values_country",
+                    "status": "warn",
+                    "failures": 9,
+                }
+            ]
+        }
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertion = processor.parse_assertions(context, nodes)["model.project.stg_customers"][0]
+
+        assert assertion.success is False  # status="warn" is not "pass"
+        assert assertion.actual == "9"
+        assert assertion.expected == "0"
+
+    def test_passing_test_surfaces_zero_failures(self, processor):
+        """Passing tests still report the count; surfacing 0 makes the metric uniformly queryable."""
+        nodes = {
+            "test.project.unique_id": {
+                "test_metadata": {"name": "unique", "kwargs": {"column_name": "id"}},
+                "config": {"severity": "error"},
+            }
+        }
+        manifest = {"parent_map": {"test.project.unique_id": ["model.project.my_model"]}}
+        run_results = {"results": [{"unique_id": "test.project.unique_id", "status": "pass", "failures": 0}]}
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertion = processor.parse_assertions(context, nodes)["model.project.my_model"][0]
+
+        assert assertion.success is True
+        assert assertion.actual == "0"
+        assert assertion.expected == "0"
+
+    def test_custom_threshold_carried_through_to_expected(self, processor):
+        """When error_if/warn_if is non-default, the threshold expression is preserved in `expected`."""
+        nodes = {
+            "test.project.row_count": {
+                "test_metadata": {"name": "row_count", "kwargs": {}},
+                "config": {"severity": "warn", "warn_if": "> 100"},
+            }
+        }
+        manifest = {"parent_map": {"test.project.row_count": ["model.project.my_model"]}}
+        run_results = {"results": [{"unique_id": "test.project.row_count", "status": "pass", "failures": 50}]}
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertion = processor.parse_assertions(context, nodes)["model.project.my_model"][0]
+
+        assert assertion.actual == "50"
+        assert assertion.expected == "> 100"
+
+    def test_missing_failures_field_falls_back_to_none(self, processor):
+        """Older dbt versions or runtime errors may not report failures; both fields stay None."""
+        nodes = {
+            "test.project.unique_id": {
+                "test_metadata": {"name": "unique", "kwargs": {"column_name": "id"}},
+                "config": {"severity": "error"},
+            }
+        }
+        manifest = {"parent_map": {"test.project.unique_id": ["model.project.my_model"]}}
+        run_results = {
+            "results": [
+                {"unique_id": "test.project.unique_id", "status": "pass"}  # no "failures" key
+            ]
+        }
+        context = DbtRunContext(manifest=manifest, run_results=run_results)
+
+        assertion = processor.parse_assertions(context, nodes)["model.project.my_model"][0]
+
+        assert assertion.actual is None
+        assert assertion.expected is None

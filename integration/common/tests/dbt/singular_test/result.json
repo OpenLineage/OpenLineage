@@ -16,8 +16,8 @@
               "severity": "error",
               "type": "singular",
               "description": "Ensures all order amounts are positive.",
-              "expected": null,
-              "actual": null,
+              "expected": "0",
+              "actual": "0",
               "content": "select * from my_schema.orders where amount < 0",
               "contentType": "sql",
               "params": {}
@@ -114,8 +114,8 @@
               "severity": "warn",
               "type": "singular",
               "description": null,
-              "expected": null,
-              "actual": null,
+              "expected": "0",
+              "actual": "5",
               "content": "select * from my_schema.orders where amount not between 0 and 10000",
               "contentType": "sql",
               "params": {}
@@ -212,8 +212,8 @@
               "severity": "error",
               "type": "singular",
               "description": "Ensures all order amounts are positive.",
-              "expected": null,
-              "actual": null,
+              "expected": "0",
+              "actual": "0",
               "content": "select * from my_schema.orders where amount < 0",
               "contentType": "sql",
               "params": {}
@@ -310,8 +310,8 @@
               "severity": "warn",
               "type": "singular",
               "description": null,
-              "expected": null,
-              "actual": null,
+              "expected": "0",
+              "actual": "5",
               "content": "select * from my_schema.orders where amount not between 0 and 10000",
               "contentType": "sql",
               "params": {}

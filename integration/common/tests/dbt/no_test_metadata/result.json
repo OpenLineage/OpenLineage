@@ -79,13 +79,17 @@
                                 "assertion": "unique_customers_customer_id",
                                 "success": false,
                                 "column": null,
-                                "severity": "error"
+                                "severity": "error",
+                                "actual": "1",
+                                "expected": "0"
                             },
                             {
                                 "assertion": "not_null_customers_customer_id",
                                 "success": false,
                                 "column": null,
-                                "severity": "error"
+                                "severity": "error",
+                                "actual": "Test failure",
+                                "expected": "0"
                             }
                         ]
                     }
@@ -674,13 +678,17 @@
                                 "assertion": "unique_customers_customer_id",
                                 "success": false,
                                 "column": null,
-                                "severity": "error"
+                                "severity": "error",
+                                "actual": "1",
+                                "expected": "0"
                             },
                             {
                                 "assertion": "not_null_customers_customer_id",
                                 "success": false,
                                 "column": null,
-                                "severity": "error"
+                                "severity": "error",
+                                "actual": "Test failure",
+                                "expected": "0"
                             }
                         ]
                     }
