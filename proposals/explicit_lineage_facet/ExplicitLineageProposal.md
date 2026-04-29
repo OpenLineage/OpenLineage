@@ -20,9 +20,9 @@ Beyond this precision gap, the current model cannot express several common patte
 
 ## Goals
 
-Create a unified lineage structure that handles all the cases outlined above on dataset-level, column-level, or mixed-level in a single model — eventually deprecating CLL. The structure should also be extensible to handle additional lineage types in the future without requiring new facets or model changes.
+Create a unified lineage structure that handles all the cases outlined above — dataset-level, column-level, mixed-level, dataset-to-dataset, and job-to-job — in a single model, eventually deprecating CLL. The structure should also be extensible to handle additional lineage types in the future without requiring new facets or model changes.
 
-Full job-to-job data flow chains are out of scope for this initial version, but `type: JOB` is supported for **sink and generator** use cases — jobs that consume data without a tracked output, or produce data without a tracked input. The design accommodates full job-to-job lineage as a future extension (see [Future Evolution](#future-evolution)).
+`type: JOB` is supported as a first-class entity type for three related cases: **sinks** (jobs that consume data without a tracked output), **generators** (jobs that produce data without a tracked input), and **job-to-job chains** (data flowing between jobs without an intermediate tracked dataset — e.g. stored procedures, non-materialized views, in-memory passing, streaming handoffs).
 
 ## Proposed Solution
 
@@ -180,12 +180,12 @@ A lineage target that is a dataset. Supports both entity-level and column-level 
 
 #### LineageJobEntry
 
-A lineage target that is a job. This is the **target/sink** side of `type: JOB` support — used when a job consumes data without producing a tracked output dataset. (The source/generator side uses `LineageJobInput`.) Does not support column-level lineage (`fields`), but supports an optional `runId` to tie to a specific execution:
+A lineage target that is a job. Used in two cases: (a) **sink** — a job consumes data without producing a tracked output dataset, with `LineageDatasetInput` sources; (b) **job-to-job chain** — a job receives data from another job with no intermediate tracked dataset, with `LineageJobInput` sources. Does not support column-level lineage (`fields`), but supports an optional `runId` to tie to a specific execution:
 
 ```json
 "LineageJobEntry": {
   "type": "object",
-  "description": "Describes data flowing into a target job (sink). Used when a job consumes data without producing a tracked output dataset.",
+  "description": "Describes data flowing into a target job. Used for sinks (jobs without tracked outputs) and as the target end of job-to-job chains.",
   "properties": {
     "namespace": {
       "type": "string",
@@ -291,7 +291,7 @@ A source input that is a dataset. Supports optional field reference and transfor
 
 #### LineageJobInput
 
-A source input that is a job. Used for **generator** scenarios where a job produces data without a tracked input dataset, or for job-to-job data flow. Supports an optional `runId` to tie to a specific execution:
+A source input that is a job. Used in two cases: (a) **generator** — when a `DATASET` target is produced by an upstream job with no tracked input dataset; (b) **job-to-job chain** — as the source end of a `JOB → JOB` edge. Supports an optional `runId` to tie to a specific execution:
 
 ```json
 "LineageJobInput": {
@@ -348,15 +348,15 @@ Reuses the existing CLL transformation structure:
 }
 ```
 
-## Why `type: JOB` Is Needed: Sinks and Generators
+## `type: JOB` Lineage: Sinks, Generators, and Job-to-Job Chains
 
-The current OpenLineage model assumes every lineage edge connects **dataset to dataset**, with a job in the middle. But two common cases break this assumption:
+The current OpenLineage model assumes every lineage edge connects **dataset to dataset**, with a job in the middle. Three common cases break that assumption — all three are different faces of the same `type: JOB` mechanism: sometimes the job is the lineage target, sometimes the source, sometimes both.
 
 ### Sinks: jobs that consume data without a tracked output
 
-A **sink** is a job that reads data but doesn't write to any tracked dataset — for example, a fraud detection job that reads a `transactions` table, runs validation, and sends alerts (not modeled as a dataset). In the current spec this produces `inputs: [transactions], outputs: []` — no lineage edge exists because there's nothing to connect the input *to*. The data consumption is invisible in the lineage graph.
+A **sink** is a job that reads data but doesn't write to any tracked dataset — for example, a fraud detection job that reads a `transactions` table, runs validation, and sends alerts (not modeled as a dataset). In the current spec this produces `inputs: [transactions], outputs: []`. While the consumer can infer "transactions feeds fraud_detector" from the event's job field, that information is implicit — it lives outside the lineage facet. The explicit lineage facet aspires to be the single source of truth (see [Precedence Rules](#precedence-rules)); it cannot fulfill that role if sink relationships are only knowable by joining the facet with `inputs`/`outputs`.
 
-With `type: JOB` as a lineage **target** (`LineageJobEntry`), we can express: "data flows into the fraud_detector job itself." The job becomes the terminal node:
+With `type: JOB` as a lineage **target** (`LineageJobEntry`), the sink edge is expressed inside the facet:
 
 ```
 transactions (DATASET) ──> fraud_detector (JOB)
@@ -370,41 +370,59 @@ A **generator** is the inverse: a job that produces data without reading from an
 extract_task (JOB) ──> transformed_data (DATASET)
 ```
 
-### Alternatives considered
+### Job-to-job chains: data flow without an intermediate tracked dataset
 
-Without `type: JOB`, the alternatives are all problematic:
+A **job-to-job chain** is data flowing from one job directly into another with no intermediate tracked dataset. The intermediate may be ephemeral (in-memory, a stream), implicit (a stored procedure invoking a function), or simply not materialized (a non-materialized view referenced by another query). Concrete cases:
 
-- **Fake temporary datasets** — pollutes the catalog with entities that don't exist; requires two independent jobs to agree on the same fake dataset name
-- **Leave it out of the lineage facet** — this is a **regression**, not an acceptable trade-off. The current spec already captures sink/generator relationships implicitly through the `inputs`/`outputs` arrays. A new explicit lineage model that loses information the old model could express is strictly worse. We should not ship a feature that degrades existing capabilities.
-- **Rely on inputs/outputs arrays for the missing edges** — forces consumers to inspect both the lineage facet AND inputs/outputs for a complete picture, defeating the purpose of explicit lineage as the single source of truth
+- **Stored procedure chains** — `Table → Function → Stored Proc → Table`. The function and stored procedure pass data between themselves without materializing it.
+- **Non-materialized views** referenced by downstream jobs — the view's defining job feeds the consuming job directly.
+- **In-memory passing in orchestrators** — Airflow XCom, Dagster IO managers, Spark jobs that hand off DataFrames in shared context.
+- **Streaming handoffs** — a Flink job emitting to a sink consumed by another Flink job through a shared topic that the user does not model as a dataset.
 
-By allowing `type: JOB` in lineage entries, the lineage facet remains **self-contained and complete**. Note that full job-to-job data flow chains (job -> job -> job) are out of scope for this version — `type: JOB` is scoped to sink and generator patterns only.
+`LineageJobEntry` accepting `LineageJobInput` expresses this directly:
+
+```
+dag_a.task_3 (JOB) ──> dag_b.task_1 (JOB)
+```
+
+Either or both jobs may live in a different namespace from the event's own job, so the explicit `(namespace, name)` on `LineageJobEntry` and `LineageJobInput` is load-bearing — these chains cannot be reconstructed from the event's surrounding job field alone.
+
+`runId` is OPTIONAL on both ends. On a `JobEvent`, it should be omitted: declared lineage describes the job definition, not a specific execution. On a `RunEvent`, it MAY be populated to bind the chain to specific upstream/downstream executions when the producer can identify them (e.g. when an orchestrator knows which run of `dag_a.task_3` fed this run of `dag_b.task_1`).
+
+**Distinction from existing concepts.** Job-to-job lineage expresses **data flow**, not control flow or containment:
+
+- `JobDependenciesRunFacet` expresses scheduling / control-flow dependencies — Job A runs Monday, Job B runs Tuesday because the schedule says so, regardless of whether any data passes between them. It remains the home for control flow.
+- `ParentRunFacet` expresses containment — task X is part of DAG Y. Job-to-job lineage between sibling tasks within the same DAG is orthogonal to that hierarchy.
+
+`JobEvent` is the natural home for declared job-to-job lineage ("this job is designed to feed data to that job"); `RunEvent` carries observed job-to-job lineage when a runtime integration can identify both ends of the chain.
+
+### Why one mechanism for all three cases
+
+A reasonable counter-question: do we need `type: JOB` at all? Sinks and generators are already implicit in the event's `inputs`/`outputs` arrays — couldn't a flag (`generated: true`, or simply `inputs: []` with no JOB type) express them?
+
+It could, if sinks and generators were the only `type: JOB` cases. They are not. Once job-to-job chains are in scope, the JOB-type identity is irreducible:
+
+- A chain involves two jobs that may both differ from the event's job, and may live in different namespaces from each other and from the event. There is no way to flag this with `generated: true` — the spec needs `(namespace, name)` for both ends.
+- Once that machinery exists for chains, using a different mechanism for sinks and generators would split a single semantic concept ("a job participates in lineage") into three special cases, requiring three parser branches and three sets of consumer rules.
+
+The early working group discussion explicitly flagged that having JOB sometimes implicit (sinks/generators) and sometimes explicit (chains) "causes inconsistency and ambiguity" and recommended consistent explicit JOB. We adopt that recommendation: one mechanism, one shape, three uses.
+
+This also keeps the lineage facet self-contained: consumers can derive every lineage edge — dataset-to-dataset, sink, generator, chain, column-level — from the facet alone, without joining against `inputs`/`outputs`.
 
 ## Granularity Matrix
 
-The combination of entry type, field presence on targets, and field presence on sources enables all granularity levels:
+The combination of target type, source type, and field presence on either end enables all granularity levels in one table:
 
-**Dataset targets (`type: DATASET`):**
-
-| Target has fields? | Source has field? | Meaning | Example |
-|---|---|---|---|
-| — (entity-level inputs) | No | Dataset-level lineage | `output_table <- input_table` |
-| — (entity-level inputs) | Yes | Dataset-wide operation (e.g., GROUP BY) | `output_table <- input.group_by_col` |
-| Yes (in fields map) | Yes | Column-level lineage | `output.total <- input.amount` |
-| Yes (in fields map) | No | Partial column lineage (source column unknown) | `output.region <- lookup_table` |
-
-**Job targets (`type: JOB`) — sinks:**
-
-| Source type | Meaning | Example |
-|---|---|---|
-| DATASET (no field) | Job consumes entire dataset | `fraud_detector <- transactions` |
-| DATASET (with field) | Job consumes specific columns | `fraud_detector <- transactions.amount` |
-
-**Job sources (`type: JOB`) — generators:**
-
-| Target type | Meaning | Example |
-|---|---|---|
-| DATASET | Dataset produced by upstream job | `output_table <- extract_task` |
+| Target type | Source type | Source field? | Meaning | Example |
+|---|---|---|---|---|
+| DATASET (entity-level) | DATASET | No | Dataset-level lineage | `output_table <- input_table` |
+| DATASET (entity-level) | DATASET | Yes | Dataset-wide operation (e.g., GROUP BY) | `output_table <- input.group_by_col` |
+| DATASET (per field) | DATASET | Yes | Column-level lineage | `output.total <- input.amount` |
+| DATASET (per field) | DATASET | No | Partial column lineage (source column unknown) | `output.region <- lookup_table` |
+| DATASET | JOB | — | Generator: dataset produced by upstream job | `output_table <- extract_task` |
+| JOB | DATASET | No | Sink: job consumes entire dataset | `fraud_detector <- transactions` |
+| JOB | DATASET | Yes | Sink: job consumes specific columns | `fraud_detector <- transactions.amount` |
+| JOB | JOB | — | Job-to-job chain (no intermediate dataset) | `dag_b.task_1 <- dag_a.task_3` |
 
 ## Examples
 
@@ -619,7 +637,101 @@ An extract task pulls data from an external API (not modeled as a dataset) and w
 }
 ```
 
-### 8. Structured-to-unstructured — known source columns, no target schema
+### 8. Job-to-job — declared chain on JobEvent
+
+A stored procedure `dag_b.task_1` reads its input from upstream `dag_a.task_3` via a non-materialized handoff. No intermediate dataset exists. The catalog declares the design-time data flow on the JobEvent for `dag_b`:
+
+```json
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "airflow://prod",
+    "name": "dag_b",
+    "facets": {
+      "lineage": {
+        "_producer": "https://example.com/catalog",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "entries": [
+          { "namespace": "airflow://prod", "name": "dag_b.task_1", "type": "JOB",
+            "inputs": [
+              { "namespace": "airflow://prod", "name": "dag_a.task_3", "type": "JOB" }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "inputs": [],
+  "outputs": []
+}
+```
+
+Note that `runId` is omitted on both ends — declared lineage describes the job definition, not a specific execution. The same shape would apply to a non-materialized view consumed by a downstream job, or to an Airflow task receiving data via XCom from an upstream task.
+
+### 9. Job-to-job — observed chain on RunEvent
+
+The same data flow as Example 8, observed at runtime by an integration that can identify both the upstream and downstream runs. `runId` is populated on each end, binding the chain to specific executions:
+
+```json
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "runId": "run-b-001",
+    "facets": {
+      "lineage": {
+        "_producer": "https://example.com/airflow",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
+        "entries": [
+          { "namespace": "airflow://prod", "name": "dag_b.task_1", "type": "JOB",
+            "runId": "run-b-001",
+            "inputs": [
+              { "namespace": "airflow://prod", "name": "dag_a.task_3", "type": "JOB",
+                "runId": "run-a-042" }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "job": { "namespace": "airflow://prod", "name": "dag_b.task_1" },
+  "inputs": [],
+  "outputs": []
+}
+```
+
+### 10. Job-to-job — cross-namespace chain
+
+A streaming job in a Flink cluster feeds an in-memory topic consumed by a job in a separate Beam pipeline. Neither job is in the namespace of the other, and the topic is not modeled as a dataset. The Beam pipeline emits the cross-namespace chain on its RunEvent:
+
+```json
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "runId": "beam-run-77",
+    "facets": {
+      "lineage": {
+        "_producer": "https://example.com/beam",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
+        "entries": [
+          { "namespace": "beam://analytics", "name": "enrichment_pipeline", "type": "JOB",
+            "runId": "beam-run-77",
+            "inputs": [
+              { "namespace": "flink://ingest", "name": "event_normalizer", "type": "JOB" }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "job": { "namespace": "beam://analytics", "name": "enrichment_pipeline" },
+  "inputs": [],
+  "outputs": []
+}
+```
+
+The source job (`flink://ingest/event_normalizer`) is in a different namespace from both the event's job and the target entry. Without explicit `(namespace, name)` on both ends, the chain could not be expressed.
+
+### 11. Structured-to-unstructured — known source columns, no target schema
 
 Reading specific columns from a structured table and writing to an unstructured file (e.g., a PDF). The target has no schema, so there is no `fields` map — but we can still express that the output came from specific source columns:
 
@@ -681,7 +793,7 @@ These constraints are documented in spec text rather than enforced by JSON Schem
 
 9. **On DatasetEvent and JobEvent**: lineage facets use **replace semantics** — the latest event's lineage is the complete picture for that entity.
 
-10. **`type: JOB` scope**: In this version, `type: JOB` is supported for sink and generator patterns only — a job as the terminal target of data flow, or a job as the origin source of data flow. Full job-to-job data flow chains (job -> job) are reserved for a future version.
+10. **`type: JOB` semantics**: A `LineageJobEntry` (target) and `LineageJobInput` (source) MUST identify the job by `(namespace, name)`. Either or both jobs MAY differ from the event's own job and from each other's namespace (e.g., for cross-namespace job-to-job chains). `runId` is OPTIONAL: on `RunEvent` it MAY be populated to bind the edge to a specific execution; on `JobEvent` it SHOULD be omitted, since declared lineage is execution-agnostic. Job-to-job lineage expresses **data flow only**; control-flow / scheduling dependencies remain in `JobDependenciesRunFacet`, and containment remains in `ParentRunFacet`.
 
 ## Interaction with Existing Features
 
@@ -693,7 +805,7 @@ The optional `runId` on `LineageJobEntry` and `LineageJobInput` is also orthogon
 
 ### JobDependenciesRunFacet (control flow)
 
-Remains as-is for scheduling and control flow dependencies. Lineage facets express DATA flow dependencies. Spec prose documents the distinction: a job may depend on another job for scheduling (control flow) without having a data dependency, and vice versa. In the future, job-to-job data flow might be added to the lineage facet model.
+Remains as-is for scheduling and control flow dependencies. Lineage facets express DATA flow dependencies — including job-to-job data flow, see [`type: JOB` Lineage](#type-job-lineage-sinks-generators-and-job-to-job-chains). Spec prose documents the distinction: a job may depend on another job for scheduling (control flow) without having a data dependency, and vice versa. The two facets are complementary, not overlapping.
 
 ### inputs[] / outputs[] arrays
 
@@ -798,13 +910,9 @@ Consumers should implement the following precedence: check lineage facets first,
 
 A key advantage of the facet-based approach is that these three lineage facets form a natural expansion point for capabilities descoped from this initial version. Rather than introducing new facets for each new lineage capability, we extend the existing ones by adding new fields and relaxing constraints:
 
-### Job-to-job data flow chains
-
-This version supports `type: JOB` for sink and generator patterns (see [Why `type: JOB` Is Needed](#why-type-job-is-needed-sinks-and-generators)). The natural next step is full job-to-job data flow chains — expressing that one job feeds data to another without an intermediate dataset (e.g., in-memory data passing, streaming pipelines). The schema already accommodates this: `LineageJobEntry` can accept `LineageJobInput` as a source. Enabling this requires only documenting the semantics and lifting the scope restriction in Semantic Constraint 10.
-
 ### Replacing JobDependenciesRunFacet
 
-Once full job-to-job lineage is supported, JobDependenciesRunFacet could be deprecated in favor of expressing both data flow and control flow dependencies through the lineage facets.
+With job-to-job data flow now expressible in lineage facets, `JobDependenciesRunFacet` could eventually be deprecated in favor of expressing both data flow and control flow dependencies through a unified mechanism — once the spec is comfortable folding control flow into the lineage facets (e.g., via a transformation type or edge attribute distinguishing data dependencies from scheduling dependencies). For this version, the two facets remain complementary.
 
 ### Relaxing the one-facet-per-event-type restriction
 
