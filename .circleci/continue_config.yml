@@ -1261,7 +1261,7 @@ jobs:
       - *checkout_project_root
       - restore_cache:
           keys:
-            - v1-go-mod-{{ checksum "go.sum" }}
+            - v1-go-mod-{{ checksum "go.sum" }}-{{ checksum "../../generator/go/go.sum" }}
       - run:
           name: Download generator dependencies
           command: cd ~/openlineage/generator/go && go mod download
@@ -1271,11 +1271,11 @@ jobs:
       - run:
           name: Check generated files are up to date
           command: |
-            if ! git diff --quiet -- pkg/facets/; then
-              echo "ERROR: Generated facet files are out of sync with the spec."
+            if ! git diff --quiet -- pkg/facets/ pkg/openlineage/spec.gen.go; then
+              echo "ERROR: Generated files are out of sync with the spec."
               echo "Run 'cd generator/go && go run .' from the repo root and commit the result."
               echo ""
-              git diff -- pkg/facets/
+              git diff -- pkg/facets/ pkg/openlineage/spec.gen.go
               exit 1
             fi
       - run:
@@ -1292,7 +1292,7 @@ jobs:
           name: Run tests
           command: go test ./... -v -race -coverprofile=coverage.out
       - save_cache:
-          key: v1-go-mod-{{ checksum "go.sum" }}
+          key: v1-go-mod-{{ checksum "go.sum" }}-{{ checksum "../../generator/go/go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
 

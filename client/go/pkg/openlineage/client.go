@@ -65,9 +65,11 @@ type Client struct {
 	producer  string
 }
 
-// Emittable is implemented by event types that can be emitted via the client.
+// Emittable is implemented by RunEvent, DatasetEvent, and JobEvent.
+// The interface uses an unexported marker method so only generated event types
+// can satisfy it, preventing callers from accidentally emitting arbitrary structs.
 type Emittable interface {
-	AsEmittable() Event
+	openlineageEvent()
 }
 
 // Emit sends an OpenLineage event using the client's transport.
@@ -77,7 +79,7 @@ func (olc *Client) Emit(ctx context.Context, event Emittable) (map[string]string
 		return nil, nil
 	}
 
-	return olc.transport.Emit(ctx, event.AsEmittable())
+	return olc.transport.Emit(ctx, event)
 }
 
 // Close releases any resources held by the client's transport (e.g. GCP connections).

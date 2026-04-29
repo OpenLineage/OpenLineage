@@ -52,6 +52,10 @@ type Enum struct {
 	Enum *EnumDef
 }
 
+// Any represents an unconstrained JSON value (additionalProperties: true, or no type).
+// Maps to interface{} in Go.
+type Any struct{}
+
 func (String) isIRType()   {}
 func (Bool) isIRType()     {}
 func (Int) isIRType()      {}
@@ -62,3 +66,4 @@ func (Map) isIRType()      {}
 func (Object) isIRType()   {}
 func (Union) isIRType()    {}
 func (Enum) isIRType()     {}
+func (Any) isIRType()      {}
