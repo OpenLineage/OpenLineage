@@ -194,6 +194,9 @@ class OpenLineageClient:
         event = self.update_event_tags_facets(event)
         event = self.add_source_code_location_facet(event)
         if self.config.dataset.reducing_enabled:
+            # Reduce datasets to their canonical form (e.g. "/data/events" instead of
+            # "/data/events/dt=2025-09-01"). All subsequent processing (e.g. event filtering)
+            # will work on these modified values.
             event = self.reduce_datasets(event)
 
         if log.isEnabledFor(logging.DEBUG):
