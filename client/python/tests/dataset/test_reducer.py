@@ -32,8 +32,31 @@ class FailingTrimmer(DatasetNameTrimmer):
         raise Exception("Intentional failure for testing")
 
 
+class NameLengtheningTrimmer(DatasetNameTrimmer):
+    """A trimmer that makes the name longer on every call — would loop forever without a cap."""
+
+    def trim(self, name: str) -> str:
+        return name + "/x"
+
+
+class AlternatingTrimmer(DatasetNameTrimmer):
+    """A trimmer that alternates between two values — would loop forever without cycle detection."""
+
+    def trim(self, name: str) -> str:
+        parts = name.rstrip("/").split("/")
+
+        if parts[-1] == "a":
+            parts[-1] = "b"
+        else:
+            parts[-1] = "a"
+
+        return "/".join(parts)
+
+
 TRAILING_DATA_PATH_TRIMMER = f"{TrailingDataPathTrimmer.__module__}.{TrailingDataPathTrimmer.__name__}"
 FAILING_TRIMMER = f"{FailingTrimmer.__module__}.{FailingTrimmer.__name__}"
+NAME_LENGTHENING_TRIMMER = f"{NameLengtheningTrimmer.__module__}.{NameLengtheningTrimmer.__name__}"
+ALTERNATING_TRIMMER = f"{AlternatingTrimmer.__module__}.{AlternatingTrimmer.__name__}"
 
 
 def _reducer(**kwargs) -> DatasetReducer:
@@ -194,6 +217,34 @@ class TestReduceInputs:
         assert len(result) == 1
         assert result[0].name == "/data/table"
         self.assert_has_input_subset_locations(result[0], ["/data/table/day=1", "/data/table/day=2"])
+
+    def test_name_lengthening_trimmer_results_in_no_trimming(self):
+        result = _reducer(
+            extra_trimmers=[NAME_LENGTHENING_TRIMMER],
+        ).reduce_inputs(
+            [
+                InputDataset(namespace="ns", name="/data/table/day=1"),
+                InputDataset(namespace="ns", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 2
+        assert result[0].name == "/data/table/day=1"
+        assert result[1].name == "/data/table/day=2"
+
+    def test_cycle_causing_trimmer_results_in_no_trimming(self):
+        result = _reducer(
+            extra_trimmers=[ALTERNATING_TRIMMER],
+        ).reduce_inputs(
+            [
+                InputDataset(namespace="ns", name="/data/table/day=1"),
+                InputDataset(namespace="ns", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 2
+        assert result[0].name == "/data/table/day=1"
+        assert result[1].name == "/data/table/day=2"
 
     @staticmethod
     def assert_does_not_have_input_subset(input_dataset):
@@ -456,6 +507,34 @@ class TestReduceOutputs:
         assert len(result) == 1
         assert result[0].name == "/data/table"
         self.assert_has_output_subset_locations(result[0], ["/data/table/day=1", "/data/table/day=2"])
+
+    def test_name_lengthening_trimmer_results_in_no_trimming(self):
+        result = _reducer(
+            extra_trimmers=[NAME_LENGTHENING_TRIMMER],
+        ).reduce_outputs(
+            [
+                OutputDataset(namespace="ns", name="/data/table/day=1"),
+                OutputDataset(namespace="ns", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 2
+        assert result[0].name == "/data/table/day=1"
+        assert result[1].name == "/data/table/day=2"
+
+    def test_cycle_causing_trimmer_results_in_no_trimming(self):
+        result = _reducer(
+            extra_trimmers=[ALTERNATING_TRIMMER],
+        ).reduce_outputs(
+            [
+                OutputDataset(namespace="ns", name="/data/table/day=1"),
+                OutputDataset(namespace="ns", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 2
+        assert result[0].name == "/data/table/day=1"
+        assert result[1].name == "/data/table/day=2"
 
     @staticmethod
     def assert_does_not_have_output_subset(output_dataset):

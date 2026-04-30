@@ -136,7 +136,7 @@ class DatasetReducer:
 
         for ds in datasets:
             original_name = ds.name
-            trimmed_name, name_was_trimmed = self._apply_trimmers(ds.name)
+            trimmed_name, name_was_trimmed = self._trim(ds.name)
             ds.name = trimmed_name
 
             reduced = self._find_matching_reduced(ds, reduced_datasets)
@@ -165,33 +165,59 @@ class DatasetReducer:
         if cll.fields:
             for field in cll.fields.values():
                 for input_field in field.inputFields or ():
-                    input_field.name, _ = self._apply_trimmers(input_field.name)
+                    input_field.name, _ = self._trim(input_field.name)
 
         for input_field in cll.dataset or ():
-            input_field.name, _ = self._apply_trimmers(input_field.name)
+            input_field.name, _ = self._trim(input_field.name)
 
-    def _apply_trimmers(self, name: str) -> tuple[str, bool]:
+    def _trim(self, name: str) -> tuple[str, bool]:
+        max_passes = 16
+        original_name = name
         was_trimmed = False
+        seen: set[str] = {name}
 
-        while True:
-            new_name = name
-            for trimmer in self.trimmers:
-                try:
-                    new_name = trimmer.trim(new_name)
-                except Exception as e:
-                    log.debug(
-                        "Skipping trimmer '%s' due to an error when trimming dataset name '%s': %s.",
-                        f"{trimmer.__class__.__module__}.{trimmer.__class__.__name__}",
-                        name,
-                        e,
-                    )
-                    continue
+        for _ in range(max_passes):
+            trimmed_name = self._apply_trimmers(name)
 
-            if new_name == name:
+            if trimmed_name == name:
                 return name, was_trimmed
 
-            name = new_name
+            if trimmed_name in seen:
+                log.warning(
+                    "Cycle detected while trimming dataset name '%s': "
+                    "name '%s' was repeated after multiple trimmer passes. "
+                    "Stopping trimming process and returning original name.",
+                    original_name,
+                    trimmed_name,
+                )
+                return original_name, False
+
+            seen.add(trimmed_name)
+            name = trimmed_name
             was_trimmed = True
+
+        log.warning(
+            "Trimmer loop for dataset name '%s' did not converge after %d passes. "
+            "One of the extra trimmers may not be monotonically shortening. "
+            "Returning original name.",
+            original_name,
+            max_passes,
+        )
+        return original_name, False
+
+    def _apply_trimmers(self, name: str) -> str:
+        for trimmer in self.trimmers:
+            try:
+                name = trimmer.trim(name)
+            except Exception as e:
+                log.debug(
+                    "Skipping trimmer '%s' due to an error when trimming dataset name '%s': %s.",
+                    f"{trimmer.__class__.__module__}.{trimmer.__class__.__name__}",
+                    name,
+                    e,
+                )
+                continue
+        return name
 
     @staticmethod
     def _find_matching_reduced(ds: Dataset, reduced_datasets: list[ReducedDataset]) -> ReducedDataset | None:

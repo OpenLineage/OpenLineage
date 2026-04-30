@@ -20,6 +20,20 @@ class DatasetNameTrimmer(ABC):
 
     A trimmer receives a dataset name (string) and returns
     the trimmed version of that name.
+
+    Implementations MUST satisfy the following two requirements:
+
+    1. **Non-lengthening**: ``trim(name)`` must never return a string longer
+       than ``name``.  If violated, the dataset is left completely untrimmed —
+       the original name is kept and no further trimmers are applied.
+
+    2. **Convergence**: repeated application must eventually stabilize into a
+       fixed point.  A trimmer may require multiple passes to fully trim a name
+       (e.g. stripping one ``key=value`` segment at a time is fine), but the
+       process must not loop indefinitely.  For example, a trimmer that toggles
+       a name between ``/data/table/a`` and ``/data/table/b`` on successive
+       calls would never converge.  If convergence is not reached, the reducer
+       falls back to the original name.
     """
 
     SEPARATOR = "/"
