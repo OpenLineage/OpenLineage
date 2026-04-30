@@ -1975,6 +1975,10 @@ client = OpenLineageClient(config=config)
 
 ## Dataset Reducing
 
+:::note
+At the moment, dataset reducing is supported only for `RunEvent`.
+:::
+
 Dataset names may sometimes not represent an actual dataset, but rather it's subset.
 This is mainly an issue with object storage paths with partitioning,
 e.g. `s3://bucket/dataset/dt=2025-09-01/`, where the actual dataset is `s3://bucket/dataset`,
