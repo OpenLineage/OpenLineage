@@ -2121,4 +2121,20 @@ class CustomTrimmer(DatasetNameTrimmer):
 
 Register the trimmer using its fully qualified class name in the `extra_trimmers` configuration.
 
+#### Requirements
+
+Custom trimmers must respect two constraints:
+
+- **Non-lengthening** — `trim(name)` must never return a string longer than `name`.
+  If violated, the dataset is left completely untrimmed — the original name is kept and no
+  further trimmers are applied.
+
+- **Convergence** — repeated application must eventually stabilise into a fixed point.
+  A trimmer may require multiple passes to fully trim a name (e.g. stripping one `key=value`
+  path segment at a time from `/path/example/month=10/day=14` is perfectly fine),
+  but the process must not loop indefinitely.
+  For example, a trimmer that toggles a name between `/data/table/a` and `/data/table/b`
+  on successive calls would never converge.
+  If convergence is not reached, the reducer falls back to the original name.
+
 
