@@ -17,9 +17,11 @@ from openlineage.client.dataset.trimmers import (
 )
 from openlineage.client.event_v2 import Dataset, InputDataset, OutputDataset
 from openlineage.client.facet_v2 import base_subset_dataset, column_lineage_dataset
-from openlineage.client.utils import import_from_string
+from openlineage.client.utils import LogDeduplicationFilter, import_from_string
 
 log = logging.getLogger(__name__)
+log_once = logging.getLogger(f"{__name__}.log_once")
+log_once.addFilter(LogDeduplicationFilter())
 
 BUILTIN_TRIMMERS = (
     KeyValueTrimmer,
@@ -183,7 +185,7 @@ class DatasetReducer:
                 return name, was_trimmed
 
             if trimmed_name in seen:
-                log.warning(
+                log_once.warning(
                     "Cycle detected while trimming dataset name '%s': "
                     "name '%s' was repeated after multiple trimmer passes. "
                     "Stopping trimming process and returning original name.",
@@ -196,7 +198,7 @@ class DatasetReducer:
             name = trimmed_name
             was_trimmed = True
 
-        log.warning(
+        log_once.warning(
             "Trimmer loop for dataset name '%s' did not converge after %d passes. "
             "One of the extra trimmers may not be monotonically shortening. "
             "Returning original name.",
@@ -210,7 +212,7 @@ class DatasetReducer:
             try:
                 name = trimmer.trim(name)
             except Exception as e:
-                log.debug(
+                log_once.warning(
                     "Skipping trimmer '%s' due to an error when trimming dataset name '%s': %s.",
                     f"{trimmer.__class__.__module__}.{trimmer.__class__.__name__}",
                     name,
