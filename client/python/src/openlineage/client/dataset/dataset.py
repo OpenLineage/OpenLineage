@@ -41,8 +41,18 @@ class DatasetConfig:
         active: list[DatasetNameTrimmer] = []
         seen_classes: set[type[DatasetNameTrimmer]] = set()
 
-        for cls in BUILTIN_TRIMMERS:
-            fqn = f"{cls.__module__}.{cls.__name__}"
+        builtin_trimmers: dict[str, type[DatasetNameTrimmer]] = {
+            f"{cls.__module__}.{cls.__name__}": cls for cls in BUILTIN_TRIMMERS
+        }
+
+        for fqn in self.disabled_trimmers:
+            if fqn not in builtin_trimmers:
+                log.warning(
+                    "Configured disabled trimmer '%s' does not match any built-in DatasetNameTrimmer.",
+                    fqn,
+                )
+
+        for fqn, cls in builtin_trimmers.items():
             if fqn in self.disabled_trimmers:
                 continue
 
