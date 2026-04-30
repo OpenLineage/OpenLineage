@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from openlineage.client.dataset import DatasetConfig, DatasetReducer
+from openlineage.client.dataset.dataset import BUILTIN_TRIMMERS
 from openlineage.client.dataset.trimmers import DatasetNameTrimmer
 from openlineage.client.event_v2 import (
     InputDataset,
@@ -204,7 +205,7 @@ class TestReduceInputs:
         assert result[0].name == "/data/table"
         assert result[0].inputFacets.get("inputStatistics") == stats
 
-    def test_failing_trimmer_does_not_prevent_reducing(self):
+    def test_failing_extra_trimmer_does_not_block_other_trimmers(self):
         result = _reducer(
             extra_trimmers=[FAILING_TRIMMER],
         ).reduce_inputs(
@@ -217,6 +218,21 @@ class TestReduceInputs:
         assert len(result) == 1
         assert result[0].name == "/data/table"
         self.assert_has_input_subset_locations(result[0], ["/data/table/day=1", "/data/table/day=2"])
+
+    def test_reducer_with_only_failing_trimmer_leaves_datasets_unchanged(self):
+        result = _reducer(
+            disabled_trimmers=[f"{cls.__module__}.{cls.__name__}" for cls in BUILTIN_TRIMMERS],
+            extra_trimmers=[FAILING_TRIMMER],
+        ).reduce_inputs(
+            [
+                InputDataset(namespace="ns", name="/data/table/day=1"),
+                InputDataset(namespace="ns", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 2
+        assert result[0].name == "/data/table/day=1"
+        assert result[1].name == "/data/table/day=2"
 
     def test_name_lengthening_trimmer_results_in_no_trimming(self):
         result = _reducer(
@@ -494,7 +510,7 @@ class TestReduceOutputs:
 
         assert result[0].facets["columnLineage"].fields["col_a"].inputFields[0].name == "plain_table"
 
-    def test_failing_trimmer_does_not_prevent_reducing(self):
+    def test_failing_extra_trimmer_does_not_block_other_trimmers(self):
         result = _reducer(
             extra_trimmers=[FAILING_TRIMMER],
         ).reduce_outputs(
@@ -507,6 +523,21 @@ class TestReduceOutputs:
         assert len(result) == 1
         assert result[0].name == "/data/table"
         self.assert_has_output_subset_locations(result[0], ["/data/table/day=1", "/data/table/day=2"])
+
+    def test_reducer_with_only_failing_trimmer_leaves_datasets_unchanged(self):
+        result = _reducer(
+            disabled_trimmers=[f"{cls.__module__}.{cls.__name__}" for cls in BUILTIN_TRIMMERS],
+            extra_trimmers=[FAILING_TRIMMER],
+        ).reduce_outputs(
+            [
+                OutputDataset(namespace="ns", name="/data/table/day=1"),
+                OutputDataset(namespace="ns", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 2
+        assert result[0].name == "/data/table/day=1"
+        assert result[1].name == "/data/table/day=2"
 
     def test_name_lengthening_trimmer_results_in_no_trimming(self):
         result = _reducer(
