@@ -88,4 +88,4 @@ class DataQualityAssertionsDatasetFacet(DatasetFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet"
