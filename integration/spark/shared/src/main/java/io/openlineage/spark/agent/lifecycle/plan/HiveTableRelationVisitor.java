@@ -6,9 +6,12 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.Dataset;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
+import io.openlineage.spark.agent.util.HierarchyDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -44,11 +47,17 @@ public class HiveTableRelationVisitor<D extends Dataset>
     DatasetIdentifier datasetId =
         PathUtils.fromCatalogTable(hiveTable.tableMeta(), context.getSparkSession().get());
 
-    return Collections.singletonList(
-        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context)
-            .map(
-                catalogDatasetFacet ->
-                    factory.getDataset(datasetId, x.schema(), catalogDatasetFacet))
-            .orElse(factory.getDataset(datasetId, x.schema())));
+    DatasetCompositeFacetsBuilder facetsBuilder = factory.createCompositeFacetBuilder();
+    facetsBuilder
+        .getFacets()
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), x.schema()))
+        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), datasetId.getNamespace()))
+        .hierarchy(
+            HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                context.getOpenLineage(), hiveTable.tableMeta().identifier()));
+    CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context)
+        .ifPresent(catalogDatasetFacet -> facetsBuilder.getFacets().catalog(catalogDatasetFacet));
+
+    return Collections.singletonList(factory.getDataset(datasetId, facetsBuilder));
   }
 }
