@@ -6,7 +6,7 @@
       "description": "list of tests performed on dataset or dataset columns, and their results",
       "allOf": [
         {
-          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/InputDatasetFacet"
         },
         {
           "type": "object",
