@@ -291,7 +291,7 @@ class OpenLineageClient:
     @staticmethod
     def _get_config_file_content(config_path: str) -> dict[str, Any]:
         try:
-            with open(config_path) as f:
+            with open(config_path, encoding="utf-8") as f:
                 config: dict[str, Any] | None = yaml.safe_load(f)
                 if not config:
                     log.error("Empty OpenLineage config file: `%s`", config_path)
