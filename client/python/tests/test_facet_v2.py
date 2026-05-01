@@ -172,7 +172,7 @@ def test_full_core_event_serializes_properly(mock_http_session_class) -> None:
                                     name="column1", type="VARCHAR", description="string"
                                 )
                             ]
-                        )
+                        ),
                     },
                 )
             ],
