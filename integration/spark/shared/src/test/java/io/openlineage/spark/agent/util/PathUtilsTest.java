@@ -444,4 +444,29 @@ class PathUtilsTest {
     // name
     assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
   }
+
+  @Test
+  void testReconstructDefaultLocationWithS3Warehouse() {
+    // Regression test for https://github.com/OpenLineage/OpenLineage/issues/4414
+    // The 3-argument Path constructor Path(scheme, authority, path) was incorrectly used,
+    // producing malformed URIs like s3://bucket/prefix://database.db./table when the
+    // warehouse is an S3 path. Chained 2-argument constructors must be used instead.
+    Path result =
+        PathUtils.reconstructDefaultLocation("s3://bucket/prefix", new String[] {"mydb"}, "mytable");
+    assertThat(result.toString()).isEqualTo("s3://bucket/prefix/mydb.db/mytable");
+  }
+
+  @Test
+  void testReconstructDefaultLocationWithDefaultDb() {
+    Path result =
+        PathUtils.reconstructDefaultLocation("s3://bucket/prefix", new String[] {"default"}, "mytable");
+    assertThat(result.toString()).isEqualTo("s3://bucket/prefix/mytable");
+  }
+
+  @Test
+  void testReconstructDefaultLocationWithLocalPath() {
+    Path result =
+        PathUtils.reconstructDefaultLocation("/warehouse", new String[] {"mydb"}, "mytable");
+    assertThat(result.toString()).isEqualTo("/warehouse/mydb.db/mytable");
+  }
 }
