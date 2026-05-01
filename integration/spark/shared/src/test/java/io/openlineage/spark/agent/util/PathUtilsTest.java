@@ -452,14 +452,16 @@ class PathUtilsTest {
     // producing malformed URIs like s3://bucket/prefix://database.db./table when the
     // warehouse is an S3 path. Chained 2-argument constructors must be used instead.
     Path result =
-        PathUtils.reconstructDefaultLocation("s3://bucket/prefix", new String[] {"mydb"}, "mytable");
+        PathUtils.reconstructDefaultLocation(
+            "s3://bucket/prefix", new String[] {"mydb"}, "mytable");
     assertThat(result.toString()).isEqualTo("s3://bucket/prefix/mydb.db/mytable");
   }
 
   @Test
   void testReconstructDefaultLocationWithDefaultDb() {
     Path result =
-        PathUtils.reconstructDefaultLocation("s3://bucket/prefix", new String[] {"default"}, "mytable");
+        PathUtils.reconstructDefaultLocation(
+            "s3://bucket/prefix", new String[] {"default"}, "mytable");
     assertThat(result.toString()).isEqualTo("s3://bucket/prefix/mytable");
   }
 
