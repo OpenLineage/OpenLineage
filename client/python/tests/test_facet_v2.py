@@ -155,7 +155,7 @@ def test_full_core_event_serializes_properly(mock_http_session_class) -> None:
                 InputDataset(
                     namespace="my-datasource-namespace",
                     name="instance.schema.table",
-                    inputFacets={
+                    facets={
                         "dataQualityAssertions": data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(  # noqa: E501
                             assertions=[
                                 data_quality_assertions_dataset.Assertion(
@@ -165,9 +165,7 @@ def test_full_core_event_serializes_properly(mock_http_session_class) -> None:
                                     assertion="no_null_values", success=True, column="id"
                                 ),
                             ]
-                        )
-                    },
-                    facets={
+                        ),
                         "schema": schema_dataset.SchemaDatasetFacet(
                             fields=[
                                 schema_dataset.SchemaDatasetFacetFields(

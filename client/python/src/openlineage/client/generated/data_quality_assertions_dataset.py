@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 import attr
-from openlineage.client.generated.base import InputDatasetFacet
+from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
 
 
@@ -81,7 +81,7 @@ class Assertion(RedactMixin):
 
 
 @attr.define
-class DataQualityAssertionsDatasetFacet(InputDatasetFacet):
+class DataQualityAssertionsDatasetFacet(DatasetFacet):
     """list of tests performed on dataset or dataset columns, and their results"""
 
     assertions: list[Assertion]
