@@ -432,7 +432,7 @@ class DbtArtifactProcessor:
                 )
 
             run_id = str(generate_new_uuid())
-            dataset_facets: dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
+            dataset_facets: dict[str, DatasetFacet] = {"dataQualityAssertions": assertion_facet}
             events.add(
                 self.to_openlineage_events(
                     "success",
@@ -444,9 +444,7 @@ class DbtArtifactProcessor:
                         InputDataset(
                             namespace=namespace,
                             name=name,
-                            inputFacets=dataset_facets,
-                            # TODO: remove this next release
-                            facets=dataset_facets,  # type: ignore
+                            facets=dataset_facets,
                         )
                     ],
                     None,
@@ -782,7 +780,7 @@ class DbtArtifactProcessor:
                 )
 
             if assertions:
-                input_facets["dataQualityAssertions"] = assertions
+                facets["dataQualityAssertions"] = assertions
 
             if node.catalog_node:
                 fields = self.extract_catalog_fields(
