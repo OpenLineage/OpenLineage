@@ -26,6 +26,7 @@ class JobDependenciesRunFacet(RunFacet):
 
     Example: ALL_SUCCESS|ALL_DONE|ONE_SUCCESS|NONE_FAILED
     """
+    key: ClassVar[str] = "jobDependencies"
 
     @staticmethod
     def _get_schema() -> str:

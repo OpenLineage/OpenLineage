@@ -12,6 +12,7 @@ import click
 import jinja2  # type: ignore[import-not-found]
 import yaml
 from base import (  # type: ignore[import-not-found]
+    FACET_KEYS,
     SCHEMA_URLS,
     camel_to_snake,
     deep_merge_dicts,
@@ -76,7 +77,11 @@ def main(output_location: pathlib.Path) -> None:
                 }
             )
 
-    extra_template_data = defaultdict(dict, deep_merge_dicts(extra_redact_fields, extra_schema_urls))
+    extra_facet_keys = {class_name: {"_facet_key": facet_key} for class_name, facet_key in FACET_KEYS.items()}
+
+    extra_template_data = defaultdict(
+        dict, deep_merge_dicts(deep_merge_dicts(extra_redact_fields, extra_schema_urls), extra_facet_keys)
+    )
 
     results = parse_and_generate(locations, extra_template_data)
 
