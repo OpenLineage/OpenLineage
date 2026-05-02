@@ -191,6 +191,12 @@ test {
     jvmArgs '--add-opens', 'java.base/java.util=ALL-UNNAMED'
 }
 
+processResources {
+    filter org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+            "version": project.property("version")
+    ]
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -225,12 +231,6 @@ publishing {
                 }
             }
         }
-    }
-
-    processResources {
-        filter ReplaceTokens, tokens: [
-                "version": project.property("version")
-        ]
     }
 }
 

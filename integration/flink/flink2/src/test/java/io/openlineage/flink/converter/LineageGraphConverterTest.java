@@ -15,7 +15,6 @@ import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.JobTypeJobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.job.JobConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
@@ -70,20 +69,17 @@ class LineageGraphConverterTest {
   }
 
   @Test
-  void testJobOwnership() {
+  void testJobOwnershipNotBuiltInConverter() {
+    // Ownership is now handled centrally in OpenLineageClient, not in the Flink converter.
     JobConfig.JobOwnersConfig ownersConfig = new JobConfig.JobOwnersConfig();
     ownersConfig.getAdditionalProperties().put("team", "MyTeam");
-    ownersConfig.getAdditionalProperties().put("person", "John Smith");
 
     when(jobConfig.getOwners()).thenReturn(ownersConfig);
 
-    List<OwnershipJobFacetOwners> owners =
-        converter.convert(graph, EventType.START).getJob().getFacets().getOwnership().getOwners();
-    assertThat(owners).hasSize(2);
-    assertThat(owners.stream().filter(o -> "team".equals(o.getType())).findAny().get().getName())
-        .isEqualTo("MyTeam");
-    assertThat(owners.stream().filter(o -> "person".equals(o.getType())).findAny().get().getName())
-        .isEqualTo("John Smith");
+    // The converter no longer builds ownership - it's null here, built by OpenLineageClient
+    assertThat(
+            converter.convert(graph, EventType.START).getJob().getFacets().getOwnership())
+        .isNull();
   }
 
   @Test
