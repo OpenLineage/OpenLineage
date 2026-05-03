@@ -29,28 +29,21 @@ async def stream_task_runs():
 	async with get_events_subscriber(filter=filter_criteria) as subscriber:
         
 		async for event in subscriber:
-			event_time = event.occurred
 
+			event_time = event.occurred
 			task_name = event.resource.name.split("-")[0]
 
-			if 'Running' in event.event:
-				event_type = 'Running'
-				task_run_id = event.resource.id.split(".")[-1]
-				flow_name = await get_flow_name_from_task_id(task_run_id)
+			if event.event.split(".")[-1] in ['Running', 'Complete', 'Failed']:
 
-				ol_adapter = PrefectOpenLineageAdapter()
-				ol_adapter.create_and_emit_events(event_type, event_time, flow_name, task_name)
+				if 'Running' in event.event:
+					event_type = 'Running'
 
-			elif 'Completed' in event.event:
-				event_type = 'Complete'
-				task_run_id = event.resource.id.split(".")[-1]
-				flow_name = await get_flow_name_from_task_id(task_run_id)
+				elif 'Complete' in event.event:
+					event_type = 'Complete'
 
-				ol_adapter = PrefectOpenLineageAdapter()
-				ol_adapter.create_and_emit_events(event_type, event_time, flow_name, task_name)
+				elif 'Failed' in event.event:
+					event_type = 'Failed'
 
-			elif 'Failed' in event.event:
-				event_type = 'Failed'
 				task_run_id = event.resource.id.split(".")[-1]
 				flow_name = await get_flow_name_from_task_id(task_run_id)
 
