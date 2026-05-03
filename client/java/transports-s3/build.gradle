@@ -12,17 +12,17 @@ plugins {
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '7.0.2'
-    id "com.gradleup.shadow" version "9.3.1"
+    id "com.gradleup.shadow" version "9.4.1"
     id "pmd"
-    id "io.freefair.lombok" version "9.2.0"
-    id "com.github.gmazzo.buildconfig" version "6.0.7"
+    id "io.freefair.lombok" version "9.4.0"
+    id "com.github.gmazzo.buildconfig" version "6.0.9"
 }
 
 ext {
     projectDescription = "S3 OpenLineage transport library"
-    s3MockVersion = "4.11.0"
-    testcontainersVersion = "2.0.3"
-    awssdkVersion = "2.41.12"
+    s3MockVersion = "5.0.0"
+    testcontainersVersion = "2.0.5"
+    awssdkVersion = "2.42.41"
 }
 
 sourceSets {
