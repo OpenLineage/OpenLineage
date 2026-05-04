@@ -92,18 +92,20 @@ class ReducedDataset:
         if not self.original_names:
             return self.dataset
 
-        dataset = copy.deepcopy(self.dataset)
+        dataset = copy.copy(self.dataset)
         condition = base_subset_dataset.LocationSubsetCondition(locations=sorted(self.original_names))
 
         if self.dataset_type == "input":
-            i_facets = getattr(dataset, "inputFacets", None) or {}
+            # copy facets dict to avoid mutating original dataset
+            i_facets = dict(getattr(dataset, "inputFacets", None) or {})
             i_facets["subset"] = base_subset_dataset.InputSubsetInputDatasetFacet(inputCondition=condition)
 
             base_dict = attr.asdict(dataset, recurse=False)
             base_dict.pop("inputFacets", None)
             return InputDataset(**base_dict, inputFacets=i_facets)
         elif self.dataset_type == "output":
-            o_facets = getattr(dataset, "outputFacets", None) or {}
+            # copy facets dict to avoid mutating original dataset
+            o_facets = dict(getattr(dataset, "outputFacets", None) or {})
             o_facets["subset"] = base_subset_dataset.OutputSubsetOutputDatasetFacet(outputCondition=condition)
 
             base_dict = attr.asdict(dataset, recurse=False)
