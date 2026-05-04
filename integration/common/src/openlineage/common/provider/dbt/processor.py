@@ -795,8 +795,9 @@ class DbtArtifactProcessor:
                 facets["schema"] = schema_dataset.SchemaDatasetFacet(fields=fields)
 
             if owner := get_from_nullable_chain(node.metadata_node, ["meta", "owner"]):
+                names = owner if isinstance(owner, list) else [owner]
                 facets["ownership"] = ownership_dataset.OwnershipDatasetFacet(
-                    owners=[ownership_dataset.Owner(name=owner)]
+                    owners=[ownership_dataset.Owner(name=name) for name in names]
                 )
         else:
             facets = {}
