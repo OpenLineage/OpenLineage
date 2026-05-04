@@ -262,6 +262,18 @@ class TestReduceInputs:
         assert result[0].name == "/data/table/day=1"
         assert result[1].name == "/data/table/day=2"
 
+    def test_original_datasets_are_not_mutated(self):
+        ds1 = InputDataset(namespace="ns", name="/data/table/day=1")
+        ds2 = InputDataset(namespace="ns", name="/data/table/day=2")
+        originals = [ds1, ds2]
+
+        result = _reducer().reduce_inputs(originals)
+
+        assert len(result) == 1
+        assert result[0].name == "/data/table"
+        assert ds1.name == "/data/table/day=1"
+        assert ds2.name == "/data/table/day=2"
+
     @staticmethod
     def assert_does_not_have_input_subset(input_dataset):
         assert input_dataset.inputFacets.get("subset") is None
@@ -566,6 +578,45 @@ class TestReduceOutputs:
         assert len(result) == 2
         assert result[0].name == "/data/table/day=1"
         assert result[1].name == "/data/table/day=2"
+
+    def test_original_datasets_are_not_mutated(self):
+        ds1 = OutputDataset(namespace="ns", name="/data/table/day=1")
+        ds2 = OutputDataset(namespace="ns", name="/data/table/day=2")
+        originals = [ds1, ds2]
+
+        result = _reducer().reduce_outputs(originals)
+
+        assert len(result) == 1
+        assert result[0].name == "/data/table"
+        assert ds1.name == "/data/table/day=1"
+        assert ds2.name == "/data/table/day=2"
+
+    def test_original_cll_input_fields_are_not_mutated(self):
+        input_field_a = column_lineage_dataset.InputField(
+            namespace="ns", name="/data/table/day=1", field="col_a"
+        )
+        input_field_b = column_lineage_dataset.InputField(
+            namespace="ns", name="/data/other/key=x", field="col_b"
+        )
+        cll = column_lineage_dataset.ColumnLineageDatasetFacet(
+            fields={
+                "col_a": column_lineage_dataset.Fields(inputFields=[input_field_a]),
+            },
+            dataset=[input_field_b],
+        )
+        ds = OutputDataset(namespace="ns", name="output", facets={"columnLineage": cll})
+
+        result = _reducer().reduce_outputs([ds])
+
+        # result should be trimmed
+        cll_result = result[0].facets["columnLineage"]
+        assert cll_result.fields["col_a"].inputFields[0].name == "/data/table"
+        assert cll_result.dataset[0].name == "/data/other"
+
+        # originals must be untouched
+        assert input_field_a.name == "/data/table/day=1"
+        assert input_field_b.name == "/data/other/key=x"
+        assert ds.facets["columnLineage"] is cll  # type: ignore[index]
 
     @staticmethod
     def assert_does_not_have_output_subset(output_dataset):
