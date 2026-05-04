@@ -138,9 +138,7 @@ class DatasetReducer:
         return self._reduce_datasets(datasets, dataset_type="input")
 
     def reduce_outputs(self, datasets: list[Any]) -> list[Any]:
-        for ds in datasets:
-            self._trim_cll_input_dataset_names(ds)
-
+        datasets = [self._trim_cll_input_dataset_names(ds) for ds in datasets]
         return self._reduce_datasets(datasets, dataset_type="output")
 
     def _reduce_datasets(
@@ -149,6 +147,7 @@ class DatasetReducer:
         reduced_datasets: list[ReducedDataset] = []
 
         for ds in datasets:
+            ds = copy.copy(ds)
             original_name = ds.name
             trimmed_name, name_was_trimmed = self._trim(ds.name)
             ds.name = trimmed_name
@@ -168,21 +167,40 @@ class DatasetReducer:
 
         return [reduced.as_dataset() for reduced in reduced_datasets]
 
-    def _trim_cll_input_dataset_names(self, dataset: Dataset) -> None:
+    def _trim_cll_input_dataset_names(self, dataset: Dataset) -> Dataset:
         if not dataset.facets:
-            return
+            return dataset
 
         cll = dataset.facets.get("columnLineage")
         if not isinstance(cll, column_lineage_dataset.ColumnLineageDatasetFacet):
-            return
+            return dataset
+
+        dataset = copy.copy(dataset)
+        dataset.facets = dict(dataset.facets)  # type: ignore[arg-type]
+        cll = copy.copy(cll)
 
         if cll.fields:
-            for field in cll.fields.values():
-                for input_field in field.inputFields or ():
-                    input_field.name, _ = self._trim(input_field.name)
+            cll.fields = dict(cll.fields)
+            for field_name, field in cll.fields.items():
+                if not field.inputFields:
+                    continue
+                new_input_fields = list(field.inputFields)
+                for i, input_field in enumerate(new_input_fields):
+                    trimmed, was_trimmed = self._trim(input_field.name)
+                    if was_trimmed:
+                        new_input_fields[i] = attr.evolve(input_field, name=trimmed)
+                cll.fields[field_name] = attr.evolve(field, inputFields=new_input_fields)
 
-        for input_field in cll.dataset or ():
-            input_field.name, _ = self._trim(input_field.name)
+        if cll.dataset:
+            new_dataset = list(cll.dataset)
+            for i, input_field in enumerate(new_dataset):
+                trimmed, was_trimmed = self._trim(input_field.name)
+                if was_trimmed:
+                    new_dataset[i] = attr.evolve(input_field, name=trimmed)
+            cll.dataset = new_dataset
+
+        dataset.facets["columnLineage"] = cll
+        return dataset
 
     def _trim(self, name: str) -> tuple[str, bool]:
         max_passes = 16
