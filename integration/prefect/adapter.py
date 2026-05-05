@@ -7,6 +7,7 @@ import os
 from typing import List, Dict, Optional
 
 from openlineage.client import OpenLineageClient
+from openlineage.client.facet import JobTypeJobFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
 
@@ -39,6 +40,12 @@ class PrefectOpenLineageAdapter:
             case 'FAILED':
                 eventType: RunState = RunState.FAILED
 
+        job_facets = {"jobType": JobTypeJobFacet(
+            processingType="BATCH", 
+            integration="Prefect", 
+            jobType="TASK"
+        )}
+
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
@@ -46,6 +53,7 @@ class PrefectOpenLineageAdapter:
             job=Job(
                 'prefect_test', # to do: replace with constant
                 self.generate_job_name(flowName, taskName),
+                job_facets
             ),
             producer=PRODUCER
         )
