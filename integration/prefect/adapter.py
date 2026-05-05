@@ -64,4 +64,4 @@ class PrefectOpenLineageAdapter:
             CLIENT.emit(run_event)
             logger.info('Emitted OpenLineage event successfully.')
         except Exception as e:
-            logger.warning(f'Could not emit OpenLineage event. {e}')
+            logger.exception('Could not emit OpenLineage event')
