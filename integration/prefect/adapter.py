@@ -13,13 +13,13 @@ from openlineage.client.facet import JobTypeJobFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
 
-CLIENT: OpenLineageClient = OpenLineageClient.from_environment()
 PRODUCER: str = 'https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/prefect'
 JOB_NAMESPACE: str = os.environ.get('OPENLINEAGE_NAMESPACE')
 
 logger: logging.Logger = logging.getLogger(__name__)
 
 class PrefectOpenLineageAdapter:
+    client: OpenLineageClient = OpenLineageClient.from_environment()
 
     def generate_job_name(self, flow_name: str, task_name: str):
         return flow_name + '.' + task_name
@@ -61,7 +61,7 @@ class PrefectOpenLineageAdapter:
         )
 
         try:
-            CLIENT.emit(run_event)
+            self.client.emit(run_event)
             logger.info('Emitted OpenLineage event successfully.')
         except Exception as e:
             logger.exception('Could not emit OpenLineage event')
