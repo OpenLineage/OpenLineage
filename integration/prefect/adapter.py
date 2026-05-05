@@ -1,6 +1,8 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+# Advisory: This integration is experimental and in active development.
+
 from datetime import datetime
 import logging
 import os
