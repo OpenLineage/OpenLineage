@@ -1,23 +1,25 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import uuid
-from uuid import uuid4
 from datetime import datetime
+import logging
+import os
 from typing import List, Dict, Optional
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_new_uuid
 
 CLIENT: OpenLineageClient = OpenLineageClient.from_environment()
 PRODUCER: str = 'https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/prefect'
 JOB_NAMESPACE: str = os.environ.get('OPENLINEAGE_NAMESPACE')
 
+logger: logging.Logger = logging.getLogger(__name__)
+
 class PrefectOpenLineageAdapter:
 
     def generate_job_name(self, flow_name: str, task_name: str):
-        return self.job_namespace + '.' + flow_name + '.' + task_name
+        return flow_name + '.' + task_name
     
     def create_and_emit_events(
         self, 
@@ -27,23 +29,22 @@ class PrefectOpenLineageAdapter:
         taskName: str = None,
     ) -> RunEvent:
 
-        run_id: str = str(uuid.uuid4())
+        run_id: str = str(generate_new_uuid())
 
-        if eventType == 'Running':
-            eventType: RunState = RunState.START
-
-        elif eventType == 'Complete':
-            eventType: RunState = RunState.COMPLETE
-
-        elif eventType == 'Failed':
-            eventType: RunState = RunState.FAILED
+        match eventType:
+            case 'RUNNING':
+                eventType: RunState = RunState.START
+            case 'COMPLETE':
+                eventType: RunState = RunState.COMPLETE
+            case 'FAILED':
+                eventType: RunState = RunState.FAILED
 
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
             run=Run(run_id),
             job=Job(
-                self.JOB_NAMESPACE, 
+                'prefect_test', # to do: replace with constant
                 self.generate_job_name(flowName, taskName),
             ),
             producer=PRODUCER
@@ -51,6 +52,6 @@ class PrefectOpenLineageAdapter:
 
         try:
             CLIENT.emit(run_event)
-            print('OpenLineage event sent successfully')
-        except:
-            print('OpenLineage event not sent')
+            logger.info('Emitted OpenLineage event successfully.')
+        except Exception as e:
+            logger.warning(f'Could not emit OpenLineage event. {e}')
