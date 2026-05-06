@@ -27,6 +27,8 @@ async def get_flow_name_from_task_id(task_run_id: str):
 
 async def stream_task_runs():
 	"""Requires that PREFECT_API_URL environment variable be set"""	
+	
+	ol_adapter = PrefectOpenLineageAdapter()
 
 	filter_criteria = EventFilter(
     	event=EventNameFilter(prefix=["prefect.task-run."])
@@ -53,7 +55,6 @@ async def stream_task_runs():
 				task_run_id = event.resource.id.split(".")[-1]
 				flow_name = await get_flow_name_from_task_id(task_run_id)
 
-				ol_adapter = PrefectOpenLineageAdapter()
 				ol_adapter.create_and_emit_events(event_type, event_time, flow_name, task_name)
 
 asyncio.run(stream_task_runs())
