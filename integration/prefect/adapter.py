@@ -14,7 +14,6 @@ from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
 
 PRODUCER: str = 'https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/prefect'
-JOB_NAMESPACE: str = os.environ.get('OPENLINEAGE_NAMESPACE')
 
 logger: logging.Logger = logging.getLogger(__name__)
 
