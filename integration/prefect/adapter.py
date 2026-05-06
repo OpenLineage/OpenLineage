@@ -59,7 +59,7 @@ class PrefectOpenLineageAdapter:
             eventTime=eventTime.isoformat(),
             run=Run(run_id),
             job=Job(
-                'prefect_test', # to do: replace with constant
+                self.job_namespace,
                 self.generate_job_name(flowName, taskName),
                 job_facets
             ),
