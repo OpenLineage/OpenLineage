@@ -19,7 +19,13 @@ JOB_NAMESPACE: str = os.environ.get('OPENLINEAGE_NAMESPACE')
 logger: logging.Logger = logging.getLogger(__name__)
 
 class PrefectOpenLineageAdapter:
-    client: OpenLineageClient = OpenLineageClient.from_environment()
+    def __init__(
+        self,
+        client: OpenLineageClient | None = None,
+        job_namespace: str | None = None,
+    ):
+      self.client = client or OpenLineageClient.from_environment()
+      self.job_namespace = job_namespace or os.getenv("JOB_NAMESPACE", "default")
 
     def generate_job_name(self, flow_name: str, task_name: str):
         return flow_name + '.' + task_name
