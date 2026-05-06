@@ -23,7 +23,7 @@ class PrefectOpenLineageAdapter:
         client: OpenLineageClient | None = None,
         job_namespace: str | None = None,
     ):
-      self.client = client or OpenLineageClient.from_environment()
+      self.client = client or OpenLineageClient()
       self.job_namespace = job_namespace or os.getenv("JOB_NAMESPACE", "default")
 
     def generate_job_name(self, flow_name: str, task_name: str):
