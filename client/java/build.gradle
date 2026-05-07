@@ -145,7 +145,7 @@ openApiGenerate {
 // openapi-generator generate -i spec/OpenLineage.yml -g html2 -o ../OpenLineage.github.io/
     generatorName = "html2"
     inputSpec = "$rootDir/../../spec/OpenLineage.yml".toString()
-    outputDir = "$buildDir/docs".toString()
+    outputDir = layout.buildDirectory.dir("docs").get().asFile.toString()
 }
 
 task sourceJar(type: Jar) {
@@ -284,22 +284,18 @@ spotless {
 
 spotlessJava.dependsOn generateCode
 
-def reportsDir = "${buildDir}/reports";
-def coverageDir = "${reportsDir}/coverage";
-
 jacoco {
     toolVersion = '0.8.12'
-    reportsDir = file(coverageDir)
 }
 
 jacocoTestReport {
     reports {
         xml {
-            enabled true
+            required = true
         }
         html {
-            enabled true
-            destination = file(coverageDir)
+            required = true
+            outputLocation = layout.buildDirectory.dir("reports/coverage")
         }
     }
 
