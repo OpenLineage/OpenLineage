@@ -10,7 +10,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.SnowflakeUtils;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.iceberg.CatalogProperties;
@@ -40,14 +40,19 @@ class SnowflakeCatalogTypeHandler extends BaseCatalogTypeHandler {
       SparkSession session, Map<String, String> catalogConf, String table) {
     String accountIdentifier = SnowflakeUtils.parseAccountIdentifier(catalogConf.get(CatalogProperties.URI));
     log.debug("Getting identifier for Snowflake Iceberg REST catalog, account={}", accountIdentifier);
-    return new DatasetIdentifier(table, SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + accountIdentifier);
+    String warehouse = catalogConf.getOrDefault(CatalogProperties.WAREHOUSE_LOCATION, "");
+    String fullName = warehouse.isEmpty() ? table : warehouse + "." + table;
+    return new DatasetIdentifier(fullName.toUpperCase(), SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + accountIdentifier);
+  }
+
+  @Override
+  boolean shouldOverridePrimary() {
+    return true;
   }
 
   @Override
   Map<String, String> catalogProperties(Map<String, String> catalogConf) {
     String accountIdentifier = SnowflakeUtils.parseAccountIdentifier(catalogConf.get(CatalogProperties.URI));
-    Map<String, String> properties = new HashMap<>();
-    properties.put("account_identifier", accountIdentifier);
-    return properties;
+    return Collections.singletonMap("account_identifier", accountIdentifier);
   }
 }

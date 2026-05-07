@@ -21,6 +21,8 @@ class SnowflakeUtilsTest {
     "https://my-org-name-my-account.snowflakecomputing.com, my-org-name-my-account",
     "https://org123-account456.snowflakecomputing.com, org123-account456",
     // Legacy account locator format - return with region.cloud
+    // Account locator may contain hyphens — must not be confused with org-account format
+    "https://catalogtest-pp8.preprod8.us-west-2.aws.snowflakecomputing.com/polaris/api/catalog, catalogtest-pp8.preprod8.us-west-2.aws",
     "https://xy12345.snowflakecomputing.com, xy12345.us-west-1.aws",
     "https://xy12345.us-west-2.snowflakecomputing.com, xy12345.us-west-2.aws",
     "https://xy12345.us-west-2.aws.snowflakecomputing.com, xy12345.us-west-2.aws",

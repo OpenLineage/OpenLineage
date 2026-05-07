@@ -185,6 +185,14 @@ public class IcebergHandler implements CatalogHandler {
     Path tableLocation =
         maybeTableLocation.orElseGet(
             () -> catalogTypeHandler.defaultTableLocation(new Path(warehouseLocation), identifier));
+
+    if (maybeSymlink.isPresent() && catalogTypeHandler.shouldOverridePrimary()) {
+      DatasetIdentifier primaryDi = maybeSymlink.get();
+      DatasetIdentifier physicalDi = PathUtils.fromPath(tableLocation);
+      primaryDi.withSymlink(physicalDi.getName(), physicalDi.getNamespace(), SymlinkType.TABLE);
+      return primaryDi;
+    }
+
     DatasetIdentifier di = PathUtils.fromPath(tableLocation);
     maybeSymlink.ifPresent(
         symlink -> di.withSymlink(symlink.getName(), symlink.getNamespace(), SymlinkType.TABLE));

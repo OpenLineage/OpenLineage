@@ -200,7 +200,7 @@ public class TransformationInfo {
     return new OpenLineage.InputFieldTransformationsBuilder()
         .type(type.name())
         .subtype(subType.name())
-        .description(description)
+        .description(description != null && !description.isEmpty() ? description : null)
         .masking(masking)
         .build();
   }

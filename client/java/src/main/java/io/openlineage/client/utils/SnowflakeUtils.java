@@ -66,11 +66,8 @@ public class SnowflakeUtils {
     // First part is the account identifier (either orgname-accountname or account_locator)
     String accountPart = parts[0];
 
-    // Check if it's organization-account format (contains hyphen)
-    // Organization-account format: orgname-accountname (never has region/cloud in URL)
-    // Account locator format: accountlocator[.region[.cloud]]
-    if (accountPart.contains("-")) {
-      // Organization-account format - return as-is
+    // org-account format has no dots after the account part; locators do (region, cloud)
+    if (accountPart.contains("-") && parts.length == 1) {
       return accountPart;
     }
 

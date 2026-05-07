@@ -633,6 +633,9 @@ class IcebergHandlerTest {
   @Test
   @SneakyThrows
   void testGetDatasetIdentifierForSnowflakeRestCatalog() {
+    // In a Polaris/Snowflake REST catalog, `warehouse` is the Snowflake database name (e.g.
+    // "MY_DATABASE"), not an S3 path. The identifier namespace is just ["MY_SCHEMA"] because the
+    // database is already conveyed by the warehouse setting.
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
@@ -642,11 +645,13 @@ class IcebergHandlerTest {
                 "spark.sql.catalog.test.uri",
                 "https://myorg-myaccount.snowflakecomputing.com/polaris/api/catalog",
                 "spark.sql.catalog.test.warehouse",
-                "s3://my-bucket/warehouse"));
+                "MY_DATABASE"));
 
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
-    Identifier identifier = Identifier.of(new String[] {"MY_DATABASE", "MY_SCHEMA"}, "MY_TABLE");
+    // In a 3-level namespace (database.schema.table) Polaris catalog, the identifier passed to
+    // Spark only contains the schema and table; the database comes from the warehouse config.
+    Identifier identifier = Identifier.of(new String[] {"MY_SCHEMA"}, "MY_TABLE");
 
     when(sparkCatalog.name()).thenReturn("test");
     when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
@@ -656,14 +661,16 @@ class IcebergHandlerTest {
         icebergHandler.getDatasetIdentifier(
             sparkSession, sparkCatalog, identifier, new HashMap<>());
 
+    // SnowflakeCatalogTypeHandler#shouldOverridePrimary() returns true, so the Snowflake
+    // identifier is the primary and the physical S3 location becomes the symlink.
     assertThat(datasetIdentifier)
-        .hasFieldOrPropertyWithValue("namespace", "s3://my-bucket")
-        .hasFieldOrPropertyWithValue("name", "warehouse/MY_TABLE");
+        .hasFieldOrPropertyWithValue("namespace", SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + "myorg-myaccount")
+        .hasFieldOrPropertyWithValue("name", "MY_DATABASE.MY_SCHEMA.MY_TABLE");
 
     assertThat(datasetIdentifier.getSymlinks())
         .singleElement()
-        .hasFieldOrPropertyWithValue("namespace", SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + "myorg-myaccount")
-        .hasFieldOrPropertyWithValue("name", "MY_DATABASE.MY_SCHEMA.MY_TABLE")
+        .hasFieldOrPropertyWithValue("namespace", "s3://my-bucket")
+        .hasFieldOrPropertyWithValue("name", "warehouse/MY_TABLE")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
