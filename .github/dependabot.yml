@@ -35,6 +35,7 @@ updates:
       - dependency-name: "org.slf4j.slf4j-api"
       - dependency-name: "org.openapi.generator"
       - dependency-name: "gradle"
+      - dependency-name: "gradle-wrapper"
     # https://til.simonwillison.net/github/dependabot-python-setup
     groups:
       client/java:
@@ -52,6 +53,8 @@ updates:
       - "dependabot"
     ignore:
       - dependency-name: "org.slf4j.slf4j-api"
+      - dependency-name: "gradle"
+      - dependency-name: "gradle-wrapper"
       - dependency-name: "org.junit.jupiter:junit-jupiter"
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.junit.jupiter:junit-jupiter-params"
@@ -91,6 +94,7 @@ updates:
       - dependency-name: "org.testcontainers:testcontainers-bom"
         update-types: ["version-update:semver-major"]
       - dependency-name: "gradle"
+      - dependency-name: "gradle-wrapper"
     groups:
       integration/spark:
         patterns:
