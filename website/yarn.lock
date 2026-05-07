@@ -6604,7 +6604,6 @@ __metadata:
     autoprefixer: "npm:^10.5.0"
     classnames: "npm:^2.5.1"
     docusaurus-lunr-search: "npm:^3.5.0"
-    lodash: "npm:^4.18.1"
     lunr: "npm:^2.3.9"
     motion: "npm:^12.38.0"
     postcss: "npm:^8.5.11"
@@ -9269,13 +9268,6 @@ __metadata:
   linkType: hard
 
 "lodash@npm:^4.17.20, lodash@npm:^4.17.21":
-  version: 4.17.21
-  resolution: "lodash@npm:4.17.21"
-  checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c
-  languageName: node
-  linkType: hard
-
-"lodash@npm:^4.18.1":
   version: 4.18.1
   resolution: "lodash@npm:4.18.1"
   checksum: 10c0/757228fc68805c59789e82185135cf85f05d0b2d3d54631d680ca79ec21944ec8314d4533639a14b8bcfbd97a517e78960933041a5af17ecb693ec6eecb99a27
