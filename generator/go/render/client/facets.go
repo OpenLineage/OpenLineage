@@ -497,10 +497,6 @@ func olElemTypeExpr(t ir.Type) string {
 
 // olJSONTag returns json struct tag for an OL struct field.
 func olJSONTag(jsonName string, required bool, t ir.Type) string {
-	if _, ok := t.(ir.DateTime); ok {
-		// DateTime fields use pointer; always omitempty
-		return fmt.Sprintf(`json:"%s,omitempty"`, jsonName)
-	}
 	if required {
 		return fmt.Sprintf("json:%q", jsonName)
 	}
@@ -936,7 +932,6 @@ func emitVariantConstructors(b *strings.Builder, u *ir.UnionDef, seen map[string
 			paramName string
 			paramType string
 			goField   string
-			isDate    bool
 		}
 		var params []param
 		for i := range v.Object.Fields {
@@ -951,12 +946,10 @@ func emitVariantConstructors(b *strings.Builder, u *ir.UnionDef, seen map[string
 			if !ok {
 				continue
 			}
-			_, isDate := f.Type.(ir.DateTime)
 			params = append(params, param{
 				paramName: safeParamName(genutil.LowerFirst(genutil.FormatGoFieldName(f.GoName))),
 				paramType: scalar,
 				goField:   genutil.FormatGoFieldName(f.GoName),
-				isDate:    isDate,
 			})
 		}
 
@@ -972,11 +965,8 @@ func emitVariantConstructors(b *strings.Builder, u *ir.UnionDef, seen map[string
 		fmt.Fprintf(b, "\treturn %s{\n", v.Object.TypeName)
 		fmt.Fprintf(b, "\t\t%s: %q,\n", discGoName, v.DiscriminatorValue)
 		for _, p := range params {
-			assign := p.paramName
-			if p.isDate {
-				assign = "&" + p.paramName
-			}
-			fmt.Fprintf(b, "\t\t%s: %s,\n", p.goField, assign)
+			// Required DateTime fields are time.Time (non-pointer), so no & prefix needed.
+			fmt.Fprintf(b, "\t\t%s: %s,\n", p.goField, p.paramName)
 		}
 		b.WriteString("\t}\n}\n\n")
 	}
