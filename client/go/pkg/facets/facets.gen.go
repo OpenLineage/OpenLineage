@@ -583,7 +583,7 @@ type NominalTimeRunFacet struct {
 	// An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time (excluded) of the run. (Should be the nominal start time of the next run)
 	NominalEndTime *time.Time `json:"nominalEndTime,omitempty"`
 	// An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time (included) of the run. AKA the schedule time
-	NominalStartTime time.Time `json:"nominalStartTime,omitempty"`
+	NominalStartTime time.Time `json:"nominalStartTime"`
 }
 
 // the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)
