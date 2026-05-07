@@ -5,7 +5,6 @@
 
 package io.openlineage.flink.visitor.facet;
 
-import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -14,9 +13,7 @@ import io.openlineage.flink.wrapper.TableLineageDatasetWrapper;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.streaming.api.lineage.DatasetConfigFacet;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
-import org.apache.flink.streaming.api.lineage.LineageDatasetFacet;
 import org.apache.flink.table.api.Schema.UnresolvedPhysicalColumn;
 import org.apache.flink.table.catalog.CatalogBaseTable;
 
@@ -37,18 +34,6 @@ public class TableLineageFacetVisitor implements DatasetFacetVisitor {
   @Override
   public void apply(LineageDatasetWithIdentifier dataset, DatasetFacetsBuilder builder) {
     buildSchemaFacet(dataset.getFlinkDataset(), builder);
-    buildConfigFacet(dataset.getFlinkDataset(), builder);
-  }
-
-  private void buildConfigFacet(LineageDataset flinkDataset, DatasetFacetsBuilder builder) {
-    for (LineageDatasetFacet facet : flinkDataset.facets().values()) {
-      if (facet instanceof DatasetConfigFacet) {
-        OpenLineage.DefaultDatasetFacet datasetFacet =
-            (OpenLineage.DefaultDatasetFacet) context.getOpenLineage().newDatasetFacet();
-        datasetFacet.getAdditionalProperties().putAll(((DatasetConfigFacet) facet).config());
-        builder.put(facet.name(), datasetFacet);
-      }
-    }
   }
 
   private void buildSchemaFacet(LineageDataset flinkDataset, DatasetFacetsBuilder builder) {
