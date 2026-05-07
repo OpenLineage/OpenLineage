@@ -132,3 +132,82 @@ def test_consume_structured_logs(command_line, os_envs, function_kwargs, monkeyp
         selector=function_kwargs["model_selector"],
         openlineage_job_name=None,
     )
+
+
+def _setup_local_artifacts_mocks(monkeypatch, env):
+    """Wire up just enough mocks to drive consume_local_artifacts() up to the
+    point where it sets ``processor.dbt_run_metadata``."""
+    monkeypatch.setattr("os.environ", env)
+    mock_processor = mock.MagicMock()
+    mock_processor.parse.return_value.events.return_value = []
+    mock_processor.run_result_path = "/nonexistent/run_results.json"
+    mock_processor.job_name = "dbt-job-name"
+    monkeypatch.setattr(
+        "openlineage.dbt.DbtLocalArtifactProcessor", mock.MagicMock(return_value=mock_processor)
+    )
+    monkeypatch.setattr("openlineage.dbt.OpenLineageClient", mock.MagicMock())
+
+    process_mock = mock.MagicMock()
+    process_mock.__enter__ = mock.MagicMock(return_value=process_mock)
+    process_mock.__exit__ = mock.MagicMock(return_value=None)
+    process_mock.wait.return_value = 0
+    monkeypatch.setattr("openlineage.dbt.subprocess.Popen", mock.MagicMock(return_value=process_mock))
+
+    return mock_processor
+
+
+def test_consume_local_artifacts_propagates_root_parent_metadata(monkeypatch):
+    """Regression: child node events must keep the orchestrator's root parent so
+    backends can stitch the full Airflow → dbt-run → node lineage chain."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_PARENT_ID": f"{parent_namespace}/{parent_job}/{parent_run_id}",
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    # Child events use processor.dbt_run_metadata as their parent facet — root must
+    # point at the orchestrator that started us, not be left blank.
+    md = processor.dbt_run_metadata
+    assert md.root_parent_run_id == parent_run_id
+    assert md.root_parent_job_name == parent_job
+    assert md.root_parent_job_namespace == parent_namespace
+
+
+def test_consume_local_artifacts_root_when_no_external_parent(monkeypatch):
+    """When no orchestrator wraps dbt-ol, the dbt run is itself the root —
+    so child events get root pointing at the dbt-run wrapper."""
+    from openlineage.dbt import consume_local_artifacts
+
+    env = {"OPENLINEAGE_NAMESPACE": "dbt"}  # no OPENLINEAGE_PARENT_ID
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    md = processor.dbt_run_metadata
+    # Root falls back to the wrapper's own start event.
+    assert md.root_parent_run_id == md.run_id
+    assert md.root_parent_job_name == md.job_name
+    assert md.root_parent_job_namespace == md.job_namespace

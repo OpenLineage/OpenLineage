@@ -301,10 +301,26 @@ def consume_local_artifacts(
         parent_run_metadata=parent_run_metadata,
     )
 
+    # Carry the root parent through to per-node events so backends can stitch the full
+    # orchestrator → dbt-run → node chain. Without this, child events get root=None.
+    if parent_run_metadata:
+        root_parent_run_id = parent_run_metadata.root_parent_run_id or parent_run_metadata.run_id
+        root_parent_job_name = parent_run_metadata.root_parent_job_name or parent_run_metadata.job_name
+        root_parent_job_namespace = (
+            parent_run_metadata.root_parent_job_namespace or parent_run_metadata.job_namespace
+        )
+    else:
+        root_parent_run_id = start_event.run.runId
+        root_parent_job_name = start_event.job.name
+        root_parent_job_namespace = start_event.job.namespace
+
     dbt_run_metadata = ParentRunMetadata(
         run_id=start_event.run.runId,
         job_name=start_event.job.name,
         job_namespace=start_event.job.namespace,
+        root_parent_run_id=root_parent_run_id,
+        root_parent_job_name=root_parent_job_name,
+        root_parent_job_namespace=root_parent_job_namespace,
     )
     # Set parent run metadata to use it as parent run facet
     processor.dbt_run_metadata = dbt_run_metadata
