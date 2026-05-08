@@ -20,6 +20,7 @@ import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.StreamingMicroBatchThrottler;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.time.ZoneOffset;
@@ -61,6 +62,12 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private boolean emittedOnJobEnd = false;
   private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
+  /**
+   * Set to true when this micro-batch is throttled; all subsequent emit calls are no-ops. Declared
+   * volatile for the same reason {@link #finished} uses AtomicBoolean: lifecycle events may arrive
+   * on different threads.
+   */
+  private volatile boolean throttled = false;
 
   private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
 
@@ -92,7 +99,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     olContext.setActiveJobId(activeJobId);
     // only one START event is expected, in case it was already sent with jobStart, we send running
     EventType eventType = emittedOnJobStart ? RUNNING : START;
-    emittedOnSqlExecutionStart = true;
 
     RunEvent event =
         runEventBuilder.buildRun(
@@ -109,6 +115,32 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
+    // Throttle check runs after buildRun() so that the job name is fully resolved (including the
+    // output-dataset suffix computed by dataset builders). Using an early pre-buildRun() check
+    // would produce an incomplete job name — missing the sink path — causing unrelated streaming
+    // queries that share the same app name and plan structure to collide on the same throttle key.
+    try {
+      if (olContext.getQueryExecution().map(qe -> qe.optimizedPlan().isStreaming()).orElse(false)) {
+        StreamingMicroBatchThrottler t = olContext.getStreamingThrottler();
+        if (t != null) {
+          String jobKey = eventEmitter.getJobNamespace() + "/" + JobNameBuilder.build(olContext);
+          if (!t.shouldEmit(jobKey)) {
+            log.debug(
+                "Streaming throttle active: skipping micro-batch event (executionId={}, job={})",
+                executionId,
+                jobKey);
+            throttled = true;
+            return;
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.warn(
+          "Streaming throttle check failed for executionId={}, defaulting to emit", executionId, e);
+    }
+
+    emittedOnSqlExecutionStart = true;
+
     if (log.isDebugEnabled()) {
       log.debug(
           "Posting event for start {}: {}", executionId, OpenLineageClientUtils.toJson(event));
@@ -122,6 +154,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     if (log.isDebugEnabled()) {
       log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
     }
+    if (throttled) return;
     // TODO: can we get failed event here?
     // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
     // Maybe use QueryExecutionListener?
@@ -261,6 +294,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     log.debug("SparkListenerJobStart - executionId: {}", executionId);
+    if (throttled) return;
     olContext.setActiveJobId(jobStart.jobId());
 
     if (!olContext.getQueryExecution().isPresent()) {
@@ -303,6 +337,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
     log.debug("SparkListenerJobEnd - executionId: {}", executionId);
+    // Always emit failure events even when this micro-batch was throttled, so that job failures
+    // are never silently dropped. Note: this means a FAIL event may be emitted without a preceding
+    // START event for that run, which is unusual but acceptable. The alternative would be to
+    // retroactively emit a "fake" START event for the throttled batch before emitting FAIL, but
+    // that adds complexity without clear benefit.
+    boolean isFailed = jobEnd.jobResult() instanceof JobFailed;
+    if (throttled && !isFailed) return;
     olContext.setActiveJobId(jobEnd.jobId());
     if (!finished.compareAndSet(false, true)) {
       log.debug("Event already finished, returning");
