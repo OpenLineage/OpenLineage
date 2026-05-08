@@ -7,7 +7,6 @@ package io.openlineage.gradle.plugin
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessPlugin
-import com.diffplug.gradle.spotless.SpotlessTask
 import com.diffplug.spotless.FormatterFunc
 import com.adarshr.gradle.testlogger.TestLoggerPlugin
 import com.adarshr.gradle.testlogger.TestLoggerExtension
@@ -160,25 +159,11 @@ class CommonConfigPlugin : Plugin<Project> {
     }
 
     private fun configureSpotless(target: Project) = target.plugins.withType<SpotlessPlugin> {
-        // spotless-lib:4.x ships ConfigurationCacheHackList which Gradle 9 cannot fingerprint.
-        // doNotTrackState bypasses all state tracking (cache + up-to-date), skipping fingerprinting.
-        target.tasks.withType<SpotlessTask>().configureEach {
-            doNotTrackState("spotless-lib:4.x ConfigurationCacheHackList incompatible with Gradle 9 fingerprinting")
-        }
-        val disallowWildcardImports = FormatterFunc { text ->
-            val regex = Regex("^import\\s+\\w+(\\.\\w+)*\\.*;$")
-            val m = regex.find(text)
-            if (m != null) {
-                throw RuntimeException("Wildcard imports are disallowed - ${m.groupValues}")
-            }
-            text
-        }
-
         target.extensions.configure<SpotlessExtension> {
             java {
                 googleJavaFormat()
                 removeUnusedImports()
-                custom("disallowWildcardImports", disallowWildcardImports)
+                custom("disallowWildcardImports", WildcardImportChecker)
             }
 
             // disable spotless tasks for Java 8
@@ -204,5 +189,19 @@ class CommonConfigPlugin : Plugin<Project> {
                 }
             }
         }
+    }
+}
+
+// Top-level singleton so it's serializable for Gradle 9 task input fingerprinting.
+// Kotlin lambdas are not serializable; object declarations are.
+private object WildcardImportChecker : FormatterFunc, java.io.Serializable {
+    private const val serialVersionUID = 1L
+    override fun apply(input: String): String {
+        val regex = Regex("^import\\s+\\w+(\\.\\w+)*\\.*;$", RegexOption.MULTILINE)
+        val m = regex.find(input)
+        if (m != null) {
+            throw RuntimeException("Wildcard imports are disallowed - ${m.groupValues}")
+        }
+        return input
     }
 }
