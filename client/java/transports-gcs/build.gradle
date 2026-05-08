@@ -10,11 +10,11 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
-    id "com.adarshr.test-logger" version "3.2.0"
+    id "com.adarshr.test-logger" version "4.0.0"
     id 'com.diffplug.spotless' version '7.0.2'
-    id "com.gradleup.shadow" version "9.3.1"
+    id "com.gradleup.shadow" version "9.4.1"
     id "pmd"
-    id "io.freefair.lombok" version "9.2.0"
+    id "io.freefair.lombok" version "9.4.0"
 }
 
 ext {
@@ -22,9 +22,9 @@ ext {
 }
 
 dependencies {
-    implementation('com.google.cloud:google-cloud-storage:2.62.0')
+    implementation('com.google.cloud:google-cloud-storage:2.67.0')
 
-    testImplementation('com.google.cloud:google-cloud-nio:0.128.10')
+    testImplementation('com.google.cloud:google-cloud-nio:0.131.0')
 }
 
 shadowJar {
