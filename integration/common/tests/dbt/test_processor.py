@@ -57,6 +57,12 @@ def dbt_artifact_processor():
             {"account": "gp12345.us-east-1"},
         ),  # Snowflake
         ("job_id", Adapter.BIGQUERY, "bigquery", {}),  # BigQuery
+        (
+            "query_id",
+            Adapter.FABRIC_WAREHOUSE,
+            "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com",
+            {"server": "myworkspace.datawarehouse.fabric.microsoft.com"},
+        ),  # Microsoft Fabric Warehouse
     ],
 )
 def test_get_query_id(
@@ -115,6 +121,18 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     generated_query_id = dbt_artifact_processor.get_query_id(run_result)
 
     assert generated_query_id is None
+
+
+def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.FABRIC_WAREHOUSE
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433}
+    )
+
+    assert (
+        dbt_artifact_processor.dataset_namespace
+        == "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1433"
+    )
 
 
 class TestParseSeverity:
@@ -401,3 +419,93 @@ class TestParseFailures:
 
         assert assertion.actual is None
         assert assertion.expected is None
+
+
+class TestAggregateTestEventStatus:
+    """Per-model aggregate test job emits FAIL when an error-severity assertion failed,
+    and COMPLETE when all assertions passed or only warn-severity ones failed.
+
+    Regression: legacy ``processor.parse_test`` previously hardcoded status="success",
+    so failing tests were emitted as COMPLETE."""
+
+    @pytest.fixture
+    def processor(self):
+        p = DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="ns",
+        )
+        p.manifest_version = 11
+        p.command = "test"
+        p.dataset_namespace = "snowflake://acct"
+        p.dbt_run_run_facet = MagicMock(return_value={})
+        return p
+
+    @staticmethod
+    def _ctx(test_results):
+        manifest = {
+            "nodes": {
+                "model.project.my_model": {
+                    "database": "DB",
+                    "schema": "SCH",
+                    "alias": "my_model",
+                    "unique_id": "model.project.my_model",
+                    "columns": {},
+                },
+            },
+            "sources": {},
+            "parent_map": {
+                f"test.project.t{i}": ["model.project.my_model"] for i in range(len(test_results))
+            },
+        }
+        run_results = {"results": test_results}
+        nodes = {
+            f"test.project.t{i}": {
+                "name": f"t{i}",
+                "test_metadata": {"name": f"t{i}", "kwargs": {"column_name": "id"}},
+                "config": {"severity": severity},
+            }
+            for i, (severity, _status) in enumerate([(r["_severity"], r["status"]) for r in test_results])
+        }
+        # remove the synthetic _severity key from results so they look like real run_results
+        for r in test_results:
+            r.pop("_severity", None)
+        return DbtRunContext(manifest=manifest, run_results=run_results, catalog=None), nodes
+
+    def _event_types(self, processor, test_results):
+        ctx, nodes = self._ctx(test_results)
+        events = processor.parse_test(ctx, nodes)
+        return [e.eventType.value for e in events.starts + events.completes + events.fails]
+
+    def test_all_pass_emits_complete(self, processor):
+        results = [
+            {"unique_id": "test.project.t0", "status": "pass", "_severity": "error"},
+        ]
+        assert self._event_types(processor, results) == ["START", "COMPLETE"]
+
+    def test_error_severity_failure_emits_fail(self, processor):
+        results = [
+            {"unique_id": "test.project.t0", "status": "fail", "failures": 3, "_severity": "error"},
+        ]
+        assert self._event_types(processor, results) == ["START", "FAIL"]
+
+    def test_warn_severity_failure_emits_complete(self, processor):
+        # dbt itself doesn't fail the run on warn-severity test failures, so the
+        # aggregate test job stays COMPLETE — mirroring CommandCompleted.success=true.
+        results = [
+            {"unique_id": "test.project.t0", "status": "warn", "failures": 3, "_severity": "warn"},
+        ]
+        assert self._event_types(processor, results) == ["START", "COMPLETE"]
+
+    def test_mixed_pass_and_warn_failure_emits_complete(self, processor):
+        results = [
+            {"unique_id": "test.project.t0", "status": "pass", "_severity": "error"},
+            {"unique_id": "test.project.t1", "status": "warn", "failures": 1, "_severity": "warn"},
+        ]
+        assert self._event_types(processor, results) == ["START", "COMPLETE"]
+
+    def test_mixed_error_and_warn_failure_emits_fail(self, processor):
+        results = [
+            {"unique_id": "test.project.t0", "status": "fail", "failures": 1, "_severity": "error"},
+            {"unique_id": "test.project.t1", "status": "warn", "failures": 1, "_severity": "warn"},
+        ]
+        assert self._event_types(processor, results) == ["START", "FAIL"]

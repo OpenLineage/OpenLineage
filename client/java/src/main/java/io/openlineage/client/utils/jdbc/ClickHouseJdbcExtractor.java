@@ -9,29 +9,37 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Properties;
 
-public class MySqlJdbcExtractor implements JdbcExtractor {
-  // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-jdbc-url-format.html
+/**
+ * Implementation of {@link JdbcExtractor} for ClickHouse.
+ *
+ * @see <a href="https://clickhouse.com/docs/en/integrations/java#jdbc-driver">ClickHouse JDBC
+ *     Driver</a>
+ */
+public class ClickHouseJdbcExtractor implements JdbcExtractor {
 
-  private static final String PROTOCOL_PART = "^[\\w+:]+://";
   private static final int MIN_QUALIFIED_TABLE_NAME_PARTS = 2;
 
   private JdbcExtractor delegate() {
-    return new OverridingJdbcExtractor("mysql", "3306");
+    return new OverridingJdbcExtractor("clickhouse", "8123");
   }
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {
-    return delegate().isDefinedAt(jdbcUri);
+    // Support both 'ch' and 'clickhouse' schemes
+    return jdbcUri.startsWith("ch:") || jdbcUri.startsWith("clickhouse:");
   }
 
   @Override
   public JdbcLocation extract(String rawUri, Properties properties) throws URISyntaxException {
-    // Schema could be 'mysql', 'mysql:part', 'mysql+srv:part'. Convert it to 'mysql'
-    String normalizedUri = rawUri.replaceFirst(PROTOCOL_PART, "mysql://");
+    // Normalize scheme and remove protocol prefix (similar to how PostgreSQL removes SSL info)
+    String normalizedUri =
+        rawUri
+            .replaceFirst("^ch:", "clickhouse:")
+            .replaceFirst("^clickhouse:(https?|grpc)://", "clickhouse://");
 
     JdbcLocation location = delegate().extract(normalizedUri, properties);
 
-    // In MySQL, DATABASE and SCHEMA are synonyms (no 3-level structure)
+    // In ClickHouse, DATABASE and SCHEMA are synonyms (no 3-level structure)
     // Override toName() to handle qualified vs unqualified table names
     return new JdbcLocation(
         location.getScheme(),

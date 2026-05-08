@@ -10,11 +10,11 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
-    id "com.adarshr.test-logger" version "3.2.0"
+    id "com.adarshr.test-logger" version "4.0.0"
     id 'com.diffplug.spotless' version '7.0.2'
-    id "com.gradleup.shadow" version "9.3.1"
+    id "com.gradleup.shadow" version "9.4.1"
     id "pmd"
-    id "io.freefair.lombok" version "9.2.0"
+    id "io.freefair.lombok" version "9.5.0"
 }
 
 ext {

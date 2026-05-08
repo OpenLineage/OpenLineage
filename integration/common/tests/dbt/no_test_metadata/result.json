@@ -272,8 +272,7 @@
                 "severity": "error"
               }
             ]
-          }
-        },
+          }        },
         "inputFacets": {}
       }
     ],
@@ -489,7 +488,7 @@
         }
       }
     },
-    "eventType": "COMPLETE",
+    "eventType": "FAIL",
     "inputs": [
       {
         "namespace": "snowflake://ASDF1234.eu-central-1.aws",
