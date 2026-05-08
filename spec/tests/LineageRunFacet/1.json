@@ -1,0 +1,32 @@
+{
+  "lineage": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.0.0/integration/spark",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageRunFacet.json",
+    "lineage": [
+      {
+        "namespace": "postgresql://warehouse:5432",
+        "name": "public.table_c",
+        "type": "DATASET",
+        "inputs": [
+          {
+            "namespace": "postgresql://warehouse:5432",
+            "name": "public.table_a",
+            "type": "DATASET"
+          }
+        ]
+      },
+      {
+        "namespace": "postgresql://warehouse:5432",
+        "name": "public.table_d",
+        "type": "DATASET",
+        "inputs": [
+          {
+            "namespace": "postgresql://warehouse:5432",
+            "name": "public.table_b",
+            "type": "DATASET"
+          }
+        ]
+      }
+    ]
+  }
+}

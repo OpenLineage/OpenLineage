@@ -10,6 +10,136 @@ import (
 	"time"
 )
 
+type OpenLineage struct {
+	// the time the event occurred at
+	EventTime time.Time `json:"eventTime"`
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this RunEvent
+	SchemaURL string `json:"schemaURL"`
+	// the current transition of the run state. It is required to issue 1 START event and 1 of [
+	// COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be
+	// added to the same run. For example to send additional metadata after the run is complete
+	EventType *EventType `json:"eventType,omitempty"`
+	// The set of **input** datasets.
+	Inputs []InputElement  `json:"inputs,omitempty"`
+	Job    *OpenLineageJob `json:"job,omitempty"`
+	// The set of **output** datasets.
+	Outputs []OutputElement `json:"outputs,omitempty"`
+	Run     *OpenLineageRun `json:"run,omitempty"`
+	Dataset *Dataset        `json:"dataset,omitempty"`
+}
+
+// Dataset — A Dataset sent within static metadata events
+type Dataset struct {
+	// The facets for this dataset
+	Facets map[string]DatasetFacet `json:"facets,omitempty"`
+	// The unique name for that dataset within that namespace
+	Name string `json:"name"`
+	// The namespace containing that dataset
+	Namespace string `json:"namespace"`
+}
+
+// A Dataset Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+
+// URI identifying the producer of this metadata. For example this could be a git url with a
+// given tag or sha
+
+// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+// of the schema definition for this facet
+
+// set to true to delete a facet
+
+// InputElement — An input dataset
+type InputElement struct {
+	// The facets for this dataset
+	Facets map[string]DatasetFacet `json:"facets,omitempty"`
+	// The unique name for that dataset within that namespace
+	Name string `json:"name"`
+	// The namespace containing that dataset
+	Namespace string `json:"namespace"`
+	// The input facets for this dataset.
+	InputFacets map[string]InputFacetValue `json:"inputFacets,omitempty"`
+}
+
+// InputFacetValue — An Input Dataset Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type InputFacetValue struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+}
+
+type OpenLineageJob struct {
+	// The job facets.
+	Facets map[string]JobFacet `json:"facets,omitempty"`
+	// The unique name for that job within that namespace
+	Name string `json:"name"`
+	// The namespace containing that job
+	Namespace string `json:"namespace"`
+}
+
+// A Job Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+
+// URI identifying the producer of this metadata. For example this could be a git url with a
+// given tag or sha
+
+// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+// of the schema definition for this facet
+
+// set to true to delete a facet
+
+// OutputElement — An output dataset
+type OutputElement struct {
+	// The facets for this dataset
+	Facets map[string]DatasetFacet `json:"facets,omitempty"`
+	// The unique name for that dataset within that namespace
+	Name string `json:"name"`
+	// The namespace containing that dataset
+	Namespace string `json:"namespace"`
+	// The output facets for this dataset
+	OutputFacets map[string]OutputFacetValue `json:"outputFacets,omitempty"`
+}
+
+// OutputFacetValue — An Output Dataset Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type OutputFacetValue struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+}
+
+type OpenLineageRun struct {
+	// The run facets.
+	Facets map[string]RunFacet `json:"facets,omitempty"`
+	// The globally unique ID of the run associated with the job.
+	RunID string `json:"runId"`
+}
+
+// A Run Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+
+// URI identifying the producer of this metadata. For example this could be a git url with a
+// given tag or sha
+
+// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+// of the schema definition for this facet
+
 // BaseSubsetDatasetFacet — An Input Dataset Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
@@ -543,6 +673,207 @@ type PreviousIdentifier struct {
 	Namespace string `json:"namespace"`
 }
 
+// LineageDatasetFacet — A Dataset Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type LineageDatasetFacet struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool `json:"_deleted,omitempty"`
+	// Column-level lineage. Maps target field names in this dataset to their source inputs.
+	Fields map[string]FieldClass `json:"fields,omitempty"`
+	// Dataset-level source inputs that feed into this dataset. When a source includes a 'field'
+	// property, it represents a dataset-wide operation (e.g., GROUP BY, FILTER) where that
+	// source column affects the entire target dataset.
+	Inputs []InputClass `json:"inputs,omitempty"`
+}
+
+// FieldClass — Column-level lineage for a single target field.
+type FieldClass struct {
+	// Source entities and/or fields that feed into this target field.
+	Inputs []InputClass `json:"inputs"`
+}
+
+// InputClass — A source entity that feeds data into a lineage target.
+type InputClass struct {
+	// The specific field/column of the source dataset. When present at entity-level inputs,
+	// represents a dataset-wide operation (e.g., GROUP BY column). When present at field-level
+	// inputs, represents the source column that feeds into the target column.
+	Field *string `json:"field,omitempty"`
+	// The name of the source entity.
+	Name string `json:"name"`
+	// The namespace of the source entity.
+	Namespace string `json:"namespace"`
+	// Transformations applied to the source data.
+	Transformations []TransformationElement `json:"transformations,omitempty"`
+	// The type of the source entity. DATASET for dataset entities. JOB for job entities, used
+	// when a job is the origin of data (e.g., a generator job that creates data without reading
+	// from any input dataset).
+	Type string `json:"type"`
+}
+
+// TransformationElement — A transformation applied to source data in a lineage relationship.
+type TransformationElement struct {
+	// A string representation of the transformation applied.
+	Description *string `json:"description,omitempty"`
+	// Whether the transformation masks the data (e.g., hashing PII).
+	Masking *bool `json:"masking,omitempty"`
+	// The subtype of the transformation, e.g., IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY,
+	// WINDOW, SORT, CONDITIONAL.
+	Subtype *string `json:"subtype,omitempty"`
+	// The type of the transformation. Allowed values are: DIRECT, INDIRECT.
+	Type string `json:"type"`
+}
+
+// LineageJobFacet — A Job Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type LineageJobFacet struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool `json:"_deleted,omitempty"`
+	// Lineage entries describing data flow declared for this job definition. Each entry
+	// identifies a target entity and the sources that feed into it.
+	Lineage []LineageElement `json:"lineage"`
+}
+
+// LineageElement — Describes data flowing into a target entity from source entities, at entity and/or column
+// granularity.
+type LineageElement struct {
+	// Column-level lineage. Maps target field names to their source inputs. Only meaningful
+	// when the target type is DATASET.
+	Fields map[string]LineageField `json:"fields,omitempty"`
+	// Entity-level source inputs. An empty array explicitly means the target has no upstream
+	// source (e.g., a data generator).
+	Inputs []FieldInput `json:"inputs,omitempty"`
+	// The name of the target entity.
+	Name string `json:"name"`
+	// The namespace of the target entity.
+	Namespace string `json:"namespace"`
+	// The type of the target entity. DATASET for dataset entities. JOB for job entities, used
+	// when the job itself is the data consumer (sink) or producer (generator) — i.e., when
+	// there are no output datasets (sink) or no input datasets (generator).
+	Type string `json:"type"`
+}
+
+// LineageField — Column-level lineage for a single target field.
+type LineageField struct {
+	// Source entities and/or fields that feed into this target field.
+	Inputs []FieldInput `json:"inputs"`
+}
+
+// FieldInput — A source entity that feeds data into a lineage target.
+type FieldInput struct {
+	// The specific field/column of the source dataset. When present at entity-level inputs,
+	// represents a dataset-wide operation (e.g., GROUP BY column). When present at field-level
+	// inputs, represents the source column that feeds into the target column.
+	Field *string `json:"field,omitempty"`
+	// The name of the source entity.
+	Name string `json:"name"`
+	// The namespace of the source entity.
+	Namespace string `json:"namespace"`
+	// Transformations applied to the source data.
+	Transformations []TransformationClass `json:"transformations,omitempty"`
+	// The type of the source entity. DATASET for dataset entities. JOB for job entities, used
+	// when a job is the origin of data (e.g., a generator job that creates data without reading
+	// from any input dataset).
+	Type string `json:"type"`
+}
+
+// TransformationClass — A transformation applied to source data in a lineage relationship.
+type TransformationClass struct {
+	// A string representation of the transformation applied.
+	Description *string `json:"description,omitempty"`
+	// Whether the transformation masks the data (e.g., hashing PII).
+	Masking *bool `json:"masking,omitempty"`
+	// The subtype of the transformation, e.g., IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY,
+	// WINDOW, SORT, CONDITIONAL.
+	Subtype *string `json:"subtype,omitempty"`
+	// The type of the transformation. Allowed values are: DIRECT, INDIRECT.
+	Type string `json:"type"`
+}
+
+// LineageRunFacet — A Run Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type LineageRunFacet struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// Lineage entries describing data flow observed during this run. Each entry identifies a
+	// target entity and the sources that feed into it.
+	Lineage []LineageClass `json:"lineage"`
+}
+
+// LineageClass — Describes data flowing into a target entity from source entities, at entity and/or column
+// granularity.
+type LineageClass struct {
+	// Column-level lineage. Maps target field names to their source inputs. Only meaningful
+	// when the target type is DATASET.
+	Fields map[string]LineageFieldClass `json:"fields,omitempty"`
+	// Entity-level source inputs. An empty array explicitly means the target has no upstream
+	// source (e.g., a data generator).
+	Inputs []FieldInputClass `json:"inputs,omitempty"`
+	// The name of the target entity.
+	Name string `json:"name"`
+	// The namespace of the target entity.
+	Namespace string `json:"namespace"`
+	// The type of the target entity. DATASET for dataset entities. JOB for job entities, used
+	// when the job itself is the data consumer (sink) or producer (generator) — i.e., when
+	// there are no output datasets (sink) or no input datasets (generator).
+	Type string `json:"type"`
+}
+
+// LineageFieldClass — Column-level lineage for a single target field.
+type LineageFieldClass struct {
+	// Source entities and/or fields that feed into this target field.
+	Inputs []FieldInputClass `json:"inputs"`
+}
+
+// FieldInputClass — A source entity that feeds data into a lineage target.
+type FieldInputClass struct {
+	// The specific field/column of the source dataset. When present at entity-level inputs,
+	// represents a dataset-wide operation (e.g., GROUP BY column). When present at field-level
+	// inputs, represents the source column that feeds into the target column.
+	Field *string `json:"field,omitempty"`
+	// The name of the source entity.
+	Name string `json:"name"`
+	// The namespace of the source entity.
+	Namespace string `json:"namespace"`
+	// Transformations applied to the source data.
+	Transformations []InputTransformation `json:"transformations,omitempty"`
+	// The type of the source entity. DATASET for dataset entities. JOB for job entities, used
+	// when a job is the origin of data (e.g., a generator job that creates data without reading
+	// from any input dataset).
+	Type string `json:"type"`
+}
+
+// InputTransformation — A transformation applied to source data in a lineage relationship.
+type InputTransformation struct {
+	// A string representation of the transformation applied.
+	Description *string `json:"description,omitempty"`
+	// Whether the transformation masks the data (e.g., hashing PII).
+	Masking *bool `json:"masking,omitempty"`
+	// The subtype of the transformation, e.g., IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY,
+	// WINDOW, SORT, CONDITIONAL.
+	Subtype *string `json:"subtype,omitempty"`
+	// The type of the transformation. Allowed values are: DIRECT, INDIRECT.
+	Type string `json:"type"`
+}
+
 // NominalTimeRunFacet — A Run Facet
 //
 // all fields of the base facet are prefixed with _ to avoid name conflicts in facets
@@ -769,6 +1100,9 @@ type SourceCodeLocationJobFacet struct {
 	Branch *string `json:"branch,omitempty"`
 	// the path in the repo containing the source files
 	Path *string `json:"path,omitempty"`
+	// optional pull request or merge request number associated with a CI run, populated from CI
+	// platform environment variables (e.g. GITHUB_REF, CI_MERGE_REQUEST_IID)
+	PullRequestNumber *string `json:"pullRequestNumber,omitempty"`
 	// the URL to the repository
 	RepoURL *string `json:"repoUrl,omitempty"`
 	// optional tag name
@@ -896,6 +1230,53 @@ type TagsTag struct {
 	Source *string `json:"source,omitempty"`
 	// The value of the field
 	Value string `json:"value"`
+}
+
+// TestRunFacet — Results of test executions associated with this run, capturing test outcomes and
+// configured severities independently of dataset attribution.
+//
+// # A Run Facet
+//
+// all fields of the base facet are prefixed with _ to avoid name conflicts in facets
+type TestRunFacet struct {
+	// URI identifying the producer of this metadata. For example this could be a git url with a
+	// given tag or sha
+	Producer string `json:"_producer"`
+	// The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version
+	// of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// List of test executions and their results.
+	Tests []TestElement `json:"tests"`
+}
+
+// TestElement — A single test execution and its result.
+type TestElement struct {
+	// The actual value observed during the test, serialized as a string.
+	Actual *string `json:"actual,omitempty"`
+	// The test body, e.g. a SQL query or expression.
+	Content *string `json:"content,omitempty"`
+	// The format of the content field, allowing consumers to interpret or filter test content.
+	// Common values include 'sql', 'json', 'expression'.
+	ContentType *string `json:"contentType,omitempty"`
+	// Human-readable description of what the test checks.
+	Description *string `json:"description,omitempty"`
+	// The expected value or threshold for the test, serialized as a string.
+	Expected *string `json:"expected,omitempty"`
+	// Name identifying the test.
+	Name string `json:"name"`
+	// Arbitrary key-value pairs for check-specific inputs.
+	Params map[string]interface{} `json:"params,omitempty"`
+	// The configured consequence of a test failure: 'error' (blocks pipeline execution) or
+	// 'warn' (produces a warning only, does not block). A test with severity 'warn' and status
+	// 'fail' means issues were found but execution continued.
+	Severity *string `json:"severity,omitempty"`
+	// Whether the test found issues: 'pass' (no issues found), 'fail' (issues found), 'skip'
+	// (not executed). Independent of severity — a test can fail without blocking the pipeline
+	// when severity is 'warn'.
+	Status string `json:"status"`
+	// Classification of the test, e.g. 'not_null', 'unique', 'row_count', 'freshness',
+	// 'custom_sql'.
+	Type *string `json:"type,omitempty"`
 }
 
 // IcebergCommitReportOutputDatasetFacet — An Output Dataset Facet
@@ -1146,6 +1527,20 @@ type Origin struct {
 	// (https://cloud.google.com/data-catalog/docs/reference/data-lineage/rest/v1/projects.locations.processes#SourceType)
 	SourceType *string `json:"sourceType,omitempty"`
 }
+
+// EventType — the current transition of the run state. It is required to issue 1 START event and 1 of [
+// COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be
+// added to the same run. For example to send additional metadata after the run is complete
+type EventType string
+
+const (
+	Abort    EventType = "ABORT"
+	Complete EventType = "COMPLETE"
+	Fail     EventType = "FAIL"
+	Other    EventType = "OTHER"
+	Running  EventType = "RUNNING"
+	Start    EventType = "START"
+)
 
 type LeftType string
 
