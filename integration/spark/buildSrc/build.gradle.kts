@@ -11,7 +11,7 @@ repositories {
 val downloadTaskVersion: String = "5.6.0"
 val lombokPluginVersion: String = "8.6"
 val shadowPluginVersion: String = "8.1.1"
-val spotlessVersion: String = "6.13.0"
+val spotlessVersion: String = "7.0.2"
 
 dependencies {
     implementation("com.diffplug.spotless:spotless-plugin-gradle:${spotlessVersion}")
