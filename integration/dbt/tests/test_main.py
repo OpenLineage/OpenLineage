@@ -211,3 +211,74 @@ def test_consume_local_artifacts_root_when_no_external_parent(monkeypatch):
     assert md.root_parent_run_id == md.run_id
     assert md.root_parent_job_name == md.job_name
     assert md.root_parent_job_namespace == md.job_namespace
+
+
+def test_consume_local_artifacts_explicit_root_different_from_parent(monkeypatch):
+    """When OPENLINEAGE_ROOT_PARENT_ID is provided and distinct from the immediate
+    parent, child events must use root values — not parent values — for the root field."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "aaaaaaaa-0000-0000-0000-000000000001"
+    root_namespace = "prefect"
+    root_job = "root-flow"
+    root_run_id = "bbbbbbbb-0000-0000-0000-000000000002"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_PARENT_ID": f"{parent_namespace}/{parent_job}/{parent_run_id}",
+        "OPENLINEAGE_ROOT_PARENT_ID": f"{root_namespace}/{root_job}/{root_run_id}",
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    md = processor.dbt_run_metadata
+    # Root must reflect the explicit root, not the immediate parent.
+    assert md.root_parent_run_id == root_run_id
+    assert md.root_parent_job_name == root_job
+    assert md.root_parent_job_namespace == root_namespace
+    # Immediate parent stays as-is.
+    assert md.run_id != root_run_id
+    assert md.job_name != root_job
+
+
+def test_consume_local_artifacts_partial_root_falls_back_to_parent(monkeypatch):
+    """When OPENLINEAGE_ROOT_PARENT_ID is malformed (not all three identifiers
+    present), root info must not be partially applied — it should fall back
+    entirely to the immediate parent values."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "cccccccc-0000-0000-0000-000000000003"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_PARENT_ID": f"{parent_namespace}/{parent_job}/{parent_run_id}",
+        "OPENLINEAGE_ROOT_PARENT_ID": "invalid-not-three-parts",
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    md = processor.dbt_run_metadata
+    # Partial root data must not bleed into result; fall back to the parent entirely.
+    assert md.root_parent_run_id == parent_run_id
+    assert md.root_parent_job_name == parent_job
+    assert md.root_parent_job_namespace == parent_namespace

@@ -303,12 +303,22 @@ def consume_local_artifacts(
 
     # Carry the root parent through to per-node events so backends can stitch the full
     # orchestrator → dbt-run → node chain. Without this, child events get root=None.
+    # All three root fields must be present together; partial data falls back to the
+    # immediate parent to avoid mixing fields from different runs/jobs.
     if parent_run_metadata:
-        root_parent_run_id = parent_run_metadata.root_parent_run_id or parent_run_metadata.run_id
-        root_parent_job_name = parent_run_metadata.root_parent_job_name or parent_run_metadata.job_name
-        root_parent_job_namespace = (
-            parent_run_metadata.root_parent_job_namespace or parent_run_metadata.job_namespace
+        root_all_present = (
+            parent_run_metadata.root_parent_run_id
+            and parent_run_metadata.root_parent_job_name
+            and parent_run_metadata.root_parent_job_namespace
         )
+        if root_all_present:
+            root_parent_run_id = parent_run_metadata.root_parent_run_id
+            root_parent_job_name = parent_run_metadata.root_parent_job_name
+            root_parent_job_namespace = parent_run_metadata.root_parent_job_namespace
+        else:
+            root_parent_run_id = parent_run_metadata.run_id
+            root_parent_job_name = parent_run_metadata.job_name
+            root_parent_job_namespace = parent_run_metadata.job_namespace
     else:
         root_parent_run_id = start_event.run.runId
         root_parent_job_name = start_event.job.name
