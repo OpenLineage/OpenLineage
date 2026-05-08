@@ -196,8 +196,12 @@ class CommonConfigPlugin : Plugin<Project> {
 // Kotlin lambdas are not serializable; object declarations are.
 private object WildcardImportChecker : FormatterFunc, java.io.Serializable {
     private const val serialVersionUID = 1L
+    // Matches only wildcard imports: import foo.bar.*;
+    // Note: \\.\\* matches a literal ".*" — the original lambda used \\.*
+    // which in regex means "zero or more literal dots", incorrectly matching
+    // all imports. The correct pattern needs explicit \\. then \\*.
     override fun apply(input: String): String {
-        val regex = Regex("^import\\s+\\w+(\\.\\w+)*\\.*;$", RegexOption.MULTILINE)
+        val regex = Regex("^import\\s+[\\w.]+\\.\\*;$", RegexOption.MULTILINE)
         val m = regex.find(input)
         if (m != null) {
             throw RuntimeException("Wildcard imports are disallowed - ${m.groupValues}")

@@ -60,7 +60,10 @@ class LogicalPlanSerializerTest {
 
   @Test
   void testSerializeLogicalPlan()
-      throws IOException, ClassNotFoundException, InvocationTargetException, InstantiationException,
+      throws IOException,
+          ClassNotFoundException,
+          InvocationTargetException,
+          InstantiationException,
           IllegalAccessException {
     String jdbcUrl = "jdbc:postgresql://postgreshost:5432/sparkdata";
     String sparkTableName = "my_spark_table";
@@ -147,7 +150,10 @@ class LogicalPlanSerializerTest {
 
   @Test
   void testSerializeInsertIntoHadoopPlan()
-      throws IOException, ClassNotFoundException, InvocationTargetException, InstantiationException,
+      throws IOException,
+          ClassNotFoundException,
+          InvocationTargetException,
+          InstantiationException,
           IllegalAccessException {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
 
