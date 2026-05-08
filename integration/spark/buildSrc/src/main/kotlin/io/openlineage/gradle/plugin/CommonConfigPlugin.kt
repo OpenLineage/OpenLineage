@@ -160,10 +160,10 @@ class CommonConfigPlugin : Plugin<Project> {
     }
 
     private fun configureSpotless(target: Project) = target.plugins.withType<SpotlessPlugin> {
-        // SpotlessTask is @CacheableTask but spotless-lib:4.x ships ConfigurationCacheHackList
-        // which Gradle 9 cannot fingerprint for the build cache. Disable caching to avoid the error.
+        // spotless-lib:4.x ships ConfigurationCacheHackList which Gradle 9 cannot fingerprint.
+        // doNotTrackState bypasses all state tracking (cache + up-to-date), skipping fingerprinting.
         target.tasks.withType<SpotlessTask>().configureEach {
-            outputs.cacheIf { false }
+            doNotTrackState("spotless-lib:4.x ConfigurationCacheHackList incompatible with Gradle 9 fingerprinting")
         }
         val disallowWildcardImports = FormatterFunc { text ->
             val regex = Regex("^import\\s+\\w+(\\.\\w+)*\\.*;$")
