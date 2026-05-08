@@ -37,6 +37,11 @@
 * **Spark: Prevent alias names from appearing as phantom input fields in JDBC column lineage** [`#4366`](https://github.com/OpenLineage/OpenLineage/pull/4366) [@mobuchowski](https://github.com/mobuchowski)
   *Fix JDBC column lineage to skip `extractInternalInputs` when SQL-based column lineage is already available, preventing alias names from being incorrectly included as input fields alongside the original column names.*
 
+### Added
+
+* **Java client: Sync tag/ownership enrichment with Python client** [`#4280`](https://github.com/OpenLineage/OpenLineage/issues/4280) [@your-github-handle](https://github.com/your-github-handle)
+  *Move job tags, run tags, and job ownership enrichment from Spark/Flink integrations into `OpenLineageClient.emit()`, matching Python client behavior. Add default `openlineage_client_version` run tag. Default tag source is now `CONFIG`. Add `job.ownership` config key with backward compatibility for `job.owners`.*
+
 ## [1.45.0](https://github.com/OpenLineage/OpenLineage/compare/1.44.1...1.45.0)
 
 ### Added

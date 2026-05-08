@@ -7,6 +7,7 @@ package io.openlineage.client.utils.jdbc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.util.Properties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -23,20 +24,22 @@ class JdbcDatasetUtilsTestForDerby {
 
   @Test
   void testGetDatasetIdentifierWithDefaultDatabase() {
-    String currentDir = System.getProperty(CURRENT_DIR_PROPERTY);
+    String currentDir =
+        new File(System.getProperty(CURRENT_DIR_PROPERTY)).toURI().normalize().getPath();
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier("jdbc:derby:", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "file:" + currentDir + "/metastore_db")
+        .hasFieldOrPropertyWithValue("namespace", "file:" + currentDir + "metastore_db")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
   void testGetDatasetIdentifierWithCustomDatabaseName() {
-    String currentDir = System.getProperty(CURRENT_DIR_PROPERTY);
+    String currentDir =
+        new File(System.getProperty(CURRENT_DIR_PROPERTY)).toURI().normalize().getPath();
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:derby:;databaseName=somedb", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "file:" + currentDir + "/somedb")
+        .hasFieldOrPropertyWithValue("namespace", "file:" + currentDir + "somedb")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -44,9 +47,12 @@ class JdbcDatasetUtilsTestForDerby {
   void testGetDatasetIdentifierWithCustomDerbyHome() {
     System.setProperty(DERBY_HOME_PROPERTY, "/some/path");
 
+    // On Windows, /some/path becomes C:/some/path, on Unix it stays /some/path
+    String expectedPath = new File("/some/path/metastore_db").toURI().normalize().getPath();
+
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier("jdbc:derby:", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "file:/some/path/metastore_db")
+        .hasFieldOrPropertyWithValue("namespace", "file:" + expectedPath)
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -54,16 +60,20 @@ class JdbcDatasetUtilsTestForDerby {
   void testGetDatasetIdentifierWithCustomDatabasePath() {
     System.setProperty(DERBY_HOME_PROPERTY, "/some/path");
 
+    // On Windows, /some/path becomes C:/some/path, on Unix it stays /some/path
+    String expectedPath1 = new File("/some/path/nested/path").toURI().normalize().getPath();
+    String expectedPath2 = new File("/some/parent/path").toURI().normalize().getPath();
+
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:derby:;databaseName=nested/path", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "file:/some/path/nested/path")
+        .hasFieldOrPropertyWithValue("namespace", "file:" + expectedPath1)
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:derby:;databaseName=../parent/path", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "file:/some/parent/path")
+        .hasFieldOrPropertyWithValue("namespace", "file:" + expectedPath2)
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 }
