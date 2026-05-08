@@ -15,7 +15,7 @@ val spotlessVersion: String = "8.4.0"
 
 dependencies {
     implementation("com.diffplug.spotless:spotless-plugin-gradle:${spotlessVersion}")
-    implementation("com.gradleup:shadow:${shadowPluginVersion}")
+    implementation("com.gradleup.shadow:shadow-gradle-plugin:${shadowPluginVersion}")
     implementation("de.undercouch:gradle-download-task:${downloadTaskVersion}")
     implementation("io.freefair.gradle:lombok-plugin:${lombokPluginVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
