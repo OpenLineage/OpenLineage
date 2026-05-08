@@ -7,6 +7,7 @@ package io.openlineage.gradle.plugin
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessPlugin
+import com.diffplug.gradle.spotless.SpotlessTask
 import com.diffplug.spotless.FormatterFunc
 import com.adarshr.gradle.testlogger.TestLoggerPlugin
 import com.adarshr.gradle.testlogger.TestLoggerExtension
@@ -159,6 +160,11 @@ class CommonConfigPlugin : Plugin<Project> {
     }
 
     private fun configureSpotless(target: Project) = target.plugins.withType<SpotlessPlugin> {
+        // SpotlessTask is @CacheableTask but spotless-lib:4.x ships ConfigurationCacheHackList
+        // which Gradle 9 cannot fingerprint for the build cache. Disable caching to avoid the error.
+        target.tasks.withType<SpotlessTask>().configureEach {
+            outputs.cacheIf { false }
+        }
         val disallowWildcardImports = FormatterFunc { text ->
             val regex = Regex("^import\\s+\\w+(\\.\\w+)*\\.*;$")
             val m = regex.find(text)
