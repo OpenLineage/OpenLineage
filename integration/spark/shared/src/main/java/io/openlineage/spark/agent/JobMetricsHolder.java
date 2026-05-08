@@ -9,10 +9,8 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,7 +37,9 @@ public class JobMetricsHolder {
    * Aggregated job metrics (jobId is key of the parent map). Can be used to access job's metrics
    * after cleanup, when stage metrics are already cleared.
    */
-  private final Map<Integer, Map<Metric, Number>> jobMetrics = new ConcurrentHashMap<>();
+  private final Map<Integer, Map<Metric, Number>> jobReadMetrics = new ConcurrentHashMap<>();
+
+  private final Map<Integer, Map<Metric, Number>> jobWriteMetrics = new ConcurrentHashMap<>();
 
   // Use singleton instance
   JobMetricsHolder() {}
@@ -70,44 +70,92 @@ public class JobMetricsHolder {
    * @param jobId
    * @return
    */
-  public Map<Metric, Number> pollMetrics(int jobId) {
-    if (!jobMetrics.containsKey(jobId)) {
-      jobMetrics.put(jobId, computeJobMetricsAndClearTemporaryResults(jobId));
+  public Map<Metric, Number> pollWriteMetrics(int jobId) {
+    if (jobWriteMetrics.containsKey(jobId)) {
+      return jobWriteMetrics.get(jobId);
     }
-    return jobMetrics.get(jobId);
+    Set<Integer> stages = jobStages.get(jobId);
+
+    if (stages == null || stages.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    // get last stage with write metrics filled
+    Optional<Integer> lastStageId =
+        stages.stream()
+            .filter(stageMetrics::containsKey)
+            .filter(id -> stageMetrics.get(id).hasWriteMetrics())
+            .max(Integer::compare);
+
+    if (!lastStageId.isPresent()) {
+      return Collections.emptyMap();
+    }
+
+    Map<Metric, Number> result = new EnumMap(Metric.class);
+    TaskMetricsAggregate metricsAggregate = stageMetrics.get(lastStageId.get());
+    if (metricsAggregate != null) {
+      result.put(Metric.WRITE_BYTES, metricsAggregate.getBytesWritten());
+      result.put(Metric.FILES_WRITTEN, metricsAggregate.getFilesWritten());
+      result.put(Metric.WRITE_RECORDS, metricsAggregate.getRecordsWritten());
+    }
+
+    jobWriteMetrics.put(jobId, result);
+    return result;
   }
 
-  public boolean containsWriteMetrics(int jobId) {
-    Map<Metric, Number> metrics = pollMetrics(jobId);
-    long records = metrics.getOrDefault(Metric.WRITE_RECORDS, 0).longValue();
-    long bytes = metrics.getOrDefault(Metric.WRITE_BYTES, 0).longValue();
+  /**
+   * Can be only polled once. Polling metrics causes removing them from the map.
+   *
+   * @param jobId
+   * @return
+   */
+  public Map<Metric, Number> pollReadMetrics(int jobId) {
+    if (jobReadMetrics.containsKey(jobId)) {
+      return jobReadMetrics.get(jobId);
+    }
 
-    return records + bytes > 0;
-  }
+    Set<Integer> stages = jobStages.get(jobId);
 
-  public boolean containsReadMetrics(int jobId) {
-    Map<Metric, Number> metrics = pollMetrics(jobId);
-    long records = metrics.getOrDefault(Metric.READ_RECORDS, 0).longValue();
-    long bytes = metrics.getOrDefault(Metric.READ_BYTES, 0).longValue();
+    if (stages == null || stages.isEmpty()) {
+      return Collections.emptyMap();
+    }
 
-    return records + bytes > 0;
-  }
+    // get first stage with read metrics filled
+    Optional<Integer> firstStageId =
+        stages.stream()
+            .filter(stageMetrics::containsKey)
+            .filter(id -> stageMetrics.get(id).hasReadMetrics())
+            .min(Integer::compare);
 
-  private Map<Metric, Number> computeJobMetricsAndClearTemporaryResults(int jobId) {
-    return Optional.ofNullable(jobStages.get(jobId))
-        .map(
-            stages ->
-                stages.stream()
-                    .map(stageMetrics::remove)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList()))
-        .filter(l -> !l.isEmpty())
-        .map(this::mapMetrics)
-        .orElse(Collections.emptyMap());
+    if (!firstStageId.isPresent()) {
+      return Collections.emptyMap();
+    }
+
+    Map<Metric, Number> result = new EnumMap(Metric.class);
+    TaskMetricsAggregate metricsAggregate = stageMetrics.get(firstStageId.get());
+    if (metricsAggregate != null) {
+      result.put(Metric.READ_BYTES, metricsAggregate.getBytesRead());
+      result.put(Metric.READ_RECORDS, metricsAggregate.getRecordsRead());
+    }
+
+    jobReadMetrics.put(jobId, result);
+    return result;
   }
 
   public void cleanUp(int jobId) {
-    jobMetrics.put(jobId, computeJobMetricsAndClearTemporaryResults(jobId));
+    // clear all values previous stats
+    jobReadMetrics.entrySet().removeIf(entry -> entry.getKey() < jobId);
+    jobWriteMetrics.entrySet().removeIf(entry -> entry.getKey() < jobId);
+
+    // put recent job stats to be fetched by onSqlEnd event call
+    // do it before clearing staging
+    if (!jobReadMetrics.containsKey(jobId)) {
+      this.pollReadMetrics(jobId);
+    }
+    if (!jobWriteMetrics.containsKey(jobId)) {
+      this.pollWriteMetrics(jobId);
+    }
+
     Set<Integer> stages = jobStages.remove(jobId);
     stages = stages == null ? Collections.emptySet() : stages;
     stages.forEach(stageMetrics::remove);
@@ -115,46 +163,10 @@ public class JobMetricsHolder {
 
   @VisibleForTesting
   void cleanUpAll() {
-    jobMetrics.clear();
+    jobWriteMetrics.clear();
+    jobReadMetrics.clear();
     jobStages.clear();
     stageMetrics.clear();
-  }
-
-  private Map<Metric, Number> mapMetrics(List<TaskMetricsAggregate> jobMetrics) {
-    Map<Metric, Number> result = new EnumMap<>(Metric.class);
-
-    for (TaskMetricsAggregate aggregate : jobMetrics) {
-      if (Objects.nonNull(aggregate)) {
-        result.merge(
-            Metric.WRITE_BYTES,
-            aggregate.getBytesWritten(),
-            (m, b) -> m.longValue() + b.longValue());
-        result.merge(
-            Metric.WRITE_RECORDS,
-            aggregate.getRecordsWritten(),
-            (m, b) -> m.longValue() + b.longValue());
-        result.merge(
-            Metric.FILES_WRITTEN,
-            aggregate.getFilesWritten(),
-            (m, b) -> m.longValue() + b.longValue());
-        result.merge(
-            Metric.READ_BYTES, aggregate.getBytesRead(), (m, b) -> m.longValue() + b.longValue());
-        result.merge(
-            Metric.READ_RECORDS,
-            aggregate.getRecordsRead(),
-            (m, b) -> m.longValue() + b.longValue());
-      }
-    }
-
-    if (result.get(Metric.WRITE_BYTES).longValue() == 0
-        && result.get(Metric.WRITE_RECORDS).longValue() == 0
-        && result.get(Metric.READ_BYTES).longValue() == 0
-        && result.get(Metric.READ_RECORDS).longValue() == 0) {
-      // no metrics, return empty map
-      return Collections.emptyMap();
-    }
-
-    return result;
   }
 
   /**
@@ -217,6 +229,14 @@ public class JobMetricsHolder {
       if (taskMetrics.outputMetrics().bytesWritten() > 0) {
         filesWritten += 1;
       }
+    }
+
+    public boolean hasWriteMetrics() {
+      return bytesWritten > 0 || recordsWritten > 0;
+    }
+
+    public boolean hasReadMetrics() {
+      return bytesRead > 0 || recordsRead > 0;
     }
   }
 
