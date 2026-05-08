@@ -10,12 +10,12 @@ repositories {
 
 val downloadTaskVersion: String = "5.6.0"
 val lombokPluginVersion: String = "8.6"
-val shadowPluginVersion: String = "8.1.1"
-val spotlessVersion: String = "7.0.2"
+val shadowPluginVersion: String = "9.4.1"
+val spotlessVersion: String = "8.4.0"
 
 dependencies {
     implementation("com.diffplug.spotless:spotless-plugin-gradle:${spotlessVersion}")
-    implementation("com.github.johnrengelman:shadow:${shadowPluginVersion}")
+    implementation("com.gradleup:shadow:${shadowPluginVersion}")
     implementation("de.undercouch:gradle-download-task:${downloadTaskVersion}")
     implementation("io.freefair.gradle:lombok-plugin:${lombokPluginVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
