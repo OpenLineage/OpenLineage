@@ -55,7 +55,7 @@ class PrefectOpenLineageAdapter:
 
         def build_run_facets():
             if parentRuns:
-                parent = parentRuns[0]
+                parent = parentRuns[0] # to do: support multiple parents
                 run_id = parent["id"]
                 run_namespace = parent["namespace"]
                 run_name = parent["name"]
