@@ -15,6 +15,7 @@ from prefect.runtime import task_run
 from adapter import PrefectOpenLineageAdapter
 
 JOB_NAMESPACE: str = os.environ.get('OPENLINEAGE_NAMESPACE')
+PARENT_RUN_NAMESPACE: str = os.environ.get('PARENT_RUN_NAMESPACE')
 OL_ADAPTER = PrefectOpenLineageAdapter()
 
 async def get_task_run_from_task_id(task_id: str):
@@ -68,7 +69,7 @@ async def collect_and_process_task_runs():
 						if task_id:
 							parent_run = await get_task_run_from_task_id(task_id)
 							parent_name = parent_run.name.split("-")[0]
-							parent_runs.append({"name": parent_name, "namespace": "parent_namespace", "id": task_context[parent_name]})
+							parent_runs.append({"name": parent_name, "namespace": PARENT_RUN_NAMESPACE, "id": task_context[parent_name]})
 					parents = True
 				except:
 					pass
