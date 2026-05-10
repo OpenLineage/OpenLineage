@@ -9,7 +9,7 @@ import os
 from typing import List, Dict, Optional
 
 from openlineage.client import OpenLineageClient
-from openlineage.client.facet import JobTypeJobFacet
+from openlineage.client.facet import JobTypeJobFacet, ParentRunFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
 
@@ -29,15 +29,15 @@ class PrefectOpenLineageAdapter:
     def generate_job_name(self, flow_name: str, task_name: str):
         return flow_name + '.' + task_name
     
-    def create_and_emit_events(
-        self, 
+    def create_and_emit_event(
+        self,
+        runId: str = None,
         eventType: str = None,
         eventTime: datetime = None,
         flowName: str = None,
         taskName: str = None,
+        parentRuns: List = None
     ) -> RunEvent:
-
-        run_id: str = str(generate_new_uuid())
 
         match eventType:
             case 'RUNNING':
@@ -53,12 +53,24 @@ class PrefectOpenLineageAdapter:
             jobType="TASK"
         )}
 
+        def build_run_facets():
+            if parentRuns:
+                parent = parentRuns[0]
+                run_id = parent["id"]
+                run_namespace = parent["namespace"]
+                run_name = parent["name"]
+                return {"parentRun": ParentRunFacet.create(
+                            run_id, run_namespace, run_name
+                        )}
+            else:
+                return None
+
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
-            run=Run(run_id),
+            run=Run(runId, build_run_facets()),
             job=Job(
-                self.job_namespace,
+                'prefect_test', # to do: replace with constant
                 self.generate_job_name(flowName, taskName),
                 job_facets
             ),
@@ -69,4 +81,4 @@ class PrefectOpenLineageAdapter:
             self.client.emit(run_event)
             logger.info('Emitted OpenLineage event successfully.')
         except Exception as e:
-            logger.exception('Could not emit OpenLineage event')
+            logger.exception('Could not emit OpenLineage event.')
