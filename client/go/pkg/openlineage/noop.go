@@ -12,24 +12,24 @@ import (
 	"github.com/google/uuid"
 )
 
-var _ Run = (*noopRun)(nil)
+var _ RunWrapper = (*noopRun)(nil)
 
 type noopRun struct{}
 
 // NewChild implements RunContext.
-func (n *noopRun) NewChild(ctx context.Context, _ string) (context.Context, Run) {
+func (n *noopRun) NewChild(ctx context.Context, _ string) (context.Context, RunWrapper) {
 	return ctx, &noopRun{}
 }
 
 // StartChild implements RunContext.
-func (n *noopRun) StartChild(ctx context.Context, _ string) (context.Context, Run, error) {
+func (n *noopRun) StartChild(ctx context.Context, _ string) (context.Context, RunWrapper, error) {
 	return ctx, &noopRun{}, nil
 }
 
-// Finish implements Run.
+// Finish implements RunWrapper.
 func (n *noopRun) Finish(error) {}
 
-// Emit implements Run.
+// Emit implements RunWrapper.
 func (n *noopRun) Emit(context.Context, Emittable) (map[string]string, error) {
 	return nil, nil
 }
@@ -50,7 +50,7 @@ func (n *noopRun) JobNamespace() string {
 }
 
 // Parent implements RunContext.
-func (n *noopRun) Parent() Run {
+func (n *noopRun) Parent() RunWrapper {
 	return &noopRun{}
 }
 
