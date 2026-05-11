@@ -28,5 +28,5 @@ set_java_version "$JAVA_VERSION"
 
 echo "Changing directory to: $LOCATION"
 cd "$LOCATION"
-./gradlew spotlessApply
+./gradlew spotlessApply --no-build-cache
 

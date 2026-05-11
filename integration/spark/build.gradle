@@ -7,7 +7,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id("java-library")
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
     id("io.openlineage.common-config")
     id("io.openlineage.jar-verification")
     id("maven-publish")
@@ -61,22 +61,18 @@ javadoc {
     options.tags = ["apiNote"]
 }
 
-def reportsDir = "${buildDir}/reports";
-def coverageDir = "${reportsDir}/coverage";
-
 jacoco {
     toolVersion = '0.8.5'
-    reportsDir = file(coverageDir)
 }
 
 jacocoTestReport {
     reports {
         xml {
-            enabled true
+            required = true
         }
         html {
-            enabled true
-            destination = file(coverageDir)
+            required = true
+            outputLocation = layout.buildDirectory.dir("reports/coverage")
         }
     }
 }

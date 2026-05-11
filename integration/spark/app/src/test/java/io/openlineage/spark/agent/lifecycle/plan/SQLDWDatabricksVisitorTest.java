@@ -123,7 +123,9 @@ class SQLDWDatabricksVisitorTest {
     "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
   })
   void testSQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName)
-      throws InstantiationException, IllegalAccessException, InvocationTargetException,
+      throws InstantiationException,
+          IllegalAccessException,
+          InvocationTargetException,
           ClassNotFoundException {
 
     String inputName = "\"schema\".\"table1\"";
@@ -179,7 +181,9 @@ class SQLDWDatabricksVisitorTest {
     "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
   })
   void testSpark2SQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName)
-      throws ClassNotFoundException, InvocationTargetException, InstantiationException,
+      throws ClassNotFoundException,
+          InvocationTargetException,
+          InstantiationException,
           IllegalAccessException {
     String inputName = "\"schema\".\"table1\"";
 
@@ -224,7 +228,9 @@ class SQLDWDatabricksVisitorTest {
 
   @Test
   void testSQLDWRelationComplexQuery()
-      throws InvocationTargetException, InstantiationException, IllegalAccessException,
+      throws InvocationTargetException,
+          InstantiationException,
+          IllegalAccessException,
           ClassNotFoundException {
     String inputName = "(SELECT * FROM dbo.table1) q";
     String inputJdbcUrl =
@@ -274,7 +280,9 @@ class SQLDWDatabricksVisitorTest {
 
   @Test
   void testSQLDWRelationBadJdbcUrl()
-      throws InvocationTargetException, InstantiationException, IllegalAccessException,
+      throws InvocationTargetException,
+          InstantiationException,
+          IllegalAccessException,
           ClassNotFoundException {
     String inputName = "dbo.mytable";
     String inputJdbcUrl = "sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
