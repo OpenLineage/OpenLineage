@@ -434,7 +434,7 @@ class DbtArtifactProcessor:
                 )
 
             run_id = str(generate_new_uuid())
-            dataset_facets: dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
+            dataset_facets: dict[str, DatasetFacet] = {"dataQualityAssertions": assertion_facet}
             # The aggregate per-model test event is FAIL when any of its assertions failed.
             # Warn-severity failures count as success so they don't block the pipeline,
             # mirroring dbt's own success/failure semantics.
@@ -454,9 +454,7 @@ class DbtArtifactProcessor:
                         InputDataset(
                             namespace=namespace,
                             name=name,
-                            inputFacets=dataset_facets,
-                            # TODO: remove this next release
-                            facets=dataset_facets,  # type: ignore
+                            facets=dataset_facets,
                         )
                     ],
                     None,
@@ -792,7 +790,7 @@ class DbtArtifactProcessor:
                 )
 
             if assertions:
-                input_facets["dataQualityAssertions"] = assertions
+                facets["dataQualityAssertions"] = assertions
 
             if node.catalog_node:
                 fields = self.extract_catalog_fields(

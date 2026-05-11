@@ -588,7 +588,10 @@
     "eventType": "START",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.orders",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -643,9 +646,7 @@
               }
             ]
           }
-        },
-        "name": "default.orders",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -691,7 +692,10 @@
     "eventType": "START",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.stg_customers",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -706,9 +710,7 @@
               }
             ]
           }
-        },
-        "name": "default.stg_customers",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -754,7 +756,10 @@
     "eventType": "START",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.stg_payments",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -774,9 +779,7 @@
               }
             ]
           }
-        },
-        "name": "default.stg_payments",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -816,7 +819,10 @@
     "eventType": "START",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.stg_orders",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -836,9 +842,7 @@
               }
             ]
           }
-        },
-        "name": "default.stg_orders",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -884,7 +888,10 @@
     "eventType": "START",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.customers",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -899,9 +906,7 @@
               }
             ]
           }
-        },
-        "name": "default.customers",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -1525,7 +1530,10 @@
     "eventType": "COMPLETE",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.orders",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -1580,9 +1588,7 @@
               }
             ]
           }
-        },
-        "name": "default.orders",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -1628,7 +1634,10 @@
     "eventType": "COMPLETE",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.stg_customers",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -1643,9 +1652,7 @@
               }
             ]
           }
-        },
-        "name": "default.stg_customers",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -1691,7 +1698,10 @@
     "eventType": "COMPLETE",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.stg_payments",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -1711,9 +1721,7 @@
               }
             ]
           }
-        },
-        "name": "default.stg_payments",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -1759,7 +1767,10 @@
     "eventType": "COMPLETE",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.stg_orders",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -1779,9 +1790,7 @@
               }
             ]
           }
-        },
-        "name": "default.stg_orders",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
@@ -1827,7 +1836,10 @@
     "eventType": "COMPLETE",
     "inputs": [
       {
-        "inputFacets": {
+        "inputFacets": {},
+        "name": "default.customers",
+        "namespace": "spark://localhost:10000",
+        "facets": {
           "dataQualityAssertions": {
             "assertions": [
               {
@@ -1842,9 +1854,7 @@
               }
             ]
           }
-        },
-        "name": "default.customers",
-        "namespace": "spark://localhost:10000"
+        }
       }
     ],
     "job": {
