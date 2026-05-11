@@ -67,4 +67,4 @@ def test_added_trimmers_must_be_actual_trimmers():
 def test_no_duplicate_trimmers():
     config = DatasetConfig(extra_trimmers=["openlineage.client.dataset.trimmers.KeyValueTrimmer"])
 
-    assert [*DEFAULT_TRIMMERS] == [type(t) for t in config.get_dataset_name_trimmers()]
+    assert DEFAULT_TRIMMERS == [type(t) for t in config.get_dataset_name_trimmers()]
