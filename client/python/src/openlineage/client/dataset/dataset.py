@@ -147,10 +147,9 @@ class DatasetReducer:
         reduced_datasets: list[ReducedDataset] = []
 
         for ds in datasets:
-            ds = copy.copy(ds)
             original_name = ds.name
             trimmed_name, name_was_trimmed = self._trim(ds.name)
-            ds.name = trimmed_name
+            ds = attr.evolve(ds, name=trimmed_name)
 
             reduced = self._find_matching_reduced(ds, reduced_datasets)
             if reduced:
