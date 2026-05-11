@@ -78,6 +78,7 @@ class DatasetConfig:
                     "Failed to load trimmer '%s': %s. Skipping.",
                     fqn,
                     e,
+                    exc_info=log.isEnabledFor(logging.DEBUG),
                 )
         return active
 
