@@ -247,6 +247,7 @@ class DatasetReducer:
                     f"{trimmer.__class__.__module__}.{trimmer.__class__.__name__}",
                     name,
                     e,
+                    exc_info=log_once.isEnabledFor(logging.DEBUG),
                 )
                 continue
         return name
