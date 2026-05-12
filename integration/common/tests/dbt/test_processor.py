@@ -59,7 +59,7 @@ def dbt_artifact_processor():
         ("job_id", Adapter.BIGQUERY, "bigquery", {}),  # BigQuery
         (
             "query_id",
-            Adapter.FABRIC_WAREHOUSE,
+            Adapter.FABRIC,
             "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com",
             {"server": "myworkspace.datawarehouse.fabric.microsoft.com"},
         ),  # Microsoft Fabric Warehouse
@@ -124,7 +124,7 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
 
 
 def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
-    dbt_artifact_processor.adapter_type = Adapter.FABRIC_WAREHOUSE
+    dbt_artifact_processor.adapter_type = Adapter.FABRIC
     dbt_artifact_processor.extract_dataset_namespace(
         {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433}
     )
@@ -133,6 +133,13 @@ def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
         dbt_artifact_processor.dataset_namespace
         == "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1433"
     )
+
+
+def test_extract_adapter_type_fabric(dbt_artifact_processor):
+    # dbt-fabric profiles use `type: fabric`; the enum name must match so
+    # `Adapter[type.upper()]` resolves it without NotImplementedError.
+    dbt_artifact_processor.extract_adapter_type({"type": "fabric"})
+    assert dbt_artifact_processor.adapter_type == Adapter.FABRIC
 
 
 class TestParseSeverity:
