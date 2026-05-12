@@ -1,6 +1,18 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.47.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.47.1...HEAD)
+
+## [1.47.1](https://github.com/OpenLineage/OpenLineage/compare/1.47.0...1.47.1)
+
+### Changed
+
+* **Client/Go: Rewrite code generator** [`#4501`](https://github.com/OpenLineage/OpenLineage/pull/4501) [@tnazarew](https://github.com/tnazarew)
+  *Replace the `quicktype`-based text-manipulation generator with a structured pipeline that parses spec files via `go-jsonschema`, resolves references, and renders facet classes — enabling extension of generated classes (e.g. byool resources). Also renames `Run` → `RunWrapper` and `RunInfo` → `Run` for consistency with `Job` and `Dataset`.*
+
+### Fixed
+
+* **dbt: Use correct name for fabric adapter** [`#4542`](https://github.com/OpenLineage/OpenLineage/pull/4542) [@mobuchowski](https://github.com/mobuchowski)
+  *Fix `extract_adapter_type` lookup for the Microsoft Fabric adapter by aligning the `Adapter` enum name with the dbt adapter type (`fabric`), while keeping the `fabric-warehouse` OpenLineage namespace unchanged.*
 
 ## [1.47.0](https://github.com/OpenLineage/OpenLineage/compare/1.46.0...1.47.0)
 
