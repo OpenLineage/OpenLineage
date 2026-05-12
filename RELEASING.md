@@ -195,7 +195,23 @@ When asked to "prepare release X.Y.Z based on LLM instructions from @RELEASING.m
      - Thank contributors:
        - Mention the number of contributors if significant
        - Highlight new contributors if, based on the PR content, you can see that it was their first contribution to the OpenLineage project
-     - Format suitable for Slack markdown (use `*` for bold, `` ` `` for code, etc.)
+   - **Format the file as standard GitHub-flavored markdown.** The intended paste workflow is:
+     1. Render the file in a markdown preview (VS Code preview with `⌘K V`, GitHub's web preview, or a browser-rendered view)
+     2. Select all and copy from the **rendered** view (NOT the raw source)
+     3. Paste into Slack — Slack's rich-text paste preserves the rendered formatting and hyperlinks
+   - Syntax conventions (a hybrid: Slack mrkdwn for inline styling, GitHub markdown for links):
+     - Bold: `*bold*` — single asterisks. This is Slack's native bold syntax, so the plain-text clipboard fallback parses cleanly to bold without doubling-up. Trade-off: markdown previews will render single asterisks as *italic*, not bold — but the preview is only a paste mechanism, not the final output. What matters is what Slack renders.
+     - Italic: `_italic_` (underscores — keeps `*` reserved for bold)
+     - Code: `` `code` `` — backticks work fine in both markdown and Slack mrkdwn
+     - Links: `[text](url)` — GitHub markdown syntax. The rendered preview shows them as clickable links, and rich-text paste preserves the hyperlinks.
+     - Emoji: use literal Unicode emoji (🚀, 🐛, 🆕, 👋, 📊, 🔗, 🧑‍🤝‍🧑) — NOT `:emoji_name:` shortcodes, because not all renderers expand them
+   - **Do NOT use** `**bold**` (double asterisks) — Slack's mrkdwn parser running on the plain-text clipboard fallback mishandles the doubled markers and leaves stray `*` characters around the text.
+   - **Do NOT use** `<strong>` HTML tags — empirically also produces stray markers in some renderer/Slack combinations.
+   - Link patterns to use:
+     - Author: `[@username](https://github.com/username)`
+     - PR: `[#4472](https://github.com/OpenLineage/OpenLineage/pull/4472)`
+     - Release notes: `[github.com/.../releases/tag/{RELEASE_VERSION}](https://github.com/OpenLineage/OpenLineage/releases/tag/{RELEASE_VERSION})`
+   - **Do NOT** use Slack mrkdwn syntax like `<url|text>` — when pasted as rich text it survives as literal angle brackets and breaks the link.
 
 ### 10. **Self-verification before completing:**
    - Verify all PR links are valid (format: `https://github.com/OpenLineage/OpenLineage/pull/{PR_NUMBER}`)
