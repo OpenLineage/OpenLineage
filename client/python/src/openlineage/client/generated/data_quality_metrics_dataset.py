@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
@@ -44,6 +46,8 @@ class DataQualityMetricsDatasetFacet(DatasetFacet):
 
     lastUpdated: str | None = attr.field(default=None)  # noqa: N815
     """The last time the dataset was changed"""
+
+    key: ClassVar[str] = "dataQualityMetrics"
 
     @staticmethod
     def _get_schema() -> str:
