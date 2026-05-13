@@ -23,8 +23,8 @@ ext {
 
 dependencies {
     implementation("software.amazon.kinesis:amazon-kinesis-producer:1.0.7")
-    implementation("software.amazon.awssdk:sts:2.44.3")
-    implementation("software.amazon.awssdk:auth:2.44.3")
+    implementation("software.amazon.awssdk:sts:2.44.2")
+    implementation("software.amazon.awssdk:auth:2.44.2")
 }
 
 apply from: '../transports.build.gradle'

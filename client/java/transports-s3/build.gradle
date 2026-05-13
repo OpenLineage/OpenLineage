@@ -22,7 +22,7 @@ ext {
     projectDescription = "S3 OpenLineage transport library"
     s3MockVersion = "5.0.0"
     testcontainersVersion = "2.0.5"
-    awssdkVersion = "2.43.2"
+    awssdkVersion = "2.44.2"
 }
 
 sourceSets {
