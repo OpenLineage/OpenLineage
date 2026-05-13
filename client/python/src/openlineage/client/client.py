@@ -150,7 +150,7 @@ class OpenLineageClient:
             if _filter:
                 self._filters.append(_filter)
 
-        self._dataset_reducer = DatasetReducer(self.config.dataset)
+        self._dataset_reducer: DatasetReducer | None = None
 
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
@@ -612,6 +612,9 @@ class OpenLineageClient:
         return event
 
     def reduce_datasets(self, event: Event) -> Event:
+        if not self._dataset_reducer:
+            self._dataset_reducer = DatasetReducer(self.config.dataset)
+
         if not isinstance(event, event_v2.RunEvent):
             return event
         if event.inputs:
