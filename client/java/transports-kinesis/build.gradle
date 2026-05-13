@@ -18,11 +18,13 @@ plugins {
 }
 
 ext {
-    projectDescription = "GcpLineage OpenLineage transport library"
+    projectDescription = "Kinesis OpenLineage transport library"
 }
 
 dependencies {
-    implementation("com.amazonaws:amazon-kinesis-producer:0.15.12")
+    implementation("software.amazon.kinesis:amazon-kinesis-producer:1.0.7")
+    implementation("software.amazon.awssdk:sts:2.44.3")
+    implementation("software.amazon.awssdk:auth:2.44.3")
 }
 
 apply from: '../transports.build.gradle'
