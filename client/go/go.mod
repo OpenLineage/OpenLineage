@@ -7,9 +7,7 @@ require (
 	github.com/go-stack/stack v1.8.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/iancoleman/strcase v0.3.0
 	github.com/tidwall/pretty v1.2.1
-	golang.org/x/tools v0.42.0
 	google.golang.org/api v0.269.0
 	google.golang.org/protobuf v1.36.11
 )

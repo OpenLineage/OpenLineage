@@ -34,7 +34,6 @@ updates:
     ignore:
       - dependency-name: "org.slf4j.slf4j-api"
       - dependency-name: "org.openapi.generator"
-      - dependency-name: "gradle"
     # https://til.simonwillison.net/github/dependabot-python-setup
     groups:
       client/java:
@@ -90,7 +89,6 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.testcontainers:testcontainers-bom"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "gradle"
     groups:
       integration/spark:
         patterns:

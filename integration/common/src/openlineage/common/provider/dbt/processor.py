@@ -60,6 +60,7 @@ class Adapter(Enum):
     TRINO = "trino"
     GLUE = "glue"
     CLICKHOUSE = "clickhouse"
+    FABRIC = "fabric"
 
     @staticmethod
     def adapters() -> str:
@@ -79,6 +80,21 @@ class SparkConnectionMethod(Enum):
 
 class UnsupportedDbtCommand(Exception):
     pass
+
+
+def expected_from_test_config(config: dict | None, severity: str | None) -> str:
+    """Translate dbt's ``error_if``/``warn_if`` threshold into the spec's ``expected`` value.
+
+    dbt's default is ``"!= 0"`` (any failing row trips the test) — semantically the
+    expected count is 0. A non-default threshold like ``"> 10"`` is carried through
+    so a consumer can distinguish "expected zero failures, got N" from "expected at
+    most 10 failures, got N".
+    """
+    threshold_key = "warn_if" if (severity or "").lower() == "warn" else "error_if"
+    threshold = (config or {}).get(threshold_key)
+    if threshold is None or "".join(str(threshold).split()) == "!=0":
+        return "0"
+    return str(threshold)
 
 
 @attr.define
@@ -370,18 +386,19 @@ class DbtArtifactProcessor:
 
         events = DbtEvents()
         manifest_nodes = {**context.manifest["nodes"], **context.manifest["sources"]}
-        for name, node in manifest_nodes.items():
-            if name.startswith("model."):
+        for unique_id, node in manifest_nodes.items():
+            if unique_id.startswith("model."):
                 node_type = "model"
-            elif name.startswith("source."):
+            elif unique_id.startswith("source."):
                 node_type = "source"
             else:
                 continue
-            if len(assertions[name]) == 0:
+            node_assertions = assertions[unique_id]
+            if len(node_assertions) == 0:
                 continue
 
             assertion_facet = data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(
-                assertions=assertions[name]
+                assertions=node_assertions
             )
 
             namespace, name, _, _ = self.extract_dataset_data(
@@ -418,9 +435,17 @@ class DbtArtifactProcessor:
 
             run_id = str(generate_new_uuid())
             dataset_facets: dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
+            # The aggregate per-model test event is FAIL when any of its assertions failed.
+            # Warn-severity failures count as success so they don't block the pipeline,
+            # mirroring dbt's own success/failure semantics.
+            status = (
+                "success"
+                if all(a.success or (a.severity or "").lower() == "warn" for a in node_assertions)
+                else "error"
+            )
             events.add(
                 self.to_openlineage_events(
-                    "success",
+                    status,
                     started_at,
                     completed_at,
                     self.get_run(run_id=run_id, run_facets=run_facets),
@@ -535,6 +560,13 @@ class DbtArtifactProcessor:
             severity=severity,
         )
 
+        # dbt reports the count of violating rows as `failures` in run_results.json.
+        # `expected` mirrors the test's error_if/warn_if threshold (default "!= 0" → "0").
+        failures = run.get("failures")
+        if failures is not None:
+            obj.actual = str(failures)
+            obj.expected = expected_from_test_config(config, severity)
+
         if not inputs:
             obj.type = test_metadata["name"] if test_metadata else "singular"
             obj.content = (
@@ -584,12 +616,18 @@ class DbtArtifactProcessor:
             if severity:
                 severity = severity.lower()
 
+            failures = run.get("failures")
+            actual = str(failures) if failures is not None else None
+            expected = expected_from_test_config(config, severity) if failures is not None else None
+
             assertions[model_node].append(
                 data_quality_assertions_dataset.Assertion(
                     assertion=name,
                     success=True if run["status"] == "pass" else False,
                     column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
                     severity=severity,
+                    actual=actual,
+                    expected=expected,
                 )
             )
 
@@ -747,7 +785,7 @@ class DbtArtifactProcessor:
                 ),
             }
 
-            documentation = node.metadata_node["description"]
+            documentation = node.metadata_node.get("description", "")
             if documentation:
                 facets["documentation"] = documentation_dataset.DocumentationDatasetFacet(
                     description=documentation
@@ -767,8 +805,9 @@ class DbtArtifactProcessor:
                 facets["schema"] = schema_dataset.SchemaDatasetFacet(fields=fields)
 
             if owner := get_from_nullable_chain(node.metadata_node, ["meta", "owner"]):
+                names = owner if isinstance(owner, list) else [owner]
                 facets["ownership"] = ownership_dataset.OwnershipDatasetFacet(
-                    owners=[ownership_dataset.Owner(name=owner)]
+                    owners=[ownership_dataset.Owner(name=name) for name in names]
                 )
         else:
             facets = {}
@@ -850,6 +889,10 @@ class DbtArtifactProcessor:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:
             return f"mssql://{profile['server']}:{profile['port']}"
+        elif self.adapter_type == Adapter.FABRIC:
+            if "port" in profile:
+                return f"fabric-warehouse://{profile['server']}:{profile['port']}"
+            return f"fabric-warehouse://{profile['server']}"
         elif self.adapter_type == Adapter.DREMIO:
             return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.ATHENA:

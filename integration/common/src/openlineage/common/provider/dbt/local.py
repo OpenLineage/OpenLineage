@@ -198,7 +198,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
     def load_metadata(
         cls, path: str, desired_schema_versions: list[int], logger: logging.Logger
     ) -> dict[Any, Any]:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             metadata = json.load(f)
             str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
             schema_version = cls.get_schema_version(metadata)
@@ -233,7 +233,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
     @staticmethod
     def load_yaml(path: str) -> dict:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return yaml.safe_load(f)
 
     @staticmethod
