@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import attr
 import yaml
 from openlineage.client import constants, event_v2
+from openlineage.client.dataset import DatasetConfig, DatasetReducer
 from openlineage.client.facet_v2 import (
     environment_variables_run,
     source_code_location_job,
@@ -38,7 +39,7 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import deep_merge_dicts
+from openlineage.client.utils import deep_merge_dicts, split_into_list
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -68,6 +69,7 @@ class OpenLineageConfig:
     facets: FacetsConfig = attr.field(factory=FacetsConfig)
     filters: list[FilterConfig] = attr.field(factory=list)
     tags: TagsConfig = attr.field(factory=TagsConfig)
+    dataset: DatasetConfig = attr.field(factory=DatasetConfig)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:
@@ -90,6 +92,12 @@ class OpenLineageConfig:
                 job=params["tags"].get("job", {}),
                 run=params["tags"].get("run", {}),
             )
+        if "dataset" in params:
+            ds = dict(params["dataset"])
+            ds["disabled_trimmers"] = split_into_list(ds.get("disabled_trimmers", []))
+            ds["extra_trimmers"] = split_into_list(ds.get("extra_trimmers", []))
+            config.dataset = DatasetConfig(**ds)
+
         return config
 
 
@@ -142,6 +150,8 @@ class OpenLineageClient:
             if _filter:
                 self._filters.append(_filter)
 
+        self._dataset_reducer: DatasetReducer | None = None
+
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
         warnings.warn(
@@ -183,6 +193,11 @@ class OpenLineageClient:
         event = self.add_environment_facets(event)
         event = self.update_event_tags_facets(event)
         event = self.add_source_code_location_facet(event)
+        if self.config.dataset.reducing_enabled:
+            # Reduce datasets to their canonical form (e.g. "/data/events" instead of
+            # "/data/events/dt=2025-09-01"). All subsequent processing (e.g. event filtering)
+            # will work on these modified values.
+            event = self.reduce_datasets(event)
 
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
@@ -594,4 +609,16 @@ class OpenLineageClient:
                 tag=scl["tag"],
                 pullRequestNumber=scl["pullRequestNumber"],
             )
+        return event
+
+    def reduce_datasets(self, event: Event) -> Event:
+        if not self._dataset_reducer:
+            self._dataset_reducer = DatasetReducer(self.config.dataset)
+
+        if not isinstance(event, event_v2.RunEvent):
+            return event
+        if event.inputs:
+            event.inputs[:] = self._dataset_reducer.reduce_inputs(event.inputs)
+        if event.outputs:
+            event.outputs[:] = self._dataset_reducer.reduce_outputs(event.outputs)
         return event
