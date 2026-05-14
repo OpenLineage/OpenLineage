@@ -12,7 +12,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.SnowflakeUtils;
 import io.openlineage.spark.agent.util.SqlUtils;
-import io.openlineage.spark.agent.vendor.snowflake.Constants;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.OpenLineageSql;
 import io.openlineage.sql.SqlMeta;
@@ -40,7 +39,9 @@ public class SnowflakeDataset {
 
     final String namespace =
         String.format(
-            "%s%s", Constants.SNOWFLAKE_PREFIX, SnowflakeUtils.parseAccountIdentifier(sfFullURL));
+            "%s%s",
+            SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX,
+            SnowflakeUtils.parseAccountIdentifier(sfFullURL));
     // https://docs.snowflake.com/en/user-guide/spark-connector-use#moving-data-from-snowflake-to-spark
     // > Specify one of the following options for the table data to be read:
     // >    - `dbtable`: The name of the table to be read. All columns and records are retrieved

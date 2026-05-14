@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.SnowflakeUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler;
@@ -56,6 +57,15 @@ class IcebergHandlerTest {
   private SparkConf sparkConf = new SparkConf();
   private Configuration hadoopConf = new Configuration();
   private RuntimeConfig runtimeConfig = mock(RuntimeConfig.class);
+
+  private SparkCatalog setupCatalogFacetMocks(String catalogName) {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn(catalogName);
+    return sparkCatalog;
+  }
 
   @ParameterizedTest
   @CsvSource({
@@ -471,11 +481,7 @@ class IcebergHandlerTest {
 
   @Test
   void testGetHadoopCatalogData() {
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
-    when(sparkSession.conf()).thenReturn(runtimeConfig);
-    when(sparkCatalog.name()).thenReturn("test");
+    SparkCatalog sparkCatalog = setupCatalogFacetMocks("test");
     when(runtimeConfig.getAll())
         .thenReturn(
             new Map.Map2(
@@ -499,11 +505,7 @@ class IcebergHandlerTest {
 
   @Test
   void testGetGlueCatalogData() {
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
-    when(sparkSession.conf()).thenReturn(runtimeConfig);
-    when(sparkCatalog.name()).thenReturn("test");
+    SparkCatalog sparkCatalog = setupCatalogFacetMocks("test");
     when(runtimeConfig.getAll()).thenReturn(new Map.Map1("spark.sql.catalog.test.type", "hadoop"));
 
     Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
@@ -519,11 +521,7 @@ class IcebergHandlerTest {
 
   @Test
   void testGetJdbcCatalogData() {
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
-    when(sparkSession.conf()).thenReturn(runtimeConfig);
-    when(sparkCatalog.name()).thenReturn("test");
+    SparkCatalog sparkCatalog = setupCatalogFacetMocks("test");
     when(runtimeConfig.getAll())
         .thenReturn(
             new Map.Map3(
@@ -551,11 +549,7 @@ class IcebergHandlerTest {
 
   @Test
   void testGetBigQueryMetastoreCatalogData() {
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
-    when(sparkSession.conf()).thenReturn(runtimeConfig);
-    when(sparkCatalog.name()).thenReturn("bq_metastore_catalog");
+    SparkCatalog sparkCatalog = setupCatalogFacetMocks("bq_metastore_catalog");
     when(runtimeConfig.getAll())
         .thenReturn(
             new Map.Map4(
@@ -630,12 +624,85 @@ class IcebergHandlerTest {
   }
 
   @Test
-  void testGetBigLakeRestCatalogData() {
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+  @SneakyThrows
+  void testGetDatasetIdentifierForSnowflakeHorizonRestCatalog() {
+    String catalogName = "test";
+    String accountIdentifier = "myorg-myaccount";
+    String catalogUri =
+        "https://" + accountIdentifier + ".snowflakecomputing.com/polaris/api/catalog";
+    String warehouse = "MY_DATABASE";
+    String schema = "MY_SCHEMA";
+    String table = "MY_TABLE";
+    String tableS3Bucket = "s3://my-bucket";
+    String tableS3Path = "warehouse/" + table;
+    String tableLocation = tableS3Bucket + "/" + tableS3Path;
+
     when(sparkSession.conf()).thenReturn(runtimeConfig);
-    when(sparkCatalog.name()).thenReturn("biglake_rest_catalog");
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog." + catalogName + ".type", "rest",
+                "spark.sql.catalog." + catalogName + ".uri", catalogUri,
+                "spark.sql.catalog." + catalogName + ".warehouse", warehouse));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {schema}, table);
+
+    when(sparkCatalog.name()).thenReturn(catalogName);
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn(tableLocation);
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue(
+            "namespace", SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + accountIdentifier)
+        .hasFieldOrPropertyWithValue("name", warehouse + "." + schema + "." + table);
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", tableS3Bucket)
+        .hasFieldOrPropertyWithValue("name", tableS3Path)
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  void testGetSnowflakeHorizonRestCatalogData() {
+    String catalogName = "snowflake_horizon_catalog";
+    String accountIdentifier = "myorg-myaccount";
+    String catalogUri =
+        "https://" + accountIdentifier + ".snowflakecomputing.com/polaris/api/catalog";
+    String warehouseUri = "s3://my-bucket/warehouse";
+
+    SparkCatalog sparkCatalog = setupCatalogFacetMocks(catalogName);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3(
+                "spark.sql.catalog." + catalogName + ".type", "rest",
+                "spark.sql.catalog." + catalogName + ".uri", catalogUri,
+                "spark.sql.catalog." + catalogName + ".warehouse", warehouseUri));
+
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
+
+    assertEquals(catalogName, facet.getName());
+    assertEquals("rest", facet.getType());
+    assertEquals(warehouseUri, facet.getWarehouseUri());
+    assertEquals(catalogUri, facet.getMetadataUri());
+    assertEquals("iceberg", facet.getFramework());
+    assertThat(facet.getCatalogProperties().getAdditionalProperties())
+        .hasFieldOrPropertyWithValue("account_identifier", accountIdentifier);
+  }
+
+  @Test
+  void testGetBigLakeRestCatalogData() {
+    SparkCatalog sparkCatalog = setupCatalogFacetMocks("biglake_rest_catalog");
     when(runtimeConfig.getAll())
         .thenReturn(
             new Map.Map4(
@@ -666,11 +733,7 @@ class IcebergHandlerTest {
 
   @Test
   void testGetBigQueryMetastoreLegacyCatalogData() {
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
-    when(sparkSession.conf()).thenReturn(runtimeConfig);
-    when(sparkCatalog.name()).thenReturn("bq_metastore_catalog");
+    SparkCatalog sparkCatalog = setupCatalogFacetMocks("bq_metastore_catalog");
     when(runtimeConfig.getAll())
         .thenReturn(
             new Map.Map4(

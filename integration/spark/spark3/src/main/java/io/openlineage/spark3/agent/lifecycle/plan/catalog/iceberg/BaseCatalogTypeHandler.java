@@ -33,6 +33,10 @@ abstract class BaseCatalogTypeHandler {
     return new Path(warehouseLocation, String.join(Path.SEPARATOR, pathComponents));
   }
 
+  boolean shouldOverridePrimary() {
+    return false;
+  }
+
   Map<String, String> catalogProperties(Map<String, String> catalogConf) {
     return Collections.emptyMap();
   }
