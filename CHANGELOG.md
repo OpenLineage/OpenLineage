@@ -63,6 +63,11 @@
 * **Spark: Update AWS SDK to resolve CVE-2026-33871** [`#4427`](https://github.com/OpenLineage/OpenLineage/pull/4427) [@Poojitha-R-Rao](https://github.com/Poojitha-R-Rao)
   *Upgrade AWS SDK version to address security vulnerability CVE-2026-33871 (netty-codec).*
 
+### Added
+
+* **Spec: Add AgentAttributionRunFacet for agent-produced lineage events** [`#4409`](https://github.com/OpenLineage/OpenLineage/issues/4409) [@aeoess](https://github.com/aeoess)
+  *Add `AgentAttributionRunFacet` JSON Schema carrying the agent's identifier and the governance attestation (covenant) that was in force at execution time. The `covenantInEffect.digest` provides tamper-evident reference to the signed policy; the `type` is an open enum with `governance_attestation` as the vendor-agnostic reference value; `additionalProperties: true` is scoped to the `covenantInEffect` sub-object so implementations can add vendor-specific fields without facet version bumps.*
+
 ## [1.46.0](https://github.com/OpenLineage/OpenLineage/compare/1.45.0...1.46.0)
 
 ### Added
