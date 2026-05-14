@@ -212,22 +212,18 @@ spotless {
     }
 }
 
-def reportsDir = "${getLayout().getBuildDirectory()}/reports";
-def coverageDir = "${reportsDir}/coverage";
-
 jacoco {
     toolVersion = '0.8.12'
-    reportsDir = file(coverageDir)
 }
 
 jacocoTestReport {
     reports {
         xml {
-            enabled true
+            required = true
         }
         html {
-            enabled true
-            destination = file(coverageDir)
+            required = true
+            outputLocation = layout.buildDirectory.dir("reports/coverage")
         }
     }
 }

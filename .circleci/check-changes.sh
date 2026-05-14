@@ -63,6 +63,7 @@ else
 
     check_change client/java/ true openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
     check_change client/go/ true openlineage-go.yml
+    check_change generator/go/ true openlineage-go.yml
     check_change integration/spark/ true openlineage-java.yml openlineage-spark.yml
     check_change integration/spark-extension-interfaces/ true openlineage-java.yml openlineage-spark.yml
     check_change integration/flink/ true openlineage-java.yml openlineage-flink.yml

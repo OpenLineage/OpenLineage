@@ -65,9 +65,11 @@ type Client struct {
 	producer  string
 }
 
-// Emittable is implemented by event types that can be emitted via the client.
+// Emittable is implemented by RunEvent, DatasetEvent, and JobEvent.
+// The interface uses an unexported marker method so only generated event types
+// can satisfy it, preventing callers from accidentally emitting arbitrary structs.
 type Emittable interface {
-	AsEmittable() Event
+	openlineageEvent()
 }
 
 // Emit sends an OpenLineage event using the client's transport.
@@ -77,7 +79,7 @@ func (olc *Client) Emit(ctx context.Context, event Emittable) (map[string]string
 		return nil, nil
 	}
 
-	return olc.transport.Emit(ctx, event.AsEmittable())
+	return olc.transport.Emit(ctx, event)
 }
 
 // Close releases any resources held by the client's transport (e.g. GCP connections).
@@ -88,9 +90,9 @@ func (olc *Client) Close() error {
 	return olc.transport.Close()
 }
 
-// NewRun creates a Run and sets it as the active Run in ctx.
+// NewRun creates a RunWrapper and sets it as the active RunWrapper in ctx.
 // If ctx already contains a RunContext, it is set as the parent.
-func (olc *Client) NewRun(ctx context.Context, job string) (context.Context, Run) {
+func (olc *Client) NewRun(ctx context.Context, job string) (context.Context, RunWrapper) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -111,7 +113,7 @@ func (olc *Client) NewRun(ctx context.Context, job string) (context.Context, Run
 
 // StartRun calls NewRun and emits a START event.
 // For details, see NewRun.
-func (olc *Client) StartRun(ctx context.Context, job string) (context.Context, Run, error) {
+func (olc *Client) StartRun(ctx context.Context, job string) (context.Context, RunWrapper, error) {
 	ctx, r := olc.NewRun(ctx, job)
 	if _, err := olc.Emit(ctx, r.NewEvent(EventTypeStart)); err != nil {
 		return ctx, r, fmt.Errorf("emit START event: %w", err)
@@ -119,8 +121,8 @@ func (olc *Client) StartRun(ctx context.Context, job string) (context.Context, R
 	return ctx, r, nil
 }
 
-// ExistingRun recreates a Run for a given run ID.
-func (olc *Client) ExistingRun(ctx context.Context, job string, runID uuid.UUID) (context.Context, Run) {
+// ExistingRun recreates a RunWrapper for a given run ID.
+func (olc *Client) ExistingRun(ctx context.Context, job string, runID uuid.UUID) (context.Context, RunWrapper) {
 	rctx := run{
 		client:       olc,
 		runID:        runID,
