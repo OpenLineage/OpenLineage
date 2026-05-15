@@ -3,41 +3,54 @@
 
 import asyncio
 from datetime import datetime
+import logging
 import os
 from typing import List
 from uuid import UUID
 
-from openlineage.client.uuid import generate_new_uuid
+from adapter import PrefectOpenLineageAdapter
+from openlineage.client.uuid import generate_static_uuid
 from prefect.events.clients import get_events_subscriber
 from prefect.client.orchestration import get_client
 from prefect.events.filters import EventFilter, EventNameFilter
 from prefect.runtime import task_run
-from adapter import PrefectOpenLineageAdapter
 
-JOB_NAMESPACE: str = os.environ.get('OPENLINEAGE_NAMESPACE')
-PARENT_RUN_NAMESPACE: str = os.environ.get('PARENT_RUN_NAMESPACE')
+FLOW_NAMESPACE: str = os.environ.get('FLOW_NAMESPACE', 'flow_test')
+JOB_NAMESPACE: str = os.environ.get('OPENLINEAGE_NAMESPACE', 'prefect_test')
+PARENT_RUN_NAMESPACE: str = os.environ.get('PARENT_RUN_NAMESPACE', 'parent_test')
 OL_ADAPTER = PrefectOpenLineageAdapter()
+
+logger: logging.Logger = logging.getLogger(__name__)
+
+@staticmethod
+def build_run_id(
+	execution_time: datetime, 
+	run_name: str, 
+	namespace: str
+) -> str:
+	return str(generate_static_uuid(
+		instant=execution_time,
+        data=f"namespace.{run_name}".encode("utf-8"),
+	))
 
 async def get_task_run_from_task_id(task_id: str):
 
 	async with get_client() as client:
-		task_run = await client.read_task_run(task_id) # to do
+		task_run = await client.read_task_run(task_id) # TODO: type
 		return task_run
 
-async def get_flow_name_from_task_id(task_run_id: str):
+async def get_flow_run_from_task_id(task_run_id: str):
 
 	async with get_client() as client:
-		task_run = await client.read_task_run(task_run_id) # to do
+		task_run = await client.read_task_run(task_run_id) # TODO: type
 		flow_run_id: UUID = task_run.flow_run_id
-		flow_run = await client.read_flow_run(flow_run_id) # to do
+		flow_run = await client.read_flow_run(flow_run_id) # TODO: type
 		flow_id: UUID = flow_run.flow_id
-		flow = await client.read_flow(flow_id) # to do
-
-		return flow.name
+		flow = await client.read_flow(flow_id) # TODO: type
+		return {"start_time": flow_run.start_time, "name": flow.name}
 
 async def collect_and_process_task_runs():
-	"""Requires PREFECT_API_URL environment variable be defined"""	
-	task_context: dict = {}
+	"""Requires PREFECT_API_URL environment variable be set"""
 
 	filter_criteria = EventFilter(
     	event = EventNameFilter(prefix=["prefect.task-run."])
@@ -54,24 +67,29 @@ async def collect_and_process_task_runs():
 			if event_state in ["Running", "Completed", "Failed"]:
 
 				prefect_task_run_id: str = event.resource.id.split(".")[-1]
-				flow_name: str = await get_flow_name_from_task_id(prefect_task_run_id)
+				ol_task_run_id: str = build_run_id(event_time, task_name, JOB_NAMESPACE)
 
-				ol_run_id: str = str(generate_new_uuid())
-				task_context[task_name] = ol_run_id
+				# Get flow run info
+				flow_namespace: str = FLOW_NAMESPACE
+				flow_data = await get_flow_run_from_task_id(prefect_task_run_id)
+				flow_name = flow_data["name"]
+				flow_run_id: str = build_run_id(flow_data["start_time"], flow_name, FLOW_NAMESPACE)
 
-				parent_runs: list = None
+				# Get job dependencies (Prefect "parents") info
 				parents: bool = False
 				try:
-					parent_runs = []
+					parent_runs: list = []
 					task_parents: List = event.payload["task_run"]["task_inputs"]["__parents__"]
 					for parent in task_parents:
-						task_id: str = parent["id"] if parent["input_type"] == "task_run" else None
+						task_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
 						if task_id:
 							parent_run = await get_task_run_from_task_id(task_id)
 							parent_name = parent_run.name.split("-")[0]
-							parent_runs.append({"name": parent_name, "namespace": PARENT_RUN_NAMESPACE, "id": task_context[parent_name]})
+							parent_run_id = build_run_id(parent_run.start_time, parent_name, PARENT_RUN_NAMESPACE)
+							parent_runs.append({"name": parent_name, "namespace": PARENT_RUN_NAMESPACE, "id": parent_run_id})
 					parents = True
 				except:
+					logger.info(f"No task parents found for {prefect_task_run_id}.")
 					pass
 
 				match event_state:
@@ -83,12 +101,14 @@ async def collect_and_process_task_runs():
 						event_type: str = "FAILED"
 
 				OL_ADAPTER.create_and_emit_event(
-					ol_run_id,
-					event_type, 
-					event_time, 
-					flow_name, 
-					task_name, 
-					parentRuns = parent_runs if parents else None
+					runId=ol_task_run_id,
+					eventType=event_type, 
+					eventTime=event_time,
+					flowRunId=flow_run_id,
+					flowName=flow_name,
+					flowNamespace=flow_namespace,
+					taskName=task_name, 
+					jobDeps=parent_runs
 				)
 
 asyncio.run(collect_and_process_task_runs())

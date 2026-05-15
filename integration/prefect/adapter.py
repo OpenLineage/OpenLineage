@@ -6,10 +6,11 @@
 from datetime import datetime
 import logging
 import os
-from typing import List, Dict, Optional
+from typing import List
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.facet import JobTypeJobFacet, ParentRunFacet
+from openlineage.client.facet_v2 import ( job_dependencies_run )
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
 
@@ -23,7 +24,7 @@ class PrefectOpenLineageAdapter:
         client: OpenLineageClient | None = None,
         job_namespace: str | None = None,
     ):
-      self.client = client or OpenLineageClient()
+      self.client = client or OpenLineageClient('http://localhost:5000')
       self.job_namespace = job_namespace or os.getenv("JOB_NAMESPACE", "default")
 
     def generate_job_name(self, flow_name: str, task_name: str):
@@ -34,9 +35,11 @@ class PrefectOpenLineageAdapter:
         runId: str = None,
         eventType: str = None,
         eventTime: datetime = None,
+        flowRunId: str = None,
         flowName: str = None,
+        flowNamespace: str = None,
         taskName: str = None,
-        parentRuns: List = None
+        jobDeps: List = None
     ) -> RunEvent:
 
         match eventType:
@@ -45,32 +48,41 @@ class PrefectOpenLineageAdapter:
             case 'COMPLETE':
                 eventType: RunState = RunState.COMPLETE
             case 'FAILED':
-                eventType: RunState = RunState.FAILED
+                eventType: RunState = RunState.FAIL
 
         job_facets = {"jobType": JobTypeJobFacet(
             processingType="BATCH", 
             integration="Prefect", 
             jobType="TASK"
         )}
-
+        
         def build_run_facets():
-            if parentRuns:
-                parent = parentRuns[0] # to do: support multiple parents
-                run_id = parent["id"]
-                run_namespace = parent["namespace"]
-                run_name = parent["name"]
+            if jobDeps:
+                dep = jobDeps[0] # TODO: support multiple dependencies
+                upstream_job = [job_dependencies_run.JobDependency(
+                    job=job_dependencies_run.JobIdentifier(
+                        namespace=dep["namespace"], 
+                        name=dep["name"]
+                    )
+                )]
                 return {"parentRun": ParentRunFacet.create(
-                            run_id, run_namespace, run_name
-                        )}
+                                flowRunId, flowNamespace, flowName
+                            ),
+                            "jobDependencies": job_dependencies_run.JobDependenciesRunFacet(
+                                upstream = upstream_job
+                            )
+                        }
             else:
-                return None
+                return {"parentRun": ParentRunFacet.create(
+                            flowRunId, flowNamespace, flowName
+                        )}
 
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
             run=Run(runId, build_run_facets()),
             job=Job(
-                'prefect_test', # to do: replace with constant
+                self.job_namespace,
                 self.generate_job_name(flowName, taskName),
                 job_facets
             ),
