@@ -344,14 +344,14 @@ func emitStructField(b *strings.Builder, indent string, field ir.Field, outField
 
 func requiredValueExpr(field ir.Field, srcExpr, pathExpr string) (string, bool) {
 	if kind := field.Type.TFKind(); kind != "" {
-		return fmt.Sprintf("required%sValue(diags, %s, %s)", kind, srcExpr, pathExpr), true
+		return fmt.Sprintf("Required%sValue(diags, %s, %s)", kind, srcExpr, pathExpr), true
 	}
 	return "", false
 }
 
 func optionalValueExpr(field ir.Field, srcExpr string) (string, bool) {
 	if kind := field.Type.TFKind(); kind != "" {
-		return fmt.Sprintf("optional%sValue(%s)", kind, srcExpr), true
+		return fmt.Sprintf("Optional%sValue(%s)", kind, srcExpr), true
 	}
 	return "", false
 }

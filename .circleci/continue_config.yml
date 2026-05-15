@@ -1306,12 +1306,8 @@ jobs:
     docker:
       - image: cimg/go:1.26
     resource_class: medium
-    environment:
-      GOWORK: ~/openlineage/byool/terraform/go.work
     steps:
       - *checkout_project_root
-      - attach_workspace:
-          at: ~/
       - run:
           name: Create go.work file
           command: |

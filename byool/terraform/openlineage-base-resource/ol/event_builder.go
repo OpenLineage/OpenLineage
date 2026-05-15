@@ -77,8 +77,8 @@ func (e *OpenLineageEventBuilder) BuildJobEvent(data *JobResourceModel) *openlin
 	base := path.Empty()
 
 	event := openlineage.NewJobEvent(
-		requiredStringValue(e.Diagnostics, data.Name, base.AtName("name")),
-		requiredStringValue(e.Diagnostics, data.Namespace, base.AtName("namespace")),
+		RequiredStringValue(e.Diagnostics, data.Name, base.AtName("name")),
+		RequiredStringValue(e.Diagnostics, data.Namespace, base.AtName("namespace")),
 		e.producer,
 	)
 
@@ -102,8 +102,8 @@ func (e *OpenLineageEventBuilder) BuildDatasetEvent(data *DatasetResourceModel) 
 	base := path.Empty()
 	facetsList := e.buildDatasetFacets(&data.DatasetModel, base)
 	return openlineage.NewDatasetEvent(
-		requiredStringValue(e.Diagnostics, data.Name, base.AtName("name")),
-		requiredStringValue(e.Diagnostics, data.Namespace, base.AtName("namespace")),
+		RequiredStringValue(e.Diagnostics, data.Name, base.AtName("name")),
+		RequiredStringValue(e.Diagnostics, data.Namespace, base.AtName("namespace")),
 		e.producer,
 		facetsList...,
 	)
@@ -113,8 +113,8 @@ func (e *OpenLineageEventBuilder) BuildDatasetEvent(data *DatasetResourceModel) 
 
 func (e *OpenLineageEventBuilder) buildInputElement(input *OLInputModel, base path.Path) openlineage.InputElement {
 	ie := openlineage.NewInputElement(
-		requiredStringValue(e.Diagnostics, input.Name, base.AtName("name")),
-		requiredStringValue(e.Diagnostics, input.Namespace, base.AtName("namespace")),
+		RequiredStringValue(e.Diagnostics, input.Name, base.AtName("name")),
+		RequiredStringValue(e.Diagnostics, input.Namespace, base.AtName("namespace")),
 	)
 	ie = ie.WithFacets(e.buildDatasetFacets(&input.DatasetModel, base)...)
 	return ie
@@ -122,8 +122,8 @@ func (e *OpenLineageEventBuilder) buildInputElement(input *OLInputModel, base pa
 
 func (e *OpenLineageEventBuilder) buildOutputElement(output *OLOutputModel, base path.Path) openlineage.OutputElement {
 	oe := openlineage.NewOutputElement(
-		requiredStringValue(e.Diagnostics, output.Name, base.AtName("name")),
-		requiredStringValue(e.Diagnostics, output.Namespace, base.AtName("namespace")),
+		RequiredStringValue(e.Diagnostics, output.Name, base.AtName("name")),
+		RequiredStringValue(e.Diagnostics, output.Namespace, base.AtName("namespace")),
 	)
 	oe = oe.WithFacets(e.buildDatasetFacets(&output.DatasetModel, base)...)
 
@@ -135,7 +135,7 @@ func (e *OpenLineageEventBuilder) buildOutputElement(output *OLOutputModel, base
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-func requiredStringValue(diags *diag.Diagnostics, attr types.String, p path.Path) string {
+func RequiredStringValue(diags *diag.Diagnostics, attr types.String, p path.Path) string {
 	if attr.IsNull() || attr.IsUnknown() {
 		diags.AddAttributeError(p, "Missing required attribute",
 			fmt.Sprintf("Attribute %q must be set. The attribute is validated in config so it shouldn't happen", p))
@@ -143,7 +143,7 @@ func requiredStringValue(diags *diag.Diagnostics, attr types.String, p path.Path
 	return attr.ValueString()
 }
 
-func requireBoolValue(diags *diag.Diagnostics, attr types.Bool, p path.Path) bool {
+func RequiredBoolValue(diags *diag.Diagnostics, attr types.Bool, p path.Path) bool {
 	if attr.IsNull() || attr.IsUnknown() {
 		diags.AddAttributeError(p, "Missing required attribute",
 			fmt.Sprintf("Attribute %q must be set. The attribute is validated in config so it shouldn't happen", p))
@@ -151,7 +151,7 @@ func requireBoolValue(diags *diag.Diagnostics, attr types.Bool, p path.Path) boo
 	return attr.ValueBool()
 }
 
-func requireInt64Value(diags *diag.Diagnostics, attr types.Int64, p path.Path) int64 {
+func RequiredInt64Value(diags *diag.Diagnostics, attr types.Int64, p path.Path) int64 {
 	if attr.IsNull() || attr.IsUnknown() {
 		diags.AddAttributeError(p, "Missing required attribute",
 			fmt.Sprintf("Attribute %q must be set. The attribute is validated in config so it shouldn't happen", p))
@@ -159,7 +159,7 @@ func requireInt64Value(diags *diag.Diagnostics, attr types.Int64, p path.Path) i
 	return attr.ValueInt64()
 }
 
-func requireFloat64Value(diags *diag.Diagnostics, attr types.Float64, p path.Path) float64 {
+func RequiredFloat64Value(diags *diag.Diagnostics, attr types.Float64, p path.Path) float64 {
 	if attr.IsNull() || attr.IsUnknown() {
 		diags.AddAttributeError(p, "Missing required attribute",
 			fmt.Sprintf("Attribute %q must be set. The attribute is validated in config so it shouldn't happen", p))
@@ -171,7 +171,7 @@ func isKnownString(v types.String) bool {
 	return !v.IsNull() && !v.IsUnknown()
 }
 
-func optionalStringValue(v types.String) *string {
+func OptionalStringValue(v types.String) *string {
 	if !isKnownString(v) {
 		return nil
 	}
@@ -179,7 +179,7 @@ func optionalStringValue(v types.String) *string {
 	return &val
 }
 
-func optionalBoolValue(v types.Bool) *bool {
+func OptionalBoolValue(v types.Bool) *bool {
 	if v.IsNull() || v.IsUnknown() {
 		return nil
 	}
@@ -187,7 +187,7 @@ func optionalBoolValue(v types.Bool) *bool {
 	return &val
 }
 
-func optionalInt64Value(v types.Int64) *int64 {
+func OptionalInt64Value(v types.Int64) *int64 {
 	if v.IsNull() || v.IsUnknown() {
 		return nil
 	}
@@ -195,7 +195,7 @@ func optionalInt64Value(v types.Int64) *int64 {
 	return &val
 }
 
-func optionalFloat64Value(v types.Float64) *float64 {
+func OptionalFloat64Value(v types.Float64) *float64 {
 	if v.IsNull() || v.IsUnknown() {
 		return nil
 	}

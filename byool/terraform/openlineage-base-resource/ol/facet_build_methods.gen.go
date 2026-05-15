@@ -16,9 +16,9 @@ import (
 func (m *CatalogDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.DatasetFacet {
 	f := facets.NewCatalogDatasetFacet(
 		producer,
-		requiredStringValue(diags, m.Framework, base.AtName("framework")),
-		requiredStringValue(diags, m.Name, base.AtName("name")),
-		requiredStringValue(diags, m.Type, base.AtName("type")),
+		RequiredStringValue(diags, m.Framework, base.AtName("framework")),
+		RequiredStringValue(diags, m.Name, base.AtName("name")),
+		RequiredStringValue(diags, m.Type, base.AtName("type")),
 	)
 	if len(m.CatalogProperties) > 0 {
 		_mCatalogProperties := make(map[string]string, len(m.CatalogProperties))
@@ -31,9 +31,9 @@ func (m *CatalogDatasetFacetModel) BuildDatasetFacet(producer string, diags *dia
 			f.CatalogProperties = _mCatalogProperties
 		}
 	}
-	f.MetadataURI = optionalStringValue(m.MetadataUri)
-	f.Source = optionalStringValue(m.Source)
-	f.WarehouseURI = optionalStringValue(m.WarehouseUri)
+	f.MetadataURI = OptionalStringValue(m.MetadataUri)
+	f.Source = OptionalStringValue(m.Source)
+	f.WarehouseURI = OptionalStringValue(m.WarehouseUri)
 	return f
 }
 
@@ -48,16 +48,16 @@ func (m *ColumnLineageDatasetFacetModel) BuildDatasetFacet(producer string, diag
 			for _i3, _item3 := range _item2.Transformations {
 				_p3 := _p2.AtName("transformations").AtListIndex(_i3)
 				inputFieldTransformation = append(inputFieldTransformation, facets.InputFieldTransformation{
-					Description: optionalStringValue(_item3.Description),
-					Masking:     optionalBoolValue(_item3.Masking),
-					Subtype:     optionalStringValue(_item3.Subtype),
-					Type:        requiredStringValue(diags, _item3.Type, _p3.AtName("type")),
+					Description: OptionalStringValue(_item3.Description),
+					Masking:     OptionalBoolValue(_item3.Masking),
+					Subtype:     OptionalStringValue(_item3.Subtype),
+					Type:        RequiredStringValue(diags, _item3.Type, _p3.AtName("type")),
 				})
 			}
 			inputField = append(inputField, facets.InputField{
-				Field:           requiredStringValue(diags, _item2.Field, _p2.AtName("field")),
-				Name:            requiredStringValue(diags, _item2.Name, _p2.AtName("name")),
-				Namespace:       requiredStringValue(diags, _item2.Namespace, _p2.AtName("namespace")),
+				Field:           RequiredStringValue(diags, _item2.Field, _p2.AtName("field")),
+				Name:            RequiredStringValue(diags, _item2.Name, _p2.AtName("name")),
+				Namespace:       RequiredStringValue(diags, _item2.Namespace, _p2.AtName("namespace")),
 				Transformations: inputFieldTransformation,
 			})
 		}
@@ -76,16 +76,16 @@ func (m *ColumnLineageDatasetFacetModel) BuildDatasetFacet(producer string, diag
 		for _i5, _item5 := range _item4.Transformations {
 			_p5 := _p4.AtName("transformations").AtListIndex(_i5)
 			inputFieldTransformation2 = append(inputFieldTransformation2, facets.InputFieldTransformation{
-				Description: optionalStringValue(_item5.Description),
-				Masking:     optionalBoolValue(_item5.Masking),
-				Subtype:     optionalStringValue(_item5.Subtype),
-				Type:        requiredStringValue(diags, _item5.Type, _p5.AtName("type")),
+				Description: OptionalStringValue(_item5.Description),
+				Masking:     OptionalBoolValue(_item5.Masking),
+				Subtype:     OptionalStringValue(_item5.Subtype),
+				Type:        RequiredStringValue(diags, _item5.Type, _p5.AtName("type")),
 			})
 		}
 		inputField2 = append(inputField2, facets.InputField{
-			Field:           requiredStringValue(diags, _item4.Field, _p4.AtName("field")),
-			Name:            requiredStringValue(diags, _item4.Name, _p4.AtName("name")),
-			Namespace:       requiredStringValue(diags, _item4.Namespace, _p4.AtName("namespace")),
+			Field:           RequiredStringValue(diags, _item4.Field, _p4.AtName("field")),
+			Name:            RequiredStringValue(diags, _item4.Name, _p4.AtName("name")),
+			Namespace:       RequiredStringValue(diags, _item4.Namespace, _p4.AtName("namespace")),
 			Transformations: inputFieldTransformation2,
 		})
 	}
@@ -96,16 +96,16 @@ func (m *ColumnLineageDatasetFacetModel) BuildDatasetFacet(producer string, diag
 func (m *DatasetTypeDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.DatasetFacet {
 	f := facets.NewDatasetTypeDatasetFacet(
 		producer,
-		requiredStringValue(diags, m.DatasetType, base.AtName("dataset_type")),
+		RequiredStringValue(diags, m.DatasetType, base.AtName("dataset_type")),
 	)
-	f.SubType = optionalStringValue(m.SubType)
+	f.SubType = OptionalStringValue(m.SubType)
 	return f
 }
 
 func (m *DatasetVersionDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.DatasetFacet {
 	f := facets.NewDatasetVersionDatasetFacet(
 		producer,
-		requiredStringValue(diags, m.DatasetVersion, base.AtName("dataset_version")),
+		RequiredStringValue(diags, m.DatasetVersion, base.AtName("dataset_version")),
 	)
 	return f
 }
@@ -114,17 +114,17 @@ func (m *DatasourceDatasetFacetModel) BuildDatasetFacet(producer string, diags *
 	f := facets.NewDatasourceDatasetFacet(
 		producer,
 	)
-	f.Name = optionalStringValue(m.Name)
-	f.URI = optionalStringValue(m.Uri)
+	f.Name = OptionalStringValue(m.Name)
+	f.URI = OptionalStringValue(m.Uri)
 	return f
 }
 
 func (m *DocumentationDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.DatasetFacet {
 	f := facets.NewDocumentationDatasetFacet(
 		producer,
-		requiredStringValue(diags, m.Description, base.AtName("description")),
+		RequiredStringValue(diags, m.Description, base.AtName("description")),
 	)
-	f.ContentType = optionalStringValue(m.ContentType)
+	f.ContentType = OptionalStringValue(m.ContentType)
 	return f
 }
 
@@ -133,8 +133,8 @@ func (m *HierarchyDatasetFacetModel) BuildDatasetFacet(producer string, diags *d
 	for _i1, _item1 := range m.Hierarchy {
 		_p1 := base.AtName("hierarchy").AtListIndex(_i1)
 		hierarchyDatasetFacetLevel = append(hierarchyDatasetFacetLevel, facets.HierarchyDatasetFacetLevel{
-			Name: requiredStringValue(diags, _item1.Name, _p1.AtName("name")),
-			Type: requiredStringValue(diags, _item1.Type, _p1.AtName("type")),
+			Name: RequiredStringValue(diags, _item1.Name, _p1.AtName("name")),
+			Type: RequiredStringValue(diags, _item1.Type, _p1.AtName("type")),
 		})
 	}
 	f := facets.NewHierarchyDatasetFacet(
@@ -152,8 +152,8 @@ func (m *OwnershipDatasetFacetModel) BuildDatasetFacet(producer string, diags *d
 	for _i1, _item1 := range m.Owners {
 		_p1 := base.AtName("owners").AtListIndex(_i1)
 		ownershipDatasetFacetOwner = append(ownershipDatasetFacetOwner, facets.OwnershipDatasetFacetOwner{
-			Name: requiredStringValue(diags, _item1.Name, _p1.AtName("name")),
-			Type: optionalStringValue(_item1.Type),
+			Name: RequiredStringValue(diags, _item1.Name, _p1.AtName("name")),
+			Type: OptionalStringValue(_item1.Type),
 		})
 	}
 	f.Owners = ownershipDatasetFacetOwner
@@ -168,10 +168,10 @@ func (m *SchemaDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag
 	for _i1, _item1 := range m.Fields {
 		_p1 := base.AtName("fields").AtListIndex(_i1)
 		schemaDatasetFacetFields = append(schemaDatasetFacetFields, facets.SchemaDatasetFacetFields{
-			Description:     optionalStringValue(_item1.Description),
-			Name:            requiredStringValue(diags, _item1.Name, _p1.AtName("name")),
-			OrdinalPosition: optionalInt64Value(_item1.OrdinalPosition),
-			Type:            optionalStringValue(_item1.Type),
+			Description:     OptionalStringValue(_item1.Description),
+			Name:            RequiredStringValue(diags, _item1.Name, _p1.AtName("name")),
+			OrdinalPosition: OptionalInt64Value(_item1.OrdinalPosition),
+			Type:            OptionalStringValue(_item1.Type),
 		})
 	}
 	f.Fields = schemaDatasetFacetFields
@@ -181,9 +181,9 @@ func (m *SchemaDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag
 func (m *StorageDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.DatasetFacet {
 	f := facets.NewStorageDatasetFacet(
 		producer,
-		requiredStringValue(diags, m.StorageLayer, base.AtName("storage_layer")),
+		RequiredStringValue(diags, m.StorageLayer, base.AtName("storage_layer")),
 	)
-	f.FileFormat = optionalStringValue(m.FileFormat)
+	f.FileFormat = OptionalStringValue(m.FileFormat)
 	return f
 }
 
@@ -195,9 +195,9 @@ func (m *SymlinksDatasetFacetModel) BuildDatasetFacet(producer string, diags *di
 	for _i1, _item1 := range m.Identifiers {
 		_p1 := base.AtName("identifiers").AtListIndex(_i1)
 		symlinksDatasetFacetIdentifier = append(symlinksDatasetFacetIdentifier, facets.SymlinksDatasetFacetIdentifier{
-			Name:      requiredStringValue(diags, _item1.Name, _p1.AtName("name")),
-			Namespace: requiredStringValue(diags, _item1.Namespace, _p1.AtName("namespace")),
-			Type:      requiredStringValue(diags, _item1.Type, _p1.AtName("type")),
+			Name:      RequiredStringValue(diags, _item1.Name, _p1.AtName("name")),
+			Namespace: RequiredStringValue(diags, _item1.Namespace, _p1.AtName("namespace")),
+			Type:      RequiredStringValue(diags, _item1.Type, _p1.AtName("type")),
 		})
 	}
 	f.Identifiers = symlinksDatasetFacetIdentifier
@@ -212,10 +212,10 @@ func (m *TagsDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag.D
 	for _i1, _item1 := range m.Tags {
 		_p1 := base.AtName("tags").AtListIndex(_i1)
 		tagsDatasetFacetFields = append(tagsDatasetFacetFields, facets.TagsDatasetFacetFields{
-			Field:  optionalStringValue(_item1.Field),
-			Key:    requiredStringValue(diags, _item1.Key, _p1.AtName("key")),
-			Source: optionalStringValue(_item1.Source),
-			Value:  requiredStringValue(diags, _item1.Value, _p1.AtName("value")),
+			Field:  OptionalStringValue(_item1.Field),
+			Key:    RequiredStringValue(diags, _item1.Key, _p1.AtName("key")),
+			Source: OptionalStringValue(_item1.Source),
+			Value:  RequiredStringValue(diags, _item1.Value, _p1.AtName("value")),
 		})
 	}
 	f.Tags = tagsDatasetFacetFields
@@ -225,19 +225,19 @@ func (m *TagsDatasetFacetModel) BuildDatasetFacet(producer string, diags *diag.D
 func (m *DocumentationJobFacetModel) BuildJobFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.JobFacet {
 	f := facets.NewDocumentationJobFacet(
 		producer,
-		requiredStringValue(diags, m.Description, base.AtName("description")),
+		RequiredStringValue(diags, m.Description, base.AtName("description")),
 	)
-	f.ContentType = optionalStringValue(m.ContentType)
+	f.ContentType = OptionalStringValue(m.ContentType)
 	return f
 }
 
 func (m *JobTypeJobFacetModel) BuildJobFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.JobFacet {
 	f := facets.NewJobTypeJobFacet(
 		producer,
-		requiredStringValue(diags, m.Integration, base.AtName("integration")),
-		requiredStringValue(diags, m.ProcessingType, base.AtName("processing_type")),
+		RequiredStringValue(diags, m.Integration, base.AtName("integration")),
+		RequiredStringValue(diags, m.ProcessingType, base.AtName("processing_type")),
 	)
-	f.JobType = optionalStringValue(m.JobType)
+	f.JobType = OptionalStringValue(m.JobType)
 	return f
 }
 
@@ -249,8 +249,8 @@ func (m *OwnershipJobFacetModel) BuildJobFacet(producer string, diags *diag.Diag
 	for _i1, _item1 := range m.Owners {
 		_p1 := base.AtName("owners").AtListIndex(_i1)
 		ownershipJobFacetOwner = append(ownershipJobFacetOwner, facets.OwnershipJobFacetOwner{
-			Name: requiredStringValue(diags, _item1.Name, _p1.AtName("name")),
-			Type: optionalStringValue(_item1.Type),
+			Name: RequiredStringValue(diags, _item1.Name, _p1.AtName("name")),
+			Type: OptionalStringValue(_item1.Type),
 		})
 	}
 	f.Owners = ownershipJobFacetOwner
@@ -260,17 +260,17 @@ func (m *OwnershipJobFacetModel) BuildJobFacet(producer string, diags *diag.Diag
 func (m *SQLJobFacetModel) BuildJobFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.JobFacet {
 	f := facets.NewSQLJobFacet(
 		producer,
-		requiredStringValue(diags, m.Query, base.AtName("query")),
+		RequiredStringValue(diags, m.Query, base.AtName("query")),
 	)
-	f.Dialect = optionalStringValue(m.Dialect)
+	f.Dialect = OptionalStringValue(m.Dialect)
 	return f
 }
 
 func (m *SourceCodeJobFacetModel) BuildJobFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.JobFacet {
 	f := facets.NewSourceCodeJobFacet(
 		producer,
-		requiredStringValue(diags, m.Language, base.AtName("language")),
-		requiredStringValue(diags, m.SourceCode, base.AtName("source_code")),
+		RequiredStringValue(diags, m.Language, base.AtName("language")),
+		RequiredStringValue(diags, m.SourceCode, base.AtName("source_code")),
 	)
 	return f
 }
@@ -278,15 +278,15 @@ func (m *SourceCodeJobFacetModel) BuildJobFacet(producer string, diags *diag.Dia
 func (m *SourceCodeLocationJobFacetModel) BuildJobFacet(producer string, diags *diag.Diagnostics, base path.Path) facets.JobFacet {
 	f := facets.NewSourceCodeLocationJobFacet(
 		producer,
-		requiredStringValue(diags, m.Type, base.AtName("type")),
-		requiredStringValue(diags, m.Url, base.AtName("url")),
+		RequiredStringValue(diags, m.Type, base.AtName("type")),
+		RequiredStringValue(diags, m.Url, base.AtName("url")),
 	)
-	f.Branch = optionalStringValue(m.Branch)
-	f.Path = optionalStringValue(m.Path)
-	f.PullRequestNumber = optionalStringValue(m.PullRequestNumber)
-	f.RepoURL = optionalStringValue(m.RepoUrl)
-	f.Tag = optionalStringValue(m.Tag)
-	f.Version = optionalStringValue(m.Version)
+	f.Branch = OptionalStringValue(m.Branch)
+	f.Path = OptionalStringValue(m.Path)
+	f.PullRequestNumber = OptionalStringValue(m.PullRequestNumber)
+	f.RepoURL = OptionalStringValue(m.RepoUrl)
+	f.Tag = OptionalStringValue(m.Tag)
+	f.Version = OptionalStringValue(m.Version)
 	return f
 }
 
@@ -298,9 +298,9 @@ func (m *TagsJobFacetModel) BuildJobFacet(producer string, diags *diag.Diagnosti
 	for _i1, _item1 := range m.Tags {
 		_p1 := base.AtName("tags").AtListIndex(_i1)
 		tagsJobFacetFields = append(tagsJobFacetFields, facets.TagsJobFacetFields{
-			Key:    requiredStringValue(diags, _item1.Key, _p1.AtName("key")),
-			Source: optionalStringValue(_item1.Source),
-			Value:  requiredStringValue(diags, _item1.Value, _p1.AtName("value")),
+			Key:    RequiredStringValue(diags, _item1.Key, _p1.AtName("key")),
+			Source: OptionalStringValue(_item1.Source),
+			Value:  RequiredStringValue(diags, _item1.Value, _p1.AtName("value")),
 		})
 	}
 	f.Tags = tagsJobFacetFields
