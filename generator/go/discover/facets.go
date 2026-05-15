@@ -96,7 +96,6 @@ func extractDefName(ref string) string {
 	return ref[i+len(suffix):]
 }
 
-
 // FindAllFacets returns all facet types (job, dataset, run, input, output) without
 // any exclusion filter. Used for OL client code generation.
 func FindAllFacets(schema *schemas.Schema) []Facet {
@@ -126,3 +125,22 @@ func FindAllFacets(schema *schemas.Schema) []Facet {
 	return out
 }
 
+func IsTerraformExcluded(facets []Facet) bool {
+	for _, f := range facets {
+		switch f.Name {
+		case "DataQualityMetricsDatasetFacet",
+			"LifecycleStateChangeDatasetFacet",
+			"GcpComposerJobFacet",
+			"GcpLineageJobFacet",
+			"BaseSubsetDatasetFacet":
+			return true
+		}
+		switch f.Type {
+		case FacetRun,
+			FacetInputDataset,
+			FacetOutputDataset:
+			return true
+		}
+	}
+	return false
+}
