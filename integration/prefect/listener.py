@@ -76,9 +76,8 @@ async def collect_and_process_task_runs():
 				flow_run_id: str = build_run_id(flow_data["start_time"], flow_name, FLOW_NAMESPACE)
 
 				# Get job dependencies (Prefect "parents") info
-				parents: bool = False
+				parent_runs = []
 				try:
-					parent_runs: list = []
 					task_parents: List = event.payload["task_run"]["task_inputs"]["__parents__"]
 					for parent in task_parents:
 						task_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
