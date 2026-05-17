@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime
 import logging
 import os
+import requests
 from typing import List
 from uuid import UUID
 
@@ -25,12 +26,20 @@ logger: logging.Logger = logging.getLogger(__name__)
 def build_run_id(
 	execution_time: datetime, 
 	run_name: str, 
-	namespace: str
+	namespace
 ) -> str:
 	return str(generate_static_uuid(
 		instant=execution_time,
         data=f"namespace.{run_name}".encode("utf-8"),
 	))
+
+def get_prefect_version():
+	"""Requires PREFECT_API_URL"""
+
+	url = os.environ.get("PREFECT_API_URL")+"/admin/version"
+	version = requests.get(url).json()
+	return version
+
 
 async def get_task_run_from_task_id(task_id: str):
 
@@ -100,6 +109,9 @@ async def collect_and_process_task_runs():
 					flow_name = flow_data["flow_name"]
 					flow_run_id: str = build_run_id(flow_data["start_time"], flow_name, FLOW_NAMESPACE)
 
+					# Get Prefect version
+					prefect_version = get_prefect_version()
+
 					OL_ADAPTER.create_and_emit_event(
 						runId=ol_task_run_id,
 						eventType=event_type, 
@@ -108,7 +120,8 @@ async def collect_and_process_task_runs():
 						flowName=flow_name,
 						flowNamespace=flow_namespace,
 						taskName=task_name, 
-						jobDeps=parent_runs
+						jobDeps=parent_runs,
+						prefectVersion=prefect_version
 					)
 
 asyncio.run(collect_and_process_task_runs())

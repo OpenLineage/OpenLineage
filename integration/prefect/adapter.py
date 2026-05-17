@@ -10,7 +10,7 @@ from typing import List
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.facet import JobTypeJobFacet, ParentRunFacet
-from openlineage.client.facet_v2 import ( job_dependencies_run )
+from openlineage.client.facet_v2 import ( job_dependencies_run, processing_engine_run )
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
 
@@ -24,7 +24,7 @@ class PrefectOpenLineageAdapter:
         client: OpenLineageClient | None = None,
         job_namespace: str | None = None,
     ):
-      self.client = client or OpenLineageClient('http://localhost:5000')
+      self.client = client or OpenLineageClient('http://localhost:5000') # for testing
       self.job_namespace = job_namespace or os.getenv("JOB_NAMESPACE", "default")
 
     def generate_job_name(self, flow_name: str, task_name: str):
@@ -39,7 +39,8 @@ class PrefectOpenLineageAdapter:
         flowName: str = None,
         flowNamespace: str = None,
         taskName: str = None,
-        jobDeps: List = None
+        jobDeps: List = None,
+        prefectVersion: str = None
     ) -> RunEvent:
 
         match eventType:
@@ -66,17 +67,28 @@ class PrefectOpenLineageAdapter:
                         )
                     ) for dep in jobDeps
                 ]
-                return {"parentRun": ParentRunFacet.create( # TODO: create() is deprecated
-                                flowRunId, flowNamespace, flowName
-                            ),
+                return {
                             "jobDependencies": job_dependencies_run.JobDependenciesRunFacet(
                                 upstream = upstream_jobs
+                            ),
+                            "parentRun": ParentRunFacet.create( # TODO: create() is deprecated
+                                flowRunId, flowNamespace, flowName
+                            ),
+                            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                                version=prefectVersion,
+                                name="Prefect"
                             )
                         }
             else:
-                return {"parentRun": ParentRunFacet.create(
-                            flowRunId, flowNamespace, flowName
-                        )}
+                return {
+                            "parentRun": ParentRunFacet.create(
+                                flowRunId, flowNamespace, flowName
+                            ),
+                            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                                version=prefectVersion,
+                                name="Prefect"
+                            )
+                        }
 
         run_event = RunEvent(
             eventType=eventType,
