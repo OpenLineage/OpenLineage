@@ -87,7 +87,7 @@ async def collect_and_process_task_runs():
 							parent_run_id = build_run_id(parent_run.start_time, parent_name, PARENT_RUN_NAMESPACE)
 							parent_runs.append({"name": parent_name, "namespace": PARENT_RUN_NAMESPACE, "id": parent_run_id})
 				except:
-					logger.info(f"No task parents found for {prefect_task_run_id}.")
+					logger.info("No task parents found for %s", prefect_task_run_id)
 					pass
 
 				match event_state:
