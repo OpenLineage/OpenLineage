@@ -60,7 +60,6 @@ async def collect_and_process_task_runs():
         
 		async for event in subscriber:
 
-			print(event)
 			if event.event.split(".")[1] == "task-run": # get task runs
 
 				task_name: str = event.resource.name.split("-")[0]
