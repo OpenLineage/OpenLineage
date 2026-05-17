@@ -58,24 +58,24 @@ class PrefectOpenLineageAdapter:
         
         def build_run_facets():
             if jobDeps:
-                dep = jobDeps[0] # TODO: support multiple dependencies
-                upstream_job = [job_dependencies_run.JobDependency(
-                    job=job_dependencies_run.JobIdentifier(
-                        namespace=dep["namespace"], 
-                        name=dep["name"]
-                    )
-                )]
-                return {"parentRun": ParentRunFacet.create(
+                for dep in deps:
+                    upstream_job = [job_dependencies_run.JobDependency(
+                        job=job_dependencies_run.JobIdentifier(
+                            namespace=dep["namespace"], 
+                            name=self.generate_job_name(flowName, dep["name"]) # assume same flow
+                        )
+                    )]
+                    return {"parentRun": ParentRunFacet.create( # TODO: create() is deprecated
+                                    flowRunId, flowNamespace, flowName
+                                ),
+                                "jobDependencies": job_dependencies_run.JobDependenciesRunFacet(
+                                    upstream = upstream_job
+                                )
+                            }
+                else:
+                    return {"parentRun": ParentRunFacet.create(
                                 flowRunId, flowNamespace, flowName
-                            ),
-                            "jobDependencies": job_dependencies_run.JobDependenciesRunFacet(
-                                upstream = upstream_job
-                            )
-                        }
-            else:
-                return {"parentRun": ParentRunFacet.create(
-                            flowRunId, flowNamespace, flowName
-                        )}
+                            )}
 
         run_event = RunEvent(
             eventType=eventType,
