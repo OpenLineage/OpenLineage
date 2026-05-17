@@ -13,7 +13,7 @@ frozenlist==1.8.0
 github==1.2.7
 github-action-utils==1.1.0
 idna==3.13
-markdown-it-py==4.0.0
+markdown-it-py==4.2.0
 mdurl==0.1.2
 multidict==6.7.1
 pendulum==3.2.0
