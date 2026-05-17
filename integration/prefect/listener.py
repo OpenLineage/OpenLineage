@@ -22,7 +22,6 @@ OL_ADAPTER = PrefectOpenLineageAdapter()
 
 logger: logging.Logger = logging.getLogger(__name__)
 
-@staticmethod
 def build_run_id(
 	execution_time: datetime, 
 	run_name: str, 
@@ -50,7 +49,7 @@ async def get_flow_run_from_task_id(task_run_id: str):
 		return {"start_time": flow_run.start_time, "flow_name": flow.name}
 
 async def collect_and_process_task_runs():
-	"""Requires PREFECT_API_URL environment variable be set"""
+	"""Requires PREFECT_API_URL"""
 
 	filter_criteria = EventFilter(
     	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run."])
@@ -99,24 +98,7 @@ async def collect_and_process_task_runs():
 					flow_namespace: str = FLOW_NAMESPACE
 					flow_data = await get_flow_run_from_task_id(prefect_task_run_id)
 					flow_name = flow_data["flow_name"]
-					flow_run_id: str = build_run_id(flow_data["start_time"], flow_name, FLOW_NAMESPACE) # check for start time
-
-					# Get job dependencies (Prefect "parents") info
-					parents: bool = False
-					try:
-						parent_runs: list = []
-						task_parents: List = event.payload["task_run"]["task_inputs"]["__parents__"]
-						for parent in task_parents:
-							task_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
-							if task_id:
-								parent_run = await get_task_run_from_task_id(task_id)
-								parent_name = parent_run.name.split("-")[0]
-								parent_run_id = build_run_id(parent_run.start_time, parent_name, PARENT_RUN_NAMESPACE)
-								parent_runs.append({"name": parent_name, "namespace": PARENT_RUN_NAMESPACE, "id": parent_run_id})
-						parents = True
-					except:
-						logger.info(f"No task parents found for {prefect_task_run_id}.")
-						pass
+					flow_run_id: str = build_run_id(flow_data["start_time"], flow_name, FLOW_NAMESPACE)
 
 					OL_ADAPTER.create_and_emit_event(
 						runId=ol_task_run_id,
