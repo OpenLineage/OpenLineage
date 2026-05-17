@@ -58,7 +58,7 @@ class PrefectOpenLineageAdapter:
         
         def build_run_facets():
             if jobDeps:
-                for dep in deps:
+                for dep in jobDeps:
                     upstream_job = [job_dependencies_run.JobDependency(
                         job=job_dependencies_run.JobIdentifier(
                             namespace=dep["namespace"], 
