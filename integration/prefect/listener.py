@@ -76,27 +76,25 @@ async def collect_and_process_task_runs():
 						case 'Failed':
 							event_type: str = "FAILED"
 
-<<<<<<< HEAD
 					task_run = event.payload["task_run"]
 					start_time: datetime = datetime.fromisoformat(task_run["start_time"])
 					prefect_task_run_id: str = event.resource.id.split(".")[-1]
 					ol_task_run_id: str = build_run_id(start_time, task_name, JOB_NAMESPACE)
-=======
-				# Get job dependencies (Prefect "parents") info
-				parent_runs = []
-				try:
-					task_parents: List = event.payload["task_run"]["task_inputs"]["__parents__"]
-					for parent in task_parents:
-						task_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
-						if task_id:
-							parent_run = await get_task_run_from_task_id(task_id)
-							parent_name = parent_run.name.split("-")[0]
-							parent_run_id = build_run_id(parent_run.start_time, parent_name, PARENT_RUN_NAMESPACE)
-							parent_runs.append({"name": parent_name, "namespace": PARENT_RUN_NAMESPACE, "id": parent_run_id})
-				except:
-					logger.info("No task parents found for %s", prefect_task_run_id)
-					pass
->>>>>>> eeaf013694ac0bdf08d77ded9a0d0e5d8c3c4daa
+
+					# Get job dependencies (Prefect "parents") info
+					parent_runs = []
+					try:
+						task_parents: List = event.payload["task_run"]["task_inputs"]["__parents__"]
+						for parent in task_parents:
+							task_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
+							if task_id:
+								parent_run = await get_task_run_from_task_id(task_id)
+								parent_name = parent_run.name.split("-")[0]
+								parent_run_id = build_run_id(parent_run.start_time, parent_name, PARENT_RUN_NAMESPACE)
+								parent_runs.append({"name": parent_name, "namespace": PARENT_RUN_NAMESPACE, "id": parent_run_id})
+					except:
+						logger.info("No task parents found for %s", prefect_task_run_id)
+						pass
 
 					# Get flow run info
 					flow_namespace: str = FLOW_NAMESPACE
