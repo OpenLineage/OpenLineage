@@ -8,7 +8,12 @@ package io.openlineage.spark.agent.util;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +39,81 @@ public class PathUtils {
 
   public static DatasetIdentifier fromURI(URI location) {
     return FilesystemDatasetUtils.fromLocation(location);
+  }
+
+  public static List<Path> getDirectoryPaths(
+      Collection<Path> paths, Configuration hadoopConf, boolean normalizeHiveStylePartitioning) {
+    LinkedHashSet<Path> normalizedPaths = new LinkedHashSet<>();
+    for (Path path : paths) {
+      Path directoryPath = getDirectoryPath(path, hadoopConf);
+      if (normalizeHiveStylePartitioning) {
+        directoryPath = normalizeHiveStylePartitioning(directoryPath);
+      }
+      if (directoryPath != null && !normalizedPaths.contains(directoryPath)) {
+        normalizedPaths.add(directoryPath);
+      }
+    }
+    return new ArrayList<>(normalizedPaths);
+  }
+
+  private static Path getDirectoryPath(Path p, Configuration hadoopConf) {
+    if (hasGlobPattern(p)) {
+      return getPathBeforeGlob(p);
+    }
+
+    try {
+      if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
+        return p.getParent();
+      }
+      return p;
+    } catch (IOException e) {
+      log.warn("Unable to get file system for path: {}", e.getMessage());
+      return p;
+    }
+  }
+
+  private static boolean hasGlobPattern(Path path) {
+    String value = path.toString();
+    return value.contains("*")
+        || value.contains("?")
+        || value.contains("{")
+        || value.contains("}")
+        || value.contains("[")
+        || value.contains("]");
+  }
+
+  private static Path getPathBeforeGlob(Path path) {
+    String value = path.toString();
+    Path current = path;
+    while (current != null && hasGlobPattern(current)) {
+      current = current.getParent();
+    }
+
+    if (current == null) {
+      log.warn("Unable to determine non-glob parent for path: {}", value);
+      return path;
+    }
+    return current;
+  }
+
+  public static Path normalizeHiveStylePartitioning(Path path) {
+    Path current = path;
+    while (current != null && isHivePartitionPath(current.getName())) {
+      Path parent = current.getParent();
+      if (parent == null) {
+        return path;
+      }
+      current = parent;
+    }
+    return current == null ? path : current;
+  }
+
+  private static boolean isHivePartitionPath(String pathName) {
+    int firstEquals = pathName.indexOf('=');
+    return firstEquals > 0
+        && firstEquals == pathName.lastIndexOf('=')
+        && pathName.substring(0, firstEquals).matches("[A-Za-z_][A-Za-z0-9_]*")
+        && firstEquals < pathName.length() - 1;
   }
 
   /**

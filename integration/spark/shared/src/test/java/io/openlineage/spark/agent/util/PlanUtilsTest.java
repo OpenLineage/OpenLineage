@@ -27,29 +27,9 @@ import org.apache.spark.sql.types.MapType;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PlanUtilsTest {
-  @Test
-  void testGetDirectoryPathsRemovesTrailingGlob() {
-    assertThat(
-            PlanUtils.getDirectoryPaths(
-                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/*.parquet")),
-                new Configuration()))
-        .containsExactly(new Path("s3://bucket/table/dt=20260516"));
-  }
-
-  @Test
-  void testGetDirectoryPathsUsesNonGlobAncestor() {
-    assertThat(
-            PlanUtils.getDirectoryPaths(
-                Collections.singletonList(new Path("s3://bucket/table/*/*/rates.parquet")),
-                new Configuration()))
-        .containsExactly(new Path("s3://bucket/table"));
-  }
-
   @Test
   void testGetDirectoryPathsNormalizesHiveStylePartitioningWhenEnabled() {
     assertThat(
@@ -110,39 +90,6 @@ class PlanUtilsTest {
                 .set(PlanUtils.SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING, "false"));
 
     assertThat(PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)).isFalse();
-  }
-
-  @ParameterizedTest
-  @CsvSource({
-    "s3://bucket/table/dt=20260516, s3://bucket/table",
-    "s3://bucket/table/_dt=20260516, s3://bucket/table",
-    "s3://bucket/table/d_t1=20260516, s3://bucket/table",
-    "s3://bucket/table/dt=20260516/hour=13, s3://bucket/table"
-  })
-  void testNormalizeHiveStylePartitioningWithValidPartitionSegments(String input, String expected) {
-    assertThat(PlanUtils.normalizeHiveStylePartitioning(new Path(input)))
-        .isEqualTo(new Path(expected));
-  }
-
-  @ParameterizedTest
-  @CsvSource({
-    "s3://bucket/table/=20260516",
-    "s3://bucket/table/1dt=20260516",
-    "s3://bucket/table/dt=",
-    "s3://bucket/table/d-t=20260516",
-    "s3://bucket/table/ts=1-id=6-uuid=f"
-  })
-  void testNormalizeHiveStylePartitioningWithInvalidPartitionSegments(String input) {
-    assertThat(PlanUtils.normalizeHiveStylePartitioning(new Path(input)))
-        .isEqualTo(new Path(input));
-  }
-
-  @Test
-  void testNormalizeHiveStylePartitioningDoesNotNormalizeCompoundEqualsSuffix() {
-    assertThat(
-            PlanUtils.normalizeHiveStylePartitioning(
-                new Path("s3://bucket/table/ts=1-id=6-uuid=f")))
-        .isEqualTo(new Path("s3://bucket/table/ts=1-id=6-uuid=f"));
   }
 
   private OpenLineageContext contextWithHiveStylePartitioningNormalization(boolean enabled) {

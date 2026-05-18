@@ -12,13 +12,10 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.NameNormalizer;
-import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -267,28 +264,13 @@ public class PlanUtils {
    * @return
    */
   public static List<Path> getDirectoryPaths(Collection<Path> paths, Configuration hadoopConf) {
-    return getDirectoryPaths(paths, hadoopConf, false);
+    return PathUtils.getDirectoryPaths(paths, hadoopConf, false);
   }
 
   public static List<Path> getDirectoryPaths(
       Collection<Path> paths, Configuration hadoopConf, OpenLineageContext context) {
-    return getDirectoryPaths(
+    return PathUtils.getDirectoryPaths(
         paths, hadoopConf, isHiveStylePartitioningNormalizationEnabled(context));
-  }
-
-  private static List<Path> getDirectoryPaths(
-      Collection<Path> paths, Configuration hadoopConf, boolean normalizeHiveStylePartitioning) {
-    LinkedHashSet<Path> normalizedPaths = new LinkedHashSet<>();
-    for (Path path : paths) {
-      Path directoryPath = PlanUtils.getDirectoryPath(path, hadoopConf);
-      if (normalizeHiveStylePartitioning) {
-        directoryPath = normalizeHiveStylePartitioning(directoryPath);
-      }
-      if (directoryPath != null && !normalizedPaths.contains(directoryPath)) {
-        normalizedPaths.add(directoryPath);
-      }
-    }
-    return new ArrayList<>(normalizedPaths);
   }
 
   public static boolean isHiveStylePartitioningNormalizationEnabled(OpenLineageContext context) {
@@ -306,67 +288,6 @@ public class PlanUtils {
         .filter(Objects::nonNull)
         .map(conf -> conf.getBoolean(SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING, true))
         .orElse(true);
-  }
-
-  private static Path getDirectoryPath(Path p, Configuration hadoopConf) {
-    if (hasGlobPattern(p)) {
-      return getPathBeforeGlob(p);
-    }
-
-    try {
-      if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
-        return p.getParent();
-      } else {
-        return p;
-      }
-    } catch (IOException e) {
-      log.warn("Unable to get file system for path: {}", e.getMessage());
-      return p;
-    }
-  }
-
-  private static boolean hasGlobPattern(Path path) {
-    String value = path.toString();
-    return value.contains("*")
-        || value.contains("?")
-        || value.contains("{")
-        || value.contains("}")
-        || value.contains("[")
-        || value.contains("]");
-  }
-
-  private static Path getPathBeforeGlob(Path path) {
-    String value = path.toString();
-    Path current = path;
-    while (current != null && hasGlobPattern(current)) {
-      current = current.getParent();
-    }
-
-    if (current == null) {
-      log.warn("Unable to determine non-glob parent for path: {}", value);
-      return path;
-    }
-    return current;
-  }
-
-  public static Path normalizeHiveStylePartitioning(Path path) {
-    Path current = path;
-    while (current != null && isHivePartitionPath(current.getName())) {
-      Path parent = current.getParent();
-      if (parent == null) {
-        return path;
-      }
-      current = parent;
-    }
-    return current == null ? path : current;
-  }
-
-  private static boolean isHivePartitionPath(String pathName) {
-    int firstEquals = pathName.indexOf('=');
-    return firstEquals > 0
-        && firstEquals == pathName.lastIndexOf('=')
-        && pathName.substring(0, firstEquals).matches("[A-Za-z_][A-Za-z0-9_]*")
-        && firstEquals < pathName.length() - 1;
   }
 
   /**

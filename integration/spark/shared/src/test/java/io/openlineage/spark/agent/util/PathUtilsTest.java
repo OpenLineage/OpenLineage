@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -25,6 +26,8 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.mockito.MockedStatic;
 import scala.Option;
@@ -62,6 +65,80 @@ class PathUtilsTest {
 
     when(sparkSession.sessionState()).thenReturn(sessionState);
     when(sessionState.catalog()).thenReturn(sessionCatalog);
+  }
+
+  @Test
+  void testGetDirectoryPathsRemovesTrailingGlob() {
+    assertThat(
+            PathUtils.getDirectoryPaths(
+                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/*.parquet")),
+                new Configuration(),
+                false))
+        .containsExactly(new Path("s3://bucket/table/dt=20260516"));
+  }
+
+  @Test
+  void testGetDirectoryPathsUsesNonGlobAncestor() {
+    assertThat(
+            PathUtils.getDirectoryPaths(
+                Collections.singletonList(new Path("s3://bucket/table/*/*/rates.parquet")),
+                new Configuration(),
+                false))
+        .containsExactly(new Path("s3://bucket/table"));
+  }
+
+  @Test
+  void testGetDirectoryPathsNormalizesHiveStylePartitioningWhenEnabled() {
+    assertThat(
+            PathUtils.getDirectoryPaths(
+                Collections.singletonList(
+                    new Path("s3://bucket/table/dt=20260516/hour=13/*.parquet")),
+                new Configuration(),
+                true))
+        .containsExactly(new Path("s3://bucket/table"));
+  }
+
+  @Test
+  void testGetDirectoryPathsDoesNotNormalizeHiveStylePartitioningWhenDisabled() {
+    assertThat(
+            PathUtils.getDirectoryPaths(
+                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/*.parquet")),
+                new Configuration(),
+                false))
+        .containsExactly(new Path("s3://bucket/table/dt=20260516"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "s3://bucket/table/dt=20260516, s3://bucket/table",
+    "s3://bucket/table/_dt=20260516, s3://bucket/table",
+    "s3://bucket/table/d_t1=20260516, s3://bucket/table",
+    "s3://bucket/table/dt=20260516/hour=13, s3://bucket/table"
+  })
+  void testNormalizeHiveStylePartitioningWithValidPartitionSegments(String input, String expected) {
+    assertThat(PathUtils.normalizeHiveStylePartitioning(new Path(input)))
+        .isEqualTo(new Path(expected));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "s3://bucket/table/=20260516",
+    "s3://bucket/table/1dt=20260516",
+    "s3://bucket/table/dt=",
+    "s3://bucket/table/d-t=20260516",
+    "s3://bucket/table/ts=1-id=6-uuid=f"
+  })
+  void testNormalizeHiveStylePartitioningWithInvalidPartitionSegments(String input) {
+    assertThat(PathUtils.normalizeHiveStylePartitioning(new Path(input)))
+        .isEqualTo(new Path(input));
+  }
+
+  @Test
+  void testNormalizeHiveStylePartitioningDoesNotNormalizeCompoundEqualsSuffix() {
+    assertThat(
+            PathUtils.normalizeHiveStylePartitioning(
+                new Path("s3://bucket/table/ts=1-id=6-uuid=f")))
+        .isEqualTo(new Path("s3://bucket/table/ts=1-id=6-uuid=f"));
   }
 
   @Test

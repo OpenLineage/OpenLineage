@@ -73,7 +73,7 @@ public class InsertIntoHadoopFsRelationVisitor
         .map(
             path -> {
               if (PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)) {
-                return PlanUtils.normalizeHiveStylePartitioning(path);
+                return PathUtils.normalizeHiveStylePartitioning(path);
               }
               return path;
             })
