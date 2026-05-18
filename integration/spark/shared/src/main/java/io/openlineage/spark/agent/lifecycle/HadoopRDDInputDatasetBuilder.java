@@ -9,11 +9,13 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.AbstractInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -55,7 +57,9 @@ public class HadoopRDDInputDatasetBuilder extends AbstractInputDatasetBuilder<RD
     List<URI> result = new ArrayList<>();
     Path[] inputPaths = getInputPaths(rdd);
     if (inputPaths != null) {
-      for (Path path : inputPaths) {
+      for (Path path :
+          PlanUtils.getDirectoryPaths(
+              Arrays.asList(inputPaths), rdd.sparkContext().hadoopConfiguration())) {
         result.add(getDatasetUri(path.toUri()));
       }
     }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -214,6 +215,15 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                               .build());
                 }
 
+                Optional<Path> partitionedDatasetRoot = getPartitionedDatasetRoot(relation);
+                if (partitionedDatasetRoot.isPresent()) {
+                  return Collections.singletonList(
+                      datasetFactory.getDataset(
+                          partitionedDatasetRoot.get().toUri(),
+                          relation.schema(),
+                          datasetFacetsBuilder));
+                }
+
                 Collection<Path> rootPaths =
                     ScalaConversionUtils.fromSeq(relation.location().rootPaths());
 
@@ -266,6 +276,26 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         return inputDatasets;
       }
     }
+  }
+
+  private Optional<Path> getPartitionedDatasetRoot(HadoopFsRelation relation) {
+    if (relation.partitionSchema() == null || relation.partitionSchema().fields().length == 0) {
+      return Optional.empty();
+    }
+    return getBasePath(relation);
+  }
+
+  private Optional<Path> getBasePath(HadoopFsRelation relation) {
+    if (relation.options() == null) {
+      return Optional.empty();
+    }
+    Map<String, String> options = ScalaConversionUtils.fromMap(relation.options());
+    return options.entrySet().stream()
+        .filter(entry -> "basePath".equalsIgnoreCase(entry.getKey()))
+        .map(Map.Entry::getValue)
+        .filter(value -> value != null && !value.isEmpty())
+        .findFirst()
+        .map(Path::new);
   }
 
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")

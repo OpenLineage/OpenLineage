@@ -180,6 +180,34 @@ class LogicalRelationDatasetBuilderTest {
   }
 
   @Test
+  void testApplyForPartitionedHadoopFsRelationWithBasePath() {
+    HadoopFsRelation hadoopFsRelation = mock(HadoopFsRelation.class);
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    Configuration hadoopConfig = mock(Configuration.class);
+    SparkContext sparkContext = mock(SparkContext.class);
+    SessionState sessionState = mock(SessionState.class);
+
+    when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    when(session.sessionState()).thenReturn(sessionState);
+    when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
+    when(hadoopFsRelation.options())
+        .thenReturn(
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap("basePath", "/tmp/table")));
+    when(hadoopFsRelation.partitionSchema())
+        .thenReturn(new StructType().add("dt", StringType$.MODULE$));
+    when(hadoopFsRelation.schema()).thenReturn(new StructType().add("id", StringType$.MODULE$));
+
+    List<OpenLineage.Dataset> datasets =
+        builder.apply(mock(SparkListenerEvent.class), logicalRelation);
+
+    assertEquals(1, datasets.size());
+    OpenLineage.Dataset ds = datasets.get(0);
+    assertEquals("/tmp/table", ds.getName());
+  }
+
+  @Test
   void testApplyForSingleFileHadoopFsRelation() throws IOException, URISyntaxException {
     HadoopFsRelation hadoopFsRelation = mock(HadoopFsRelation.class);
     LogicalRelation logicalRelation = mock(LogicalRelation.class);

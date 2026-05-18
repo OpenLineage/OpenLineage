@@ -265,17 +265,19 @@ public class PlanUtils {
   public static List<Path> getDirectoryPaths(Collection<Path> paths, Configuration hadoopConf) {
     LinkedHashSet<Path> normalizedPaths = new LinkedHashSet<>();
     for (Path path : paths) {
-      // check if the root path is already contained in normalized Paths
-      Path parent = path.getParent();
-      if (parent != null && !normalizedPaths.contains(parent)) {
-        // if not, add new path to normalized paths -> call getDirectoryPath
-        normalizedPaths.add(PlanUtils.getDirectoryPath(path, hadoopConf));
+      Path directoryPath = PlanUtils.getDirectoryPath(path, hadoopConf);
+      if (directoryPath != null && !normalizedPaths.contains(directoryPath)) {
+        normalizedPaths.add(directoryPath);
       }
     }
     return new ArrayList<>(normalizedPaths);
   }
 
   private static Path getDirectoryPath(Path p, Configuration hadoopConf) {
+    if (hasGlobPattern(p)) {
+      return getPathBeforeGlob(p);
+    }
+
     try {
       if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
         return p.getParent();
@@ -286,6 +288,30 @@ public class PlanUtils {
       log.warn("Unable to get file system for path: {}", e.getMessage());
       return p;
     }
+  }
+
+  private static boolean hasGlobPattern(Path path) {
+    String value = path.toString();
+    return value.contains("*")
+        || value.contains("?")
+        || value.contains("{")
+        || value.contains("}")
+        || value.contains("[")
+        || value.contains("]");
+  }
+
+  private static Path getPathBeforeGlob(Path path) {
+    String value = path.toString();
+    Path current = path;
+    while (current != null && hasGlobPattern(current)) {
+      current = current.getParent();
+    }
+
+    if (current == null) {
+      log.warn("Unable to determine non-glob parent for path: {}", value);
+      return path;
+    }
+    return current;
   }
 
   /**

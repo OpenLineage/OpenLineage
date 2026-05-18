@@ -12,6 +12,9 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.util.Arrays;
+import java.util.Collections;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
@@ -22,6 +25,24 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PlanUtilsTest {
+  @Test
+  void testGetDirectoryPathsRemovesTrailingGlob() {
+    assertThat(
+            PlanUtils.getDirectoryPaths(
+                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/*.parquet")),
+                new Configuration()))
+        .containsExactly(new Path("s3://bucket/table/dt=20260516"));
+  }
+
+  @Test
+  void testGetDirectoryPathsUsesNonGlobAncestor() {
+    assertThat(
+            PlanUtils.getDirectoryPaths(
+                Collections.singletonList(new Path("s3://bucket/table/*/*/rates.parquet")),
+                new Configuration()))
+        .containsExactly(new Path("s3://bucket/table"));
+  }
+
   @Test
   void testSchemaFacetFlat() {
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
