@@ -168,7 +168,8 @@ class LogicalRelationDatasetBuilderTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
-      when(PlanUtils.getDirectoryPaths(any(Collection.class), any(Configuration.class)))
+      when(PlanUtils.getDirectoryPaths(
+              any(Collection.class), any(Configuration.class), any(OpenLineageContext.class)))
           .thenReturn(Collections.singletonList(new Path("/tmp")));
 
       List<OpenLineage.Dataset> datasets =

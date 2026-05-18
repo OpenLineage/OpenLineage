@@ -59,7 +59,7 @@ public class HadoopRDDInputDatasetBuilder extends AbstractInputDatasetBuilder<RD
     if (inputPaths != null) {
       for (Path path :
           PlanUtils.getDirectoryPaths(
-              Arrays.asList(inputPaths), rdd.sparkContext().hadoopConfiguration())) {
+              Arrays.asList(inputPaths), rdd.sparkContext().hadoopConfiguration(), context)) {
         result.add(getDatasetUri(path.toUri()));
       }
     }

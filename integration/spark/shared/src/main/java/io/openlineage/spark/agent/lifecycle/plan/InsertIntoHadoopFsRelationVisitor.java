@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
@@ -68,6 +69,14 @@ public class InsertIntoHadoopFsRelationVisitor
           PathUtils.fromCatalogTable(
               command.catalogTable().get(), context.getSparkSession().get(), command.outputPath()));
     }
-    return Optional.of(PathUtils.fromPath(command.outputPath()));
+    return Optional.of(command.outputPath())
+        .map(
+            path -> {
+              if (PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)) {
+                return PlanUtils.normalizeHiveStylePartitioning(path);
+              }
+              return path;
+            })
+        .map(PathUtils::fromPath);
   }
 }

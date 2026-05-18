@@ -10,6 +10,7 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptiona
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.NameNormalizer;
 import java.io.IOException;
 import java.net.URI;
@@ -42,6 +43,9 @@ import scala.PartialFunction$;
  */
 @Slf4j
 public class PlanUtils {
+  public static final String SPARK_OPENLINEAGE_DATASET_NORMALIZE_HIVE_STYLE_PARTITIONING =
+      "spark.openlineage.dataset.normalizeHiveStylePartitioning";
+
   /**
    * Given a list of {@link PartialFunction}s merge to produce a single function that will test the
    * input against each function one by one until a match is found or {@link
@@ -263,14 +267,39 @@ public class PlanUtils {
    * @return
    */
   public static List<Path> getDirectoryPaths(Collection<Path> paths, Configuration hadoopConf) {
+    return getDirectoryPaths(paths, hadoopConf, false);
+  }
+
+  public static List<Path> getDirectoryPaths(
+      Collection<Path> paths, Configuration hadoopConf, OpenLineageContext context) {
+    return getDirectoryPaths(
+        paths, hadoopConf, isHiveStylePartitioningNormalizationEnabled(context));
+  }
+
+  private static List<Path> getDirectoryPaths(
+      Collection<Path> paths, Configuration hadoopConf, boolean normalizeHiveStylePartitioning) {
     LinkedHashSet<Path> normalizedPaths = new LinkedHashSet<>();
     for (Path path : paths) {
       Path directoryPath = PlanUtils.getDirectoryPath(path, hadoopConf);
+      if (normalizeHiveStylePartitioning) {
+        directoryPath = normalizeHiveStylePartitioning(directoryPath);
+      }
       if (directoryPath != null && !normalizedPaths.contains(directoryPath)) {
         normalizedPaths.add(directoryPath);
       }
     }
     return new ArrayList<>(normalizedPaths);
+  }
+
+  public static boolean isHiveStylePartitioningNormalizationEnabled(OpenLineageContext context) {
+    return context
+        .getSparkContext()
+        .map(sparkContext -> sparkContext.getConf())
+        .filter(Objects::nonNull)
+        .map(
+            conf ->
+                conf.getBoolean(SPARK_OPENLINEAGE_DATASET_NORMALIZE_HIVE_STYLE_PARTITIONING, true))
+        .orElse(true);
   }
 
   private static Path getDirectoryPath(Path p, Configuration hadoopConf) {
@@ -312,6 +341,26 @@ public class PlanUtils {
       return path;
     }
     return current;
+  }
+
+  public static Path normalizeHiveStylePartitioning(Path path) {
+    Path current = path;
+    while (current != null && isHivePartitionPath(current.getName())) {
+      Path parent = current.getParent();
+      if (parent == null) {
+        return path;
+      }
+      current = parent;
+    }
+    return current == null ? path : current;
+  }
+
+  private static boolean isHivePartitionPath(String pathName) {
+    int firstEquals = pathName.indexOf('=');
+    return firstEquals > 0
+        && firstEquals == pathName.lastIndexOf('=')
+        && pathName.substring(0, firstEquals).matches("[A-Za-z_][A-Za-z0-9_]*")
+        && firstEquals < pathName.length() - 1;
   }
 
   /**

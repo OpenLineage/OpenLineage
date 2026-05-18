@@ -9,11 +9,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.RDD;
 import org.junit.jupiter.api.Test;
@@ -27,8 +30,16 @@ class HadoopRDDInputDatasetBuilderTest {
     RDD<?> rdd = mock(RDD.class);
     when(rdd.sparkContext()).thenReturn(sparkContext);
 
+    OpenLineageContext context = mock(OpenLineageContext.class);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(sparkContext.getConf())
+        .thenReturn(
+            new SparkConf()
+                .set(
+                    PlanUtils.SPARK_OPENLINEAGE_DATASET_NORMALIZE_HIVE_STYLE_PARTITIONING, "true"));
+
     HadoopRDDInputDatasetBuilder builder =
-        new HadoopRDDInputDatasetBuilder(mock(OpenLineageContext.class)) {
+        new HadoopRDDInputDatasetBuilder(context) {
           @Override
           protected Path[] getInputPaths(RDD<?> rdd) {
             return new Path[] {new Path("s3://bucket/table/dt=20260516/*.parquet")};
@@ -37,6 +48,6 @@ class HadoopRDDInputDatasetBuilderTest {
 
     List<URI> inputs = builder.findInputs(rdd);
 
-    assertThat(inputs).containsExactly(URI.create("s3://bucket/table/dt=20260516"));
+    assertThat(inputs).containsExactly(URI.create("s3://bucket/table"));
   }
 }

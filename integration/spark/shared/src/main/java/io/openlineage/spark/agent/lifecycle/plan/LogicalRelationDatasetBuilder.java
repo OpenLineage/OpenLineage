@@ -234,7 +234,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                           relation.schema(),
                           datasetFacetsBuilder));
                 } else {
-                  return PlanUtils.getDirectoryPaths(rootPaths, hadoopConfig).stream()
+                  return PlanUtils.getDirectoryPaths(rootPaths, hadoopConfig, context).stream()
                       .map(
                           p -> {
                             // TODO- refactor this to return a single partitioned dataset based on

@@ -11,10 +11,14 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
@@ -22,6 +26,8 @@ import org.apache.spark.sql.types.MapType;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PlanUtilsTest {
@@ -41,6 +47,88 @@ class PlanUtilsTest {
                 Collections.singletonList(new Path("s3://bucket/table/*/*/rates.parquet")),
                 new Configuration()))
         .containsExactly(new Path("s3://bucket/table"));
+  }
+
+  @Test
+  void testGetDirectoryPathsNormalizesHiveStylePartitioningWhenEnabled() {
+    assertThat(
+            PlanUtils.getDirectoryPaths(
+                Collections.singletonList(
+                    new Path("s3://bucket/table/dt=20260516/hour=13/*.parquet")),
+                new Configuration(),
+                contextWithHiveStylePartitioningNormalization(true)))
+        .containsExactly(new Path("s3://bucket/table"));
+  }
+
+  @Test
+  void testGetDirectoryPathsNormalizesHiveStylePartitioningByDefault() {
+    OpenLineageContext context = mock(OpenLineageContext.class);
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+
+    assertThat(
+            PlanUtils.getDirectoryPaths(
+                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/*.parquet")),
+                new Configuration(),
+                context))
+        .containsExactly(new Path("s3://bucket/table"));
+  }
+
+  @Test
+  void testGetDirectoryPathsDoesNotNormalizeHiveStylePartitioningWhenDisabled() {
+    assertThat(
+            PlanUtils.getDirectoryPaths(
+                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/*.parquet")),
+                new Configuration(),
+                contextWithHiveStylePartitioningNormalization(false)))
+        .containsExactly(new Path("s3://bucket/table/dt=20260516"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "s3://bucket/table/dt=20260516, s3://bucket/table",
+    "s3://bucket/table/_dt=20260516, s3://bucket/table",
+    "s3://bucket/table/d_t1=20260516, s3://bucket/table",
+    "s3://bucket/table/dt=20260516/hour=13, s3://bucket/table"
+  })
+  void testNormalizeHiveStylePartitioningWithValidPartitionSegments(String input, String expected) {
+    assertThat(PlanUtils.normalizeHiveStylePartitioning(new Path(input)))
+        .isEqualTo(new Path(expected));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "s3://bucket/table/=20260516",
+    "s3://bucket/table/1dt=20260516",
+    "s3://bucket/table/dt=",
+    "s3://bucket/table/d-t=20260516",
+    "s3://bucket/table/ts=1-id=6-uuid=f"
+  })
+  void testNormalizeHiveStylePartitioningWithInvalidPartitionSegments(String input) {
+    assertThat(PlanUtils.normalizeHiveStylePartitioning(new Path(input)))
+        .isEqualTo(new Path(input));
+  }
+
+  @Test
+  void testNormalizeHiveStylePartitioningDoesNotNormalizeCompoundEqualsSuffix() {
+    assertThat(
+            PlanUtils.normalizeHiveStylePartitioning(
+                new Path("s3://bucket/table/ts=1-id=6-uuid=f")))
+        .isEqualTo(new Path("s3://bucket/table/ts=1-id=6-uuid=f"));
+  }
+
+  private OpenLineageContext contextWithHiveStylePartitioningNormalization(boolean enabled) {
+    OpenLineageContext context = mock(OpenLineageContext.class);
+    SparkContext sparkContext = mock(SparkContext.class);
+    SparkConf sparkConf =
+        new SparkConf()
+            .set(
+                PlanUtils.SPARK_OPENLINEAGE_DATASET_NORMALIZE_HIVE_STYLE_PARTITIONING,
+                String.valueOf(enabled));
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    return context;
   }
 
   @Test
