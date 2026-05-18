@@ -35,8 +35,7 @@ class HadoopRDDInputDatasetBuilderTest {
     when(sparkContext.getConf())
         .thenReturn(
             new SparkConf()
-                .set(
-                    PlanUtils.SPARK_OPENLINEAGE_DATASET_NORMALIZE_HIVE_STYLE_PARTITIONING, "true"));
+                .set(PlanUtils.SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING, "true"));
 
     HadoopRDDInputDatasetBuilder builder =
         new HadoopRDDInputDatasetBuilder(context) {

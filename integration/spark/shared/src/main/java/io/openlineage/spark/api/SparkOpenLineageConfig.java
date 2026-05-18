@@ -63,6 +63,8 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @JsonProperty("timeout")
   private TimeoutConfig timeoutConfig;
 
+  private Boolean normalizeHiveStylePartitioning;
+
   public SparkOpenLineageConfig(
       String namespace,
       String parentJobName,
@@ -84,7 +86,8 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       ColumnLineageConfig columnLineageConfig,
       VendorsConfig vendors,
       FilterConfig filterConfig,
-      RunConfig run) {
+      RunConfig run,
+      Boolean normalizeHiveStylePartitioning) {
     super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig, run, job);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
@@ -100,6 +103,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.columnLineageConfig = columnLineageConfig;
     this.vendors = vendors;
     this.filterConfig = filterConfig;
+    this.normalizeHiveStylePartitioning = normalizeHiveStylePartitioning;
   }
 
   @Override
@@ -194,6 +198,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
         mergePropertyWith(vendors, other.vendors),
         mergePropertyWith(filterConfig, other.filterConfig),
-        mergePropertyWith(runConfig, other.runConfig));
+        mergePropertyWith(runConfig, other.runConfig),
+        mergePropertyWith(normalizeHiveStylePartitioning, other.normalizeHiveStylePartitioning));
   }
 }

@@ -351,6 +351,16 @@ class ArgumentParserTest {
   }
 
   @Test
+  void testNormalizeHiveStylePartitioningConfiguration() {
+    SparkConf sparkConf =
+        new SparkConf().set("spark.openlineage.normalizeHiveStylePartitioning", "false");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getNormalizeHiveStylePartitioning()).isFalse();
+  }
+
+  @Test
   void testNodeFilterConfiguration() {
     SparkConf sparkConf =
         new SparkConf()

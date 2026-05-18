@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -85,6 +86,32 @@ class PlanUtilsTest {
         .containsExactly(new Path("s3://bucket/table/dt=20260516"));
   }
 
+  @Test
+  void testOpenLineageConfigTakesPrecedenceOverSparkConf() {
+    OpenLineageContext context = contextWithHiveStylePartitioningNormalization(false);
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(sparkContext.getConf())
+        .thenReturn(
+            new SparkConf()
+                .set(PlanUtils.SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING, "true"));
+
+    assertThat(PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)).isFalse();
+  }
+
+  @Test
+  void testSparkConfIsUsedAsFallbackForHiveStylePartitioningNormalization() {
+    OpenLineageContext context = mock(OpenLineageContext.class);
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(sparkContext.getConf())
+        .thenReturn(
+            new SparkConf()
+                .set(PlanUtils.SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING, "false"));
+
+    assertThat(PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)).isFalse();
+  }
+
   @ParameterizedTest
   @CsvSource({
     "s3://bucket/table/dt=20260516, s3://bucket/table",
@@ -120,14 +147,9 @@ class PlanUtilsTest {
 
   private OpenLineageContext contextWithHiveStylePartitioningNormalization(boolean enabled) {
     OpenLineageContext context = mock(OpenLineageContext.class);
-    SparkContext sparkContext = mock(SparkContext.class);
-    SparkConf sparkConf =
-        new SparkConf()
-            .set(
-                PlanUtils.SPARK_OPENLINEAGE_DATASET_NORMALIZE_HIVE_STYLE_PARTITIONING,
-                String.valueOf(enabled));
-    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
-    when(sparkContext.getConf()).thenReturn(sparkConf);
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
+    config.setNormalizeHiveStylePartitioning(enabled);
+    when(context.getOpenLineageConfig()).thenReturn(config);
     return context;
   }
 
