@@ -15,11 +15,8 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
@@ -44,9 +41,7 @@ class PlanUtilsTest {
   @Test
   void testGetDirectoryPathsNormalizesHiveStylePartitioningByDefault() {
     OpenLineageContext context = mock(OpenLineageContext.class);
-    SparkContext sparkContext = mock(SparkContext.class);
-    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
-    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
 
     assertThat(
             PlanUtils.getDirectoryPaths(
@@ -67,29 +62,11 @@ class PlanUtilsTest {
   }
 
   @Test
-  void testOpenLineageConfigTakesPrecedenceOverSparkConf() {
-    OpenLineageContext context = contextWithHiveStylePartitioningNormalization(false);
-    SparkContext sparkContext = mock(SparkContext.class);
-    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
-    when(sparkContext.getConf())
-        .thenReturn(
-            new SparkConf()
-                .set(PlanUtils.SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING, "true"));
-
-    assertThat(PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)).isFalse();
-  }
-
-  @Test
-  void testSparkConfIsUsedAsFallbackForHiveStylePartitioningNormalization() {
-    OpenLineageContext context = mock(OpenLineageContext.class);
-    SparkContext sparkContext = mock(SparkContext.class);
-    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
-    when(sparkContext.getConf())
-        .thenReturn(
-            new SparkConf()
-                .set(PlanUtils.SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING, "false"));
-
-    assertThat(PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)).isFalse();
+  void testOpenLineageConfigControlsHiveStylePartitioningNormalization() {
+    assertThat(
+            PlanUtils.isHiveStylePartitioningNormalizationEnabled(
+                contextWithHiveStylePartitioningNormalization(false)))
+        .isFalse();
   }
 
   private OpenLineageContext contextWithHiveStylePartitioningNormalization(boolean enabled) {

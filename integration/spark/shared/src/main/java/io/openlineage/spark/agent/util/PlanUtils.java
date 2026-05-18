@@ -277,16 +277,6 @@ public class PlanUtils {
     return Optional.ofNullable(context)
         .map(OpenLineageContext::getOpenLineageConfig)
         .map(config -> config.getNormalizeHiveStylePartitioning())
-        .orElseGet(() -> isHiveStylePartitioningNormalizationEnabledInSparkConf(context));
-  }
-
-  private static boolean isHiveStylePartitioningNormalizationEnabledInSparkConf(
-      OpenLineageContext context) {
-    return Optional.ofNullable(context)
-        .flatMap(OpenLineageContext::getSparkContext)
-        .map(sparkContext -> sparkContext.getConf())
-        .filter(Objects::nonNull)
-        .map(conf -> conf.getBoolean(SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING, true))
         .orElse(true);
   }
 
