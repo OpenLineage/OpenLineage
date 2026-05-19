@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import os
@@ -417,8 +416,17 @@ class OpenLineageClient:
             keys = env_key[len(cls.DYNAMIC_ENV_VARS_PREFIX) :].split("__")
 
             # Parse value (try to parse as JSON, otherwise lowercase the value)
-            with contextlib.suppress(json.JSONDecodeError):
+            try:
                 env_value = json.loads(env_value)  # noqa: PLW2901
+            except json.JSONDecodeError as err:
+                if any(c in env_value for c in "{}[]"):
+                    log.warning(
+                        "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "
+                        "Treating as plain string. Error: %s",
+                        env_key,
+                        env_value,
+                        err,
+                    )
             cls._insert_into_config(config, keys, env_value)
 
         return config
