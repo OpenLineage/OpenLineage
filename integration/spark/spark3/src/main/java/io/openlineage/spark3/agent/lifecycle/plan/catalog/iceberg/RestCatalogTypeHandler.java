@@ -12,6 +12,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.iceberg.CatalogProperties;
@@ -37,11 +38,11 @@ class RestCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   @SneakyThrows
-  DatasetIdentifier getIdentifier(
+  Optional<DatasetIdentifier> getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table) {
     String confUri = catalogConf.get(CatalogProperties.URI);
     String uri = new URI(confUri).toString();
-    return new DatasetIdentifier(table, uri);
+    return Optional.of(new DatasetIdentifier(table, uri));
   }
 
   @Override

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
@@ -20,7 +21,7 @@ abstract class BaseCatalogTypeHandler {
 
   abstract boolean matchesCatalogType(Map<String, String> catalogConf);
 
-  abstract DatasetIdentifier getIdentifier(
+  abstract Optional<DatasetIdentifier> getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table);
 
   Path defaultTableLocation(Path warehouseLocation, Identifier identifier) {

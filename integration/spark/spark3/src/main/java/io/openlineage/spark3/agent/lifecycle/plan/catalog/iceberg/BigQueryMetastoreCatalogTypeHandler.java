@@ -12,6 +12,7 @@ import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.spark.sql.SparkSession;
@@ -31,10 +32,11 @@ class BigQueryMetastoreCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
-  DatasetIdentifier getIdentifier(
+  Optional<DatasetIdentifier> getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table) {
     String warehouseLocation = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
-    return FilesystemDatasetUtils.fromLocationAndName(new Path(warehouseLocation).toUri(), table);
+    return Optional.of(
+        FilesystemDatasetUtils.fromLocationAndName(new Path(warehouseLocation).toUri(), table));
   }
 
   @Override
