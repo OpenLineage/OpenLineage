@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.S3TablesUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogHandler;
@@ -49,6 +50,10 @@ public class IcebergHandler implements CatalogHandler {
     this.context = context;
     this.catalogTypeHandlers =
         Arrays.asList(
+            // S3TablesCatalogTypeHandler must run first: its warehouse-ARN and glue.id signals
+            // must override the suffix-based matches in GlueCatalogTypeHandler and the type=rest
+            // match in RestCatalogTypeHandler when the underlying catalog is S3 Tables.
+            new S3TablesCatalogTypeHandler(),
             new NessieCatalogTypeHandler(),
             new GlueCatalogTypeHandler(),
             new RestCatalogTypeHandler(),
@@ -89,7 +94,10 @@ public class IcebergHandler implements CatalogHandler {
     }
     Map<String, String> conf = catalogConf.get();
     BaseCatalogTypeHandler catalogTypeHandler = getCatalogTypeHandler(conf);
-    String catalogType = Optional.ofNullable(conf.get(TYPE)).orElse(catalogTypeHandler.getType());
+    String catalogType =
+        catalogTypeHandler instanceof S3TablesCatalogTypeHandler
+            ? catalogTypeHandler.getType()
+            : Optional.ofNullable(conf.get(TYPE)).orElse(catalogTypeHandler.getType());
 
     OpenLineage.CatalogDatasetFacetBuilder builder =
         context
@@ -153,6 +161,25 @@ public class IcebergHandler implements CatalogHandler {
         ICEBERG_PATH_IDENTIFIER_CLASS_NAME.equals(identifier.getClass().getName());
     Optional<Table> table = getIcebergTable(tableCatalog, identifier);
     Optional<Path> maybeTableLocation = table.map(tbl -> new Path(tbl.location()));
+
+    // Primary identifier override: handlers like S3 Tables can supply the dataset identity
+    // directly, anchored to the catalog ARN. This deliberately bypasses the table-location
+    // requirement below, so identifiers can be built for tables that don't exist yet (e.g.
+    // the target of a MERGE INTO that creates the table).
+    Optional<DatasetIdentifier> primaryOverride =
+        catalogTypeHandler.getPrimaryIdentifier(session, catalogConf, identifier, catalogName);
+    if (primaryOverride.isPresent()) {
+      DatasetIdentifier di = primaryOverride.get();
+      maybeTableLocation.ifPresent(
+          loc -> {
+            String authority = loc.toUri().getAuthority();
+            if (authority != null) {
+              di.withSymlink("/", "s3://" + authority, SymlinkType.LOCATION);
+            }
+          });
+      return di;
+    }
+
     Optional<DatasetIdentifier> maybeSymlink = Optional.empty();
     if (isDefaultIcebergCatalog && lacksWarehouseProperty && isPathIdentifier) {
       if (log.isDebugEnabled()) {
@@ -184,6 +211,25 @@ public class IcebergHandler implements CatalogHandler {
         maybeTableLocation.orElseGet(
             () -> catalogTypeHandler.defaultTableLocation(new Path(warehouseLocation), identifier));
     DatasetIdentifier di = PathUtils.fromPath(tableLocation);
+
+    // Defense-in-depth: if catalog dispatch missed and the primary namespace is an S3 Tables
+    // physical bucket, rebuild it as the user-facing S3 Tables identity.
+    if (S3TablesUtils.isS3TablesNamespace(di.getNamespace())) {
+      StringBuilder nameBuilder = new StringBuilder(catalogName);
+      for (String ns : identifier.namespace()) {
+        nameBuilder.append('.').append(ns);
+      }
+      nameBuilder.append('.').append(identifier.name());
+      String s3TablesNs =
+          S3TablesUtils.buildS3TablesArnFromCatalogConf(
+              session.sparkContext().getConf(),
+              session.sparkContext().hadoopConfiguration(),
+              catalogConf);
+      DatasetIdentifier rebuilt = new DatasetIdentifier(nameBuilder.toString(), s3TablesNs);
+      rebuilt.withSymlink("/", di.getNamespace(), SymlinkType.LOCATION);
+      return rebuilt;
+    }
+
     maybeSymlink.ifPresent(
         symlink -> di.withSymlink(symlink.getName(), symlink.getNamespace(), SymlinkType.TABLE));
     return di;

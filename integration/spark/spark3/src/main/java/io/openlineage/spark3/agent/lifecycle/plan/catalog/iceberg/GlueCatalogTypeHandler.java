@@ -10,6 +10,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.AwsUtils;
+import io.openlineage.spark.agent.util.S3TablesUtils;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +27,21 @@ class GlueCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   boolean matchesCatalogType(Map<String, String> catalogConf) {
-    return catalogConf.containsKey(CATALOG_IMPL)
-        && catalogConf.get(CATALOG_IMPL).endsWith("GlueCatalog");
+    boolean glueImpl =
+        catalogConf.containsKey(CATALOG_IMPL)
+            && catalogConf.get(CATALOG_IMPL).endsWith("GlueCatalog");
+    if (!glueImpl) {
+      return false;
+    }
+    // S3 Tables can be accessed through GlueCatalog federation. Those configs must be handled by
+    // S3TablesCatalogTypeHandler regardless of handler ordering.
+    if (S3TablesUtils.matchesS3TablesCatalogConfig(catalogConf)) {
+      log.warn(
+          "Catalog has catalog-impl=GlueCatalog with S3 Tables federation signals. "
+              + "Treating as non-Glue so S3 Tables lineage identity is preserved.");
+      return false;
+    }
+    return true;
   }
 
   @Override

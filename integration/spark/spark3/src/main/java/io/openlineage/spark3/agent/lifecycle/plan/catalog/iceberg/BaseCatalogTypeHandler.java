@@ -24,6 +24,20 @@ abstract class BaseCatalogTypeHandler {
   abstract Optional<DatasetIdentifier> getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table);
 
+  /**
+   * Optionally supply the primary {@link DatasetIdentifier} directly, bypassing the default
+   * table-location-based identity in {@code IcebergHandler.getDatasetIdentifier}. Handlers like S3
+   * Tables override this so the user-facing identity matches the catalog (e.g. {@code
+   * arn:aws:s3tables:...}) rather than an opaque physical bucket URI.
+   */
+  Optional<DatasetIdentifier> getPrimaryIdentifier(
+      SparkSession session,
+      Map<String, String> catalogConf,
+      Identifier identifier,
+      String catalogName) {
+    return Optional.empty();
+  }
+
   Path defaultTableLocation(Path warehouseLocation, Identifier identifier) {
     // namespace1.namespace2.table -> /warehouseLocation/namespace1/namespace2/table
     String[] namespace = identifier.namespace();
