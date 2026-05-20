@@ -49,6 +49,10 @@ public class IcebergHandler implements CatalogHandler {
     this.context = context;
     this.catalogTypeHandlers =
         Arrays.asList(
+            // S3TablesCatalogTypeHandler must run first: its warehouse-ARN and glue.id signals
+            // must override the suffix-based matches in GlueCatalogTypeHandler and the type=rest
+            // match in RestCatalogTypeHandler when the underlying catalog is S3 Tables.
+            new S3TablesCatalogTypeHandler(),
             new NessieCatalogTypeHandler(),
             new GlueCatalogTypeHandler(),
             new RestCatalogTypeHandler(),
@@ -89,7 +93,7 @@ public class IcebergHandler implements CatalogHandler {
     }
     Map<String, String> conf = catalogConf.get();
     BaseCatalogTypeHandler catalogTypeHandler = getCatalogTypeHandler(conf);
-    String catalogType = Optional.ofNullable(conf.get(TYPE)).orElse(catalogTypeHandler.getType());
+    String catalogType = catalogTypeHandler.getFacetType(conf);
 
     OpenLineage.CatalogDatasetFacetBuilder builder =
         context
@@ -153,6 +157,24 @@ public class IcebergHandler implements CatalogHandler {
         ICEBERG_PATH_IDENTIFIER_CLASS_NAME.equals(identifier.getClass().getName());
     Optional<Table> table = getIcebergTable(tableCatalog, identifier);
     Optional<Path> maybeTableLocation = table.map(tbl -> new Path(tbl.location()));
+
+    // S3 Tables identity comes from catalog config and the logical Spark identifier, not
+    // table.location(). Build it before path-based fallback so NoSuchTableException paths
+    // (for example, create-like operations) can still produce a stable dataset name.
+    Optional<DatasetIdentifier> primaryOverride =
+        catalogTypeHandler.getPrimaryIdentifier(session, catalogConf, identifier, catalogName);
+    if (primaryOverride.isPresent()) {
+      DatasetIdentifier di = primaryOverride.get();
+      maybeTableLocation.ifPresent(
+          loc -> {
+            String authority = loc.toUri().getAuthority();
+            if (authority != null) {
+              di.withSymlink("/", "s3://" + authority, SymlinkType.LOCATION);
+            }
+          });
+      return di;
+    }
+
     Optional<DatasetIdentifier> maybeSymlink = Optional.empty();
     if (isDefaultIcebergCatalog && lacksWarehouseProperty && isPathIdentifier) {
       if (log.isDebugEnabled()) {
