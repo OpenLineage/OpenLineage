@@ -10,6 +10,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.iceberg.CatalogProperties;
@@ -32,11 +33,11 @@ class NessieCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   @SneakyThrows
-  DatasetIdentifier getIdentifier(
+  Optional<DatasetIdentifier> getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table) {
     log.debug("Getting identifier for nessie");
     String confUri = catalogConf.get(CatalogProperties.URI);
     String uri = new URI(confUri).toString();
-    return new DatasetIdentifier(table, uri);
+    return Optional.of(new DatasetIdentifier(table, uri));
   }
 }

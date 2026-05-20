@@ -856,4 +856,230 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("namespace", "file")
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
   }
+
+  @Test
+  @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void testGetDatasetIdentifierForS3TablesGlueCatalogWarehouseArn() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.s3tablescatalog.catalog-impl",
+                "org.apache.iceberg.aws.glue.GlueCatalog",
+                "spark.sql.catalog.s3tablescatalog.warehouse",
+                "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    Identifier identifier = Identifier.of(new String[] {"it_al_prod"}, "tbpiani");
+
+    when(sparkCatalog.name()).thenReturn("s3tablescatalog");
+    when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue(
+            "namespace", "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket")
+        .hasFieldOrPropertyWithValue("name", "s3tablescatalog.it_al_prod.tbpiani");
+    assertThat(datasetIdentifier.getSymlinks()).isEmpty();
+  }
+
+  @Test
+  @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void testGetDatasetIdentifierForS3TablesPhysicalBucketFallback() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    sparkConf.set("spark.glue.accountId", "557690578487");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                "file:/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("s3://abcd1234ef56--table-s3/data/file.parquet");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:s3tables:eu-central-1:557690578487")
+        .hasFieldOrPropertyWithValue("name", "test.database.table");
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("name", "/")
+        .hasFieldOrPropertyWithValue("namespace", "s3://abcd1234ef56--table-s3")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.LOCATION);
+  }
+
+  @Test
+  void testGetS3TablesCatalogData() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn("s3tablescatalog");
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3(
+                "spark.sql.catalog.s3tablescatalog.type",
+                "rest",
+                "spark.sql.catalog.s3tablescatalog.warehouse",
+                "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket",
+                "spark.sql.catalog.s3tablescatalog.uri",
+                "https://s3tables.eu-central-1.amazonaws.com/iceberg"));
+
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
+
+    assertEquals("s3tablescatalog", facet.getName());
+    assertEquals("s3tables", facet.getType());
+    assertEquals(
+        "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket", facet.getWarehouseUri());
+    assertEquals("https://s3tables.eu-central-1.amazonaws.com/iceberg", facet.getMetadataUri());
+    assertEquals("iceberg", facet.getFramework());
+  }
+
+  @Test
+  @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void testGetDatasetIdentifierForS3TablesNativeCatalog() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.s3tablescatalog.catalog-impl",
+                "software.amazon.s3tables.iceberg.S3TablesCatalog",
+                "spark.sql.catalog.s3tablescatalog.warehouse",
+                "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"it_al_prod"}, "tbpiani");
+
+    when(sparkCatalog.name()).thenReturn("s3tablescatalog");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location())
+        .thenReturn("s3://abcd1234ef56--table-s3/data/00000-0-abcd.parquet");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue(
+            "namespace", "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket")
+        .hasFieldOrPropertyWithValue("name", "s3tablescatalog.it_al_prod.tbpiani");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("name", "/")
+        .hasFieldOrPropertyWithValue("namespace", "s3://abcd1234ef56--table-s3")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.LOCATION);
+  }
+
+  @Test
+  @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void testGetDatasetIdentifierForS3TablesGlueFederation_DropsGlueSymlink() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    sparkConf.set("spark.glue.accountId", "557690578487");
+    hadoopConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.s3tablescatalog.catalog-impl",
+                "org.apache.iceberg.aws.glue.GlueCatalog",
+                "spark.sql.catalog.s3tablescatalog.glue.id",
+                "557690578487:s3tablescatalog/my-bucket"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"it_al_prod"}, "tbpiani");
+
+    when(sparkCatalog.name()).thenReturn("s3tablescatalog");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("s3://abcd1234ef56--table-s3");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    // No arn:aws:glue anywhere — S3 Tables handler matched first because of the glue.id federation
+    // signal.
+    assertThat(datasetIdentifier.getNamespace()).doesNotContain("arn:aws:glue");
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue(
+            "namespace", "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket")
+        .hasFieldOrPropertyWithValue("name", "s3tablescatalog.it_al_prod.tbpiani");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .allSatisfy(symlink -> assertThat(symlink.getNamespace()).doesNotContain("arn:aws:glue"));
+  }
+
+  @Test
+  @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void testGetDatasetIdentifierForS3Tables_MissingTable_NoException() {
+    // Regression for the empty inputs/outputs case: the target of a MERGE INTO that doesn't yet
+    // exist should still produce an identifier built from catalog/namespace/table + warehouse ARN.
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.s3tablescatalog.type",
+                "rest",
+                "spark.sql.catalog.s3tablescatalog.warehouse",
+                "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    Identifier identifier =
+        Identifier.of(new String[] {"it_al_prod_red_alleanza_allnet"}, "tbstatt");
+
+    when(sparkCatalog.name()).thenReturn("s3tablescatalog");
+    when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue(
+            "namespace", "arn:aws:s3tables:eu-central-1:557690578487:bucket/my-bucket")
+        .hasFieldOrPropertyWithValue(
+            "name", "s3tablescatalog.it_al_prod_red_alleanza_allnet.tbstatt");
+    // No LOCATION symlink because table.location() couldn't be resolved.
+    assertThat(datasetIdentifier.getSymlinks()).isEmpty();
+  }
 }

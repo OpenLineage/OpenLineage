@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.io.File;
 import java.net.URI;
@@ -68,10 +69,29 @@ public class PathUtils {
     DatasetIdentifier locationDataset = fromURI(location);
     URI locationUri = FilesystemDatasetUtils.toLocation(locationDataset);
 
-    Optional<DatasetIdentifier> symlinkDataset = Optional.empty();
-
     SparkConf sparkConf = sparkContext.getConf();
     Configuration hadoopConf = sparkContext.hadoopConfiguration();
+
+    // S3 Tables physical bucket detection takes priority over Glue/metastore branches. On EMR
+    // Serverless the Glue Hive factory is injected by default which would otherwise unconditionally
+    // attach a Glue symlink to every catalog-table read regardless of the table's actual catalog.
+    if (S3TablesUtils.isS3TablesStorage(locationUri)) {
+      String catalogName = S3TablesUtils.extractCatalogName(identifier, "spark_catalog");
+      StringBuilder nameBuilder = new StringBuilder(catalogName);
+      if (identifier.database().isDefined()) {
+        nameBuilder.append('.').append(identifier.database().get());
+      }
+      nameBuilder.append('.').append(identifier.table());
+      String namespace = S3TablesUtils.buildV1S3TablesArn(sparkConf, hadoopConf, catalogName);
+      DatasetIdentifier di = new DatasetIdentifier(nameBuilder.toString(), namespace);
+      String authority = locationUri.getAuthority();
+      if (authority != null) {
+        di.withSymlink("/", "s3://" + authority, SymlinkType.LOCATION);
+      }
+      return di;
+    }
+
+    Optional<DatasetIdentifier> symlinkDataset = Optional.empty();
 
     Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
     Optional<String> glueArn = AwsUtils.getGlueArn(sparkConf, hadoopConf);

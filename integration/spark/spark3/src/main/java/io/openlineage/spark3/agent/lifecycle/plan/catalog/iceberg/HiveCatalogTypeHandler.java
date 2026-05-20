@@ -13,6 +13,7 @@ import io.openlineage.spark.agent.util.SparkConfUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.iceberg.CatalogProperties;
@@ -35,7 +36,7 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   @SneakyThrows
-  DatasetIdentifier getIdentifier(
+  Optional<DatasetIdentifier> getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table) {
     URI metastoreUri;
     String confUri = catalogConf.get(CatalogProperties.URI);
@@ -46,6 +47,7 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
     } else {
       metastoreUri = new URI(confUri);
     }
-    return new DatasetIdentifier(table, PathUtils.prepareHiveUri(metastoreUri).toString());
+    return Optional.of(
+        new DatasetIdentifier(table, PathUtils.prepareHiveUri(metastoreUri).toString()));
   }
 }
