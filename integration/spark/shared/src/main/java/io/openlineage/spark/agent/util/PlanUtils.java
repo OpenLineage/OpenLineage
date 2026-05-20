@@ -22,8 +22,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.ArrayType;
@@ -40,9 +38,6 @@ import scala.PartialFunction$;
  */
 @Slf4j
 public class PlanUtils {
-  public static final String SPARK_OPENLINEAGE_NORMALIZE_HIVE_STYLE_PARTITIONING =
-      "spark.openlineage.normalizeHiveStylePartitioning";
-
   /**
    * Given a list of {@link PartialFunction}s merge to produce a single function that will test the
    * input against each function one by one until a match is found or {@link
@@ -254,25 +249,6 @@ public class PlanUtils {
         .build();
   }
 
-  /**
-   * Given a list of paths, it collects list of data location directories. For each path, a parent
-   * directory is taken and list of distinct locations is returned. Operation is optimized to check
-   * for each path if it was already added to the list of normalized paths.
-   *
-   * @param paths
-   * @param hadoopConf
-   * @return
-   */
-  public static List<Path> getDirectoryPaths(Collection<Path> paths, Configuration hadoopConf) {
-    return PathUtils.getDirectoryPaths(paths, hadoopConf, false);
-  }
-
-  public static List<Path> getDirectoryPaths(
-      Collection<Path> paths, Configuration hadoopConf, OpenLineageContext context) {
-    return PathUtils.getDirectoryPaths(
-        paths, hadoopConf, isHiveStylePartitioningNormalizationEnabled(context));
-  }
-
   public static boolean isHiveStylePartitioningNormalizationEnabled(OpenLineageContext context) {
     return Optional.ofNullable(context)
         .map(OpenLineageContext::getOpenLineageConfig)
@@ -288,8 +264,20 @@ public class PlanUtils {
    * @return
    */
   public static List<DatasetIdentifier> findDatasetIdentifiers(List<RDD<?>> rdds) {
+    return findDatasetIdentifiers(rdds, false);
+  }
+
+  public static List<DatasetIdentifier> findDatasetIdentifiers(
+      List<RDD<?>> rdds, OpenLineageContext context) {
+    return findDatasetIdentifiers(rdds, isHiveStylePartitioningNormalizationEnabled(context));
+  }
+
+  private static List<DatasetIdentifier> findDatasetIdentifiers(
+      List<RDD<?>> rdds, boolean normalizeHiveStylePartitioning) {
     return rdds.stream()
-        .flatMap(RddDatasetInfoExtractor::findDatasetIdentifiers)
+        .flatMap(
+            rdd ->
+                RddDatasetInfoExtractor.findDatasetIdentifiers(rdd, normalizeHiveStylePartitioning))
         .distinct()
         .collect(Collectors.toList());
   }

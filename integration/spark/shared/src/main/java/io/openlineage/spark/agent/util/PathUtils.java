@@ -12,9 +12,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -44,31 +48,71 @@ public class PathUtils {
   public static List<Path> getDirectoryPaths(
       Collection<Path> paths, Configuration hadoopConf, boolean normalizeHiveStylePartitioning) {
     LinkedHashSet<Path> normalizedPaths = new LinkedHashSet<>();
-    for (Path path : paths) {
-      Path directoryPath = getDirectoryPath(path, hadoopConf);
+    for (Path path : collapsePathsWithSameParent(paths)) {
+      if (hasNormalizedAncestor(normalizedPaths, path)) {
+        continue;
+      }
+
+      Optional<Path> directoryPath = getDirectoryPath(path, hadoopConf);
       if (normalizeHiveStylePartitioning) {
-        directoryPath = normalizeHiveStylePartitioning(directoryPath);
+        directoryPath = directoryPath.map(PathUtils::normalizeHiveStylePartitioning);
       }
-      if (directoryPath != null && !normalizedPaths.contains(directoryPath)) {
-        normalizedPaths.add(directoryPath);
-      }
+      directoryPath.ifPresent(normalizedPaths::add);
     }
     return new ArrayList<>(normalizedPaths);
   }
 
-  private static Path getDirectoryPath(Path p, Configuration hadoopConf) {
+  private static List<Path> collapsePathsWithSameParent(Collection<Path> paths) {
+    if (paths.size() <= 1) {
+      return new ArrayList<>(paths);
+    }
+
+    Map<Path, Long> parentCounts =
+        paths.stream()
+            .map(Path::getParent)
+            .filter(parent -> parent != null)
+            .collect(
+                Collectors.groupingBy(parent -> parent, LinkedHashMap::new, Collectors.counting()));
+
+    List<Path> collapsedPaths = new ArrayList<>();
+    Set<Path> emittedParents = new LinkedHashSet<>();
+    for (Path path : paths) {
+      Path parent = path.getParent();
+      if (parent != null && parentCounts.getOrDefault(parent, 0L) > 1) {
+        if (emittedParents.add(parent)) {
+          collapsedPaths.add(parent);
+        }
+      } else {
+        collapsedPaths.add(path);
+      }
+    }
+    return collapsedPaths;
+  }
+
+  private static boolean hasNormalizedAncestor(Set<Path> normalizedPaths, Path path) {
+    Path current = path.getParent();
+    while (current != null) {
+      if (normalizedPaths.contains(current)) {
+        return true;
+      }
+      current = current.getParent();
+    }
+    return false;
+  }
+
+  private static Optional<Path> getDirectoryPath(Path p, Configuration hadoopConf) {
     if (hasGlobPattern(p)) {
       return getPathBeforeGlob(p);
     }
 
     try {
       if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
-        return p.getParent();
+        return Optional.ofNullable(p.getParent());
       }
-      return p;
+      return Optional.of(p);
     } catch (IOException e) {
-      log.warn("Unable to get file system for path: {}", e.getMessage());
-      return p;
+      log.warn("Unable to get file status for path: {}", p, e);
+      return Optional.of(p);
     }
   }
 
@@ -82,7 +126,7 @@ public class PathUtils {
         || value.contains("]");
   }
 
-  private static Path getPathBeforeGlob(Path path) {
+  private static Optional<Path> getPathBeforeGlob(Path path) {
     String value = path.toString();
     Path current = path;
     while (current != null && hasGlobPattern(current)) {
@@ -91,9 +135,9 @@ public class PathUtils {
 
     if (current == null) {
       log.warn("Unable to determine non-glob parent for path: {}", value);
-      return path;
+      return Optional.empty();
     }
-    return current;
+    return Optional.of(current);
   }
 
   public static Path normalizeHiveStylePartitioning(Path path) {

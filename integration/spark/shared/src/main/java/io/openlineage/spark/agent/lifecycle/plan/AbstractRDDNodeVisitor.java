@@ -39,7 +39,7 @@ public abstract class AbstractRDDNodeVisitor<T extends LogicalPlan, D extends Op
   }
 
   protected List<D> findInputDatasets(List<RDD<?>> fileRdds, StructType schema) {
-    return PlanUtils.findDatasetIdentifiers(fileRdds).stream()
+    return PlanUtils.findDatasetIdentifiers(fileRdds, context).stream()
         // TODO- refactor this to return a single partitioned dataset based on static
         // static partitions in the relation
         .map(

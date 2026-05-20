@@ -234,7 +234,11 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                           relation.schema(),
                           datasetFacetsBuilder));
                 } else {
-                  return PlanUtils.getDirectoryPaths(rootPaths, hadoopConfig, context).stream()
+                  return PathUtils.getDirectoryPaths(
+                          rootPaths,
+                          hadoopConfig,
+                          PlanUtils.isHiveStylePartitioningNormalizationEnabled(context))
+                      .stream()
                       .map(
                           p -> {
                             // TODO- refactor this to return a single partitioned dataset based on

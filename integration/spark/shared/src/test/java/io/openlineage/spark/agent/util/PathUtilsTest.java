@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collections;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -88,6 +89,26 @@ class PathUtilsTest {
   }
 
   @Test
+  void testGetDirectoryPathsSkipsPathWhenAncestorAlreadyAdded() {
+    assertThat(
+            PathUtils.getDirectoryPaths(
+                Arrays.asList(new Path("/root"), new Path("/root/sub/file.parquet")),
+                new Configuration(),
+                false))
+        .containsExactly(new Path("/root"));
+  }
+
+  @Test
+  void testGetDirectoryPathsCollapsesPathsWithSameParent() {
+    assertThat(
+            PathUtils.getDirectoryPaths(
+                Arrays.asList(new Path("/root/file1.parquet"), new Path("/root/file2.parquet")),
+                new Configuration(),
+                false))
+        .containsExactly(new Path("/root"));
+  }
+
+  @Test
   void testGetDirectoryPathsNormalizesHiveStylePartitioningWhenEnabled() {
     assertThat(
             PathUtils.getDirectoryPaths(
@@ -108,12 +129,23 @@ class PathUtilsTest {
         .containsExactly(new Path("s3://bucket/table/dt=20260516"));
   }
 
+  @Test
+  void testGetDirectoryPathsDoesNotNormalizeHiveStylePartitioningInMiddleOfPath() {
+    assertThat(
+            PathUtils.getDirectoryPaths(
+                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/data/*.parquet")),
+                new Configuration(),
+                true))
+        .containsExactly(new Path("s3://bucket/table/dt=20260516/data"));
+  }
+
   @ParameterizedTest
   @CsvSource({
     "s3://bucket/table/dt=20260516, s3://bucket/table",
     "s3://bucket/table/_dt=20260516, s3://bucket/table",
     "s3://bucket/table/d_t1=20260516, s3://bucket/table",
-    "s3://bucket/table/dt=20260516/hour=13, s3://bucket/table"
+    "s3://bucket/table/dt=20260516/hour=13, s3://bucket/table",
+    "s3://some/table/col1=1/col2=2, s3://some/table"
   })
   void testNormalizeHiveStylePartitioningWithValidPartitionSegments(String input, String expected) {
     assertThat(PathUtils.normalizeHiveStylePartitioning(new Path(input)))

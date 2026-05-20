@@ -14,9 +14,6 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
-import java.util.Collections;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
@@ -28,37 +25,11 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PlanUtilsTest {
   @Test
-  void testGetDirectoryPathsNormalizesHiveStylePartitioningWhenEnabled() {
-    assertThat(
-            PlanUtils.getDirectoryPaths(
-                Collections.singletonList(
-                    new Path("s3://bucket/table/dt=20260516/hour=13/*.parquet")),
-                new Configuration(),
-                contextWithHiveStylePartitioningNormalization(true)))
-        .containsExactly(new Path("s3://bucket/table"));
-  }
-
-  @Test
-  void testGetDirectoryPathsNormalizesHiveStylePartitioningByDefault() {
+  void testHiveStylePartitioningNormalizationEnabledByDefault() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
 
-    assertThat(
-            PlanUtils.getDirectoryPaths(
-                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/*.parquet")),
-                new Configuration(),
-                context))
-        .containsExactly(new Path("s3://bucket/table"));
-  }
-
-  @Test
-  void testGetDirectoryPathsDoesNotNormalizeHiveStylePartitioningWhenDisabled() {
-    assertThat(
-            PlanUtils.getDirectoryPaths(
-                Collections.singletonList(new Path("s3://bucket/table/dt=20260516/*.parquet")),
-                new Configuration(),
-                contextWithHiveStylePartitioningNormalization(false)))
-        .containsExactly(new Path("s3://bucket/table/dt=20260516"));
+    assertThat(PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)).isTrue();
   }
 
   @Test

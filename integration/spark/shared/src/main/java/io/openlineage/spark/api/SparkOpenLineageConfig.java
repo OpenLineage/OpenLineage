@@ -144,11 +144,8 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     return columnLineageConfig;
   }
 
-  public Boolean getNormalizeHiveStylePartitioning() {
-    if (normalizeHiveStylePartitioning == null) {
-      normalizeHiveStylePartitioning = true;
-    }
-    return normalizeHiveStylePartitioning;
+  public boolean getNormalizeHiveStylePartitioning() {
+    return normalizeHiveStylePartitioning == null ? true : normalizeHiveStylePartitioning;
   }
 
   @Getter

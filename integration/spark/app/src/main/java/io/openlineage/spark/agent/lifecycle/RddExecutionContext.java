@@ -555,7 +555,8 @@ class RddExecutionContext implements ExecutionContext {
 
   protected List<DatasetIdentifier> findInputs(Set<RDD<?>> rdds) {
     log.debug("find Inputs within RddExecutionContext {}", rdds);
-    return PlanUtils.findDatasetIdentifiers(rdds.stream().collect(Collectors.toList())).stream()
+    return PlanUtils.findDatasetIdentifiers(rdds.stream().collect(Collectors.toList()), olContext)
+        .stream()
         .filter(Objects::nonNull)
         .collect(Collectors.toList());
   }

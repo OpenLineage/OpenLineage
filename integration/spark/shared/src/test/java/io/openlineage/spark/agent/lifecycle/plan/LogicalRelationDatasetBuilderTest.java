@@ -7,6 +7,8 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -17,7 +19,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -160,6 +162,7 @@ class LogicalRelationDatasetBuilderTest {
     when(session.sessionState()).thenReturn(sessionState);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
     when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    when(hadoopFsRelation.schema()).thenReturn(new StructType().add("id", StringType$.MODULE$));
     when(fileIndex.rootPaths())
         .thenReturn(
             scala.collection.JavaConverters.collectionAsScalaIterableConverter(
@@ -167,9 +170,12 @@ class LogicalRelationDatasetBuilderTest {
                 .asScala()
                 .toSeq());
 
-    try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
-      when(PlanUtils.getDirectoryPaths(
-              any(Collection.class), any(Configuration.class), any(OpenLineageContext.class)))
+    try (MockedStatic<PathUtils> mocked = mockStatic(PathUtils.class, CALLS_REAL_METHODS)) {
+      mocked
+          .when(
+              () ->
+                  PathUtils.getDirectoryPaths(
+                      any(Collection.class), any(Configuration.class), anyBoolean()))
           .thenReturn(Collections.singletonList(new Path("/tmp")));
 
       List<OpenLineage.Dataset> datasets =
@@ -228,19 +234,18 @@ class LogicalRelationDatasetBuilderTest {
     when(session.sessionState()).thenReturn(sessionState);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
     when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    when(hadoopFsRelation.schema()).thenReturn(new StructType().add("id", StringType$.MODULE$));
     when(fileIndex.rootPaths())
         .thenReturn(
             scala.collection.JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(p))
                 .asScala()
                 .toSeq());
 
-    try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
-      List<OpenLineage.Dataset> datasets =
-          builder.apply(mock(SparkListenerEvent.class), logicalRelation);
-      assertEquals(1, datasets.size());
-      OpenLineage.Dataset ds = datasets.get(0);
-      assertEquals("/tmp/path.csv", ds.getName());
-    }
+    List<OpenLineage.Dataset> datasets =
+        builder.apply(mock(SparkListenerEvent.class), logicalRelation);
+    assertEquals(1, datasets.size());
+    OpenLineage.Dataset ds = datasets.get(0);
+    assertEquals("/tmp/path.csv", ds.getName());
   }
 
   @Test
