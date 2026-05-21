@@ -298,6 +298,39 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForGlueWithoutArnOmitsSymlink() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.catalog-impl",
+                "org.apache.iceberg.aws.glue.GlueCatalog",
+                "spark.sql.catalog.test.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+    assertThat(datasetIdentifier.getSymlinks()).isEmpty();
+  }
+
   private static Stream<Arguments> missingTableOptions() {
     return Stream.of(
         Arguments.of(Identifier.of(new String[] {}, "table"), "table", "/tmp/iceberg/table"),
