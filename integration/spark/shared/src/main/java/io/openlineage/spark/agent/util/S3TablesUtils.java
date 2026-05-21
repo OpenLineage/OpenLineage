@@ -5,16 +5,22 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Value;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.spark.sql.catalyst.TableIdentifier;
+import scala.Option;
+import scala.Tuple2;
 
 /**
  * Utilities for detecting and building dataset identifiers for AWS S3 Tables. S3 Tables can be
@@ -39,6 +45,8 @@ public class S3TablesUtils {
   private static final String S3TABLES_CATALOG_SUFFIX = "S3TablesCatalog";
   private static final String GLUE_CATALOG_SUFFIX = "GlueCatalog";
   private static final String S3TABLES_ARN_PREFIX = "arn:aws:s3tables:";
+  private static final String SPARK_SQL_CATALOG_PREFIX = "spark.sql.catalog.";
+
   static final Pattern PHYSICAL_BUCKET = Pattern.compile("^[^/]+--table-s3$");
   static final Pattern FEDERATION_ID = Pattern.compile("^(\\d+):s3tablescatalog/(.+)$");
   // arn:aws:s3tables:<region>:<account>:bucket/<bucket-name>
@@ -138,6 +146,43 @@ public class S3TablesUtils {
     return composeArn(sparkConf, hadoopConf, info);
   }
 
+  /**
+   * V1 path: build the S3 Tables ARN. Tries the per-catalog config of {@code catalogName} first,
+   * then a session-wide scan, then account-level fallback.
+   */
+  public static String buildV1S3TablesArn(
+      SparkConf sparkConf, Configuration hadoopConf, String catalogName) {
+    Optional<BucketInfo> info = extractBucketForCatalogFromSparkConf(sparkConf, catalogName);
+    if (!info.isPresent()) {
+      info = extractSingleS3TablesBucketFromSparkConf(sparkConf);
+    }
+    return composeArn(sparkConf, hadoopConf, info);
+  }
+
+  /**
+   * Attempts {@code TableIdentifier.catalog()} (Spark 3.4+) via reflection. Falls back to {@code
+   * defaultName} when the method is unavailable or returns {@code None}.
+   */
+  public static String extractCatalogName(TableIdentifier identifier, String defaultName) {
+    if (identifier == null) {
+      return defaultName;
+    }
+    try {
+      //noinspection unchecked
+      Option<String> opt = (Option<String>) MethodUtils.invokeMethod(identifier, "catalog");
+      if (opt != null && opt.isDefined()) {
+        return opt.get();
+      }
+    } catch (NoSuchMethodException
+        | IllegalAccessException
+        | InvocationTargetException
+        | NoSuchElementException
+        | ClassCastException e) {
+      log.debug("TableIdentifier.catalog() not available; using default '{}'", defaultName);
+    }
+    return defaultName;
+  }
+
   // ----- internals -----
 
   private static Optional<BucketInfo> extractBucketFromCatalogConf(Map<String, String> conf) {
@@ -158,6 +203,63 @@ public class S3TablesUtils {
       return fromArn;
     }
     return Optional.empty();
+  }
+
+  private static Optional<BucketInfo> extractBucketForCatalogFromSparkConf(
+      SparkConf sparkConf, String catalogName) {
+    if (sparkConf == null || catalogName == null) {
+      return Optional.empty();
+    }
+    String warehouse =
+        readSparkOption(sparkConf, SPARK_SQL_CATALOG_PREFIX + catalogName + ".warehouse");
+    String glueId = readSparkOption(sparkConf, SPARK_SQL_CATALOG_PREFIX + catalogName + ".glue.id");
+
+    Optional<BucketInfo> fromFederation = parseFederationId(glueId);
+    if (fromFederation.isPresent()) {
+      return fromFederation;
+    }
+    Optional<BucketInfo> fromWarehouseFederation = parseFederationId(warehouse);
+    if (fromWarehouseFederation.isPresent()) {
+      return fromWarehouseFederation;
+    }
+    return parseS3TablesArn(warehouse);
+  }
+
+  private static Optional<BucketInfo> extractSingleS3TablesBucketFromSparkConf(
+      SparkConf sparkConf) {
+    if (sparkConf == null) {
+      return Optional.empty();
+    }
+    BucketInfo found = null;
+    Tuple2<String, String>[] entries = sparkConf.getAllWithPrefix(SPARK_SQL_CATALOG_PREFIX);
+    for (Tuple2<String, String> entry : entries) {
+      String key = entry._1();
+      String value = entry._2();
+      Optional<BucketInfo> info;
+      if (key.endsWith(".glue.id")) {
+        info = parseFederationId(value);
+      } else if (key.endsWith(".warehouse")) {
+        info = parseFederationId(value);
+        if (!info.isPresent()) {
+          info = parseS3TablesArn(value);
+        }
+      } else {
+        continue;
+      }
+      if (info.isPresent()) {
+        if (found == null) {
+          found = info.get();
+        } else if (!found.bucketName.equals(info.get().bucketName)) {
+          log.warn(
+              "Found multiple S3 Tables buckets in Spark catalog configuration ({} and {}). "
+                  + "Falling back to account-level S3 Tables namespace.",
+              found.bucketName,
+              info.get().bucketName);
+          return Optional.empty();
+        }
+      }
+    }
+    return Optional.ofNullable(found);
   }
 
   private static String composeArn(
@@ -238,5 +340,9 @@ public class S3TablesUtils {
           new BucketInfo(Optional.of(m.group(1)), Optional.of(m.group(2)), m.group(3)));
     }
     return Optional.empty();
+  }
+
+  private static String readSparkOption(SparkConf sparkConf, String key) {
+    return ScalaConversionUtils.asJavaOptional(sparkConf.getOption(key)).orElse(null);
   }
 }

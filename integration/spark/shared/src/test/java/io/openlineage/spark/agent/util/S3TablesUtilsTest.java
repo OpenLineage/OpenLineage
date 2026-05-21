@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import io.openlineage.spark.agent.util.S3TablesUtils.BucketInfo;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.mockito.MockedStatic;
@@ -135,6 +137,14 @@ class S3TablesUtilsTest {
   }
 
   @Test
+  void extractCatalogName_fallsBackWhenCatalogMethodIsAbsent() {
+    TableIdentifier identifier = mock(TableIdentifier.class);
+
+    assertThat(S3TablesUtils.extractCatalogName(identifier, "spark_catalog"))
+        .isEqualTo("spark_catalog");
+  }
+
+  @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
   void buildS3TablesArnFromCatalogConf_PrefersWarehouseArn() {
     SparkConf sparkConf = new SparkConf();
@@ -159,6 +169,62 @@ class S3TablesUtilsTest {
 
     String arn = S3TablesUtils.buildS3TablesArnFromCatalogConf(sparkConf, hadoopConf, catalogConf);
     assertThat(arn).isEqualTo("arn:aws:s3tables:eu-central-1:557690578487:bucket/federated-bucket");
+  }
+
+  @Test
+  void buildV1S3TablesArn_FullArnFromCatalogWarehouse() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set(
+        "spark.sql.catalog.s3tablescatalog.warehouse",
+        "arn:aws:s3tables:us-west-2:111122223333:bucket/my-bucket");
+    Configuration hadoopConf = new Configuration();
+
+    String arn = S3TablesUtils.buildV1S3TablesArn(sparkConf, hadoopConf, "s3tablescatalog");
+    assertThat(arn).isEqualTo("arn:aws:s3tables:us-west-2:111122223333:bucket/my-bucket");
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void buildV1S3TablesArn_FullArnFromGlueIdFederation() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set(
+        "spark.sql.catalog.s3tablescatalog.glue.id", "111122223333:s3tablescatalog/my-bucket");
+    Configuration hadoopConf = new Configuration();
+
+    String arn = S3TablesUtils.buildV1S3TablesArn(sparkConf, hadoopConf, "s3tablescatalog");
+    assertThat(arn).contains("111122223333").contains("bucket/my-bucket");
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void buildV1S3TablesArn_SessionScanWhenPerCatalogMisses() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set(
+        "spark.sql.catalog.othercatalog.warehouse",
+        "arn:aws:s3tables:eu-central-1:111122223333:bucket/found-bucket");
+    Configuration hadoopConf = new Configuration();
+
+    String arn = S3TablesUtils.buildV1S3TablesArn(sparkConf, hadoopConf, "spark_catalog");
+    assertThat(arn).isEqualTo("arn:aws:s3tables:eu-central-1:111122223333:bucket/found-bucket");
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void buildV1S3TablesArn_AmbiguousMultiBucket_AccountLevelFallback() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set("spark.glue.accountId", "111122223333");
+    sparkConf.set(
+        "spark.sql.catalog.a.warehouse",
+        "arn:aws:s3tables:eu-central-1:111122223333:bucket/bucket-a");
+    sparkConf.set(
+        "spark.sql.catalog.b.warehouse",
+        "arn:aws:s3tables:eu-central-1:111122223333:bucket/bucket-b");
+    Configuration hadoopConf = new Configuration();
+
+    String arn = S3TablesUtils.buildV1S3TablesArn(sparkConf, hadoopConf, "spark_catalog");
+    // Ambiguous bucket -> falls back to account-level (or unknown account if STS isn't reachable)
+    assertThat(arn).startsWith("arn:aws:s3tables:eu-central-1:");
+    assertThat(arn).doesNotContain("bucket/bucket-a").doesNotContain("bucket/bucket-b");
   }
 
   @Test

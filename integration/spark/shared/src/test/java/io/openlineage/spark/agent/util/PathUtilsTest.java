@@ -471,4 +471,101 @@ class PathUtilsTest {
         PathUtils.reconstructDefaultLocation("/warehouse", new String[] {"mydb"}, "mytable");
     assertThat(result.toString()).isEqualTo("/warehouse/mydb.db/mytable");
   }
+
+  @Test
+  void testFromCatalogTableForS3Tables_FullArnFromCatalogWarehouse() throws URISyntaxException {
+    sparkConf.set(
+        "spark.sql.catalog.s3tablescatalog.warehouse",
+        "arn:aws:s3tables:us-west-2:111122223333:bucket/my-bucket");
+    // EMR Serverless default: Glue Hive factory injected — must NOT cause a Glue symlink.
+    hadoopConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+
+    when(catalogTable.provider()).thenReturn(Option.apply("iceberg"));
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("it_al_prod"));
+    when(tableIdentifier.table()).thenReturn("tbpiani");
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://abcd1234ef56--table-s3/")));
+
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue(
+            "namespace", "arn:aws:s3tables:us-west-2:111122223333:bucket/my-bucket")
+        .hasFieldOrPropertyWithValue("name", "spark_catalog.it_al_prod.tbpiani");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "/")
+        .hasFieldOrPropertyWithValue("namespace", "s3://abcd1234ef56--table-s3")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.LOCATION);
+    // Critical: no Glue symlink even though EMR's Glue Hive factory is set in hadoopConf.
+    assertThat(datasetIdentifier.getSymlinks())
+        .allSatisfy(s -> assertThat(s.getNamespace()).doesNotContain("arn:aws:glue"));
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void testFromCatalogTableForS3Tables_FullArnFromGlueIdFederation() throws URISyntaxException {
+    sparkConf.set(
+        "spark.sql.catalog.s3tablescatalog.glue.id",
+        "111122223333:s3tablescatalog/federated-bucket");
+    hadoopConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+
+    when(catalogTable.provider()).thenReturn(Option.apply("iceberg"));
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("db"));
+    when(tableIdentifier.table()).thenReturn("table");
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://xyz--table-s3/")));
+
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+
+    assertThat(datasetIdentifier.getNamespace())
+        .contains("111122223333", "bucket/federated-bucket");
+    assertThat(datasetIdentifier.getName()).isEqualTo("spark_catalog.db.table");
+    assertThat(datasetIdentifier.getSymlinks())
+        .allSatisfy(s -> assertThat(s.getNamespace()).doesNotContain("arn:aws:glue"));
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "eu-central-1")
+  void testFromCatalogTableForS3Tables_HiveGlueFactoryIgnored_NoBucketKnown()
+      throws URISyntaxException {
+    // No S3 Tables catalog configured in session — falls back to account-level S3 Tables identity.
+    // The Glue Hive factory must still be ignored: no Glue symlink.
+    hadoopConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+    sparkConf.set("spark.glue.accountId", "557690578487");
+
+    when(catalogTable.provider()).thenReturn(Option.apply("iceberg"));
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("db"));
+    when(tableIdentifier.table()).thenReturn("table");
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://orphan--table-s3/")));
+
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+
+    // Account-level S3 Tables identity (no bucket name known); name still uses catalog.db.table.
+    assertThat(datasetIdentifier.getNamespace()).startsWith("arn:aws:s3tables:eu-central-1:");
+    assertThat(datasetIdentifier.getNamespace()).doesNotContain("bucket/");
+    assertThat(datasetIdentifier.getName()).isEqualTo("spark_catalog.db.table");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("namespace", "s3://orphan--table-s3")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.LOCATION);
+    assertThat(datasetIdentifier.getSymlinks())
+        .allSatisfy(s -> assertThat(s.getNamespace()).doesNotContain("arn:aws:glue"));
+  }
 }
