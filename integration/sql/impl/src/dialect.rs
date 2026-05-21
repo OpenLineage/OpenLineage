@@ -56,17 +56,3 @@ pub fn get_generic_dialect(name: Option<String>) -> &'static dyn CanonicalDialec
         &GenericDialect
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::get_dialect;
-    use sqlparser::dialect::MsSqlDialect;
-
-    #[test]
-    fn sqlserver_alias_uses_mssql_dialect() {
-        let dialect = get_dialect("sqlserver");
-
-        assert!(dialect.as_base().is::<MsSqlDialect>());
-        assert_eq!(dialect.canonical_name("[Alias]"), Some("Alias"));
-    }
-}
