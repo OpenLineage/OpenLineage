@@ -27,10 +27,52 @@ class PrefectOpenLineageAdapter:
       self.client = client or OpenLineageClient('http://localhost:5000') # for testing
       self.job_namespace = job_namespace or os.getenv("JOB_NAMESPACE", "default")
 
-    def generate_job_name(self, flow_name: str, task_name: str):
-        return flow_name + '.' + task_name
+    def generate_job_name(self, parent: str, child: str):
+        return parent+"."+child
     
-    def create_and_emit_event(
+    def create_and_emit_flow_event(
+        self,
+        runId: str = None,
+        eventType: str = None,
+        eventTime: datetime = None,
+        flowName: str = None,
+        parentTransport: str = None, # was deploymentId
+        prefectVersion: str = None
+    ) -> RunEvent:
+
+        match eventType:
+            case 'START':
+                eventType: RunState = RunState.START
+            case 'COMPLETE':
+                eventType: RunState = RunState.COMPLETE
+            case 'FAILED':
+                eventType: RunState = RunState.FAIL
+
+        job_facets = {"jobType": JobTypeJobFacet(
+            processingType="BATCH", 
+            integration="Prefect",
+            jobType="FLOW"
+        )}
+
+        run_event = RunEvent(
+            eventType=eventType,
+            eventTime=eventTime.isoformat(),
+            run=Run(runId),
+            job=Job(
+                self.job_namespace,
+                self.generate_job_name(parentTransport, flowName), # Was deployment name
+                job_facets
+            ),
+            producer=PRODUCER
+        )
+
+        try:
+            self.client.emit(run_event)
+            logger.info('Emitted OpenLineage event successfully.')
+        except Exception as e:
+            logger.exception('Could not emit OpenLineage event.')
+
+    def create_and_emit_task_event(
         self,
         runId: str = None,
         eventType: str = None,
@@ -44,7 +86,7 @@ class PrefectOpenLineageAdapter:
     ) -> RunEvent:
 
         match eventType:
-            case 'RUNNING':
+            case 'START':
                 eventType: RunState = RunState.START
             case 'COMPLETE':
                 eventType: RunState = RunState.COMPLETE
