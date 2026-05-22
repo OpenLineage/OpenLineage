@@ -6,6 +6,8 @@
 package io.openlineage.client.utils;
 
 public class SnowflakeUtils {
+  public static final String SNOWFLAKE_NAMESPACE_PREFIX = "snowflake://";
+
   /**
    * Parses the Snowflake full URL to extract the account identifier according to OpenLineage naming
    * specification.
@@ -67,7 +69,9 @@ public class SnowflakeUtils {
     // Check if it's organization-account format (contains hyphen)
     // Organization-account format: orgname-accountname (never has region/cloud in URL)
     // Account locator format: accountlocator[.region[.cloud]]
-    if (accountPart.contains("-")) {
+    // Note: account locators can also contain hyphens, so we also check parts.length == 1
+    // to distinguish them from org-account format which has no dots after the account part.
+    if (accountPart.contains("-") && parts.length == 1) {
       // Organization-account format - return as-is
       return accountPart;
     }
