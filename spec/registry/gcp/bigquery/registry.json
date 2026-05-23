@@ -1,0 +1,6 @@
+{
+  "producer": {
+    "root_doc_URL": "https://cloud.google.com/bigquery/docs/routines",
+    "produced_facets": ["ol:gcp:bigquery:GcpBigQueryRoutineJobFacet.json"]
+  }
+}

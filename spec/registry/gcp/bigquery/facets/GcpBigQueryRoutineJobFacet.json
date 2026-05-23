@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/GcpBigQueryRoutineJobFacet.json",
+  "$defs": {
+    "GcpBigQueryRoutineJobFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "projectId": {
+              "description": "GCP project ID containing the routine",
+              "type": "string"
+            },
+            "datasetId": {
+              "description": "BigQuery dataset containing the routine",
+              "type": "string"
+            },
+            "routineId": {
+              "description": "Name of the routine (stored procedure or user-defined function)",
+              "type": "string"
+            },
+            "routineType": {
+              "description": "BigQuery routine type as reported by `INFORMATION_SCHEMA.ROUTINES.routine_type`. Optional — omit when unknown at emit time",
+              "type": "string",
+              "enum": ["PROCEDURE", "SCALAR_FUNCTION", "TABLE_VALUED_FUNCTION", "AGGREGATE_FUNCTION"]
+            }
+          },
+          "required": ["projectId", "datasetId", "routineId"],
+          "additionalProperties": true
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "gcp_bigquery_routine_job": {
+      "$ref": "#/$defs/GcpBigQueryRoutineJobFacet"
+    }
+  }
+}
