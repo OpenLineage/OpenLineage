@@ -36,7 +36,7 @@ class PrefectOpenLineageAdapter:
         eventType: str = None,
         eventTime: datetime = None,
         flowName: str = None,
-        parentTransport: str = None, # was deploymentId
+        flowNamespace: str = None,
         prefectVersion: str = None
     ) -> RunEvent:
 
@@ -60,7 +60,7 @@ class PrefectOpenLineageAdapter:
             run=Run(runId),
             job=Job(
                 self.job_namespace,
-                self.generate_job_name(parentTransport, flowName), # Was deployment name
+                self.generate_job_name(flowNamespace, flowName),
                 job_facets
             ),
             producer=PRODUCER
