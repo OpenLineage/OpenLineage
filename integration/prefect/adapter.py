@@ -102,7 +102,6 @@ class PrefectOpenLineageAdapter:
                         job=job_dependencies_run.JobIdentifier(
                             namespace=dep["namespace"], 
                             name=dep["name"]
-                            # name=self.generate_job_name(flowName, dep["name"]) # assume same flow
                         )
                     ) for dep in jobDeps
                 ]
@@ -110,8 +109,9 @@ class PrefectOpenLineageAdapter:
                             "jobDependencies": job_dependencies_run.JobDependenciesRunFacet(
                                 upstream = upstream_jobs
                             ),
-                            "parentRun": ParentRunFacet.create( # TODO: create() is deprecated
-                                flowRunId, flowNamespace, flowName
+                            "parentRun": ParentRunFacet(
+                                run={"runId": flowRunId},
+                                job={"namespace": flowNamespace, "name": flowName}
                             ),
                             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                                 version=prefectVersion,
@@ -120,14 +120,16 @@ class PrefectOpenLineageAdapter:
                         }
             else:
                 return {
-                            "parentRun": ParentRunFacet.create(
-                                flowRunId, flowNamespace, flowName
+                            "parentRun": ParentRunFacet(
+                                run={"runId": flowRunId},
+                                job={"namespace": flowNamespace, "name": flowName}
                             ),
                             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                                 version=prefectVersion,
                                 name="Prefect"
                             )
                         }
+
         job_facets = {"jobType": JobTypeJobFacet(
             processingType="BATCH", 
             integration="Prefect", 
