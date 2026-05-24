@@ -25,10 +25,6 @@ class PrefectOpenLineageAdapter:
         job_namespace: str | None = None,
     ):
       self.client = client or OpenLineageClient('http://localhost:5000') # for testing
-      self.job_namespace = job_namespace or os.getenv("JOB_NAMESPACE", "default")
-
-    def generate_job_name(self, parent: str, child: str):
-        return parent+"."+child
     
     def create_and_emit_flow_event(
         self,
@@ -48,6 +44,11 @@ class PrefectOpenLineageAdapter:
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
 
+        run_facets = {"processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+            version=prefectVersion,
+            name="Prefect"
+        )}
+
         job_facets = {"jobType": JobTypeJobFacet(
             processingType="BATCH", 
             integration="Prefect",
@@ -57,10 +58,10 @@ class PrefectOpenLineageAdapter:
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
-            run=Run(runId),
+            run=Run(runId, run_facets),
             job=Job(
-                self.job_namespace,
-                self.generate_job_name(flowNamespace, flowName),
+                flowNamespace,
+                flowName,
                 job_facets
             ),
             producer=PRODUCER
@@ -81,6 +82,7 @@ class PrefectOpenLineageAdapter:
         flowName: str = None,
         flowNamespace: str = None,
         taskName: str = None,
+        taskNamespace: str = None,
         jobDeps: List = None,
         prefectVersion: str = None
     ) -> RunEvent:
@@ -92,12 +94,6 @@ class PrefectOpenLineageAdapter:
                 eventType: RunState = RunState.COMPLETE
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
-
-        job_facets = {"jobType": JobTypeJobFacet(
-            processingType="BATCH", 
-            integration="Prefect", 
-            jobType="TASK"
-        )}
         
         def build_run_facets():
             if jobDeps:
@@ -105,7 +101,8 @@ class PrefectOpenLineageAdapter:
                     job_dependencies_run.JobDependency(
                         job=job_dependencies_run.JobIdentifier(
                             namespace=dep["namespace"], 
-                            name=self.generate_job_name(flowName, dep["name"]) # assume same flow
+                            name=dep["name"]
+                            # name=self.generate_job_name(flowName, dep["name"]) # assume same flow
                         )
                     ) for dep in jobDeps
                 ]
@@ -131,14 +128,19 @@ class PrefectOpenLineageAdapter:
                                 name="Prefect"
                             )
                         }
+        job_facets = {"jobType": JobTypeJobFacet(
+            processingType="BATCH", 
+            integration="Prefect", 
+            jobType="TASK"
+        )}
 
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
             run=Run(runId, build_run_facets()),
             job=Job(
-                self.job_namespace,
-                self.generate_job_name(flowName, taskName),
+                taskNamespace,
+                taskName,
                 job_facets
             ),
             producer=PRODUCER

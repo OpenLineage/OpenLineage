@@ -10,7 +10,7 @@ from typing import List
 from uuid import UUID
 
 from adapter import PrefectOpenLineageAdapter
-from openlineage.client.uuid import generate_static_uuid
+from openlineage.client.uuid import generate_static_uuid, generate_new_uuid
 from prefect.events.clients import get_events_subscriber
 from prefect.client.orchestration import get_client
 from prefect.events.filters import EventFilter, EventNameFilter
@@ -25,7 +25,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 def build_run_id(
 	execution_time: datetime, 
 	run_name: str, 
-	namespace
+	namespace: str
 ) -> str:
 	return str(generate_static_uuid(
 		instant=execution_time,
@@ -33,17 +33,11 @@ def build_run_id(
 	))
 
 def get_prefect_version():
-	"""Requires PREFECT_API_URL"""
+	"""Requires PREFECT_API_URL."""
 
 	url = os.environ.get("PREFECT_API_URL")+"/admin/version"
 	version = requests.get(url).json()
 	return version
-
-def get_variable(url: str, var: str):
-
-	url = url+f"/variables/{var}"
-	prefect_variable = requests.get(url).json()
-	return prefect_variable
 
 async def get_task_run(task_id: str):
 
@@ -58,9 +52,23 @@ async def get_deployment_id(flow_run_id: str):
 		deployment = await client.read_deployment(flow_run.deployment_id)
 		return str(deployment.id).split("-")[0]
 
-async def get_job_vars(task_run_id):
+async def get_flow_ns(flow_run_id: str):
 	"""
-	Looks for OL_NAMESPACE job env variable in parent's deployment.
+	Looks for OPENLINEAGE_NAMESPACE job env variable in flow's deployment.
+	"""
+
+	async with get_client() as client:
+		flow_run = await client.read_flow_run(flow_run_id) # TODO: type
+		deployment = await client.read_deployment(flow_run.deployment_id)
+		try:
+			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
+		except:
+			ns: str = JOB_NAMESPACE
+		return ns
+
+async def get_job_ns(task_run_id: str):
+	"""
+	Looks for OPENLINEAGE_NAMESPACE job env variable in task's deployment.
 	"""
 
 	async with get_client() as client:
@@ -71,7 +79,7 @@ async def get_job_vars(task_run_id):
 		try:
 			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
 		except:
-			ns: str = str(deployment.id).split("-")[0]
+			ns: str = JOB_NAMESPACE
 		return ns
 
 async def get_flow_run_info_from_task_id(task_run_id: str):
@@ -84,17 +92,20 @@ async def get_flow_run_info_from_task_id(task_run_id: str):
 		flow_id: UUID = flow_run.flow_id
 		flow = await client.read_flow(flow_id) # TODO: type
 		flow_name = flow.name
+		flow_namespace: str = await get_flow_ns(flow_run_id)
 		return {
 			"start_time": start_time, 
-			"flow_name": flow_name
+			"flow_name": flow_name,
+			"flow_namespace": flow_namespace
 		}
 
 async def collect_and_process_task_runs():
-	"""Requires PREFECT_API_URL"""
+	"""Requires PREFECT_API_URL."""
 
 	filter_criteria = EventFilter(
     	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run."])
 	)
+	run_context: dict = {}
 
 	async with get_events_subscriber(filter=filter_criteria) as subscriber:
 
@@ -117,21 +128,29 @@ async def collect_and_process_task_runs():
 
 					for res in event.related:
 						if res["prefect.resource.role"] == "flow":
+							flow_run_name: str = event.resource.name
 							flow_name: str = res["prefect.resource.name"]
+
 					if flow_name:
 						start_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
-						flow_namespace: str = JOB_NAMESPACE
-						flow_run_id: str = build_run_id(
-							start_time,
-							flow_name,
-							flow_namespace
-						)
+						prefect_flow_run_id: str = event.resource.id.split(".")[-1]
+						flow_namespace: str = await get_flow_ns(prefect_flow_run_id)
 
-						# Get Prefect version
+						if event_state == "Running":
+							ol_flow_run_id: str = build_run_id(
+								start_time,
+								flow_name,
+								flow_namespace
+							)
+							run_context[flow_run_name] = ol_flow_run_id
+
+						elif event_state in ["Completed", "Failed"]:
+							ol_flow_run_id: str = run_context.pop(flow_run_name, None)
+
 						prefect_version = get_prefect_version()
 
 						OL_ADAPTER.create_and_emit_flow_event(
-							runId=flow_run_id,
+							runId=ol_flow_run_id,
 							eventType=event_type, 
 							eventTime=start_time,
 							flowName=flow_name,
@@ -142,9 +161,21 @@ async def collect_and_process_task_runs():
 				elif entity_type == "task-run":
 
 					task_name: str = event.resource.name.split("-")[0]
+					task_run_name: str = event.resource.name
 					start_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
 					prefect_task_run_id: str = event.resource.id.split(".")[-1]
-					ol_task_run_id: str = build_run_id(start_time, task_name, JOB_NAMESPACE)
+					task_namespace: str = await get_job_ns(prefect_task_run_id)
+
+					if event_state == "Running":
+						ol_task_run_id: str = build_run_id(
+							start_time, 
+							task_name, 
+							task_namespace
+						)
+						run_context[task_run_name] = ol_task_run_id
+
+					elif event_state in ["Completed", "Failed"]:
+						ol_task_run_id: str = run_context.pop(task_run_name, None)
 
 					# Get job dependencies (Prefect "parents") info
 					parent_runs = []
@@ -154,7 +185,7 @@ async def collect_and_process_task_runs():
 							task_run_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
 
 							if task_run_id:
-								parent_namespace: dict = await get_job_vars(task_run_id)
+								parent_namespace: dict = await get_job_ns(task_run_id)
 								parent_run = await get_task_run(task_run_id)
 								parent_name: str = parent_run.name.split("-")[0]
 								parent_run_id = build_run_id(
@@ -171,11 +202,14 @@ async def collect_and_process_task_runs():
 						logger.info("No task parents found for %s", prefect_task_run_id)
 						pass
 
-					# Get flow run info
-					flow_data = await get_flow_run_info_from_task_id(prefect_task_run_id)
-					flow_run_id: str = build_run_id(flow_data["start_time"], flow_data["flow_name"], JOB_NAMESPACE)
+					flow_info = await get_flow_run_info_from_task_id(prefect_task_run_id)
+					flow_run_id: str = build_run_id(
+											flow_info["start_time"], 
+											flow_info["flow_name"], 
+											flow_info["flow_namespace"]
+										)
+					flow_namespace = flow_info["flow_namespace"]
 
-					# Get Prefect version
 					prefect_version = get_prefect_version()
 
 					OL_ADAPTER.create_and_emit_task_event(
@@ -184,8 +218,9 @@ async def collect_and_process_task_runs():
 						eventTime=start_time,
 						flowRunId=flow_run_id,
 						flowName=flow_name,
-						flowNamespace=JOB_NAMESPACE,
-						taskName=task_name, 
+						flowNamespace=flow_namespace,
+						taskName=task_name,
+						taskNamespace=task_namespace,
 						jobDeps=parent_runs,
 						prefectVersion=prefect_version
 					)
