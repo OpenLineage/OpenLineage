@@ -45,13 +45,6 @@ async def get_task_run(task_id: str):
 		task_run = await client.read_task_run(task_id) # TODO: type
 		return task_run
 
-async def get_deployment_id(flow_run_id: str):
-
-	async with get_client() as client:
-		flow_run = await client.read_flow_run(flow_run_id) # TODO: type
-		deployment = await client.read_deployment(flow_run.deployment_id)
-		return str(deployment.id).split("-")[0]
-
 async def get_flow_ns(flow_run_id: str):
 	"""
 	Looks for OPENLINEAGE_NAMESPACE job env variable in flow's deployment.
