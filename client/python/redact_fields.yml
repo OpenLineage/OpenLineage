@@ -209,6 +209,12 @@
   classes:
     - class_name: ProcessingEngineRunFacet
       redact_fields: []
+- module: routine_job
+  classes:
+    - class_name: RoutineJobFacet
+      redact_fields:
+        - namespace
+        - name
 - module: schema_dataset
   classes:
     - class_name: SchemaDatasetFacet

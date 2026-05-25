@@ -61,6 +61,23 @@ Using the legacy Snowflake account locator format (that will create `snowflake:/
 but it forces dataset IDs that won’t match IDs created with the orgname-account_name format.
 If you switch formats later, existing lineage nodes won’t connect to new ones.
 
+## Routine Naming
+
+A `Routine` is a callable named object stored inside a data system — a stored procedure, user-defined function,
+table-valued function, aggregate function, or similar. Routines follow the same `Namespace` + `Name` convention as
+datasets in the same source system: the `Namespace` is identical to the dataset namespace for that source, and the
+`Name` uses the same fully-qualified path convention as tables.
+
+| Data Store | Namespace                                                                                                                          | Name                                          |
+|:-----------|:-----------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------|
+| BigQuery   | `bigquery`                                                                                                                         | `{project id}.{dataset name}.{routine name}`  |
+| Snowflake  | `snowflake://{organization name}-{account name}` or `snowflake://{account-locator}(.{compliance})(.{cloud_region_id})(.{cloud})`   | `{database}.{schema}.{routine name}`          |
+| Redshift   | `redshift://{cluster_identifier}.{region_name}:{port}`                                                                             | `{database}.{schema}.{routine name}`          |
+| Postgres   | `postgres://{host}:{port}`                                                                                                         | `{database}.{schema}.{routine name}`          |
+| Databricks | `dbfs://{workspace name}`                                                                                                          | `{catalog}.{schema}.{routine name}`           |
+
+This convention is the basis for the `RoutineJobFacet` job facet, which identifies the routine invoked by a job.
+
 ## Job Naming
 
 A `Job` is a recurring data transformation with inputs and outputs. Each execution is captured as a `Run` with
