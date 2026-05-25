@@ -35,7 +35,7 @@ ext {
     hiveVersion = '3.1.3'
     hadoopVersion = '2.10.2'
     postgresqlVersion = '42.7.5'
-    testcontainersVersion = '1.20.4'
+    testcontainersVersion = '1.21.4'
 }
 
 dependencies {
