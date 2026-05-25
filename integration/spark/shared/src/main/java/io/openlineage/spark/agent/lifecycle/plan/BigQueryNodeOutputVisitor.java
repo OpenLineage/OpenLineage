@@ -11,7 +11,9 @@ import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ReflectionUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -25,6 +27,7 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
+import org.apache.spark.sql.types.StructType;
 import scala.Option;
 
 /**
@@ -86,6 +89,17 @@ public class BigQueryNodeOutputVisitor
         .map(x -> (String) x);
   }
 
+  private StructType getSchema(SaveIntoDataSourceCommand command) {
+    StructType schema = command.schema();
+    if ((schema == null || schema.fields() == null || schema.fields().length == 0)
+        && command.query() != null
+        && command.query().output() != null) {
+      // get schema from logical plan's output
+      schema = PlanUtils.toStructType(ScalaConversionUtils.fromSeq(command.query().output()));
+    }
+    return schema;
+  }
+
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan plan) {
     SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
@@ -95,7 +109,7 @@ public class BigQueryNodeOutputVisitor
           factory.getDataset(
               getFromSaveIntoDataSourceCommand(saveCommand, session.get()),
               BIGQUERY_NAMESPACE,
-              saveCommand.schema()));
+              getSchema(saveCommand)));
     } else {
       return Collections.emptyList();
     }
