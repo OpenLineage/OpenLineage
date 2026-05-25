@@ -113,7 +113,16 @@ class SparkSqlGenericIntegrationTest {
     spark.sql(
         "CREATE TABLE test_output AS SELECT * FROM test_input1 UNION ALL SELECT * FROM test_input2");
     spark.stop();
-    List<RunEvent> events = getEventsEmitted(mockServer);
+    // Wait for the COMPLETE event for test_output specifically: events are delivered via the async
+    // HTTP transport and SparkSession.stop() does not guarantee they have all been received by the
+    // mock server when it returns.
+    List<RunEvent> events =
+        getEventsEmitted(
+            mockServer,
+            e ->
+                e.getEventType() == RunEvent.EventType.COMPLETE
+                    && e.getOutputs() != null
+                    && e.getOutputs().stream().anyMatch(o -> o.getName().endsWith("test_output")));
 
     // verify output statistics facet
     Optional<OutputStatisticsOutputDatasetFacet> outputStatistics =
