@@ -83,7 +83,8 @@ public class SparkInputPartitionExtractor implements InputPartitionExtractor {
         tableLocation.map(
             location ->
                 tableIdentifier.isPresent()
-                    ? PathUtils.fromTableIdentifier(tableIdentifier.get(), sparkContext, location)
+                    ? PathUtils.fromTableIdentifier(
+                        tableIdentifier.get(), sparkContext, location, Optional.empty())
                     : PathUtils.fromURI(location));
     return di.map(Collections::singletonList).orElse(Collections.emptyList());
   }

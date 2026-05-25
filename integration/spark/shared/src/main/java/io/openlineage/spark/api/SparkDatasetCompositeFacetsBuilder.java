@@ -24,6 +24,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.types.StructType;
 
@@ -82,6 +83,7 @@ public abstract class SparkDatasetCompositeFacetsBuilder<T extends OpenLineage.D
   public SparkDatasetCompositeFacetsBuilder<T> dataset(CatalogTable catalogTable) {
     if (context.getSparkSession().isPresent()) {
       dataset(PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()));
+      catalog(catalogTable.identifier());
     }
     return this;
   }
@@ -136,6 +138,15 @@ public abstract class SparkDatasetCompositeFacetsBuilder<T extends OpenLineage.D
 
   public SparkDatasetCompositeFacetsBuilder<T> catalog(CatalogDatasetFacet catalogFacet) {
     inner.getFacets().catalog(catalogFacet);
+    return this;
+  }
+
+  public SparkDatasetCompositeFacetsBuilder<T> catalog(TableIdentifier identifier) {
+    if (context.getSparkSession().isPresent()) {
+      if (CatalogDatasetFacetUtils.isHiveCatalog(context.getSparkSession().get(), identifier)) {
+        catalog();
+      }
+    }
     return this;
   }
 

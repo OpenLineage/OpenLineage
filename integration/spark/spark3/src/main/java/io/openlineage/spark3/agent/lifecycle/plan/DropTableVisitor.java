@@ -10,6 +10,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -104,6 +105,8 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
               .schema(resolvedTable.schema())
               .lifecycleStateChange(
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP);
+      CatalogUtils3.getCatalogDatasetFacet(context, tableCatalog, tableProperties)
+          .ifPresent(cf -> sparkBuilder.catalog(cf.getCatalogDatasetFacet()));
       return Collections.singletonList(sparkBuilder.build());
     } else {
       return Collections.emptyList();
@@ -151,6 +154,8 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
                 .schema(schema)
                 .lifecycleStateChange(
                     OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP);
+        CatalogUtils3.getCatalogDatasetFacet(context, tableCatalog, tableProperties)
+            .ifPresent(cf -> sparkBuilder.catalog(cf.getCatalogDatasetFacet()));
         return Collections.singletonList(sparkBuilder.build());
       } else {
         return Collections.emptyList();

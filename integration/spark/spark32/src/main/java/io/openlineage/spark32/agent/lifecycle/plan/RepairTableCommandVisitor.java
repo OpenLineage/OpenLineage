@@ -37,6 +37,7 @@ public class RepairTableCommandVisitor
                         .schema(catalogTable.schema())
                         .lifecycleStateChange(
                             OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER)
+                        .catalog(catalogTable.identifier())
                         .build()))
         .orElse(Collections.emptyList());
   }
