@@ -66,14 +66,7 @@ class PrefectOpenLineageListener:
 		Looks for OPENLINEAGE_NAMESPACE job env variable in task's deployment.
 		"""
 		task_run = await self.client.read_task_run(task_run_id) # TODO: type
-		flow_run_id: UUID = task_run.flow_run_id
-		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
-		deployment = await self.client.read_deployment(flow_run.deployment_id)
-		try:
-			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
-		except:
-			ns: str = JOB_NAMESPACE
-		return ns
+		return await self.get_flow_ns(task_run.flow_run_id)
 
 	async def get_flow_run_info(self, task_run_id: str):
 		task_run = await self.client.read_task_run(task_run_id) # TODO: type
