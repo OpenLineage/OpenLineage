@@ -9,7 +9,7 @@ import os
 from typing import List
 
 from openlineage.client import OpenLineageClient
-from openlineage.client.facet import JobTypeJobFacet, ParentRunFacet
+from openlineage.client.facet import JobTypeJobFacet, ParentRunFacet, NominalTimeRunFacet
 from openlineage.client.facet_v2 import ( job_dependencies_run, processing_engine_run )
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
@@ -24,7 +24,7 @@ class PrefectOpenLineageAdapter:
         client: OpenLineageClient | None = None,
         job_namespace: str | None = None,
     ):
-      self.client = client or OpenLineageClient('http://localhost:5000') # for testing
+        self.client = client or OpenLineageClient('http://localhost:5000') # for testing
     
     def create_and_emit_flow_event(
         self,
@@ -78,6 +78,7 @@ class PrefectOpenLineageAdapter:
         runId: str = None,
         eventType: str = None,
         eventTime: datetime = None,
+        expectedEventTime: datetime = None,
         flowRunId: str = None,
         flowName: str = None,
         flowNamespace: str = None,
@@ -107,7 +108,10 @@ class PrefectOpenLineageAdapter:
                 ]
                 return {
                             "jobDependencies": job_dependencies_run.JobDependenciesRunFacet(
-                                upstream = upstream_jobs
+                                upstream=upstream_jobs
+                            ),
+                            "nominalTime": NominalTimeRunFacet(
+                                nominalStartTime=expectedEventTime
                             ),
                             "parentRun": ParentRunFacet(
                                 run={"runId": flowRunId},
@@ -120,6 +124,9 @@ class PrefectOpenLineageAdapter:
                         }
             else:
                 return {
+                            "nominalTime": NominalTimeRunFacet(
+                                nominalStartTime=expectedEventTime
+                            ),
                             "parentRun": ParentRunFacet(
                                 run={"runId": flowRunId},
                                 job={"namespace": flowNamespace, "name": flowName}

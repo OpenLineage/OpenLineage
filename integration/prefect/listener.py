@@ -22,222 +22,201 @@ OL_ADAPTER = PrefectOpenLineageAdapter()
 
 logger: logging.Logger = logging.getLogger(__name__)
 
-def build_run_id(
-	execution_time: datetime, 
-	run_name: str, 
-	namespace: str
-) -> str:
-	return str(generate_static_uuid(
-		instant=execution_time,
-        data=f"{namespace}.{run_name}".encode("utf-8"),
-	))
+class PrefectOpenLineageListener:
+	def __init__(
+		self
+	):
+		self.client = get_client()
 
-def get_prefect_version():
-	"""Requires PREFECT_API_URL."""
+	def build_run_id(
+		self,
+		execution_time: datetime, 
+		run_name: str, 
+		namespace: str
+	) -> str:
+		return str(generate_static_uuid(
+			instant=execution_time,
+	        data=f"{namespace}.{run_name}".encode("utf-8"),
+		))
 
-	url = os.environ.get("PREFECT_API_URL")+"/admin/version"
-	version = requests.get(url).json()
-	return version
+	def get_prefect_version(self):
+		"""Requires PREFECT_API_URL."""
+		url = os.environ.get("PREFECT_API_URL")+"/admin/version"
+		version = requests.get(url).json()
+		return version
 
-async def get_task_run(task_id: str):
-
-	async with get_client() as client:
-		task_run = await client.read_task_run(task_id) # TODO: type
+	async def get_task_run(self, task_id: str):
+		task_run = await self.client.read_task_run(task_id) # TODO: type
 		return task_run
 
-async def get_flow_ns(flow_run_id: str):
-	"""
-	Looks for OPENLINEAGE_NAMESPACE job env variable in flow's deployment.
-	"""
-
-	async with get_client() as client:
-		flow_run = await client.read_flow_run(flow_run_id) # TODO: type
-		deployment = await client.read_deployment(flow_run.deployment_id)
+	async def get_flow_ns(self, flow_run_id: str):
+		"""
+		Looks for OPENLINEAGE_NAMESPACE job env variable in flow's deployment.
+		"""
+		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
+		deployment = await self.client.read_deployment(flow_run.deployment_id)
 		try:
 			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
 		except:
 			ns: str = JOB_NAMESPACE
 		return ns
 
-async def get_flow_name(flow_run_id: str, flow_name: str):
-	"""Looks for OPENLINEAGE_URL to construct flow name."""
-
-	async with get_client() as client:
-		flow_run = await client.read_flow_run(flow_run_id) # TODO: type
-		deployment = await client.read_deployment(flow_run.deployment_id)
-		try:
-			url: str = deployment.job_variables["env"]["OPENLINEAGE_URL"]
-			host_long: str = url.split("/")[2]
-			host: str = host_long.split(":")[0]
-			return host+"."+flow_name
-		except:
-			return flow_name
-
-async def get_job_ns(task_run_id: str):
-	"""
-	Looks for OPENLINEAGE_NAMESPACE job env variable in task's deployment.
-	"""
-
-	async with get_client() as client:
-		task_run = await client.read_task_run(task_run_id) # TODO: type
+	async def get_job_ns(self, task_run_id: str):
+		"""
+		Looks for OPENLINEAGE_NAMESPACE job env variable in task's deployment.
+		"""
+		task_run = await self.client.read_task_run(task_run_id) # TODO: type
 		flow_run_id: UUID = task_run.flow_run_id
-		flow_run = await client.read_flow_run(flow_run_id) # TODO: type
-		deployment = await client.read_deployment(flow_run.deployment_id)
+		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
+		deployment = await self.client.read_deployment(flow_run.deployment_id)
 		try:
 			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
 		except:
 			ns: str = JOB_NAMESPACE
 		return ns
 
-async def get_flow_run_info_from_task_id(task_run_id: str):
-
-	async with get_client() as client:
-		task_run = await client.read_task_run(task_run_id) # TODO: type
+	async def get_flow_run_info(self, task_run_id: str):
+		task_run = await self.client.read_task_run(task_run_id) # TODO: type
 		flow_run_id: UUID = task_run.flow_run_id
-		flow_run = await client.read_flow_run(flow_run_id) # TODO: type
+		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
 		flow_id: UUID = flow_run.flow_id
-		flow = await client.read_flow(flow_id) # TODO: type
-		prefect_flow_name: str = flow.name
-		ol_flow_name: str = await get_flow_name(flow_run_id, prefect_flow_name)
-		flow_namespace: str = await get_flow_ns(flow_run_id)
+		flow = await self.client.read_flow(flow_id) # TODO: type
+		flow_name: str = flow.name
+		flow_namespace: str = await self.get_flow_ns(flow_run_id)
 		return {
-			"flow_name": ol_flow_name,
+			"flow_name": flow_name,
 			"flow_namespace": flow_namespace
 		}
 
-async def get_flow_run_start_time(flow_run_id: str):
-
-	async with get_client() as client:
-		flow_run = await client.read_flow_run(flow_run_id) # TODO: type
+	async def get_flow_run_start_time(self, flow_run_id: str):
+		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
 		flow_run_start_time = flow_run.state.timestamp
 		return flow_run_start_time
 
-async def collect_and_process_task_runs():
-	"""Requires PREFECT_API_URL."""
+	async def collect_and_process_task_runs(self):
+		"""Requires PREFECT_API_URL."""
+		filter_criteria = EventFilter(
+	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run."])
+		)
+		run_context: dict = {}
 
-	filter_criteria = EventFilter(
-    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run."])
-	)
-	run_context: dict = {}
+		async with get_events_subscriber(filter=filter_criteria) as subscriber:
+			async for event in subscriber:
+				entity_type: str = event.event.split(".")[1]
+				event_state: str = event.event.split(".")[-1]
 
-	async with get_events_subscriber(filter=filter_criteria) as subscriber:
+				if event_state in ["Running", "Completed", "Failed"]:
 
-		async for event in subscriber:
+					match event_state:
+						case 'Running':
+							event_type: str = "START"
+						case 'Completed':
+							event_type: str = "COMPLETE"
+						case 'Failed':
+							event_type: str = "FAILED"
 
-			entity_type: str = event.event.split(".")[1]
-			event_state: str = event.event.split(".")[-1]
+					if entity_type == "flow-run":
 
-			if event_state in ["Running", "Completed", "Failed"]:
+						for res in event.related:
+							if res["prefect.resource.role"] == "flow":
+								flow_run_name: str = event.resource.name
+								flow_name: str = res["prefect.resource.name"]
 
-				match event_state:
-					case 'Running':
-						event_type: str = "START"
-					case 'Completed':
-						event_type: str = "COMPLETE"
-					case 'Failed':
-						event_type: str = "FAILED"
+						if flow_run_name:
+							start_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
+							prefect_flow_run_id: str = event.resource.id.split(".")[-1]
+							flow_namespace: str = await self.get_flow_ns(prefect_flow_run_id)
 
-				if entity_type == "flow-run":
+							if event_state == "Running":
+								ol_flow_run_id: str = self.build_run_id(
+									start_time,
+									flow_name,
+									flow_namespace
+								)
+								run_context[flow_run_name] = ol_flow_run_id
 
-					for res in event.related:
-						if res["prefect.resource.role"] == "flow":
-							flow_run_name: str = event.resource.name
-							prefect_flow_name: str = res["prefect.resource.name"]
+							elif event_state in ["Completed", "Failed"]:
+								ol_flow_run_id: str = run_context[flow_run_name]
 
-					if flow_run_name:
+							prefect_version = self.get_prefect_version()
+
+							OL_ADAPTER.create_and_emit_flow_event(
+								runId=ol_flow_run_id,
+								eventType=event_type, 
+								eventTime=start_time,
+								flowName=flow_name,
+								flowNamespace=flow_namespace,
+								prefectVersion=prefect_version
+							)
+
+					elif entity_type == "task-run":
+
+						task_name: str = event.resource.name.split("-")[0]
+						task_run_name: str = event.resource.name
 						start_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
-						prefect_flow_run_id: str = event.resource.id.split(".")[-1]
-						flow_namespace: str = await get_flow_ns(prefect_flow_run_id)
-						ol_flow_name: str = await get_flow_name(prefect_flow_run_id, prefect_flow_name)
+						expected_start_time: datetime = event.payload["task_run"]["expected_start_time"]
+						prefect_task_run_id: str = event.resource.id.split(".")[-1]
+						task_namespace: str = await self.get_job_ns(prefect_task_run_id)
 
 						if event_state == "Running":
-							ol_flow_run_id: str = build_run_id(
-								start_time,
-								ol_flow_name,
-								flow_namespace
+							ol_task_run_id: str = self.build_run_id(
+								start_time, 
+								task_name, 
+								task_namespace
 							)
-							run_context[flow_run_name] = ol_flow_run_id
+							run_context[task_run_name] = ol_task_run_id
 
 						elif event_state in ["Completed", "Failed"]:
-							ol_flow_run_id: str = run_context[flow_run_name]
+							ol_task_run_id: str = run_context.pop(task_run_name, None)
 
-						prefect_version = get_prefect_version()
+						# Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
+						parent_runs = []
+						try:
+							task_parents: List = event.payload["task_run"]["task_inputs"]["__parents__"]
+							for parent in task_parents:
+								task_run_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
 
-						OL_ADAPTER.create_and_emit_flow_event(
-							runId=ol_flow_run_id,
+								if task_run_id:
+									parent_namespace: dict = await self.get_job_ns(task_run_id)
+									parent_run = await self.get_task_run(task_run_id)
+									parent_name: str = parent_run.name.split("-")[0]
+									parent_run_id = self.build_run_id(
+														start_time, 
+														parent_name, 
+														parent_namespace
+													)
+									parent_runs.append({
+													"name": parent_name, 
+													"namespace": parent_namespace, 
+													"id": parent_run_id
+												})
+						except:
+							logger.info("No task parents found for %s", prefect_task_run_id)
+							pass
+
+						# Get flow run info for ParentRunFacet
+						for res in event.related:
+							if res["prefect.resource.role"] == "flow-run":
+								flow_run_name: str = res["prefect.resource.name"]
+						flow_info: dict = await self.get_flow_run_info(prefect_task_run_id) #TODO: use flow_run_id
+						ol_flow_run_id: str = run_context[flow_run_name]
+						flow_namespace: str = flow_info["flow_namespace"]
+						flow_name: str = flow_info["flow_name"]
+
+						prefect_version = self.get_prefect_version()
+
+						OL_ADAPTER.create_and_emit_task_event(
+							runId=ol_task_run_id,
 							eventType=event_type, 
 							eventTime=start_time,
-							flowName=ol_flow_name,
+							expectedEventTime=expected_start_time,
+							flowRunId=ol_flow_run_id,
+							flowName=flow_name,
 							flowNamespace=flow_namespace,
+							taskName=task_name,
+							taskNamespace=task_namespace,
+							jobDeps=parent_runs,
 							prefectVersion=prefect_version
 						)
 
-				elif entity_type == "task-run":
-
-					task_name: str = event.resource.name.split("-")[0]
-					task_run_name: str = event.resource.name
-					start_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
-					prefect_task_run_id: str = event.resource.id.split(".")[-1]
-					task_namespace: str = await get_job_ns(prefect_task_run_id)
-
-					if event_state == "Running":
-						ol_task_run_id: str = build_run_id(
-							start_time, 
-							task_name, 
-							task_namespace
-						)
-						run_context[task_run_name] = ol_task_run_id
-
-					elif event_state in ["Completed", "Failed"]:
-						ol_task_run_id: str = run_context.pop(task_run_name, None)
-
-					# Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
-					parent_runs = []
-					try:
-						task_parents: List = event.payload["task_run"]["task_inputs"]["__parents__"]
-						for parent in task_parents:
-							task_run_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
-
-							if task_run_id:
-								parent_namespace: dict = await get_job_ns(task_run_id)
-								parent_run = await get_task_run(task_run_id)
-								parent_name: str = parent_run.name.split("-")[0]
-								parent_run_id = build_run_id(
-													start_time, 
-													parent_name, 
-													parent_namespace
-												)
-								parent_runs.append({
-												"name": parent_name, 
-												"namespace": parent_namespace, 
-												"id": parent_run_id
-											})
-					except:
-						logger.info("No task parents found for %s", prefect_task_run_id)
-						pass
-
-					# Get flow run info for ParentRunFacet
-					for res in event.related:
-						if res["prefect.resource.role"] == "flow-run":
-							flow_run_name: str = res["prefect.resource.name"]
-					flow_info: dict = await get_flow_run_info_from_task_id(prefect_task_run_id) #TODO: use flow_run_id
-					ol_flow_run_id: str = run_context[flow_run_name]
-					flow_namespace: str = flow_info["flow_namespace"]
-					flow_name: str = flow_info["flow_name"]
-
-					prefect_version = get_prefect_version()
-
-					OL_ADAPTER.create_and_emit_task_event(
-						runId=ol_task_run_id,
-						eventType=event_type, 
-						eventTime=start_time,
-						flowRunId=ol_flow_run_id,
-						flowName=flow_name,
-						flowNamespace=flow_namespace,
-						taskName=task_name,
-						taskNamespace=task_namespace,
-						jobDeps=parent_runs,
-						prefectVersion=prefect_version
-					)
-
-asyncio.run(collect_and_process_task_runs())
+asyncio.run(PrefectOpenLineageListener().collect_and_process_task_runs())
