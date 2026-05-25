@@ -190,7 +190,7 @@ class PrefectOpenLineageListener:
 													"namespace": parent_namespace, 
 													"id": parent_run_id
 												})
-						except:
+						except KeyError:
 							logger.info("No task parents found for %s", prefect_task_run_id)
 							pass
 
