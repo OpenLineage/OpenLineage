@@ -228,72 +228,72 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/api-client@npm:0.18.0":
-  version: 0.18.0
-  resolution: "@argos-ci/api-client@npm:0.18.0"
+"@argos-ci/api-client@npm:0.20.0":
+  version: 0.20.0
+  resolution: "@argos-ci/api-client@npm:0.20.0"
   dependencies:
     debug: "npm:^4.4.3"
     openapi-fetch: "npm:^0.17.0"
-  checksum: 10c0/49396701d99c1b8284855117fb231afe68a4917d1608ee01e3f9cb961a5458c699276f80b258837ce363be4821cd36b785fcdad5055d1179b97df34417bbea8f
+  checksum: 10c0/42e4c286a001f3d6110d872cac3b9cdf34117cb9a638bd7e70f30b493a7bcb73b160b43c8899494f3ef142e2f1358575a997eb63170383876b3dd230f2d0a1b6
   languageName: node
   linkType: hard
 
-"@argos-ci/browser@npm:5.1.3":
-  version: 5.1.3
-  resolution: "@argos-ci/browser@npm:5.1.3"
-  checksum: 10c0/3b3eaf7ef55d383c2993f2038aacc6af89c5b2da42a9a00dca44d654305d5edd32f5c0446c7bb5241e911688b89bce849bb2640bfa62ce4f30e66e1ac2515b27
+"@argos-ci/browser@npm:6.0.0":
+  version: 6.0.0
+  resolution: "@argos-ci/browser@npm:6.0.0"
+  checksum: 10c0/bc16f9f373d522f16407abe22837153b6fc79264f07e87f93f0d785008fd0309a9f89eaa6f785bc547e9d51cadd4b432c8411790985ba2ae940fbf49c51bef65
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^4.2.0":
-  version: 4.2.0
-  resolution: "@argos-ci/cli@npm:4.2.0"
+"@argos-ci/cli@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "@argos-ci/cli@npm:5.0.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.18.0"
-    "@argos-ci/core": "npm:5.2.1"
+    "@argos-ci/api-client": "npm:0.20.0"
+    "@argos-ci/core": "npm:6.0.0"
     commander: "npm:^14.0.3"
     open: "npm:^11.0.0"
-    ora: "npm:^9.3.0"
+    ora: "npm:^9.4.0"
     update-notifier: "npm:^7.3.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/19591891b80d98a5b06b90f566181bb3d6d6774077c2173f866cdc4f14f4d277380a0ea72bd235fb2a49f7d959b521e44c7937f2b2105621eb78c584d2c739e0
+  checksum: 10c0/2a68ff5f677b7f858afba990a560af805623d930f5a5631b952ff4e0b3e734721f167fcbca67e29bfd69456768a8badc4270a1fa2c76a34939f462f1088010e4
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:5.2.1":
-  version: 5.2.1
-  resolution: "@argos-ci/core@npm:5.2.1"
+"@argos-ci/core@npm:6.0.0":
+  version: 6.0.0
+  resolution: "@argos-ci/core@npm:6.0.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.18.0"
-    "@argos-ci/util": "npm:3.4.0"
+    "@argos-ci/api-client": "npm:0.20.0"
+    "@argos-ci/util": "npm:4.0.0"
     convict: "npm:^6.2.5"
     debug: "npm:^4.4.3"
     fast-glob: "npm:^3.3.3"
     mime-types: "npm:^3.0.2"
     sharp: "npm:^0.34.5"
     tmp: "npm:^0.2.5"
-  checksum: 10c0/a7714830be8ff778241040d5558eac1e5600bac6ab9caa66f5f0224e1ac85ae7db73ace28eab4be1532d1af1584da80619dafc2f80d34004674a7ac115ee5a00
+  checksum: 10c0/19d1b4999b6d5088d6de2ac43b0bb8c68f8391eb8210d83d7f080c6a598a89dc783b2b7fffe93112f4bd56b6fd1af034deec79eb64c2d5cb34f911d2821ebd46
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^6.6.2":
-  version: 6.6.2
-  resolution: "@argos-ci/playwright@npm:6.6.2"
+"@argos-ci/playwright@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "@argos-ci/playwright@npm:7.0.0"
   dependencies:
-    "@argos-ci/browser": "npm:5.1.3"
-    "@argos-ci/core": "npm:5.2.1"
-    "@argos-ci/util": "npm:3.4.0"
+    "@argos-ci/browser": "npm:6.0.0"
+    "@argos-ci/core": "npm:6.0.0"
+    "@argos-ci/util": "npm:4.0.0"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
-  checksum: 10c0/9d948e4174eeadfb19bf4a9ba6e90ad5220d6ef3200aa06130e35fa9669b29fe1d609842d2a777298e1f1f2e3b7bb98e16fe366836a205736ef183e4c7d392ca
+  checksum: 10c0/284fb5e0e4bd5e1de9a91496e1a6b36df94be50ca7d3499504f4434d3b4b739b6f12138929da81447ee044d258c2a71f4a3cccff86dc284063edf88d4475861b
   languageName: node
   linkType: hard
 
-"@argos-ci/util@npm:3.4.0":
-  version: 3.4.0
-  resolution: "@argos-ci/util@npm:3.4.0"
-  checksum: 10c0/a407240734cac538fd203e42fa472ef41a8f141cd4a5392c9c48248f2f57a65cb6a2e2d0bec167c2c993ad91b603344a9996a67d2c73da09a6b18a25868b5828
+"@argos-ci/util@npm:4.0.0":
+  version: 4.0.0
+  resolution: "@argos-ci/util@npm:4.0.0"
+  checksum: 10c0/be54a0888dd1d5554bd8830da3f4647ac5596cab691605d3508d1723c2b9522375c9f1c462b145ac857d3cacf8f8a8fdcbf0d263d6cc7f6ef798311c46acc968
   languageName: node
   linkType: hard
 
@@ -3905,14 +3905,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:^1.59.1":
-  version: 1.59.1
-  resolution: "@playwright/test@npm:1.59.1"
+"@playwright/test@npm:^1.60.0":
+  version: 1.60.0
+  resolution: "@playwright/test@npm:1.60.0"
   dependencies:
-    playwright: "npm:1.59.1"
+    playwright: "npm:1.60.0"
   bin:
     playwright: cli.js
-  checksum: 10c0/8c2d94a860d3c254a0b114df2f888ad0a0e9310f45b6059bd5d4da196d965cadf6922267cef0881cfa9784d4bef6d78363d2c2d94caa64be67ff644c41162137
+  checksum: 10c0/86b06e6437933e741c7cd43f362024e857e7bc28a55fcbb0553ef55e01a2a403c64f4786868de8af86a6e303fe99e98a18a42ba19489f43ae122e457f9e2d189
   languageName: node
   linkType: hard
 
@@ -5137,9 +5137,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^4.2.0"
-    "@argos-ci/playwright": "npm:^6.6.2"
-    "@playwright/test": "npm:^1.59.1"
+    "@argos-ci/cli": "npm:^5.0.0"
+    "@argos-ci/playwright": "npm:^7.0.0"
+    "@playwright/test": "npm:^1.60.0"
     cheerio: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
@@ -11115,9 +11115,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ora@npm:^9.3.0":
-  version: 9.3.0
-  resolution: "ora@npm:9.3.0"
+"ora@npm:^9.4.0":
+  version: 9.4.0
+  resolution: "ora@npm:9.4.0"
   dependencies:
     chalk: "npm:^5.6.2"
     cli-cursor: "npm:^5.0.0"
@@ -11125,9 +11125,9 @@ __metadata:
     is-interactive: "npm:^2.0.0"
     is-unicode-supported: "npm:^2.1.0"
     log-symbols: "npm:^7.0.1"
-    stdin-discarder: "npm:^0.3.1"
+    stdin-discarder: "npm:^0.3.2"
     string-width: "npm:^8.1.0"
-  checksum: 10c0/1d25c0f43e20389757285f740686958bce78ccb9d03dda190ecc92ae585cbc498fa54cf13933fea2f96cb97a0be82e927cf0fd8c96217459f9c43d915a380531
+  checksum: 10c0/8f2d7a8869cd68607797ac0ffe9f5cdceeb6009437672510d9920aea794cdd055164e3fe804248624c4940a71b22f94f1ffd94ce8fecf0746baef97a5c121a91
   languageName: node
   linkType: hard
 
@@ -11457,27 +11457,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.59.1":
-  version: 1.59.1
-  resolution: "playwright-core@npm:1.59.1"
+"playwright-core@npm:1.60.0":
+  version: 1.60.0
+  resolution: "playwright-core@npm:1.60.0"
   bin:
     playwright-core: cli.js
-  checksum: 10c0/d41a74d9681ce3beb3d5239e9ed577710b4ad099a6ca2476219c6599d51e9cb4b80bd72ed82c528da6a5d929c18ae3b872cf02bb83f78fa1c2cb9199c501abee
+  checksum: 10c0/99ccd43923b6e9355e0723b7fe221e6326efd4687f8dafff951313662aea11db51f542a9c2122c704c445fb9baae1c9ec9fa6f895126bbddd9fe92313f6942c9
   languageName: node
   linkType: hard
 
-"playwright@npm:1.59.1":
-  version: 1.59.1
-  resolution: "playwright@npm:1.59.1"
+"playwright@npm:1.60.0":
+  version: 1.60.0
+  resolution: "playwright@npm:1.60.0"
   dependencies:
     fsevents: "npm:2.3.2"
-    playwright-core: "npm:1.59.1"
+    playwright-core: "npm:1.60.0"
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     playwright: cli.js
-  checksum: 10c0/dfe38396e616e5c4f98825ce90037bb96e477c5a2bd9258a24854f8ce72a8a41427b19098863866f85aa0216e70287dd537c4438d761aca93995e31ae099c533
+  checksum: 10c0/714ad76d85b4865d7e43c0012f9039800c1485373388973ed39d79339cee5ad467052d1e2f1eaeca107a1cb6e65342186a8578a4c3504853d84c3a691250d5db
   languageName: node
   linkType: hard
 
@@ -13943,10 +13943,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stdin-discarder@npm:^0.3.1":
-  version: 0.3.1
-  resolution: "stdin-discarder@npm:0.3.1"
-  checksum: 10c0/2fda9b230e72f092a933dbc755fadbfd53b721b103acddd06c2642a81793565f1673f249dc54fc0c63b141f222e9d09494cdf4db6ab7998f54e0b0be8526cba5
+"stdin-discarder@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "stdin-discarder@npm:0.3.2"
+  checksum: 10c0/5dbaba9efbcb447a4450d5ae19794641ea9166abe96dc4b5547a109db1bb6e8bdb17bbe1029e02ca8d9d8ee996b7c7cbcce12b12c18c121871cd4f574292381a
   languageName: node
   linkType: hard
 
