@@ -84,7 +84,8 @@ public final class WriteToDataSourceV2Visitor
     if (topicOpt.isPresent() && bootstrapServersOpt.isPresent()) {
       String topic = topicOpt.get();
 
-      OutputDataset dataset = outputDataset().getDataset(topic, namespace, schemaOpt);
+      OutputDataset dataset =
+          outputDataset().sparkDatasetBuilder().dataset(topic, namespace).schema(schemaOpt).build();
       return Collections.singletonList(dataset);
     } else {
       String topicPresent =

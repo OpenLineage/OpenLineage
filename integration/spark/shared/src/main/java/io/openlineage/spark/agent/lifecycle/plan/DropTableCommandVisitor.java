@@ -6,11 +6,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
-import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
@@ -40,22 +35,12 @@ public class DropTableCommandVisitor
     if (!table.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
-
-    DatasetIdentifier datasetIdentifier =
-        PathUtils.fromCatalogTable(table.get(), context.getSparkSession().get());
-
-    DatasetFactory<OpenLineage.OutputDataset> factory = outputDataset();
-    DatasetCompositeFacetsBuilder facetsBuilder = factory.createCompositeFacetBuilder();
-    facetsBuilder
-        .getFacets()
-        .schema(null)
-        .dataSource(
-            PlanUtils.datasourceFacet(context.getOpenLineage(), datasetIdentifier.getNamespace()))
-        .lifecycleStateChange(
-            context
-                .getOpenLineage()
-                .newLifecycleStateChangeDatasetFacet(
-                    OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP, null));
-    return Collections.singletonList(factory.getDataset(datasetIdentifier, facetsBuilder));
+    return Collections.singletonList(
+        outputDataset()
+            .sparkDatasetBuilder()
+            .dataset(table.get())
+            .lifecycleStateChange(
+                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP)
+            .build());
   }
 }

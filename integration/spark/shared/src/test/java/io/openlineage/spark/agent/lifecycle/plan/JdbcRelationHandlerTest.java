@@ -5,14 +5,17 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -29,12 +32,13 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import scala.collection.immutable.Map$;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class JdbcRelationHandlerTest {
   JdbcRelationHandler jdbcRelationHandler;
-  DatasetFactory datasetFactory = mock(DatasetFactory.class);
+  DatasetFactory datasetFactory = mock(DatasetFactory.class, RETURNS_DEEP_STUBS);
   JDBCRelation relation = mock(JDBCRelation.class);
   JDBCOptions jdbcOptions = mock(JDBCOptions.class);
   String jdbcQuery =
@@ -66,16 +70,24 @@ class JdbcRelationHandlerTest {
   @Test
   void testHandlingJdbcQuery() {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcQuery);
-    StructType schema1 =
-        new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
-    StructType schema2 = new StructType().add("j2", DataTypes.StringType);
 
     jdbcRelationHandler.getDatasets(relation);
 
-    verify(datasetFactory, times(1))
-        .getDataset("test.jdbc_source1", "postgres://localhost:5432", schema1);
-    verify(datasetFactory, times(1))
-        .getDataset("test.jdbc_source2", "postgres://localhost:5432", schema2);
+    ArgumentCaptor<DatasetIdentifier> diCaptor = ArgumentCaptor.forClass(DatasetIdentifier.class);
+    verify(datasetFactory.sparkDatasetBuilder(), times(2)).dataset(diCaptor.capture());
+    List<DatasetIdentifier> allDis = diCaptor.getAllValues();
+    assertTrue(
+        allDis.stream()
+            .anyMatch(
+                di ->
+                    "test.jdbc_source1".equals(di.getName())
+                        && "postgres://localhost:5432".equals(di.getNamespace())));
+    assertTrue(
+        allDis.stream()
+            .anyMatch(
+                di ->
+                    "test.jdbc_source2".equals(di.getName())
+                        && "postgres://localhost:5432".equals(di.getNamespace())));
   }
 
   @Test
@@ -90,8 +102,11 @@ class JdbcRelationHandlerTest {
 
     jdbcRelationHandler.getDatasets(relation);
 
-    verify(datasetFactory, times(1))
-        .getDataset("test.tablename", "postgres://localhost:5432", schema);
+    ArgumentCaptor<DatasetIdentifier> diCaptor = ArgumentCaptor.forClass(DatasetIdentifier.class);
+    verify(datasetFactory.sparkDatasetBuilder(), times(1)).dataset(diCaptor.capture());
+    DatasetIdentifier di = diCaptor.getValue();
+    assertEquals("test.tablename", di.getName());
+    assertEquals("postgres://localhost:5432", di.getNamespace());
   }
 
   @Test
@@ -103,48 +118,72 @@ class JdbcRelationHandlerTest {
                     JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), jdbcDbTableAsSubQuery)));
     when(jdbcOptions.parameters()).thenReturn(params);
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcDbTableAsSubQuery);
-    StructType schema1 =
-        new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
-    StructType schema2 = new StructType().add("j2", DataTypes.StringType);
 
     jdbcRelationHandler.getDatasets(relation);
 
-    verify(datasetFactory, times(1))
-        .getDataset("test.jdbc_source1", "postgres://localhost:5432", schema1);
-    verify(datasetFactory, times(1))
-        .getDataset("test.jdbc_source2", "postgres://localhost:5432", schema2);
+    ArgumentCaptor<DatasetIdentifier> diCaptor = ArgumentCaptor.forClass(DatasetIdentifier.class);
+    verify(datasetFactory.sparkDatasetBuilder(), times(2)).dataset(diCaptor.capture());
+    List<DatasetIdentifier> allDis = diCaptor.getAllValues();
+    assertTrue(
+        allDis.stream()
+            .anyMatch(
+                di ->
+                    "test.jdbc_source1".equals(di.getName())
+                        && "postgres://localhost:5432".equals(di.getNamespace())));
+    assertTrue(
+        allDis.stream()
+            .anyMatch(
+                di ->
+                    "test.jdbc_source2".equals(di.getName())
+                        && "postgres://localhost:5432".equals(di.getNamespace())));
   }
 
   @Test
   void testMysqlDialect() {
     when(jdbcOptions.tableOrQuery()).thenReturn(mysqlQuery);
     when(jdbcOptions.url()).thenReturn("jdbc:" + mysqlUrl);
-    StructType schema1 =
-        new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
-    StructType schema2 = new StructType().add("j2", DataTypes.StringType);
 
     jdbcRelationHandler.getDatasets(relation);
 
-    verify(datasetFactory, times(1))
-        .getDataset("test.jdbc_source1", "mysql://localhost:3306", schema1);
-    verify(datasetFactory, times(1))
-        .getDataset("test.jdbc_source2", "mysql://localhost:3306", schema2);
+    ArgumentCaptor<DatasetIdentifier> diCaptor = ArgumentCaptor.forClass(DatasetIdentifier.class);
+    verify(datasetFactory.sparkDatasetBuilder(), times(2)).dataset(diCaptor.capture());
+    List<DatasetIdentifier> allDis = diCaptor.getAllValues();
+    assertTrue(
+        allDis.stream()
+            .anyMatch(
+                di ->
+                    "test.jdbc_source1".equals(di.getName())
+                        && "mysql://localhost:3306".equals(di.getNamespace())));
+    assertTrue(
+        allDis.stream()
+            .anyMatch(
+                di ->
+                    "test.jdbc_source2".equals(di.getName())
+                        && "mysql://localhost:3306".equals(di.getNamespace())));
   }
 
   @Test
   void testUnknownDialect() {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcQuery);
     when(jdbcOptions.url()).thenReturn("jdbc:" + unknownUrl);
-    StructType schema1 =
-        new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
-    StructType schema2 = new StructType().add("j2", DataTypes.StringType);
 
     jdbcRelationHandler.getDatasets(relation);
 
-    verify(datasetFactory, times(1))
-        .getDataset("test.jdbc_source1", "unknown://localhost:1234", schema1);
-    verify(datasetFactory, times(1))
-        .getDataset("test.jdbc_source2", "unknown://localhost:1234", schema2);
+    ArgumentCaptor<DatasetIdentifier> diCaptor = ArgumentCaptor.forClass(DatasetIdentifier.class);
+    verify(datasetFactory.sparkDatasetBuilder(), times(2)).dataset(diCaptor.capture());
+    List<DatasetIdentifier> allDis = diCaptor.getAllValues();
+    assertTrue(
+        allDis.stream()
+            .anyMatch(
+                di ->
+                    "test.jdbc_source1".equals(di.getName())
+                        && "unknown://localhost:1234".equals(di.getNamespace())));
+    assertTrue(
+        allDis.stream()
+            .anyMatch(
+                di ->
+                    "test.jdbc_source2".equals(di.getName())
+                        && "unknown://localhost:1234".equals(di.getNamespace())));
   }
 
   @Test
@@ -153,7 +192,6 @@ class JdbcRelationHandlerTest {
     when(jdbcOptions.url()).thenReturn("jdbc:" + url);
     List datasets = jdbcRelationHandler.getDatasets(relation);
     assertTrue(datasets.isEmpty());
-    verify(datasetFactory, never())
-        .getDataset(any(String.class), any(String.class), any(StructType.class));
+    verify(datasetFactory.sparkDatasetBuilder(), never()).dataset(any(DatasetIdentifier.class));
   }
 }
