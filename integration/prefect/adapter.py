@@ -21,8 +21,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 class PrefectOpenLineageAdapter:
     def __init__(
         self,
-        client: OpenLineageClient | None = None,
-        job_namespace: str | None = None,
+        client: OpenLineageClient | None = None
     ):
         self.client = client or OpenLineageClient('http://localhost:5000') # for testing
     
@@ -81,9 +80,8 @@ class PrefectOpenLineageAdapter:
         expectedEventTime: datetime = None,
         flowRunId: str = None,
         flowName: str = None,
-        flowNamespace: str = None,
         taskName: str = None,
-        taskNamespace: str = None,
+        namespace: str = None,
         jobDeps: List = None,
         prefectVersion: str = None
     ) -> RunEvent:
@@ -96,17 +94,16 @@ class PrefectOpenLineageAdapter:
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
         
-        def build_run_facets():
-            if jobDeps:
-                upstream_jobs = [
-                    job_dependencies_run.JobDependency(
-                        job=job_dependencies_run.JobIdentifier(
-                            namespace=dep["namespace"], 
-                            name=dep["name"]
-                        )
-                    ) for dep in jobDeps
-                ]
-                return {
+        if jobDeps:
+            upstream_jobs = [
+                job_dependencies_run.JobDependency(
+                    job=job_dependencies_run.JobIdentifier(
+                        namespace=dep["namespace"], 
+                        name=dep["name"]
+                    )
+                ) for dep in jobDeps
+            ]
+            run_facets = {
                             "jobDependencies": job_dependencies_run.JobDependenciesRunFacet(
                                 upstream=upstream_jobs
                             ),
@@ -115,15 +112,15 @@ class PrefectOpenLineageAdapter:
                             ),
                             "parentRun": ParentRunFacet(
                                 run={"runId": flowRunId},
-                                job={"namespace": flowNamespace, "name": flowName}
+                                job={"namespace": namespace, "name": flowName}
                             ),
                             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                                 version=prefectVersion,
                                 name="Prefect"
                             )
                         }
-            else:
-                return {
+        else:
+            run_facets = {
                             "nominalTime": NominalTimeRunFacet(
                                 nominalStartTime=expectedEventTime
                             ),
@@ -146,9 +143,9 @@ class PrefectOpenLineageAdapter:
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
-            run=Run(runId, build_run_facets()),
+            run=Run(runId, run_facets),
             job=Job(
-                taskNamespace,
+                namespace,
                 taskName,
                 job_facets
             ),

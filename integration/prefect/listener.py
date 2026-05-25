@@ -18,7 +18,6 @@ from prefect.runtime import task_run, flow_run
 from prefect.utilities.urls import url_for
 
 JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "prefect_test")
-OL_ADAPTER = PrefectOpenLineageAdapter()
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -27,6 +26,7 @@ class PrefectOpenLineageListener:
 		self
 	):
 		self.client = get_client()
+		self.ol_adapter = PrefectOpenLineageAdapter()
 
 	def build_run_id(
 		self,
@@ -68,18 +68,14 @@ class PrefectOpenLineageListener:
 		task_run = await self.client.read_task_run(task_run_id) # TODO: type
 		return await self.get_flow_ns(task_run.flow_run_id)
 
-	async def get_flow_run_info(self, task_run_id: str):
+	async def get_flow_run_name(self, task_run_id: str):
 		task_run = await self.client.read_task_run(task_run_id) # TODO: type
 		flow_run_id: UUID = task_run.flow_run_id
 		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
 		flow_id: UUID = flow_run.flow_id
 		flow = await self.client.read_flow(flow_id) # TODO: type
 		flow_name: str = flow.name
-		flow_namespace: str = await self.get_flow_ns(flow_run_id)
-		return {
-			"flow_name": flow_name,
-			"flow_namespace": flow_namespace
-		}
+		return flow_name
 
 	async def get_flow_run_start_time(self, flow_run_id: str):
 		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
@@ -92,6 +88,7 @@ class PrefectOpenLineageListener:
 	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run."])
 		)
 		run_context: dict = {}
+		prefect_version = self.get_prefect_version()
 
 		async with get_events_subscriber(filter=filter_criteria) as subscriber:
 			async for event in subscriber:
@@ -120,7 +117,10 @@ class PrefectOpenLineageListener:
 							prefect_flow_run_id: str = event.resource.id.split(".")[-1]
 							flow_namespace: str = await self.get_flow_ns(prefect_flow_run_id)
 
-							if event_state == "Running":
+							# Using caching for runIDs for now because flow event lacks start_time
+							try:
+								ol_flow_run_id: str = run_context[flow_run_name]
+							except KeyError:
 								ol_flow_run_id: str = self.build_run_id(
 									start_time,
 									flow_name,
@@ -128,12 +128,7 @@ class PrefectOpenLineageListener:
 								)
 								run_context[flow_run_name] = ol_flow_run_id
 
-							elif event_state in ["Completed", "Failed"]:
-								ol_flow_run_id: str = run_context[flow_run_name]
-
-							prefect_version = self.get_prefect_version()
-
-							OL_ADAPTER.create_and_emit_flow_event(
+							self.ol_adapter.create_and_emit_flow_event(
 								runId=ol_flow_run_id,
 								eventType=event_type, 
 								eventTime=start_time,
@@ -146,21 +141,17 @@ class PrefectOpenLineageListener:
 
 						task_name: str = event.resource.name.split("-")[0]
 						task_run_name: str = event.resource.name
-						start_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
+						start_time: datetime = datetime.fromisoformat(event.payload["task_run"]["start_time"])
+						event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
 						expected_start_time: datetime = event.payload["task_run"]["expected_start_time"]
 						prefect_task_run_id: str = event.resource.id.split(".")[-1]
-						task_namespace: str = await self.get_job_ns(prefect_task_run_id)
+						namespace: str = await self.get_job_ns(prefect_task_run_id)
 
-						if event_state == "Running":
-							ol_task_run_id: str = self.build_run_id(
-								start_time, 
-								task_name, 
-								task_namespace
-							)
-							run_context[task_run_name] = ol_task_run_id
-
-						elif event_state in ["Completed", "Failed"]:
-							ol_task_run_id: str = run_context.pop(task_run_name, None)
+						ol_task_run_id: str = self.build_run_id(
+							start_time, 
+							task_name, 
+							namespace
+						)
 
 						# Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
 						parent_runs = []
@@ -174,7 +165,7 @@ class PrefectOpenLineageListener:
 									parent_run = await self.get_task_run(task_run_id)
 									parent_name: str = parent_run.name.split("-")[0]
 									parent_run_id = self.build_run_id(
-														start_time, 
+														start_time, #TODO: get start_time from parent run
 														parent_name, 
 														parent_namespace
 													)
@@ -191,23 +182,18 @@ class PrefectOpenLineageListener:
 						for res in event.related:
 							if res["prefect.resource.role"] == "flow-run":
 								flow_run_name: str = res["prefect.resource.name"]
-						flow_info: dict = await self.get_flow_run_info(prefect_task_run_id) #TODO: use flow_run_id
+						flow_name: str = await self.get_flow_run_name(prefect_task_run_id) #TODO: use flow_run_id
 						ol_flow_run_id: str = run_context[flow_run_name]
-						flow_namespace: str = flow_info["flow_namespace"]
-						flow_name: str = flow_info["flow_name"]
 
-						prefect_version = self.get_prefect_version()
-
-						OL_ADAPTER.create_and_emit_task_event(
+						self.ol_adapter.create_and_emit_task_event(
 							runId=ol_task_run_id,
 							eventType=event_type, 
-							eventTime=start_time,
+							eventTime=event_time,
 							expectedEventTime=expected_start_time,
 							flowRunId=ol_flow_run_id,
 							flowName=flow_name,
-							flowNamespace=flow_namespace,
 							taskName=task_name,
-							taskNamespace=task_namespace,
+							namespace=namespace,
 							jobDeps=parent_runs,
 							prefectVersion=prefect_version
 						)
