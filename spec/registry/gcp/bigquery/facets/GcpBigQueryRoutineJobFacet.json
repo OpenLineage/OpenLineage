@@ -23,9 +23,8 @@
               "type": "string"
             },
             "routineType": {
-              "description": "BigQuery routine type as reported by `INFORMATION_SCHEMA.ROUTINES.routine_type`. Optional — omit when unknown at emit time",
-              "type": "string",
-              "enum": ["PROCEDURE", "SCALAR_FUNCTION", "TABLE_VALUED_FUNCTION", "AGGREGATE_FUNCTION"]
+              "description": "BigQuery routine type as reported by `INFORMATION_SCHEMA.ROUTINES.routine_type` (`PROCEDURE`, `SCALAR_FUNCTION`, `TABLE_VALUED_FUNCTION`, `AGGREGATE_FUNCTION`, etc.)",
+              "type": "string"
             }
           },
           "required": ["projectId", "datasetId", "routineId"],
