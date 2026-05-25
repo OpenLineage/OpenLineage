@@ -13,6 +13,7 @@ import io.openlineage.client.utils.SnowflakeUtils;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.spark.sql.SparkSession;
@@ -37,7 +38,7 @@ class SnowflakeCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
-  DatasetIdentifier getIdentifier(
+  Optional<DatasetIdentifier> getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table) {
     String accountIdentifier =
         SnowflakeUtils.parseAccountIdentifier(catalogConf.get(CatalogProperties.URI));
@@ -45,9 +46,10 @@ class SnowflakeCatalogTypeHandler extends BaseCatalogTypeHandler {
         "Getting identifier for Snowflake Iceberg REST catalog, account={}", accountIdentifier);
     String warehouse = catalogConf.getOrDefault(CatalogProperties.WAREHOUSE_LOCATION, "");
     String fullName = warehouse.isEmpty() ? table : warehouse + "." + table;
-    return new DatasetIdentifier(
-        fullName.toUpperCase(Locale.ROOT),
-        SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + accountIdentifier);
+    return Optional.of(
+        new DatasetIdentifier(
+            fullName.toUpperCase(Locale.ROOT),
+            SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + accountIdentifier));
   }
 
   @Override
