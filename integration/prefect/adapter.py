@@ -3,16 +3,18 @@
 
 # Advisory: This integration is experimental and in active development.
 
+import attr
 from datetime import datetime
+import json
 import logging
 import os
 from typing import List
 
+from facets.deploymentFacet import PrefectDeploymentRunFacet
 from openlineage.client import OpenLineageClient
-from openlineage.client.facet import JobTypeJobFacet, ParentRunFacet, NominalTimeRunFacet
+from openlineage.client.facet import BaseFacet, JobTypeJobFacet, ParentRunFacet, NominalTimeRunFacet
 from openlineage.client.facet_v2 import ( job_dependencies_run, processing_engine_run )
 from openlineage.client.run import Job, Run, RunEvent, RunState
-from openlineage.client.uuid import generate_new_uuid
 
 PRODUCER: str = 'https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/prefect'
 
@@ -32,7 +34,8 @@ class PrefectOpenLineageAdapter:
         eventTime: datetime = None,
         flowName: str = None,
         flowNamespace: str = None,
-        prefectVersion: str = None
+        prefectVersion: str = None,
+        flowDeploymentInfo: dict = None
     ) -> RunEvent:
 
         match eventType:
@@ -43,10 +46,22 @@ class PrefectOpenLineageAdapter:
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
 
-        run_facets = {"processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-            version=prefectVersion,
-            name="Prefect"
-        )}
+        deployment_id = flowDeploymentInfo["id"]
+        deployment_created = flowDeploymentInfo["created"]
+        deployment_updated = flowDeploymentInfo["updated"]
+        deployment_name = flowDeploymentInfo["name"]
+        run_facets = {
+                        "prefectDeployment": PrefectDeploymentRunFacet(
+                            deployment_id=deployment_id,
+                            created=deployment_created,
+                            updated=deployment_updated,
+                            name=deployment_name
+                        ),
+                        "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                            version=prefectVersion,
+                            name="Prefect"
+                        )
+                    }
 
         job_facets = {"jobType": JobTypeJobFacet(
             processingType="BATCH", 
@@ -83,7 +98,8 @@ class PrefectOpenLineageAdapter:
         taskName: str = None,
         namespace: str = None,
         jobDeps: List = None,
-        prefectVersion: str = None
+        prefectVersion: str = None,
+        flowDeploymentInfo: dict = None
     ) -> RunEvent:
 
         match eventType:
@@ -93,7 +109,11 @@ class PrefectOpenLineageAdapter:
                 eventType: RunState = RunState.COMPLETE
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
-        
+
+        deployment_id = flowDeploymentInfo["id"]
+        deployment_created = flowDeploymentInfo["created"]
+        deployment_updated = flowDeploymentInfo["updated"]
+        deployment_name = flowDeploymentInfo["name"]
         if jobDeps:
             upstream_jobs = [
                                 job_dependencies_run.JobDependency(
@@ -114,6 +134,12 @@ class PrefectOpenLineageAdapter:
                                 run={"runId": flowRunId},
                                 job={"namespace": namespace, "name": flowName}
                             ),
+                            "prefectDeployment": PrefectDeploymentRunFacet(
+                                deployment_id=deployment_id,
+                                created=deployment_created,
+                                updated=deployment_updated,
+                                name=deployment_name
+                            ),
                             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                                 version=prefectVersion,
                                 name="Prefect"
@@ -127,6 +153,12 @@ class PrefectOpenLineageAdapter:
                             "parentRun": ParentRunFacet(
                                 run={"runId": flowRunId},
                                 job={"namespace": namespace, "name": flowName}
+                            ),
+                            "prefectDeployment": PrefectDeploymentRunFacet(
+                                deployment_id=deployment_id,
+                                created=deployment_created,
+                                updated=deployment_updated,
+                                name=deployment_name
                             ),
                             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                                 version=prefectVersion,
