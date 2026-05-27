@@ -148,10 +148,11 @@ def get_ci_pr_number() -> str | None:
     if gitlab_mr_iid:
         return gitlab_mr_iid
 
-    # GitHub Actions: GITHUB_REF is "refs/pull/{number}/merge" for pull_request events
+    # GitHub Actions: GITHUB_REF can be "refs/pull/{number}/merge" or
+    # "refs/pull/{number}/head" for pull request refs.
     github_ref = os.getenv("GITHUB_REF")
     if github_ref:
-        match = re.match(r"refs/pull/(\d+)/merge", github_ref)
+        match = re.match(r"refs/pull/(\d+)/(?:merge|head)", github_ref)
         if match:
             return match.group(1)
 
