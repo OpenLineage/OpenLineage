@@ -23,10 +23,12 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 class PrefectOpenLineageListener:
 	def __init__(
-		self
+		self,
+		client = None,
+		adapter = None,
 	):
-		self.client = get_client()
-		self.ol_adapter = PrefectOpenLineageAdapter()
+		self.client = client or get_client()
+		self.ol_adapter = adapter or PrefectOpenLineageAdapter()
 
 	def build_run_id(
 		self,

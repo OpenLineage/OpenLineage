@@ -114,57 +114,37 @@ class PrefectOpenLineageAdapter:
         deployment_created = flowDeploymentInfo["created"]
         deployment_updated = flowDeploymentInfo["updated"]
         deployment_name = flowDeploymentInfo["name"]
+        run_facets = {
+            "nominalTime": NominalTimeRunFacet(
+                nominalStartTime=expectedEventTime
+            ),
+            "parentRun": ParentRunFacet(
+                run={"runId": flowRunId},
+                job={"namespace": namespace, "name": flowName}
+            ),
+            "prefectDeployment": PrefectDeploymentRunFacet(
+                deployment_id=deployment_id,
+                created=deployment_created,
+                updated=deployment_updated,
+                name=deployment_name
+            ),
+            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                version=prefectVersion,
+                name="Prefect"
+            )
+        }
         if jobDeps:
             upstream_jobs = [
-                                job_dependencies_run.JobDependency(
-                                    job=job_dependencies_run.JobIdentifier(
-                                        namespace=dep["namespace"], 
-                                        name=dep["name"]
-                                    )
-                                ) for dep in jobDeps
-                            ]
-            run_facets = {
-                            "jobDependencies": job_dependencies_run.JobDependenciesRunFacet(
-                                upstream=upstream_jobs
-                            ),
-                            "nominalTime": NominalTimeRunFacet(
-                                nominalStartTime=expectedEventTime
-                            ),
-                            "parentRun": ParentRunFacet(
-                                run={"runId": flowRunId},
-                                job={"namespace": namespace, "name": flowName}
-                            ),
-                            "prefectDeployment": PrefectDeploymentRunFacet(
-                                deployment_id=deployment_id,
-                                created=deployment_created,
-                                updated=deployment_updated,
-                                name=deployment_name
-                            ),
-                            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                                version=prefectVersion,
-                                name="Prefect"
-                            )
-                        }
-        else:
-            run_facets = {
-                            "nominalTime": NominalTimeRunFacet(
-                                nominalStartTime=expectedEventTime
-                            ),
-                            "parentRun": ParentRunFacet(
-                                run={"runId": flowRunId},
-                                job={"namespace": namespace, "name": flowName}
-                            ),
-                            "prefectDeployment": PrefectDeploymentRunFacet(
-                                deployment_id=deployment_id,
-                                created=deployment_created,
-                                updated=deployment_updated,
-                                name=deployment_name
-                            ),
-                            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                                version=prefectVersion,
-                                name="Prefect"
-                            )
-                        }
+                job_dependencies_run.JobDependency(
+                    job=job_dependencies_run.JobIdentifier(
+                        namespace=dep["namespace"],
+                        name=dep["name"]
+                    )
+                ) for dep in jobDeps
+            ]
+            run_facets["jobDependencies"] = (
+                job_dependencies_run.JobDependenciesRunFacet(upstream=upstream_jobs)
+            )
 
         job_facets = {"jobType": JobTypeJobFacet(
             processingType="BATCH", 
