@@ -39,6 +39,7 @@ ext {
     micrometerVersion = '1.16.2'
     mockitoVersion = "4.11.0"
     mockserverVersion = "5.14.0"
+    nettyVersion = "4.2.13.Final"
     postgresqlVersion = "42.7.9"
     sqlLiteVersion = "3.51.1.0"
     testcontainersVersion = "1.19.3"
@@ -94,6 +95,12 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.dataformat")
     }
     testFixturesApi("org.mock-server:mockserver-netty:${mockserverVersion}:shaded")
+    
+    // Force netty version to fix CVE-2026-41417
+    testFixturesApi("io.netty:netty-codec:${nettyVersion}")
+    testFixturesApi("io.netty:netty-codec-http:${nettyVersion}")
+    testFixturesApi("io.netty:netty-codec-http2:${nettyVersion}")
+    
     testFixturesApi("org.awaitility:awaitility:${awaitilityVersion}")
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")

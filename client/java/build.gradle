@@ -59,6 +59,7 @@ ext {
     lombokVersion = '1.18.46'
     mockitoVersion = '5.23.0'
     micrometerVersion = '1.16.5'
+    nettyVersion = '4.2.13.Final'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     guavaVersion = '33.6.0-jre'
 }
@@ -109,6 +110,11 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.dataformat'
         exclude group: 'org.mock-server.mockserver-client-java'
     }
+    
+    // Force netty version to fix CVE-2026-41417
+    testImplementation "io.netty:netty-codec:${nettyVersion}"
+    testImplementation "io.netty:netty-codec-http:${nettyVersion}"
+    testImplementation "io.netty:netty-codec-http2:${nettyVersion}"
 }
 
 configurations {

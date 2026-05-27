@@ -29,6 +29,7 @@ ext {
     bigqueryVersion = '0.42.2'
     junit5Version = '5.11.4'
     mockitoVersion = '4.11.0'
+    nettyVersion = '4.2.13.Final'
     postgresqlVersion = '42.7.9'
     testcontainersVersion = '1.21.4'
     awssdkVersion = '2.42.25'
@@ -150,6 +151,12 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.dataformat'
         exclude group: 'org.mock-server.mockserver-client-java'
     }
+    
+    // Force netty version to fix CVE-2026-41417
+    testImplementation "io.netty:netty-codec:${nettyVersion}"
+    testImplementation "io.netty:netty-codec-http:${nettyVersion}"
+    testImplementation "io.netty:netty-codec-http2:${nettyVersion}"
+    
     testImplementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testImplementation("io.micrometer:micrometer-registry-statsd:${micrometerVersion}")
     testImplementation('net.javacrumbs.json-unit:json-unit-assertj:2.38.0')

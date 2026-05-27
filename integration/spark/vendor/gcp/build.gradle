@@ -17,6 +17,7 @@ ext {
     lombokVersion = '1.18.30'
     micrometerVersion = '1.14.1'
     mockserverVersion = "5.14.0"
+    nettyVersion = '4.2.13.Final'
 
     sparkProp = project.findProperty('spark.version').toString()
     // compile for unsupported iceberg versions
@@ -41,6 +42,12 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mock-server:mockserver-netty:${mockserverVersion}:shaded")
+    
+    // Force netty version to fix CVE-2026-41417
+    testImplementation "io.netty:netty-codec:${nettyVersion}"
+    testImplementation "io.netty:netty-codec-http:${nettyVersion}"
+    testImplementation "io.netty:netty-codec-http2:${nettyVersion}"
+    
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
     testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")

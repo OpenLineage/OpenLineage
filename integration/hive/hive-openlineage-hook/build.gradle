@@ -32,6 +32,7 @@ ext {
     jupiterVersion = '5.11.3'
     jacksonVersion = '2.18.1'
     mockitoVersion = '4.11.0'
+    nettyVersion = '4.2.13.Final'
     hiveVersion = '3.1.3'
     hadoopVersion = '2.10.2'
     postgresqlVersion = '42.7.5'
@@ -96,6 +97,11 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.dataformat'
         exclude group: 'org.mock-server.mockserver-client-java'
     }
+    
+    // Force netty version to fix CVE-2026-41417
+    testImplementation "io.netty:netty-codec:${nettyVersion}"
+    testImplementation "io.netty:netty-codec-http:${nettyVersion}"
+    testImplementation "io.netty:netty-codec-http2:${nettyVersion}"
 
     testImplementation 'org.datanucleus:datanucleus-rdbms:4.1.19'
     testImplementation 'org.datanucleus:datanucleus-api-jdo:4.2.4'
