@@ -130,6 +130,19 @@ fn select_redshift() {
 }
 
 #[test]
+fn select_sqlserver() {
+    assert_eq!(
+        test_sql_dialect("SELECT [col1] FROM [test_schema].[test_table]", "sqlserver")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["[test_schema].[test_table]"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
 fn select_with_table_generator() {
     assert_eq!(
         test_sql(
