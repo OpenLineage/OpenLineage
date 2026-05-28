@@ -147,14 +147,14 @@ class PrefectOpenLineageListener:
 
 							task_name: str = event.resource.name.split("-")[0]
 							task_run_name: str = event.resource.name
-							start_time: datetime = datetime.fromisoformat(event.payload["task_run"]["start_time"])
+							# start_time: datetime = datetime.fromisoformat(event.payload["task_run"]["start_time"])
 							event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
 							expected_start_time: datetime = event.payload["task_run"]["expected_start_time"]
 							prefect_task_run_id: str = event.resource.id.split(".")[-1]
+							task_run = await self.client.read_task_run(prefect_task_run_id)
 							namespace: str = await self.get_job_ns(prefect_task_run_id)
-
 							ol_task_run_id: str = self.build_run_id(
-								start_time, 
+								task_run.start_time, 
 								task_name, 
 								namespace
 							)
