@@ -8,7 +8,6 @@ from datetime import datetime
 import json
 import logging
 import os
-from typing import List
 
 from facets.deploymentFacet import PrefectDeploymentRunFacet
 from openlineage.client import OpenLineageClient
@@ -97,7 +96,7 @@ class PrefectOpenLineageAdapter:
         flowName: str = None,
         taskName: str = None,
         namespace: str = None,
-        jobDeps: List = None,
+        jobDeps: list = None,
         prefectVersion: str = None,
         flowDeploymentInfo: dict = None
     ) -> RunEvent:
