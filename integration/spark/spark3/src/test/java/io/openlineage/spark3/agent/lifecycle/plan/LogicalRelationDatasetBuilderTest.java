@@ -7,7 +7,8 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -18,7 +19,6 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
@@ -87,6 +87,7 @@ class LogicalRelationDatasetBuilderTest {
     when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
     when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    when(hadoopFsRelation.schema()).thenReturn(new StructType().add("id", StringType$.MODULE$));
 
     when(fileIndex.rootPaths())
         .thenReturn(
@@ -96,9 +97,10 @@ class LogicalRelationDatasetBuilderTest {
     when(openLineage.newDatasetFacetsBuilder()).thenReturn(new OpenLineage.DatasetFacetsBuilder());
     when(openLineage.newDatasetVersionDatasetFacet(SOME_VERSION)).thenReturn(facet);
 
-    try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
+    try (MockedStatic<PathUtils> mocked = mockStatic(PathUtils.class, CALLS_REAL_METHODS)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(PlanUtils.getDirectoryPaths(any(), eq(hadoopConfig)))
+        mocked
+            .when(() -> PathUtils.getDirectoryPaths(any(), any(Configuration.class), anyBoolean()))
             .thenReturn(Collections.singletonList(new Path("/tmp")));
         when(DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(logicalRelation))
             .thenReturn(Optional.of(SOME_VERSION));

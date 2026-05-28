@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.ArrayType;
@@ -22,6 +24,30 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PlanUtilsTest {
+  @Test
+  void testHiveStylePartitioningNormalizationEnabledByDefault() {
+    OpenLineageContext context = mock(OpenLineageContext.class);
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+
+    assertThat(PlanUtils.isHiveStylePartitioningNormalizationEnabled(context)).isTrue();
+  }
+
+  @Test
+  void testOpenLineageConfigControlsHiveStylePartitioningNormalization() {
+    assertThat(
+            PlanUtils.isHiveStylePartitioningNormalizationEnabled(
+                contextWithHiveStylePartitioningNormalization(false)))
+        .isFalse();
+  }
+
+  private OpenLineageContext contextWithHiveStylePartitioningNormalization(boolean enabled) {
+    OpenLineageContext context = mock(OpenLineageContext.class);
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
+    config.setNormalizeHiveStylePartitioning(enabled);
+    when(context.getOpenLineageConfig()).thenReturn(config);
+    return context;
+  }
+
   @Test
   void testSchemaFacetFlat() {
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);

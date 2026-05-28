@@ -50,12 +50,17 @@ import scala.collection.mutable.ArrayBuffer;
 public class RddDatasetInfoExtractor {
 
   public static Stream<DatasetIdentifier> findDatasetIdentifiers(RDD<?> rdd) {
+    return findDatasetIdentifiers(rdd, false);
+  }
+
+  public static Stream<DatasetIdentifier> findDatasetIdentifiers(
+      RDD<?> rdd, boolean normalizeHiveStylePartitioning) {
     return Stream.<RddDatasetIdentifierExtractor>of(
-            new HadoopRDDExtractor(),
+            new HadoopRDDExtractor(normalizeHiveStylePartitioning),
             new FileScanRDDExtractor(),
-            new MapPartitionsRDDExtractor(),
-            new UnionRddExctractor(),
-            new NewHadoopRDDExtractor(),
+            new MapPartitionsRDDExtractor(normalizeHiveStylePartitioning),
+            new UnionRddExctractor(normalizeHiveStylePartitioning),
+            new NewHadoopRDDExtractor(normalizeHiveStylePartitioning),
             new ParallelCollectionRDDExtractor(),
             new DataSourceRDDExtractor())
         .filter(e -> e.isDefinedAt(rdd))
@@ -73,6 +78,12 @@ public class RddDatasetInfoExtractor {
   }
 
   static class UnionRddExctractor implements RddDatasetIdentifierExtractor<UnionRDD<?>> {
+    private final boolean normalizeHiveStylePartitioning;
+
+    UnionRddExctractor(boolean normalizeHiveStylePartitioning) {
+      this.normalizeHiveStylePartitioning = normalizeHiveStylePartitioning;
+    }
+
     @Override
     public boolean isDefinedAt(Object rdd) {
       return rdd instanceof UnionRDD;
@@ -81,7 +92,10 @@ public class RddDatasetInfoExtractor {
     @Override
     public Stream<DatasetIdentifier> extract(UnionRDD<?> rdd) {
       return ScalaConversionUtils.fromSeq(rdd.rdds()).stream()
-          .flatMap(RddDatasetInfoExtractor::findDatasetIdentifiers);
+          .flatMap(
+              child ->
+                  RddDatasetInfoExtractor.findDatasetIdentifiers(
+                      child, normalizeHiveStylePartitioning));
     }
   }
 
@@ -99,6 +113,12 @@ public class RddDatasetInfoExtractor {
   }
 
   static class HadoopRDDExtractor implements RddDatasetIdentifierExtractor<HadoopRDD<?, ?>> {
+    private final boolean normalizeHiveStylePartitioning;
+
+    HadoopRDDExtractor(boolean normalizeHiveStylePartitioning) {
+      this.normalizeHiveStylePartitioning = normalizeHiveStylePartitioning;
+    }
+
     @Override
     public boolean isDefinedAt(Object rdd) {
       return rdd instanceof HadoopRDD;
@@ -113,12 +133,20 @@ public class RddDatasetInfoExtractor {
         log.debug("Hadoop RDD input paths {}", Arrays.toString(inputPaths));
         log.debug("Hadoop RDD job conf {}", rdd.getJobConf());
       }
-      return PlanUtils.getDirectoryPaths(Arrays.asList(inputPaths), hadoopConf).stream()
+      return PathUtils.getDirectoryPaths(
+              Arrays.asList(inputPaths), hadoopConf, normalizeHiveStylePartitioning)
+          .stream()
           .map(PathUtils::fromPath);
     }
   }
 
   static class NewHadoopRDDExtractor implements RddDatasetIdentifierExtractor<NewHadoopRDD<?, ?>> {
+    private final boolean normalizeHiveStylePartitioning;
+
+    NewHadoopRDDExtractor(boolean normalizeHiveStylePartitioning) {
+      this.normalizeHiveStylePartitioning = normalizeHiveStylePartitioning;
+    }
+
     @Override
     public boolean isDefinedAt(Object rdd) {
       return rdd instanceof NewHadoopRDD;
@@ -131,7 +159,9 @@ public class RddDatasetInfoExtractor {
             org.apache.hadoop.mapreduce.lib.input.FileInputFormat.getInputPaths(
                 new Job(rdd.getConf()));
 
-        return PlanUtils.getDirectoryPaths(Arrays.asList(inputPaths), rdd.getConf()).stream()
+        return PathUtils.getDirectoryPaths(
+                Arrays.asList(inputPaths), rdd.getConf(), normalizeHiveStylePartitioning)
+            .stream()
             .map(PathUtils::fromPath);
       } catch (IOException e) {
         log.error("Openlineage spark agent could not get input paths", e);
@@ -142,6 +172,11 @@ public class RddDatasetInfoExtractor {
 
   static class MapPartitionsRDDExtractor
       implements RddDatasetIdentifierExtractor<MapPartitionsRDD<?, ?>> {
+    private final boolean normalizeHiveStylePartitioning;
+
+    MapPartitionsRDDExtractor(boolean normalizeHiveStylePartitioning) {
+      this.normalizeHiveStylePartitioning = normalizeHiveStylePartitioning;
+    }
 
     @Override
     public boolean isDefinedAt(Object rdd) {
@@ -153,7 +188,7 @@ public class RddDatasetInfoExtractor {
       if (log.isDebugEnabled()) {
         log.debug("Parent RDD: {}", rdd.prev());
       }
-      return findDatasetIdentifiers(rdd.prev());
+      return findDatasetIdentifiers(rdd.prev(), normalizeHiveStylePartitioning);
     }
   }
 

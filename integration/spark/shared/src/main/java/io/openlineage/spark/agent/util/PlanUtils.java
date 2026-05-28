@@ -10,22 +10,18 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptiona
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.NameNormalizer;
-import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.ArrayType;
@@ -253,39 +249,11 @@ public class PlanUtils {
         .build();
   }
 
-  /**
-   * Given a list of paths, it collects list of data location directories. For each path, a parent
-   * directory is taken and list of distinct locations is returned. Operation is optimized to check
-   * for each path if it was already added to the list of normalized paths.
-   *
-   * @param paths
-   * @param hadoopConf
-   * @return
-   */
-  public static List<Path> getDirectoryPaths(Collection<Path> paths, Configuration hadoopConf) {
-    LinkedHashSet<Path> normalizedPaths = new LinkedHashSet<>();
-    for (Path path : paths) {
-      // check if the root path is already contained in normalized Paths
-      Path parent = path.getParent();
-      if (parent != null && !normalizedPaths.contains(parent)) {
-        // if not, add new path to normalized paths -> call getDirectoryPath
-        normalizedPaths.add(PlanUtils.getDirectoryPath(path, hadoopConf));
-      }
-    }
-    return new ArrayList<>(normalizedPaths);
-  }
-
-  private static Path getDirectoryPath(Path p, Configuration hadoopConf) {
-    try {
-      if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
-        return p.getParent();
-      } else {
-        return p;
-      }
-    } catch (IOException e) {
-      log.warn("Unable to get file system for path: {}", e.getMessage());
-      return p;
-    }
+  public static boolean isHiveStylePartitioningNormalizationEnabled(OpenLineageContext context) {
+    return Optional.ofNullable(context)
+        .map(OpenLineageContext::getOpenLineageConfig)
+        .map(config -> config.getNormalizeHiveStylePartitioning())
+        .orElse(true);
   }
 
   /**
@@ -296,8 +264,20 @@ public class PlanUtils {
    * @return
    */
   public static List<DatasetIdentifier> findDatasetIdentifiers(List<RDD<?>> rdds) {
+    return findDatasetIdentifiers(rdds, false);
+  }
+
+  public static List<DatasetIdentifier> findDatasetIdentifiers(
+      List<RDD<?>> rdds, OpenLineageContext context) {
+    return findDatasetIdentifiers(rdds, isHiveStylePartitioningNormalizationEnabled(context));
+  }
+
+  private static List<DatasetIdentifier> findDatasetIdentifiers(
+      List<RDD<?>> rdds, boolean normalizeHiveStylePartitioning) {
     return rdds.stream()
-        .flatMap(RddDatasetInfoExtractor::findDatasetIdentifiers)
+        .flatMap(
+            rdd ->
+                RddDatasetInfoExtractor.findDatasetIdentifiers(rdd, normalizeHiveStylePartitioning))
         .distinct()
         .collect(Collectors.toList());
   }
