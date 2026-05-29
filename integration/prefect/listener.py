@@ -76,14 +76,12 @@ class PrefectOpenLineageListener:
 		task_run = await self.client.read_task_run(task_run_id) # TODO: type
 		return await self.get_flow_ns(task_run.flow_run_id)
 
-	async def get_flow_and_deployment_info(self, task_run_id: str) -> dict:
-		task_run = await self.client.read_task_run(task_run_id) # TODO: type
-		flow_run_id: UUID = task_run.flow_run_id
+	async def get_flow_and_deployment_info(self, flow_run_id: str) -> dict:
 		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
 		flow_id: UUID = flow_run.flow_id
-		deployment_info: dict = await self.get_deployment_info(flow_run_id)
 		flow = await self.client.read_flow(flow_id) # TODO: type
 		flow_name: str = flow.name
+		deployment_info: dict = await self.get_deployment_info(flow_run_id)
 		return {"name": flow_name, "deployment_info": deployment_info}
 
 	async def get_flow_run_start_time(self, flow_run_id: str):
@@ -96,7 +94,6 @@ class PrefectOpenLineageListener:
 		filter_criteria = EventFilter(
 	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run."])
 		)
-		run_context: dict = {}
 		prefect_version = self.get_prefect_version()
 
 		async with get_events_subscriber(filter=filter_criteria) as subscriber:
@@ -147,7 +144,6 @@ class PrefectOpenLineageListener:
 
 							task_name: str = event.resource.name.split("-")[0]
 							task_run_name: str = event.resource.name
-							# start_time: datetime = datetime.fromisoformat(event.payload["task_run"]["start_time"])
 							event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
 							expected_start_time: datetime = event.payload["task_run"]["expected_start_time"]
 							prefect_task_run_id: str = event.resource.id.split(".")[-1]
@@ -188,15 +184,15 @@ class PrefectOpenLineageListener:
 							for res in event.related:
 								if res["prefect.resource.role"] == "flow-run":
 									flow_run_id = res["prefect.resource.id"].split(".")[-1]
-							flow_and_deployment_info: str = await self.get_flow_and_deployment_info(prefect_task_run_id) #TODO: use flow_run_id
-							flow_name: str = flow_and_deployment_info["name"]
-							deployment_info: dict = flow_and_deployment_info["deployment_info"]
-							flow_run = await self.client.read_flow_run(flow_run_id)
-							ol_flow_run_id: str = self.build_run_id(
-								flow_run.start_time,
-								flow_name,
-								namespace
-							)
+									flow_and_deployment_info: str = await self.get_flow_and_deployment_info(flow_run_id) #TODO: use flow_run_id
+									flow_name: str = flow_and_deployment_info["name"]
+									deployment_info: dict = flow_and_deployment_info["deployment_info"]
+									flow_run = await self.client.read_flow_run(flow_run_id)
+									ol_flow_run_id: str = self.build_run_id(
+										flow_run.start_time,
+										flow_name,
+										namespace
+									)
 
 							self.ol_adapter.create_and_emit_task_event(
 								runId=ol_task_run_id,
