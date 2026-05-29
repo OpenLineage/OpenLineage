@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,6 +23,7 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
+import io.openlineage.spark.agent.util.StreamingMicroBatchThrottler;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.OpenLineageRunStatus;
@@ -323,5 +325,115 @@ class SparkSQLExecutionContextTest {
       assertThat(rootJob.getNamespace()).isEqualTo("root_job_namespace");
       assertThat(rootRun.getRunId()).isEqualTo(rootUuid);
     }
+  }
+
+  @Test
+  void testStreamingThrottleSkipsEntireMicroBatch(SparkSession spark) {
+    // Throttler that rejects on the first call (shouldEmit returns false)
+    StreamingMicroBatchThrottler throttler = mock(StreamingMicroBatchThrottler.class);
+    when(throttler.shouldEmit(any())).thenReturn(false);
+    when(olContext.getStreamingThrottler()).thenReturn(throttler);
+    when(queryExecution.optimizedPlan().isStreaming()).thenReturn(true);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.start(mock(SparkListenerJobStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      SparkListenerJobEnd successEnd = mock(SparkListenerJobEnd.class);
+      when(successEnd.jobResult()).thenReturn(mock(org.apache.spark.scheduler.JobSucceeded$.class));
+      context.end(successEnd);
+    }
+
+    // No events should be emitted for a throttled micro-batch that succeeds
+    verify(eventEmitter, never()).emit(any());
+  }
+
+  @Test
+  void testStreamingThrottleAllowsEmitWhenThrottlerPermits(SparkSession spark) {
+    // Throttler that allows emission
+    StreamingMicroBatchThrottler throttler = mock(StreamingMicroBatchThrottler.class);
+    when(throttler.shouldEmit(any())).thenReturn(true);
+    when(olContext.getStreamingThrottler()).thenReturn(throttler);
+    when(queryExecution.optimizedPlan().isStreaming()).thenReturn(true);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.start(mock(SparkListenerJobStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+
+    // All 4 events should be emitted when throttler permits
+    verify(eventEmitter, times(4)).emit(any());
+  }
+
+  @Test
+  void testNoThrottlerMeansAlwaysEmit(SparkSession spark) {
+    when(olContext.getStreamingThrottler()).thenReturn(null);
+    when(queryExecution.optimizedPlan().isStreaming()).thenReturn(true);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.start(mock(SparkListenerJobStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+
+    // No throttler configured → all 4 events emitted
+    verify(eventEmitter, times(4)).emit(any());
+  }
+
+  @Test
+  void testThrottleNotAppliedForBatchQueries(SparkSession spark) {
+    // Throttler that would reject, but plan is not streaming → throttle should not apply
+    StreamingMicroBatchThrottler throttler = mock(StreamingMicroBatchThrottler.class);
+    when(throttler.shouldEmit(any())).thenReturn(false);
+    when(olContext.getStreamingThrottler()).thenReturn(throttler);
+    when(queryExecution.optimizedPlan().isStreaming()).thenReturn(false);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.start(mock(SparkListenerJobStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+
+    // Batch queries are never throttled
+    verify(eventEmitter, times(4)).emit(any());
+    verify(throttler, never()).shouldEmit(any());
+  }
+
+  @Test
+  void testThrottledMicroBatchStillEmitsOnFailure(SparkSession spark) {
+    // Throttler that rejects (throttled), but job fails → FAIL event must still be emitted
+    StreamingMicroBatchThrottler throttler = mock(StreamingMicroBatchThrottler.class);
+    when(throttler.shouldEmit(any())).thenReturn(false);
+    when(olContext.getStreamingThrottler()).thenReturn(throttler);
+    when(queryExecution.optimizedPlan().isStreaming()).thenReturn(true);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.start(mock(SparkListenerJobStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+
+      SparkListenerJobEnd failedEnd = mock(SparkListenerJobEnd.class);
+      when(failedEnd.jobResult()).thenReturn(mock(JobFailed.class));
+      context.end(failedEnd);
+    }
+
+    // Only the FAIL event from jobEnd should be emitted despite throttling
+    ArgumentCaptor<RunEvent> captor = ArgumentCaptor.forClass(RunEvent.class);
+    verify(eventEmitter, times(1)).emit(captor.capture());
+    assertThat(captor.getValue()).hasFieldOrPropertyWithValue("eventType", EventType.FAIL);
   }
 }

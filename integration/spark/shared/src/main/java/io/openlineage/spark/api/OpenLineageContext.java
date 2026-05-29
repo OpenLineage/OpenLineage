@@ -12,6 +12,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
+import io.openlineage.spark.agent.util.StreamingMicroBatchThrottler;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -267,6 +268,13 @@ public class OpenLineageContext {
   public String getSparkVersion() {
     return getSparkContext().map(sc -> sc.version()).orElse(package$.MODULE$.SPARK_VERSION());
   }
+
+  /**
+   * Optional throttler for Structured Streaming micro-batch events. When non-null, {@code
+   * SparkSQLExecutionContext} will call {@code shouldEmit()} before emitting events for streaming
+   * queries, skipping the entire micro-batch if the throttle is active.
+   */
+  @Getter @Setter StreamingMicroBatchThrottler streamingThrottler;
 
   /**
    * Job name is build when the first event of the run is build is created on the top of ready event

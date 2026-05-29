@@ -169,6 +169,20 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     private final List<String> allowedSparkNodes = new ArrayList<>();
     private final List<String> deniedSparkNodes = new ArrayList<>();
     private final Boolean rddEventsDisabled = false;
+
+    @JsonProperty("streaming")
+    private StreamingConfig streamingConfig;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @ToString
+    public static class StreamingConfig {
+      // Emit every N micro-batches. null = no count-based throttle.
+      private Integer microbatchThrottle;
+      // Emit at most every M minutes. null = no time-based throttle.
+      private Integer microbatchThrottleMinutes;
+    }
   }
 
   @Override

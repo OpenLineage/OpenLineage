@@ -21,10 +21,13 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
@@ -128,12 +131,54 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
   }
 
   @Test
-  void testApply_WithFileStreamSink_NoCatalogTable() {
+  void testApply_WithFileStreamSink_NoCatalogTable_NoPathOption() {
     when(writeToMicroBatchV1.sink()).thenReturn(fileStreamSink);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
+    when(writeToMicroBatchV1.writeOptions())
+        .thenReturn(ScalaConversionUtils.fromJavaMap(Collections.emptyMap()));
 
     List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
     assertTrue(result.isEmpty());
+  }
+
+  @Test
+  void testApply_WithFileStreamSink_NoCatalogTable_WithPathOption() {
+    String outputPath = "/tmp/streaming-output";
+    DatasetIdentifier pathIdentifier = new DatasetIdentifier(outputPath, "file");
+    OpenLineage.OutputDataset expectedDataset = mock(OpenLineage.OutputDataset.class);
+
+    when(writeToMicroBatchV1.sink()).thenReturn(fileStreamSink);
+    when(writeToMicroBatchV1.schema()).thenReturn(schema);
+    when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
+    when(writeToMicroBatchV1.writeOptions())
+        .thenReturn(ScalaConversionUtils.fromJavaMap(Collections.singletonMap("path", outputPath)));
+
+    try (MockedStatic<PathUtils> pathUtilsMock = mockStatic(PathUtils.class)) {
+      pathUtilsMock
+          .when(() -> PathUtils.fromPath(any(org.apache.hadoop.fs.Path.class)))
+          .thenReturn(pathIdentifier);
+      when(factory.getDataset(eq(pathIdentifier), eq(schema))).thenReturn(expectedDataset);
+
+      List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
+
+      assertEquals(1, result.size());
+      assertEquals(expectedDataset, result.get(0));
+    }
+  }
+
+  @Test
+  void testJobNameSuffix_WithFileStreamSink_NoCatalogTable_WithPathOption() {
+    String outputPath = "/tmp/streaming-ns/my-table";
+    when(writeToMicroBatchV1.sink()).thenReturn(fileStreamSink);
+    when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
+    when(writeToMicroBatchV1.writeOptions())
+        .thenReturn(ScalaConversionUtils.fromJavaMap(Collections.singletonMap("path", outputPath)));
+
+    Optional<String> suffix = builder.jobNameSuffix(writeToMicroBatchV1);
+
+    assertTrue(suffix.isPresent());
+    // trimPath returns the last two path segments joined with "_"
+    assertEquals("streaming-ns_my-table", suffix.get());
   }
 
   @Test
