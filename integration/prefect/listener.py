@@ -124,6 +124,10 @@ class PrefectOpenLineageListener:
 								prefect_flow_run_id: str = event.resource.id.split(".")[-1]
 								flow_namespace: str = await self.get_flow_ns(prefect_flow_run_id)
 								flow_deployment_info: dict = await self.get_deployment_info(prefect_flow_run_id)
+								deployment_id = flow_deployment_info["id"]
+								deployment_created = flow_deployment_info["created"]
+								deployment_updated = flow_deployment_info["updated"]
+								deployment_name = flow_deployment_info["name"]
 								ol_flow_run_id: str = self.build_run_id(
 									start_time,
 									flow_name,
@@ -137,7 +141,10 @@ class PrefectOpenLineageListener:
 									flowName=flow_name,
 									flowNamespace=flow_namespace,
 									prefectVersion=prefect_version,
-									flowDeploymentInfo=flow_deployment_info
+									deploymentId=deployment_id,
+									deploymentCreated=deployment_created,
+									deploymentUpdated=deployment_updated,
+									deploymentName=deployment_name
 								)
 
 						if entity_type == "task-run":
@@ -184,9 +191,13 @@ class PrefectOpenLineageListener:
 							for res in event.related:
 								if res["prefect.resource.role"] == "flow-run":
 									flow_run_id = res["prefect.resource.id"].split(".")[-1]
-									flow_and_deployment_info: str = await self.get_flow_and_deployment_info(flow_run_id) #TODO: use flow_run_id
+									flow_and_deployment_info: str = await self.get_flow_and_deployment_info(flow_run_id)
 									flow_name: str = flow_and_deployment_info["name"]
 									deployment_info: dict = flow_and_deployment_info["deployment_info"]
+									deployment_id = deployment_info["id"]
+									deployment_created = deployment_info["created"]
+									deployment_updated = deployment_info["updated"]
+									deployment_name = deployment_info["name"]
 									flow_run = await self.client.read_flow_run(flow_run_id)
 									ol_flow_run_id: str = self.build_run_id(
 										flow_run.start_time,
@@ -205,7 +216,10 @@ class PrefectOpenLineageListener:
 								namespace=namespace,
 								jobDeps=parent_runs,
 								prefectVersion=prefect_version,
-								flowDeploymentInfo=deployment_info
+								deploymentId=deployment_id,
+								deploymentCreated=deployment_created,
+								deploymentUpdated=deployment_updated,
+								deploymentName=deployment_name
 							)
 
 asyncio.run(PrefectOpenLineageListener().collect_and_process_task_runs())

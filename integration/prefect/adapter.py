@@ -34,7 +34,10 @@ class PrefectOpenLineageAdapter:
         flowName: str = None,
         flowNamespace: str = None,
         prefectVersion: str = None,
-        flowDeploymentInfo: dict = None
+        deploymentId: str = None,
+        deploymentCreated: str = None,
+        deploymentUpdated: str = None,
+        deploymentName: str = None
     ) -> RunEvent:
 
         match eventType:
@@ -45,16 +48,12 @@ class PrefectOpenLineageAdapter:
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
 
-        deployment_id = flowDeploymentInfo["id"]
-        deployment_created = flowDeploymentInfo["created"]
-        deployment_updated = flowDeploymentInfo["updated"]
-        deployment_name = flowDeploymentInfo["name"]
         run_facets = {
                         "prefectDeployment": PrefectDeploymentRunFacet(
-                            deployment_id=deployment_id,
-                            created=deployment_created,
-                            updated=deployment_updated,
-                            name=deployment_name
+                            deployment_id=deploymentId,
+                            created=deploymentCreated,
+                            updated=deploymentUpdated,
+                            name=deploymentName
                         ),
                         "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                             version=prefectVersion,
@@ -98,7 +97,10 @@ class PrefectOpenLineageAdapter:
         namespace: str = None,
         jobDeps: list = None,
         prefectVersion: str = None,
-        flowDeploymentInfo: dict = None
+        deploymentId: str = None,
+        deploymentCreated: str = None,
+        deploymentUpdated: str = None,
+        deploymentName: str = None
     ) -> RunEvent:
 
         match eventType:
@@ -109,10 +111,7 @@ class PrefectOpenLineageAdapter:
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
 
-        deployment_id = flowDeploymentInfo["id"]
-        deployment_created = flowDeploymentInfo["created"]
-        deployment_updated = flowDeploymentInfo["updated"]
-        deployment_name = flowDeploymentInfo["name"]
+        
         run_facets = {
             "nominalTime": NominalTimeRunFacet(
                 nominalStartTime=expectedEventTime
@@ -122,10 +121,10 @@ class PrefectOpenLineageAdapter:
                 job={"namespace": namespace, "name": flowName}
             ),
             "prefectDeployment": PrefectDeploymentRunFacet(
-                deployment_id=deployment_id,
-                created=deployment_created,
-                updated=deployment_updated,
-                name=deployment_name
+                deployment_id=deploymentId,
+                created=deploymentCreated,
+                updated=deploymentUpdated,
+                name=deploymentName
             ),
             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                 version=prefectVersion,
