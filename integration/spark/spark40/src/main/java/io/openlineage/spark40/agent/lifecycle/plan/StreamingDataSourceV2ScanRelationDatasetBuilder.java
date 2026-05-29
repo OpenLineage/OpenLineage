@@ -7,6 +7,8 @@ package io.openlineage.spark40.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.KafkaMicroBatchStreamStrategy;
+import io.openlineage.spark.agent.lifecycle.plan.KinesisMicroBatchStreamStrategy;
+import io.openlineage.spark.agent.lifecycle.plan.MongoMicroBatchStreamStrategy;
 import io.openlineage.spark.agent.lifecycle.plan.NoOpStreamStrategy;
 import io.openlineage.spark.agent.lifecycle.plan.StreamStrategy;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -25,6 +27,10 @@ public class StreamingDataSourceV2ScanRelationDatasetBuilder
 
   private static final String KAFKA_MICRO_BATCH_STREAM_CLASS_NAME =
       "org.apache.spark.sql.kafka010.KafkaMicroBatchStream";
+  private static final String KINESIS_MICRO_BATCH_STREAM_CLASS_NAME =
+      "org.apache.spark.sql.kinesis.KinesisMicroBatchStream";
+  private static final String MONGO_MICRO_BATCH_STREAM_CLASS_NAME =
+      "com.mongodb.spark.sql.connector.read.MongoMicroBatchStream";
 
   public StreamingDataSourceV2ScanRelationDatasetBuilder(OpenLineageContext context) {
     super(context, true);
@@ -45,6 +51,20 @@ public class StreamingDataSourceV2ScanRelationDatasetBuilder
     if (KAFKA_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
       streamStrategy =
           new KafkaMicroBatchStreamStrategy(
+              inputDataset(),
+              relation.relation().schema(),
+              relation.stream(),
+              ScalaConversionUtils.<Offset>asJavaOptional(relation.startOffset()));
+    } else if (KINESIS_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
+      streamStrategy =
+          new KinesisMicroBatchStreamStrategy(
+              inputDataset(),
+              relation.relation().schema(),
+              relation.stream(),
+              ScalaConversionUtils.<Offset>asJavaOptional(relation.startOffset()));
+    } else if (MONGO_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
+      streamStrategy =
+          new MongoMicroBatchStreamStrategy(
               inputDataset(),
               relation.relation().schema(),
               relation.stream(),
