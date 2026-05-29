@@ -8,6 +8,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.HierarchyDatasetFacetUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler;
 import java.util.Arrays;
@@ -94,6 +95,34 @@ public class CatalogUtils3 {
                         relation.simpleString(5), relation.getClass().getCanonicalName())));
   }
 
+  public static void addComplementaryFacets(
+      OpenLineageContext context,
+      TableCatalog catalog,
+      Identifier identifier,
+      Map<String, String> properties,
+      DatasetCompositeFacetsBuilder builder) {
+    CatalogUtils3.getStorageDatasetFacet(context, catalog, properties)
+        .map(storageDatasetFacet -> builder.getFacets().storage(storageDatasetFacet));
+    CatalogUtils3.getCatalogDatasetFacet(context, catalog, properties)
+        .ifPresent(
+            catalogDatasetFacet -> {
+              builder.getFacets().catalog(catalogDatasetFacet.getCatalogDatasetFacet());
+              catalogDatasetFacet
+                  .getAdditionalFacets()
+                  .forEach((k, v) -> builder.getFacets().put(k, v));
+            });
+    builder
+        .getFacets()
+        .hierarchy(
+            HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                context.getOpenLineage(), catalog, identifier));
+  }
+
+  /**
+   * @deprecated Use {@link #addComplementaryFacets(OpenLineageContext, TableCatalog, Identifier,
+   *     Map, DatasetCompositeFacetsBuilder)} instead.
+   */
+  @Deprecated
   public static void addStorageAndCatalogFacets(
       OpenLineageContext context,
       TableCatalog catalog,

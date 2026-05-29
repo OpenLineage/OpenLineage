@@ -12,6 +12,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.ExtensionLineageRelationHandler;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.DatasetVersionUtils;
+import io.openlineage.spark.agent.util.HierarchyDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -171,6 +172,15 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     getDatasetVersion(logRel)
         .ifPresent(
             v -> DatasetVersionUtils.buildVersionOutputFacets(context, datasetFacetsBuilder, v));
+
+    Optional.ofNullable(catalogTable.identifier())
+        .ifPresent(
+            identifier ->
+                datasetFacetsBuilder
+                    .getFacets()
+                    .hierarchy(
+                        HierarchyDatasetFacetUtils.buildHierarchyFacet(
+                            context.getOpenLineage(), identifier)));
 
     addCatalogAndStorageFacets(catalogTable, datasetFacetsBuilder);
     return Collections.singletonList(datasetFactory.getDataset(di, datasetFacetsBuilder));

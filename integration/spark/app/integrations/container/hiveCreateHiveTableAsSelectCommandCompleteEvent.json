@@ -28,6 +28,12 @@
               "type": "TABLE"
             }
           ]
+        },
+        "hierarchy": {
+          "hierarchy": [
+            { "type": "DATABASE", "name": "hive3" },
+            { "type": "TABLE", "name": "table1" }
+          ]
         }
       }
     }
@@ -68,6 +74,12 @@
               "name": "hive3.table2",
               "type": "TABLE"
             }
+          ]
+        },
+        "hierarchy": {
+          "hierarchy": [
+            { "type": "DATABASE", "name": "hive3" },
+            { "type": "TABLE", "name": "table2" }
           ]
         }
       }
