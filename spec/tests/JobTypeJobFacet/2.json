@@ -1,0 +1,14 @@
+{
+  "jobType": {
+    "processingType": "STREAMING",
+    "integration": "KAFKA_STREAMS",
+    "jobType": "STREAM_PROCESSOR",
+    "emissionPattern": {
+      "eventTrigger": "PERIODIC",
+      "eventCompleteness": "COMPLETE_SNAPSHOT",
+      "windowDuration": 300
+    },
+    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json"
+  }
+}
