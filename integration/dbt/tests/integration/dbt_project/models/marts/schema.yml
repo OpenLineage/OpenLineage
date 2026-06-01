@@ -3,7 +3,8 @@ version: 2
 models:
   - name: customers
     description: Customer dimension table with order aggregations
-    tags: ['some_tag']
+    config:
+      tags: ['some_tag']
     columns:
       - name: customer_id
         description: Unique identifier for customers
@@ -36,4 +37,5 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['paid', 'partial', 'unpaid']
+              arguments:
+                values: ['paid', 'partial', 'unpaid']
