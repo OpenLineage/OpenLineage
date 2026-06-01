@@ -30,6 +30,21 @@ SITE_MAPPING = {
 }
 
 
+def _default_retry() -> dict[str, Any]:
+    return {
+        "total": 5,
+        "read": 5,
+        "connect": 5,
+        "backoff_factor": 0.3,
+        "status_forcelist": [500, 502, 503, 504],
+        "allowed_methods": ["HEAD", "POST"],
+    }
+
+
+def _default_async_transport_rules() -> dict[str, dict[str, bool]]:
+    return {"dbt": {"*": True}}
+
+
 def _is_valid_url(url: str) -> bool:
     try:
         parsed = urlparse(url)
@@ -43,19 +58,10 @@ class DatadogConfig(Config):
     apiKey: str = attr.field()  # noqa: N815
     site: str = attr.field(default="datadoghq.com")
     timeout: float = attr.field(default=5.0)
-    retry: dict[str, Any] = attr.field(
-        default={
-            "total": 5,
-            "read": 5,
-            "connect": 5,
-            "backoff_factor": 0.3,
-            "status_forcelist": [500, 502, 503, 504],
-            "allowed_methods": ["HEAD", "POST"],
-        }
-    )
+    retry: dict[str, Any] = attr.field(factory=_default_retry)
     max_queue_size: int = attr.field(default=10000)
     max_concurrent_requests: int = attr.field(default=100)
-    async_transport_rules: dict[str, dict[str, bool]] = attr.field(default={"dbt": {"*": True}})
+    async_transport_rules: dict[str, dict[str, bool]] = attr.field(factory=_default_async_transport_rules)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> DatadogConfig:
