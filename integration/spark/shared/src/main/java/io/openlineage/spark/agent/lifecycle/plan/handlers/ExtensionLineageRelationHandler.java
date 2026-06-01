@@ -34,10 +34,10 @@ public class ExtensionLineageRelationHandler<D extends Dataset> {
             .getLineageDatasetIdentifier(x.relation(), event.getClass().getName());
 
     if (x.schema() != null) {
-      return Collections.singletonList(datasetFactory.getDataset(di, x.schema()));
-    } else {
       return Collections.singletonList(
-          datasetFactory.getDataset(di, datasetFactory.createCompositeFacetBuilder()));
+          datasetFactory.sparkDatasetBuilder().dataset(di).schema(x.schema()).build());
+    } else {
+      return Collections.singletonList(datasetFactory.sparkDatasetBuilder().dataset(di).build());
     }
   }
 }

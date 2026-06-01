@@ -68,6 +68,7 @@ class CreateTableLikeCommandVisitorTest {
     when(sessionCatalog.defaultTablePath(targetTableIdentifier))
         .thenReturn(new URI("/tmp/warehouse/newtable"));
     when(sourceCatalogTable.schema()).thenReturn(schema);
+    when(sourceCatalogTable.identifier()).thenReturn(sourceTableIdentifier);
 
     CreateTableLikeCommandVisitor visitor =
         new CreateTableLikeCommandVisitor(

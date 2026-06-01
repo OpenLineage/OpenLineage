@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -41,9 +40,12 @@ public class AlterTableAddColumnsCommandVisitor
     if (tableColumns.containsAll(addedColumns)) {
       return Collections.singletonList(
           outputDataset()
-              .getDataset(
-                  PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
-                  catalogTable.schema()));
+              .sparkDatasetBuilder()
+              .dataset(catalogTable)
+              .schema(catalogTable.schema())
+              .lifecycleStateChange(
+                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER)
+              .build());
     } else {
       // apply triggered before applying the change - do not send an event
       return Collections.emptyList();

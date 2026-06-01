@@ -46,10 +46,12 @@ public class DropTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuild
         .map(
             di ->
                 outputDataset()
-                    .getDataset(
-                        di,
-                        resolvedIdentifier.schema(),
-                        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP))
+                    .sparkDatasetBuilder()
+                    .dataset(di)
+                    .schema(resolvedIdentifier.schema())
+                    .lifecycleStateChange(
+                        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP)
+                    .build())
         .map(d -> Collections.singletonList(d))
         .orElseGet(() -> Collections.emptyList());
   }

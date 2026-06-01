@@ -92,7 +92,10 @@ public class DataSourceV2RelationDatasetExtractor {
                   .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
                   .dataSource(PlanUtils.datasourceFacet(openLineage, identifier.getNamespace()));
 
-              return datasetFactory.getDataset(identifier, datasetFacetsBuilder);
+              return datasetFactory
+                  .sparkDatasetBuilder(datasetFacetsBuilder)
+                  .dataset(identifier)
+                  .build();
             })
         .collect(Collectors.toList());
   }
@@ -115,11 +118,14 @@ public class DataSourceV2RelationDatasetExtractor {
                               new DatasetIdentifier(dbtm.qualifiedName(), namespace);
 
                           if (numberOfTables > 1) {
-                            return datasetFactory.getDataset(di.getName(), di.getNamespace());
+                            return datasetFactory.sparkDatasetBuilder().dataset(di).build();
                           }
 
-                          return datasetFactory.getDataset(
-                              di.getName(), di.getNamespace(), relation.schema());
+                          return datasetFactory
+                              .sparkDatasetBuilder()
+                              .dataset(di)
+                              .schema(relation.schema())
+                              .build();
                         })
                     .collect(Collectors.toList());
               }
@@ -128,10 +134,11 @@ public class DataSourceV2RelationDatasetExtractor {
                       dbtm -> {
                         DatasetIdentifier di =
                             new DatasetIdentifier(dbtm.qualifiedName(), namespace);
-                        return datasetFactory.getDataset(
-                            di.getName(),
-                            di.getNamespace(),
-                            generateSchemaFromSqlMeta(dbtm, relation.schema(), sqm));
+                        return datasetFactory
+                            .sparkDatasetBuilder()
+                            .dataset(di)
+                            .schema(generateSchemaFromSqlMeta(dbtm, relation.schema(), sqm))
+                            .build();
                       })
                   .collect(Collectors.toList());
             })

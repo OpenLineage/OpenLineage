@@ -45,8 +45,8 @@ public abstract class AbstractRDDNodeVisitor<T extends LogicalPlan, D extends Op
         .map(
             di ->
                 schema != null
-                    ? datasetFactory.getDataset(di, schema)
-                    : datasetFactory.getDataset(di))
+                    ? datasetFactory.sparkDatasetBuilder().dataset(di).schema(schema).build()
+                    : datasetFactory.sparkDatasetBuilder().dataset(di).build())
         .collect(Collectors.toList());
   }
 }

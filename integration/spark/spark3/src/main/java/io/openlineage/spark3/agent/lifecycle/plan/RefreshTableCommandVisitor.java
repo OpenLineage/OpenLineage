@@ -6,11 +6,6 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
-import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
@@ -30,33 +25,17 @@ public class RefreshTableCommandVisitor
   @Override
   public List<OpenLineage.InputDataset> apply(LogicalPlan x) {
     Optional<CatalogTable> tableOption = catalogTableFor(((RefreshTableCommand) x).tableIdent());
-
-    if (!tableOption.isPresent()) {
-      return Collections.emptyList();
-    }
-
-    CatalogTable catalogTable = tableOption.get();
-
-    DatasetIdentifier di =
-        PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get());
-
-    OpenLineage.LifecycleStateChangeDatasetFacet lifecycleStateChangeDatasetFacet =
-        context
-            .getOpenLineage()
-            .newLifecycleStateChangeDatasetFacetBuilder()
-            .lifecycleStateChange(
-                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER)
-            .build();
-
-    DatasetFactory<OpenLineage.InputDataset> factory = inputDataset();
-
-    DatasetCompositeFacetsBuilder datasetFacetsBuilder = factory.createCompositeFacetBuilder();
-    datasetFacetsBuilder
-        .getFacets()
-        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), catalogTable.schema()))
-        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()))
-        .lifecycleStateChange(lifecycleStateChangeDatasetFacet);
-
-    return Collections.singletonList(factory.getDataset(di, datasetFacetsBuilder));
+    return tableOption
+        .map(
+            catalogTable ->
+                Collections.singletonList(
+                    inputDataset()
+                        .sparkDatasetBuilder()
+                        .dataset(catalogTable)
+                        .schema(catalogTable.schema())
+                        .lifecycleStateChange(
+                            OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER)
+                        .build()))
+        .orElseGet(() -> Collections.emptyList());
   }
 }

@@ -6,10 +6,9 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -30,20 +29,15 @@ public class InsertIntoDataSourceDirVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoDataSourceDirCommand command = (InsertIntoDataSourceDirCommand) x;
     // URI is required by the InsertIntoDataSourceDirCommand
-    DatasetIdentifier di = PathUtils.fromURI(command.storage().locationUri().get());
-
-    OpenLineage.OutputDataset outputDataset;
+    SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> builder =
+        outputDataset()
+            .sparkDatasetBuilder()
+            .dataset(command.storage().locationUri().get())
+            .schema(command.schema());
     if (command.overwrite()) {
-      outputDataset =
-          outputDataset()
-              .getDataset(
-                  di,
-                  command.schema(),
-                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
-    } else {
-      outputDataset = outputDataset().getDataset(di, command.schema());
+      builder.lifecycleStateChange(
+          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
     }
-
-    return Collections.singletonList(outputDataset);
+    return Collections.singletonList(builder.build());
   }
 }

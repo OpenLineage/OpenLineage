@@ -5,8 +5,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static java.util.Collections.singletonList;
-
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
@@ -63,13 +61,14 @@ public class CreateTableLikeCommandVisitor
                       .orElse(defaultLocation);
               DatasetIdentifier di = PathUtils.fromURI(location);
 
-              return singletonList(
+              return Collections.singletonList(
                   outputDataset()
-                      .getDataset(
-                          di,
-                          source.schema(),
-                          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                              .CREATE));
+                      .sparkDatasetBuilder()
+                      .dataset(di)
+                      .schema(source.schema())
+                      .lifecycleStateChange(
+                          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)
+                      .build());
             })
         .orElse(Collections.emptyList());
   }

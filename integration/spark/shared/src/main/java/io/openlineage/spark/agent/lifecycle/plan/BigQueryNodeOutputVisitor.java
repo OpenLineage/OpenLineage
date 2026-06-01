@@ -90,14 +90,17 @@ public class BigQueryNodeOutputVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan plan) {
     SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
     Optional<SparkSession> session = SparkSessionUtils.activeSession();
-    if (session.isPresent()) {
-      return Collections.singletonList(
-          factory.getDataset(
-              getFromSaveIntoDataSourceCommand(saveCommand, session.get()),
-              BIGQUERY_NAMESPACE,
-              saveCommand.schema()));
-    } else {
-      return Collections.emptyList();
-    }
+    return session
+        .map(
+            sparkSession ->
+                Collections.singletonList(
+                    factory
+                        .sparkDatasetBuilder()
+                        .dataset(
+                            getFromSaveIntoDataSourceCommand(saveCommand, sparkSession),
+                            BIGQUERY_NAMESPACE)
+                        .schema(saveCommand.schema())
+                        .build()))
+        .orElse(Collections.emptyList());
   }
 }

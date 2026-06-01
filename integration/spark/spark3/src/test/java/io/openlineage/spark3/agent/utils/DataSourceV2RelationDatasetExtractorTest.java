@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.net.URI;
@@ -97,7 +99,12 @@ class DataSourceV2RelationDatasetExtractorTest {
         when(CatalogUtils3.getDatasetIdentifier(
                 openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(di);
-        when(datasetFactory.getDataset(di, datasetFacetsBuilder)).thenReturn(dataset);
+
+        SparkDatasetCompositeFacetsBuilder sparkBuilder =
+            mock(SparkDatasetCompositeFacetsBuilder.class);
+        when(datasetFactory.sparkDatasetBuilder(datasetFacetsBuilder)).thenReturn(sparkBuilder);
+        when(sparkBuilder.dataset(any(DatasetIdentifier.class))).thenReturn(sparkBuilder);
+        when(sparkBuilder.build()).thenReturn(dataset);
 
         assertEquals(
             Collections.singletonList(dataset),
@@ -110,13 +117,9 @@ class DataSourceV2RelationDatasetExtractorTest {
   @Test
   void testExtractFromDataSourceV2RelationWhenDatasetIdentifierEmpty() {
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      DatasetIdentifier di = mock(DatasetIdentifier.class);
-      OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
-
       when(CatalogUtils3.getDatasetIdentifier(
               openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
-      when(datasetFactory.getDataset(di, schema)).thenReturn(dataset);
 
       assertEquals(
           Collections.emptyList(),
