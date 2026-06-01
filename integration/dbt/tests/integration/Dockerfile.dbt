@@ -1,39 +1,28 @@
 FROM python:3.10-slim
 
-# Install system dependencies including Rust for building SQL parser
 RUN apt-get update && \
-    apt-get install -y gcc g++ curl git && \
+    apt-get install -y curl && \
     rm -rf /var/lib/apt/lists/*
-
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:$PATH"
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
-# Install dbt-duckdb first
-RUN uv pip install --system dbt-duckdb==1.7.0
+# dbt Core v2: prebuilt Rust binary; DuckDB driver is fetched via `dbt system update`
+# https://docs.getdbt.com/docs/dbt-versions/core-upgrade/upgrading-to-v2
+RUN uv pip install --system "dbt-core==2.0.0-alpha.1" && \
+    dbt system update || true
 
-# Copy pre-built wheels
-COPY wheels/ /opt/wheels/
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# List available wheels
-RUN ls -la /opt/wheels/
+# OpenLineage wheels are built on the host and mounted at /opt/wheels (see docker-compose.yml)
+RUN mkdir -p /opt/wheels /opt/dbt/data
 
-# Install OpenLineage dependencies from wheels
-RUN uv pip install --system /opt/wheels/*.whl
-
-# Create data directory for DuckDB
-RUN mkdir -p /opt/dbt/data
-
-# Set working directory
 WORKDIR /opt/dbt_project
 
-# Set environment variables
 ENV PYTHONPATH=/opt/openlineage
 ENV DBT_PROFILES_DIR=/opt/dbt_project
 
-# Keep container running
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["tail", "-f", "/dev/null"]
