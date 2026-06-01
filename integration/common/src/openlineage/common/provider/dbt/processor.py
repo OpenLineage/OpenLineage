@@ -252,8 +252,15 @@ class DbtArtifactProcessor:
         # Use the adapter type to make sure the correct key is used
         if self.adapter_type == Adapter.BIGQUERY:
             query_id_key = "job_id"
-
-        query_id: str | None = run_result["adapter_response"].get(query_id_key)
+            project_id: str | None = run_result["adapter_response"].get("project_id")
+            location: str | None = run_result["adapter_response"].get("location")
+            job_id: str | None = run_result["adapter_response"].get(query_id_key)
+            if project_id is not None and location is not None and job_id is not None:
+                query_id = f"{project_id}:{location}.{job_id}"
+            else:
+                query_id = job_id
+        else:
+            query_id: str | None = run_result["adapter_response"].get(query_id_key)
 
         if isinstance(query_id, str):
             # For Databricks, "N/A" could be returned if the query_id is None; catch that
