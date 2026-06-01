@@ -23,6 +23,7 @@ classifiers = [
 
 dependencies = [
     "attrs>=19.3.0",
+    "jinja2>=3.0.0",
     "openlineage-python",
     "openlineage_sql",
     "pyyaml>=5.3.1",
