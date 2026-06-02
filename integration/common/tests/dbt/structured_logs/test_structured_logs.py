@@ -168,6 +168,14 @@ def node_finished_event(
             CURRENT_DIR + "/snowflake/run/results/successful_run_ol_events.json",
             CURRENT_DIR + "/snowflake/run/target/manifest.json",
         ),
+        # successful bigquery run
+        (
+            "bigquery",
+            ["dbt", "run", "..."],
+            CURRENT_DIR + "/bigquery/run/logs/successful_run_logs.jsonl",
+            CURRENT_DIR + "/bigquery/run/results/successful_run_ol_events.json",
+            CURRENT_DIR + "/bigquery/run/target/manifest.json",
+        ),
         # failed snowflake run
         (
             "snowflake",
@@ -247,6 +255,7 @@ def node_finished_event(
         "postgres_successful_dbt_run",
         "postgres_failed_dbt_run",
         "snowflake_successful_dbt_run",
+        "bigquery_successful_dbt_run",
         "snowflake_failed_dbt_run",
         # seed command
         "postgres_dbt_seed",
