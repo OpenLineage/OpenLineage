@@ -77,7 +77,7 @@ When asked to "prepare release X.Y.Z based on LLM instructions from @RELEASING.m
 ### 1. **Determine the release version and previous version:**
    - The release version should be provided in the user prompt (e.g., "1.42.0"). If not provided, ask for it.
    - Make sure the user-provided version is normalized to semantic version format (MAJOR.MINOR.PATCH)
-   - Find the previous release version: `git tag --sort=-version:refname | head -1`
+   - Find the previous release version: `git tag --sort=-version:refname | grep '^[0-9]\+\.[0-9]\+\.[0-9]\+$' | head -1`
    - Verify in `CHANGELOG.md` that this version matches the latest entry
 
 ### 2. **Collect all commits and PRs between releases:**
