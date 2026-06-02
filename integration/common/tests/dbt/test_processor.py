@@ -103,6 +103,7 @@ def test_get_query_id(
         ),
         ({"project_id": "test-project", "job_id": QUERY_ID}, QUERY_ID),
         ({"location": "US", "job_id": QUERY_ID}, QUERY_ID),
+        ({"job_id": QUERY_ID}, QUERY_ID),
         ({"project_id": "test-project", "location": "US"}, None),
     ],
 )

@@ -360,10 +360,28 @@ def test_dataset_namespace(mock_run_dbt_command, target, expected_dataset_namesp
             {"project_id": "test-project", "location": "US", "job_id": "job-123"},
             "test-project:US.job-123",
         ),
+        (
+            Adapter.BIGQUERY,
+            "bigquery",
+            {"project_id": "test-project", "job_id": "job-123"},
+            "job-123",
+        ),
+        (
+            Adapter.BIGQUERY,
+            "bigquery",
+            {"location": "US", "job_id": "job-123"},
+            "job-123",
+        ),
         (Adapter.BIGQUERY, "bigquery", {"job_id": "job-123"}, "job-123"),
         (Adapter.SNOWFLAKE, "snowflake://test-account", {"query_id": "query-123"}, "query-123"),
     ],
-    ids=["bigquery_full_job_reference", "bigquery_job_id_only", "query_id_adapter"],
+    ids=[
+        "bigquery_full_job_reference",
+        "bigquery_project_and_job_id",
+        "bigquery_location_and_job_id",
+        "bigquery_job_id_only",
+        "query_id_adapter",
+    ],
 )
 def test_node_finished_external_query(
     adapter_type, dataset_namespace, adapter_response, expected_external_query_id
