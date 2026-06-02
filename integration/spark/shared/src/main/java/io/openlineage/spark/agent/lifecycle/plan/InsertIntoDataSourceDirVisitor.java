@@ -8,7 +8,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -29,7 +29,7 @@ public class InsertIntoDataSourceDirVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoDataSourceDirCommand command = (InsertIntoDataSourceDirCommand) x;
     // URI is required by the InsertIntoDataSourceDirCommand
-    SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> builder =
+    SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
         outputDataset()
             .sparkDatasetBuilder()
             .dataset(command.storage().locationUri().get())

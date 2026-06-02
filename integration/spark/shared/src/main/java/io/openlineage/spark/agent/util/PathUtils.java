@@ -20,7 +20,6 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
-import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 import org.apache.spark.sql.internal.StaticSQLConf;
 
 @Slf4j
@@ -59,20 +58,21 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, SparkSession sparkSession, URI location) {
-
-    return fromTableIdentifier(
-        catalogTable.identifier(),
-        sparkSession.sparkContext(),
-        location,
-        CatalogDatasetFacetUtils.getCatalogPlugin(sparkSession, catalogTable.identifier()));
+    SparkContext sparkContext = sparkSession.sparkContext();
+    if (CatalogDatasetFacetUtils.isHiveCatalog(sparkSession, catalogTable.identifier())
+        && GoogleCloudPlatformUtils.isBigLakeHiveCatalog(sparkContext.getConf())) {
+      return fromURI(location)
+          .withSymlink(
+              nameFromTableIdentifier(catalogTable.identifier()),
+              "gcp_lakehouse",
+              DatasetIdentifier.SymlinkType.TABLE);
+    }
+    return fromTableIdentifier(catalogTable.identifier(), sparkContext, location);
   }
 
   @SneakyThrows
   public static DatasetIdentifier fromTableIdentifier(
-      TableIdentifier identifier,
-      SparkContext sparkContext,
-      URI location,
-      Optional<CatalogPlugin> catalogPlugin) {
+      TableIdentifier identifier, SparkContext sparkContext, URI location) {
     // perform URL normalization
     DatasetIdentifier locationDataset = fromURI(location);
     URI locationUri = FilesystemDatasetUtils.toLocation(locationDataset);
@@ -90,11 +90,6 @@ public class PathUtils {
       String tableName = nameFromTableIdentifier(identifier, "/");
       symlinkDataset =
           Optional.of(new DatasetIdentifier(GLUE_TABLE_PREFIX + tableName, glueArn.get()));
-    } else if (catalogPlugin.isPresent()
-        && CatalogDatasetFacetUtils.isHiveCatalog(sparkContext, catalogPlugin.get())
-        && GoogleCloudPlatformUtils.isBigLakeHiveCatalog(sparkContext.getConf())) {
-      String tableName = nameFromTableIdentifier(identifier);
-      symlinkDataset = Optional.of(new DatasetIdentifier(tableName, "gcp_lakehouse"));
     } else if (metastoreUri.isPresent()) {
       // dealing with Hive tables
       URI hiveUri = prepareHiveUri(metastoreUri.get());

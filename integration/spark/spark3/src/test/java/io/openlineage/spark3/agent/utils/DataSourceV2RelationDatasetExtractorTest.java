@@ -21,7 +21,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.net.URI;
@@ -100,8 +100,7 @@ class DataSourceV2RelationDatasetExtractorTest {
                 openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(di);
 
-        SparkDatasetCompositeFacetsBuilder sparkBuilder =
-            mock(SparkDatasetCompositeFacetsBuilder.class);
+        SparkDatasetBuilder sparkBuilder = mock(SparkDatasetBuilder.class);
         when(datasetFactory.sparkDatasetBuilder(datasetFacetsBuilder)).thenReturn(sparkBuilder);
         when(sparkBuilder.dataset(any(DatasetIdentifier.class))).thenReturn(sparkBuilder);
         when(sparkBuilder.build()).thenReturn(dataset);

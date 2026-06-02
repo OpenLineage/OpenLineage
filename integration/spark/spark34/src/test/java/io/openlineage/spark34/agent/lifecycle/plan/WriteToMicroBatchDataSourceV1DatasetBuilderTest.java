@@ -18,7 +18,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.List;
 import org.apache.spark.SparkContext;
@@ -141,8 +141,7 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.apply(catalogTable));
 
     @SuppressWarnings("unchecked")
-    SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> sparkBuilder =
-        mock(SparkDatasetCompositeFacetsBuilder.class);
+    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder = mock(SparkDatasetBuilder.class);
     when(factory.sparkDatasetBuilder()).thenReturn(sparkBuilder);
     when(sparkBuilder.dataset(catalogTable)).thenReturn(sparkBuilder);
     when(sparkBuilder.schema(schema)).thenReturn(sparkBuilder);

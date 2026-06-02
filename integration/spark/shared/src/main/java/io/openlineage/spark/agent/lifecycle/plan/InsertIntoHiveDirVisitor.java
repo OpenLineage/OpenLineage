@@ -11,7 +11,7 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +38,7 @@ public class InsertIntoHiveDirVisitor
     return optionalUri
         .map(
             uri -> {
-              SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> builder =
+              SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
                   outputDataset()
                       .sparkDatasetBuilder()
                       .dataset(uri)

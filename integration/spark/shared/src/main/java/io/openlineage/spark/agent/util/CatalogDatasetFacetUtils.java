@@ -86,16 +86,15 @@ public class CatalogDatasetFacetUtils {
   }
 
   public static boolean isHiveCatalog(SparkSession session, TableIdentifier identifier) {
-    return getCatalogPlugin(session, identifier)
-        .map(catalogPlugin -> isHiveCatalog(session.sparkContext(), catalogPlugin))
-        .orElse(false);
+    return "hive".equals(session.sparkContext().conf().get("spark.sql.catalogImplementation", ""))
+        && getCatalogPlugin(session, identifier)
+            .map(catalogPlugin -> isHiveCatalog(session.sparkContext(), catalogPlugin))
+            .orElse(false);
   }
 
   @SuppressWarnings("PMD")
-  public static boolean isHiveCatalog(SparkContext context, CatalogPlugin catalogPlugin) {
-    if ("hive".equals(context.conf().get("spark.sql.catalogImplementation", ""))
-        && catalogPlugin instanceof V2SessionCatalog) {
-
+  private static boolean isHiveCatalog(SparkContext context, CatalogPlugin catalogPlugin) {
+    if (catalogPlugin instanceof V2SessionCatalog) {
       V2SessionCatalog v2Catalog = ((V2SessionCatalog) catalogPlugin);
       Field catalog = FieldUtils.getField(V2SessionCatalog.class, "catalog", true);
       catalog.setAccessible(true);

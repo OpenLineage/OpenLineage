@@ -11,7 +11,7 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.SaveMode;
@@ -64,7 +64,7 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
         PathUtils.fromCatalogTable(table, context.getSparkSession().get());
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
 
-    SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> builder =
+    SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
         outputDataset().sparkDatasetBuilder().dataset(datasetIdentifier).schema(schema);
     if ((SaveMode.Overwrite == command.mode())) {
       builder.lifecycleStateChange(

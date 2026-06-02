@@ -42,10 +42,9 @@ public abstract class DatasetFactory<D extends Dataset> {
     this.namespaceResolver = new DatasetNamespaceCombinedResolver(context.getOpenLineageConfig());
   }
 
-  public abstract SparkDatasetCompositeFacetsBuilder<D> sparkDatasetBuilder();
+  public abstract SparkDatasetBuilder<D> sparkDatasetBuilder();
 
-  public abstract SparkDatasetCompositeFacetsBuilder<D> sparkDatasetBuilder(
-      DatasetCompositeFacetsBuilder inner);
+  public abstract SparkDatasetBuilder<D> sparkDatasetBuilder(DatasetCompositeFacetsBuilder inner);
 
   public abstract void buildVersionFacets(
       DatasetCompositeFacetsBuilder facetsBuilder, String version);
@@ -65,14 +64,14 @@ public abstract class DatasetFactory<D extends Dataset> {
       }
 
       @Override
-      public SparkDatasetCompositeFacetsBuilder<InputDataset> sparkDatasetBuilder() {
-        return new SparkInputDatasetCompositeFacetsBuilder(context);
+      public SparkDatasetBuilder<InputDataset> sparkDatasetBuilder() {
+        return new SparkInputDatasetBuilder(context);
       }
 
       @Override
-      public SparkDatasetCompositeFacetsBuilder<InputDataset> sparkDatasetBuilder(
+      public SparkDatasetBuilder<InputDataset> sparkDatasetBuilder(
           DatasetCompositeFacetsBuilder inner) {
-        return new SparkInputDatasetCompositeFacetsBuilder(context, inner);
+        return new SparkInputDatasetBuilder(context, inner);
       }
     };
   }
@@ -92,14 +91,14 @@ public abstract class DatasetFactory<D extends Dataset> {
       }
 
       @Override
-      public SparkDatasetCompositeFacetsBuilder<OutputDataset> sparkDatasetBuilder() {
-        return new SparkOutputDatasetCompositeFacetsBuilder(context);
+      public SparkDatasetBuilder<OutputDataset> sparkDatasetBuilder() {
+        return new SparkOutputDatasetBuilder(context);
       }
 
       @Override
-      public SparkDatasetCompositeFacetsBuilder<OutputDataset> sparkDatasetBuilder(
+      public SparkDatasetBuilder<OutputDataset> sparkDatasetBuilder(
           DatasetCompositeFacetsBuilder inner) {
-        return new SparkOutputDatasetCompositeFacetsBuilder(context, inner);
+        return new SparkOutputDatasetBuilder(context, inner);
       }
     };
   }

@@ -10,7 +10,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +36,7 @@ public class InsertIntoHadoopFsRelationVisitor
     return getDatasetIdentifier(command)
         .map(
             di -> {
-              SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> builder =
+              SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
                   outputDataset()
                       .sparkDatasetBuilder()
                       .dataset(di)
