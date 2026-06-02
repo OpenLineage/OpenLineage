@@ -9,21 +9,20 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.spark.agent.util.DatasetVersionUtils;
 
-public class SparkOutputDatasetCompositeFacetsBuilder
-    extends SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> {
+public class SparkOutputDatasetBuilder extends SparkDatasetBuilder<OpenLineage.OutputDataset> {
 
-  public SparkOutputDatasetCompositeFacetsBuilder(OpenLineageContext context) {
+  public SparkOutputDatasetBuilder(OpenLineageContext context) {
     super(context);
   }
 
-  public SparkOutputDatasetCompositeFacetsBuilder(
+  public SparkOutputDatasetBuilder(
       OpenLineageContext context, DatasetCompositeFacetsBuilder inner) {
     super(context, inner);
   }
 
   /** Overrides to also trigger vendor-specific output facet builders (e.g. Iceberg). */
   @Override
-  public SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> version(String version) {
+  public SparkDatasetBuilder<OpenLineage.OutputDataset> version(String version) {
     DatasetVersionUtils.buildVersionOutputFacets(context, inner, version);
     return this;
   }
@@ -41,7 +40,7 @@ public class SparkOutputDatasetCompositeFacetsBuilder
   }
 
   @Override
-  public SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> fromBuilder(
+  public SparkDatasetBuilder<OpenLineage.OutputDataset> fromBuilder(
       OpenLineage.DatasetFacetsBuilder facetsBuilder) {
     inner.setFacets(facetsBuilder);
     return this;

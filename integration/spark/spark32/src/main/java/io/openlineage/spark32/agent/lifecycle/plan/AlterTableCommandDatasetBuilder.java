@@ -9,7 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
@@ -83,7 +83,7 @@ public class AlterTableCommandDatasetBuilder
       return Collections.emptyList();
     }
 
-    SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> sparkBuilder =
+    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder =
         outputDataset()
             .sparkDatasetBuilder()
             .dataset(di.get())

@@ -9,7 +9,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -97,13 +98,15 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
         PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
     if (di.isPresent()) {
-      SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> sparkBuilder =
+      SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder =
           outputDataset()
               .sparkDatasetBuilder()
               .dataset(di.get())
               .schema(resolvedTable.schema())
               .lifecycleStateChange(
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP);
+      CatalogUtils3.getCatalogDatasetFacet(context, tableCatalog, tableProperties)
+          .ifPresent(cf -> sparkBuilder.catalog(cf.getCatalogDatasetFacet()));
       return Collections.singletonList(sparkBuilder.build());
     } else {
       return Collections.emptyList();
@@ -144,13 +147,15 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
           PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
       if (di.isPresent()) {
-        SparkDatasetCompositeFacetsBuilder<OpenLineage.OutputDataset> sparkBuilder =
+        SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder =
             outputDataset()
                 .sparkDatasetBuilder()
                 .dataset(di.get())
                 .schema(schema)
                 .lifecycleStateChange(
                     OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP);
+        CatalogUtils3.getCatalogDatasetFacet(context, tableCatalog, tableProperties)
+            .ifPresent(cf -> sparkBuilder.catalog(cf.getCatalogDatasetFacet()));
         return Collections.singletonList(sparkBuilder.build());
       } else {
         return Collections.emptyList();

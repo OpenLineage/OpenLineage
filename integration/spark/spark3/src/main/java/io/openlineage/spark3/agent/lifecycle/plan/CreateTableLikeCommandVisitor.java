@@ -66,6 +66,7 @@ public class CreateTableLikeCommandVisitor
                       .sparkDatasetBuilder()
                       .dataset(di)
                       .schema(source.schema())
+                      .catalog(source.identifier())
                       .lifecycleStateChange(
                           OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)
                       .build());

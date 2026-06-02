@@ -8,15 +8,13 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 
-public class SparkInputDatasetCompositeFacetsBuilder
-    extends SparkDatasetCompositeFacetsBuilder<OpenLineage.InputDataset> {
+public class SparkInputDatasetBuilder extends SparkDatasetBuilder<OpenLineage.InputDataset> {
 
-  public SparkInputDatasetCompositeFacetsBuilder(OpenLineageContext context) {
+  public SparkInputDatasetBuilder(OpenLineageContext context) {
     super(context);
   }
 
-  public SparkInputDatasetCompositeFacetsBuilder(
-      OpenLineageContext context, DatasetCompositeFacetsBuilder inner) {
+  public SparkInputDatasetBuilder(OpenLineageContext context, DatasetCompositeFacetsBuilder inner) {
     super(context, inner);
   }
 
@@ -33,7 +31,7 @@ public class SparkInputDatasetCompositeFacetsBuilder
   }
 
   @Override
-  public SparkDatasetCompositeFacetsBuilder<OpenLineage.InputDataset> fromBuilder(
+  public SparkDatasetBuilder<OpenLineage.InputDataset> fromBuilder(
       OpenLineage.DatasetFacetsBuilder facetsBuilder) {
     inner.setFacets(facetsBuilder);
     return this;

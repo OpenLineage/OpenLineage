@@ -18,7 +18,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.SparkDatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -136,7 +136,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     DatasetIdentifier di =
         PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get());
 
-    SparkDatasetCompositeFacetsBuilder<D> sparkBuilder =
+    SparkDatasetBuilder<D> sparkBuilder =
         datasetFactory.sparkDatasetBuilder().dataset(di).schema(logRel.schema());
     DatasetCompositeFacetsBuilder datasetFacetsBuilder = sparkBuilder.getInner();
 
@@ -258,7 +258,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       HadoopFsRelation relation,
       Optional<OpenLineage.DatasetVersionDatasetFacet> datasetVersion,
       Optional<OpenLineage.InputStatisticsInputDatasetFacet> inputStats) {
-    SparkDatasetCompositeFacetsBuilder<D> b =
+    SparkDatasetBuilder<D> b =
         datasetFactory.sparkDatasetBuilder().dataset(uri).schema(relation.schema());
     datasetVersion.ifPresent(b::version);
     inputStats.ifPresent(s -> b.getInner().getInputFacets().inputStatistics(s));
