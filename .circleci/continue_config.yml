@@ -923,7 +923,6 @@ jobs:
 
           # Publish *.jar
           ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
-          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
       - store_artifacts:
           path: ./build/libs
           destination: hive-client-artifacts
