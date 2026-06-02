@@ -86,6 +86,16 @@ $ cd integration/dbt
 $ uv sync --extra dev
 ```
 
+### dbt Core v2 (experimental)
+
+Published installs keep `dbt-core>=1.0,<3` (dbt 1.x by default). To test against [dbt Core v2 alpha](https://docs.getdbt.com/docs/dbt-versions/core-upgrade/upgrading-to-v2) locally:
+
+```bash
+$ uv sync --extra dev --extra dbt-v2
+```
+
+Docker-based integration tests pin v2 in `tests/integration/Dockerfile.dbt`; see `tests/integration/scripts/build-wheels.sh`.
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2026 contributors to the OpenLineage project

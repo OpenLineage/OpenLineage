@@ -13,13 +13,13 @@ keywords = ["openlineage"]
 dependencies = [
     "tqdm>=4.62.0",
     "openlineage-integration-common==1.48.0",
-    "dbt-core>=1.0.0",
+    "dbt-core>=1.0.0,<3",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
-    "pytest-cov", 
+    "pytest-cov",
     "pytest-xdist>=2.5.0",
     "mock",
     "ruff",
@@ -27,7 +27,11 @@ dev = [
     "python-dateutil",
     "requests>=2.25.0",
     "docker>=6.0.0",
-    "mypy"
+    "mypy",
+]
+# Experimental: dbt Core v2 alpha for local/dev testing (Docker integration tests pin v2 in Dockerfile.dbt)
+dbt-v2 = [
+    "dbt-core==2.0.0-alpha.1",
 ]
 
 [project.scripts]

@@ -22,6 +22,7 @@ services:
     working_dir: /opt/dbt_project
     volumes:
       - ./dbt_project:/opt/dbt_project
+      - ./wheels:/opt/wheels
       - ./data:/opt/data  # For DuckDB database file
     environment:
       - OPENLINEAGE_URL=http://test-server:8080
