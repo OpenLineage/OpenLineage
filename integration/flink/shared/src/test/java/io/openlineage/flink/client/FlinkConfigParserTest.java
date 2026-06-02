@@ -43,6 +43,10 @@ class FlinkConfigParserTest {
       ConfigOptions.key("openlineage.facets.facetX.disabled").booleanType().noDefaultValue();
   ConfigOption facetYDisabled =
       ConfigOptions.key("openlineage.facets.facetY.disabled").booleanType().noDefaultValue();
+  ConfigOption detachedStartEventEmitTimeoutOption =
+      ConfigOptions.key("openlineage.detachedStartEventEmitTimeoutInSeconds")
+          .stringType()
+          .noDefaultValue();
 
   @BeforeEach
   void beforeEach() {
@@ -134,5 +138,15 @@ class FlinkConfigParserTest {
         false);
     config = FlinkConfigParser.parse(configuration);
     assertThat(config.getDatasetConfig().getKafkaConfig().getResolveTopicPattern()).isFalse();
+  }
+
+  @Test
+  void testDetachedStartEventEmitTimeout() {
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getDetachedStartEventEmitTimeoutInSeconds()).isEqualTo(5);
+
+    configuration.set(detachedStartEventEmitTimeoutOption, "7");
+    config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getDetachedStartEventEmitTimeoutInSeconds()).isEqualTo(7);
   }
 }

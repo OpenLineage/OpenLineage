@@ -18,8 +18,8 @@ Please refer to [Java client for Openlineage](../../client/java/configuration.md
 
 ## Flink specific configuration
 
-| Parameter                             | Definition                                                                                                                                                                                                           | Example                 |
-|---------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|
-| openlineage.resolveTopicPattern       | This option is used to control whether topic pattern resolution should be used for Kafka topics to extract lineage information, as this may require an extra Kafka client call. The option works only for Flink 2.x. | True (default) or False |
-| openlineage.trackingIntervalInSeconds | Defines polling interval for a tracking thread to refresh lineage metadata from jobs API and emit it in a form of `RUNNING` OpenLineage events.                                                                      | 60 (default)            |
-
+| Parameter                                           | Definition                                                                                                                                                                                                           | Example                 |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| openlineage.resolveTopicPattern                     | This option is used to control whether topic pattern resolution should be used for Kafka topics to extract lineage information, as this may require an extra Kafka client call. The option works only for Flink 2.x. | True (default) or False |
+| openlineage.trackingIntervalInSeconds               | Defines polling interval for a tracking thread to refresh lineage metadata from jobs API and emit it in a form of `RUNNING` OpenLineage events.                                                                      | 60 (default)            |
+| openlineage.detachedStartEventEmitTimeoutInSeconds  | Defines how long the Flink 2.x listener waits for the detached `START` event emit call to complete, for example waiting for Kafka send acknowledgement, before the submitter JVM exits.                              | 5 (default)             |

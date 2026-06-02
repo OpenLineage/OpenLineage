@@ -22,6 +22,7 @@ import lombok.ToString;
 public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageConfig> {
 
   private static final Integer DEFAULT_TRACKING_INTERVAL = 60;
+  private static final Integer DEFAULT_DETACHED_START_EVENT_EMIT_TIMEOUT = 5;
 
   @JsonProperty("dataset")
   @Setter
@@ -31,6 +32,10 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   @JsonProperty("trackingIntervalInSeconds")
   @Setter
   private Integer trackingIntervalInSeconds;
+
+  @JsonProperty("detachedStartEventEmitTimeoutInSeconds")
+  @Setter
+  private Integer detachedStartEventEmitTimeoutInSeconds;
 
   public FlinkOpenLineageConfig() {
     super();
@@ -45,7 +50,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       Map metricsConfig,
       RunConfig runConfig,
       JobConfig jobConfig,
-      Integer trackingIntervalInSeconds) {
+      Integer trackingIntervalInSeconds,
+      Integer detachedStartEventEmitTimeoutInSeconds) {
     super(
         transportConfig,
         facetsConfig,
@@ -56,6 +62,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         jobConfig);
     this.datasetConfig = datasetConfig;
     this.trackingIntervalInSeconds = trackingIntervalInSeconds;
+    this.detachedStartEventEmitTimeoutInSeconds = detachedStartEventEmitTimeoutInSeconds;
   }
 
   @Override
@@ -68,10 +75,17 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(runConfig, other.runConfig),
         mergePropertyWith(jobConfig, other.jobConfig),
-        mergePropertyWith(trackingIntervalInSeconds, other.trackingIntervalInSeconds));
+        mergePropertyWith(trackingIntervalInSeconds, other.trackingIntervalInSeconds),
+        mergePropertyWith(
+            detachedStartEventEmitTimeoutInSeconds, other.detachedStartEventEmitTimeoutInSeconds));
   }
 
   public Integer getTrackingIntervalInSeconds() {
     return Optional.ofNullable(trackingIntervalInSeconds).orElse(DEFAULT_TRACKING_INTERVAL);
+  }
+
+  public Integer getDetachedStartEventEmitTimeoutInSeconds() {
+    return Optional.ofNullable(detachedStartEventEmitTimeoutInSeconds)
+        .orElse(DEFAULT_DETACHED_START_EVENT_EMIT_TIMEOUT);
   }
 }
