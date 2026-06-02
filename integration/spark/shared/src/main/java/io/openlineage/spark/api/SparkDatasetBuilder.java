@@ -24,6 +24,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.types.StructType;
 
@@ -39,7 +40,7 @@ import org.apache.spark.sql.types.StructType;
  * DatasetCompositeFacetsBuilder} is accessible via {@link #getInner()} for passing to existing APIs
  * that still require it.
  */
-public abstract class SparkDatasetCompositeFacetsBuilder<T extends OpenLineage.Dataset> {
+public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
 
   protected final OpenLineageContext context;
   protected final DatasetNamespaceCombinedResolver namespaceResolver;
@@ -48,18 +49,17 @@ public abstract class SparkDatasetCompositeFacetsBuilder<T extends OpenLineage.D
   @Getter protected String name;
   @Getter protected String namespace;
 
-  public SparkDatasetCompositeFacetsBuilder(OpenLineageContext context) {
+  public SparkDatasetBuilder(OpenLineageContext context) {
     this(context, new DatasetCompositeFacetsBuilder(context.getOpenLineage()));
   }
 
-  public SparkDatasetCompositeFacetsBuilder(
-      OpenLineageContext context, DatasetCompositeFacetsBuilder inner) {
+  public SparkDatasetBuilder(OpenLineageContext context, DatasetCompositeFacetsBuilder inner) {
     this.context = context;
     this.namespaceResolver = new DatasetNamespaceCombinedResolver(context.getOpenLineageConfig());
     this.inner = inner;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> dataset(DatasetIdentifier datasetIdentifier) {
+  public SparkDatasetBuilder<T> dataset(DatasetIdentifier datasetIdentifier) {
     this.name = datasetIdentifier.getName();
     this.namespace = datasetIdentifier.getNamespace();
     dataSource(datasetIdentifier.getNamespace());
@@ -67,31 +67,32 @@ public abstract class SparkDatasetCompositeFacetsBuilder<T extends OpenLineage.D
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> dataset(String name, String namespace) {
+  public SparkDatasetBuilder<T> dataset(String name, String namespace) {
     return dataset(new DatasetIdentifier(name, namespace));
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> dataset(String name, URI outputPath) {
+  public SparkDatasetBuilder<T> dataset(String name, URI outputPath) {
     return dataset(new DatasetIdentifier(name, PlanUtils.namespaceUri(outputPath)));
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> dataset(URI outputPath) {
+  public SparkDatasetBuilder<T> dataset(URI outputPath) {
     return dataset(PathUtils.fromURI(outputPath));
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> dataset(CatalogTable catalogTable) {
+  public SparkDatasetBuilder<T> dataset(CatalogTable catalogTable) {
     if (context.getSparkSession().isPresent()) {
       dataset(PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()));
+      catalog(catalogTable.identifier());
     }
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> symlink(SymlinksDatasetFacet symlinksFacet) {
+  public SparkDatasetBuilder<T> symlink(SymlinksDatasetFacet symlinksFacet) {
     inner.getFacets().symlinks(symlinksFacet);
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> symlink(List<DatasetIdentifier.Symlink> symlinks) {
+  public SparkDatasetBuilder<T> symlink(List<DatasetIdentifier.Symlink> symlinks) {
     if (!symlinks.isEmpty()) {
       List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinkIdentifiers =
           symlinks.stream()
@@ -115,52 +116,60 @@ public abstract class SparkDatasetCompositeFacetsBuilder<T extends OpenLineage.D
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> schema(SchemaDatasetFacet schemaFacet) {
+  public SparkDatasetBuilder<T> schema(SchemaDatasetFacet schemaFacet) {
     inner.getFacets().schema(schemaFacet);
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> schema(StructType schema) {
+  public SparkDatasetBuilder<T> schema(StructType schema) {
     return schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema));
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> dataSource(DatasourceDatasetFacet datasourceFacet) {
+  public SparkDatasetBuilder<T> dataSource(DatasourceDatasetFacet datasourceFacet) {
     inner.getFacets().dataSource(datasourceFacet);
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> dataSource(String namespace) {
+  public SparkDatasetBuilder<T> dataSource(String namespace) {
     return dataSource(
         PlanUtils.datasourceFacet(context.getOpenLineage(), namespaceResolver.resolve(namespace)));
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> catalog(CatalogDatasetFacet catalogFacet) {
+  public SparkDatasetBuilder<T> catalog(CatalogDatasetFacet catalogFacet) {
     inner.getFacets().catalog(catalogFacet);
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> catalog() {
+  public SparkDatasetBuilder<T> catalog(TableIdentifier identifier) {
+    if (context.getSparkSession().isPresent()) {
+      if (CatalogDatasetFacetUtils.isHiveCatalog(context.getSparkSession().get(), identifier)) {
+        catalog();
+      }
+    }
+    return this;
+  }
+
+  public SparkDatasetBuilder<T> catalog() {
     CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context).ifPresent(this::catalog);
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> symlinks(SymlinksDatasetFacet symlinksFacet) {
+  public SparkDatasetBuilder<T> symlinks(SymlinksDatasetFacet symlinksFacet) {
     inner.getFacets().symlinks(symlinksFacet);
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> lifecycleStateChange(
+  public SparkDatasetBuilder<T> lifecycleStateChange(
       LifecycleStateChangeDatasetFacet lifecycleFacet) {
     inner.getFacets().lifecycleStateChange(lifecycleFacet);
     return this;
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> lifecycleStateChange(
-      LifecycleStateChange lifecycleStateChange) {
+  public SparkDatasetBuilder<T> lifecycleStateChange(LifecycleStateChange lifecycleStateChange) {
     return lifecycleStateChange(lifecycleStateChange, null);
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> lifecycleStateChange(
+  public SparkDatasetBuilder<T> lifecycleStateChange(
       LifecycleStateChange lifecycleStateChange, String previousName, String previousNamespace) {
     return lifecycleStateChange(
         lifecycleStateChange,
@@ -172,7 +181,7 @@ public abstract class SparkDatasetCompositeFacetsBuilder<T extends OpenLineage.D
             .build());
   }
 
-  public SparkDatasetCompositeFacetsBuilder<T> lifecycleStateChange(
+  public SparkDatasetBuilder<T> lifecycleStateChange(
       LifecycleStateChange lifecycleStateChange,
       OpenLineage.LifecycleStateChangeDatasetFacetPreviousIdentifier previousIdentifier) {
     return lifecycleStateChange(
@@ -188,19 +197,19 @@ public abstract class SparkDatasetCompositeFacetsBuilder<T extends OpenLineage.D
    * Sets the dataset version facet. For output datasets, also triggers vendor-specific output facet
    * builders (e.g. Iceberg snapshot facets). Subclasses may override to provide richer behaviour.
    */
-  public SparkDatasetCompositeFacetsBuilder<T> version(String version) {
+  public SparkDatasetBuilder<T> version(String version) {
     DatasetVersionUtils.buildVersionFacets(context, inner, version);
     return this;
   }
 
   /** Sets a pre-built {@link DatasetVersionDatasetFacet} directly on the facets builder. */
-  public SparkDatasetCompositeFacetsBuilder<T> version(DatasetVersionDatasetFacet versionFacet) {
+  public SparkDatasetBuilder<T> version(DatasetVersionDatasetFacet versionFacet) {
     inner.getFacets().version(versionFacet);
     return this;
   }
 
   public abstract T build();
 
-  public abstract SparkDatasetCompositeFacetsBuilder<T> fromBuilder(
+  public abstract SparkDatasetBuilder<T> fromBuilder(
       OpenLineage.DatasetFacetsBuilder facetsBuilder);
 }

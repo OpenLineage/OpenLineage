@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.CatalogTableTestUtils;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
+import io.openlineage.spark.agent.util.GoogleCloudPlatformUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -48,6 +50,7 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
   private static final String HIVE_FRAMEWORK = "hive";
   private static final String HIVE_METASTORE_URI = "hive://localhost:9083";
   private static final String HIVE_SYMLINK_NAME = "test_db.test_table";
+  private static final String GCP_LAKEHOUSE = "gcp_lakehouse";
 
   private SparkSession session;
   private OpenLineageContext context;
@@ -97,6 +100,9 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
 
       DatasetIdentifier di = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
       pathUtils.when(() -> PathUtils.fromCatalogTable(catalogTable, session)).thenReturn(di);
+      catalogUtils
+          .when(() -> CatalogDatasetFacetUtils.isHiveCatalog(session, catalogTable.identifier()))
+          .thenReturn(false);
 
       List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
@@ -114,11 +120,53 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
 
       DatasetIdentifier di = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
       pathUtils.when(() -> PathUtils.fromCatalogTable(catalogTable, session)).thenReturn(di);
+      catalogUtils
+          .when(() -> CatalogDatasetFacetUtils.isHiveCatalog(session, catalogTable.identifier()))
+          .thenReturn(false);
 
       List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
       assertThat(datasets).hasSize(1);
       assertThat(datasets.get(0).getFacets().getCatalog()).isNull();
+    }
+  }
+
+  @Test
+  void testApplyWithHiveCatalogIncludesCatalogFacet() {
+    OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+    OpenLineage.CatalogDatasetFacet expectedFacet =
+        ol.newCatalogDatasetFacetBuilder()
+            .framework(HIVE_FRAMEWORK)
+            .source("spark")
+            .name("default")
+            .type(HIVE_FRAMEWORK)
+            .metadataUri(HIVE_METASTORE_URI)
+            .warehouseUri("file:/tmp/warehouse")
+            .build();
+
+    try (MockedStatic<PathUtils> pathUtils = mockStatic(PathUtils.class);
+        MockedStatic<CatalogDatasetFacetUtils> catalogUtils =
+            mockStatic(CatalogDatasetFacetUtils.class)) {
+
+      DatasetIdentifier di = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
+      pathUtils.when(() -> PathUtils.fromCatalogTable(catalogTable, session)).thenReturn(di);
+      catalogUtils
+          .when(() -> CatalogDatasetFacetUtils.isHiveCatalog(session, catalogTable.identifier()))
+          .thenReturn(true);
+      catalogUtils
+          .when(() -> CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context))
+          .thenReturn(Optional.of(expectedFacet));
+
+      List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
+
+      assertThat(datasets).hasSize(1);
+      OpenLineage.CatalogDatasetFacet catalog = datasets.get(0).getFacets().getCatalog();
+      assertThat(catalog).isNotNull();
+      assertThat(catalog.getName()).isEqualTo("default");
+      assertThat(catalog.getFramework()).isEqualTo(HIVE_FRAMEWORK);
+      assertThat(catalog.getType()).isEqualTo(HIVE_FRAMEWORK);
+      assertThat(catalog.getMetadataUri()).isEqualTo(HIVE_METASTORE_URI);
+      assertThat(catalog.getWarehouseUri()).isEqualTo("file:/tmp/warehouse");
     }
   }
 
@@ -147,7 +195,9 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
       pathUtils
           .when(() -> PathUtils.fromCatalogTable(catalogTable, session))
           .thenReturn(diWithSymlink);
-
+      catalogUtils
+          .when(() -> CatalogDatasetFacetUtils.isHiveCatalog(session, catalogTable.identifier()))
+          .thenReturn(true);
       catalogUtils
           .when(() -> CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context))
           .thenReturn(Optional.of(hiveFacet));
@@ -162,6 +212,73 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
       assertThat(symlinks.getIdentifiers().get(0).getNamespace()).isEqualTo(HIVE_METASTORE_URI);
       assertThat(symlinks.getIdentifiers().get(0).getType())
           .isEqualTo(DatasetIdentifier.SymlinkType.TABLE.toString());
+    }
+  }
+
+  @Test
+  void testApplyWithBigLakeCatalogIncludesBigLakeFacetAndSymlink() {
+    OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+    // Catalog facet as returned by getCatalogDatasetFacetForHive when BigLake is detected —
+    // mocking HiveConf.ConfVars.valueOf via mockStatic(GoogleCloudPlatformUtils.class) so
+    // the BigLake-specific HiveConf enum is not required on the test classpath.
+    OpenLineage.CatalogDatasetFacet bigLakeFacet =
+        ol.newCatalogDatasetFacetBuilder()
+            .framework(HIVE_FRAMEWORK)
+            .source("spark")
+            .name("my_biglake_catalog")
+            .type(GCP_LAKEHOUSE)
+            .warehouseUri("gs://my-bucket/warehouse")
+            .catalogProperties(
+                ol.newCatalogDatasetFacetCatalogPropertiesBuilder()
+                    .put("gcp_project_id", "my-gcp-project")
+                    .build())
+            .build();
+
+    // DatasetIdentifier with gcp_lakehouse symlink, as PathUtils produces for BigLake tables
+    DatasetIdentifier diWithBigLakeSymlink = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
+    diWithBigLakeSymlink.withSymlink(
+        HIVE_SYMLINK_NAME, GCP_LAKEHOUSE, DatasetIdentifier.SymlinkType.TABLE);
+
+    try (MockedStatic<PathUtils> pathUtils = mockStatic(PathUtils.class);
+        MockedStatic<CatalogDatasetFacetUtils> catalogUtils =
+            mockStatic(CatalogDatasetFacetUtils.class);
+        // Mock GoogleCloudPlatformUtils so that BigLake detection does not require the
+        // BigLake-extended HiveConf (with SPARK_HIVE_METASTORE_CLIENT_FACTORY_CLASS ConfVar)
+        // to be present on the test classpath.
+        MockedStatic<GoogleCloudPlatformUtils> gcpUtils =
+            mockStatic(GoogleCloudPlatformUtils.class)) {
+
+      pathUtils
+          .when(() -> PathUtils.fromCatalogTable(catalogTable, session))
+          .thenReturn(diWithBigLakeSymlink);
+      catalogUtils
+          .when(() -> CatalogDatasetFacetUtils.isHiveCatalog(session, catalogTable.identifier()))
+          .thenReturn(true);
+      catalogUtils
+          .when(() -> CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context))
+          .thenReturn(Optional.of(bigLakeFacet));
+      gcpUtils
+          .when(() -> GoogleCloudPlatformUtils.isBigLakeHiveCatalog(any(SparkConf.class)))
+          .thenReturn(true);
+
+      List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
+
+      assertThat(datasets).hasSize(1);
+      OpenLineage.OutputDataset ds = datasets.get(0);
+
+      OpenLineage.CatalogDatasetFacet catalog = ds.getFacets().getCatalog();
+      assertThat(catalog).isNotNull();
+      assertThat(catalog.getName()).isEqualTo("my_biglake_catalog");
+      assertThat(catalog.getType()).isEqualTo(GCP_LAKEHOUSE);
+      assertThat(catalog.getWarehouseUri()).isEqualTo("gs://my-bucket/warehouse");
+      assertThat(catalog.getCatalogProperties().getAdditionalProperties())
+          .containsEntry("gcp_project_id", "my-gcp-project");
+
+      OpenLineage.SymlinksDatasetFacet symlinks = ds.getFacets().getSymlinks();
+      assertThat(symlinks).isNotNull();
+      assertThat(symlinks.getIdentifiers()).hasSize(1);
+      assertThat(symlinks.getIdentifiers().get(0).getNamespace()).isEqualTo(GCP_LAKEHOUSE);
+      assertThat(symlinks.getIdentifiers().get(0).getName()).isEqualTo(HIVE_SYMLINK_NAME);
     }
   }
 
@@ -187,6 +304,10 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
 
       DatasetIdentifier di = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
       pathUtils.when(() -> PathUtils.fromCatalogTable(emptySchemaTable, session)).thenReturn(di);
+      catalogUtils
+          .when(
+              () -> CatalogDatasetFacetUtils.isHiveCatalog(session, emptySchemaTable.identifier()))
+          .thenReturn(false);
 
       List<OpenLineage.OutputDataset> datasets = visitor.apply(cmd);
 

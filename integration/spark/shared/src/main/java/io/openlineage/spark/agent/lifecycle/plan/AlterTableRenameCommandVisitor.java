@@ -48,6 +48,7 @@ public class AlterTableRenameCommandVisitor
             .dataset(di)
             .schema(table.schema())
             .lifecycleStateChange(LifecycleStateChange.RENAME, previousName, di.getNamespace())
+            .catalog(table.identifier())
             .build());
   }
 }
