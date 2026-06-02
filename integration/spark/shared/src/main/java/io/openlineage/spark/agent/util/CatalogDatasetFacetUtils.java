@@ -86,7 +86,8 @@ public class CatalogDatasetFacetUtils {
   }
 
   public static boolean isHiveCatalog(SparkSession session, TableIdentifier identifier) {
-    return "hive".equals(session.sparkContext().conf().get("spark.sql.catalogImplementation", ""))
+    return "hive"
+            .equals(session.sparkContext().getConf().get("spark.sql.catalogImplementation", ""))
         && getCatalogPlugin(session, identifier)
             .map(catalogPlugin -> isHiveCatalog(session.sparkContext(), catalogPlugin))
             .orElse(false);
