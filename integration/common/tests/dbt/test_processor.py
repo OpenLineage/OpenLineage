@@ -94,6 +94,30 @@ def test_get_query_id(
     }
 
 
+@pytest.mark.parametrize(
+    "adapter_response, expected_query_id",
+    [
+        (
+            {"project_id": "test-project", "location": "US", "job_id": QUERY_ID},
+            f"test-project:US.{QUERY_ID}",
+        ),
+        ({"project_id": "test-project", "job_id": QUERY_ID}, QUERY_ID),
+        ({"location": "US", "job_id": QUERY_ID}, QUERY_ID),
+        ({"job_id": QUERY_ID}, QUERY_ID),
+        ({"project_id": "test-project", "location": "US"}, None),
+    ],
+)
+def test_get_query_id_bigquery_job_reference_parts(
+    adapter_response, expected_query_id, dbt_artifact_processor, run_result
+):
+    run_result["adapter_response"].update(adapter_response)
+    dbt_artifact_processor.adapter_type = Adapter.BIGQUERY
+
+    generated_query_id = dbt_artifact_processor.get_query_id(run_result)
+
+    assert generated_query_id == expected_query_id
+
+
 def test_invalid_adapter(dbt_artifact_processor, run_result):
     run_result["adapter_response"]["query_id"] = None
     dbt_artifact_processor.adapter_type = Adapter.GLUE

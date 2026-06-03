@@ -438,6 +438,14 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             "parent": self.dbt_run_metadata.to_openlineage(),
         }
 
+        if resource_type in ("model", "snapshot"):
+            run_result = get_from_nullable_chain(event, ["data", "run_result"]) or {}
+            if query_id := self.get_query_id(run_result):
+                run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
+                    externalQueryId=query_id,
+                    source=self.dataset_namespace,
+                )
+
         # Add tags if they exist for this node
         if tags := self._get_node_tags(node_unique_id):
             run_facets["tags"] = tags_run.TagsRunFacet(
