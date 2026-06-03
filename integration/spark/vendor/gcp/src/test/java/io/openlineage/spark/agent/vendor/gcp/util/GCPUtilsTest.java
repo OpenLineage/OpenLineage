@@ -94,7 +94,9 @@ class GCPUtilsTest {
             "%s-m.%s-a.c.%s.google.com.internal", TEST_CLUSTER_NAME, TEST_REGION, TEST_PROJECT_ID));
     sparkConf.set(
         GCPUtils.SPARK_YARN_TAGS,
-        String.format("dataproc_job_%s,dataproc_uuid_%s", TEST_JOB_ID, TEST_RESOURCE_UUID));
+        String.format(
+            "dataproc_job_attempt_timestamp_%s,dataproc_job_%s,dataproc_uuid_%s",
+            "1234567890", TEST_JOB_ID, TEST_RESOURCE_UUID));
     sparkConf.set(GCPUtils.SPARK_MASTER, "yarn");
 
     mockServer
