@@ -9,6 +9,7 @@ from unittest import mock
 import attr
 import pytest
 import yaml
+from openlineage.common.provider.dbt.facets import ParentRunMetadata
 from openlineage.common.provider.dbt.processor import Adapter
 from openlineage.common.provider.dbt.structured_logs import (
     DbtStructuredLogsProcessor,
@@ -49,6 +50,92 @@ def patch_get_dbt_profiles_dir(monkeypatch):
     )
 
 
+def node_finished_processor(adapter_type=Adapter.SNOWFLAKE, dataset_namespace="test-namespace"):
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir=CURRENT_DIR,
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+    processor._dbt_version = "1.8.2"
+    processor._dbt_invocation_id = "test-invocation-id"
+    processor.dbt_run_metadata = ParentRunMetadata(
+        run_id=DUMMY_UUID_4,
+        job_name="dbt-run-jaffle_shop",
+        job_namespace="dbt-test-namespace",
+    )
+    processor.adapter_type = adapter_type
+    processor.dataset_namespace = dataset_namespace
+    processor._compiled_manifest = {
+        "nodes": {
+            "model.jaffle_shop.orders": {
+                "database": "REPORTING",
+                "schema": "TEST_GENERAL",
+                "alias": "orders",
+                "unique_id": "model.jaffle_shop.orders",
+                "columns": {},
+                "meta": {},
+                "tags": [],
+            },
+            "snapshot.jaffle_shop.orders_snapshot": {
+                "database": "REPORTING",
+                "schema": "SNAPSHOTS",
+                "alias": "orders_snapshot",
+                "unique_id": "snapshot.jaffle_shop.orders_snapshot",
+                "columns": {},
+                "meta": {},
+                "tags": [],
+            },
+            "test.jaffle_shop.not_null_orders_id": {
+                "database": "REPORTING",
+                "schema": "TEST_GENERAL_dbt_test__audit",
+                "alias": "not_null_orders_id",
+                "unique_id": "test.jaffle_shop.not_null_orders_id",
+                "columns": {},
+                "meta": {},
+                "tags": [],
+                "config": {},
+                "test_metadata": {"name": "not_null", "kwargs": {"column_name": "id"}},
+                "attached_node": "model.jaffle_shop.orders",
+            },
+        },
+        "sources": {},
+        "parent_map": {
+            "model.jaffle_shop.orders": [],
+            "snapshot.jaffle_shop.orders_snapshot": ["model.jaffle_shop.orders"],
+            "test.jaffle_shop.not_null_orders_id": ["model.jaffle_shop.orders"],
+        },
+    }
+    return processor
+
+
+def node_finished_event(
+    unique_id="model.jaffle_shop.orders",
+    resource_type="model",
+    adapter_response=None,
+    node_status="success",
+):
+    return {
+        "data": {
+            "node_info": {
+                "node_finished_at": "2024-01-01T00:00:01.000000",
+                "node_started_at": "2024-01-01T00:00:00.000000",
+                "node_status": node_status,
+                "resource_type": resource_type,
+                "unique_id": unique_id,
+            },
+            "run_result": {
+                "adapter_response": adapter_response or {},
+                "message": "",
+                "num_failures": 0,
+                "status": node_status,
+            },
+        },
+        "info": {"name": "NodeFinished", "ts": "2024-01-01T00:00:01.000000Z"},
+    }
+
+
 ##################
 # test functions
 ##################
@@ -80,6 +167,14 @@ def patch_get_dbt_profiles_dir(monkeypatch):
             CURRENT_DIR + "/snowflake/run/logs/successful_run_logs.jsonl",
             CURRENT_DIR + "/snowflake/run/results/successful_run_ol_events.json",
             CURRENT_DIR + "/snowflake/run/target/manifest.json",
+        ),
+        # successful bigquery run
+        (
+            "bigquery",
+            ["dbt", "run", "..."],
+            CURRENT_DIR + "/bigquery/run/logs/successful_run_logs.jsonl",
+            CURRENT_DIR + "/bigquery/run/results/successful_run_ol_events.json",
+            CURRENT_DIR + "/bigquery/run/target/manifest.json",
         ),
         # failed snowflake run
         (
@@ -160,6 +255,7 @@ def patch_get_dbt_profiles_dir(monkeypatch):
         "postgres_successful_dbt_run",
         "postgres_failed_dbt_run",
         "snowflake_successful_dbt_run",
+        "bigquery_successful_dbt_run",
         "snowflake_failed_dbt_run",
         # seed command
         "postgres_dbt_seed",
@@ -262,6 +358,83 @@ def test_dataset_namespace(mock_run_dbt_command, target, expected_dataset_namesp
         pass
 
     assert processor.dataset_namespace == expected_dataset_namespace
+
+
+@pytest.mark.parametrize(
+    "adapter_type, dataset_namespace, adapter_response, expected_external_query_id",
+    [
+        (
+            Adapter.BIGQUERY,
+            "bigquery",
+            {"project_id": "test-project", "location": "US", "job_id": "job-123"},
+            "test-project:US.job-123",
+        ),
+        (
+            Adapter.BIGQUERY,
+            "bigquery",
+            {"project_id": "test-project", "job_id": "job-123"},
+            "job-123",
+        ),
+        (
+            Adapter.BIGQUERY,
+            "bigquery",
+            {"location": "US", "job_id": "job-123"},
+            "job-123",
+        ),
+        (Adapter.BIGQUERY, "bigquery", {"job_id": "job-123"}, "job-123"),
+        (Adapter.SNOWFLAKE, "snowflake://test-account", {"query_id": "query-123"}, "query-123"),
+    ],
+    ids=[
+        "bigquery_full_job_reference",
+        "bigquery_project_and_job_id",
+        "bigquery_location_and_job_id",
+        "bigquery_job_id_only",
+        "query_id_adapter",
+    ],
+)
+def test_node_finished_external_query(
+    adapter_type, dataset_namespace, adapter_response, expected_external_query_id
+):
+    processor = node_finished_processor(
+        adapter_type=adapter_type,
+        dataset_namespace=dataset_namespace,
+    )
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(adapter_response=adapter_response),
+    )
+    external_query = ol_event_to_dict(event)["run"]["facets"]["externalQuery"]
+
+    assert external_query["externalQueryId"] == expected_external_query_id
+    assert external_query["source"] == dataset_namespace
+
+
+def test_node_finished_bigquery_missing_job_id_has_no_external_query():
+    processor = node_finished_processor(adapter_type=Adapter.BIGQUERY, dataset_namespace="bigquery")
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(adapter_response={"project_id": "test-project", "location": "US"}),
+    )
+
+    assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
+
+
+def test_test_node_finished_has_no_external_query():
+    processor = node_finished_processor(
+        adapter_type=Adapter.SNOWFLAKE,
+        dataset_namespace="snowflake://test-account",
+    )
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="test.jaffle_shop.not_null_orders_id",
+            resource_type="test",
+            adapter_response={"query_id": "query-123"},
+            node_status="pass",
+        ),
+    )
+
+    assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
 
 
 @pytest.mark.parametrize(
