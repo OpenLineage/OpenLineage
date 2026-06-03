@@ -495,7 +495,16 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         ]
         outputs = []
         if node := self._get_model_node(node_unique_id):
-            outputs = [self.node_to_output_dataset(node=node, has_facets=True)]
+            output_dataset = self.node_to_output_dataset(node=node, has_facets=True)
+            if resource_type in ("model", "snapshot") and event_type in (RunState.COMPLETE, RunState.FAIL):
+                compiled_sql = node.metadata_node.get("compiled_code") or node.metadata_node.get(
+                    "compiled_sql"
+                )
+                if compiled_sql:
+                    column_lineage = self.get_column_lineage(output_dataset.namespace, compiled_sql)
+                    if column_lineage:
+                        output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
+            outputs = [output_dataset]
 
         if resource_type == "test":
             success = node_status == "pass"
