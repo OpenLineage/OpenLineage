@@ -523,9 +523,9 @@ def test_node_finished_column_lineage_parse_failure_has_no_column_lineage():
 
 def test_test_node_finished_has_no_column_lineage():
     processor = node_finished_processor()
-    processor._compiled_manifest["nodes"]["test.jaffle_shop.not_null_orders_id"][
-        "compiled_code"
-    ] = "select id from REPORTING.TEST_GENERAL.orders"
+    processor._compiled_manifest["nodes"]["test.jaffle_shop.not_null_orders_id"]["compiled_code"] = (
+        "select id from REPORTING.TEST_GENERAL.orders"
+    )
     processor.get_column_lineage = mock.Mock(return_value=sample_column_lineage_facet())
 
     event = processor.parse_node_finished_event(
