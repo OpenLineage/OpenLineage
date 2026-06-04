@@ -56,17 +56,9 @@ Jobs can have different processing types that define their lifecycle characteris
 
 **Characteristics:**
 - No expected terminal event under normal operation
-- Typically emit events periodically at regular intervals
-- Events can be either accumulative or complete snapshots for time windows
+- Typically emit events periodically at regular intervals containing complete snapshot of lineage and metrics for the captured time period
 - Examples: Kafka Streams, Flink streaming jobs, Spark Streaming applications
 - While `START`, `COMPLETE`, `ABORT`, or `FAIL` events can be emitted, they should not be relied upon as they might occur only occasionally when the streaming job is restarted
-
-**Event Patterns:**
-
-- **Periodic with Complete Snapshots** (recommended for streaming):
-   - Each event contains complete information for a specific time window (e.g., 5 minutes). Events can be processed independently.
-- **Periodic with Accumulative State**:
-   - Each event contains cumulative metrics since job start. Consumers need only the latest event.
 
 ### SERVICE Jobs (Continuous)
 
@@ -85,8 +77,8 @@ The `eventCompleteness` field in the emission pattern describes what information
 
 ### Accumulative Events
 
-**Accumulative events** may contain only partial information and the complete information can be collected by combining information from all the events emmited by a specific job run:
-- Individual events are more likely to contain partial rather then complete information
+**Accumulative events** may contain only partial information and the complete information can be collected by combining information from all the events emitted by a specific job run:
+- Individual events are more likely to contain partial rather than complete information
 - Consumers need to combine all events for a specif run to have complete information about the job run
 
 ### Complete Snapshot Events
@@ -117,10 +109,3 @@ A streaming Job - e.g., a Kafka Streams application or Flink job - will typicall
 A long-running service - e.g., a microservice - may emit periodic or event-based (e.g. per-request) events with metrics. It will typically be represented by a `START` event followed by a series of `RUNNING` events that report changes in the run or emit performance metrics. Occasionally, a `COMPLETE`, `ABORT`, or `FAIL` event will occur, often followed by a `START` event as the service is reinitiated.
 
 ![image](./run-cycle-stream.svg)
-
-### Key differences between continous (STREAMING, SERVICE) and finite (BATCH) jobs
-- Continuous jobs can emit `START`, `COMPLETE`, `ABORT`, or `FAIL` events, however they should not be relied upon as they might be emitted only occasionally when the streaming job is restarted
-- Events are typically emitted at regular intervals (e.g., every 5 minutes)
-- Each event is self-contained for its time window
-- No need to accumulate information across multiple events
-- Consumers can process each event independently

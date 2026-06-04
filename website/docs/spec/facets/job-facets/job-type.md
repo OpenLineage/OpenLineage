@@ -66,8 +66,8 @@ Defines when events are emitted:
   * `RUNNING` for progress updates (optional)
   
 * **`PERIODIC`** - Events emitted at regular time intervals
-  * Emitted on a schedule (e.g., every 5 minutes)
-  * Independent of job lifecycle state
+  * `RUNNING` events are emitted on a schedule (e.g., every 5 minutes)
+  * Other events related to the job lifecycle state can still be emitted, but it is expected that most lineage information and observability metrics will be captured in the periodic events.  
 
 ### Event Completeness
 
@@ -131,6 +131,7 @@ The `windowDuration` field (optional, integer) specifies the time window duratio
         }
     }
 }
+```
 
 ### Long-Running Microservice
 
@@ -158,7 +159,7 @@ The `windowDuration` field (optional, integer) specifies the time window duratio
 ## Integration-Specific Examples
 
  * Integration: `SPARK`
-    * Processing type: `STREAM`|`BATCH`
+    * Processing type: `STREAMING`|`BATCH`
     * Job type: `JOB`|`COMMAND`
  * Integration: `AIRFLOW`
     * Processing type: `BATCH`
