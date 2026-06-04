@@ -9,6 +9,7 @@ from unittest import mock
 import attr
 import pytest
 import yaml
+from openlineage.client.facet_v2 import column_lineage_dataset
 from openlineage.common.provider.dbt.facets import ParentRunMetadata
 from openlineage.common.provider.dbt.processor import Adapter
 from openlineage.common.provider.dbt.structured_logs import (
@@ -134,6 +135,22 @@ def node_finished_event(
         },
         "info": {"name": "NodeFinished", "ts": "2024-01-01T00:00:01.000000Z"},
     }
+
+
+def sample_column_lineage_facet():
+    return column_lineage_dataset.ColumnLineageDatasetFacet(
+        fields={
+            "order_id": column_lineage_dataset.Fields(
+                inputFields=[
+                    column_lineage_dataset.InputField(
+                        namespace="test-namespace",
+                        name="REPORTING.TEST_GENERAL.stg_orders",
+                        field="id",
+                    )
+                ]
+            )
+        }
+    )
 
 
 ##################
@@ -435,6 +452,93 @@ def test_test_node_finished_has_no_external_query():
     )
 
     assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
+
+
+@pytest.mark.parametrize(
+    "unique_id, resource_type, node_status",
+    [
+        ("model.jaffle_shop.orders", "model", "success"),
+        ("model.jaffle_shop.orders", "model", "fail"),
+        ("snapshot.jaffle_shop.orders_snapshot", "snapshot", "success"),
+    ],
+    ids=["model_complete", "model_fail", "snapshot_complete"],
+)
+def test_node_finished_attaches_column_lineage(unique_id, resource_type, node_status):
+    processor = node_finished_processor()
+    compiled_sql = "select id as order_id from REPORTING.TEST_GENERAL.stg_orders"
+    processor._compiled_manifest["nodes"][unique_id]["compiled_code"] = compiled_sql
+    facet = sample_column_lineage_facet()
+    processor.get_column_lineage = mock.Mock(return_value=facet)
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id=unique_id,
+            resource_type=resource_type,
+            node_status=node_status,
+        )
+    )
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert output_facets["columnLineage"] == ol_event_to_dict(facet)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+
+
+def test_node_finished_missing_compiled_sql_has_no_column_lineage():
+    processor = node_finished_processor()
+    processor.get_column_lineage = mock.Mock(return_value=sample_column_lineage_facet())
+
+    event = processor.parse_node_finished_event(node_finished_event())
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert "columnLineage" not in output_facets
+    processor.get_column_lineage.assert_not_called()
+
+
+def test_node_finished_uses_compiled_sql_fallback_for_column_lineage():
+    processor = node_finished_processor()
+    compiled_sql = "select id as order_id from REPORTING.TEST_GENERAL.stg_orders"
+    processor._compiled_manifest["nodes"]["model.jaffle_shop.orders"]["compiled_sql"] = compiled_sql
+    facet = sample_column_lineage_facet()
+    processor.get_column_lineage = mock.Mock(return_value=facet)
+
+    event = processor.parse_node_finished_event(node_finished_event())
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert output_facets["columnLineage"] == ol_event_to_dict(facet)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+
+
+def test_node_finished_column_lineage_parse_failure_has_no_column_lineage():
+    processor = node_finished_processor()
+    compiled_sql = "select id as order_id from REPORTING.TEST_GENERAL.stg_orders"
+    processor._compiled_manifest["nodes"]["model.jaffle_shop.orders"]["compiled_code"] = compiled_sql
+    processor.get_column_lineage = mock.Mock(return_value=None)
+
+    event = processor.parse_node_finished_event(node_finished_event())
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert "columnLineage" not in output_facets
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+
+
+def test_test_node_finished_has_no_column_lineage():
+    processor = node_finished_processor()
+    processor._compiled_manifest["nodes"]["test.jaffle_shop.not_null_orders_id"]["compiled_code"] = (
+        "select id from REPORTING.TEST_GENERAL.orders"
+    )
+    processor.get_column_lineage = mock.Mock(return_value=sample_column_lineage_facet())
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="test.jaffle_shop.not_null_orders_id",
+            resource_type="test",
+            node_status="pass",
+        )
+    )
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert "columnLineage" not in output_facets
+    processor.get_column_lineage.assert_not_called()
 
 
 @pytest.mark.parametrize(

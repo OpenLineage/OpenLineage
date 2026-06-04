@@ -39,7 +39,7 @@
           "source.jaffle_shop.raw.raw_stores"
         ]
       },
-      "compiled_code": "with source as (\n\n    select * from `example-bigquery-project`.`raw`.`raw_stores`\n\n),\n\nrenamed as (\n\n    select\n        id as location_id,\n        name as location_name,\n        tax_rate\n    from source\n\n)\n\nselect * from renamed",
+      "compiled_code": "with renamed as (\n\n    select\n        id as location_id,\n        name as location_name,\n        tax_rate\n    from `example-bigquery-project`.`raw`.`raw_stores`\n\n)\n\nselect\n    location_id,\n    location_name,\n    tax_rate\nfrom renamed",
       "relation_name": "`example-bigquery-project`.`jaffle_shop`.`stg_locations`"
     }
   },
