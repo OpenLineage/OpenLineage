@@ -116,7 +116,7 @@ class PrefectOpenLineageListener:
 		}
 		response = await self.client._client.post("/artifacts/filter", json=payload)
 		if response.status_code == 200:
-			uris = []
+			dataset_info = []
 			artifacts = response.json()
 			for artifact in artifacts:
 				if "ol-dataset" in artifact["description"]:
@@ -124,8 +124,8 @@ class PrefectOpenLineageListener:
 					data_list = ast.literal_eval(artifact["data"])
 					uri = data_list[0]["database_uri"]
 					table = data_list[0]["table"]
-					uris.append([uri, table, dataset_type])
-			return uris
+					dataset_info.append([uri, table, dataset_type])
+			return dataset_info
 		else:
 			logging.info("No datasets found for task run.")
 			return []
@@ -145,15 +145,6 @@ class PrefectOpenLineageListener:
 
 					entity_type: str = event.event.split(".")[1]
 					event_state: str = event.event.split(".")[-1]
-					
-					# if entity_type == "asset": # Expected to follow task run event
-
-							# asset_id = event.resource.id.split(".")[-1]
-							# for res in event.related:
-							# 	if res["prefect.resource.role"] == "task-run":
-							# 		task_run_id: str = res["prefect.resource.id"].split(".")[-1]
-							# 		asset_dict[task_run_id] = asset_id
-							# print(event)
 
 					if event_state in ["Running", "Completed", "Failed"]:
 
@@ -220,7 +211,6 @@ class PrefectOpenLineageListener:
 							input_datasets = []
 							output_datasets = []
 							datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
-							print(datasets)
 							for dataset in datasets:
 								if dataset[2] == "input":
 									input_datasets.append(dataset)
