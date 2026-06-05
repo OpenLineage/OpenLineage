@@ -24,17 +24,6 @@ JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "prefect_test")
 
 logger: logging.Logger = logging.getLogger(__name__)
 
-class MonitoredDict(dict):
-    def __init__(self, target_key, callback, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.target_key = target_key
-        self.callback = callback
-
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-        if key == self.target_key:
-            self.callback(key, value)
-
 class PrefectOpenLineageListener:
 	def __init__(
 		self,
@@ -198,7 +187,6 @@ class PrefectOpenLineageListener:
 							event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
 							expected_start_time: datetime = event.payload["task_run"]["expected_start_time"]
 							prefect_task_run_id: str = event.resource.id.split(".")[-1]
-							print(prefect_task_run_id)
 							task_run = await self.client.read_task_run(prefect_task_run_id)
 							namespace: str = await self.get_job_ns(prefect_task_run_id)
 							ol_task_run_id: str = self.build_run_id(
