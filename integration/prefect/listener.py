@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import ast
 from datetime import datetime
 import logging
 import os
+import re
 import requests
 from typing import List
 from uuid import UUID
@@ -16,10 +18,22 @@ from prefect.client.orchestration import get_client
 from prefect.events.filters import EventFilter, EventNameFilter
 from prefect.runtime import task_run, flow_run
 from prefect.utilities.urls import url_for
+from prefect.client.schemas.filters import ArtifactFilter, ArtifactFilterTaskRunId
 
 JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "prefect_test")
 
 logger: logging.Logger = logging.getLogger(__name__)
+
+class MonitoredDict(dict):
+    def __init__(self, target_key, callback, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.target_key = target_key
+        self.callback = callback
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        if key == self.target_key:
+            self.callback(key, value)
 
 class PrefectOpenLineageListener:
 	def __init__(
@@ -52,8 +66,10 @@ class PrefectOpenLineageListener:
 		}
 
 	def get_prefect_version(self) -> str:
-		"""Requires PREFECT_API_URL."""
-		url = os.environ.get("PREFECT_API_URL")+"/admin/version"
+		try:
+			url = os.environ.get("PREFECT_API_URL")+"/admin/version"
+		except TypeError:
+			logger.info("PREFECT_API_URL not found.")
 		version = requests.get(url).json()
 		return version
 
@@ -89,18 +105,55 @@ class PrefectOpenLineageListener:
 		flow_run_start_time = flow_run.state.timestamp
 		return flow_run_start_time
 
+	async def get_artifacts_by_task_run(self, run_id: str) -> list:
+		payload = {
+			"limit": 5,
+			"artifacts": {
+				"task_run_id": {
+					"any_": [run_id]
+				}
+			}
+		}
+		response = await self.client._client.post("/artifacts/filter", json=payload)
+		if response.status_code == 200:
+			uris = []
+			artifacts = response.json()
+			for artifact in artifacts:
+				if "ol-dataset" in artifact["description"]:
+					dataset_type = artifact["description"].split("_")[-1]
+					data_list = ast.literal_eval(artifact["data"])
+					uri = data_list[0]["database_uri"]
+					table = data_list[0]["table"]
+					uris.append([uri, table, dataset_type])
+			return uris
+		else:
+			logging.info("No datasets found for task run.")
+			return []
+
 	async def collect_and_process_task_runs(self):
-		"""Requires PREFECT_API_URL."""
 		filter_criteria = EventFilter(
-	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run."])
+	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run.", "prefect.asset.materialization."])
 		)
-		prefect_version = self.get_prefect_version()
+		prefect_version: str = self.get_prefect_version()
+		
+		def asset_id_listener(key, value):
+			return value
 
 		async with get_events_subscriber(filter=filter_criteria) as subscriber:
 			async with self.client:
 				async for event in subscriber:
+
 					entity_type: str = event.event.split(".")[1]
 					event_state: str = event.event.split(".")[-1]
+					
+					# if entity_type == "asset": # Expected to follow task run event
+
+							# asset_id = event.resource.id.split(".")[-1]
+							# for res in event.related:
+							# 	if res["prefect.resource.role"] == "task-run":
+							# 		task_run_id: str = res["prefect.resource.id"].split(".")[-1]
+							# 		asset_dict[task_run_id] = asset_id
+							# print(event)
 
 					if event_state in ["Running", "Completed", "Failed"]:
 
@@ -124,10 +177,10 @@ class PrefectOpenLineageListener:
 								prefect_flow_run_id: str = event.resource.id.split(".")[-1]
 								flow_namespace: str = await self.get_flow_ns(prefect_flow_run_id)
 								flow_deployment_info: dict = await self.get_deployment_info(prefect_flow_run_id)
-								deployment_id = flow_deployment_info["id"]
-								deployment_created = flow_deployment_info["created"]
-								deployment_updated = flow_deployment_info["updated"]
-								deployment_name = flow_deployment_info["name"]
+								deployment_id: str = flow_deployment_info["id"]
+								deployment_created: str = flow_deployment_info["created"]
+								deployment_updated: str = flow_deployment_info["updated"]
+								deployment_name: str = flow_deployment_info["name"]
 								ol_flow_run_id: str = self.build_run_id(
 									start_time,
 									flow_name,
@@ -154,6 +207,7 @@ class PrefectOpenLineageListener:
 							event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
 							expected_start_time: datetime = event.payload["task_run"]["expected_start_time"]
 							prefect_task_run_id: str = event.resource.id.split(".")[-1]
+							print(prefect_task_run_id)
 							task_run = await self.client.read_task_run(prefect_task_run_id)
 							namespace: str = await self.get_job_ns(prefect_task_run_id)
 							ol_task_run_id: str = self.build_run_id(
@@ -162,18 +216,28 @@ class PrefectOpenLineageListener:
 								namespace
 							)
 
+							# Get datasets from Prefect artifacts
+							input_datasets = []
+							output_datasets = []
+							datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
+							print(datasets)
+							for dataset in datasets:
+								if dataset[2] == "input":
+									input_datasets.append(dataset)
+								else:
+									output_datasets.append(dataset)
+
 							# Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
 							parent_runs = []
 							try:
 								task_parents: List = event.payload["task_run"]["task_inputs"]["__parents__"]
 								for parent in task_parents:
 									task_run_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
-
 									if task_run_id:
 										parent_namespace: dict = await self.get_job_ns(task_run_id)
 										parent_run = await self.client.read_task_run(task_run_id)
 										parent_name: str = parent_run.name.split("-")[0]
-										parent_run_id = self.build_run_id(
+										parent_run_id: str = self.build_run_id(
 															parent_run.start_time,
 															parent_name, 
 															parent_namespace
@@ -190,14 +254,14 @@ class PrefectOpenLineageListener:
 							# Get flow run info for ParentRunFacet
 							for res in event.related:
 								if res["prefect.resource.role"] == "flow-run":
-									flow_run_id = res["prefect.resource.id"].split(".")[-1]
+									flow_run_id: str = res["prefect.resource.id"].split(".")[-1]
 									flow_and_deployment_info: str = await self.get_flow_and_deployment_info(flow_run_id)
 									flow_name: str = flow_and_deployment_info["name"]
 									deployment_info: dict = flow_and_deployment_info["deployment_info"]
-									deployment_id = deployment_info["id"]
-									deployment_created = deployment_info["created"]
-									deployment_updated = deployment_info["updated"]
-									deployment_name = deployment_info["name"]
+									deployment_id: str = deployment_info["id"]
+									deployment_created: str = deployment_info["created"]
+									deployment_updated: str = deployment_info["updated"]
+									deployment_name: str = deployment_info["name"]
 									flow_run = await self.client.read_flow_run(flow_run_id)
 									ol_flow_run_id: str = self.build_run_id(
 										flow_run.start_time,
@@ -219,7 +283,9 @@ class PrefectOpenLineageListener:
 								deploymentId=deployment_id,
 								deploymentCreated=deployment_created,
 								deploymentUpdated=deployment_updated,
-								deploymentName=deployment_name
+								deploymentName=deployment_name,
+								inputDatasets=input_datasets,
+								outputDatasets=output_datasets
 							)
 
 asyncio.run(PrefectOpenLineageListener().collect_and_process_task_runs())

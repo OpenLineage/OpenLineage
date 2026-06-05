@@ -9,10 +9,11 @@ import json
 import logging
 import os
 
-from facets.deploymentFacet import PrefectDeploymentRunFacet
+from facets import PrefectDeploymentRunFacet
 from openlineage.client import OpenLineageClient
 from openlineage.client.facet import BaseFacet, JobTypeJobFacet, ParentRunFacet, NominalTimeRunFacet
 from openlineage.client.facet_v2 import ( job_dependencies_run, processing_engine_run )
+from openlineage.client.event_v2 import ( Dataset )
 from openlineage.client.run import Job, Run, RunEvent, RunState
 
 PRODUCER: str = 'https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/prefect'
@@ -100,7 +101,9 @@ class PrefectOpenLineageAdapter:
         deploymentId: str = None,
         deploymentCreated: str = None,
         deploymentUpdated: str = None,
-        deploymentName: str = None
+        deploymentName: str = None,
+        inputDatasets: list = [],
+        outputDatasets: list = []
     ) -> RunEvent:
 
         match eventType:
@@ -110,7 +113,6 @@ class PrefectOpenLineageAdapter:
                 eventType: RunState = RunState.COMPLETE
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
-
         
         run_facets = {
             "nominalTime": NominalTimeRunFacet(
@@ -150,17 +152,40 @@ class PrefectOpenLineageAdapter:
             jobType="TASK"
         )}
 
-        run_event = RunEvent(
-            eventType=eventType,
-            eventTime=eventTime.isoformat(),
-            run=Run(runId, run_facets),
-            job=Job(
-                namespace,
-                taskName,
-                job_facets
-            ),
-            producer=PRODUCER
-        )
+        inputs = []
+        for dataset in inputDatasets:
+            inputs.append(Dataset(namespace=dataset[0], name=dataset[1]))
+
+        outputs = []
+        for dataset in outputDatasets:
+            outputs.append(Dataset(namespace=dataset[0], name=dataset[1]))
+
+        if eventType == RunState.COMPLETE:
+            run_event = RunEvent(
+                eventType=eventType,
+                eventTime=eventTime.isoformat(),
+                run=Run(runId, run_facets),
+                job=Job(
+                    namespace,
+                    taskName,
+                    job_facets
+                ),
+                producer=PRODUCER,
+                inputs=inputs,
+                outputs=outputs
+            )
+        else:
+            run_event = RunEvent(
+                eventType=eventType,
+                eventTime=eventTime.isoformat(),
+                run=Run(runId, run_facets),
+                job=Job(
+                    namespace,
+                    taskName,
+                    job_facets
+                ),
+                producer=PRODUCER
+            )
 
         try:
             self.client.emit(run_event)
