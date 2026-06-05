@@ -218,32 +218,16 @@ public final class OpenLineageClient implements AutoCloseable {
     }
 
     OpenLineage.JobFacets existing = job.getFacets();
-    OpenLineage.JobFacetsBuilder facetsBuilder = openLineage.newJobFacetsBuilder();
 
-    // Copy all existing named facets
-    if (existing != null) {
-      if (existing.getDocumentation() != null)
-        facetsBuilder.documentation(existing.getDocumentation());
-      if (existing.getSql() != null) facetsBuilder.sql(existing.getSql());
-      if (existing.getOwnership() != null) facetsBuilder.ownership(existing.getOwnership());
-      if (existing.getJobType() != null) facetsBuilder.jobType(existing.getJobType());
-      if (existing.getTags() != null) facetsBuilder.tags(existing.getTags());
-      if (existing.getSourceCodeLocation() != null)
-        facetsBuilder.sourceCodeLocation(existing.getSourceCodeLocation());
-      if (existing.getSourceCode() != null) facetsBuilder.sourceCode(existing.getSourceCode());
-      if (existing.getGcp_lineage() != null) facetsBuilder.gcp_lineage(existing.getGcp_lineage());
-      if (existing.getGcp_composer_job() != null)
-        facetsBuilder.gcp_composer_job(existing.getGcp_composer_job());
-      // Copy additional (unknown) facets
-      if (existing.getAdditionalProperties() != null) {
-        existing.getAdditionalProperties().forEach(facetsBuilder::put);
-      }
-    }
+    // Build enrichment facets as a map that will be merged on top of existing facets.
+    // mergeFacets handles all named and additional facets via JSON round-trip,
+    // so this does not need to be updated when new named facets are added to the spec.
+    Map<String, OpenLineage.JobFacet> enrichments = new java.util.LinkedHashMap<>();
 
     // Merge job tags from config (override existing tags by key)
     if (!configJobTags.isEmpty()) {
       OpenLineage.TagsJobFacet existingTags = (existing != null) ? existing.getTags() : null;
-      facetsBuilder.tags(mergeJobTagFacet(openLineage, existingTags, configJobTags));
+      enrichments.put("tags", mergeJobTagFacet(openLineage, existingTags, configJobTags));
     }
 
     // Add ownership from config only if not already set by the integration
@@ -253,14 +237,18 @@ public final class OpenLineageClient implements AutoCloseable {
           (type, name) ->
               ownersList.add(
                   openLineage.newOwnershipJobFacetOwnersBuilder().name(name).type(type).build()));
-      facetsBuilder.ownership(openLineage.newOwnershipJobFacetBuilder().owners(ownersList).build());
+      enrichments.put(
+          "ownership", openLineage.newOwnershipJobFacetBuilder().owners(ownersList).build());
     }
+
+    OpenLineage.JobFacets enrichedFacets =
+        OpenLineageClientUtils.mergeFacets(enrichments, existing, OpenLineage.JobFacets.class);
 
     return openLineage
         .newJobBuilder()
         .namespace(job.getNamespace())
         .name(job.getName())
-        .facets(facetsBuilder.build())
+        .facets(enrichedFacets)
         .build();
   }
 
@@ -275,42 +263,20 @@ public final class OpenLineageClient implements AutoCloseable {
     }
 
     OpenLineage.RunFacets existing = run.getFacets();
-    OpenLineage.RunFacetsBuilder facetsBuilder = openLineage.newRunFacetsBuilder();
 
-    // Copy all existing named facets
-    if (existing != null) {
-      if (existing.getNominalTime() != null) facetsBuilder.nominalTime(existing.getNominalTime());
-      if (existing.getParent() != null) facetsBuilder.parent(existing.getParent());
-      if (existing.getErrorMessage() != null)
-        facetsBuilder.errorMessage(existing.getErrorMessage());
-      if (existing.getProcessing_engine() != null)
-        facetsBuilder.processing_engine(existing.getProcessing_engine());
-      if (existing.getTags() != null) facetsBuilder.tags(existing.getTags());
-      if (existing.getExternalQuery() != null)
-        facetsBuilder.externalQuery(existing.getExternalQuery());
-      if (existing.getGcp_dataproc() != null)
-        facetsBuilder.gcp_dataproc(existing.getGcp_dataproc());
-      if (existing.getExtractionError() != null)
-        facetsBuilder.extractionError(existing.getExtractionError());
-      if (existing.getEnvironmentVariables() != null)
-        facetsBuilder.environmentVariables(existing.getEnvironmentVariables());
-      if (existing.getGcp_composer_run() != null)
-        facetsBuilder.gcp_composer_run(existing.getGcp_composer_run());
-      if (existing.getExecutionParameters() != null)
-        facetsBuilder.executionParameters(existing.getExecutionParameters());
-      if (existing.getJobDependencies() != null)
-        facetsBuilder.jobDependencies(existing.getJobDependencies());
-      // Copy additional (unknown) facets
-      if (existing.getAdditionalProperties() != null) {
-        existing.getAdditionalProperties().forEach(facetsBuilder::put);
-      }
-    }
+    // Build enrichment facets as a map that will be merged on top of existing facets.
+    // mergeFacets handles all named and additional facets via JSON round-trip,
+    // so this does not need to be updated when new named facets are added to the spec.
+    Map<String, OpenLineage.RunFacet> enrichments = new java.util.LinkedHashMap<>();
 
     // Merge run tags from config (override existing tags by key)
     OpenLineage.TagsRunFacet existingTags = (existing != null) ? existing.getTags() : null;
-    facetsBuilder.tags(mergeRunTagFacet(openLineage, existingTags, configRunTags));
+    enrichments.put("tags", mergeRunTagFacet(openLineage, existingTags, configRunTags));
 
-    return openLineage.newRunBuilder().runId(run.getRunId()).facets(facetsBuilder.build()).build();
+    OpenLineage.RunFacets enrichedFacets =
+        OpenLineageClientUtils.mergeFacets(enrichments, existing, OpenLineage.RunFacets.class);
+
+    return openLineage.newRunBuilder().runId(run.getRunId()).facets(enrichedFacets).build();
   }
 
   /** Returns job tags from config (source = CONFIG). */

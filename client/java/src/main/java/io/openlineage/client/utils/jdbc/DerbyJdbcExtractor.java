@@ -6,6 +6,7 @@
 package io.openlineage.client.utils.jdbc;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
@@ -37,10 +38,7 @@ public class DerbyJdbcExtractor implements JdbcExtractor {
             .orElse(System.getProperty("user.dir"));
 
     // databaseName could be a relative location. Normalize '/some/path/../abc' to '/some/abc'
-    // Convert to File first to handle platform-specific paths, then convert to URI for
-    // normalization
-    File derbyFile = new File(derbyHome, databaseName);
-    String derbyLocation = derbyFile.toURI().normalize().getPath();
+    String derbyLocation = new URI(derbyHome + File.separator + databaseName).normalize().getPath();
 
     return new JdbcLocation("file", Optional.empty(), Optional.of(derbyLocation), Optional.empty());
   }
