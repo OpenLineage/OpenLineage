@@ -12,13 +12,13 @@ from uuid import UUID
 
 from adapter import PrefectOpenLineageAdapter
 from openlineage.client.uuid import generate_static_uuid, generate_new_uuid
-from prefect.events.clients import get_events_subscriber
-from prefect.events.schemas.events import Event
 from prefect.client.orchestration import get_client
+from prefect.client.schemas.filters import ArtifactFilter, ArtifactFilterTaskRunId
+from prefect.events.clients import get_events_subscriber
 from prefect.events.filters import EventFilter, EventNameFilter
+from prefect.events.schemas.events import Event
 from prefect.runtime import task_run, flow_run
 from prefect.utilities.urls import url_for
-from prefect.client.schemas.filters import ArtifactFilter, ArtifactFilterTaskRunId
 
 JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "prefect_test")
 
@@ -61,11 +61,11 @@ class PrefectOpenLineageListener:
 				version = response.json()
 				return version
 		except TypeError:
-			logger.info("PREFECT_API_URL not found.")
+			logger.info("Cannot get Prefect version. PREFECT_API_URL not set.")
 
 	async def get_flow_ns(self, flow_run_id: str) -> str:
 		"""
-		Looks for OPENLINEAGE_NAMESPACE job env variable in flow's deployment.
+		Looks for OPENLINEAGE_NAMESPACE job env variable in deployment.
 		"""
 		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
 		deployment = await self.client.read_deployment(flow_run.deployment_id)
@@ -73,11 +73,12 @@ class PrefectOpenLineageListener:
 			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
 		except:
 			ns: str = JOB_NAMESPACE
+			logger.info("OPENLINEAGE_NAMESPACE deployment variable not found. Using JOB_NAMESPACE.")
 		return ns
 
 	async def get_job_ns(self, task_run_id: str) -> str:
 		"""
-		Looks for OPENLINEAGE_NAMESPACE job env variable in task's deployment.
+		Looks for OPENLINEAGE_NAMESPACE job env variable in parent deployment.
 		"""
 		task_run = await self.client.read_task_run(task_run_id) # TODO: type
 		return await self.get_flow_ns(task_run.flow_run_id)
@@ -114,7 +115,7 @@ class PrefectOpenLineageListener:
 						data_list = ast.literal_eval(artifact["data"])
 						uri = data_list[0]["database_uri"]
 						table = data_list[0]["table"]
-						dataset_info.append([uri, table, dataset_type])
+						dataset_info.append({"uri": uri, "table": table, "dataset_type": dataset_type})
 				return dataset_info
 			else:
 				logging.info("No datasets found for task run.")
@@ -190,14 +191,9 @@ class PrefectOpenLineageListener:
 		)
 
 		# Get datasets from Prefect Artifacts
-		input_datasets = []
-		output_datasets = []
 		datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
-		for dataset in datasets:
-			if dataset[2] == "input":
-				input_datasets.append(dataset)
-			else:
-				output_datasets.append(dataset)
+		input_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "input"]
+		output_datasets = [dataset for dataset in datasets if dataset["dataset_type"] != "input"]
 
 		# Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
 		parent_runs = []
@@ -246,6 +242,11 @@ class PrefectOpenLineageListener:
 		)
 
 	async def collect_and_process_runs(self) -> None:
+		try:
+			os.environ.get("PREFECT_API_URL")
+		except TypeError:
+			logger.warn("PREFECT_API_URL not set. Prefect events will not be emitted.")
+
 		filter_criteria = EventFilter(
 	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run.", "prefect.asset.materialization."])
 		)

@@ -49,21 +49,23 @@ class PrefectOpenLineageAdapter:
             case 'FAILED':
                 eventType: RunState = RunState.FAIL
 
-        run_facets = {"prefectDeployment": PrefectDeploymentRunFacet(
-            deployment_id=deploymentId,
-            created=deploymentCreated,
-            updated=deploymentUpdated,
-            name=deploymentName
+        run_facets = {
+            "prefectDeployment": PrefectDeploymentRunFacet(
+                deployment_id=deploymentId,
+                created=deploymentCreated,
+                updated=deploymentUpdated,
+                name=deploymentName
         ),
             "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                 version=prefectVersion,
                 name="Prefect"
         )}
 
-        job_facets = {"jobType": JobTypeJobFacet(
-            processingType="BATCH", 
-            integration="Prefect",
-            jobType="FLOW"
+        job_facets = {
+            "jobType": JobTypeJobFacet(
+                processingType="BATCH", 
+                integration="Prefect",
+                jobType="FLOW"
         )}
 
         run_event = RunEvent(
@@ -82,7 +84,7 @@ class PrefectOpenLineageAdapter:
             self.client.emit(run_event)
             logger.info('Emitted OpenLineage event successfully.')
         except Exception as e:
-            logger.exception('Could not emit OpenLineage event.')
+            logger.exception('OpenLineage event not sent.')
 
     def create_and_emit_task_event(
         self,
@@ -144,19 +146,15 @@ class PrefectOpenLineageAdapter:
                 job_dependencies_run.JobDependenciesRunFacet(upstream=upstream_jobs)
             )
 
-        job_facets = {"jobType": JobTypeJobFacet(
-            processingType="BATCH", 
-            integration="Prefect", 
-            jobType="TASK"
+        job_facets = {
+            "jobType": JobTypeJobFacet(
+                processingType="BATCH", 
+                integration="Prefect", 
+                jobType="TASK"
         )}
 
-        inputs = []
-        for dataset in inputDatasets:
-            inputs.append(Dataset(namespace=dataset[0], name=dataset[1]))
-
-        outputs = []
-        for dataset in outputDatasets:
-            outputs.append(Dataset(namespace=dataset[0], name=dataset[1]))
+        inputs = [Dataset(namespace=dataset["uri"], name=dataset["table"]) for dataset in inputDatasets]
+        outputs = [Dataset(namespace=dataset["uri"], name=dataset["table"]) for dataset in outputDatasets]
 
         run_event = RunEvent(
             eventType=eventType,
@@ -176,4 +174,4 @@ class PrefectOpenLineageAdapter:
             self.client.emit(run_event)
             logger.info('Emitted OpenLineage event successfully.')
         except Exception as e:
-            logger.exception('Could not emit OpenLineage event.')
+            logger.exception('OpenLineage event not sent.')
