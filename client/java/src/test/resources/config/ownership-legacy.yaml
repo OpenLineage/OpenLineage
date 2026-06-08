@@ -1,0 +1,5 @@
+transport:
+  type: console
+job:
+  owners:
+    team: LegacyTeam

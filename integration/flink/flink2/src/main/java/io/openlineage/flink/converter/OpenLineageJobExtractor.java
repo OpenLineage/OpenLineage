@@ -8,14 +8,9 @@ package io.openlineage.flink.converter;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
 import io.openlineage.client.OpenLineage.JobTypeJobFacetBuilder;
-import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
-import io.openlineage.client.job.JobConfig;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.streaming.api.lineage.LineageGraph;
 import org.apache.flink.streaming.api.lineage.SourceLineageVertex;
@@ -46,7 +41,6 @@ class OpenLineageJobExtractor {
       jobTypeJobFacetBuilder.processingType(extractProcessingType(graph));
     }
     facetsBuilder.jobType(jobTypeJobFacetBuilder.build());
-    buildOwnershipFacet(facetsBuilder);
 
     return context
         .getOpenLineage()
@@ -55,35 +49,6 @@ class OpenLineageJobExtractor {
         .name(context.getJobId().getJobName())
         .facets(facetsBuilder.build())
         .build();
-  }
-
-  private JobFacetsBuilder buildOwnershipFacet(JobFacetsBuilder builder) {
-    Optional.ofNullable(context.getConfig())
-        .map(FlinkOpenLineageConfig::getJobConfig)
-        .map(JobConfig::getOwners)
-        .map(JobConfig.JobOwnersConfig::getAdditionalProperties)
-        .filter(Objects::nonNull)
-        .ifPresent(
-            map -> {
-              List<OwnershipJobFacetOwners> ownersList = new ArrayList<>();
-              map.forEach(
-                  (type, name) ->
-                      ownersList.add(
-                          context
-                              .getOpenLineage()
-                              .newOwnershipJobFacetOwnersBuilder()
-                              .name(name)
-                              .type(type)
-                              .build()));
-              builder.ownership(
-                  context
-                      .getOpenLineage()
-                      .newOwnershipJobFacetBuilder()
-                      .owners(ownersList)
-                      .build());
-            });
-
-    return builder;
   }
 
   private String extractProcessingType(LineageGraph graph) {
