@@ -71,7 +71,7 @@ class PrefectOpenLineageListener:
 		deployment = await self.client.read_deployment(flow_run.deployment_id)
 		try:
 			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
-		except:
+		except KeyError:
 			ns: str = JOB_NAMESPACE
 			logger.info("OPENLINEAGE_NAMESPACE deployment variable not found. Using JOB_NAMESPACE.")
 		return ns
