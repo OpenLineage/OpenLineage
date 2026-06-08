@@ -71,7 +71,7 @@ class PrefectOpenLineageListener:
 		deployment = await self.client.read_deployment(flow_run.deployment_id)
 		try:
 			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
-		except:
+		except KeyError:
 			ns: str = JOB_NAMESPACE
 			logger.info(
 				"OPENLINEAGE_NAMESPACE deployment variable not found. Using OPENLINEAGE_NAMESPACE env variable."
@@ -218,9 +218,9 @@ class PrefectOpenLineageListener:
 				deployment_created: str = deployment_info["created"]
 				deployment_updated: str = deployment_info["updated"]
 				deployment_name: str = deployment_info["name"]
-				flow_run = await self.client.read_flow_run(flow_run_id)
+				flow_start_time = await self.get_flow_run_start_time(flow_run_id)
 				ol_flow_run_id: str = self.build_run_id(
-					flow_run.start_time,
+					flow_start_time,
 					flow_name,
 					namespace
 				)
@@ -249,6 +249,7 @@ class PrefectOpenLineageListener:
 			os.environ.get("PREFECT_API_URL")
 		except TypeError:
 			logger.warn("PREFECT_API_URL not set. Prefect events will not be emitted.")
+			return
 
 		filter_criteria = EventFilter(
 	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run.", "prefect.asset.materialization."])
