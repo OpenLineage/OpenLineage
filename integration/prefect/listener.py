@@ -215,9 +215,9 @@ class PrefectOpenLineageListener:
 				deployment_created: str = deployment_info["created"]
 				deployment_updated: str = deployment_info["updated"]
 				deployment_name: str = deployment_info["name"]
-				flow_run = await self.client.read_flow_run(flow_run_id)
+				flow_start_time = await self.get_flow_run_start_time(flow_run_id)
 				ol_flow_run_id: str = self.build_run_id(
-					flow_run.start_time,
+					flow_start_time,
 					flow_name,
 					namespace
 				)
