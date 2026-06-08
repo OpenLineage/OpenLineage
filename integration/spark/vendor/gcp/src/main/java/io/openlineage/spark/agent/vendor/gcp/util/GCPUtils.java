@@ -233,7 +233,7 @@ public class GCPUtils {
       return Optional.empty();
     }
     return Arrays.stream(yarnTag.split(","))
-        .filter(tag -> tag.contains(tagPrefix))
+        .filter(tag -> tag.startsWith(tagPrefix))
         .findFirst()
         .map(tag -> tag.substring(tagPrefix.length()));
   }
@@ -245,7 +245,7 @@ public class GCPUtils {
       return Optional.empty();
     }
     return Arrays.stream(yarnTag.split(","))
-        .filter(tag -> tag.contains(tagPrefix) && !tag.contains(excludePrefix))
+        .filter(tag -> tag.startsWith(tagPrefix) && !tag.startsWith(excludePrefix))
         .findFirst()
         .map(tag -> tag.substring(tagPrefix.length()));
   }
