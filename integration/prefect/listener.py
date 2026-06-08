@@ -20,7 +20,7 @@ from prefect.events.schemas.events import Event
 from prefect.runtime import task_run, flow_run
 from prefect.utilities.urls import url_for
 
-JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "prefect_test")
+JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "prefect_test") #TODO: make "default" for prod
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -73,7 +73,11 @@ class PrefectOpenLineageListener:
 			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
 		except:
 			ns: str = JOB_NAMESPACE
-			logger.info("OPENLINEAGE_NAMESPACE deployment variable not found. Using JOB_NAMESPACE.")
+			logger.info(
+				"OPENLINEAGE_NAMESPACE deployment variable not found. Using OPENLINEAGE_NAMESPACE env variable."
+			)
+			if JOB_NAMESPACE == "default":
+				logger.info("OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'")
 		return ns
 
 	async def get_job_ns(self, task_run_id: str) -> str:
@@ -121,25 +125,30 @@ class PrefectOpenLineageListener:
 				logging.info("No datasets found for task run.")
 				return []
 
-	async def get_parent_runs(self, task_parents: list) -> list:
-		parent_runs = []
-		for parent in task_parents:
-			task_run_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
-			if task_run_id:
-				parent_namespace: dict = await self.get_job_ns(task_run_id)
-				parent_run = await self.client.read_task_run(task_run_id)
-				parent_name: str = parent_run.name.split("-")[0]
-				parent_run_id: str = self.build_run_id(
-									parent_run.start_time,
-									parent_name, 
-									parent_namespace
-								)
-				parent_runs.append({
-								"name": parent_name, 
-								"namespace": parent_namespace, 
-								"id": parent_run_id
-							})
-		return parent_runs
+	async def get_parent_runs(self, payload: dict, prefect_task_run_id: str) -> list:
+		try:
+			parent_runs = []
+			task_parents: list = payload["task_run"]["task_inputs"]["__parents__"]
+			for parent in task_parents:
+				task_run_id: str | None = parent["id"] if parent["input_type"] == "task_run" else None
+				if task_run_id:
+					parent_namespace: dict = await self.get_job_ns(task_run_id)
+					parent_run = await self.client.read_task_run(task_run_id)
+					parent_name: str = parent_run.name.split("-")[0]
+					parent_run_id: str = self.build_run_id(
+										parent_run.start_time,
+										parent_name, 
+										parent_namespace
+									)
+					parent_runs.append({
+									"name": parent_name, 
+									"namespace": parent_namespace, 
+									"id": parent_run_id
+								})
+			return parent_runs
+		except KeyError:
+			logger.info("No task parents found for %s", prefect_task_run_id)
+			return []
 
 	async def collect_and_process_flow_runs(self, prefect_version: str, event: Event, event_state: str):
 		for res in event.related:
@@ -193,16 +202,10 @@ class PrefectOpenLineageListener:
 		# Get datasets from Prefect Artifacts
 		datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
 		input_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "input"]
-		output_datasets = [dataset for dataset in datasets if dataset["dataset_type"] != "input"]
+		output_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "output"]
 
 		# Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
-		parent_runs = []
-		try:
-			task_parents: list = event.payload["task_run"]["task_inputs"]["__parents__"]
-			parent_runs = await self.get_parent_runs(task_parents)
-		except KeyError:
-			logger.info("No task parents found for %s", prefect_task_run_id)
-			pass
+		parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
 
 		# Get flow run info for ParentRunFacet
 		for res in event.related:
