@@ -246,6 +246,7 @@ class PrefectOpenLineageListener:
 			os.environ.get("PREFECT_API_URL")
 		except TypeError:
 			logger.warn("PREFECT_API_URL not set. Prefect events will not be emitted.")
+			return
 
 		filter_criteria = EventFilter(
 	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run.", "prefect.asset.materialization."])
