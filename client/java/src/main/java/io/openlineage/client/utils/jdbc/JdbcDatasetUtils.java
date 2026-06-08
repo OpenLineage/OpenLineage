@@ -28,6 +28,7 @@ public class JdbcDatasetUtils {
     new TrinoJdbcExtractor(),
     new OceanBaseJdbcExtractor(),
     new ClickHouseJdbcExtractor(),
+    new CassandraJdbcExtractor(),
     new GenericJdbcExtractor()
   };
 
