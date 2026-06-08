@@ -28,6 +28,12 @@ class JdbcDatasetUtilsTestForClickHouse {
                 "jdbc:clickhouse://test-host.com:9000", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "clickhouse://test-host.com:9000")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:clickhouse://[2001:db8::1]:9000", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "clickhouse://[2001:db8::1]:9000")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
