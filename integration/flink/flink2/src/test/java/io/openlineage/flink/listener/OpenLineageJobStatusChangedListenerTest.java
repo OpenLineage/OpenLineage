@@ -7,7 +7,6 @@ package io.openlineage.flink.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -19,15 +18,10 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.flink.api.OpenLineageContext;
-import io.openlineage.flink.api.OpenLineageContextFactory;
-import io.openlineage.flink.client.EventEmitter;
-import io.openlineage.flink.config.FlinkConfigParser;
-import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -78,9 +72,7 @@ class OpenLineageJobStatusChangedListenerTest {
   @SneakyThrows
   void testOnEventForJobCreated() {
     listener = new OpenLineageJobStatusChangedListener(context, factory);
-    JobID jobId = new JobID(1, 2);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
-    when(createdEvent.jobId()).thenReturn(jobId);
     when(createdEvent.jobName()).thenReturn("event-job-name");
     listener.onEvent(createdEvent);
 
@@ -115,9 +107,7 @@ class OpenLineageJobStatusChangedListenerTest {
     when(context.getConfiguration()).thenReturn(configuration);
 
     listener = new OpenLineageJobStatusChangedListener(context, factory);
-    JobID jobId = new JobID(1, 2);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
-    when(createdEvent.jobId()).thenReturn(jobId);
     when(createdEvent.jobName()).thenReturn("event-job-name");
     listener.onEvent(createdEvent);
 
@@ -152,9 +142,7 @@ class OpenLineageJobStatusChangedListenerTest {
     when(context.getConfiguration()).thenReturn(configuration);
 
     listener = new OpenLineageJobStatusChangedListener(context, factory);
-    JobID jobId = new JobID(1, 2);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
-    when(createdEvent.jobId()).thenReturn(jobId);
     when(createdEvent.jobName()).thenReturn("event-job-name");
     listener.onEvent(createdEvent);
 
@@ -179,16 +167,18 @@ class OpenLineageJobStatusChangedListenerTest {
     listener = new OpenLineageJobStatusChangedListener(context, factory);
 
     // emit start event
-    JobID jobId = new JobID(1, 2);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
-    when(createdEvent.jobId()).thenReturn(jobId);
     when(createdEvent.jobName()).thenReturn("event-job-name");
     listener.onEvent(createdEvent);
 
     // emit complete event
     DefaultJobExecutionStatusEvent statusEvent =
         new DefaultJobExecutionStatusEvent(
-            jobId, "jobName", JobStatus.RUNNING, JobStatus.FINISHED, mock(Throwable.class));
+            new JobID(1, 2),
+            "jobName",
+            JobStatus.RUNNING,
+            JobStatus.FINISHED,
+            mock(Throwable.class));
     listener.onEvent(statusEvent);
 
     Path path = Path.of(eventFileLocation);
@@ -216,16 +206,14 @@ class OpenLineageJobStatusChangedListenerTest {
     listener = new OpenLineageJobStatusChangedListener(context, factory);
 
     // emit start event
-    JobID jobId = new JobID(1, 2);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
-    when(createdEvent.jobId()).thenReturn(jobId);
     when(createdEvent.jobName()).thenReturn("event-job-name");
     listener.onEvent(createdEvent);
 
     // emit fail event
     DefaultJobExecutionStatusEvent statusEvent =
         new DefaultJobExecutionStatusEvent(
-            jobId, "jobName", JobStatus.RUNNING, JobStatus.FAILED, mock(Throwable.class));
+            new JobID(1, 2), "jobName", JobStatus.RUNNING, JobStatus.FAILED, mock(Throwable.class));
     listener.onEvent(statusEvent);
 
     List<RunEvent> eventsEmitted =
@@ -239,99 +227,11 @@ class OpenLineageJobStatusChangedListenerTest {
   }
 
   @Test
-  @SneakyThrows
-  void testRuntimeStatusEventLoadsJobIdAndStartsTracking() {
-    OpenLineageContext openLineageContext =
-        OpenLineageContextFactory.fromConfig(FlinkConfigParser.parse(context.getConfiguration()))
-            .build();
-    OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
-    listener = new OpenLineageJobStatusChangedListener(openLineageContext, factory, tracker, false);
-    JobID jobId = new JobID(1, 2);
-
-    listener.onEvent(
-        new DefaultJobExecutionStatusEvent(
-            jobId, "runtime-job-name", JobStatus.CREATED, JobStatus.RUNNING, null));
-
-    assertThat(Files.exists(Path.of(eventFileLocation))).isFalse();
-    verify(tracker, times(1)).startTracking(any(OpenLineageContext.class), any());
-  }
-
-  @Test
-  @SneakyThrows
-  void testRuntimeTerminalEventLoadsJobIdAndEmitsWithDeterministicRunId() {
-    OpenLineageContext openLineageContext =
-        OpenLineageContextFactory.fromConfig(FlinkConfigParser.parse(context.getConfiguration()))
-            .build();
-    OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
-    listener = new OpenLineageJobStatusChangedListener(openLineageContext, factory, tracker, false);
-    JobID jobId = new JobID(1, 2);
-
-    listener.onEvent(
-        new DefaultJobExecutionStatusEvent(
-            jobId, "runtime-job-name", JobStatus.RUNNING, JobStatus.FAILED, null));
-
-    List<RunEvent> eventsEmitted =
-        Files.readAllLines(Path.of(eventFileLocation)).stream()
-            .map(OpenLineageClientUtils::runEventFromJson)
-            .collect(Collectors.toList());
-
-    assertThat(eventsEmitted).hasSize(1);
-    assertThat(eventsEmitted.get(0).getJob().getNamespace()).isEqualTo("flink-jobs");
-    assertThat(eventsEmitted.get(0).getJob().getName()).isEqualTo("runtime-job-name");
-    assertThat(eventsEmitted.get(0).getRun().getRunId()).isEqualTo(openLineageContext.getRunUuid());
-    assertThat(eventsEmitted.get(0).getEventType()).isEqualTo(EventType.FAIL);
-    verify(tracker, times(1)).stopTracking();
-  }
-
-  @Test
-  void testRuntimeInitializingEventDoesNotEmitDuplicateStart() {
-    OpenLineageContext openLineageContext =
-        OpenLineageContextFactory.fromConfig(FlinkConfigParser.parse(context.getConfiguration()))
-            .build();
-    OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
-    listener = new OpenLineageJobStatusChangedListener(openLineageContext, factory, tracker, false);
-
-    listener.onEvent(
-        new DefaultJobExecutionStatusEvent(
-            new JobID(1, 2), "runtime-job-name", JobStatus.CREATED, JobStatus.INITIALIZING, null));
-
-    assertThat(Files.exists(Path.of(eventFileLocation))).isFalse();
-    verify(tracker, times(0)).startTracking(any(OpenLineageContext.class), any());
-  }
-
-  @Test
-  void testDetachedJobCreatedEventUsesBoundedEmit() {
-    EventEmitter eventEmitter = mock(EventEmitter.class);
-    Configuration configuration =
-        Configuration.fromMap(
-            Map.of(
-                "openlineage.transport.type",
-                "file",
-                "openlineage.transport.location",
-                eventFileLocation,
-                "openlineage.detachedStartEventEmitTimeoutInSeconds",
-                "7"));
-    OpenLineageContext openLineageContext =
-        OpenLineageContextFactory.fromConfig(FlinkConfigParser.parse(configuration))
-            .eventEmitter(eventEmitter)
-            .build();
-    listener = new OpenLineageJobStatusChangedListener(openLineageContext, factory, null, true);
-    JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
-    when(createdEvent.jobId()).thenReturn(new JobID(1, 2));
-    when(createdEvent.jobName()).thenReturn("event-job-name");
-
-    listener.onEvent(createdEvent);
-
-    verify(eventEmitter, times(1)).emit(any(RunEvent.class), eq(Duration.ofSeconds(7)));
-    verify(eventEmitter, times(0)).emit(any(RunEvent.class));
-  }
-
-  @Test
   void testCircuitBreaker() {
     OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
     CircuitBreaker circuitBreaker = mock(CircuitBreaker.class);
     when(openLineageContext.getCircuitBreaker()).thenReturn(circuitBreaker);
-    listener = new OpenLineageJobStatusChangedListener(openLineageContext, factory, null, false);
+    listener = new OpenLineageJobStatusChangedListener(openLineageContext, factory);
     listener.onEvent(mock(JobCreatedEvent.class));
     verify(circuitBreaker, times(1)).run(any(Callable.class));
   }

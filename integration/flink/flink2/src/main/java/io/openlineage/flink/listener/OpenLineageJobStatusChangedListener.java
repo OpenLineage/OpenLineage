@@ -24,11 +24,10 @@ import io.openlineage.flink.util.JobStatusUtil;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.api.common.JobStatus;
-import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.core.execution.DefaultJobExecutionStatusEvent;
 import org.apache.flink.core.execution.JobStatusChangedEvent;
@@ -43,12 +42,9 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
   public static final String FLINK_JOB_FACET_KEY = "flink_job";
   private final OpenLineageContext context;
   private final LineageGraphConverter graphConverter;
-  private final boolean isDetachedSubmission;
   private OpenLineageContinousJobTracker tracker;
-  private boolean jobTrackingStarted = false;
 
   public OpenLineageJobStatusChangedListener(Context context, Flink2VisitorFactory visitorFactory) {
-    this.isDetachedSubmission = !context.getConfiguration().get(DeploymentOptions.ATTACHED);
     this.context =
         OpenLineageContextFactory.fromConfig(FlinkConfigParser.parse(context.getConfiguration()))
             .build();
@@ -70,13 +66,8 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
 
   @VisibleForTesting
   OpenLineageJobStatusChangedListener(
-      OpenLineageContext context,
-      Flink2VisitorFactory visitorFactory,
-      OpenLineageContinousJobTracker tracker,
-      boolean isDetachedSubmission) {
+      OpenLineageContext context, Flink2VisitorFactory visitorFactory) {
     this.context = context;
-    this.tracker = tracker;
-    this.isDetachedSubmission = isDetachedSubmission;
     graphConverter = new LineageGraphConverter(this.context, visitorFactory);
   }
 
@@ -103,16 +94,11 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
   private void onJobCreatedEvent(JobCreatedEvent event) {
     loadJobId(event);
     try {
-      RunEvent startEvent = graphConverter.convert(event.lineageGraph(), EventType.START);
-      // Only used when job is submitted in --detached mode
-      if (isDetachedSubmission) {
-        context.getEventEmitter().emit(startEvent, getDetachedStartEventEmitTimeout());
-      } else {
-        context.getEventEmitter().emit(startEvent);
-      }
+      context.getEventEmitter().emit(graphConverter.convert(event.lineageGraph(), EventType.START));
     } catch (Exception e) {
       log.error("Triggering event caused an exception", e);
     }
+    tracker.startTracking(context, this::onJobCheckpoint);
   }
 
   private void onJobCheckpoint(CheckpointFacet checkpointFacet) {
@@ -142,22 +128,10 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
   }
 
   private void onDefaultJobExecutionStatusEvent(DefaultJobExecutionStatusEvent event) {
-    if (!hasFlinkJobId()) {
-      loadJobId(event);
-    }
-
-    if (!hasFlinkJobId()) {
+    if (context.getJobId() == null) {
+      // If jobId wasn't recorded, then there was no START event emitted.
+      // This means that current event is CANCELLED, so we should not emit anything.
       log.warn("JobId is not set, skipping event: {}", event);
-      return;
-    }
-
-    if (event.newStatus() == JobStatus.RUNNING) {
-      startTrackingIfNeeded();
-      return;
-    }
-
-    if (!event.newStatus().isGloballyTerminalState()) {
-      log.debug("Skipping non-terminal status event: {}", event);
       return;
     }
 
@@ -179,26 +153,9 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
             .build();
 
     context.getEventEmitter().emit(runEvent);
-
-    if (event.newStatus().isGloballyTerminalState() && tracker != null) {
+    if (List.of(EventType.COMPLETE, EventType.START).contains(runEvent.getEventType())) {
       tracker.stopTracking();
-      jobTrackingStarted = false;
     }
-  }
-
-  private boolean hasFlinkJobId() {
-    return context.getJobId() != null && context.getJobId().getFlinkJobId() != null;
-  }
-
-  private void startTrackingIfNeeded() {
-    if (!jobTrackingStarted && tracker != null) {
-      tracker.startTracking(context, this::onJobCheckpoint);
-      jobTrackingStarted = true;
-    }
-  }
-
-  private Duration getDetachedStartEventEmitTimeout() {
-    return Duration.ofSeconds(context.getConfig().getDetachedStartEventEmitTimeoutInSeconds());
   }
 
   private RunEventBuilder commonEventBuilder() {
@@ -234,12 +191,12 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
     return new FlinkJobDetailsFacet(flinkJobId);
   }
 
-  private void loadJobId(JobStatusChangedEvent event) {
+  private void loadJobId(JobCreatedEvent createdEvent) {
     String jobName =
         Optional.ofNullable(context.getConfig())
             .map(FlinkOpenLineageConfig::getJobConfig)
             .map(j -> j.getName())
-            .orElse(event.jobName());
+            .orElse(createdEvent.jobName());
 
     String jobNamespace =
         Optional.ofNullable(context.getConfig())
@@ -251,12 +208,9 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
         JobIdentifier.builder()
             .jobName(jobName)
             .jobNamespace(jobNamespace)
-            .flinkJobId(event.jobId())
+            .flinkJobId(createdEvent.jobId())
             .build();
     log.info("JobIdentifier with jobId: {}", jobId.getFlinkJobId());
     context.setJobId(jobId);
-    if (event.jobId() != null) {
-      context.setRunUuidFromFlinkJobId(event.jobId());
-    }
   }
 }
