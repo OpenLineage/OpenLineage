@@ -54,12 +54,11 @@ class PrefectOpenLineageListener:
 			"name": deployment.name
 		}
 
-	async def get_prefect_version(self) -> str | None:
+	async def get_prefect_version(self, client) -> str | None:
 		try:
-			async with get_client()._client as c:
-				response = await c.get("/admin/version")
-				version = response.json()
-				return version
+			response = await client._client.get("/admin/version")
+			version = response.json()
+			return version
 		except TypeError:
 			logger.info("Cannot get Prefect version. PREFECT_API_URL not set.")
 
@@ -100,7 +99,7 @@ class PrefectOpenLineageListener:
 		flow_run_start_time = flow_run.start_time
 		return flow_run_start_time
 
-	async def get_artifacts_by_task_run(self, run_id: str) -> list:
+	async def get_artifacts_by_task_run(self, run_id: str, client) -> list:
 		payload = {
 			"artifacts": {
 				"task_run_id": {
@@ -108,22 +107,21 @@ class PrefectOpenLineageListener:
 				}
 			}
 		}
-		async with get_client()._client as c:
-			response = await c.post("/artifacts/filter", json=payload)
-			if response.status_code == 200:
-				dataset_info = []
-				artifacts = response.json()
-				for artifact in artifacts:
-					if "ol-dataset" in artifact["description"]:
-						dataset_type = artifact["description"].split("_")[-1]
-						data_list = ast.literal_eval(artifact["data"])
-						uri = data_list[0]["database_uri"]
-						table = data_list[0]["table"]
-						dataset_info.append({"uri": uri, "table": table, "dataset_type": dataset_type})
-				return dataset_info
-			else:
-				logging.info("No datasets found for task run.")
-				return []
+		response = await client._client.post("/artifacts/filter", json=payload)
+		if response.status_code == 200:
+			dataset_info = []
+			artifacts = response.json()
+			for artifact in artifacts:
+				if "ol-dataset" in artifact["description"]:
+					dataset_type = artifact["description"].split("_")[-1]
+					data_list = ast.literal_eval(artifact["data"])
+					uri = data_list[0]["database_uri"]
+					table = data_list[0]["table"]
+					dataset_info.append({"uri": uri, "table": table, "dataset_type": dataset_type})
+			return dataset_info
+		else:
+			logging.info("No datasets found for task run.")
+			return []
 
 	async def get_parent_runs(self, payload: dict, prefect_task_run_id: str) -> list:
 		try:
@@ -185,7 +183,7 @@ class PrefectOpenLineageListener:
 					deploymentName=deployment_name
 				)
 
-	async def collect_and_process_task_runs(self, prefect_version: str, event: Event, event_state: str):
+	async def collect_and_process_task_runs(self, prefect_version: str, event: Event, event_state: str, client: client):
 		task_name: str = event.resource.name.split("-")[0]
 		task_run_name: str = event.resource.name
 		event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
@@ -200,7 +198,7 @@ class PrefectOpenLineageListener:
 		)
 
 		# Get datasets from Prefect Artifacts
-		datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
+		datasets = await self.get_artifacts_by_task_run(prefect_task_run_id, client)
 		input_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "input"]
 		output_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "output"]
 
@@ -254,10 +252,11 @@ class PrefectOpenLineageListener:
 		filter_criteria = EventFilter(
 	    	event = EventNameFilter(prefix=["prefect.task-run.", "prefect.flow-run.", "prefect.asset.materialization."])
 		)
-		prefect_version: str = await self.get_prefect_version()
 
 		async with get_events_subscriber(filter=filter_criteria) as subscriber:
 			async with self.client:
+				prefect_version: str = await self.get_prefect_version(self.client)
+
 				async for event in subscriber:
 					entity_type: str = event.event.split(".")[1]
 					prefect_state: str = event.event.split(".")[-1]
@@ -276,6 +275,6 @@ class PrefectOpenLineageListener:
 							await self.collect_and_process_flow_runs(prefect_version, event, event_state)
 
 						if entity_type == "task-run":
-							await self.collect_and_process_task_runs(prefect_version, event, event_state)
+							await self.collect_and_process_task_runs(prefect_version, event, event_state, self.client)
 
 asyncio.run(PrefectOpenLineageListener().collect_and_process_runs())
