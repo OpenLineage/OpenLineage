@@ -617,8 +617,7 @@ class OpenLineageClient:
 
         if not isinstance(event, event_v2.RunEvent):
             return event
-        if event.inputs:
-            event.inputs[:] = self._dataset_reducer.reduce_inputs(event.inputs)
-        if event.outputs:
-            event.outputs[:] = self._dataset_reducer.reduce_outputs(event.outputs)
-        return event
+
+        new_inputs = self._dataset_reducer.reduce_inputs(event.inputs) if event.inputs else event.inputs
+        new_outputs = self._dataset_reducer.reduce_outputs(event.outputs) if event.outputs else event.outputs
+        return attr.evolve(event, inputs=new_inputs, outputs=new_outputs)
