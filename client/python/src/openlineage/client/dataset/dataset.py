@@ -121,12 +121,21 @@ class ReducedDataset:
         return self.dataset.name == other_dataset.name
 
     def _facets_match(self, other_dataset: Dataset) -> bool:
-        if self.dataset.facets != other_dataset.facets:
+        facets = self.dataset.facets or {}
+        other_facets = other_dataset.facets or {}
+        if facets != other_facets:
             return False
-        if getattr(self.dataset, "inputFacets", None) != getattr(other_dataset, "inputFacets", None):
+
+        input_facets = getattr(self.dataset, "inputFacets", None) or {}
+        other_input_facets = getattr(other_dataset, "inputFacets", None) or {}
+        if input_facets != other_input_facets:
             return False
-        if getattr(self.dataset, "outputFacets", None) != getattr(other_dataset, "outputFacets", None):
+
+        output_facets = getattr(self.dataset, "outputFacets", None) or {}
+        other_output_facets = getattr(other_dataset, "outputFacets", None) or {}
+        if output_facets != other_output_facets:
             return False
+
         return True
 
 
