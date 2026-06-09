@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -61,7 +62,7 @@ class GoogleCloudPlatformUtilsTest {
     conf.set(METASTORE_CLASS_KEY, VALID_METASTORE_CLASS_VALUE);
     try (MockedStatic<HiveConf.ConfVars> confVars = mockStatic(HiveConf.ConfVars.class)) {
       confVars.when(() -> HiveConf.ConfVars.valueOf(METASTORE_HIVE_CONF_STRING)).thenReturn(null);
-      assert (GoogleCloudPlatformUtils.isBigLakeHiveCatalog(conf));
+      assertTrue(GoogleCloudPlatformUtils.isBigLakeHiveCatalog(conf));
     }
   }
 }

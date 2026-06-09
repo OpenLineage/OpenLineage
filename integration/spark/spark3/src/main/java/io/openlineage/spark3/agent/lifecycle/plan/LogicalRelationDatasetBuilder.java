@@ -22,7 +22,6 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.connector.catalog.CatalogManager;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
-import org.apache.spark.sql.execution.datasources.v2.V2SessionCatalog;
 import scala.Option;
 
 /**
@@ -75,7 +74,6 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
     CatalogManager catalogManager = context.getSparkSession().get().sessionState().catalogManager();
     Optional.of(catalogManager.catalog(catalogName))
-        .filter(catalogPlugin -> !(catalogPlugin instanceof V2SessionCatalog))
         .filter(catalogPlugin -> catalogPlugin instanceof TableCatalog)
         .map(TableCatalog.class::cast)
         .ifPresent(

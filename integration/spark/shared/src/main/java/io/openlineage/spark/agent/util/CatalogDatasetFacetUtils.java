@@ -86,15 +86,14 @@ public class CatalogDatasetFacetUtils {
   }
 
   public static boolean isHiveCatalog(SparkSession session, TableIdentifier identifier) {
-    return "hive"
-            .equals(session.sparkContext().getConf().get("spark.sql.catalogImplementation", ""))
+    return isHiveSupportEnabled(session.sparkContext())
         && getCatalogPlugin(session, identifier)
-            .map(catalogPlugin -> isHiveCatalog(session.sparkContext(), catalogPlugin))
+            .map(CatalogDatasetFacetUtils::isHiveCatalog)
             .orElse(false);
   }
 
   @SuppressWarnings("PMD")
-  private static boolean isHiveCatalog(SparkContext context, CatalogPlugin catalogPlugin) {
+  public static boolean isHiveCatalog(CatalogPlugin catalogPlugin) {
     if (catalogPlugin instanceof V2SessionCatalog) {
       V2SessionCatalog v2Catalog = ((V2SessionCatalog) catalogPlugin);
       Field catalog = FieldUtils.getField(V2SessionCatalog.class, "catalog", true);
@@ -122,5 +121,9 @@ public class CatalogDatasetFacetUtils {
       //            log.debug("No catalog name, cannot add catalog/storage facets");
       return Optional.empty();
     }
+  }
+
+  public static boolean isHiveSupportEnabled(SparkContext sc) {
+    return "hive".equals(sc.getConf().get("spark.sql.catalogImplementation", ""));
   }
 }
