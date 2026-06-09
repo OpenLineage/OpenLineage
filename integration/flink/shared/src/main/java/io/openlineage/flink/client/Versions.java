@@ -27,7 +27,7 @@ public class Versions {
       InputStream is = Versions.class.getResourceAsStream("version.properties");
       properties.load(is);
       return properties.getProperty("version");
-    } catch (IOException exception) {
+    } catch (Exception exception) {
       return "main";
     }
   }

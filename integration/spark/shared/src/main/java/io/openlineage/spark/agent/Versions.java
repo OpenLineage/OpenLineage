@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Properties;
@@ -27,7 +26,7 @@ public class Versions {
       InputStream is = Versions.class.getResourceAsStream("version.properties");
       properties.load(is);
       return properties.getProperty("version");
-    } catch (IOException exception) {
+    } catch (Exception exception) {
       return "main";
     }
   }

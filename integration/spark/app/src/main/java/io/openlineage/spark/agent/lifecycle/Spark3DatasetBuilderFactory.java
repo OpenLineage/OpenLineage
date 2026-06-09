@@ -35,6 +35,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuild
 import io.openlineage.spark3.agent.lifecycle.plan.column.JdbcColumnLineageVisitor;
 //import io.openlineage.spark31.agent.lifecycle.plan.AlterTableDatasetBuilder;
 //import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
+//import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoIceberg013ColumnLineageVisitor;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoCommandEdgeColumnLineageBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoDelta24ColumnLineageVisitor;
@@ -103,11 +104,13 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
       builder.add(new MergeIntoCommandEdgeColumnLineageBuilder(context));
     }
 
-    /*if (MergeIntoDelta11ColumnLineageVisitor.hasClasses()) {
+    /*
+    TODO: we dont need spark 3+, only 4+
+    if (MergeIntoDelta11ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoDelta11ColumnLineageVisitor(context));
-    }*/
+    }
 
-    /*if (MergeIntoIceberg13ColumnLineageVisitor.hasClasses()) {
+    if (MergeIntoIceberg13ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoIceberg13ColumnLineageVisitor(context));
     }*/
 

@@ -21,7 +21,7 @@ import io.openlineage.spark.shade.extension.v1.OutputDatasetWithDelegate;
 import io.openlineage.spark.shade.extension.v1.OutputDatasetWithFacets;
 import io.openlineage.spark.shade.extension.v1.OutputDatasetWithIdentifier;
 import io.openlineage.spark.shade.extension.v1.OutputLineageNode;
-import java.io.IOException;
+
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Collections;
@@ -194,10 +194,10 @@ public final class SparkOpenLineageExtensionVisitor {
     public static String getVersion() {
       try {
         Properties properties = new Properties();
-        InputStream is = Versions.class.getResourceAsStream("version.properties");
+        InputStream is = Versions.class.getResourceAsStream("io/openlineage/spark/agent/version.properties");
         properties.load(is);
         return properties.getProperty("version");
-      } catch (IOException exception) {
+      } catch (Exception exception) {
         return "main";
       }
     }

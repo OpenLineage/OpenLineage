@@ -25,31 +25,43 @@ public class EventFilterUtils {
    * has to be sent.
    */
   public static boolean isDisabled(OpenLineageContext context, SparkListenerEvent event) {
-    return Stream.of(
-            new DeltaEventFilter(context),
-            new DatabricksEventFilter(context),
-            new SparkNodesFilter(context),
-            new CreateViewFilter(context),
-            new BigQueryIntermediateJobFilter(context),
-            new AdaptivePlanEventFilter(context))
-        .anyMatch(
-            filter -> {
-              boolean isDisabled = filter.isDisabled(event.getClass().cast(event));
-              if (isDisabled) {
-                String logicalPlanNode =
-                    getLogicalPlan(context)
-                        .map(plan -> plan.getClass().getCanonicalName())
-                        .orElse("UnparsableLogicalPlan");
-                if (log.isDebugEnabled()) {
-                  log.debug(
-                      "Rejecting event : {} with plan : {} due to filter : {}",
-                      event.toString(),
-                      logicalPlanNode,
-                      filter.getClass().getCanonicalName());
-                }
-              }
-              return isDisabled;
-            });
+
+    boolean isEventFilterEnabled = SparkSessionUtils.activeSession()
+        .map(SparkSession::sparkContext)
+        .map(SparkContext::conf)
+        .map(conf -> conf.getBoolean("spark.openlineage.eventfilter.enabled", true))
+        .orElse(true);
+
+    if (isEventFilterEnabled) {
+        return Stream.of(
+                        new DeltaEventFilter(context),
+                        new DatabricksEventFilter(context),
+                        new SparkNodesFilter(context),
+                        new CreateViewFilter(context),
+                        new BigQueryIntermediateJobFilter(context),
+                        new AdaptivePlanEventFilter(context))
+                .anyMatch(
+                        filter -> {
+                            boolean isDisabled = filter.isDisabled(event.getClass().cast(event));
+                            if (isDisabled) {
+                                String logicalPlanNode =
+                                        getLogicalPlan(context)
+                                                .map(plan -> plan.getClass().getCanonicalName())
+                                                .orElse("UnparsableLogicalPlan");
+                                if (log.isDebugEnabled()) {
+                                    log.debug(
+                                            "Rejecting event : {} with plan : {} due to filter : {}",
+                                            event.toString(),
+                                            logicalPlanNode,
+                                            filter.getClass().getCanonicalName());
+                                }
+                            }
+                            return isDisabled;
+                        });
+    } else {
+        // Accept all events
+        return false;
+    }
   }
 
   static Optional<LogicalPlan> getLogicalPlan(OpenLineageContext context) {

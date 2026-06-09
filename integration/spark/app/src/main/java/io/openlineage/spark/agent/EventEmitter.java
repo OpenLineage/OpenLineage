@@ -9,20 +9,19 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.transports.ProxyTransportWrapper;
 import io.openlineage.client.transports.TransportFactory;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.api.DebugConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.net.URISyntaxException;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class EventEmitter {
@@ -69,9 +68,18 @@ public class EventEmitter {
         .filter(DebugConfig::isSmartEnabled)
         .ifPresent(e -> disabledFacets.remove("debug"));
 
+    var useProxy = Objects.equals(config.getUseProxy(), "true") ||
+            Objects.equals(config.getUseProxy(), "yes");
+
+    var transport = new TransportFactory(config.getTransportConfig()).build();
+
+    if (useProxy) {
+      transport = new ProxyTransportWrapper(config, transport);
+    }
+
     this.client =
         OpenLineageClient.builder()
-            .transport(new TransportFactory(config.getTransportConfig()).build())
+            .transport(transport)
             .disableFacets(disabledFacets.toArray(new String[0]))
             .build();
     this.applicationJobName = this.overriddenAppName.orElse(applicationJobName);

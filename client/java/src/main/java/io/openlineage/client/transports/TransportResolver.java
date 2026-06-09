@@ -23,6 +23,7 @@ public class TransportResolver {
   @SuppressWarnings("PMD.DoubleBraceInitialization")
   private static final Collection<TransportBuilder> COMMON_BUILDERS =
       Arrays.asList(
+          new ProxyTransportBuilder(),
           new HttpTransportBuilder(),
           new CompositeTransportBuilder(),
           new FileTransportBuilder(),

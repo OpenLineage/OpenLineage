@@ -14,6 +14,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2Relation;
+import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2ScanRelation;
 
 @Slf4j
 public class StreamingDataSourceV2RelationVisitor
@@ -35,7 +36,7 @@ public class StreamingDataSourceV2RelationVisitor
         "Applying {} to a logical plan with type {}",
         this.getClass().getSimpleName(),
         x.getClass().getCanonicalName());
-    final StreamingDataSourceV2Relation relation = (StreamingDataSourceV2Relation) x;
+    final StreamingDataSourceV2ScanRelation relation = (StreamingDataSourceV2ScanRelation) x;
     final StreamStrategy streamStrategy = selectStrategy(relation);
     return streamStrategy.getInputDatasets();
   }
@@ -53,7 +54,7 @@ public class StreamingDataSourceV2RelationVisitor
     return result;
   }
 
-  public StreamStrategy selectStrategy(StreamingDataSourceV2Relation relation) {
+  public StreamStrategy selectStrategy(StreamingDataSourceV2ScanRelation relation) {
     StreamStrategy streamStrategy;
     Class<?> streamClass = relation.stream().getClass();
     String streamClassName = streamClass.getCanonicalName();
@@ -64,10 +65,11 @@ public class StreamingDataSourceV2RelationVisitor
               relation.schema(),
               relation.stream(),
               ScalaConversionUtils.asJavaOptional(relation.startOffset()));
-    } else if (KINESIS_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
-      streamStrategy = new KinesisMicroBatchStreamStrategy(inputDataset(), relation);
-    } else if (MONGO_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
-      streamStrategy = new MongoMicroBatchStreamStrategy(inputDataset(), relation);
+// TODO: we are not really using them
+//    } else if (KINESIS_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
+//      streamStrategy = new KinesisMicroBatchStreamStrategy(inputDataset(), relation);
+//    } else if (MONGO_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
+//      streamStrategy = new MongoMicroBatchStreamStrategy(inputDataset(), relation);
     } else {
       log.warn(
           "The {} has been selected because no rules have matched for the stream class of {}",

@@ -14,12 +14,13 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2Relation;
+import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2ScanRelation;
 
 public class KinesisMicroBatchStreamStrategy extends StreamStrategy {
 
   public KinesisMicroBatchStreamStrategy(
       DatasetFactory<OpenLineage.InputDataset> inputDatasetDatasetFactory,
-      StreamingDataSourceV2Relation relation) {
+      StreamingDataSourceV2ScanRelation relation) {
     super(inputDatasetDatasetFactory, relation.schema(), relation.stream(), Optional.empty());
 
     new HostListNamespaceResolverConfig();

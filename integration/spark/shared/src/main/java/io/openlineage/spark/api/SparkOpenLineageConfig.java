@@ -46,6 +46,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private String overriddenAppName;
   private String overriddenApplicationRunId;
   private String testExtensionProvider;
+
+  private String useProxy;
+
   private JobNameConfig jobName;
 
   @JsonProperty("vendors")
@@ -74,6 +77,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String overriddenAppName,
       String overriddenApplicationRunId,
       String testExtensionProvider,
+      String useProxy,
       JobNameConfig jobName,
       JobConfig job,
       TransportConfig transportConfig,
@@ -100,6 +104,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.columnLineageConfig = columnLineageConfig;
     this.vendors = vendors;
     this.filterConfig = filterConfig;
+    this.useProxy = useProxy;
   }
 
   @Override
@@ -184,6 +189,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
         mergePropertyWith(overriddenApplicationRunId, other.overriddenApplicationRunId),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
+        mergePropertyWith(useProxy, other.useProxy),
         mergePropertyWith(jobName, other.jobName),
         mergePropertyWith(jobConfig, other.jobConfig),
         mergePropertyWith(transportConfig, other.transportConfig),

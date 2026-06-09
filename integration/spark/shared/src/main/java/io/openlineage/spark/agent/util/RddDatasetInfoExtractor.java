@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.spark.package$;
+import org.apache.spark.paths.SparkPath;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.MapPartitionsRDD;
 import org.apache.spark.rdd.NewHadoopRDD;
@@ -293,7 +294,10 @@ public class RddDatasetInfoExtractor {
         inputPartitions =
             Arrays.stream(rdd.getPartitions())
                 .filter(p -> p instanceof DataSourceRDDPartition)
-                .map(p -> ((DataSourceRDDPartition) p).inputPartition())
+                .map(p -> tryExecuteMethod(p, "inputPartition").orElse(null))
+                .filter(Objects::nonNull)
+                .filter(ip -> ip instanceof InputPartition)
+                .map(ip -> (InputPartition) ip)
                 .collect(Collectors.toList());
       }
       return inputPartitions;
@@ -343,9 +347,16 @@ public class RddDatasetInfoExtractor {
     }
   }
 
-  private static Path parentOf(String path) {
+  //TODO: candidate for moving back to spark codebase from shared, SparkPath introduced in 3.4.0. We should be safe
+  private static Path parentOf(Object path) {
     try {
-      return new Path(path).getParent();
+      if (path instanceof String) {
+        return new Path((String) path).getParent();
+      } else if (path instanceof SparkPath) {
+        return new Path(((SparkPath) path).toString()).getParent();
+      } else {
+        throw new RuntimeException("not recognized path type: " + path.getClass().getCanonicalName());
+      }
     } catch (Exception e) {
       if (log.isDebugEnabled()) {
         log.debug("Cannot get parent of path {}", path, e);
