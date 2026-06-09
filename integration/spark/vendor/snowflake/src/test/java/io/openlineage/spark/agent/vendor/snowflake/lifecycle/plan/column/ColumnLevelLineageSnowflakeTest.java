@@ -117,6 +117,61 @@ class ColumnLevelLineageSnowflakeTest {
   }
 
   @Test
+  void testSnowflakeColumnLineageWithDbtableLowerCase() {
+    // Glue ETL scenario: dbtable and schema fields are lowercase, no quotes
+    StructType lowerCaseSchema =
+        new StructType(
+            new StructField[] {
+              new StructField("colorid", IntegerType$.MODULE$, false, Metadata.empty()),
+              new StructField("colorname", StringType$.MODULE$, false, Metadata.empty())
+            });
+    when(snowflakeRelation.schema()).thenReturn(lowerCaseSchema);
+
+    givenALogicalRelationWith(
+        aSnowflakeRelation("dbtable", "colors"),
+        anAttribute("colorid", 21L),
+        anAttribute("colorname", 22L));
+
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        buildFacetFor(anOutputSchemaWith(aField("colorid"), aField("colorname")));
+
+    assertFieldsPresent(facet, "colorid", "colorname");
+    assertFieldDependsOn(facet, "colorid", "snowflake_db.snowflake_schema.colors.colorid");
+    assertFieldDependsOn(facet, "colorname", "snowflake_db.snowflake_schema.colors.colorname");
+
+    when(snowflakeRelation.schema()).thenReturn(snowflakeSchema);
+  }
+
+  @Test
+  void testSnowflakeColumnLineageWithDbtableQuotedAttributes() {
+    // Quoted attributes vs unquoted schema — tests both addOutput and getDescendantId fix points
+    StructType unquotedSchema =
+        new StructType(
+            new StructField[] {
+              new StructField("colorid", IntegerType$.MODULE$, false, Metadata.empty()),
+              new StructField("colorname", StringType$.MODULE$, false, Metadata.empty())
+            });
+    when(snowflakeRelation.schema()).thenReturn(unquotedSchema);
+
+    givenALogicalRelationWith(
+        aSnowflakeRelation("dbtable", "\"colors\""),
+        anAttribute("\"colorid\"", 21L),
+        anAttribute("\"colorname\"", 22L));
+
+    // Output schema has UNQUOTED field names (matches production behavior)
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        anOutputSchemaWith(aField("colorid"), aField("colorname"));
+
+    OpenLineage.ColumnLineageDatasetFacet facet = buildFacetFor(outputSchema);
+
+    assertFieldsPresent(facet, "colorid", "colorname");
+    assertFieldDependsOn(facet, "colorid", "snowflake_db.snowflake_schema.colors.colorid");
+    assertFieldDependsOn(facet, "colorname", "snowflake_db.snowflake_schema.colors.colorname");
+
+    when(snowflakeRelation.schema()).thenReturn(snowflakeSchema);
+  }
+
+  @Test
   void testSnowflakeColumnLineageWithQuery() {
     givenALogicalRelationWith(
         aSnowflakeRelation("query", "SELECT COLORID, COLORNAME FROM COLORS"),
@@ -129,6 +184,21 @@ class ColumnLevelLineageSnowflakeTest {
     assertFieldsPresent(facet, "COLORID", "COLORNAME");
     assertFieldDependsOn(facet, "COLORID", "COLORID");
     assertFieldDependsOn(facet, "COLORNAME", "COLORNAME");
+  }
+
+  @Test
+  void testSnowflakeColumnLineageWithLowerCaseQuery() {
+    givenALogicalRelationWith(
+        aSnowflakeRelation("query", "SELECT colorid, colorname FROM COLORS"),
+        anAttribute("colorid", 21L),
+        anAttribute("colorname", 22L));
+
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        buildFacetFor(anOutputSchemaWith(aField("colorid"), aField("colorname")));
+
+    assertFieldsPresent(facet, "colorid", "colorname");
+    assertFieldDependsOn(facet, "colorid", "colorid");
+    assertFieldDependsOn(facet, "colorname", "colorname");
   }
 
   @Test
@@ -295,6 +365,21 @@ class ColumnLevelLineageSnowflakeTest {
         "COLORNAME",
         "snowflake_db.snowflake_schema.COLORS.COLORNAME",
         "different_snowflake_db.different_snowflake_schema.COLORS.COLORTINT");
+  }
+
+  @Test
+  void testSnowflakeQueryWithLowerCaseQuotedIdentifiers() {
+    givenALogicalRelationWith(
+        aSnowflakeRelation("query", "SELECT \"colorid\", \"colorname\" FROM \"COLORS\""),
+        anAttribute("colorid", 21L),
+        anAttribute("colorname", 22L));
+
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        buildFacetFor(anOutputSchemaWith(aField("colorid"), aField("colorname")));
+
+    assertFieldsPresent(facet, "colorid", "colorname");
+    assertFieldDependsOn(facet, "colorid", "colorid");
+    assertFieldDependsOn(facet, "colorname", "colorname");
   }
 
   private SnowflakeRelation aSnowflakeRelation(String option, String value) {
