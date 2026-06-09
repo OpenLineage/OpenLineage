@@ -99,7 +99,7 @@ class PrefectOpenLineageListener:
 		flow_run_start_time = flow_run.start_time
 		return flow_run_start_time
 
-	async def get_artifacts_by_task_run(self, run_id: str, client) -> list:
+	async def get_artifacts_by_task_run(self, run_id: str) -> list:
 		payload = {
 			"artifacts": {
 				"task_run_id": {
@@ -107,7 +107,7 @@ class PrefectOpenLineageListener:
 				}
 			}
 		}
-		response = await client._client.post("/artifacts/filter", json=payload)
+		response = await self.client._client.post("/artifacts/filter", json=payload)
 		if response.status_code == 200:
 			dataset_info = []
 			artifacts = response.json()
@@ -183,7 +183,7 @@ class PrefectOpenLineageListener:
 					deploymentName=deployment_name
 				)
 
-	async def collect_and_process_task_runs(self, prefect_version: str, event: Event, event_state: str, client: client):
+	async def collect_and_process_task_runs(self, prefect_version: str, event: Event, event_state: str):
 		task_name: str = event.resource.name.split("-")[0]
 		task_run_name: str = event.resource.name
 		event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
@@ -198,7 +198,7 @@ class PrefectOpenLineageListener:
 		)
 
 		# Get datasets from Prefect Artifacts
-		datasets = await self.get_artifacts_by_task_run(prefect_task_run_id, client)
+		datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
 		input_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "input"]
 		output_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "output"]
 
@@ -275,6 +275,6 @@ class PrefectOpenLineageListener:
 							await self.collect_and_process_flow_runs(prefect_version, event, event_state)
 
 						if entity_type == "task-run":
-							await self.collect_and_process_task_runs(prefect_version, event, event_state, self.client)
+							await self.collect_and_process_task_runs(prefect_version, event, event_state)
 
 asyncio.run(PrefectOpenLineageListener().collect_and_process_runs())
