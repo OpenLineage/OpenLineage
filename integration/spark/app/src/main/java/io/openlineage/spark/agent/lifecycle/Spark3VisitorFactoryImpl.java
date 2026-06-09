@@ -10,7 +10,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.spark.agent.lifecycle.plan.StreamingDataSourceV2RelationVisitor;
+//import io.openlineage.spark.agent.lifecycle.plan.StreamingDataSourceV2RelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.WriteToDataSourceV2Visitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -39,7 +39,7 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
       OpenLineageContext context) {
     return ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
         .addAll(super.getInputVisitors(context))
-        .add(new StreamingDataSourceV2RelationVisitor(context))
+        //.add(new StreamingDataSourceV2RelationVisitor(context))
         .add(new RefreshTableCommandVisitor(context))
         .build();
   }

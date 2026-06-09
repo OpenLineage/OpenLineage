@@ -17,7 +17,7 @@ import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
+//import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnEndDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnStartDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
@@ -33,12 +33,12 @@ import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuild
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.column.JdbcColumnLineageVisitor;
-import io.openlineage.spark31.agent.lifecycle.plan.AlterTableDatasetBuilder;
-import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
+//import io.openlineage.spark31.agent.lifecycle.plan.AlterTableDatasetBuilder;
+//import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoIceberg013ColumnLineageVisitor;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoCommandEdgeColumnLineageBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoDelta24ColumnLineageVisitor;
-import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoIceberg13ColumnLineageVisitor;
+//import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoIceberg13ColumnLineageVisitor;
 import java.util.Collection;
 import java.util.List;
 import scala.PartialFunction;
@@ -78,10 +78,10 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
-            .add(new CreateReplaceDatasetBuilder(context))
+            //.add(new CreateReplaceDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
-            .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
-            .add(new AlterTableDatasetBuilder(context));
+            .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context));
+            //.add(new AlterTableDatasetBuilder(context));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
@@ -103,13 +103,13 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
       builder.add(new MergeIntoCommandEdgeColumnLineageBuilder(context));
     }
 
-    if (MergeIntoDelta11ColumnLineageVisitor.hasClasses()) {
+    /*if (MergeIntoDelta11ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoDelta11ColumnLineageVisitor(context));
-    }
+    }*/
 
-    if (MergeIntoIceberg13ColumnLineageVisitor.hasClasses()) {
+    /*if (MergeIntoIceberg13ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoIceberg13ColumnLineageVisitor(context));
-    }
+    }*/
 
     if (MergeIntoIceberg013ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoIceberg013ColumnLineageVisitor(context));

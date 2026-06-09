@@ -41,7 +41,7 @@ class Spark32VisitorFactoryImpl extends BaseVisitorFactory {
       OpenLineageContext context) {
     return ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
         .addAll(super.getInputVisitors(context))
-        .add(new StreamingDataSourceV2RelationVisitor(context))
+        //.add(new StreamingDataSourceV2RelationVisitor(context))
         .add(new RefreshTableCommandVisitor(context))
         .build();
   }
