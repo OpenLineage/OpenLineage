@@ -32,13 +32,11 @@
                 "eventTrigger": {
                   "description": "Defines when events are emitted. EVENT_BASED: events emitted on lifecycle transitions (START/COMPLETE/FAIL/ABORT). PERIODIC: events emitted at regular time intervals.",
                   "type": "string",
-                  "enum": ["EVENT_BASED", "PERIODIC"],
                   "example": "EVENT_BASED"
                 },
                 "eventCompleteness": {
                   "description": "Defines what events contain. ACCUMULATIVE: events contain cumulative state since job start (consumers need only latest event). COMPLETE_SNAPSHOT: events contain complete state for a specific time window (events can be processed independently).",
                   "type": "string",
-                  "enum": ["ACCUMULATIVE", "COMPLETE_SNAPSHOT"],
                   "example": "ACCUMULATIVE"
                 },
                 "windowDuration": {

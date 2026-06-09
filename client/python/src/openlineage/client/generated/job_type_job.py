@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from enum import Enum
-
 import attr
 from openlineage.client.generated.base import JobFacet
 from openlineage.client.utils import RedactMixin
@@ -14,14 +12,14 @@ from openlineage.client.utils import RedactMixin
 class EmissionPattern(RedactMixin):
     """Describes how and what the job emits in its events"""
 
-    eventTrigger: EventTrigger  # noqa: N815
+    eventTrigger: str  # noqa: N815
     """
     Defines when events are emitted. EVENT_BASED: events emitted on lifecycle transitions
     (START/COMPLETE/FAIL/ABORT). PERIODIC: events emitted at regular time intervals.
 
     Example: EVENT_BASED
     """
-    eventCompleteness: EventCompleteness  # noqa: N815
+    eventCompleteness: str  # noqa: N815
     """
     Defines what events contain. ACCUMULATIVE: events contain cumulative state since job start
     (consumers need only latest event). COMPLETE_SNAPSHOT: events contain complete state for a specific
@@ -36,27 +34,6 @@ class EmissionPattern(RedactMixin):
 
     Example: 300
     """
-
-
-class EventCompleteness(Enum):
-    """
-    Defines what events contain. ACCUMULATIVE: events contain cumulative state since job start
-    (consumers need only latest event). COMPLETE_SNAPSHOT: events contain complete state for a specific
-    time window (events can be processed independently).
-    """
-
-    ACCUMULATIVE = "ACCUMULATIVE"
-    COMPLETE_SNAPSHOT = "COMPLETE_SNAPSHOT"
-
-
-class EventTrigger(Enum):
-    """
-    Defines when events are emitted. EVENT_BASED: events emitted on lifecycle transitions
-    (START/COMPLETE/FAIL/ABORT). PERIODIC: events emitted at regular time intervals.
-    """
-
-    EVENT_BASED = "EVENT_BASED"
-    PERIODIC = "PERIODIC"
 
 
 @attr.define

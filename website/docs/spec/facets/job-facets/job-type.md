@@ -10,6 +10,42 @@ Facet to contain job properties like:
  * `jobType` which can be `QUERY|COMMAND|DAG|TASK|JOB|MODEL`,
  * `emissionPattern` (optional) which describes how and what the job emits in its events.
 
+The `processingType` and `emissionPattern` fields are complementary, and serve to describe in more detail the behaviour and expected lifecycle of a job, as well as what OpenLineage events is the job supposed to emit. 
+
+## Emission Pattern
+
+The `emissionPattern` object describes how and what the job emits in its events. It contains:
+
+### Event Trigger
+
+Defines when events are emitted:
+
+* **`EVENT_BASED`** - Events emitted on lifecycle transitions
+  * `START` when job begins
+  * `COMPLETE`/`FAIL`/`ABORT` when job ends
+  * `RUNNING` for progress updates (optional)
+  
+* **`PERIODIC`** - Events emitted at regular time intervals
+  * `RUNNING` events are emitted on a schedule (e.g., every 5 minutes)
+  * Other events related to the job lifecycle state can still be emitted, but it is expected that most lineage information and observability metrics will be captured in the periodic events.  
+
+### Event Completeness
+
+Defines what events contain:
+
+* **`ACCUMULATIVE`** - Events may contain only partial information and the complete information can be collected by combining information from all the events emmited by a specific job run:
+  * Individual events are more likely to contain partial rather then complete information
+  * Consumers need to combine all events for a specif run to have complete information about the job run
+  
+* **`COMPLETE_SNAPSHOT`** - Events contain complete state for a specific time window
+  * Each event is self-contained for its time period
+  * Events can be processed independently
+  * Example: Records processed in the last 5 minutes
+
+### Window Duration
+
+The `windowDuration` field (optional, integer) specifies the time window duration for periodic event emissions in seconds. Only applicable when `eventTrigger` is `PERIODIC`.
+
 ## Processing Type
 
 The `processingType` field indicates the nature of the job and implicitly defines its lifecycle characteristics:
@@ -51,40 +87,6 @@ Unless specified otherwise, the job is assumed to be a `BATCH` job that emits `A
 	...
 }
 ```
-
-## Emission Pattern
-
-The `emissionPattern` object describes how and what the job emits in its events. It contains:
-
-### Event Trigger
-
-Defines when events are emitted:
-
-* **`EVENT_BASED`** - Events emitted on lifecycle transitions
-  * `START` when job begins
-  * `COMPLETE`/`FAIL`/`ABORT` when job ends
-  * `RUNNING` for progress updates (optional)
-  
-* **`PERIODIC`** - Events emitted at regular time intervals
-  * `RUNNING` events are emitted on a schedule (e.g., every 5 minutes)
-  * Other events related to the job lifecycle state can still be emitted, but it is expected that most lineage information and observability metrics will be captured in the periodic events.  
-
-### Event Completeness
-
-Defines what events contain:
-
-* **`ACCUMULATIVE`** - Events may contain only partial information and the complete information can be collected by combining information from all the events emmited by a specific job run:
-  * Individual events are more likely to contain partial rather then complete information
-  * Consumers need to combine all events for a specif run to have complete information about the job run
-  
-* **`COMPLETE_SNAPSHOT`** - Events contain complete state for a specific time window
-  * Each event is self-contained for its time period
-  * Events can be processed independently
-  * Example: Records processed in the last 5 minutes
-
-### Window Duration
-
-The `windowDuration` field (optional, integer) specifies the time window duration for periodic event emissions in seconds. Only applicable when `eventTrigger` is `PERIODIC`.
 
 ## Extended Examples
 

@@ -81,6 +81,8 @@ The `eventCompleteness` field in the emission pattern describes what information
 - Individual events are more likely to contain partial rather than complete information
 - Consumers need to combine all events for a specif run to have complete information about the job run
 
+For example, dynamic or parametrised jobs may not have a fixed set of outputs, and the outputs may be generated dynamically based on the input data. In such cases, the events may contain only partial information, and the complete information can be collected by combining information from all the events emitted by a specific job run.
+
 ### Complete Snapshot Events
 
 **Complete snapshot events** contain complete state for a specific time window:
