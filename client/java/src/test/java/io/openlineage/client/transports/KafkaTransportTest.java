@@ -22,10 +22,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
@@ -59,28 +57,6 @@ class KafkaTransportTest {
     assertThat(captor.getValue().topic()).isEqualTo("test-topic");
     assertThat(captor.getValue().key()).isEqualTo("run:test-namespace/test-job");
     assertThat(captor.getValue().value()).isEqualTo(OpenLineageClientUtils.toJson(event));
-  }
-
-  @Test
-  void clientEmitsRunEventKafkaTransportWithTimeout() throws Exception {
-    KafkaProducer<String, String> producer = mock(KafkaProducer.class);
-    KafkaConfig config = new KafkaConfig();
-
-    Properties properties = new Properties();
-    properties.setProperty("bootstrap.servers", "localhost:9092;external:9092");
-
-    config.setTopicName("test-topic");
-    config.setProperties(properties);
-
-    KafkaTransport transport = new KafkaTransport(producer, config);
-    OpenLineageClient client = new OpenLineageClient(transport);
-    Future future = mock(Future.class);
-    when(producer.send(any(ProducerRecord.class))).thenReturn(future);
-
-    OpenLineage.RunEvent event = runEvent();
-    client.emit(event, Duration.ofSeconds(5));
-
-    verify(future, times(1)).get(5000, TimeUnit.MILLISECONDS);
   }
 
   @Test

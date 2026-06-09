@@ -13,7 +13,6 @@ import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.Transport;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -73,23 +72,6 @@ public final class OpenLineageClient implements AutoCloseable {
    * @param runEvent The run event to emit.
    */
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    emitRunEvent(runEvent, () -> transport.emit(runEvent));
-  }
-
-  /**
-   * Emit the given run event with a bounded wait when supported by the configured transport.
-   *
-   * <p>Transports that do not support bounded delivery acknowledgement may fall back to regular
-   * asynchronous emit semantics.
-   *
-   * @param runEvent The run event to emit.
-   * @param timeout Maximum time to wait for transports that support bounded delivery.
-   */
-  public void emit(@NonNull OpenLineage.RunEvent runEvent, @NonNull Duration timeout) {
-    emitRunEvent(runEvent, () -> transport.emit(runEvent, timeout));
-  }
-
-  private void emitRunEvent(@NonNull OpenLineage.RunEvent runEvent, Runnable emit) {
     if (log.isDebugEnabled()) {
       log.debug(
           "OpenLineageClient will emit lineage event: {}", OpenLineageClientUtils.toJson(runEvent));
@@ -102,7 +84,7 @@ public final class OpenLineageClient implements AutoCloseable {
       engagedCircuitBreaker.set(0);
     }
     emitStart.increment();
-    emitTime.record(emit);
+    emitTime.record(() -> transport.emit(runEvent));
     emitComplete.increment();
   }
 
