@@ -132,6 +132,36 @@ class TestReduceInputs:
         assert result[1].name == "/data/table"
         self.assert_has_input_subset_locations(result[1], ["/data/table/day=2"])
 
+    def test_duplicated_datasets_with_no_facets_are_reduced(self):
+        result = _reducer().reduce_inputs(
+            [
+                InputDataset(namespace="ns", name="/data/table/day=1"),
+                InputDataset(namespace="ns", name="/data/table/day=2", facets=None),
+                InputDataset(namespace="ns", name="/data/table/day=3", facets={}),
+            ]
+        )
+
+        assert len(result) == 1
+        assert result[0].name == "/data/table"
+        self.assert_has_input_subset_locations(
+            result[0], ["/data/table/day=1", "/data/table/day=2", "/data/table/day=3"]
+        )
+
+    def test_duplicated_datasets_with_no_input_facets_are_reduced(self):
+        result = _reducer().reduce_inputs(
+            [
+                InputDataset(namespace="ns", name="/data/table/day=1"),
+                InputDataset(namespace="ns", name="/data/table/day=2", inputFacets=None),
+                InputDataset(namespace="ns", name="/data/table/day=3", inputFacets={}),
+            ]
+        )
+
+        assert len(result) == 1
+        assert result[0].name == "/data/table"
+        self.assert_has_input_subset_locations(
+            result[0], ["/data/table/day=1", "/data/table/day=2", "/data/table/day=3"]
+        )
+
     def test_applies_all_active_trimmers(self):
         result = _reducer(
             disabled_trimmers=[
@@ -369,6 +399,36 @@ class TestReduceOutputs:
         self.assert_has_output_subset_locations(
             result[1],
             ["/data/table/day=2"],
+        )
+
+    def test_duplicated_datasets_with_no_facets_are_reduced(self):
+        result = _reducer().reduce_outputs(
+            [
+                OutputDataset(namespace="ns", name="/data/table/day=1"),
+                OutputDataset(namespace="ns", name="/data/table/day=2", facets=None),
+                OutputDataset(namespace="ns", name="/data/table/day=3", facets={}),
+            ]
+        )
+
+        assert len(result) == 1
+        assert result[0].name == "/data/table"
+        self.assert_has_output_subset_locations(
+            result[0], ["/data/table/day=1", "/data/table/day=2", "/data/table/day=3"]
+        )
+
+    def test_duplicated_datasets_with_no_output_facets_are_reduced(self):
+        result = _reducer().reduce_outputs(
+            [
+                OutputDataset(namespace="ns", name="/data/table/day=1"),
+                OutputDataset(namespace="ns", name="/data/table/day=2", outputFacets=None),
+                OutputDataset(namespace="ns", name="/data/table/day=3", outputFacets={}),
+            ]
+        )
+
+        assert len(result) == 1
+        assert result[0].name == "/data/table"
+        self.assert_has_output_subset_locations(
+            result[0], ["/data/table/day=1", "/data/table/day=2", "/data/table/day=3"]
         )
 
     def test_applies_all_active_trimmers(self):
