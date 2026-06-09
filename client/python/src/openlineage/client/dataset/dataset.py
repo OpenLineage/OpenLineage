@@ -115,10 +115,10 @@ class ReducedDataset:
         return dataset
 
     def matches(self, other_dataset: Dataset) -> bool:
-        return self._name_matches(other_dataset) and self._facets_match(other_dataset)
+        return self._identity_matches(other_dataset) and self._facets_match(other_dataset)
 
-    def _name_matches(self, other_dataset: Dataset) -> bool:
-        return self.dataset.name == other_dataset.name
+    def _identity_matches(self, other_dataset: Dataset) -> bool:
+        return self.dataset.namespace == other_dataset.namespace and self.dataset.name == other_dataset.name
 
     def _facets_match(self, other_dataset: Dataset) -> bool:
         facets = self.dataset.facets or {}
