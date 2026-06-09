@@ -304,6 +304,22 @@ class TestReduceInputs:
         assert ds1.name == "/data/table/day=1"
         assert ds2.name == "/data/table/day=2"
 
+    def test_datasets_with_different_namespaces_not_reduced(self):
+        result = _reducer().reduce_inputs(
+            [
+                InputDataset(namespace="ns-a", name="/data/table/day=1"),
+                InputDataset(namespace="ns-b", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 2
+        assert result[0].namespace == "ns-a"
+        assert result[0].name == "/data/table"
+        self.assert_has_input_subset_locations(result[0], ["/data/table/day=1"])
+        assert result[1].namespace == "ns-b"
+        assert result[1].name == "/data/table"
+        self.assert_has_input_subset_locations(result[1], ["/data/table/day=2"])
+
     @staticmethod
     def assert_does_not_have_input_subset(input_dataset):
         assert input_dataset.inputFacets.get("subset") is None
@@ -650,6 +666,22 @@ class TestReduceOutputs:
         assert result[0].name == "/data/table"
         assert ds1.name == "/data/table/day=1"
         assert ds2.name == "/data/table/day=2"
+
+    def test_datasets_with_different_namespaces_not_reduced(self):
+        result = _reducer().reduce_outputs(
+            [
+                OutputDataset(namespace="ns-a", name="/data/table/day=1"),
+                OutputDataset(namespace="ns-b", name="/data/table/day=2"),
+            ]
+        )
+
+        assert len(result) == 2
+        assert result[0].namespace == "ns-a"
+        assert result[0].name == "/data/table"
+        self.assert_has_output_subset_locations(result[0], ["/data/table/day=1"])
+        assert result[1].namespace == "ns-b"
+        assert result[1].name == "/data/table"
+        self.assert_has_output_subset_locations(result[1], ["/data/table/day=2"])
 
     def test_original_cll_input_fields_are_not_mutated(self):
         input_field_a = column_lineage_dataset.InputField(
