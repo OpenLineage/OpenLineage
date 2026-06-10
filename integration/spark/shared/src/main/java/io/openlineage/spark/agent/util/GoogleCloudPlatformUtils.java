@@ -16,9 +16,11 @@ public class GoogleCloudPlatformUtils {
       // To use Big Lake Hive Catalog you have to use custom implementation of HiveConf that
       // contains this enum
       // if the enum is present, you can set the custom client factory
-      String name = HiveConf.ConfVars.valueOf("spark.hive.metastore.client.factory.class").name();
-      return conf.getOption(name)
-          .exists("com.google.cloud.spark.biglake.hive.BigLakeHiveClientFactory"::equals);
+      HiveConf.ConfVars.valueOf("METASTORE_CLIENT_FACTORY_CLASS");
+      log.debug("detected custom Metastore Client Factory class");
+      return conf.getOption("spark.hive.metastore.client.factory.class")
+          .exists(
+              "com.google.cloud.bigquery.metastore.client.BigLakeMetastoreClientFactory"::equals);
     } catch (IllegalArgumentException e) {
       return false;
     }
