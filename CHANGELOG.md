@@ -1,6 +1,26 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.48.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.49.0...HEAD)
+
+## [1.49.0](https://github.com/OpenLineage/OpenLineage/compare/1.48.0...1.49.0)
+
+### Added
+
+* **Java: Add CassandraJdbcExtractor** [`#4610`](https://github.com/OpenLineage/OpenLineage/pull/4610) [@matveeysv](https://github.com/matveeysv)
+  *Add `CassandraJdbcExtractor` to parse Cassandra JDBC URLs according to the driver specification, enabling lineage tracking for Cassandra databases via JDBC.*
+
+### Fixed
+
+* **dbt: Add missing column lineage for structured log processor** [`#4599`](https://github.com/OpenLineage/OpenLineage/pull/4599) [@fm100](https://github.com/fm100)
+  *Fix missing column lineage facet in `DbtStructuredLogsProcessor` when using `--consume-structured-logs` option by attaching the column lineage facet to the output dataset on node finished events.*
+* **dbt: Use fully qualified job ID for externalQuery run facet for BigQuery** [`#4591`](https://github.com/OpenLineage/OpenLineage/pull/4591) [@fm100](https://github.com/fm100)
+  *Use a fully qualified job ID (with project ID and location) for the `externalQueryId` in the `externalQuery` run facet when using the dbt-bigquery adapter; also adds `externalQuery` run facet support when using `--consume-structured-logs`.*
+* **Spark: Fix GCP Dataproc jobId when job has multiple attempts** [`#4598`](https://github.com/OpenLineage/OpenLineage/pull/4598) [@codelixir](https://github.com/codelixir)
+  *Exclude the `dataproc_job_attempt_timestamp` tag prefix when reading the job ID from Yarn tags in the GCP Dataproc facet, preventing the attempt timestamp from being reported as the job ID on retried jobs.*
+* **Spark: Fix Lakehouse detection mechanism** [`#4611`](https://github.com/OpenLineage/OpenLineage/pull/4611) [@tnazarew](https://github.com/tnazarew)
+  *Fix incorrect Spark configuration properties used in the Lakehouse Hive Catalog detection logic and extend catalog detection to `V2SessionCatalogHandler` used by DatasetBuilders.*
+* **Spark: Fix Snowflake column lineage for quoted identifiers** [`#4602`](https://github.com/OpenLineage/OpenLineage/pull/4602) [@mrpalash-amz](https://github.com/mrpalash-amz)
+  *Fix missing column lineage when the Snowflake Spark connector uses quoted identifiers (e.g. in AWS Glue ETL with `dbtable` path) by applying `stripQuotes()` normalization on both sides of identifier comparisons in `ColumnLevelLineageBuilder` and `SqlCollector`.*
 
 ## [1.48.0](https://github.com/OpenLineage/OpenLineage/compare/1.47.1...1.48.0)
 
