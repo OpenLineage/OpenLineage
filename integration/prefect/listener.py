@@ -54,9 +54,9 @@ class PrefectOpenLineageListener:
 			"name": deployment.name
 		}
 
-	async def get_prefect_version(self, client) -> str | None:
+	async def get_prefect_version(self) -> str | None:
 		try:
-			response = await client._client.get("/admin/version")
+			response = await self.client._client.get("/admin/version")
 			version = response.json()
 			return version
 		except TypeError:
@@ -255,7 +255,7 @@ class PrefectOpenLineageListener:
 
 		async with get_events_subscriber(filter=filter_criteria) as subscriber:
 			async with self.client:
-				prefect_version: str = await self.get_prefect_version(self.client)
+				prefect_version: str = await self.get_prefect_version()
 
 				async for event in subscriber:
 					entity_type: str = event.event.split(".")[1]
