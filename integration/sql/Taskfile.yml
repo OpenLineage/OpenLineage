@@ -1,0 +1,17 @@
+version: '3'
+
+tasks:
+  test:
+    desc: Run Rust parser tests
+    cmds:
+      - cargo test
+
+  publish-local:
+    desc: Compile the native library, bundle it into openlineage-sql-java, test, and publish to Maven Local (required before building integration/spark)
+    dir: iface-java
+    cmds:
+      # compile.sh builds the Rust core; build.sh copies the native lib into jar
+      # resources, regenerates the JNI header, runs tests, publishes to Maven
+      # Local, and runs a smoke test.
+      - bash script/compile.sh
+      - bash script/build.sh
