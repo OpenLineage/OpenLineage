@@ -13,6 +13,7 @@ import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -38,15 +39,11 @@ public class OpenLineageContext {
 
   @Builder.Default UUID runUuid = UUIDUtils.generateNewUUID();
 
-  /**
-   * Sets a deterministic OpenLineage run UUID from the Flink job ID.
-   *
-   * <p>This allows listener instances running in different JVMs, for example the submitter and the
-   * JobManager in Session Mode with detached submissions, to emit events for the same OpenLineage
-   * run.
-   */
-  public void setRunUuidFromFlinkJobId(JobID jobId) {
-    this.runUuid = UUID.nameUUIDFromBytes(jobId.toHexString().getBytes(StandardCharsets.UTF_8));
+  /** Sets a deterministic UUIDv7 OpenLineage run UUID from the Flink job ID and start time. */
+  public void setRunUuidFromFlinkJobId(JobID jobId, Instant jobStartTime) {
+    this.runUuid =
+        UUIDUtils.generateStaticUUID(
+            jobStartTime, jobId.toHexString().getBytes(StandardCharsets.UTF_8));
   }
 
   /**

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,6 +36,12 @@ public class FlinkConfigParser {
   public static final Set<String> PROPERTIES_PREFIXES =
       new HashSet<>(
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
+  private static final Map<String, String> CONFIG_ALIASES =
+      Map.of(
+          "openlineage.flink.enableDetachedJobTracking",
+          "openlineage.enableDetachedJobTracking",
+          "openlineage.flink.detachedStartEventEmitTimeoutInSeconds",
+          "openlineage.detachedStartEventEmitTimeoutInSeconds");
 
   public static FlinkOpenLineageConfig parse(Configuration configuration) {
     // TRY READING CONFIG FROM FILE
@@ -81,7 +88,7 @@ public class FlinkConfigParser {
       String value = configuration.get(ConfigOptions.key(configKey).stringType().noDefaultValue());
 
       if (StringUtils.isNotBlank(value)) {
-        List<String> pathKeys = getJsonPath(configKey);
+        List<String> pathKeys = getJsonPath(CONFIG_ALIASES.getOrDefault(configKey, configKey));
         List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
         String leaf = pathKeys.get(pathKeys.size() - 1);
         for (String node : nonLeafs) {

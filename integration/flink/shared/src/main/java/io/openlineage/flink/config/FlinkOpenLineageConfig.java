@@ -23,6 +23,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
 
   private static final Integer DEFAULT_TRACKING_INTERVAL = 60;
   private static final Integer DEFAULT_DETACHED_START_EVENT_EMIT_TIMEOUT = 5;
+  private static final Boolean DEFAULT_ENABLE_DETACHED_JOB_TRACKING = false;
 
   @JsonProperty("dataset")
   @Setter
@@ -36,6 +37,10 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   @JsonProperty("detachedStartEventEmitTimeoutInSeconds")
   @Setter
   private Integer detachedStartEventEmitTimeoutInSeconds;
+
+  @JsonProperty("enableDetachedJobTracking")
+  @Setter
+  private Boolean enableDetachedJobTracking;
 
   public FlinkOpenLineageConfig() {
     super();
@@ -51,7 +56,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       RunConfig runConfig,
       JobConfig jobConfig,
       Integer trackingIntervalInSeconds,
-      Integer detachedStartEventEmitTimeoutInSeconds) {
+      Integer detachedStartEventEmitTimeoutInSeconds,
+      Boolean enableDetachedJobTracking) {
     super(
         transportConfig,
         facetsConfig,
@@ -63,6 +69,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
     this.datasetConfig = datasetConfig;
     this.trackingIntervalInSeconds = trackingIntervalInSeconds;
     this.detachedStartEventEmitTimeoutInSeconds = detachedStartEventEmitTimeoutInSeconds;
+    this.enableDetachedJobTracking = enableDetachedJobTracking;
   }
 
   @Override
@@ -77,7 +84,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(jobConfig, other.jobConfig),
         mergePropertyWith(trackingIntervalInSeconds, other.trackingIntervalInSeconds),
         mergePropertyWith(
-            detachedStartEventEmitTimeoutInSeconds, other.detachedStartEventEmitTimeoutInSeconds));
+            detachedStartEventEmitTimeoutInSeconds, other.detachedStartEventEmitTimeoutInSeconds),
+        mergePropertyWith(enableDetachedJobTracking, other.enableDetachedJobTracking));
   }
 
   public Integer getTrackingIntervalInSeconds() {
@@ -87,5 +95,10 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   public Integer getDetachedStartEventEmitTimeoutInSeconds() {
     return Optional.ofNullable(detachedStartEventEmitTimeoutInSeconds)
         .orElse(DEFAULT_DETACHED_START_EVENT_EMIT_TIMEOUT);
+  }
+
+  public Boolean getEnableDetachedJobTracking() {
+    return Optional.ofNullable(enableDetachedJobTracking)
+        .orElse(DEFAULT_ENABLE_DETACHED_JOB_TRACKING);
   }
 }

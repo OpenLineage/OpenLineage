@@ -44,8 +44,12 @@ class FlinkConfigParserTest {
   ConfigOption facetYDisabled =
       ConfigOptions.key("openlineage.facets.facetY.disabled").booleanType().noDefaultValue();
   ConfigOption detachedStartEventEmitTimeoutOption =
-      ConfigOptions.key("openlineage.detachedStartEventEmitTimeoutInSeconds")
+      ConfigOptions.key("openlineage.flink.detachedStartEventEmitTimeoutInSeconds")
           .stringType()
+          .noDefaultValue();
+  ConfigOption enableDetachedJobTrackingOption =
+      ConfigOptions.key("openlineage.flink.enableDetachedJobTracking")
+          .booleanType()
           .noDefaultValue();
 
   @BeforeEach
@@ -148,5 +152,15 @@ class FlinkConfigParserTest {
     configuration.set(detachedStartEventEmitTimeoutOption, "7");
     config = FlinkConfigParser.parse(configuration);
     assertThat(config.getDetachedStartEventEmitTimeoutInSeconds()).isEqualTo(7);
+  }
+
+  @Test
+  void testEnableDetachedJobTracking() {
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getEnableDetachedJobTracking()).isFalse();
+
+    configuration.set(enableDetachedJobTrackingOption, true);
+    config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getEnableDetachedJobTracking()).isTrue();
   }
 }
