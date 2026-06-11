@@ -18,9 +18,11 @@ public class JobStatusUtil {
    */
   public static EventType fromJobStatus(JobStatus jobStatus) {
     if (jobStatus.isGloballyTerminalState()) {
-      // termination status
       if (jobStatus.equals(JobStatus.FINISHED)) {
         return EventType.COMPLETE;
+      }
+      if (jobStatus.equals(JobStatus.CANCELED)) {
+        return EventType.ABORT;
       }
       return EventType.FAIL;
     }
