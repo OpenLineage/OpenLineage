@@ -144,7 +144,8 @@ public class OpenLineageDetachedJobStatusChangedListener implements JobStatusCha
   }
 
   private void onJobCreatedEvent(JobCreatedEvent event) {
-    if (!loadJobId(event)) {
+    loadJobId(event);
+    if (!setDeterministicRunUuid(event)) {
       log.warn("Skipping START event because runUuid could not be initialized: {}", event);
       return;
     }
@@ -185,7 +186,7 @@ public class OpenLineageDetachedJobStatusChangedListener implements JobStatusCha
 
   private void onDefaultJobExecutionStatusEvent(DefaultJobExecutionStatusEvent event) {
     if (!hasFlinkJobId()) {
-      loadJobId(event, Optional.empty());
+      loadJobId(event);
     }
 
     if (!hasFlinkJobId()) {
@@ -209,7 +210,7 @@ public class OpenLineageDetachedJobStatusChangedListener implements JobStatusCha
   }
 
   private void onRunUuidInitialized(JobStatusChangedEvent event, Runnable action) {
-    initializeRunUuid(event)
+    initializeRunUuidAsync(event)
         .thenAccept(
             initialized -> {
               if (initialized) {
@@ -264,25 +265,15 @@ public class OpenLineageDetachedJobStatusChangedListener implements JobStatusCha
   }
 
   // Async because JM's REST API deadlocks when called synchronously during state transitions.
-  private synchronized CompletableFuture<Boolean> initializeRunUuid(JobStatusChangedEvent event) {
+  private synchronized CompletableFuture<Boolean> initializeRunUuidAsync(
+      JobStatusChangedEvent event) {
     if (event.jobId() == null) {
       return CompletableFuture.completedFuture(false);
     }
 
     if (runUuidInitialization == null) {
       runUuidInitialization =
-          CompletableFuture.supplyAsync(() -> jobStartTimeProvider.apply(event.jobId()), ioExecutor)
-              .thenApply(
-                  jobStartTime -> {
-                    if (jobStartTime.isPresent()) {
-                      context.setRunUuidFromFlinkJobId(event.jobId(), jobStartTime.get());
-                      return true;
-                    } else {
-                      log.warn(
-                          "Skipping event because runUuid could not be initialized: {}", event);
-                      return false;
-                    }
-                  });
+          CompletableFuture.supplyAsync(() -> setDeterministicRunUuid(event), ioExecutor);
     }
 
     return runUuidInitialization;
@@ -321,14 +312,7 @@ public class OpenLineageDetachedJobStatusChangedListener implements JobStatusCha
     return new FlinkJobDetailsFacet(flinkJobId);
   }
 
-  private boolean loadJobId(JobStatusChangedEvent event) {
-    Optional<Instant> jobStartTime =
-        event.jobId() == null ? Optional.empty() : jobStartTimeProvider.apply(event.jobId());
-    loadJobId(event, jobStartTime);
-    return jobStartTime.isPresent();
-  }
-
-  private void loadJobId(JobStatusChangedEvent event, Optional<Instant> jobStartTime) {
+  private void loadJobId(JobStatusChangedEvent event) {
     String jobName =
         Optional.ofNullable(context.getConfig())
             .map(FlinkOpenLineageConfig::getJobConfig)
@@ -349,9 +333,16 @@ public class OpenLineageDetachedJobStatusChangedListener implements JobStatusCha
             .build();
     log.info("JobIdentifier with jobId: {}", jobId.getFlinkJobId());
     context.setJobId(jobId);
-    if (event.jobId() != null && jobStartTime.isPresent()) {
-      context.setRunUuidFromFlinkJobId(event.jobId(), jobStartTime.get());
-      runUuidInitialization = CompletableFuture.completedFuture(true);
+  }
+
+  private boolean setDeterministicRunUuid(JobStatusChangedEvent event) {
+    if (event.jobId() == null) {
+      return false;
     }
+    Optional<Instant> jobStartTime = jobStartTimeProvider.apply(event.jobId());
+    if (jobStartTime.isPresent()) {
+      context.setRunUuidFromFlinkJobId(event.jobId(), jobStartTime.get());
+    }
+    return jobStartTime.isPresent();
   }
 }

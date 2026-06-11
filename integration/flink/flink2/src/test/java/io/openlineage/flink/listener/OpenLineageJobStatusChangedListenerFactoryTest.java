@@ -36,7 +36,8 @@ class OpenLineageJobStatusChangedListenerFactoryTest {
   void testDetachedModeCreatesOpenLineageDetachedJobStatusChangedListener() {
     when(context.getConfiguration())
         .thenReturn(
-            openLineageConfiguration(Map.of("openlineage.flink.enableDetachedJobTracking", "true")));
+            openLineageConfiguration(
+                Map.of("openlineage.flink.enableDetachedJobTracking", "true")));
 
     JobStatusChangedListener listener = factory.createListener(context);
 
