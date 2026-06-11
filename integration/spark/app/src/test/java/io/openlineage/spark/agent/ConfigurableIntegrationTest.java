@@ -55,6 +55,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 class ConfigurableIntegrationTest {
 
   public static final String OPENLINEAGE_ROOT_DIR = "/usr/lib/openlineage";
+
   /**
    * Name of the tests within the examples which is expected fail. Running it in CI makes assures a
    * testing mechanism is working properly.

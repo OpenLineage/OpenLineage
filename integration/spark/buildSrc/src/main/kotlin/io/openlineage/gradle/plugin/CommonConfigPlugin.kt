@@ -159,20 +159,11 @@ class CommonConfigPlugin : Plugin<Project> {
     }
 
     private fun configureSpotless(target: Project) = target.plugins.withType<SpotlessPlugin> {
-        val disallowWildcardImports = FormatterFunc { text ->
-            val regex = Regex("^import\\s+\\w+(\\.\\w+)*\\.*;$")
-            val m = regex.find(text)
-            if (m != null) {
-                throw RuntimeException("Wildcard imports are disallowed - ${m.groupValues}")
-            }
-            text
-        }
-
         target.extensions.configure<SpotlessExtension> {
             java {
                 googleJavaFormat()
                 removeUnusedImports()
-                custom("disallowWildcardImports", disallowWildcardImports)
+                custom("disallowWildcardImports", WildcardImportChecker)
             }
 
             // disable spotless tasks for Java 8
@@ -198,5 +189,23 @@ class CommonConfigPlugin : Plugin<Project> {
                 }
             }
         }
+    }
+}
+
+// Top-level singleton so it's serializable for Gradle 9 task input fingerprinting.
+// Kotlin lambdas are not serializable; object declarations are.
+private object WildcardImportChecker : FormatterFunc, java.io.Serializable {
+    private const val serialVersionUID = 1L
+    // Matches only wildcard imports: import foo.bar.*;
+    // Note: \\.\\* matches a literal ".*" — the original lambda used \\.*
+    // which in regex means "zero or more literal dots", incorrectly matching
+    // all imports. The correct pattern needs explicit \\. then \\*.
+    override fun apply(input: String): String {
+        val regex = Regex("^import\\s+[\\w.]+\\.\\*;$", RegexOption.MULTILINE)
+        val m = regex.find(input)
+        if (m != null) {
+            throw RuntimeException("Wildcard imports are disallowed - ${m.groupValues}")
+        }
+        return input
     }
 }

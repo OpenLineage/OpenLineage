@@ -85,6 +85,8 @@ updates:
       - dependency-name: "com.google.guava*"
       - dependency-name: "org.junit.jupiter:junit-jupiter"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "org.junit.jupiter:junit-jupiter-api"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "org.junit:junit-bom"
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.testcontainers:testcontainers-bom"
