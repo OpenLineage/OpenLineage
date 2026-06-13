@@ -26,6 +26,14 @@ def test_nullable_chain_works():
     assert get_from_nullable_chain(x, ["first", "second", "third"]) == 42
 
 
+def test_nullable_chain_does_not_mutate_chain():
+    x = {"first": {"second": {"third": 42}}}
+    chain = ["first", "second", "third"]
+
+    assert get_from_nullable_chain(x, chain) == 42
+    assert chain == ["first", "second", "third"]
+
+
 def test_parse_single_arg_does_not_exist():
     assert parse_single_arg(["dbt", "run"], ["-t", "--target"]) is None
     assert parse_single_arg(["python", "main.py", "--random_arg", "yes"], ["--what"]) is None

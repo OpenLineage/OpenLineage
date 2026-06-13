@@ -26,10 +26,8 @@ def get_from_nullable_chain(source: Any, chain: list[str]) -> Any | None:
     if not result:
         return None
     """
-    chain.reverse()
     try:
-        while chain:
-            next_key = chain.pop()
+        for next_key in chain:
             if isinstance(source, dict):
                 source = source.get(next_key)
             else:
