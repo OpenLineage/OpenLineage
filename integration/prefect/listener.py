@@ -44,15 +44,30 @@ class PrefectOpenLineageListener:
 	        data=f"{namespace}.{run_name}".encode("utf-8"),
 		))
 
-	async def get_deployment_info(self, flow_run_id: str) -> dict:
+	async def get_deployment_and_flow_info(self, flow_run_id: str) -> dict:
 		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
 		deployment = await self.client.read_deployment(flow_run.deployment_id)
-		return {
-			"id": str(deployment.id), 
-			"created": deployment.created.isoformat(), 
-			"updated": deployment.updated.isoformat(), 
-			"name": deployment.name
-		}
+		flow_id: UUID = flow_run.flow_id
+		flow = await self.client.read_flow(flow_id) # TODO: type
+		flow_name: str = flow.name
+		try:
+			ns: str = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
+		except KeyError:
+			ns: str = JOB_NAMESPACE
+			logger.info(
+				"OPENLINEAGE_NAMESPACE deployment variable not found. Using OPENLINEAGE_NAMESPACE env variable."
+			)
+			if JOB_NAMESPACE == "default":
+				logger.info("OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'")
+		return (
+			str(deployment.id), 
+			flow_run.start_time,
+			deployment.created.isoformat(), 
+			deployment.updated.isoformat(), 
+			deployment.name,
+			ns,
+			flow_name
+		)
 
 	async def get_prefect_version(self) -> str | None:
 		try:
@@ -62,7 +77,7 @@ class PrefectOpenLineageListener:
 		except TypeError:
 			logger.info("Cannot get Prefect version. PREFECT_API_URL not set.")
 
-	async def get_flow_ns(self, flow_run_id: str) -> str:
+	async def get_flow_ns(self, flow_run_id) -> str:
 		"""
 		Looks for OPENLINEAGE_NAMESPACE job env variable in deployment.
 		"""
@@ -86,14 +101,6 @@ class PrefectOpenLineageListener:
 		task_run = await self.client.read_task_run(task_run_id) # TODO: type
 		return await self.get_flow_ns(task_run.flow_run_id)
 
-	async def get_flow_and_deployment_info(self, flow_run_id: str) -> dict:
-		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
-		flow_id: UUID = flow_run.flow_id
-		flow = await self.client.read_flow(flow_id) # TODO: type
-		flow_name: str = flow.name
-		deployment_info: dict = await self.get_deployment_info(flow_run_id)
-		return {"name": flow_name, "deployment_info": deployment_info}
-
 	async def get_flow_run_start_time(self, flow_run_id: str) -> datetime:
 		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
 		flow_run_start_time = flow_run.start_time
@@ -113,10 +120,10 @@ class PrefectOpenLineageListener:
 			artifacts = response.json()
 			for artifact in artifacts:
 				if "ol-dataset" in artifact["description"]:
-					dataset_type = artifact["description"].split("_")[-1]
+					dataset_type = artifact["description"].split("_")[-1].lower()
 					data_list = ast.literal_eval(artifact["data"])
-					uri = data_list[0]["database_uri"]
-					table = data_list[0]["table"]
+					uri = data_list[0]["database_uri"].lower()
+					table = data_list[0]["table"].lower()
 					dataset_info.append({"uri": uri, "table": table, "dataset_type": dataset_type})
 			return dataset_info
 		else:
@@ -148,7 +155,7 @@ class PrefectOpenLineageListener:
 			logger.info("No task parents found for %s", prefect_task_run_id)
 			return []
 
-	async def collect_and_process_flow_runs(self, prefect_version: str, event: Event, event_state: str):
+	async def collect_and_process_flow_runs(self, prefect_version: str, event: Event, event_state: str) -> None:
 		for res in event.related:
 			if res["prefect.resource.role"] == "flow":
 				flow_run_name: str = event.resource.name
@@ -157,13 +164,13 @@ class PrefectOpenLineageListener:
 			if flow_run_name:
 				prefect_flow_run_id: str = event.resource.id.split(".")[-1]
 				event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
-				start_time: datetime = await self.get_flow_run_start_time(prefect_flow_run_id)
-				flow_namespace: str = await self.get_flow_ns(prefect_flow_run_id)
-				flow_deployment_info: dict = await self.get_deployment_info(prefect_flow_run_id)
-				deployment_id: str = flow_deployment_info["id"]
-				deployment_created: str = flow_deployment_info["created"]
-				deployment_updated: str = flow_deployment_info["updated"]
-				deployment_name: str = flow_deployment_info["name"]
+				deployment_and_flow_info: tuple = await self.get_deployment_and_flow_info(prefect_flow_run_id)
+				deployment_id: str = deployment_and_flow_info[0]
+				start_time: datetime = deployment_and_flow_info[1]
+				deployment_created: str = deployment_and_flow_info[2]
+				deployment_updated: str = deployment_and_flow_info[3]
+				deployment_name: str = deployment_and_flow_info[4]
+				flow_namespace: str = deployment_and_flow_info[5]
 				ol_flow_run_id: str = self.build_run_id(
 					start_time,
 					flow_name,
@@ -183,7 +190,7 @@ class PrefectOpenLineageListener:
 					deploymentName=deployment_name
 				)
 
-	async def collect_and_process_task_runs(self, prefect_version: str, event: Event, event_state: str):
+	async def collect_and_process_task_runs(self, prefect_version: str, event: Event, event_state: str) -> None:
 		task_name: str = event.resource.name.split("-")[0]
 		task_run_name: str = event.resource.name
 		event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
@@ -209,13 +216,12 @@ class PrefectOpenLineageListener:
 		for res in event.related:
 			if res["prefect.resource.role"] == "flow-run":
 				flow_run_id: str = res["prefect.resource.id"].split(".")[-1]
-				flow_and_deployment_info: str = await self.get_flow_and_deployment_info(flow_run_id)
-				flow_name: str = flow_and_deployment_info["name"]
-				deployment_info: dict = flow_and_deployment_info["deployment_info"]
-				deployment_id: str = deployment_info["id"]
-				deployment_created: str = deployment_info["created"]
-				deployment_updated: str = deployment_info["updated"]
-				deployment_name: str = deployment_info["name"]
+				deployment_and_flow_info: tuple = await self.get_deployment_and_flow_info(flow_run_id)
+				deployment_id: str = deployment_and_flow_info[0]
+				deployment_created: str = deployment_and_flow_info[2]
+				deployment_updated: str = deployment_and_flow_info[3]
+				deployment_name: str = deployment_and_flow_info[4]
+				flow_name: str = deployment_and_flow_info[6]
 				flow_start_time = await self.get_flow_run_start_time(flow_run_id)
 				ol_flow_run_id: str = self.build_run_id(
 					flow_start_time,
