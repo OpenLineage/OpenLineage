@@ -222,7 +222,7 @@ class PrefectOpenLineageListener:
 				deployment_updated: str = deployment_and_flow_info[3]
 				deployment_name: str = deployment_and_flow_info[4]
 				flow_name: str = deployment_and_flow_info[6]
-				flow_start_time = await self.get_flow_run_start_time(flow_run_id)
+				flow_start_time = deployment_and_flow_info[1]
 				ol_flow_run_id: str = self.build_run_id(
 					flow_start_time,
 					flow_name,
