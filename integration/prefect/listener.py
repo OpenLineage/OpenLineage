@@ -44,7 +44,7 @@ class PrefectOpenLineageListener:
 	        data=f"{namespace}.{run_name}".encode("utf-8"),
 		))
 
-	async def get_deployment_and_flow_info(self, flow_run_id: str) -> dict:
+	async def get_deployment_and_flow_info(self, flow_run_id: str) -> tuple:
 		flow_run = await self.client.read_flow_run(flow_run_id) # TODO: type
 		deployment = await self.client.read_deployment(flow_run.deployment_id)
 		flow_id: UUID = flow_run.flow_id
@@ -75,7 +75,7 @@ class PrefectOpenLineageListener:
 			version = response.json()
 			return version
 		except TypeError:
-			logger.info("Cannot get Prefect version. PREFECT_API_URL not set.")
+			logger.info("Cannot get Prefect version. Did you set the PREFECT_API_URL?")
 
 	async def get_flow_ns(self, flow_run_id) -> str:
 		"""
@@ -91,7 +91,7 @@ class PrefectOpenLineageListener:
 				"OPENLINEAGE_NAMESPACE deployment variable not found. Using OPENLINEAGE_NAMESPACE env variable."
 			)
 			if JOB_NAMESPACE == "default":
-				logger.info("OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'")
+				logger.info("OPENLINEAGE_NAMESPACE env variable not found. Namespace will be 'default.'")
 		return ns
 
 	async def get_job_ns(self, task_run_id: str) -> str:
@@ -171,11 +171,15 @@ class PrefectOpenLineageListener:
 				deployment_updated: str = deployment_and_flow_info[3]
 				deployment_name: str = deployment_and_flow_info[4]
 				flow_namespace: str = deployment_and_flow_info[5]
-				ol_flow_run_id: str = self.build_run_id(
-					start_time,
-					flow_name,
-					flow_namespace
-				)
+				try:
+					ol_flow_run_id: str = self.build_run_id(
+						start_time,
+						flow_name,
+						flow_namespace
+					)
+				except AttributeError:
+					logger.info("No Prefect run found for %s. OpenLineage event will not be emitted.", prefect_flow_run_id)
+					continue
 
 				self.ol_adapter.create_and_emit_flow_event(
 					runId=ol_flow_run_id,
@@ -197,62 +201,72 @@ class PrefectOpenLineageListener:
 		expected_start_time: datetime = event.payload["task_run"]["expected_start_time"]
 		prefect_task_run_id: str = event.resource.id.split(".")[-1]
 		task_run = await self.client.read_task_run(prefect_task_run_id)
-		namespace: str = await self.get_job_ns(prefect_task_run_id)
-		ol_task_run_id: str = self.build_run_id(
-			task_run.start_time, 
-			task_name, 
-			namespace
-		)
-
-		# Get datasets from Prefect Artifacts
-		datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
-		input_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "input"]
-		output_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "output"]
-
-		# Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
-		parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
-
-		# Get flow run info for ParentRunFacet
-		for res in event.related:
-			if res["prefect.resource.role"] == "flow-run":
-				flow_run_id: str = res["prefect.resource.id"].split(".")[-1]
-				deployment_and_flow_info: tuple = await self.get_deployment_and_flow_info(flow_run_id)
-				deployment_id: str = deployment_and_flow_info[0]
-				deployment_created: str = deployment_and_flow_info[2]
-				deployment_updated: str = deployment_and_flow_info[3]
-				deployment_name: str = deployment_and_flow_info[4]
-				flow_name: str = deployment_and_flow_info[6]
-				flow_start_time = await self.get_flow_run_start_time(flow_run_id)
-				ol_flow_run_id: str = self.build_run_id(
-					flow_start_time,
-					flow_name,
+		if task_run:
+			namespace: str = await self.get_job_ns(prefect_task_run_id)
+			try:
+				ol_task_run_id: str = self.build_run_id(
+					task_run.start_time, 
+					task_name, 
 					namespace
 				)
+			except AttributeError:
+				logger.info("No Prefect run found for %s.", prefect_task_run_id)
 
-		self.ol_adapter.create_and_emit_task_event(
-			runId=ol_task_run_id,
-			eventType=event_state, 
-			eventTime=event_time,
-			expectedEventTime=expected_start_time,
-			flowRunId=ol_flow_run_id,
-			flowName=flow_name,
-			taskName=task_name,
-			namespace=namespace,
-			jobDeps=parent_runs,
-			prefectVersion=prefect_version,
-			deploymentId=deployment_id,
-			deploymentCreated=deployment_created,
-			deploymentUpdated=deployment_updated,
-			deploymentName=deployment_name,
-			inputDatasets=input_datasets,
-			outputDatasets=output_datasets
-		)
+			# Get datasets from Prefect Artifacts
+			datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
+			input_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "input"]
+			output_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "output"]
+
+			# Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
+			parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
+
+			# Get flow run info for ParentRunFacet
+			for res in event.related:
+				if res["prefect.resource.role"] == "flow-run":
+					flow_run_id: str = res["prefect.resource.id"].split(".")[-1]
+					deployment_and_flow_info: tuple = await self.get_deployment_and_flow_info(flow_run_id)
+					deployment_id: str = deployment_and_flow_info[0]
+					deployment_created: str = deployment_and_flow_info[2]
+					deployment_updated: str = deployment_and_flow_info[3]
+					deployment_name: str = deployment_and_flow_info[4]
+					flow_name: str = deployment_and_flow_info[6]
+					flow_start_time = await self.get_flow_run_start_time(flow_run_id)
+					try:
+						ol_flow_run_id: str = self.build_run_id(
+							flow_start_time,
+							flow_name,
+							namespace
+						)
+					except AttributeError:
+						logger.info("No Prefect run found for %s. ParentRunFacet will not be included.", flow_run_id)
+						continue
+
+			self.ol_adapter.create_and_emit_task_event(
+				runId=ol_task_run_id,
+				eventType=event_state, 
+				eventTime=event_time,
+				expectedEventTime=expected_start_time,
+				flowRunId=ol_flow_run_id,
+				flowName=flow_name,
+				taskName=task_name,
+				namespace=namespace,
+				jobDeps=parent_runs,
+				prefectVersion=prefect_version,
+				deploymentId=deployment_id,
+				deploymentCreated=deployment_created,
+				deploymentUpdated=deployment_updated,
+				deploymentName=deployment_name,
+				inputDatasets=input_datasets,
+				outputDatasets=output_datasets
+			)
+		else:
+			logger.info("No Prefect run found for %s, will not attempt to create OpenLineage event.", prefect_task_run_id)
 
 	async def collect_and_process_runs(self) -> None:
 		try:
 			os.environ.get("PREFECT_API_URL")
 		except TypeError:
-			logger.warn("PREFECT_API_URL not set. Prefect events will not be emitted.")
+			logger.warn("PREFECT_API_URL not set. Prefect events will not be received.")
 			return
 
 		filter_criteria = EventFilter(

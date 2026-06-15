@@ -12,7 +12,7 @@ import os
 from facets import PrefectDeploymentRunFacet
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import ( Dataset )
-from openlineage.client.facet import BaseFacet, JobTypeJobFacet, ParentRunFacet, NominalTimeRunFacet
+from openlineage.client.facet import BaseFacet, JobTypeJobFacet, NominalTimeRunFacet, ParentRunFacet
 from openlineage.client.facet_v2 import ( job_dependencies_run, processing_engine_run )
 from openlineage.client.run import Job, Run, RunEvent, RunState
 
@@ -29,9 +29,9 @@ class PrefectOpenLineageAdapter:
     
     def create_and_emit_flow_event(
         self,
-        runId: str = None,
-        eventType: str = None,
-        eventTime: datetime = None,
+        runId: str,
+        eventType: str,
+        eventTime: datetime,
         flowName: str = None,
         flowNamespace: str = None,
         prefectVersion: str = None,
@@ -88,9 +88,9 @@ class PrefectOpenLineageAdapter:
 
     def create_and_emit_task_event(
         self,
-        runId: str = None,
-        eventType: str = None,
-        eventTime: datetime = None,
+        runId: str,
+        eventType: str,
+        eventTime: datetime,
         expectedEventTime: datetime = None,
         flowRunId: str = None,
         flowName: str = None,
