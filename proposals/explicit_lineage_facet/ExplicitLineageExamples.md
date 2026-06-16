@@ -2,7 +2,7 @@
 
 This file contains examples for [ExplicitLineageProposal.md](ExplicitLineageProposal.md). See [ExplicitLineageSchema.md](ExplicitLineageSchema.md) for the proposed schema.
 
-## 1. Dataset-level lineage on RunEvent (solves #4359)
+## 1. Dataset-level lineage on RunEvent
 
 ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. LineageRunFacet on the run:
 
@@ -38,7 +38,9 @@ ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. LineageRunF
 
 `inputs`/`outputs` remain as the carrier for dataset facets, as the fallback for older consumers, and as the event boundary for the job's direct input/output participation.
 
-## 2. Column-level lineage on RunEvent (subsumes CLL)
+## 2. Column-level lineage on RunEvent
+
+This example shows how the new facets can replace ColumnLevelLineageDatasetFacet.
 
 ```json
 "run": {
@@ -204,7 +206,47 @@ extract_task (JOB) ──> extracted_data (DATASET)
 
 That edge is implicit in the RunEvent boundary, not repeated with a `LineageJobInput`.
 
-## 8. Job-to-job — declared chain on JobEvent
+### 8. Enriched generator — field-level transformation detail, job still implicit
+
+The same extract task as in previous example, but the producer knows that `total` was derived via a `sum()` aggregation over the (untracked) external API response. 
+There is still no tracked upstream dataset, so the entry's top-level `inputs` is `[]`. 
+The per-field detail names an `LineageJobInput` (`type: JOB` with no `namespace`/`name`), which resolves to the event's own job, and carries the transformation:
+
+```json
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "runId": "abc-789",
+    "facets": {
+      "lineage": {
+        "_producer": "https://example.com/extract",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
+        "entries": [
+          { "namespace": "postgres://prod", "name": "extracted_data", "type": "DATASET",
+            "inputs": [],
+            "fields": {
+              "total": {
+                "inputs": [
+                  { "type": "JOB", "transformations": [{ "type": "INDIRECT", "subtype": "AGGREGATION", "description": "sum()" }] }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "job": { "namespace": "airflow://prod", "name": "data_pipeline.extract_task" },
+  "inputs": [],
+  "outputs": [
+    { "namespace": "postgres://prod", "name": "extracted_data" }
+  ]
+}
+```
+
+The implicit edge `extract_task (JOB) ──> extracted_data (DATASET)` is unchanged — the identity-less `LineageJobInput` only adds the column-level transformation that event membership could not express.
+
+## 9. Job-to-job — declared chain on JobEvent
 
 A stored procedure `dag_b.task_1` reads its input from upstream `dag_a.task_3` via a non-materialized handoff. No intermediate dataset exists. The catalog declares the design-time data flow on the JobEvent for `dag_b`:
 
@@ -235,7 +277,7 @@ A stored procedure `dag_b.task_1` reads its input from upstream `dag_a.task_3` v
 
 Note that `runId` is omitted on both ends — declared lineage describes the job definition, not a specific execution. The same shape would apply to a non-materialized view consumed by a downstream job, or to an Airflow task receiving data via XCom from an upstream task.
 
-## 9. Job-to-job — observed chain on RunEvent
+## 10. Job-to-job — observed chain on RunEvent
 
 The same data flow as Example 8, observed at runtime by an integration that can identify both the upstream and downstream runs. `runId` is populated on each end, binding the chain to specific executions:
 
@@ -266,7 +308,7 @@ The same data flow as Example 8, observed at runtime by an integration that can 
 }
 ```
 
-## 10. Job-to-job — cross-namespace chain
+## 11. Job-to-job — cross-namespace chain
 
 A streaming job in a Flink cluster feeds an in-memory topic consumed by a job in a separate Beam pipeline. Neither job is in the namespace of the other, and the topic is not modeled as a dataset. The Beam pipeline emits the cross-namespace chain on its RunEvent:
 
@@ -298,7 +340,7 @@ A streaming job in a Flink cluster feeds an in-memory topic consumed by a job in
 
 The source job (`flink://ingest/event_normalizer`) is in a different namespace from both the event's job and the target entry. Without explicit `(namespace, name)` on both ends, the chain could not be expressed.
 
-## 11. Structured-to-unstructured — known source columns, no target schema
+## 12. Structured-to-unstructured — known source columns, no target schema
 
 Reading specific columns from a structured table and writing to an unstructured file (e.g., a PDF). The target has no schema, so there is no `fields` map — but we can still express that the output came from specific source columns:
 

@@ -117,7 +117,7 @@ A lineage target that is a dataset. Supports both entity-level and column-level 
     },
     "inputs": {
       "type": "array",
-      "description": "Entity-level source inputs. Each item is a LineageInput (dataset or job).",
+      "description": "Entity-level inputs feeding this target dataset. Each item is a LineageInput (dataset or job). When an input includes a 'field' property, it represents a dataset-wide operation (e.g., GROUP BY) where that input's column affects the entire target dataset.",
       "items": {
         "$ref": "#/$defs/LineageInput"
       }
@@ -247,20 +247,22 @@ A source input that is a dataset. Supports optional field reference and transfor
 
 ### LineageJobInput
 
-A source input that is a job. Used when data comes from an explicitly identified job without an intermediate tracked dataset, including `JOB → JOB` and `JOB → DATASET` chains. Supports an optional `runId` to tie to a specific execution:
+A source input that is a job. Used when data comes from an explicitly identified job without an intermediate tracked dataset, including `JOB → JOB` and `JOB → DATASET` chains. Supports an optional `runId` to tie to a specific execution, and optional `transformations` describing how the job produced the data.
+
+**`namespace` and `name` are OPTIONAL.** When both are omitted, the source job is implicitly the **event's own job** — the job carried in the event's `job` field. This is the home for field-level and transformation detail on data produced by the implicit job (the generator case): a target field can name the current job as its source and attach `transformations` without that job having to be restated as an explicit entity. When `namespace`/`name` are present, they identify a different, explicitly tracked job (the `JOB → JOB` / `JOB → DATASET` chain case).
 
 ```json
 "LineageJobInput": {
   "type": "object",
-  "description": "A source job that feeds data into a lineage target. Used when data comes from another job without an intermediate tracked dataset.",
+  "description": "A source job that feeds data into a lineage target. Used when data comes from another job without an intermediate tracked dataset. When namespace/name are omitted, the source is the event's own job.",
   "properties": {
     "namespace": {
       "type": "string",
-      "description": "The namespace of the source job"
+      "description": "The namespace of the source job. When omitted together with 'name', the source is the event's own job."
     },
     "name": {
       "type": "string",
-      "description": "The name of the source job"
+      "description": "The name of the source job. When omitted together with 'namespace', the source is the event's own job."
     },
     "type": {
       "type": "string",
@@ -270,12 +272,21 @@ A source input that is a job. Used when data comes from an explicitly identified
     "runId": {
       "type": "string",
       "format": "uuid",
-      "description": "Optional. The specific run ID of the source job, when the lineage is tied to a particular execution."
+      "description": "Optional. The specific run ID of the source job, when the lineage is tied to a particular execution. When the source is the event's own job, this MAY repeat the event's own runId."
+    },
+    "transformations": {
+      "type": "array",
+      "description": "Transformations applied by the source job to produce the data.",
+      "items": {
+        "$ref": "#/$defs/LineageTransformation"
+      }
     }
   },
-  "required": ["namespace", "name", "type"]
+  "required": ["type"]
 }
 ```
+
+> Either both `namespace` and `name` are present (an explicitly identified job) or both are absent (the event's own job). A producer SHOULD NOT emit one without the other.
 
 ### LineageTransformation
 
