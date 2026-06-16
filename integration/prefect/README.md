@@ -4,13 +4,13 @@ The Prefect OpenLineage integration listens for task and flow events using Prefe
 
 ## Configuration
 
-`OPENLINEAGE_NAMESPACE` and `PREFECT_API_URL` env variables are both required. Optionally, use a deployment variable to set the namespace variable.
+`OPENLINEAGE_NAMESPACE` and `PREFECT_API_URL` env variables (strings) are both required. Optionally, use a deployment variable to pass the namespace.
 
 ## Datasets
 
 The integration uses Prefect Table Artifacts to add datasets to OpenLineage run events.
 
-Pass a dataset object to an Artifact using `create_table_artifact` from the Artifacts library. Import it in your flow like so: 
+Attach a dataset object to an Artifact using the `table` param of `create_table_artifact` from the Artifacts library. Import this in your flow like so: 
 
 ```py
 from prefect.artifacts import create_table_artifact
