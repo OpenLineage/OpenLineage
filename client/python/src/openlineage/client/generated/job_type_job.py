@@ -21,9 +21,10 @@ class EmissionPattern(RedactMixin):
     """
     eventCompleteness: str  # noqa: N815
     """
-    Defines what events contain. ACCUMULATIVE: events contain cumulative state since job start
-    (consumers need only latest event). COMPLETE_SNAPSHOT: events contain complete state for a specific
-    time window (events can be processed independently).
+    Defines what events contain. ACCUMULATIVE: Events may contain only partial information and the
+    complete information can be collected by combining information from all the events emitted by a
+    specific job run. COMPLETE_SNAPSHOT: events contain complete state for a specific time window
+    (events can be processed independently).
 
     Example: ACCUMULATIVE
     """

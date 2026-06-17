@@ -74,7 +74,7 @@
       "facets": {
         "jobType": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
           "_deleted": null,
           "processingType": "BATCH",
           "integration": "DBT",
@@ -172,7 +172,7 @@
       "facets": {
         "jobType": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
           "_deleted": null,
           "processingType": "BATCH",
           "integration": "DBT",
@@ -270,7 +270,7 @@
       "facets": {
         "jobType": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
           "_deleted": null,
           "processingType": "BATCH",
           "integration": "DBT",
@@ -368,7 +368,7 @@
       "facets": {
         "jobType": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
           "_deleted": null,
           "processingType": "BATCH",
           "integration": "DBT",

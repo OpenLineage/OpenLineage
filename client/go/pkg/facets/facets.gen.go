@@ -334,11 +334,13 @@ type JobTypeJobFacet struct {
 	SchemaURL string `json:"_schemaURL"`
 	// set to true to delete a facet
 	Deleted *bool `json:"_deleted,omitempty"`
+	// Describes how and what the job emits in its events
+	EmissionPattern *JobTypeJobFacetEmissionPattern `json:"emissionPattern,omitempty"`
 	// OpenLineage integration type of this job: for example SPARK|DBT|AIRFLOW|FLINK
 	Integration string `json:"integration"`
 	// Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is an integration-specific field.
 	JobType *string `json:"jobType,omitempty"`
-	// Job processing type like: BATCH or STREAMING
+	// Job processing type: BATCH (finite jobs with clear start/end), STREAMING (continuous jobs processing data streams), or SERVICE (continuous long-running services). BATCH jobs are finite and emit START/COMPLETE/FAIL/ABORT events. STREAMING and SERVICE jobs are continuous with no natural completion point.
 	ProcessingType string `json:"processingType"`
 }
 
@@ -1014,6 +1016,16 @@ type JobIdentifier struct {
 	Name string `json:"name"`
 	// The namespace containing the job
 	Namespace string `json:"namespace"`
+}
+
+// JobTypeJobFacetEmissionPattern — Describes how and what the job emits in its events
+type JobTypeJobFacetEmissionPattern struct {
+	// Defines what events contain. ACCUMULATIVE: events contain cumulative state since job start (consumers need only latest event). COMPLETE_SNAPSHOT: events contain complete state for a specific time window (events can be processed independently).
+	EventCompleteness string `json:"eventCompleteness"`
+	// Defines when events are emitted. EVENT_BASED: events emitted on lifecycle transitions (START/COMPLETE/FAIL/ABORT). PERIODIC: events emitted at regular time intervals.
+	EventTrigger string `json:"eventTrigger"`
+	// Time window duration for periodic event emissions in seconds. Only applicable when eventTrigger is PERIODIC. Required when eventTrigger is PERIODIC and eventCompleteness is COMPLETE_SNAPSHOT.
+	WindowDuration *int64 `json:"windowDuration,omitempty"`
 }
 
 // LifecycleStateChangeDatasetFacetPreviousIdentifier — Previous name of the dataset in case of renaming it.
