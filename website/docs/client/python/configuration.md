@@ -1809,6 +1809,14 @@ While the configuration is read only at client creation time (so the environment
 a client has been created) - the value of the variables will be read and appended to the event at the time of event emission.
 :::
 
+### Merge behavior
+
+If the event already contains an `environmentVariables` facet (set by an integration or producer), the client-configured variables are **merged** into it rather than replacing it.
+
+- Variables already present in the event take precedence over client-configured ones.
+- If the same variable name exists in both with different values, the event-supplied value is kept and a warning is logged.
+- Variables present only in the client configuration are appended to the existing facet.
+
 ### Examples
 
 <Tabs groupId="env-vars-run-facet">
