@@ -16,7 +16,7 @@ from openlineage.client.facet import BaseFacet, JobTypeJobFacet, NominalTimeRunF
 from openlineage.client.facet_v2 import ( job_dependencies_run, processing_engine_run )
 from openlineage.client.run import Job, Run, RunEvent, RunState
 
-PRODUCER: str = 'https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/prefect'
+PRODUCER: str = "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/prefect"
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -42,12 +42,12 @@ class PrefectOpenLineageAdapter:
     ) -> RunEvent:
 
         match eventType:
-            case 'START':
-                eventType: RunState = RunState.START
-            case 'COMPLETE':
-                eventType: RunState = RunState.COMPLETE
-            case 'FAILED':
-                eventType: RunState = RunState.FAIL
+            case "START":
+                eventType = RunState.START
+            case "COMPLETE":
+                eventType = RunState.COMPLETE
+            case "FAILED":
+                eventType = RunState.FAIL
 
         run_facets = {
             "prefectDeployment": PrefectDeploymentRunFacet(
@@ -107,12 +107,12 @@ class PrefectOpenLineageAdapter:
     ) -> RunEvent:
 
         match eventType:
-            case 'START':
-                eventType: RunState = RunState.START
-            case 'COMPLETE':
-                eventType: RunState = RunState.COMPLETE
-            case 'FAILED':
-                eventType: RunState = RunState.FAIL
+            case "START":
+                eventType = RunState.START
+            case "COMPLETE":
+                eventType = RunState.COMPLETE
+            case "FAILED":
+                eventType = RunState.FAIL
         
         run_facets = {
             "nominalTime": NominalTimeRunFacet(
@@ -172,6 +172,6 @@ class PrefectOpenLineageAdapter:
 
         try:
             self.client.emit(run_event)
-            logger.info('Emitted OpenLineage event successfully.')
+            logger.info("Emitted OpenLineage event successfully.")
         except Exception as e:
-            logger.exception('OpenLineage event not sent.')
+            logger.exception("OpenLineage event not sent.")
