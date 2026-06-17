@@ -452,11 +452,40 @@ class OpenLineageClient:
             env_vars := self._collect_environment_variables()
         ):
             event.run.facets = event.run.facets or {}
+
+            # Vars the client was configured to collect from the environment
+            client_collected_env_vars = [
+                environment_variables_run.EnvironmentVariable(name=name, value=value)
+                for name, value in env_vars.items()
+            ]
+
+            # Vars already provided in the event
+            event_env_vars: list[environment_variables_run.EnvironmentVariable] = []
+            current_env_vars_facet = event.run.facets.get("environmentVariables")
+            if isinstance(current_env_vars_facet, environment_variables_run.EnvironmentVariablesRunFacet):
+                event_env_vars = current_env_vars_facet.environmentVariables or []
+
+            # Event-supplied vars take precedence; skip client vars that would overwrite them
+            event_env_vars_by_name = {ev.name: ev for ev in event_env_vars}
+            additional_env_vars = []
+            for client_env_var in client_collected_env_vars:
+                if client_env_var.name in event_env_vars_by_name:
+                    event_env_var_value = event_env_vars_by_name[client_env_var.name].value
+                    if client_env_var.value != event_env_var_value:
+                        log.warning(
+                            "Environment variable `%s` is already present in the event with value `%s`, "
+                            "but the OpenLineage client wanted to set it to `%s`. "
+                            "Keeping the event-supplied value `%s`.",
+                            client_env_var.name,
+                            event_env_var_value,
+                            client_env_var.value,
+                            event_env_var_value,
+                        )
+                else:
+                    additional_env_vars.append(client_env_var)
+
             event.run.facets["environmentVariables"] = environment_variables_run.EnvironmentVariablesRunFacet(
-                environmentVariables=[
-                    environment_variables_run.EnvironmentVariable(name=name, value=value)
-                    for name, value in env_vars.items()
-                ]
+                environmentVariables=event_env_vars + additional_env_vars
             )
         return event
 
