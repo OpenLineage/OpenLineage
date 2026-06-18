@@ -1,6 +1,24 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.49.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.50.0...HEAD)
+
+## [1.50.0](https://github.com/OpenLineage/OpenLineage/compare/1.49.0...1.50.0)
+
+### Added
+
+* **Client/Java: Add timeout-aware run event emission support** [`#4613`](https://github.com/OpenLineage/OpenLineage/pull/4613) [@jsingh-yelp](https://github.com/jsingh-yelp)
+  *Add a timeout-aware `emit` overload to the Java client and `Transport` API, allowing callers to provide a bounded wait when emitting `RunEvent`s; Kafka transport uses the timeout to wait for producer acknowledgement before returning.*
+* **Flink: Add support for OpenLineage events in detached Flink Session Mode** [`#4596`](https://github.com/OpenLineage/OpenLineage/pull/4596) [@jsingh-yelp](https://github.com/jsingh-yelp)
+  *Enable full OpenLineage lifecycle events (RUNNING, COMPLETE, FAIL) for Flink jobs submitted in detached Session Mode by introducing `OpenLineageDetachedJobStatusChangedListener` that initialises the Flink job ID from the REST API, bypassing the missing `JobCreatedEvent` on the JobManager side.*
+
+### Fixed
+
+* **Flink: Emit ABORT event for canceled jobs instead of FAIL** [`#4615`](https://github.com/OpenLineage/OpenLineage/pull/4615) [@wangxiaojing](https://github.com/wangxiaojing)
+  *Map `JobStatus.CANCELED` to `EventType.ABORT` in Flink 2 job status handling; previously all non-FINISHED terminal statuses were mapped to FAIL, causing user-canceled jobs to appear as failures in downstream OpenLineage consumers.*
+* **Python: Fix env var facet overwriting event-supplied values** [`#4635`](https://github.com/OpenLineage/OpenLineage/pull/4635) [@kacpermuda](https://github.com/kacpermuda)
+  *Merge client-configured environment variables into any `environmentVariables` facet already set by the producer instead of replacing it; event-supplied values take precedence and a warning is logged on conflict.*
+* **Spark: Fix missing Iceberg scan report facet using scanReportSupplier** [`#4633`](https://github.com/OpenLineage/OpenLineage/pull/4633) [@fm100](https://github.com/fm100)
+  *Fix missing `IcebergScanReport` input dataset facet in CTAS/RTAS queries by reading the report directly from `scanReportSupplier` when available, rather than relying on `OpenLineageMetricsReporter` which is registered after the scan has already occurred.*
 
 ## [1.49.0](https://github.com/OpenLineage/OpenLineage/compare/1.48.0...1.49.0)
 
