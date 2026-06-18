@@ -166,6 +166,10 @@ updates:
       dev:
         patterns:
           - '*'
+      dev-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
 
   - package-ecosystem: "npm"
     directory: "website"
@@ -193,5 +197,9 @@ updates:
         update-types: ["version-update:semver-major"]
     groups:
       website:
+        patterns:
+          - '*'
+      website-security:
+        applies-to: security-updates
         patterns:
           - '*'
