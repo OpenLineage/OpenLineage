@@ -540,3 +540,59 @@ class TestAggregateTestEventStatus:
             {"unique_id": "test.project.t1", "status": "warn", "failures": 1, "_severity": "warn"},
         ]
         assert self._event_types(processor, results) == ["START", "FAIL"]
+
+
+class TestDbtModelDatasetFacet:
+    """Covers parsing of dbt manifest node ``config``/``meta`` into the dbt_model dataset facet.
+
+    The facet is built in DbtArtifactProcessor.extract_dataset_data and is therefore shared by
+    both the legacy local processor and the structured-logs processor.
+    """
+
+    def _node(self, metadata_node):
+        from openlineage.common.provider.dbt.processor import ModelNode
+
+        base = {"database": "db", "schema": "sch", "alias": "orders", "columns": {}}
+        base.update(metadata_node)
+        return ModelNode(type="model", metadata_node=base)
+
+    def test_extracts_config_and_meta(self, dbt_artifact_processor):
+        node = self._node(
+            {
+                "config": {
+                    "materialized": "incremental",
+                    "access": "public",
+                    "group": "finance",
+                },
+                "meta": {"owner": "data-team", "pii": False},
+            }
+        )
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(node)
+        assert facet is not None
+        assert facet.config.materialized == "incremental"
+        assert facet.config.access == "public"
+        assert facet.config.group == "finance"
+        assert facet.config.owner is None
+        assert facet.meta == {"owner": "data-team", "pii": False}
+
+    def test_empty_strings_are_dropped(self, dbt_artifact_processor):
+        # config present but every field blank, and no meta -> no facet
+        node = self._node({"config": {"materialized": "", "access": ""}, "meta": {}})
+        assert dbt_artifact_processor._create_dbt_model_dataset_facet(node) is None
+
+    def test_meta_only(self, dbt_artifact_processor):
+        node = self._node({"config": {}, "meta": {"tier": "gold"}})
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(node)
+        assert facet is not None
+        assert facet.config is None
+        assert facet.meta == {"tier": "gold"}
+
+    def test_no_config_no_meta_returns_none(self, dbt_artifact_processor):
+        node = self._node({})
+        assert dbt_artifact_processor._create_dbt_model_dataset_facet(node) is None
+
+    def test_facet_attached_to_dataset_facets(self, dbt_artifact_processor):
+        node = self._node({"config": {"materialized": "table"}})
+        _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(node, None, has_facets=True)
+        assert "dbt_model" in facets
+        assert facets["dbt_model"].config.materialized == "table"

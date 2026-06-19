@@ -34,6 +34,8 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
+    DbtModelConfig,
+    DbtModelDatasetFacet,
     DbtNodeJobFacet,
     DbtRunRunFacet,
     DbtVersionRunFacet,
@@ -817,6 +819,9 @@ class DbtArtifactProcessor:
                 facets["ownership"] = ownership_dataset.OwnershipDatasetFacet(
                     owners=[ownership_dataset.Owner(name=name) for name in names]
                 )
+
+            if dbt_model_facet := self._create_dbt_model_dataset_facet(node):
+                facets["dbt_model"] = dbt_model_facet
         else:
             facets = {}
         if node.type == "source":
@@ -832,6 +837,41 @@ class DbtArtifactProcessor:
             ),
             facets,
             input_facets,
+        )
+
+    def _create_dbt_model_dataset_facet(self, node: ModelNode) -> DbtModelDatasetFacet | None:
+        """Build a DbtModelDatasetFacet from a dbt manifest node's ``config`` and ``meta``.
+
+        Reads the resolved ``config`` (``materialized``/``access``/``owner``/``group``) and the
+        free-form ``meta`` map from ``node.metadata_node``. Returns ``None`` when the node carries
+        neither, so we don't attach an empty facet to the dataset.
+        """
+        raw_config = node.metadata_node.get("config") or {}
+        model_config = DbtModelConfig(
+            materialized=raw_config.get("materialized") or None,
+            access=raw_config.get("access") or None,
+            owner=raw_config.get("owner") or None,
+            group=raw_config.get("group") or None,
+        )
+        has_config = any(
+            value is not None
+            for value in (
+                model_config.materialized,
+                model_config.access,
+                model_config.owner,
+                model_config.group,
+            )
+        )
+
+        meta = node.metadata_node.get("meta") or {}
+        has_meta = bool(meta)
+
+        if not has_config and not has_meta:
+            return None
+
+        return DbtModelDatasetFacet(
+            config=model_config if has_config else None,
+            meta=meta if has_meta else None,
         )
 
     @staticmethod

@@ -5,6 +5,7 @@
 import attr
 from openlineage.client.facet_v2 import (
     BaseFacet,
+    DatasetFacet,
     JobFacet,
     parent_run,
 )
@@ -58,6 +59,40 @@ class DbtRunRunFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "dbt-run-run-facet.json"
+
+
+@attr.define
+class DbtModelConfig:
+    """The resolved dbt model configuration fields most relevant for data observability.
+
+    These come from the *resolved* ``config`` of a dbt manifest node (after applying
+    project-level defaults from ``dbt_project.yml``, per-model overrides, etc.).
+    """
+
+    materialized: str | None = attr.field(default=None)
+    access: str | None = attr.field(default=None)
+    owner: str | None = attr.field(default=None)
+    group: str | None = attr.field(default=None)
+
+
+@attr.define
+class DbtModelDatasetFacet(DatasetFacet):
+    """Dataset facet capturing dbt-specific per-model config and meta from the dbt manifest.
+
+    dbt manifest nodes carry two sources of rich per-model metadata:
+
+    1. ``config`` - the resolved dbt configuration. The most observability-relevant fields
+       are ``materialized``, ``access``, ``owner`` and ``group``.
+    2. ``meta`` - an arbitrary user-defined key/value map, commonly used for ownership,
+       PII flags, team labels, etc.
+    """
+
+    config: DbtModelConfig | None = attr.field(default=None)
+    meta: dict | None = attr.field(default=None)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return GITHUB_LOCATION + "dbt-model-dataset-facet.json"
 
 
 @attr.define
