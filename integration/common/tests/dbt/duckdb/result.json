@@ -20,6 +20,18 @@
     "outputs": [
       {
         "facets": {
+          "dbt_model": {
+            "config": {
+              "materialized": "table",
+              "access": "protected",
+              "group": "finance"
+            },
+            "meta": {
+              "owner": "data-team",
+              "pii": false,
+              "tier": "gold"
+            }
+          },
           "dataSource": {
             "name": "duckdb:///database/jaffle_shop.duckdb",
             "uri": "duckdb:///database/jaffle_shop.duckdb"
@@ -107,6 +119,18 @@
     "outputs": [
       {
         "facets": {
+          "dbt_model": {
+            "config": {
+              "materialized": "table",
+              "access": "protected",
+              "group": "finance"
+            },
+            "meta": {
+              "owner": "data-team",
+              "pii": false,
+              "tier": "gold"
+            }
+          },
           "dataSource": {
             "name": "duckdb:///database/jaffle_shop.duckdb",
             "uri": "duckdb:///database/jaffle_shop.duckdb"
