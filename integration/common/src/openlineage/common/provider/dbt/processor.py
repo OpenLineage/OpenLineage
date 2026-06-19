@@ -872,11 +872,11 @@ class DbtArtifactProcessor:
         """Build a TagsRunFacet from a dbt node's ``tags`` and ``meta``.
 
         Plain dbt ``tags`` keep ``source="DBT"`` and value ``"true"``; each ``meta`` entry becomes a
-        key/value tag with ``source="dbt-meta"``. Returns ``None`` when there is nothing to emit.
+        key/value tag with ``source="DBT_META"``. Returns ``None`` when there is nothing to emit.
         """
         fields = [tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in (tags or [])]
         fields += [
-            tags_run.TagsRunFacetFields(key=key, value=self._meta_tag_value(value), source="dbt-meta")
+            tags_run.TagsRunFacetFields(key=key, value=self._meta_tag_value(value), source="DBT_META")
             for key, value in (meta or {}).items()
         ]
         return tags_run.TagsRunFacet(tags=fields) if fields else None

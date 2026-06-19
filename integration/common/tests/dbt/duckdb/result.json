@@ -95,17 +95,17 @@
             {
               "key": "owner",
               "value": "data-team",
-              "source": "dbt-meta"
+              "source": "DBT_META"
             },
             {
               "key": "pii",
               "value": "false",
-              "source": "dbt-meta"
+              "source": "DBT_META"
             },
             {
               "key": "tier",
               "value": "gold",
-              "source": "dbt-meta"
+              "source": "DBT_META"
             }
           ]
         }
@@ -205,17 +205,17 @@
             {
               "key": "owner",
               "value": "data-team",
-              "source": "dbt-meta"
+              "source": "DBT_META"
             },
             {
               "key": "pii",
               "value": "false",
-              "source": "dbt-meta"
+              "source": "DBT_META"
             },
             {
               "key": "tier",
               "value": "gold",
-              "source": "dbt-meta"
+              "source": "DBT_META"
             }
           ]
         }

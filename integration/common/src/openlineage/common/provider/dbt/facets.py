@@ -81,7 +81,7 @@ class DbtModelDatasetFacet(DatasetFacet):
 
     The most observability-relevant fields are ``materialized``, ``access``, ``owner`` and
     ``group``. The free-form ``meta`` map is emitted separately as dataset/run tags (source
-    ``dbt-meta``), not on this facet.
+    ``DBT_META``), not on this facet.
     """
 
     config: DbtModelConfig | None = attr.field(default=None)

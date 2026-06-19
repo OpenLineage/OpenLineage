@@ -597,7 +597,7 @@ class TestDbtModelDatasetFacet:
 
 
 class TestDbtMetaTags:
-    """Covers dbt ``tags`` (source DBT) and ``meta`` (source dbt-meta) -> TagsRunFacet."""
+    """Covers dbt ``tags`` (source DBT) and ``meta`` (source DBT_META) -> TagsRunFacet."""
 
     def test_none_when_empty(self, dbt_artifact_processor):
         assert dbt_artifact_processor._build_tags_run_facet(None, None) is None
@@ -615,18 +615,18 @@ class TestDbtMetaTags:
             None, {"owner": "data-team", "pii": False, "tier": "gold", "freshness_h": 24}
         )
         assert [(t.key, t.value, t.source) for t in facet.tags] == [
-            ("owner", "data-team", "dbt-meta"),
-            ("pii", "false", "dbt-meta"),
-            ("tier", "gold", "dbt-meta"),
-            ("freshness_h", "24", "dbt-meta"),
+            ("owner", "data-team", "DBT_META"),
+            ("pii", "false", "DBT_META"),
+            ("tier", "gold", "DBT_META"),
+            ("freshness_h", "24", "DBT_META"),
         ]
 
     def test_nested_meta_value_is_json(self, dbt_artifact_processor):
         facet = dbt_artifact_processor._build_tags_run_facet(None, {"sla": {"freshness_hours": 24}})
         assert facet.tags[0].key == "sla"
         assert facet.tags[0].value == '{"freshness_hours": 24}'
-        assert facet.tags[0].source == "dbt-meta"
+        assert facet.tags[0].source == "DBT_META"
 
     def test_tags_and_meta_combined(self, dbt_artifact_processor):
         facet = dbt_artifact_processor._build_tags_run_facet(["core"], {"tier": "gold"})
-        assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "dbt-meta")]
+        assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "DBT_META")]
