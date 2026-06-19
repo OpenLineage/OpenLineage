@@ -543,10 +543,11 @@ class TestAggregateTestEventStatus:
 
 
 class TestDbtModelDatasetFacet:
-    """Covers parsing of dbt manifest node ``config``/``meta`` into the dbt_model dataset facet.
+    """Covers parsing of a dbt manifest node's resolved ``config`` into the dbt_model dataset facet.
 
     The facet is built in DbtArtifactProcessor.extract_dataset_data and is therefore shared by
-    both the legacy local processor and the structured-logs processor.
+    both the legacy local processor and the structured-logs processor. Node ``meta`` is no longer
+    on this facet — it is emitted as tags (see TestDbtMetaTags).
     """
 
     def _node(self, metadata_node):
@@ -556,7 +557,7 @@ class TestDbtModelDatasetFacet:
         base.update(metadata_node)
         return ModelNode(type="model", metadata_node=base)
 
-    def test_extracts_config_and_meta(self, dbt_artifact_processor):
+    def test_extracts_config(self, dbt_artifact_processor):
         node = self._node(
             {
                 "config": {
@@ -564,7 +565,6 @@ class TestDbtModelDatasetFacet:
                     "access": "public",
                     "group": "finance",
                 },
-                "meta": {"owner": "data-team", "pii": False},
             }
         )
         facet = dbt_artifact_processor._create_dbt_model_dataset_facet(node)
@@ -573,21 +573,19 @@ class TestDbtModelDatasetFacet:
         assert facet.config.access == "public"
         assert facet.config.group == "finance"
         assert facet.config.owner is None
-        assert facet.meta == {"owner": "data-team", "pii": False}
+        assert not hasattr(facet, "meta")
 
     def test_empty_strings_are_dropped(self, dbt_artifact_processor):
-        # config present but every field blank, and no meta -> no facet
-        node = self._node({"config": {"materialized": "", "access": ""}, "meta": {}})
+        # config present but every field blank -> no facet
+        node = self._node({"config": {"materialized": "", "access": ""}})
         assert dbt_artifact_processor._create_dbt_model_dataset_facet(node) is None
 
-    def test_meta_only(self, dbt_artifact_processor):
+    def test_meta_does_not_produce_config_facet(self, dbt_artifact_processor):
+        # meta alone no longer yields a dbt_model facet; it is emitted as tags instead
         node = self._node({"config": {}, "meta": {"tier": "gold"}})
-        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(node)
-        assert facet is not None
-        assert facet.config is None
-        assert facet.meta == {"tier": "gold"}
+        assert dbt_artifact_processor._create_dbt_model_dataset_facet(node) is None
 
-    def test_no_config_no_meta_returns_none(self, dbt_artifact_processor):
+    def test_no_config_returns_none(self, dbt_artifact_processor):
         node = self._node({})
         assert dbt_artifact_processor._create_dbt_model_dataset_facet(node) is None
 
@@ -596,3 +594,39 @@ class TestDbtModelDatasetFacet:
         _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(node, None, has_facets=True)
         assert "dbt_model" in facets
         assert facets["dbt_model"].config.materialized == "table"
+
+
+class TestDbtMetaTags:
+    """Covers dbt ``tags`` (source DBT) and ``meta`` (source dbt-meta) -> TagsRunFacet."""
+
+    def test_none_when_empty(self, dbt_artifact_processor):
+        assert dbt_artifact_processor._build_tags_run_facet(None, None) is None
+        assert dbt_artifact_processor._build_tags_run_facet([], {}) is None
+
+    def test_plain_tags_keep_dbt_source(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._build_tags_run_facet(["pii", "core"], None)
+        assert [(t.key, t.value, t.source) for t in facet.tags] == [
+            ("pii", "true", "DBT"),
+            ("core", "true", "DBT"),
+        ]
+
+    def test_meta_becomes_dbt_meta_tags(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._build_tags_run_facet(
+            None, {"owner": "data-team", "pii": False, "tier": "gold", "freshness_h": 24}
+        )
+        assert [(t.key, t.value, t.source) for t in facet.tags] == [
+            ("owner", "data-team", "dbt-meta"),
+            ("pii", "false", "dbt-meta"),
+            ("tier", "gold", "dbt-meta"),
+            ("freshness_h", "24", "dbt-meta"),
+        ]
+
+    def test_nested_meta_value_is_json(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._build_tags_run_facet(None, {"sla": {"freshness_hours": 24}})
+        assert facet.tags[0].key == "sla"
+        assert facet.tags[0].value == '{"freshness_hours": 24}'
+        assert facet.tags[0].source == "dbt-meta"
+
+    def test_tags_and_meta_combined(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._build_tags_run_facet(["core"], {"tier": "gold"})
+        assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "dbt-meta")]

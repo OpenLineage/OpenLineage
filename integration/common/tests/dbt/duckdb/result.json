@@ -25,11 +25,6 @@
               "materialized": "table",
               "access": "protected",
               "group": "finance"
-            },
-            "meta": {
-              "owner": "data-team",
-              "pii": false,
-              "tier": "gold"
             }
           },
           "dataSource": {
@@ -94,6 +89,25 @@
         },
         "dbt_run": {
           "invocation_id": "d205f9ce-0e55-4a5f-9f69-bfa170867a41"
+        },
+        "tags": {
+          "tags": [
+            {
+              "key": "owner",
+              "value": "data-team",
+              "source": "dbt-meta"
+            },
+            {
+              "key": "pii",
+              "value": "false",
+              "source": "dbt-meta"
+            },
+            {
+              "key": "tier",
+              "value": "gold",
+              "source": "dbt-meta"
+            }
+          ]
         }
       }
     }
@@ -124,11 +138,6 @@
               "materialized": "table",
               "access": "protected",
               "group": "finance"
-            },
-            "meta": {
-              "owner": "data-team",
-              "pii": false,
-              "tier": "gold"
             }
           },
           "dataSource": {
@@ -190,6 +199,25 @@
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "tags": {
+          "tags": [
+            {
+              "key": "owner",
+              "value": "data-team",
+              "source": "dbt-meta"
+            },
+            {
+              "key": "pii",
+              "value": "false",
+              "source": "dbt-meta"
+            },
+            {
+              "key": "tier",
+              "value": "gold",
+              "source": "dbt-meta"
+            }
+          ]
         }
       }
     }

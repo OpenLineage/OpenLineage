@@ -77,18 +77,14 @@ class DbtModelConfig:
 
 @attr.define
 class DbtModelDatasetFacet(DatasetFacet):
-    """Dataset facet capturing dbt-specific per-model config and meta from the dbt manifest.
+    """Dataset facet capturing the resolved dbt ``config`` of a manifest node.
 
-    dbt manifest nodes carry two sources of rich per-model metadata:
-
-    1. ``config`` - the resolved dbt configuration. The most observability-relevant fields
-       are ``materialized``, ``access``, ``owner`` and ``group``.
-    2. ``meta`` - an arbitrary user-defined key/value map, commonly used for ownership,
-       PII flags, team labels, etc.
+    The most observability-relevant fields are ``materialized``, ``access``, ``owner`` and
+    ``group``. The free-form ``meta`` map is emitted separately as dataset/run tags (source
+    ``dbt-meta``), not on this facet.
     """
 
     config: DbtModelConfig | None = attr.field(default=None)
-    meta: dict | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
