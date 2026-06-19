@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
@@ -121,9 +123,19 @@ class FileHandler(ABC):
 class LocalFileHandler(FileHandler):
     """Handler for local filesystem operations."""
 
+    @staticmethod
+    def _to_local_path(file_path: str) -> str:
+        parsed = urlparse(file_path)
+        if parsed.scheme != "file":
+            return file_path
+
+        if parsed.netloc and parsed.netloc != "localhost":
+            return url2pathname(f"//{parsed.netloc}{parsed.path}")
+        return url2pathname(parsed.path)
+
     def open_file(self, file_path: str, mode: str) -> Any:
         """Open a file using built-in open for local filesystem."""
-        return open(file_path, mode)
+        return open(self._to_local_path(file_path), mode)
 
 
 class FsspecFileHandler(FileHandler):
