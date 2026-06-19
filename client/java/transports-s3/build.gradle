@@ -47,10 +47,10 @@ dependencies {
 }
 
 shadowJar {
-    relocate "software.amazon", "io.openlineage.client.shaded.software.amazon"
-    relocate "org.apache", "io.openlineage.client.shaded.org.apache"
-    relocate "org.reactivestreams", "io.openlineage.client.shaded.org.reactivestreams"
-    relocate "org.slf4j", "io.openlineage.client.shaded.org.slf4j"
+    relocate "software.amazon", "io.openlineage.client.transports.s3.shaded.software.amazon"
+    relocate "org.apache", "io.openlineage.client.transports.s3.shaded.org.apache"
+    relocate "org.reactivestreams", "io.openlineage.client.transports.s3.shaded.org.reactivestreams"
+    relocate "org.slf4j", "io.openlineage.client.transports.s3.shaded.org.slf4j"
 }
 
 apply from: '../transports.build.gradle'
