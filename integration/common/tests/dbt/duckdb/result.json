@@ -20,6 +20,13 @@
     "outputs": [
       {
         "facets": {
+          "dbt_model": {
+            "config": {
+              "materialized": "table",
+              "access": "protected",
+              "group": "finance"
+            }
+          },
           "dataSource": {
             "name": "duckdb:///database/jaffle_shop.duckdb",
             "uri": "duckdb:///database/jaffle_shop.duckdb"
@@ -82,6 +89,25 @@
         },
         "dbt_run": {
           "invocation_id": "d205f9ce-0e55-4a5f-9f69-bfa170867a41"
+        },
+        "tags": {
+          "tags": [
+            {
+              "key": "owner",
+              "value": "data-team",
+              "source": "DBT_META"
+            },
+            {
+              "key": "pii",
+              "value": "false",
+              "source": "DBT_META"
+            },
+            {
+              "key": "tier",
+              "value": "gold",
+              "source": "DBT_META"
+            }
+          ]
         }
       }
     }
@@ -107,6 +133,13 @@
     "outputs": [
       {
         "facets": {
+          "dbt_model": {
+            "config": {
+              "materialized": "table",
+              "access": "protected",
+              "group": "finance"
+            }
+          },
           "dataSource": {
             "name": "duckdb:///database/jaffle_shop.duckdb",
             "uri": "duckdb:///database/jaffle_shop.duckdb"
@@ -166,6 +199,25 @@
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "tags": {
+          "tags": [
+            {
+              "key": "owner",
+              "value": "data-team",
+              "source": "DBT_META"
+            },
+            {
+              "key": "pii",
+              "value": "false",
+              "source": "DBT_META"
+            },
+            {
+              "key": "tier",
+              "value": "gold",
+              "source": "DBT_META"
+            }
+          ]
         }
       }
     }
