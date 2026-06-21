@@ -246,25 +246,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^5.0.4":
-  version: 5.0.4
-  resolution: "@argos-ci/cli@npm:5.0.4"
+"@argos-ci/cli@npm:^5.0.5":
+  version: 5.0.5
+  resolution: "@argos-ci/cli@npm:5.0.5"
   dependencies:
     "@argos-ci/api-client": "npm:0.22.0"
-    "@argos-ci/core": "npm:6.1.0"
+    "@argos-ci/core": "npm:6.1.1"
     commander: "npm:^14.0.3"
     open: "npm:^11.0.0"
     ora: "npm:^9.4.0"
     update-notifier: "npm:^7.3.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/fa86a1bf019b96ec71b09e9eb0325cf72f72bbfa3222edcc01310350a184d8ec7443ee60b9c4b1659ca4eff938b08a11d6c1d888935841be67311e9b24e0e189
+  checksum: 10c0/1e36c29819b18b3f48f2436bcdb8fa6fc73a3950ac9916a1655179fc224d1e3b69849393c3104ad1cf3bf68639edffdeb4579864628349003befe8a9d77c0874
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:6.1.0":
-  version: 6.1.0
-  resolution: "@argos-ci/core@npm:6.1.0"
+"@argos-ci/core@npm:6.1.1":
+  version: 6.1.1
+  resolution: "@argos-ci/core@npm:6.1.1"
   dependencies:
     "@argos-ci/api-client": "npm:0.22.0"
     "@argos-ci/util": "npm:4.0.0"
@@ -274,20 +274,20 @@ __metadata:
     mime-types: "npm:^3.0.2"
     sharp: "npm:^0.34.5"
     tmp: "npm:^0.2.5"
-  checksum: 10c0/47d688d1547d3672101c8f02e70736d1858db353852ab94389620e3c8f03a026d903357e2da97e0604a504ae7af229733879b006228d167ac904e8df0866f53a
+  checksum: 10c0/da579c02c8cdf641dde51170501d262c920883afcb83f2e77c2bb100518d62fdfa99ecfb5d5ac6ced0a31a86acd38a7f35b2fd33fff22a6f6d2bd7baf6e6c5ea
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^7.0.5":
-  version: 7.0.5
-  resolution: "@argos-ci/playwright@npm:7.0.5"
+"@argos-ci/playwright@npm:^7.0.6":
+  version: 7.0.6
+  resolution: "@argos-ci/playwright@npm:7.0.6"
   dependencies:
     "@argos-ci/browser": "npm:6.1.0"
-    "@argos-ci/core": "npm:6.1.0"
+    "@argos-ci/core": "npm:6.1.1"
     "@argos-ci/util": "npm:4.0.0"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
-  checksum: 10c0/7687306587aacd8654518d1f942816e34d405be9d07aab48fa86a4209dfd3c245f67bdef99436ccc58e18ac379bc5059f2fcab9624d3de87fc9e4c81073c13e0
+  checksum: 10c0/22bf77b4fa7e88f185955583c09fd81036f72850e003857091f0bd4aebe86988750ca19e2528f0fff82b2b59debdcd0f7121767aa232d31b1eb3f9aab579d32c
   languageName: node
   linkType: hard
 
@@ -5138,8 +5138,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^5.0.4"
-    "@argos-ci/playwright": "npm:^7.0.5"
+    "@argos-ci/cli": "npm:^5.0.5"
+    "@argos-ci/playwright": "npm:^7.0.6"
     "@playwright/test": "npm:^1.60.0"
     cheerio: "npm:^1.2.0"
   languageName: unknown
