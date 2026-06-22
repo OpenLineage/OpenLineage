@@ -18,7 +18,6 @@ public class FacetUtils {
     if (facets == null) return builder;
 
     builder
-        .dataQualityAssertions(facets.getDataQualityAssertions())
         .dataQualityMetrics(facets.getDataQualityMetrics())
         .inputStatistics(facets.getInputStatistics())
         .icebergScanReport(facets.getIcebergScanReport());
