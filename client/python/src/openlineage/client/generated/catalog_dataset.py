@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import DatasetFacet
 
@@ -47,6 +49,8 @@ class CatalogDatasetFacet(DatasetFacet):
     """
     catalogProperties: dict[str, str] | None = attr.field(factory=dict)  # noqa: N815
     """Additional catalog properties"""
+
+    key: ClassVar[str] = "catalog"
 
     @staticmethod
     def _get_schema() -> str:

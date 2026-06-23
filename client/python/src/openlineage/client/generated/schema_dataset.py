@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
@@ -12,6 +14,8 @@ from openlineage.client.utils import RedactMixin
 class SchemaDatasetFacet(DatasetFacet):
     fields: list[SchemaDatasetFacetFields] | None = attr.field(factory=list)
     """The fields of the data source."""
+
+    key: ClassVar[str] = "schema"
 
     @staticmethod
     def _get_schema() -> str:

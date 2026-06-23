@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import ClassVar
 
 import attr
 from openlineage.client.generated.base import DatasetFacet
@@ -28,6 +29,8 @@ class LifecycleStateChangeDatasetFacet(DatasetFacet):
 
     previousIdentifier: PreviousIdentifier | None = attr.field(default=None)  # noqa: N815
     """Previous name of the dataset in case of renaming it."""
+
+    key: ClassVar[str] = "lifecycleStateChange"
 
     @staticmethod
     def _get_schema() -> str:

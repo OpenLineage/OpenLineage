@@ -21,6 +21,7 @@ class DatasetTypeDatasetFacet(DatasetFacet):
     """Optional sub-type within the dataset type (e.g., MATERIALIZED, EXTERNAL, TEMPORARY)."""
 
     _additional_skip_redact: ClassVar[list[str]] = ["datasetType", "subType"]
+    key: ClassVar[str] = "datasetType"
 
     @staticmethod
     def _get_schema() -> str:

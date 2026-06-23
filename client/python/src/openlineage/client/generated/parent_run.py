@@ -37,6 +37,7 @@ class ParentRunFacet(RunFacet):
     job: Job
     root: Root | None = attr.field(default=None)
     _additional_skip_redact: ClassVar[list[str]] = ["job", "run"]
+    key: ClassVar[str] = "parent"
 
     @staticmethod
     def _get_schema() -> str:

@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import attr
 from openlineage.client.generated.base import RunFacet
 
@@ -27,6 +29,7 @@ class ProcessingEngineRunFacet(RunFacet):
 
     Example: 0.19.0
     """
+    key: ClassVar[str] = "processing_engine"
 
     @staticmethod
     def _get_schema() -> str:

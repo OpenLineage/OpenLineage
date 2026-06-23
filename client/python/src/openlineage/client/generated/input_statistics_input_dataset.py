@@ -21,6 +21,7 @@ class InputStatisticsInputDatasetFacet(InputDatasetFacet):
     """The number of files read"""
 
     _additional_skip_redact: ClassVar[list[str]] = ["rowCount", "size"]
+    key: ClassVar[str] = "inputStatistics"
 
     @staticmethod
     def _get_schema() -> str:

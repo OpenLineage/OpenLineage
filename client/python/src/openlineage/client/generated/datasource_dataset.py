@@ -14,6 +14,7 @@ class DatasourceDatasetFacet(DatasetFacet):
     name: str | None = attr.field(default=None)
     uri: str | None = attr.field(default=None)
     _additional_skip_redact: ClassVar[list[str]] = ["name", "uri"]
+    key: ClassVar[str] = "dataSource"
 
     @staticmethod
     def _get_schema() -> str:

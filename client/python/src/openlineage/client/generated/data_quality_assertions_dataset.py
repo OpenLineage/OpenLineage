@@ -85,6 +85,7 @@ class DataQualityAssertionsDatasetFacet(InputDatasetFacet):
     """list of tests performed on dataset or dataset columns, and their results"""
 
     assertions: list[Assertion]
+    key: ClassVar[str] = "dataQualityAssertions"
 
     @staticmethod
     def _get_schema() -> str:

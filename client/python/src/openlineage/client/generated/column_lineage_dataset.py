@@ -20,6 +20,7 @@ class ColumnLineageDatasetFacet(DatasetFacet):
     Column level lineage that affects the whole dataset. This includes filtering, sorting, grouping
     (aggregates), joining, window functions, etc.
     """
+    key: ClassVar[str] = "columnLineage"
 
     @staticmethod
     def _get_schema() -> str:

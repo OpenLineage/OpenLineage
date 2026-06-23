@@ -33,6 +33,7 @@ class ErrorMessageRunFacet(RunFacet):
     at io.openlineage.SomeClass.anotherMethod(SomeClass.java:9)
     """
     _additional_skip_redact: ClassVar[list[str]] = ["programmingLanguage"]
+    key: ClassVar[str] = "errorMessage"
 
     @staticmethod
     def _get_schema() -> str:

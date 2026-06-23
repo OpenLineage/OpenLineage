@@ -30,6 +30,8 @@ class EnvironmentVariablesRunFacet(RunFacet):
     environmentVariables: list[EnvironmentVariable]  # noqa: N815
     """The environment variables for the run."""
 
+    key: ClassVar[str] = "environmentVariables"
+
     @staticmethod
     def _get_schema() -> str:
         return "https://openlineage.io/spec/facets/1-0-0/EnvironmentVariablesRunFacet.json#/$defs/EnvironmentVariablesRunFacet"
