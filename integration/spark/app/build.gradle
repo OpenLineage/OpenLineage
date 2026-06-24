@@ -112,6 +112,7 @@ dependencies {
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}")
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
+    testImplementation(testFixtures(project(path: ":test-commons")))
     testImplementation("org.apache.spark:spark-core_${scala}:${spark}")
     testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
     testImplementation("org.apache.spark:spark-hive_${scala}:${spark}")
