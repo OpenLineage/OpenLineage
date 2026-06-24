@@ -14,7 +14,16 @@ public class FilesystemDatasetUtils {
     new LocalFilesystemDatasetExtractor(),
     new ObjectStorageDatasetExtractor("s3"),
     new ObjectStorageDatasetExtractor("gs"),
-    new ObjectStorageDatasetExtractor("wasbs")
+    // Azure ADLS Gen2 ("abfs"/"abfss") and Blob storage ("wasb"/"wasbs"). Within each pair the
+    // schemes differ only in transport security (the trailing "s" tells the driver to use TLS) and
+    // address the same data, so both variants are normalized to the canonical TLS scheme defined by
+    // the OpenLineage naming spec ("abfss"/"wasbs"). ObjectStorageDatasetExtractor matches on
+    // scheme
+    // prefix, so the "abfs" extractor also claims "abfss" URIs (and "wasb" claims "wasbs"), and
+    // rewrites them to the canonical scheme -- mirroring how the "s3" extractor normalizes
+    // "s3a"/"s3n" to "s3".
+    new ObjectStorageDatasetExtractor("abfs", "abfss"),
+    new ObjectStorageDatasetExtractor("wasb", "wasbs")
   };
 
   private static FilesystemDatasetExtractor getExtractor(URI location) {
