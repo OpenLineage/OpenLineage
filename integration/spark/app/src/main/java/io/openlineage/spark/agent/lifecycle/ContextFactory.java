@@ -18,6 +18,7 @@ import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Optional;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
@@ -36,6 +37,19 @@ public class ContextFactory {
   @Getter private final SparkOpenLineageConfig config;
   private final OpenLineageEventHandlerFactory handlerFactory;
 
+  /**
+   * Built once and shared across all execution contexts. Its constructor walks the classpath
+   * (ServiceLoader, Thread.getAllStackTraces, reflective defineClass) to discover
+   * OpenLineageExtensionProvider implementations. Doing that on every SQL execution start ran on
+   * the Spark listener thread and, when classpath JARs live on S3, could deadlock against the
+   * driver thread over the AWS HTTP connection-pool lock and the app classloader's URLClassPath
+   * monitor. The discovered providers are static for the JVM lifetime, so a single immutable
+   * instance is built here (at ContextFactory construction, i.e. application start) and reused
+   * everywhere.
+   */
+  @Getter(AccessLevel.PACKAGE)
+  private final SparkOpenLineageExtensionVisitorWrapper visitorWrapper;
+
   public ContextFactory(
       EventEmitter openLineageEventEmitter,
       MeterRegistry meterRegistry,
@@ -44,6 +58,7 @@ public class ContextFactory {
     this.meterRegistry = meterRegistry;
     this.config = config;
     handlerFactory = new InternalEventHandlerFactory();
+    this.visitorWrapper = new SparkOpenLineageExtensionVisitorWrapper(config);
   }
 
   public ExecutionContext createSparkApplicationExecutionContext(SparkContext sparkContext) {
@@ -59,7 +74,7 @@ public class ContextFactory {
             .vendors(Vendors.getVendors())
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
-            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .sparkExtensionVisitorWrapper(visitorWrapper)
             .build();
 
     String resolvedAppName = JobNameBuilder.buildApplicationName(olContext);
@@ -83,7 +98,7 @@ public class ContextFactory {
             .vendors(Vendors.getVendors())
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
-            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .sparkExtensionVisitorWrapper(visitorWrapper)
             .build();
 
     OpenLineageRunEventBuilder runEventBuilder =
@@ -112,7 +127,7 @@ public class ContextFactory {
             .vendors(Vendors.getVendors())
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
-            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .sparkExtensionVisitorWrapper(visitorWrapper)
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -140,8 +155,7 @@ public class ContextFactory {
                       .vendors(Vendors.getVendors())
                       .meterRegistry(meterRegistry)
                       .openLineageConfig(config)
-                      .sparkExtensionVisitorWrapper(
-                          new SparkOpenLineageExtensionVisitorWrapper(config))
+                      .sparkExtensionVisitorWrapper(visitorWrapper)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

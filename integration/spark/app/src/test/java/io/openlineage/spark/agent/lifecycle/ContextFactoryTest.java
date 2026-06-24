@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,5 +39,32 @@ class ContextFactoryTest {
     factory.createSparkApplicationExecutionContext(sparkContext);
 
     verify(emitter).setApplicationJobName("test_app");
+  }
+
+  @Test
+  void testVisitorWrapperIsBuiltOnceAndReusedAcrossExecutionContexts() {
+    EventEmitter emitter = mock(EventEmitter.class);
+    when(emitter.getApplicationRunId()).thenReturn(UUID.randomUUID());
+    when(emitter.getCustomEnvironmentVariables()).thenReturn(Optional.of(Collections.emptyList()));
+
+    SparkContext sparkContext = mock(SparkContext.class);
+    SparkConf sparkConf = new SparkConf().set("spark.app.name", "test-app");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.appName()).thenReturn("test-app");
+
+    ContextFactory factory =
+        new ContextFactory(emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig());
+
+    // The wrapper performs an expensive classpath scan in its constructor; it must be built exactly
+    // once (here, at ContextFactory construction) and shared, never rebuilt per execution context.
+    SparkOpenLineageExtensionVisitorWrapper wrapper = factory.getVisitorWrapper();
+    assertThat(wrapper).isNotNull();
+
+    factory.createSparkApplicationExecutionContext(sparkContext);
+    factory.createRddExecutionContext(0);
+
+    // Same instance after creating contexts guards against regressing to a per-execution
+    // `new SparkOpenLineageExtensionVisitorWrapper(config)` (the source of the listener deadlock).
+    assertThat(factory.getVisitorWrapper()).isSameAs(wrapper);
   }
 }
