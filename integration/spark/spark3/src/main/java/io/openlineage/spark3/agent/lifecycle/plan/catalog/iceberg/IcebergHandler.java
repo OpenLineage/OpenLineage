@@ -65,10 +65,10 @@ public class IcebergHandler implements CatalogHandler {
   @Override
   public boolean hasClasses() {
     try {
-      IcebergHandler.class.getClassLoader().loadClass("org.apache.iceberg.catalog.Catalog");
+      IcebergHandler.class.getClassLoader().loadClass("org.apache.iceberg.spark.SparkCatalog");
       return true;
-    } catch (Exception e) {
-      log.debug("The iceberg catalog is not present");
+    } catch (NoClassDefFoundError | Exception e) {
+      log.debug("The iceberg spark catalog is not present");
     }
     return false;
   }
