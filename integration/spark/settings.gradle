@@ -11,6 +11,7 @@ include 'spark34'
 include 'spark35'
 include 'spark40'
 include 'shared'
+include 'test-commons'
 include 'app'
 include 'scala-fixtures'
 
