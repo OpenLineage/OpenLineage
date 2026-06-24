@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -40,6 +41,7 @@ import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBui
 import io.openlineage.spark35.agent.lifecycle.plan.MergeRowsColumnLineageVisitor;
 import io.openlineage.spark40.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark40.agent.lifecycle.plan.StreamingDataSourceV2ScanRelationDatasetBuilder;
+import io.openlineage.spark40.agent.lifecycle.plan.catalog.UnityCatalogHandler;
 import java.util.Collection;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -116,5 +118,13 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
     builder.addAll(super.getColumnLevelLineageVisitors(context));
 
     return builder.build();
+  }
+
+  @Override
+  public List<CatalogHandler> getCatalogHandlers(OpenLineageContext context) {
+    return ImmutableList.<CatalogHandler>builder()
+        .addAll(super.getCatalogHandlers(context))
+        .add(new UnityCatalogHandler(context))
+        .build();
   }
 }
