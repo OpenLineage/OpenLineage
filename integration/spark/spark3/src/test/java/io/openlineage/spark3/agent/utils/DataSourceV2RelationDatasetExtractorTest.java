@@ -18,12 +18,12 @@ import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -73,7 +73,7 @@ class DataSourceV2RelationDatasetExtractorTest {
 
   @Test
   void testExtractFromDataSourceV2Relation() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
       try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
         DatasetIdentifier di = mock(DatasetIdentifier.class);
         when(di.getNamespace()).thenReturn("file://tmp");
@@ -96,7 +96,7 @@ class DataSourceV2RelationDatasetExtractorTest {
         when(facetsBuilder.dataSource(datasourceDatasetFacet)).thenReturn(facetsBuilder);
         when(facetsBuilder.build()).thenReturn(datasetFacets);
 
-        when(CatalogUtils3.getDatasetIdentifier(
+        when(CatalogUtils.getDatasetIdentifier(
                 openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(di);
 
@@ -115,8 +115,8 @@ class DataSourceV2RelationDatasetExtractorTest {
 
   @Test
   void testExtractFromDataSourceV2RelationWhenDatasetIdentifierEmpty() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetIdentifier(
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetIdentifier(
               openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
 
@@ -149,8 +149,8 @@ class DataSourceV2RelationDatasetExtractorTest {
   @Test
   void testGetDatasetIdentifierFromV2Relation() {
     DatasetIdentifier di = mock(DatasetIdentifier.class);
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetIdentifier(
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetIdentifier(
               openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(di);
       assertEquals(
@@ -267,7 +267,7 @@ class DataSourceV2RelationDatasetExtractorTest {
 
   @Test
   void testExtractFromDataSourceV2RelationContainsVersionFacet() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
       try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
         try (MockedStatic<DatasetVersionDatasetFacetUtils> versionUtils =
             mockStatic(DatasetVersionDatasetFacetUtils.class)) {
@@ -279,7 +279,7 @@ class DataSourceV2RelationDatasetExtractorTest {
           when(openLineageContext.getOpenLineage())
               .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
 
-          when(CatalogUtils3.getDatasetIdentifier(
+          when(CatalogUtils.getDatasetIdentifier(
                   openLineageContext, tableCatalog, identifier, tableProperties))
               .thenReturn(di);
           when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(

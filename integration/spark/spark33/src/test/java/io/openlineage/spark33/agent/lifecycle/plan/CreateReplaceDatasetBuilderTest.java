@@ -19,10 +19,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;
@@ -147,8 +147,8 @@ class CreateReplaceDatasetBuilderTest {
 
     DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
-        when(CatalogUtils3.getDatasetVersion(
+      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils.class)) {
+        when(CatalogUtils.getDatasetVersion(
                 openLineageContext,
                 catalog,
                 Identifier.of(new String[] {"db"}, TABLE),
@@ -181,8 +181,8 @@ class CreateReplaceDatasetBuilderTest {
 
     DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
-        when(CatalogUtils3.getDatasetVersion(
+      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils.class)) {
+        when(CatalogUtils.getDatasetVersion(
                 openLineageContext,
                 catalog,
                 Identifier.of(new String[] {"db"}, TABLE),
