@@ -5,7 +5,7 @@
     "jobType": "ETL",
     "emissionPattern": {
       "eventTrigger": "EVENT_BASED",
-      "eventCompleteness": "ACCUMULATIVE"
+      "eventContentMode": "ACCUMULATIVE"
     },
     "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
     "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json"

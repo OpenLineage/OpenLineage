@@ -19,19 +19,20 @@ class EmissionPattern(RedactMixin):
 
     Example: EVENT_BASED
     """
-    eventCompleteness: str  # noqa: N815
+    eventContentMode: str  # noqa: N815
     """
-    Defines what events contain. ACCUMULATIVE: Events may contain only partial information and the
-    complete information can be collected by combining information from all the events emitted by a
-    specific job run. COMPLETE_SNAPSHOT: events contain complete state for a specific time window
-    (events can be processed independently).
+    Define if individual events are self-sufficient and can be processed individually, or need to be
+    combined by consumer. ACCUMULATIVE: Events may contain only partial information and the complete
+    information can be collected by combining information from all the events emitted by a specific job
+    run. COMPLETE_SNAPSHOT: events contain complete state for a specific time window (events can be
+    processed independently).
 
     Example: ACCUMULATIVE
     """
     windowDuration: int | None = attr.field(default=None)  # noqa: N815
     """
     Time window duration for periodic event emissions in seconds. Only applicable when eventTrigger is
-    PERIODIC. Required when eventTrigger is PERIODIC and eventCompleteness is COMPLETE_SNAPSHOT.
+    PERIODIC. Required when eventTrigger is PERIODIC and eventContentMode is COMPLETE_SNAPSHOT.
 
     Example: 300
     """

@@ -1020,11 +1020,11 @@ type JobIdentifier struct {
 
 // JobTypeJobFacetEmissionPattern — Describes how and what the job emits in its events
 type JobTypeJobFacetEmissionPattern struct {
-	// Defines what events contain. ACCUMULATIVE: events contain cumulative state since job start (consumers need only latest event). COMPLETE_SNAPSHOT: events contain complete state for a specific time window (events can be processed independently).
-	EventCompleteness string `json:"eventCompleteness"`
+	// Define if individual events are self-sufficient and can be processed individually, or need to be combined by consumer. ACCUMULATIVE: Events may contain only partial information and the complete information can be collected by combining information from all the events emitted by a specific job run. COMPLETE_SNAPSHOT: events contain complete state for a specific time window (events can be processed independently).
+	EventContentMode string `json:"eventContentMode"`
 	// Defines when events are emitted. EVENT_BASED: events emitted on lifecycle transitions (START/COMPLETE/FAIL/ABORT). PERIODIC: events emitted at regular time intervals.
 	EventTrigger string `json:"eventTrigger"`
-	// Time window duration for periodic event emissions in seconds. Only applicable when eventTrigger is PERIODIC. Required when eventTrigger is PERIODIC and eventCompleteness is COMPLETE_SNAPSHOT.
+	// Time window duration for periodic event emissions in seconds. Only applicable when eventTrigger is PERIODIC. Required when eventTrigger is PERIODIC and eventContentMode is COMPLETE_SNAPSHOT.
 	WindowDuration *int64 `json:"windowDuration,omitempty"`
 }
 

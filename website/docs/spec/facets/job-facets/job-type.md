@@ -29,13 +29,13 @@ Defines when events are emitted:
   * `RUNNING` events are emitted on a schedule (e.g., every 5 minutes)
   * Other events related to the job lifecycle state can still be emitted, but it is expected that most lineage information and observability metrics will be captured in the periodic events.  
 
-### Event Completeness
+### Event Content Mode
 
-Defines what events contain:
+Define if individual events are self-sufficient and can be processed individually, or need to be combined by consumer:
 
-* **`ACCUMULATIVE`** - Events may contain only partial information and the complete information can be collected by combining information from all the events emmited by a specific job run:
-  * Individual events are more likely to contain partial rather then complete information
-  * Consumers need to combine all events for a specif run to have complete information about the job run
+* **`ACCUMULATIVE`** - Events may contain only partial information and the complete information can be collected by combining information from all the events emitted by a specific job run:
+  * Individual events are more likely to contain partial rather than complete information
+  * Consumers need to combine all events for a specific run to have complete information about the job run
   
 * **`COMPLETE_SNAPSHOT`** - Events contain complete state for a specific time window
   * Each event is self-contained for its time period
@@ -102,7 +102,7 @@ Unless specified otherwise, the job is assumed to be a `BATCH` job that emits `A
                 "jobType": "ETL",
                 "emissionPattern": {
                     "eventTrigger": "EVENT_BASED",
-                    "eventCompleteness": "ACCUMULATIVE"
+                    "eventContentMode": "ACCUMULATIVE"
                 },
                 "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
                 "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json"
@@ -124,7 +124,7 @@ Unless specified otherwise, the job is assumed to be a `BATCH` job that emits `A
                 "jobType": "STREAM_PROCESSOR",
                 "emissionPattern": {
                     "eventTrigger": "PERIODIC",
-                    "eventCompleteness": "COMPLETE_SNAPSHOT",
+                    "eventContentMode": "COMPLETE_SNAPSHOT",
                     "windowDuration": 300
                 },
                 "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
@@ -147,7 +147,7 @@ Unless specified otherwise, the job is assumed to be a `BATCH` job that emits `A
                 "jobType": "MICROSERVICE",
                 "emissionPattern": {
                     "eventTrigger": "PERIODIC",
-                    "eventCompleteness": "COMPLETE_SNAPSHOT",
+                    "eventContentMode": "COMPLETE_SNAPSHOT",
                     "windowDuration": 60
                 },
                 "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",

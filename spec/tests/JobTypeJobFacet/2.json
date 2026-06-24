@@ -5,7 +5,7 @@
     "jobType": "STREAM_PROCESSOR",
     "emissionPattern": {
       "eventTrigger": "PERIODIC",
-      "eventCompleteness": "COMPLETE_SNAPSHOT",
+      "eventContentMode": "COMPLETE_SNAPSHOT",
       "windowDuration": 300
     },
     "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
