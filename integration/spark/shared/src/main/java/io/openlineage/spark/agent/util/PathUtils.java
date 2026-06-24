@@ -179,7 +179,11 @@ public class PathUtils {
     return warehouseLocation.map(URI::create);
   }
 
-  private static URI getLocationUri(CatalogTable catalogTable, SparkSession sparkSession) {
+  /**
+   * Returns the physical storage location of a table: its explicit {@code storage().locationUri()}
+   * if defined, otherwise the catalog's default table path.
+   */
+  public static URI getLocationUri(CatalogTable catalogTable, SparkSession sparkSession) {
     URI locationUri;
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
       locationUri = catalogTable.storage().locationUri().get();
