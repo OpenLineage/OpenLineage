@@ -10,6 +10,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.UUIDUtils;
+import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactory;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
@@ -52,6 +53,12 @@ import scala.PartialFunction;
 public class OpenLineageContext {
   // filled up only for SparkListenerApplication{Start,End} events
   @Setter @Getter UUID applicationUuid;
+
+  // The Spark-version-specific DatasetBuilderFactory, used to source version-specific catalog
+  // handlers (see CatalogUtils). Defaults to a no-op factory when the context is not built via the
+  // agent's ContextFactory (e.g. some unit tests).
+  @Default @NonNull @Getter
+  DatasetBuilderFactory datasetBuilderFactory = DatasetBuilderFactory.EMPTY;
 
   // filled up for SparkListener non-application events
   @Default @NonNull @Getter final UUID runUuid = UUIDUtils.generateNewUUID();
