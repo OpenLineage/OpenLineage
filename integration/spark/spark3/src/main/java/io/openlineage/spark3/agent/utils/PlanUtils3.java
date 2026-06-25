@@ -6,11 +6,11 @@
 package io.openlineage.spark3.agent.utils;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +48,7 @@ public class PlanUtils3 {
 
     try {
       return (Optional.of(
-          CatalogUtils3.getDatasetIdentifier(context, catalog, identifier, properties)));
+          CatalogUtils.getDatasetIdentifier(context, catalog, identifier, properties)));
     } catch (UnsupportedCatalogException ex) {
       log.warn(
           String.format(
