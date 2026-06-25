@@ -11,8 +11,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -96,8 +96,8 @@ class DatasetVersionDatasetFacetUtilsTest {
     when(v2Relation.table()).thenReturn(table);
     when(table.properties()).thenReturn(tableProperties);
 
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetVersion(
               openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.of("some-version"));
       assertEquals(

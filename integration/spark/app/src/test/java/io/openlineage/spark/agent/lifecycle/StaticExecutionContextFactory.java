@@ -135,6 +135,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .openLineageConfig(config)
                       .sparkExtensionVisitorWrapper(
                           new SparkOpenLineageExtensionVisitorWrapper(config))
+                      .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory());
