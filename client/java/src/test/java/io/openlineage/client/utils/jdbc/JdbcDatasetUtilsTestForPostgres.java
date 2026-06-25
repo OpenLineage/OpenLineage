@@ -59,6 +59,15 @@ class JdbcDatasetUtilsTestForPostgres {
                 "jdbc:postgresql://hostname:5433", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "postgres://hostname:5433")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:postgresql://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:5433",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue(
+            "namespace", "postgres://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:5433")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
