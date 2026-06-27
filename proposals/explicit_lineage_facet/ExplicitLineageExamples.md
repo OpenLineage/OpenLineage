@@ -93,6 +93,7 @@ This example shows how the new facets can replace ColumnLevelLineageDatasetFacet
 ```
 
 This single entry combines:
+
 - **Entity-level**: output_X comes from input_A
 - **Dataset-wide op**: group_by_col affects entire output
 - **Column mapping**: col_a -> col1
@@ -373,3 +374,4 @@ Reading specific columns from a structured table and writing to an unstructured 
   ]
 }
 ```
+

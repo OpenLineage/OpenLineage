@@ -34,6 +34,8 @@ The natural facet. Lives on datasets in DatasetEvent. The target entity is impli
 
 ## LineageRunFacet (RunFacet)
 
+TODO: remove
+
 Lives on the run object in RunEvent. Contains an array of `LineageEntry` objects, each identifying a target entity explicitly by namespace, name, and type, along with its source inputs and optional column-level detail.
 
 ```json
@@ -79,6 +81,8 @@ Lives on the job object in JobEvent. Same structure as LineageRunFacet.
 ## Shared Types
 
 ### LineageEntry (discriminated union)
+
+TODO: when LineageJobFacet coalesces to LineageRunFacet, we don't need this
 
 Used by LineageRunFacet and LineageJobFacet. Each entry describes ONE target entity and what feeds into it. The `type` field discriminates between dataset targets and job targets. Dataset targets may be fed by datasets or by explicit upstream jobs; job targets may be fed by datasets or jobs when the target job must be identified independently from the event's own job:
 
@@ -138,19 +142,13 @@ A lineage target that is a dataset. Supports both entity-level and column-level 
 
 A lineage target that is a job. Used when the target job must be identified explicitly, such as **job-to-job chains** or other cross-job handoffs with no intermediate tracked dataset. It is not used to model the ordinary sink case for the event's own job; that is represented by input datasets that appear in the event `inputs` array but do not feed any tracked output dataset. Does not support column-level lineage (`fields`), but supports an optional `runId` to tie to a specific execution:
 
+When we describe current job, we don't 
+
 ```json
 "LineageJobEntry": {
   "type": "object",
   "description": "Describes data flowing into a target job. Used when the target job must be identified explicitly.",
   "properties": {
-    "namespace": {
-      "type": "string",
-      "description": "The namespace of the target job"
-    },
-    "name": {
-      "type": "string",
-      "description": "The name of the target job"
-    },
     "type": {
       "type": "string",
       "enum": ["JOB"],
@@ -169,7 +167,7 @@ A lineage target that is a job. Used when the target job must be identified expl
       }
     }
   },
-  "required": ["namespace", "name", "type"]
+  "required": ["type"]
 }
 ```
 
@@ -249,7 +247,7 @@ A source input that is a dataset. Supports optional field reference and transfor
 
 A source input that is a job. Used when data comes from an explicitly identified job without an intermediate tracked dataset, including `JOB → JOB` and `JOB → DATASET` chains. Supports an optional `runId` to tie to a specific execution, and optional `transformations` describing how the job produced the data.
 
-**`namespace` and `name` are OPTIONAL.** When both are omitted, the source job is implicitly the **event's own job** — the job carried in the event's `job` field. This is the home for field-level and transformation detail on data produced by the implicit job (the generator case): a target field can name the current job as its source and attach `transformations` without that job having to be restated as an explicit entity. When `namespace`/`name` are present, they identify a different, explicitly tracked job (the `JOB → JOB` / `JOB → DATASET` chain case).
+`**namespace` and `name` are OPTIONAL.** When both are omitted, the source job is implicitly the **event's own job** — the job carried in the event's `job` field. This is the home for field-level and transformation detail on data produced by the implicit job (the generator case): a target field can name the current job as its source and attach `transformations` without that job having to be restated as an explicit entity. When `namespace`/`name` are present, they identify a different, explicitly tracked job (the `JOB → JOB` / `JOB → DATASET` chain case).
 
 ```json
 "LineageJobInput": {
@@ -272,7 +270,7 @@ A source input that is a job. Used when data comes from an explicitly identified
     "runId": {
       "type": "string",
       "format": "uuid",
-      "description": "Optional. The specific run ID of the source job, when the lineage is tied to a particular execution. When the source is the event's own job, this MAY repeat the event's own runId."
+      "description": "Optional. The specific run ID of the source job, when the lineage is tied to a particular execution."
     },
     "transformations": {
       "type": "array",
@@ -287,6 +285,8 @@ A source input that is a job. Used when data comes from an explicitly identified
 ```
 
 > Either both `namespace` and `name` are present (an explicitly identified job) or both are absent (the event's own job). A producer SHOULD NOT emit one without the other.
+
+TODO: explain that when refering to current job, we are inferring current namespace/name/runId from the job on the top-level event
 
 ### LineageTransformation
 
@@ -314,3 +314,4 @@ Reuses the existing CLL transformation structure:
   "required": ["type"]
 }
 ```
+

@@ -8,15 +8,18 @@
 
 ## Problem Statement
 
-OpenLineage's current model captures lineage through two mechanisms: `inputs`/`outputs` arrays on Run and Job events, and `ColumnLineageDatasetFacet` (CLL) for column-level detail on individual outputs. Most integrations today (Spark, dbt, Flink) emit one output per job, so the implicit assumption that all inputs feed all outputs happens to be correct — dataset-level lineage works fine.
+TODO: bit more positive sentiment here. We will support more use cases due to this proposal.
+
+OpenLineage's current model captures lineage through two mechanisms: `inputs`/`outputs` arrays on Run and Job events, and `ColumnLineageDatasetFacet` (CLL - Column-Level Lineage) for column-level detail on individual outputs. Most integrations today (Spark, dbt, Flink) emit one output per job, so the implicit assumption that all inputs feed all outputs happens to be correct — dataset-level lineage works fine.
 
 The problem appears when a single job reads and writes multiple independent datasets. The model infers the cartesian product of inputs x outputs: reading A,B and writing C,D produces four edges, even if the real flow is only A -> C and B -> D. In some cases, this makes it difficult to express a bulk ETL job processing 10 independent tables without artificially splitting it into separate jobs. CLL can resolve this at column granularity, but many integrations know "Table A feeds Table C" without column-level detail — and without CLL, the only fallback is the cartesian product.
 
 Beyond this gap, the current model cannot express several common patterns:
 
 - **Dataset-to-dataset derivation** — no mechanism for views, aliases, or manually documented lineage without an intermediate job
-- **Mixed granularity** — CLL is all-or-nothing per output; no way to provide dataset-level lineage for some outputs and column-level for others in the same event
 - **Job-to-job data flow** — no way to express that one job feeds data to another without an intermediate dataset (e.g., non-materialized views, stored procedures calling functions, in-memory data passing)
+- **Mixed granularity** — CLL is all-or-nothing per output; no way to provide dataset-level lineage for some outputs and column-level for others in the same event.
+- **Job-to-dataset and dataset-to-job data flows - TODO**
 
 ## Goals
 
@@ -24,26 +27,31 @@ Create a unified lineage structure that handles all the cases outlined above —
 
 ## Proposed Solution
 
+The general idea is to model the relationships explicitly; rather than implicitly; following and expanding on the ColumnLevelLineageDatasetFacet.
+
 We introduce three new facets — **LineageRunFacet**, **LineageJobFacet**, and **LineageDatasetFacet** — each carrying explicit lineage information and each restricted (by spec text, not JSON Schema) to a single event type:
 
-| Facet | Entity it lives on | Allowed event type | Semantics |
-|---|---|---|---|
-| `LineageRunFacet` | Run | RunEvent only | Observed data flow during this specific run |
-| `LineageJobFacet` | Job | JobEvent only | Declared/static data flow for this job definition |
-| `LineageDatasetFacet` | Dataset | DatasetEvent only | Structural derivation of this dataset (views, aliases, manual docs) |
+
+| Facet                 | Entity it lives on | Allowed event type | Semantics                                                           |
+| --------------------- | ------------------ | ------------------ | ------------------------------------------------------------------- |
+| `LineageRunFacet`     | Run                | RunEvent only      | Observed data flow during this specific run                         |
+| `LineageJobFacet`     | Job                | JobEvent only      | Declared/static data flow for this job definition                   |
+| `LineageDatasetFacet` | Dataset            | DatasetEvent only  | Structural derivation of this dataset (views, aliases, manual docs) |
+
 
 **Why the one-facet-per-event-type restriction?** If a RunEvent carried both a LineageRunFacet (on the run) and LineageDatasetFacet (on output datasets), the semantics would be ambiguous — which takes precedence? Do they merge? Rather than define complex interaction rules, we disallow the combination entirely. Each event type has exactly one place where lineage lives.
 
-This restriction may be relaxed in a future version with clear type-of-lineage or hierarchy semantics defined (see [Future Evolution](#future-evolution)).
+This restriction may be relaxed in a future version if we define the semantics of that behavior (see [Future Evolution](#future-evolution)).
 
 **LineageDatasetFacet** is the natural one. It sits on an output dataset and describes what feeds into that specific dataset — the same position as CLL. The target entity is implicit (the dataset the facet is attached to). This is a direct evolution of CLL.
 
-**LineageRunFacet** and **LineageJobFacet** are the pragmatic ones. They sit on the run/job entity but describe relationships between other entities (datasets). This is unusual for a facet — normally a facet describes properties of the entity it's on. But it works because the event type provides the semantic frame: "during this run, data flowed this way" or "this job is designed to move data this way."
-
+**LineageRunFacet** and **LineageJobFacet** are the pragmatic ones. They sit on the run/job entity but describe relationships between other entities (datasets). This is not the usual way for a facet — normally a facet describes properties of the entity it's on. But it works because the event type provides the frame on which the event is one: "during this run, data flowed this way" or "this job is designed to move data this way." This information is also used in the Sinks/Generators section below - we know they live in the context of some dataset.
 
 ## Proposed Schema
 
 The proposed facet and shared type schemas are defined in more details in [ExplicitLineageSchema.md](ExplicitLineageSchema.md).
+
+There are special cases that need additional explanation and defined semantics:
 
 ### Sinks: jobs that consume data without a tracked output
 
@@ -55,7 +63,7 @@ inputs: [transactions]
 outputs: []
 ```
 
-The dataset-to-job relationship is implicit in the event boundary: `transactions` is consumed by the event's job because it appears in `inputs` and does not feed any tracked output dataset in the lineage facet. We intentionally do not add a `LineageJobEntry` for `fraud_detector`; that would duplicate information already carried by the event's `job` field.
+The dataset-to-job relationship is implicit in the event: `transactions` is consumed by the event's job because it appears in `inputs` and does not feed any tracked output dataset in the lineage facet. We intentionally do not add a `LineageJobEntry` for `fraud_detector`; that would duplicate information already carried by the event's `job` field.
 
 ```
 transactions (DATASET) ──> fraud_detector (JOB)
@@ -108,6 +116,8 @@ An explicit job-involving chain is data flowing through a job that cannot be rec
 dag_a.task_3 (JOB) ──> dag_b.task_1 (JOB)
 ```
 
+TODO: explain that we standarize from the point of "output" - we are describing the current job's inputs
+
 Either or both jobs may live in a different namespace from the event's own job, so the explicit `(namespace, name)` on `LineageJobEntry` and `LineageJobInput` is load-bearing — these chains cannot be reconstructed from the event's surrounding job field alone. The same applies to a chain that ends in a dataset after an explicit upstream job, such as `dag_a.task_3 (JOB) -> output_table (DATASET)`: the upstream job identity is not the event's own job and must remain expressible as a `LineageJobInput`.
 
 `runId` is OPTIONAL on both ends. On a `JobEvent`, it should be omitted: declared lineage describes the job definition, not a specific execution. On a `RunEvent`, it MAY be populated to bind the chain to specific upstream/downstream executions when the producer can identify them (e.g. when an orchestrator knows which run of `dag_a.task_3` fed this run of `dag_b.task_1`).
@@ -138,23 +148,29 @@ What is lost is the partitioning of the handoff: that `dataset_4` depends on the
 
 ## Granularity Matrix
 
+TODO: This is not clear at all
+
 The combination of target type, source type, and field presence on either end enables all granularity levels in one table:
 
-| Target type | Source type | Source field? | Meaning | Example |
-|---|---|---|---|---|
-| DATASET (entity-level) | DATASET | No | Dataset-level lineage | `output_table <- input_table` |
-| DATASET (entity-level) | DATASET | Yes | Dataset-wide operation (e.g., GROUP BY) | `output_table <- input.group_by_col` |
-| DATASET (per field) | DATASET | Yes | Column-level lineage | `output.total <- input.amount` |
-| DATASET (per field) | DATASET | No | Partial column lineage (source column unknown) | `output.region <- lookup_table` |
-| DATASET | JOB (identified) | — | Dataset produced from an explicitly identified upstream job | `output_table <- dag_a.task_3` |
-| DATASET (per field) | JOB (identity-less = own job) | — | Field produced by the event's own job, with transformation detail and no tracked upstream | `extracted_data.total <- sum() by own job` |
-| JOB | DATASET | No | Explicit target job consumes entire dataset | `dag_b.task_1 <- transactions` |
-| JOB | DATASET | Yes | Explicit target job consumes specific columns | `dag_b.task_1 <- transactions.amount` |
-| JOB | JOB | — | Job-to-job chain (no intermediate dataset) | `dag_b.task_1 <- dag_a.task_3` |
+
+| Target type            | Source type                   | Source field? | Meaning                                                                                   | Example                                    |
+| ---------------------- | ----------------------------- | ------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------ |
+| DATASET (entity-level) | DATASET                       | No            | Dataset-level lineage                                                                     | `output_table <- input_table`              |
+| DATASET (entity-level) | DATASET                       | Yes           | Dataset-wide operation (e.g., GROUP BY)                                                   | `output_table <- input.group_by_col`       |
+| DATASET (per field)    | DATASET                       | Yes           | Column-level lineage                                                                      | `output.total <- input.amount`             |
+| DATASET (per field)    | DATASET                       | No            | Partial column lineage (source column unknown)                                            | `output.region <- lookup_table`            |
+| DATASET                | JOB (identified)              | —             | Dataset produced from an explicitly identified upstream job                               | `output_table <- dag_a.task_3`             |
+| DATASET (per field)    | JOB (identity-less = own job) | —             | Field produced by the event's own job, with transformation detail and no tracked upstream | `extracted_data.total <- sum() by own job` |
+| JOB                    | DATASET                       | No            | Explicit target job consumes entire dataset                                               | `dag_b.task_1 <- transactions`             |
+| JOB                    | DATASET                       | Yes           | Explicit target job consumes specific columns                                             | `dag_b.task_1 <- transactions.amount`      |
+| JOB                    | JOB                           | —             | Job-to-job chain (no intermediate dataset)                                                | `dag_b.task_1 <- dag_a.task_3`             |
+
 
 The ordinary sink and generator relationships for the event's own job are outside this matrix because they are not represented as explicit facet entries. They are represented by event membership: dangling `inputs` are consumed by the event's job, and dangling `outputs` are produced by the event's job.
 
 ## Precedence Rules
+
+TODO: Why are we talking about this here
 
 1. **If a lineage facet is present on the event**, it is the complete picture of explicit lineage between tracked entities for that event. Consumers should derive dataset-to-dataset, column-level, and explicit job-involving edges from the facet and should not infer additional dataset-to-dataset edges from `inputs`/`outputs` arrays or CLL facets.
 2. **The event's own job remains implicit**. Even when a lineage facet is present, `inputs`/`outputs` still define the boundary of the event's job. Input datasets that are not referenced by any lineage entry are consumed directly by the event's job. Output datasets that are not described by any lineage entry are produced directly by the event's job. These implicit job-boundary relationships do not create a cartesian product between inputs and outputs.
@@ -166,28 +182,23 @@ The ordinary sink and generator relationships for the event's own job are outsid
 These constraints are documented in spec text rather than enforced by JSON Schema. They are intentionally conservative — motivated by keeping lineage cohesive within a single event and avoiding the need to define interaction/precedence rules between multiple lineage facets. Any of these restrictions may be relaxed in a future version if use cases emerge; the current goal is to keep the initial proposal simple and unambiguous.
 
 1. **One lineage facet per event**: A single event MUST NOT carry more than one type of lineage facet. A RunEvent uses LineageRunFacet; a JobEvent uses LineageJobFacet; a DatasetEvent uses LineageDatasetFacet. Mixing them is forbidden.
-
 2. **Event type restriction**: LineageRunFacet MUST only appear on RunEvent. LineageJobFacet MUST only appear on JobEvent. LineageDatasetFacet MUST only appear on DatasetEvent.
 
-3. **Producers MUST include datasets referenced in lineage facets in the event's inputs/outputs arrays** when applicable. These arrays are the carrier for dataset facets, the fallback for older consumers, and the source of implicit event-job boundary relationships for dangling inputs/outputs.
+TODO: reconsider only LineageJobFacet vs LineageRunFacet. The lineage should be a relatively "static" property - not change every run. 
 
-4. **Absence of lineage facet**: When no lineage facet is present on an event, the existing behavior applies unchanged — lineage is derived from CLL on output datasets if available, otherwise from the cartesian product of inputs x outputs.
+1. **Producers MUST include datasets referenced in lineage facets in the event's inputs/outputs arrays** when applicable. These arrays are the carrier for dataset facets, the fallback for older consumers, and the source of implicit event-job boundary relationships for dangling inputs/outputs.
+2. **Absence of lineage facet**: When no lineage facet is present on an event, the existing behavior applies unchanged — lineage is derived from CLL on output datasets if available, otherwise from the cartesian product of inputs x outputs.
+3. At least one of `inputs` or `fields` SHOULD be present on a LineageDatasetEntry (or on LineageDatasetFacet directly). For LineageJobEntry, `inputs` SHOULD be present.
+4. An **empty `inputs: []` array is semantically meaningful**: "this entity has no upstream source" (distinct from the entity not appearing in lineage at all).
+5. A **dangling input** is an input dataset in the event `inputs` array that is not referenced as a source by any lineage entry. It is interpreted as data consumed directly by the event's job without a tracked output dataset. A **dangling output** is an output dataset in the event `outputs` array that is not represented as a lineage target. It is interpreted as data produced directly by the event's job without a tracked input dataset.
+6. Lineage entries and inputs do NOT carry a `facets` property. Facets belong on the entities they describe (Dataset, Run, Job), not on lineage edges.
+7. **On RunEvent**: LineageRunFacet follows existing OpenLineage **accumulative semantics** — each event adds to the lineage picture for the run. Consumers merge lineage entries across events for the same `runId`.
+8. **On DatasetEvent and JobEvent**: lineage facets use **replace semantics** — the latest event's lineage is the complete picture for that entity.
 
-5. At least one of `inputs` or `fields` SHOULD be present on a LineageDatasetEntry (or on LineageDatasetFacet directly). For LineageJobEntry, `inputs` SHOULD be present.
+TODO: Semantics should follow event types - behave differently based on event, not facets
 
-6. An **empty `inputs: []` array is semantically meaningful**: "this entity has no upstream source" (distinct from the entity not appearing in lineage at all).
-
-7. A **dangling input** is an input dataset in the event `inputs` array that is not referenced as a source by any lineage entry. It is interpreted as data consumed directly by the event's job without a tracked output dataset. A **dangling output** is an output dataset in the event `outputs` array that is not represented as a lineage target. It is interpreted as data produced directly by the event's job without a tracked input dataset.
-
-8. Lineage entries and inputs do NOT carry a `facets` property. Facets belong on the entities they describe (Dataset, Run, Job), not on lineage edges.
-
-9. **On RunEvent**: LineageRunFacet follows existing OpenLineage **accumulative semantics** — each event adds to the lineage picture for the run. Consumers merge lineage entries across events for the same `runId`.
-
-10. **On DatasetEvent and JobEvent**: lineage facets use **replace semantics** — the latest event's lineage is the complete picture for that entity.
-
-11. **`type: JOB` semantics**: A `LineageJobEntry` (target) MUST identify the job by `(namespace, name)`. A `LineageJobInput` (source) identifies the job by `(namespace, name)` when both are present; either job MAY differ from the event's own job and from other jobs in the same lineage chain (e.g., for cross-namespace job-to-job-to-dataset chains). `runId` is OPTIONAL: on `RunEvent` it MAY be populated to bind the edge to a specific execution; on `JobEvent` it SHOULD be omitted, since declared lineage is execution-agnostic. Job-involving lineage expresses **data flow only**; control-flow / scheduling dependencies remain in `JobDependenciesRunFacet`, and containment remains in `ParentRunFacet`. A `LineageJobInput` is **not** used to restate that the event's own job consumes event inputs or produces event outputs at dataset granularity — that remains implicit via event membership.
-
-    **Identity-less `LineageJobInput` (the event's own job)**: A `LineageJobInput` MAY omit both `namespace` and `name`, in which case it resolves to the event's own job. This form exists only to attach **field-level and/or transformation detail** to data produced by the implicit job (the generator case) — detail that event membership alone cannot carry. It MUST NOT be used as a top-level entity-level input to restate the implicit dataset-level edge. A producer MUST emit `namespace` and `name` together or omit them together.
+1. `**type: JOB` semantics**: A `LineageJobEntry` (target) MUST identify the job by `(namespace, name)`. A `LineageJobInput` (source) identifies the job by `(namespace, name)` when both are present; either job MAY differ from the event's own job and from other jobs in the same lineage chain (e.g., for cross-namespace job-to-job-to-dataset chains). `runId` is OPTIONAL: on `RunEvent` it MAY be populated to bind the edge to a specific execution; on `JobEvent` it SHOULD be omitted, since declared lineage is execution-agnostic. Job-involving lineage expresses **data flow only**; control-flow / scheduling dependencies remain in `JobDependenciesRunFacet`, and containment remains in `ParentRunFacet`. A `LineageJobInput` is **not** used to restate that the event's own job consumes event inputs or produces event outputs at dataset granularity — that remains implicit via event membership.
+  **Identity-less `LineageJobInput` (the event's own job)**: A `LineageJobInput` MAY omit both `namespace` and `name`, in which case it resolves to the event's own job. This form exists only to attach **field-level and/or transformation detail** to data produced by the implicit job (the generator case) — detail that event membership alone cannot carry. It MUST NOT be used as a top-level entity-level input to restate the implicit dataset-level edge. A producer MUST emit `namespace` and `name` together or omit them together.
 
 ## Interaction with Existing Features
 
@@ -231,21 +242,25 @@ The translation happens transparently in the client library's event emission pat
 
 **CLL -> Lineage (lossless):**
 
-| CLL structure | Lineage facet equivalent |
-|---|---|
-| `fields.{col}.inputFields[i]` | `fields.{col}.inputs[i]` with `field` on source |
-| `dataset[i]` (GROUP BY, FILTER) | Top-level `inputs[i]` with `field` on source |
-| Target dataset identity | Implicit — same dataset the facet is on |
+
+| CLL structure                   | Lineage facet equivalent                        |
+| ------------------------------- | ----------------------------------------------- |
+| `fields.{col}.inputFields[i]`   | `fields.{col}.inputs[i]` with `field` on source |
+| `dataset[i]` (GROUP BY, FILTER) | Top-level `inputs[i]` with `field` on source    |
+| Target dataset identity         | Implicit — same dataset the facet is on         |
+
 
 **Lineage -> CLL (lossy):**
 
-| Lineage facet structure | CLL mapping | Loss |
-|---|---|---|
-| Entity-level inputs (no field on source) | dropped | CLL has no dataset-level concept |
-| Entity-level inputs (field on source) | -> `dataset[]` array | None |
-| `fields.{col}.inputs` (field on source) | -> `fields.{col}.inputFields` | None |
-| `fields.{col}.inputs` (no field on source) | dropped | CLL requires field on source |
-| `fields.{col}.inputs` (identity-less JOB source, transformations only) | dropped | CLL has no notion of a field produced by the job with no dataset source |
+
+| Lineage facet structure                                                | CLL mapping                   | Loss                                                                    |
+| ---------------------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------- |
+| Entity-level inputs (no field on source)                               | dropped                       | CLL has no dataset-level concept                                        |
+| Entity-level inputs (field on source)                                  | -> `dataset[]` array          | None                                                                    |
+| `fields.{col}.inputs` (field on source)                                | -> `fields.{col}.inputFields` | None                                                                    |
+| `fields.{col}.inputs` (no field on source)                             | dropped                       | CLL requires field on source                                            |
+| `fields.{col}.inputs` (identity-less JOB source, transformations only) | dropped                       | CLL has no notion of a field produced by the job with no dataset source |
+
 
 For LineageRunFacet/LineageJobFacet: extract entries by target dataset, generate a CLL facet per output dataset, attach to the corresponding output in `outputs[]`. Same lossy mapping as above.
 
@@ -275,12 +290,14 @@ This translation is lossless — CLL is a strict subset of what lineage facets c
 openlineage.lineage.compatibility = none | legacy | modern | both
 ```
 
-| Mode | Producer emits | Client generates | Use case |
-|---|---|---|---|
-| `none` | Whatever it wants | Nothing | Full control, no magic |
-| `legacy` | Lineage facets | inputs/outputs/CLL | New producer, old consumers |
-| `modern` | inputs/outputs/CLL | Lineage facets | Old producer, new consumers |
-| `both` | Either or both | Whichever is missing | Transition period — everything works |
+
+| Mode     | Producer emits     | Client generates     | Use case                             |
+| -------- | ------------------ | -------------------- | ------------------------------------ |
+| `none`   | Whatever it wants  | Nothing              | Full control, no magic               |
+| `legacy` | Lineage facets     | inputs/outputs/CLL   | New producer, old consumers          |
+| `modern` | inputs/outputs/CLL | Lineage facets       | Old producer, new consumers          |
+| `both`   | Either or both     | Whichever is missing | Transition period — everything works |
+
 
 **Default during transition**: `both`.
 
