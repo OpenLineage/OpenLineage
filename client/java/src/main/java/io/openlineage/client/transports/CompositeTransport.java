@@ -95,8 +95,10 @@ public class CompositeTransport extends Transport {
                   try {
                     f.get();
                   } catch (InterruptedException | ExecutionException e) {
-                    // do nothing, continue with the next transport
-                    log.warn("One of the composite transports failed with: {}", e.getMessage());
+                    // continue with the next transport, but log the full exception chain so the
+                    // underlying cause (e.g. the HTTP status/body or network error from the
+                    // failing transport) is visible at WARN without enabling DEBUG logging.
+                    log.warn("One of the composite transports failed to emit event", e);
                   }
                 });
       } catch (InterruptedException e) {
