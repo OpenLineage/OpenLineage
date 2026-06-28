@@ -19,7 +19,7 @@ plugins {
 
 ext {
     projectDescription = 'DataZone OpenLineage transport library'
-    awsSdkVersion = '2.45.1'
+    awsSdkVersion = '2.46.15'
 }
 
 dependencies {
