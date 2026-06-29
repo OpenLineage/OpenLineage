@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
+import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.io.File;
@@ -117,6 +118,12 @@ public abstract class AbstractDatabricksHandler implements CatalogHandler {
     }
     Path path = new Path(location.get());
     DatasetIdentifier di = PathUtils.fromPath(path);
+    if (DatabricksUtils.isDatabricksUnityCatalogEnabled(session.sparkContext().getConf())) {
+      return di.withSymlink(
+          DatabricksUtils.qualifiedUnityCatalogTableName(tableCatalog, identifier),
+          DatabricksUtils.UNITY_CATALOG_SYMLINK_NAMESPACE,
+          DatasetIdentifier.SymlinkType.TABLE);
+    }
     return di.withSymlink(
         identifier.toString(),
         StringUtils.substringBeforeLast(
