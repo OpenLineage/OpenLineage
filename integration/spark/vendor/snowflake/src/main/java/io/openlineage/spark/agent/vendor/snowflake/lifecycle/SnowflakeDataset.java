@@ -53,7 +53,8 @@ public class SnowflakeDataset {
     StructType normalizedSchema = stripQuotesFromSchema(schema);
     if (dbtable.isPresent()) {
       String name = getQualifiedName(sfDatabase, sfSchema, dbtable.get());
-      return Collections.singletonList(factory.getDataset(name, namespace, normalizedSchema));
+      return Collections.singletonList(
+          factory.sparkDatasetBuilder().dataset(name, namespace).schema(normalizedSchema).build());
     } else if (query.isPresent()) {
       Optional<SqlMeta> sqlMeta =
           OpenLineageSql.parse(Collections.singletonList(query.get()), "snowflake");

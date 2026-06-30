@@ -6,11 +6,10 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -37,20 +36,14 @@ public class InsertIntoDirVisitor
     return optionalUri
         .map(
             uri -> {
-              DatasetIdentifier di = PathUtils.fromURI(uri);
-              OpenLineage.OutputDataset outputDataset;
+              SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
+                  outputDataset().sparkDatasetBuilder().dataset(uri).schema(cmd.child().schema());
               if (cmd.overwrite()) {
-                outputDataset =
-                    outputDataset()
-                        .getDataset(
-                            di,
-                            cmd.child().schema(),
-                            OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                                .OVERWRITE);
-              } else {
-                outputDataset = outputDataset().getDataset(di, cmd.child().schema());
+                builder.lifecycleStateChange(
+                    OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
               }
-              return Collections.singletonList(outputDataset);
+
+              return Collections.singletonList(builder.build());
             })
         .orElse(Collections.emptyList());
   }

@@ -38,8 +38,11 @@ public class MongoMicroBatchStreamStrategy extends StreamStrategy {
               String connectionURL = option.get("spark.mongodb.connection.uri");
               String collectionName = option.get("spark.mongodb.collection");
 
-              return datasetFactory.getDataset(
-                  collectionName, connectionURL + "/" + databaseName, schema);
+              return datasetFactory
+                  .sparkDatasetBuilder()
+                  .dataset(collectionName, connectionURL + "/" + databaseName)
+                  .schema(schema)
+                  .build();
             });
 
     return dataset.map(Arrays::asList).orElseGet(ArrayList::new);

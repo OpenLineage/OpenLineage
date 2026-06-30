@@ -12,7 +12,7 @@ plugins {
     id 'signing'
     id "com.adarshr.test-logger" version "4.0.0"
     id 'com.diffplug.spotless' version '7.0.2'
-    id "com.gradleup.shadow" version "9.4.1"
+    id "com.gradleup.shadow" version "9.4.2"
     id "pmd"
     id "io.freefair.lombok" version "9.5.0"
 }
@@ -22,9 +22,9 @@ ext {
 }
 
 dependencies {
-    implementation('com.google.cloud:google-cloud-storage:2.67.0')
+    implementation('com.google.cloud:google-cloud-storage:2.68.0')
 
-    testImplementation('com.google.cloud:google-cloud-nio:0.131.0')
+    testImplementation('com.google.cloud:google-cloud-nio:0.132.0')
 }
 
 shadowJar {
@@ -36,16 +36,16 @@ shadowJar {
         exclude 'org/slf4j/**'
     }
 
-    relocate "com.google", "io.openlineage.client.shaded.com.google"
-    relocate "org.checkerframework", "io.openlineage.client.shaded.org.checkerframework"
-    relocate "org.codehaus", "io.openlineage.client.shaded.org.codehaus"
-    relocate "org.conscrypt", "io.openlineage.client.shaded.org.conscrypt"
-    relocate "org.threeten", "io.openlineage.client.shaded.org.threeten"
-    relocate "org.apache", "io.openlineage.client.shaded.org.apache"
-    relocate "io.opencensus", "io.openlineage.client.shaded.io.opencensus"
-    relocate "io.grpc", "io.openlineage.client.shaded.io.grpc"
-    relocate "io.opentelemetry", "io.openlineage.client.shaded.io.opentelemetry"
-    relocate "io.perfmark", "io.openlineage.client.shaded.io.perfmark"
+    relocate "com.google", "io.openlineage.client.transports.gcs.shaded.com.google"
+    relocate "org.checkerframework", "io.openlineage.client.transports.gcs.shaded.org.checkerframework"
+    relocate "org.codehaus", "io.openlineage.client.transports.gcs.shaded.org.codehaus"
+    relocate "org.conscrypt", "io.openlineage.client.transports.gcs.shaded.org.conscrypt"
+    relocate "org.threeten", "io.openlineage.client.transports.gcs.shaded.org.threeten"
+    relocate "org.apache", "io.openlineage.client.transports.gcs.shaded.org.apache"
+    relocate "io.opencensus", "io.openlineage.client.transports.gcs.shaded.io.opencensus"
+    relocate "io.grpc", "io.openlineage.client.transports.gcs.shaded.io.grpc"
+    relocate "io.opentelemetry", "io.openlineage.client.transports.gcs.shaded.io.opentelemetry"
+    relocate "io.perfmark", "io.openlineage.client.transports.gcs.shaded.io.perfmark"
 }
 
 apply from: '../transports.build.gradle'

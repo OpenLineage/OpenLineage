@@ -13,10 +13,10 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -51,8 +51,8 @@ class PlanUtils3Test {
   @Test
   void testGetDatasetIdentifier() {
     DatasetIdentifier di = mock(DatasetIdentifier.class);
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetIdentifier(
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetIdentifier(
               openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(di);
 
@@ -66,8 +66,8 @@ class PlanUtils3Test {
 
   @Test
   void testGetDatasetIdentifierWhenCatalogUnsupported() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetIdentifier(
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetIdentifier(
               openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
 
@@ -80,8 +80,8 @@ class PlanUtils3Test {
 
   @Test
   void testGetDatasetIdentifierWhenMissingDatasetIdentifier() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetIdentifier(
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetIdentifier(
               openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new MissingDatasetIdentifierCatalogException("exception"));
 

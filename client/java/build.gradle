@@ -15,7 +15,7 @@ plugins {
     id "com.adarshr.test-logger" version "4.0.0"
     id 'com.diffplug.spotless' version '7.0.2'
     id "org.openapi.generator" version "6.6.0"
-    id "com.gradleup.shadow" version "9.4.1"
+    id "com.gradleup.shadow" version "9.4.2"
     id "pmd"
     id "io.freefair.lombok" version "9.5.0"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
@@ -82,7 +82,7 @@ dependencies {
     implementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.kafka:kafka-clients:4.2.0'
+    compileOnly 'org.apache.kafka:kafka-clients:4.3.0'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"

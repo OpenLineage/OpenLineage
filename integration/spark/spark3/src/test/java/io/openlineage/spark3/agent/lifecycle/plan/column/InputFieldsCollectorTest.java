@@ -238,7 +238,7 @@ class InputFieldsCollectorTest {
     verify(builder, times(1))
         .addInput(
             exprId,
-            new DatasetIdentifier("/path", "abfss://tmp@storage.dfs.core.windows.net"),
+            new DatasetIdentifier("path", "abfss://tmp@storage.dfs.core.windows.net"),
             SOME_NAME);
   }
 

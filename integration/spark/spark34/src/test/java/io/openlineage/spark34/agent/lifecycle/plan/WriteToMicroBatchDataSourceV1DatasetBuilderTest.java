@@ -8,21 +8,17 @@ package io.openlineage.spark34.agent.lifecycle.plan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.List;
 import org.apache.spark.SparkContext;
@@ -40,7 +36,6 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import scala.Option;
 
 class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
@@ -124,7 +119,7 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
 
     assertTrue(result.isEmpty());
-    verify(factory, never()).getDataset(any(DatasetIdentifier.class), any(StructType.class));
+    verify(factory, never()).sparkDatasetBuilder();
   }
 
   @Test
@@ -138,9 +133,6 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
 
   @Test
   void testApply_WithFileStreamSink_ValidPath_WithCatalogTable() {
-    DatasetIdentifier catalogDatasetIdentifier =
-        new DatasetIdentifier("catalog_table", "catalog_namespace");
-
     OpenLineage.OutputDataset expectedDataset = mock(OpenLineage.OutputDataset.class);
     CatalogTable catalogTable = mock(CatalogTable.class);
 
@@ -148,19 +140,18 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     when(writeToMicroBatchV1.schema()).thenReturn(schema);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.apply(catalogTable));
 
-    try (MockedStatic<PathUtils> pathUtilsMock = mockStatic(PathUtils.class)) {
-      pathUtilsMock
-          .when(() -> PathUtils.fromCatalogTable(eq(catalogTable), any()))
-          .thenReturn(catalogDatasetIdentifier);
+    @SuppressWarnings("unchecked")
+    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder = mock(SparkDatasetBuilder.class);
+    when(factory.sparkDatasetBuilder()).thenReturn(sparkBuilder);
+    when(sparkBuilder.dataset(catalogTable)).thenReturn(sparkBuilder);
+    when(sparkBuilder.schema(schema)).thenReturn(sparkBuilder);
+    when(sparkBuilder.build()).thenReturn(expectedDataset);
 
-      when(factory.getDataset(eq(catalogDatasetIdentifier), eq(schema)))
-          .thenReturn(expectedDataset);
+    List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
 
-      List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
-
-      assertEquals(1, result.size());
-      assertEquals(expectedDataset, result.get(0));
-      verify(factory).getDataset(eq(catalogDatasetIdentifier), eq(schema));
-    }
+    assertEquals(1, result.size());
+    assertEquals(expectedDataset, result.get(0));
+    verify(sparkBuilder).dataset(catalogTable);
+    verify(sparkBuilder).schema(schema);
   }
 }

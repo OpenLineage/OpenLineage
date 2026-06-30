@@ -1,0 +1,247 @@
+[
+  {
+    "eventTime": "2026-06-01T21:13:20.000000Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.11.0"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.11.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "11111111-1111-4111-8111-111111111111"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "eventTime": "2026-06-01T21:13:29.598581Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version": {
+          "version": "1.11.0"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.11.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "11111111-1111-4111-8111-111111111111"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.stg_locations",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "MODEL"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [
+      {
+        "namespace": "bigquery",
+        "name": "example-bigquery-project.raw.raw_stores",
+        "facets": {
+          "dataSource": {
+            "name": "bigquery",
+            "uri": "bigquery"
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "bigquery",
+        "name": "example-bigquery-project.jaffle_shop.stg_locations",
+        "facets": {
+          "dataSource": {
+            "name": "bigquery",
+            "uri": "bigquery"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "location_id"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventTime": "2026-06-01T21:13:30.520045Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version": {
+          "version": "1.11.0"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.11.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "11111111-1111-4111-8111-111111111111"
+        },
+        "externalQuery": {
+          "externalQueryId": "example-bigquery-project:US.job_abc123",
+          "source": "bigquery"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.stg_locations",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "MODEL"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [
+      {
+        "namespace": "bigquery",
+        "name": "example-bigquery-project.raw.raw_stores",
+        "facets": {
+          "dataSource": {
+            "name": "bigquery",
+            "uri": "bigquery"
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "bigquery",
+        "name": "example-bigquery-project.jaffle_shop.stg_locations",
+        "facets": {
+          "dataSource": {
+            "name": "bigquery",
+            "uri": "bigquery"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "location_id"
+              }
+            ]
+          },
+          "columnLineage": {
+            "fields": {
+              "location_id": {
+                "inputFields": [
+                  {
+                    "namespace": "bigquery",
+                    "name": "example-bigquery-project.raw.raw_stores",
+                    "field": "id"
+                  }
+                ]
+              },
+              "location_name": {
+                "inputFields": [
+                  {
+                    "namespace": "bigquery",
+                    "name": "example-bigquery-project.raw.raw_stores",
+                    "field": "name"
+                  }
+                ]
+              },
+              "tax_rate": {
+                "inputFields": [
+                  {
+                    "namespace": "bigquery",
+                    "name": "example-bigquery-project.raw.raw_stores",
+                    "field": "tax_rate"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventTime": "2026-06-01T21:13:31.000000Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.11.0"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.11.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "11111111-1111-4111-8111-111111111111"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
+  }
+]

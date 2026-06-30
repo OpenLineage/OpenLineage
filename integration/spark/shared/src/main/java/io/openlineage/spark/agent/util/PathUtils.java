@@ -7,12 +7,10 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
-import java.io.File;
 import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
@@ -58,7 +56,16 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, SparkSession sparkSession, URI location) {
-    return fromTableIdentifier(catalogTable.identifier(), sparkSession.sparkContext(), location);
+    SparkContext sparkContext = sparkSession.sparkContext();
+    if (CatalogDatasetFacetUtils.isHiveCatalog(sparkSession, catalogTable.identifier())
+        && GoogleCloudPlatformUtils.isBigLakeHiveCatalog(sparkContext.getConf())) {
+      return fromURI(location)
+          .withSymlink(
+              nameFromTableIdentifier(catalogTable.identifier()),
+              "gcp_lakehouse",
+              DatasetIdentifier.SymlinkType.TABLE);
+    }
+    return fromTableIdentifier(catalogTable.identifier(), sparkContext, location);
   }
 
   @SneakyThrows
@@ -75,7 +82,6 @@ public class PathUtils {
 
     Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
     Optional<String> glueArn = AwsUtils.getGlueArn(sparkConf, hadoopConf);
-
     if (glueArn.isPresent()) {
       // Even if glue catalog is used, it will have a hive metastore URI
       // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'
@@ -88,9 +94,11 @@ public class PathUtils {
       String tableName = nameFromTableIdentifier(identifier);
       symlinkDataset = Optional.of(FilesystemDatasetUtils.fromLocationAndName(hiveUri, tableName));
     } else if (DatabricksUtils.isDatabricksUnityCatalogEnabled(sparkConf)) {
-      String tableName = nameFromTableIdentifier(identifier);
-      String namespace = StringUtils.substringBeforeLast(location.toString(), File.separator);
-      symlinkDataset = Optional.of(new DatasetIdentifier(tableName, namespace));
+      symlinkDataset =
+          Optional.of(
+              new DatasetIdentifier(
+                  DatabricksUtils.qualifiedUnityCatalogTableName(identifier),
+                  DatabricksUtils.UNITY_CATALOG_SYMLINK_NAMESPACE));
     } else {
       Optional<URI> warehouseLocation =
           getWarehouseLocation(sparkConf, hadoopConf)
@@ -111,12 +119,12 @@ public class PathUtils {
       }
     }
 
-    if (symlinkDataset.isPresent()) {
-      locationDataset.withSymlink(
-          symlinkDataset.get().getName(),
-          symlinkDataset.get().getNamespace(),
-          DatasetIdentifier.SymlinkType.TABLE);
-    }
+    symlinkDataset.ifPresent(
+        datasetIdentifier ->
+            locationDataset.withSymlink(
+                datasetIdentifier.getName(),
+                datasetIdentifier.getNamespace(),
+                DatasetIdentifier.SymlinkType.TABLE));
 
     return locationDataset;
   }

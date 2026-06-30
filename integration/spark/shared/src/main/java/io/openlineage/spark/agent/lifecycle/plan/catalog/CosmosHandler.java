@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.catalog;
+package io.openlineage.spark.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import lombok.extern.slf4j.Slf4j;

@@ -48,10 +48,12 @@ public class CreateTableCommandVisitor
 
     return Collections.singletonList(
         outputDataset()
-            .getDataset(
-                PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
-                catalogTable.schema(),
-                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
+            .sparkDatasetBuilder()
+            .dataset(catalogTable)
+            .schema(catalogTable.schema())
+            .lifecycleStateChange(
+                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)
+            .build());
   }
 
   @Override

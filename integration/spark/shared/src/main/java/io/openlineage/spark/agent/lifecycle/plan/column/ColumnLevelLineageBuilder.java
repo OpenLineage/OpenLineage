@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.lifecycle.plan.column;
 
+import static io.openlineage.client.utils.SnowflakeUtils.stripQuotes;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
@@ -91,7 +93,7 @@ public class ColumnLevelLineageBuilder {
    */
   public void addOutput(ExprId exprId, String attributeName) {
     schema.getFields().stream()
-        .filter(field -> field.getName().equals(attributeName))
+        .filter(field -> stripQuotes(field.getName()).equals(stripQuotes(attributeName)))
         .findAny()
         .ifPresent(field -> outputs.putIfAbsent(field, exprId));
   }
@@ -138,7 +140,7 @@ public class ColumnLevelLineageBuilder {
 
   public Optional<ExprId> getOutputExprIdByFieldName(String field) {
     return outputs.keySet().stream()
-        .filter(fields -> fields.getName().equals(field))
+        .filter(fields -> stripQuotes(fields.getName()).equals(stripQuotes(field)))
         .findAny()
         .map(f -> outputs.get(f));
   }

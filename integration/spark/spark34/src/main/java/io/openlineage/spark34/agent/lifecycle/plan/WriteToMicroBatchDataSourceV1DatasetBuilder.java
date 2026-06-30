@@ -6,8 +6,6 @@
 package io.openlineage.spark34.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -57,11 +55,12 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
     // Currently, only FileStreamSink is supported
     if (writeToMicroBatchV1.sink() instanceof FileStreamSink) {
       if (writeToMicroBatchV1.catalogTable().isDefined()) {
-        DatasetIdentifier di =
-            PathUtils.fromCatalogTable(
-                writeToMicroBatchV1.catalogTable().get(), context.getSparkSession().get());
-
-        return Collections.singletonList(factory.getDataset(di, writeToMicroBatchV1.schema()));
+        return Collections.singletonList(
+            factory
+                .sparkDatasetBuilder()
+                .dataset(writeToMicroBatchV1.catalogTable().get())
+                .schema(writeToMicroBatchV1.schema())
+                .build());
       } else {
         return Collections.emptyList();
       }

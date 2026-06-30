@@ -7,8 +7,8 @@ package io.openlineage.spark3.agent.utils;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +43,7 @@ public final class DatasetVersionDatasetFacetUtils {
     TableCatalog tableCatalog = (TableCatalog) table.catalog().get();
 
     Map<String, String> tableProperties = table.table().properties();
-    return CatalogUtils3.getDatasetVersion(context, tableCatalog, identifier, tableProperties);
+    return CatalogUtils.getDatasetVersion(context, tableCatalog, identifier, tableProperties);
   }
 
   /**

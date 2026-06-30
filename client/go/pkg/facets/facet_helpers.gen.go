@@ -946,7 +946,7 @@ func NewJobTypeJobFacet(
 ) *JobTypeJobFacet {
 	return &JobTypeJobFacet{
 		Producer:       producer,
-		SchemaURL:      "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json",
+		SchemaURL:      "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json",
 		Integration:    integration,
 		ProcessingType: processingType,
 	}
@@ -955,6 +955,13 @@ func NewJobTypeJobFacet(
 // WithDeleted sets the Deleted field on this JobTypeJobFacet.
 func (f *JobTypeJobFacet) WithDeleted(deleted bool) *JobTypeJobFacet {
 	f.Deleted = &deleted
+
+	return f
+}
+
+// WithEmissionPattern sets the EmissionPattern field on this JobTypeJobFacet.
+func (f *JobTypeJobFacet) WithEmissionPattern(emissionPattern *JobTypeJobFacetEmissionPattern) *JobTypeJobFacet {
+	f.EmissionPattern = emissionPattern
 
 	return f
 }

@@ -31,3 +31,12 @@ jaffle_shop:
       database: MY_DATABASE
       warehouse: MY_EXTRA_SMALL_WAREHOUSE
       schema: MY_SCHEMA
+
+    bigquery:
+      type: bigquery
+      method: service-account
+      keyfile: /tmp/fake-bigquery-key.json
+      project: example-bigquery-project
+      dataset: jaffle_shop
+      location: US
+      threads: 1

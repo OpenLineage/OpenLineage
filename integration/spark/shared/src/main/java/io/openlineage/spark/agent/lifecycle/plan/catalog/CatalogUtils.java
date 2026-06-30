@@ -3,13 +3,12 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.catalog;
+package io.openlineage.spark.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -19,20 +18,14 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
-public class CatalogUtils3 {
+public class CatalogUtils {
 
   private static List<RelationHandler> relationHandlers = getRelationHandlers();
 
   private static List<CatalogHandler> getHandlers(OpenLineageContext context) {
-    List<CatalogHandler> handlers =
-        Arrays.asList(
-            new IcebergHandler(context),
-            new DeltaHandler(context),
-            new DatabricksDeltaHandler(context),
-            new DatabricksUnityV2Handler(context),
-            new JdbcHandler(context),
-            new V2SessionCatalogHandler());
-    return handlers.stream().filter(CatalogHandler::hasClasses).collect(Collectors.toList());
+    return context.getDatasetBuilderFactory().getCatalogHandlers(context).stream()
+        .filter(CatalogHandler::hasClasses)
+        .collect(Collectors.toList());
   }
 
   private static List<RelationHandler> getRelationHandlers() {
@@ -99,9 +92,9 @@ public class CatalogUtils3 {
       TableCatalog catalog,
       Map<String, String> properties,
       DatasetCompositeFacetsBuilder builder) {
-    CatalogUtils3.getStorageDatasetFacet(context, catalog, properties)
+    CatalogUtils.getStorageDatasetFacet(context, catalog, properties)
         .map(storageDatasetFacet -> builder.getFacets().storage(storageDatasetFacet));
-    CatalogUtils3.getCatalogDatasetFacet(context, catalog, properties)
+    CatalogUtils.getCatalogDatasetFacet(context, catalog, properties)
         .ifPresent(
             catalogDatasetFacet -> {
               builder.getFacets().catalog(catalogDatasetFacet.getCatalogDatasetFacet());

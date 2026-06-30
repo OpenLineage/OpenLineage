@@ -78,8 +78,8 @@ For development setup instructions, see the [Python development setup guide](htt
 
 Quick start:
 ```bash
-# From the repository root
-$ make setup-dbt
+# From the repository root (requires https://taskfile.dev)
+$ task integrations:dbt:setup
 
 # Or manually
 $ cd integration/dbt

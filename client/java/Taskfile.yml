@@ -1,0 +1,36 @@
+# Tasks for the OpenLineage Java client.
+version: '3'
+
+tasks:
+  generate:
+    desc: Regenerate the Java event model classes (stubs) from the OpenLineage spec
+    cmds:
+      - ./gradlew generateCode --rerun-tasks
+
+  format:
+    desc: Apply Spotless formatting
+    cmds:
+      - ./gradlew spotlessApply
+
+  lint:
+    desc: Formatting and static analysis without tests (Spotless, PMD)
+    cmds:
+      - ./gradlew spotlessCheck pmdMain
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - ./gradlew test
+
+  build:
+    desc: Full build with tests and quality checks (what CI runs)
+    cmds:
+      - ./gradlew build check
+
+  publish-local:
+    env:
+      JAVA_HOME:
+        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" 17'
+    desc: Publish openlineage-java to Maven Local without running tests
+    cmds:
+      - ./gradlew publishToMavenLocal -x test --rerun-tasks

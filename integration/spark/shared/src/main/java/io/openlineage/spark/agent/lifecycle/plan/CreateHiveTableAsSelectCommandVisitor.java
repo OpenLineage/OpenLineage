@@ -7,7 +7,6 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -55,24 +54,15 @@ public class CreateHiveTableAsSelectCommandVisitor
             index ->
                 schemaAttributes.add(
                     attributes.get(index).withName(command.outputColumnNames().apply(index))));
-
     return Collections.singletonList(
-        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context)
-            .map(
-                catalogDatasetFacet ->
-                    outputDataset()
-                        .getDataset(
-                            di,
-                            outputSchema(schemaAttributes),
-                            OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                                .CREATE,
-                            catalogDatasetFacet))
-            .orElse(
-                outputDataset()
-                    .getDataset(
-                        di,
-                        outputSchema(schemaAttributes),
-                        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)));
+        outputDataset()
+            .sparkDatasetBuilder()
+            .dataset(di)
+            .schema(outputSchema(schemaAttributes))
+            .lifecycleStateChange(
+                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)
+            .catalog()
+            .build());
   }
 
   private StructType outputSchema(List<Attribute> attrs) {

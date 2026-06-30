@@ -127,6 +127,6 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
     DatasetIdentifier di =
         JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl.get(), name.get(), new Properties());
     return Collections.singletonList(
-        factory.getDataset(di.getName(), di.getNamespace(), relation.schema()));
+        factory.sparkDatasetBuilder().dataset(di).schema(relation.schema()).build());
   }
 }

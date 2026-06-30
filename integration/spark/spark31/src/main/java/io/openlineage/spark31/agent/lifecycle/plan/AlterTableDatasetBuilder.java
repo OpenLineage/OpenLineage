@@ -6,12 +6,11 @@
 package io.openlineage.spark31.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;
@@ -49,23 +48,16 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
             context, alterTable.catalog(), alterTable.ident(), table.properties());
 
     if (di.isPresent()) {
-      OpenLineage openLineage = context.getOpenLineage();
-      DatasetCompositeFacetsBuilder builder = new DatasetCompositeFacetsBuilder(openLineage);
-      builder
-          .getFacets()
-          .schema(PlanUtils.schemaFacet(openLineage, table.schema()))
-          .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
+      SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder =
+          outputDataset().sparkDatasetBuilder().dataset(di.get()).schema(table.schema());
 
       if (includeDatasetVersion(event)) {
-        Optional<String> datasetVersion =
-            CatalogUtils3.getDatasetVersion(
-                context, alterTable.catalog(), alterTable.ident(), table.properties());
-        datasetVersion.ifPresent(
-            version ->
-                builder.getFacets().version(openLineage.newDatasetVersionDatasetFacet(version)));
+        CatalogUtils.getDatasetVersion(
+                context, alterTable.catalog(), alterTable.ident(), table.properties())
+            .ifPresent(sparkBuilder::version);
       }
 
-      return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
+      return Collections.singletonList(sparkBuilder.build());
     } else {
       return Collections.emptyList();
     }

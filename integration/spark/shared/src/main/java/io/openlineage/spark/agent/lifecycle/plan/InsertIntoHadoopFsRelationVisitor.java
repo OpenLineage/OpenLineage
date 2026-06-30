@@ -10,6 +10,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -32,24 +33,21 @@ public class InsertIntoHadoopFsRelationVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHadoopFsRelationCommand command = (InsertIntoHadoopFsRelationCommand) x;
 
-    Optional<DatasetIdentifier> di = getDatasetIdentifier(command);
-    if (!di.isPresent()) {
-      return Collections.emptyList();
-    }
-
-    OpenLineage.OutputDataset outputDataset;
-    if (SaveMode.Overwrite == command.mode()) {
-      outputDataset =
-          outputDataset()
-              .getDataset(
-                  di.get(),
-                  command.query().schema(),
-                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
-    } else {
-      outputDataset = outputDataset().getDataset(di.get(), command.query().schema());
-    }
-
-    return Collections.singletonList(outputDataset);
+    return getDatasetIdentifier(command)
+        .map(
+            di -> {
+              SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
+                  outputDataset()
+                      .sparkDatasetBuilder()
+                      .dataset(di)
+                      .schema(command.query().schema());
+              if (SaveMode.Overwrite == command.mode()) {
+                builder.lifecycleStateChange(
+                    OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+              }
+              return Collections.singletonList(builder.build());
+            })
+        .orElse(Collections.emptyList());
   }
 
   @Override

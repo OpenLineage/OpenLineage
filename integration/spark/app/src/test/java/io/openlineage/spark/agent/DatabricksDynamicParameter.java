@@ -7,15 +7,12 @@ package io.openlineage.spark.agent;
 
 import javax.annotation.Nullable;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
 
 /**
  * Class for dynamic provisioning of parameters. In the current form it retrieves the values from
  * the system properties. They can be set using -Dopenlineage.tests.databricks.parameterName=value
  * when running the application.
  */
-@Slf4j
 @Getter
 public enum DatabricksDynamicParameter implements DynamicParameter {
 
@@ -81,10 +78,5 @@ public enum DatabricksDynamicParameter implements DynamicParameter {
     this.parameterName = parameterName;
     this.defaultValue = defaultValue;
     this.prefix = prefix;
-  }
-
-  @Override
-  public Logger getLog() {
-    return log;
   }
 }

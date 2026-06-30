@@ -63,7 +63,7 @@ import org.junit.jupiter.api.Test;
  * <h2>Configuration</h2>
  *
  * <p>All infrastructure details and configuration parameters should be set using system properties.
- * For example: {@code -Dopenlineage.tests.bucketName=my-bucket-name}. Most parameters have
+ * For example: {@code -Dopenlineage.tests.emr.bucketName=my-bucket-name}. Most parameters have
  * defaults. For a full list of configurable parameters, see {@link EmrDynamicParameter}.
  *
  * <h3>Note on JUnit and Gradle</h3>

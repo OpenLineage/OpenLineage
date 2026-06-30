@@ -364,8 +364,7 @@ class PathUtilsTest {
     assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
     assertThat(datasetIdentifier.getSymlinks().get(0))
         .hasFieldOrPropertyWithValue("name", "database.mytable")
-        .hasFieldOrPropertyWithValue(
-            "namespace", "s3://bucket/5087cc52-ff07-4f8c-9580-0d4a962b4585/tables")
+        .hasFieldOrPropertyWithValue("namespace", DatabricksUtils.UNITY_CATALOG_SYMLINK_NAMESPACE)
         .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
   }
 

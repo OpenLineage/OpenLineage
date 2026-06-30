@@ -18,7 +18,7 @@ class JobStatusUtilTest {
   void testFromJobStatus() {
     assertThat(JobStatusUtil.fromJobStatus(JobStatus.INITIALIZING)).isEqualTo(EventType.START);
 
-    assertThat(JobStatusUtil.fromJobStatus(JobStatus.CANCELED)).isEqualTo(EventType.FAIL);
+    assertThat(JobStatusUtil.fromJobStatus(JobStatus.CANCELED)).isEqualTo(EventType.ABORT);
     assertThat(JobStatusUtil.fromJobStatus(JobStatus.FAILED)).isEqualTo(EventType.FAIL);
 
     assertThat(JobStatusUtil.fromJobStatus(JobStatus.FINISHED)).isEqualTo(EventType.COMPLETE);

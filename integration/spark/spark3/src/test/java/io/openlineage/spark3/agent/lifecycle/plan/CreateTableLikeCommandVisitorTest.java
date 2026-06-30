@@ -19,6 +19,7 @@ import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.List;
 import lombok.SneakyThrows;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -59,8 +60,10 @@ class CreateTableLikeCommandVisitorTest {
   @SneakyThrows
   void testCreateTableLikeCommand() {
     CatalogTable sourceCatalogTable = mock(CatalogTable.class);
+    SparkContext sparkContext = mock(SparkContext.class);
 
-    when(sparkSession.sparkContext()).thenReturn(mock(SparkContext.class));
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(sparkSession.sessionState()).thenReturn(sessionState);
     when(sessionState.catalog()).thenReturn(sessionCatalog);
     when(sessionCatalog.getTempViewOrPermanentTableMetadata(sourceTableIdentifier))
@@ -68,6 +71,7 @@ class CreateTableLikeCommandVisitorTest {
     when(sessionCatalog.defaultTablePath(targetTableIdentifier))
         .thenReturn(new URI("/tmp/warehouse/newtable"));
     when(sourceCatalogTable.schema()).thenReturn(schema);
+    when(sourceCatalogTable.identifier()).thenReturn(sourceTableIdentifier);
 
     CreateTableLikeCommandVisitor visitor =
         new CreateTableLikeCommandVisitor(
