@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -82,10 +81,10 @@ public class SparkTestUtils {
 
   static SparkSession createSparkSession(Integer httpServerPort, String appName) {
     Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
-    UUID testUuid = UUID.randomUUID();
+    String testId = TestIds.randomHex();
 
-    Path derbySystemHome = tmpDir.resolve("derby").resolve(testUuid.toString());
-    Path sparkSqlWarehouse = tmpDir.resolve("spark-sql-warehouse").resolve(testUuid.toString());
+    Path derbySystemHome = tmpDir.resolve("derby").resolve(testId);
+    Path sparkSqlWarehouse = tmpDir.resolve("spark-sql-warehouse").resolve(testId);
 
     return SparkSession.builder()
         .appName(appName)
