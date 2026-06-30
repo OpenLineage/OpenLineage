@@ -40,8 +40,8 @@ pmdMain {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
@@ -54,7 +54,7 @@ repositories {
 
 ext {
     assertjVersion = '3.27.7'
-    jacksonVersion = "2.18.8"
+    jacksonVersion = "2.15.3"
     junit5Version = '5.13.4'
     lombokVersion = '1.18.46'
     mockitoVersion = '5.23.0'
@@ -119,16 +119,16 @@ compileJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
     options.encoding = "UTF-8"
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 compileTestJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
     options.encoding = "UTF-8"
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 task generateCode(type: JavaExec) {
