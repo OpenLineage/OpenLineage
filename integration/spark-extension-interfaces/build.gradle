@@ -49,8 +49,8 @@ pmdTest {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
@@ -106,16 +106,16 @@ compileJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
     options.encoding = "UTF-8"
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 compileTestJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
     options.encoding = "UTF-8"
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 task sourceJar(type: Jar) {
