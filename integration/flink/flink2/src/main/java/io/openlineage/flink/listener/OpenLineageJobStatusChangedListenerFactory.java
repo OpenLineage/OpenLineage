@@ -6,6 +6,7 @@
 package io.openlineage.flink.listener;
 
 import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.config.FlinkConfigParser;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import io.openlineage.flink.visitor.facet.ConfigFacetVisitor;
 import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
@@ -31,6 +32,9 @@ public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChan
     log.info(
         "Creating OpenLineageJobStatusChangedListener with Flink configuration: {}",
         context.getConfiguration());
+    if (FlinkConfigParser.parse(context.getConfiguration()).getEnableDetachedJobTracking()) {
+      return new OpenLineageDetachedJobStatusChangedListener(context, loadVisitorFactory());
+    }
     return new OpenLineageJobStatusChangedListener(context, loadVisitorFactory());
   }
 

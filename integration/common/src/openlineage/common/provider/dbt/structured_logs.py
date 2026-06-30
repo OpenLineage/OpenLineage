@@ -22,7 +22,6 @@ from openlineage.client.facet_v2 import (
     job_type_job,
     processing_engine_run,
     sql_job,
-    tags_run,
     test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
@@ -370,11 +369,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             "parent": self.dbt_run_metadata.to_openlineage(),
         }
 
-        # Add tags if they exist for this node
-        if tags := self._get_node_tags(node_unique_id):
-            run_facets["tags"] = tags_run.TagsRunFacet(
-                tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-            )
+        # Add tags (dbt tags + meta) if they exist for this node
+        if tags_facet := self._build_tags_run_facet(
+            self._get_node_tags(node_unique_id), self._get_node_meta(node_unique_id)
+        ):
+            run_facets["tags"] = tags_facet
 
         resource_type = event["data"]["node_info"]["resource_type"]
         job_name = self._get_job_name(event)
@@ -446,11 +445,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                     source=self.dataset_namespace,
                 )
 
-        # Add tags if they exist for this node
-        if tags := self._get_node_tags(node_unique_id):
-            run_facets["tags"] = tags_run.TagsRunFacet(
-                tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-            )
+        # Add tags (dbt tags + meta) if they exist for this node
+        if tags_facet := self._build_tags_run_facet(
+            self._get_node_tags(node_unique_id), self._get_node_meta(node_unique_id)
+        ):
+            run_facets["tags"] = tags_facet
 
         job_name = self._get_job_name(event)
         node_metadata = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
@@ -990,6 +989,15 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
         manifest_node = all_nodes[node_id]
         return manifest_node.get("tags", [])
+
+    @handle_keyerror
+    def _get_node_meta(self, node_id: str) -> dict:
+        """
+        Extract the free-form ``meta`` map from a dbt node in the compiled manifest
+        """
+        all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
+        manifest_node = all_nodes[node_id]
+        return manifest_node.get("meta", {})
 
     def _get_model_inputs(self, node_id) -> list[ModelNode]:
         """

@@ -1,0 +1,141 @@
+# Tasks for the OpenLineage Spark integration. Included by the root Taskfile
+# as `integrations:spark` (alias `spark`).
+#
+# Secrets/local values for credential-requiring tasks (e.g.
+# aws-integration-test) live in .env in this directory (copy .env.template).
+# Each such task loads it itself via task-level `dotenv:` (the file-level
+# form is forbidden in included Taskfiles), so it works both here and via
+# the root catalog; exported environment variables take precedence.
+#
+# First-time setup: `task setup` (publishes openlineage-java,
+# spark-extension-interfaces and openlineage-sql-java to Maven Local, as
+# described in https://openlineage.io/docs/development/developing/spark/setup).
+#
+# Spark/Scala default to the newest CI-tested combination (see vars below);
+# override per invocation, e.g.: task build SPARK=3.5.6 SCALA=2.12
+# Run `task versions` to list the supported SPARK/SCALA pairs.
+version: '3'
+
+includes:
+  java:
+    taskfile: ../../client/java/Taskfile.yml
+    dir: ../../client/java
+    internal: true
+  sql:
+    taskfile: ../../integration/sql/Taskfile.yml
+    dir: ../../integration/sql
+    internal: true
+  interfaces:
+    taskfile: ../spark-extension-interfaces/Taskfile.yml
+    dir: ../spark-extension-interfaces
+    internal: true
+
+vars:
+  # The newest CI-tested Spark/Scala combination. Alternative pairs: run
+  # `task versions`, or see the matrix in .circleci/workflows/openlineage-spark.yml.
+  DEFAULT_SPARK: "4.0.0"
+  DEFAULT_SCALA: "2.13"
+
+tasks:
+  default:
+    desc: List all available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  setup:
+    # Pin the JDK for publishing to Maven Local, where a silently wrong JDK
+    # poisons every downstream consumer. Task-level env on purpose: global
+    # env leaks across included Taskfiles. `JAVA_VERSION=… task …` overrides;
+    # see dev/java-home.sh for the resolution order.
+    env:
+      JAVA_HOME:
+        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" 17'
+    desc: Build and publish ALL sibling dependencies to Maven Local (openlineage-java, spark-extension-interfaces, openlineage-sql-java)
+    cmds:
+      - task: setup-java
+      - task: setup-interfaces
+      - task: setup-sql
+
+  setup-java:
+    desc: Republish only openlineage-java to Maven Local (after changing client/java)
+    cmds:
+      - task: java:publish-local
+
+  setup-interfaces:
+    desc: Republish only spark-extension-interfaces to Maven Local
+    cmds:
+      - task: interfaces:publish-local
+
+  setup-sql:
+    desc: Republish only openlineage-sql-java to Maven Local (after changing integration/sql)
+    cmds:
+      - task: sql:publish-local
+
+  format:
+    desc: Apply Spotless formatting to all modules
+    cmds:
+      - ./gradlew spotlessApply
+
+  lint:
+    desc: Verify formatting without building (Spotless check)
+    cmds:
+      - ./gradlew spotlessCheck
+
+  test:
+    desc: Run unit tests (SPARK=… SCALA=… to override versions)
+    cmds:
+      - ./gradlew test -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}}
+
+  build:
+    desc: Full build with tests and quality checks, what CI runs (SPARK=… SCALA=… to override versions)
+    cmds:
+      - ./gradlew build check -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}}
+
+  versions:
+    desc: List the Spark/Scala pairs usable as SPARK=… SCALA=… overrides (the CI-tested matrix)
+    silent: true
+    cmds:
+      - 'echo "Default (newest CI-tested): SPARK={{.DEFAULT_SPARK}} SCALA={{.DEFAULT_SCALA}}"'
+      - 'echo "CI-tested pairs (from .circleci/workflows/openlineage-spark.yml):"'
+      - 'grep -o "spark:[0-9][0-9.]*-scala:[0-9][0-9.]*" ../../.circleci/workflows/openlineage-spark.yml | sort -u -V | sed -E "s/spark:([0-9.]+)-scala:([0-9.]+)/  SPARK=\1 SCALA=\2/"'
+
+  integration-test:
+    desc: Run integration tests — requires Docker for Testcontainers (SPARK=… SCALA=… to override versions)
+    cmds:
+      - ./gradlew integrationTest -x test -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}}
+
+  jar:
+    desc: 'Build the OpenLineage Spark agent shadow jar, skipping tests; extra Gradle args after "--"'
+    cmds:
+      - ./gradlew shadowJar -x test {{.CLI_ARGS}}
+
+  jar:verify:
+    # Mirrors the CI invocation (clean build, then verify) so a green run here
+    # means a green jarVerification in CI. CI pins SCALA=2.12; override to match
+    # exactly. jarVerification dependsOn shadowJar + jar, so it builds the jar.
+    desc: 'Build the agent shadow jar and run jarVerification — the jar-content check CI runs (SPARK=… SCALA=… to override versions)'
+    cmds:
+      - ./gradlew clean jarVerification -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}}
+
+  aws-integration-test:
+    desc: 'Run AWS EMR integration tests — needs AWS credentials in the environment plus BUCKET (s3 bucket) and SUBNET (ec2 subnet id) exported or set in integration/spark/.env; extra -Dopenlineage.test.* params after "--"'
+    dotenv: ['.env']
+    preconditions:
+      - sh: test -n "$BUCKET"
+        msg: 'BUCKET (s3 bucket name) is not set — fill it in integration/spark/.env or export it'
+      - sh: test -n "$SUBNET"
+        msg: 'SUBNET (ec2 subnet id) is not set — fill it in integration/spark/.env or export it'
+    cmds:
+      - ./gradlew awsIntegrationTest --info -x test -Dopenlineage.test.bucketName="$BUCKET" -Dopenlineage.test.ec2SubnetId="$SUBNET" {{.CLI_ARGS}}
+
+  quickstart:start:
+    desc: Start the local playground — Jupyter+PySpark (localhost:8888, token in logs) with Marquez UI (localhost:3000); app/build is mounted, so run 'task jar' first to try a locally built agent
+    cmds:
+      - docker compose up --detach
+      - docker compose logs notebook | grep -m1 "127.0.0.1:8888" || true
+
+  quickstart:down:
+    desc: Stop the local playground and remove its containers
+    cmds:
+      - docker compose down

@@ -12,9 +12,21 @@ import lombok.SneakyThrows;
 
 public class ObjectStorageDatasetExtractor implements FilesystemDatasetExtractor {
   private final String scheme;
+  private final String canonicalScheme;
 
   public ObjectStorageDatasetExtractor(String scheme) {
+    this(scheme, scheme);
+  }
+
+  /**
+   * @param scheme the scheme prefix this extractor matches (e.g. {@code abfs}, which also matches
+   *     {@code abfss} since matching is by prefix)
+   * @param canonicalScheme the scheme emitted in the resulting namespace; matched variants are
+   *     normalized to it (e.g. {@code abfs} and {@code abfss} both normalize to {@code abfss})
+   */
+  public ObjectStorageDatasetExtractor(String scheme, String canonicalScheme) {
     this.scheme = scheme;
+    this.canonicalScheme = canonicalScheme;
   }
 
   @Override
@@ -33,7 +45,8 @@ public class ObjectStorageDatasetExtractor implements FilesystemDatasetExtractor
   @Override
   @SneakyThrows
   public DatasetIdentifier extract(URI location, String rawName) {
-    URI fixedLocation = new URI(scheme, location.getAuthority(), location.getPath(), null, null);
+    URI fixedLocation =
+        new URI(canonicalScheme, location.getAuthority(), location.getPath(), null, null);
     String namespace = FilesystemUriSanitizer.removeLastSlash(fixedLocation.toString());
     String name =
         Optional.of(rawName)

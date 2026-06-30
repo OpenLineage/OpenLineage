@@ -1,0 +1,86 @@
+# Root task aggregator. Run `task --list` here for the full namespaced catalog.
+# Namespaces mirror the repository layout: `clients:*` for client/ and
+# `integrations:*` for integration/, e.g. `task clients:java:test`,
+# `task integrations:spark:build` (aliased: `task spark:build`). The `python:*`
+# tasks are repo-wide aggregates defined below.
+#
+# Each included Taskfile is self-contained: when working inside a component
+# (e.g. integration/spark), run `task` there directly — Task finds the nearest
+# Taskfile by walking up from the current directory.
+version: '3'
+
+includes:
+  clients:java:
+    taskfile: client/java/Taskfile.yml
+    dir: client/java
+  clients:python:
+    taskfile: client/python/Taskfile.yml
+    dir: client/python
+  integrations:spark:
+    taskfile: integration/spark/Taskfile.yml
+    dir: integration/spark
+    # The most frequently used namespace keeps a short alias.
+    aliases: [spark]
+  integrations:sql:
+    taskfile: integration/sql/Taskfile.yml
+    dir: integration/sql
+  integrations:spark-interfaces:
+    taskfile: integration/spark-extension-interfaces/Taskfile.yml
+    dir: integration/spark-extension-interfaces
+  integrations:common:
+    taskfile: integration/common/Taskfile.yml
+    dir: integration/common
+  integrations:dbt:
+    taskfile: integration/dbt/Taskfile.yml
+    dir: integration/dbt
+  maintenance:
+    taskfile: dev/Taskfile.yml
+    dir: dev
+
+tasks:
+  default:
+    desc: List all available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  # Repo-wide Python tasks. They deliberately share the `python:` prefix with
+  # nothing else — `python` is not an include namespace, so Task merges these
+  # colon-named tasks into the listing without collisions. Ruff is configured
+  # by the root ruff.toml and runs repo-wide, hence format/lint live here
+  # rather than in the per-package Taskfiles.
+  python:format:
+    desc: Auto-fix Python formatting and lint issues repo-wide (ruff)
+    cmds:
+      - uv tool run ruff format .
+      - uv tool run ruff check --fix .
+
+  python:lint:
+    desc: Check Python formatting and lint repo-wide without modifying files (ruff)
+    cmds:
+      - uv tool run ruff check .
+      - uv tool run ruff format --check .
+
+  python:typecheck:
+    desc: Run mypy type checking across all Python packages
+    cmds:
+      - task: clients:python:typecheck
+      - task: integrations:common:typecheck
+      - task: integrations:dbt:typecheck
+
+  python:test:
+    desc: Run tests of all Python packages
+    cmds:
+      - task: clients:python:test
+      - task: integrations:common:test
+      - task: integrations:dbt:test
+
+  python:clean:
+    desc: Remove the virtual environments of all Python packages
+    cmds:
+      - rm -rf client/python/.venv integration/common/.venv integration/dbt/.venv
+
+  precommit:
+    desc: Run ALL pre-commit hooks across the repo — the check jj skips (it never fires git's pre-commit hook)
+    cmds:
+      - uv tool run pre-commit run --all-files

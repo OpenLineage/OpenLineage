@@ -1,0 +1,20 @@
+version: '3'
+
+tasks:
+  format:
+    desc: Apply Spotless formatting
+    cmds:
+      - ./gradlew spotlessApply
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - ./gradlew test
+
+  publish-local:
+    env:
+      JAVA_HOME:
+        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" 17'
+    desc: Publish spark-extension-interfaces to Maven Local without running tests
+    cmds:
+      - ./gradlew clean publishToMavenLocal -x test
