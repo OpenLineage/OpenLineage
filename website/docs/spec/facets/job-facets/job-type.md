@@ -172,3 +172,6 @@ Unless specified otherwise, the job is assumed to be a `BATCH` job that emits `A
  * Integration: `FLINK`
     * Processing type: `STREAMING`|`BATCH`
     * Job type: `JOB`
+ * Integration: `FEAST`
+    * Processing type: `BATCH`
+    * Job type: `JOB`
