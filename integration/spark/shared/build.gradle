@@ -34,6 +34,7 @@ ext {
     awaitilityVersion = "4.3.0"
     bigqueryVersion = "0.42.2"
     databricksVersion = "0.1.5"
+    jacksonVersion = "2.18.8"
     junit5Version = "5.11.4"
     kafkaClientsVersion = "4.1.1"
     micrometerVersion = '1.16.2'
@@ -54,6 +55,11 @@ dependencies {
     api("io.openlineage:openlineage-java:${project.version}")
     api("io.openlineage:openlineage-sql-java:${project.version}")
     api("io.openlineage:spark-extension-entrypoint:1.0.0")
+
+    // Explicitly declare Jackson 2.18.8 to override transitive dependency from openlineage-java
+    implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    implementation("com.fasterxml.jackson.core:jackson-core:${jacksonVersion}")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}")
 
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")

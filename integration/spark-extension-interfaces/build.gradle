@@ -10,7 +10,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'com.diffplug.spotless' version '6.12.0'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "com.gradleup.shadow" version "8.3.5"
     id "pmd"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
@@ -23,7 +23,7 @@ ext {
     assertjVersion = '3.25.3'
     mockitoVersion = '4.11.0'
     sparkVersion = '3.2.4'
-    jacksonVersion = '2.15.3'
+    jacksonVersion = '2.18.8'
 }
 
 final def mainSourceSet = sourceSets.main
@@ -49,8 +49,8 @@ pmdTest {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
@@ -106,16 +106,16 @@ compileJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
     options.encoding = "UTF-8"
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 compileTestJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
     options.encoding = "UTF-8"
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 task sourceJar(type: Jar) {
