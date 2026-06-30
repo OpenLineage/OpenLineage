@@ -10,11 +10,11 @@ import static io.openlineage.spark.agent.util.SqlUtils.generateSchemaFromSqlMeta
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import io.openlineage.sql.OpenLineageSql;
 import io.openlineage.sql.SqlMeta;
 import java.util.Collections;
@@ -84,7 +84,7 @@ public class DataSourceV2RelationDatasetExtractor {
                 }
 
                 Map<String, String> tableProperties = relation.table().properties();
-                CatalogUtils3.addStorageAndCatalogFacets(
+                CatalogUtils.addStorageAndCatalogFacets(
                     context, tableCatalog, tableProperties, datasetFacetsBuilder);
               }
               datasetFacetsBuilder
@@ -218,7 +218,7 @@ public class DataSourceV2RelationDatasetExtractor {
   private static Optional<DatasetIdentifier> getDatasetIdentifierFromRelation(
       DataSourceV2Relation relation) {
     try {
-      return (Optional.of(CatalogUtils3.getDatasetIdentifierFromRelation(relation)));
+      return (Optional.of(CatalogUtils.getDatasetIdentifierFromRelation(relation)));
     } catch (UnsupportedCatalogException ex) {
       log.warn(String.format("Catalog %s is unsupported", ex.getMessage()));
       // update this if change the exception thrown in catalogutils

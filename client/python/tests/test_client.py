@@ -565,6 +565,152 @@ def test_add_environment_facets():
     )
 
 
+@patch.dict(os.environ, {"NEW_VAR": "new_value"})
+def test_add_environment_facets_extends_existing_facet():
+    client = OpenLineageClient()
+    client._config = OpenLineageConfig(  # noqa: SLF001
+        facets=FacetsConfig(environment_variables=["NEW_VAR"])
+    )
+    pre_existing = environment_variables_run.EnvironmentVariable(name="PRE_EXISTING", value="already_there")
+
+    for run_event in (
+        RunEvent(
+            eventType=RunState.START,
+            eventTime="2021-11-03T10:53:52.427343",
+            run=Run(runId=str(generate_new_uuid())),
+            job=Job(name="name", namespace=""),
+            producer="",
+            schemaURL="",
+        ),
+        event_v2.RunEvent(
+            eventType=event_v2.RunState.START,
+            eventTime="2021-11-03T10:53:52.427343",
+            run=Run(runId=str(generate_new_uuid())),
+            job=event_v2.Job(name="name", namespace=""),
+            producer="",
+        ),
+    ):
+        run_event.run.facets = {
+            "environmentVariables": environment_variables_run.EnvironmentVariablesRunFacet([pre_existing])
+        }
+        modified = client.add_environment_facets(run_event)
+        result_vars = modified.run.facets["environmentVariables"].environmentVariables
+        assert len(result_vars) == 2
+        assert result_vars[0] == pre_existing
+        assert result_vars[1] == environment_variables_run.EnvironmentVariable(
+            name="NEW_VAR", value="new_value"
+        )
+
+
+@patch.dict(os.environ, {"SHARED_VAR": "client_value"})
+def test_add_environment_facets_event_var_takes_precedence_with_warning():
+    """Pre-existing event var wins over client-collected value; warning names all three details."""
+    client = OpenLineageClient()
+    client._config = OpenLineageConfig(  # noqa: SLF001
+        facets=FacetsConfig(environment_variables=["SHARED_VAR"])
+    )
+    run_event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(name="name", namespace=""),
+        producer="",
+        schemaURL="",
+    )
+    run_event.run.facets = {
+        "environmentVariables": environment_variables_run.EnvironmentVariablesRunFacet(
+            [environment_variables_run.EnvironmentVariable(name="SHARED_VAR", value="event_value")]
+        )
+    }
+
+    with patch("openlineage.client.client.log") as mock_log:
+        modified = client.add_environment_facets(run_event)
+
+        mock_log.warning.assert_called_once()
+        fmt, *args = mock_log.warning.call_args.args
+        rendered = fmt % tuple(args)
+        assert "SHARED_VAR" in rendered
+        assert "event_value" in rendered
+        assert "client_value" in rendered
+
+    result_vars = modified.run.facets["environmentVariables"].environmentVariables
+    assert len(result_vars) == 1
+    assert result_vars[0] == environment_variables_run.EnvironmentVariable(
+        name="SHARED_VAR", value="event_value"
+    )
+
+
+@patch.dict(os.environ, {"SHARED_VAR": "same_value"})
+def test_add_environment_facets_deduplicates_same_value_no_warning():
+    """No warning when pre-existing var has the same value as the collected one."""
+    client = OpenLineageClient()
+    client._config = OpenLineageConfig(  # noqa: SLF001
+        facets=FacetsConfig(environment_variables=["SHARED_VAR"])
+    )
+    run_event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(name="name", namespace=""),
+        producer="",
+        schemaURL="",
+    )
+    run_event.run.facets = {
+        "environmentVariables": environment_variables_run.EnvironmentVariablesRunFacet(
+            [environment_variables_run.EnvironmentVariable(name="SHARED_VAR", value="same_value")]
+        )
+    }
+    with patch("openlineage.client.client.log") as mock_log:
+        client.add_environment_facets(run_event)
+        mock_log.warning.assert_not_called()
+
+
+@patch.dict(os.environ, {"NEW_VAR": "new_value"})
+def test_add_environment_facets_none_environment_variables_is_safe():
+    """Existing facet with environmentVariables=None must not raise TypeError."""
+    client = OpenLineageClient()
+    client._config = OpenLineageConfig(  # noqa: SLF001
+        facets=FacetsConfig(environment_variables=["NEW_VAR"])
+    )
+    run_event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(name="name", namespace=""),
+        producer="",
+        schemaURL="",
+    )
+    run_event.run.facets = {
+        "environmentVariables": environment_variables_run.EnvironmentVariablesRunFacet(
+            environmentVariables=None
+        )
+    }
+    modified = client.add_environment_facets(run_event)
+    result_vars = modified.run.facets["environmentVariables"].environmentVariables
+    assert result_vars == [environment_variables_run.EnvironmentVariable(name="NEW_VAR", value="new_value")]
+
+
+def test_add_environment_facets_no_configured_vars_preserves_existing_facet():
+    """When no env vars are configured the existing facet must be left untouched."""
+    client = OpenLineageClient()
+    client._config = OpenLineageConfig(  # noqa: SLF001
+        facets=FacetsConfig(environment_variables=[])
+    )
+    pre_existing = environment_variables_run.EnvironmentVariable(name="PRE_EXISTING", value="already_there")
+    original_facet = environment_variables_run.EnvironmentVariablesRunFacet([pre_existing])
+    run_event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(name="name", namespace=""),
+        producer="",
+        schemaURL="",
+    )
+    run_event.run.facets = {"environmentVariables": original_facet}
+    modified = client.add_environment_facets(run_event)
+    assert modified.run.facets["environmentVariables"] is original_facet
+
+
 @patch("openlineage.client.client.OpenLineageClient._find_yaml_config_path")
 @patch("openlineage.client.client.OpenLineageClient._get_config_file_content")
 def test_config_property_loads_yaml(mock_get_config_content, mock_find_yaml):

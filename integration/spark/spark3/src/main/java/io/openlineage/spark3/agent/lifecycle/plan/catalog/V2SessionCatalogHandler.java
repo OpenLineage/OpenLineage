@@ -12,6 +12,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
 import io.openlineage.spark.agent.util.GoogleCloudPlatformUtils;
 import io.openlineage.spark.agent.util.PathUtils;

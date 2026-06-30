@@ -75,22 +75,23 @@ class JarVerificationPluginDelegate(
      * For example, for Java 8 compiled classes should contain class major version equal to 52.
      */
     private fun hasCompiledClassesMajorVersionAboveAllowed(): Boolean {
+        val highest = extension.highestMajorClassVersionAllowed.get()
         return target
             .zipTree(locateJar(target).toPath())
             .files
             .filter { it.extension == "class" }
             .filter { !it.path.contains("META-INF") }
-            .filter { majorVersionOf(it.path) > extension.highestMajorClassVersionAllowed.get() }
-            .map { p ->
-                logger.error("[ERROR] Major class version for '${p.path}' " +
-                        "is '${majorVersionOf(p.path)}', which is above " +
-                        "'${extension.highestMajorClassVersionAllowed.get()}'")
+            .map { it.path to majorVersionOf(it.path) }
+            .filter { (_, version) -> version > highest }
+            .map { (path, version) ->
+                logger.error("[ERROR] Major class version for '$path' " +
+                        "is '$version', which is above '$highest'")
             }
             .isNotEmpty()
     }
 
     private fun majorVersionOf(path: String): Int {
-        return ClassFile(DataInputStream(FileInputStream(File(path)))).majorVersion
+        return DataInputStream(FileInputStream(File(path))).use { ClassFile(it).majorVersion }
     }
 
     /**
