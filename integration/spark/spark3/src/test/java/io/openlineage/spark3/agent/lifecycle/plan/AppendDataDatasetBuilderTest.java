@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -21,6 +22,9 @@ import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrap
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
+import java.util.Collections;
+import java.util.List;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -29,6 +33,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class AppendDataDatasetBuilderTest {
 
@@ -49,6 +54,28 @@ class AppendDataDatasetBuilderTest {
   void isDefinedAtLogicalPlan() {
     assertTrue(builder.isDefinedAtLogicalPlan(mock(AppendData.class)));
     assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
+  }
+
+  @Test
+  void testApplyForDataSourceV2Relation() {
+    AppendData appendData = mock(AppendData.class);
+    DataSourceV2Relation table = mock(DataSourceV2Relation.class);
+    OpenLineage.OutputDataset dataset = mock(OpenLineage.OutputDataset.class);
+
+    when(appendData.table()).thenReturn(table);
+
+    try (MockedStatic<DataSourceV2RelationDatasetExtractor> extractor =
+        mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
+      extractor
+          .when(() -> DataSourceV2RelationDatasetExtractor.extract(factory, context, table, true))
+          .thenReturn(Collections.singletonList(dataset));
+
+      List<OpenLineage.OutputDataset> datasets =
+          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), appendData);
+
+      assertEquals(1, datasets.size());
+      assertEquals(dataset, datasets.get(0));
+    }
   }
 
   @Test
