@@ -63,6 +63,27 @@ in an earlier pass and caused `:iceberg:compileTestJava` / `:gcp:compileTestJava
 in CI with the same "only compatible with JVM runtime version 17 or newer" resolution
 error before being caught and fixed.
 
+## org.apache.kafka:kafka-clients: 4.1.1 -> 4.3.0
+
+**Why excluded:** Not a Java-8 issue, but it breaks dependency resolution: newer
+`kafka-clients` depends on the lz4-java fork `at.yawk.lz4:lz4-java:1.10.2` instead of the
+original `org.lz4:lz4-java` artifact. Both jars declare the same Gradle capability
+(`org.lz4:lz4-java`), and `:shared`'s test runtime classpath also pulls in
+`org.lz4:lz4-java:1.7.1` transitively via `org.apache.spark:spark-hive_2.13:3.2.4` ->
+`spark-core_2.13:3.2.4`. Gradle refuses to resolve two different modules that provide the
+same capability, so `:shared:testScala213RuntimeClasspath` (and the analogous 2.12
+classpath) fails with `Cannot select module with conflict on capability
+'org.lz4:lz4-java:...' also provided by [...]`, which in turn fails
+`:shared:executeTestScala213`/`executeTestScala212` in the `java:17-spark:*-scala:*` CI
+jobs.
+
+**How to make it compatible:** Either wait for the Spark/`spark-core` dependency this
+module tests against to move onto the `at.yawk.lz4` fork as well (so both sides agree on
+one capability provider), or add an explicit Gradle capability resolution strategy in
+`integration/spark/shared/build.gradle` (`resolutionStrategy.capabilitiesResolution` or a
+per-configuration `exclude group: 'org.lz4'` / `exclude group: 'at.yawk.lz4'` on the
+`kafka-clients` dependency) to force one side consistently, then re-apply this bump.
+
 ## Kotlin toolchain (buildSrc only): kept at pre-bump versions
 
 Also reverted, purely as a consequence of keeping `gradle-wrapper` at 8.9:
