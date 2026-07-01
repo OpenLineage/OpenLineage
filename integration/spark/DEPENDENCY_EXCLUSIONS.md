@@ -55,6 +55,14 @@ replacement type or entry point that superseded `BigQueryRelationProvider` (it m
 been renamed/relocated as part of the connector's DSv2 migration) and update the three
 visitor classes above to use it, then re-apply this version bump.
 
+**Note:** the `junit5Version` property is declared independently in every module's
+`build.gradle` (there's no shared version catalog), so this revert had to be applied in
+`app/`, `shared/`, `spark3/`, `spark31/`-`spark40/`, and the vendor modules
+`vendor/iceberg/`, `vendor/gcp/`, and `vendor/snowflake/`. The vendor modules were missed
+in an earlier pass and caused `:iceberg:compileTestJava` / `:gcp:compileTestJava` to fail
+in CI with the same "only compatible with JVM runtime version 17 or newer" resolution
+error before being caught and fixed.
+
 ## Kotlin toolchain (buildSrc only): kept at pre-bump versions
 
 Also reverted, purely as a consequence of keeping `gradle-wrapper` at 8.9:
