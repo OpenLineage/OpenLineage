@@ -1,0 +1,58 @@
+name: Integration tests for Spark Azure
+
+# Runs the Azure ADLS Gen2 (abfss) Unity Catalog integration tests for the Spark integration.
+#
+# The workflow is triggered manually. To run, you have to install GitHub CLI, set up the secrets
+# and run:
+# gh workflow run "Integration tests for Spark Azure" --ref <name of your branch>
+#
+# The required secrets are:
+# - AZURE_TESTS_CONTAINER_URI       (writable abfss:// base, e.g. abfss://container@account.dfs.core.windows.net/test)
+# - AZURE_TESTS_CLIENT_ID           (OAuth service principal)
+# - AZURE_TESTS_CLIENT_SECRET
+# - AZURE_TESTS_TENANT_ID           (the directory/tenant GUID)
+#
+# For local development use the command as in the step "Run Azure integration tests" below, with the
+# parameters supplied via integration/spark/.env (copy integration/spark/.env.template). See class
+# DynamicParameter and AzureDynamicParameter in the Spark integration for details.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: integration/spark
+
+jobs:
+  run-integration-tests-azure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Spark integration dependencies
+        run: task setup
+      - name: Run Azure integration tests
+        env:
+          OPENLINEAGE_TESTS_AZURE_CONTAINER_URI: ${{ secrets.AZURE_TESTS_CONTAINER_URI }}
+          OPENLINEAGE_TESTS_AZURE_CLIENT_ID: ${{ secrets.AZURE_TESTS_CLIENT_ID }}
+          OPENLINEAGE_TESTS_AZURE_CLIENT_SECRET: ${{ secrets.AZURE_TESTS_CLIENT_SECRET }}
+          OPENLINEAGE_TESTS_AZURE_TENANT_ID: ${{ secrets.AZURE_TESTS_TENANT_ID }}
+        run: task abfss-test -- -Pjava.compile.home=${JAVA_HOME}
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report
+          path: integration/spark/spark40/build/reports/tests

@@ -93,7 +93,7 @@ repos:
         types: [text]
         args:
           - --ignore-words=spelling_wordlist.txt
-          - --skip=*.css,*.js,*.svg,*.xml,*/**/test/*,*/**/tests/*,*/yarn.lock,**/openapi/*.html,*/package-lock.json,*/spec/*
+          - --skip=*.css,*.js,*.svg,*.xml,*/**/test/*,*/**/tests/*,*/**/testScala*/*,*/yarn.lock,**/openapi/*.html,*/package-lock.json,*/spec/*
   - repo: https://github.com/koalaman/shellcheck-precommit
     rev: v0.10.0
     hooks:

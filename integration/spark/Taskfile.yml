@@ -119,7 +119,7 @@ tasks:
       - ./gradlew clean jarVerification -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}}
 
   aws-integration-test:
-    desc: 'Run AWS EMR integration tests — needs AWS credentials in the environment plus BUCKET (s3 bucket) and SUBNET (ec2 subnet id) exported or set in integration/spark/.env; extra -Dopenlineage.test.* params after "--"'
+    desc: 'Run AWS EMR integration tests — needs AWS credentials in the environment plus BUCKET (s3 bucket) and SUBNET (ec2 subnet id) exported or set in integration/spark/.env; extra -Dopenlineage.tests.emr.* params after "--"'
     dotenv: ['.env']
     preconditions:
       - sh: test -n "$BUCKET"
@@ -127,7 +127,13 @@ tasks:
       - sh: test -n "$SUBNET"
         msg: 'SUBNET (ec2 subnet id) is not set — fill it in integration/spark/.env or export it'
     cmds:
-      - ./gradlew awsIntegrationTest --info -x test -Dopenlineage.test.bucketName="$BUCKET" -Dopenlineage.test.ec2SubnetId="$SUBNET" {{.CLI_ARGS}}
+      - ./gradlew awsIntegrationTest --info -x test -Dopenlineage.tests.emr.bucketName="$BUCKET" -Dopenlineage.tests.emr.ec2SubnetId="$SUBNET" {{.CLI_ARGS}}
+
+  abfss-test:
+    desc: 'Run the Azure ADLS Gen2 (abfss) Unity Catalog integration tests'
+    dotenv: ['.env']
+    cmds:
+      - ./gradlew :spark40:executeTestScala213 -Pazure --tests '*Abfss*' {{.CLI_ARGS}}
 
   quickstart:start:
     desc: Start the local playground — Jupyter+PySpark (localhost:8888, token in logs) with Marquez UI (localhost:3000); app/build is mounted, so run 'task jar' first to try a locally built agent
