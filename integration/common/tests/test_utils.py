@@ -50,6 +50,11 @@ def test_parse_single_arg_default():
     assert parse_single_arg(["dbt", "run"], ["-t", "--target"], default="prod") == "prod"
 
 
+def test_parse_single_arg_trailing_key_uses_default():
+    assert parse_single_arg(["dbt", "run", "--target"], ["-t", "--target"]) is None
+    assert parse_single_arg(["dbt", "run", "--target"], ["-t", "--target"], default="prod") == "prod"
+
+
 def test_parse_multiple_args():
     assert parse_multiple_args(["dbt", "run", "--foo", "bar"], ["-m", "--model", "--models"]) == []
     assert sorted(
