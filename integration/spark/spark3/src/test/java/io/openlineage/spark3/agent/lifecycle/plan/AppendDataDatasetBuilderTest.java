@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -34,6 +36,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 class AppendDataDatasetBuilderTest {
 
@@ -61,6 +64,7 @@ class AppendDataDatasetBuilderTest {
     AppendData appendData = mock(AppendData.class);
     DataSourceV2Relation table = mock(DataSourceV2Relation.class);
     OpenLineage.OutputDataset dataset = mock(OpenLineage.OutputDataset.class);
+    SparkListenerSQLExecutionEnd event = new SparkListenerSQLExecutionEnd(1L, 1L);
 
     when(appendData.table()).thenReturn(table);
 
@@ -70,11 +74,33 @@ class AppendDataDatasetBuilderTest {
           .when(() -> DataSourceV2RelationDatasetExtractor.extract(factory, context, table, true))
           .thenReturn(Collections.singletonList(dataset));
 
-      List<OpenLineage.OutputDataset> datasets =
-          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), appendData);
+      List<OpenLineage.OutputDataset> datasets = builder.apply(event, appendData);
 
       assertEquals(1, datasets.size());
       assertEquals(dataset, datasets.get(0));
+    }
+  }
+
+  @Test
+  void testApplyRunsQueryPlanVisitorsBeforeExtract() {
+    AppendData appendData = mock(AppendData.class);
+    DataSourceV2Relation table = mock(DataSourceV2Relation.class);
+    OpenLineage.OutputDataset dataset = mock(OpenLineage.OutputDataset.class);
+    SparkListenerSQLExecutionEnd event = new SparkListenerSQLExecutionEnd(1L, 1L);
+    AppendDataDatasetBuilder spyBuilder = spy(builder);
+
+    when(appendData.table()).thenReturn(table);
+    Mockito.doReturn(Collections.emptyList()).when(spyBuilder).delegate(table, event);
+
+    try (MockedStatic<DataSourceV2RelationDatasetExtractor> extractor =
+        mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
+      extractor
+          .when(() -> DataSourceV2RelationDatasetExtractor.extract(factory, context, table, true))
+          .thenReturn(Collections.singletonList(dataset));
+
+      spyBuilder.apply(event, appendData);
+
+      verify(spyBuilder).delegate(table, event);
     }
   }
 

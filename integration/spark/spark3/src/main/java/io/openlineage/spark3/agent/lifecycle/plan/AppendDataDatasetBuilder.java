@@ -49,6 +49,9 @@ public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
     LogicalPlan table = (LogicalPlan) x.table();
     Optional<DataSourceV2Relation> relation = resolveDataSourceV2Relation(table);
     if (relation.isPresent()) {
+      // Run query plan visitors (for example, Iceberg metrics reporter injection) before building
+      // output datasets directly from the target relation.
+      delegate(table, event);
       return DataSourceV2RelationDatasetExtractor.extract(
           factory, context, relation.get(), includeDatasetVersion(event));
     }
