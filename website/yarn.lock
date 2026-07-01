@@ -246,25 +246,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^5.0.4":
-  version: 5.0.4
-  resolution: "@argos-ci/cli@npm:5.0.4"
+"@argos-ci/cli@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "@argos-ci/cli@npm:5.1.0"
   dependencies:
     "@argos-ci/api-client": "npm:0.22.0"
-    "@argos-ci/core": "npm:6.1.0"
+    "@argos-ci/core": "npm:6.2.0"
     commander: "npm:^14.0.3"
     open: "npm:^11.0.0"
     ora: "npm:^9.4.0"
     update-notifier: "npm:^7.3.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/fa86a1bf019b96ec71b09e9eb0325cf72f72bbfa3222edcc01310350a184d8ec7443ee60b9c4b1659ca4eff938b08a11d6c1d888935841be67311e9b24e0e189
+  checksum: 10c0/282768fdffa760e252ff0ebb3653905b6717ff12e5828562d23edd951a1ca85bdd21c29ec6bc8740bc3aae342218d1f05330e88fbf20ef7eb367844f0acad1ee
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:6.1.0":
-  version: 6.1.0
-  resolution: "@argos-ci/core@npm:6.1.0"
+"@argos-ci/core@npm:6.2.0":
+  version: 6.2.0
+  resolution: "@argos-ci/core@npm:6.2.0"
   dependencies:
     "@argos-ci/api-client": "npm:0.22.0"
     "@argos-ci/util": "npm:4.0.0"
@@ -274,20 +274,20 @@ __metadata:
     mime-types: "npm:^3.0.2"
     sharp: "npm:^0.34.5"
     tmp: "npm:^0.2.5"
-  checksum: 10c0/47d688d1547d3672101c8f02e70736d1858db353852ab94389620e3c8f03a026d903357e2da97e0604a504ae7af229733879b006228d167ac904e8df0866f53a
+  checksum: 10c0/c8a1dc36abe855e46281ce3dabed59fa7ae53a3a73debe24691a8a86fff1ec720e4270e0eaa671ef0ad5c25cfea8b91ffed521e1609ffaab5f1c35af5aedeb07
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^7.0.5":
-  version: 7.0.5
-  resolution: "@argos-ci/playwright@npm:7.0.5"
+"@argos-ci/playwright@npm:^7.0.7":
+  version: 7.0.7
+  resolution: "@argos-ci/playwright@npm:7.0.7"
   dependencies:
     "@argos-ci/browser": "npm:6.1.0"
-    "@argos-ci/core": "npm:6.1.0"
+    "@argos-ci/core": "npm:6.2.0"
     "@argos-ci/util": "npm:4.0.0"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
-  checksum: 10c0/7687306587aacd8654518d1f942816e34d405be9d07aab48fa86a4209dfd3c245f67bdef99436ccc58e18ac379bc5059f2fcab9624d3de87fc9e4c81073c13e0
+  checksum: 10c0/9f5bf59648fbdd064829d1adde33ba2516e216bad19012c12458b97fc897431833700d82830890997044ed40e7734a2657819b36b805bbb53cf26a156714d226
   languageName: node
   linkType: hard
 
@@ -1693,10 +1693,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.29.7":
-  version: 7.29.7
-  resolution: "@babel/runtime@npm:7.29.7"
-  checksum: 10c0/ca11572f7146b21e0bde6a9ed4bb6a89eafbee5f0944c7eb54d0d8a2dac962c33638a1d611e14faa71dfbb92b4b5f9236232208568a6b7d5c6f3f39ddb91771e
+"@babel/runtime@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@babel/runtime@npm:8.0.0"
+  checksum: 10c0/450857cf52b3a3935d4aad505277201361c86185dad3bdd2ae083d78b76c6265c7fc7610e170c80de1b825d5bfdcfb50697f0853fff922b2661c91cff1fbbd81
   languageName: node
   linkType: hard
 
@@ -4048,14 +4048,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:^1.60.0":
-  version: 1.60.0
-  resolution: "@playwright/test@npm:1.60.0"
+"@playwright/test@npm:^1.61.0":
+  version: 1.61.0
+  resolution: "@playwright/test@npm:1.61.0"
   dependencies:
-    playwright: "npm:1.60.0"
+    playwright: "npm:1.61.0"
   bin:
     playwright: cli.js
-  checksum: 10c0/86b06e6437933e741c7cd43f362024e857e7bc28a55fcbb0553ef55e01a2a403c64f4786868de8af86a6e303fe99e98a18a42ba19489f43ae122e457f9e2d189
+  checksum: 10c0/993f5e30878f50c92c058f7a37f15bca456b794f2818a8c0b75bf09bc947657d56fee836ff4ebee83a869a3471663f0d61ca4eaaae31dd1bcf8bf4342344be35
   languageName: node
   linkType: hard
 
@@ -5280,9 +5280,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^5.0.4"
-    "@argos-ci/playwright": "npm:^7.0.5"
-    "@playwright/test": "npm:^1.60.0"
+    "@argos-ci/cli": "npm:^5.1.0"
+    "@argos-ci/playwright": "npm:^7.0.7"
+    "@playwright/test": "npm:^1.61.0"
     cheerio: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
@@ -6997,7 +6997,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "docs@workspace:."
   dependencies:
-    "@babel/runtime": "npm:^7.29.7"
+    "@babel/runtime": "npm:^8.0.0"
     "@docusaurus/core": "npm:^3.10.1"
     "@docusaurus/module-type-aliases": "npm:^3.10.1"
     "@docusaurus/plugin-content-blog": "npm:^3.10.1"
@@ -11616,27 +11616,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.60.0":
-  version: 1.60.0
-  resolution: "playwright-core@npm:1.60.0"
+"playwright-core@npm:1.61.0":
+  version: 1.61.0
+  resolution: "playwright-core@npm:1.61.0"
   bin:
     playwright-core: cli.js
-  checksum: 10c0/99ccd43923b6e9355e0723b7fe221e6326efd4687f8dafff951313662aea11db51f542a9c2122c704c445fb9baae1c9ec9fa6f895126bbddd9fe92313f6942c9
+  checksum: 10c0/64cbf5e9f4ad81cbb005d59417e96435e324a6e3801f1c79b36850ad99f6bb90853c4b569a32c49b9eca1e07925bbb2a5a864babdba2178c3c395e0c589d5941
   languageName: node
   linkType: hard
 
-"playwright@npm:1.60.0":
-  version: 1.60.0
-  resolution: "playwright@npm:1.60.0"
+"playwright@npm:1.61.0":
+  version: 1.61.0
+  resolution: "playwright@npm:1.61.0"
   dependencies:
     fsevents: "npm:2.3.2"
-    playwright-core: "npm:1.60.0"
+    playwright-core: "npm:1.61.0"
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     playwright: cli.js
-  checksum: 10c0/714ad76d85b4865d7e43c0012f9039800c1485373388973ed39d79339cee5ad467052d1e2f1eaeca107a1cb6e65342186a8578a4c3504853d84c3a691250d5db
+  checksum: 10c0/079dceebe8b745fa6062a3af928024d0c508177fbf15d61dba09ba173f277465ad3746fdc1b31788ade65428f4d3f92fc8083b44c07381b088721eaa2ea06513
   languageName: node
   linkType: hard
 
