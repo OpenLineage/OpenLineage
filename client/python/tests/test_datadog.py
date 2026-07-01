@@ -25,6 +25,26 @@ class TestDatadogConfig:
         assert config.max_queue_size == 10000
         assert config.max_concurrent_requests == 100
 
+    def test_datadog_config_retry_default_is_per_instance(self):
+        first = DatadogConfig.from_dict({"apiKey": "first-key"})
+        second = DatadogConfig.from_dict({"apiKey": "second-key"})
+
+        first.retry["total"] = 1
+        first.retry["status_forcelist"].append(429)
+
+        assert second.retry["total"] == 5
+        assert second.retry["status_forcelist"] == [500, 502, 503, 504]
+
+    def test_datadog_config_async_rules_default_is_per_instance(self):
+        first = DatadogConfig.from_dict({"apiKey": "first-key"})
+        second = DatadogConfig.from_dict({"apiKey": "second-key"})
+
+        first.async_transport_rules["spark"] = {"*": True}
+        first.async_transport_rules["dbt"]["test"] = False
+
+        assert "spark" not in second.async_transport_rules
+        assert second.async_transport_rules == {"dbt": {"*": True}}
+
     def test_datadog_config_full(self):
         """Test full config with all parameters."""
         config = DatadogConfig.from_dict(
