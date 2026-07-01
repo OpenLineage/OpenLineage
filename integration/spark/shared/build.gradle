@@ -32,9 +32,9 @@ javadoc {
 ext {
     assertjVersion = "3.27.7"
     awaitilityVersion = "4.3.0"
-    bigqueryVersion = "0.44.2"
+    bigqueryVersion = "0.42.2"
     databricksVersion = "0.1.5"
-    junit5Version = "6.1.0"
+    junit5Version = "5.11.4"
     kafkaClientsVersion = "4.3.0"
     micrometerVersion = '1.17.0'
     mockitoVersion = "4.11.0"
