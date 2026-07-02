@@ -4,17 +4,19 @@ This file contains examples for [ExplicitLineageProposal.md](ExplicitLineageProp
 
 ## 1. Dataset-level lineage on RunEvent
 
-ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. LineageRunFacet on the run:
+ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. `LineageJobFacet` on the job:
 
 ```json
 {
   "eventType": "COMPLETE",
-  "run": {
-    "runId": "abc-123",
+  "run": { "runId": "abc-123" },
+  "job": {
+    "namespace": "http://etl-server:8080",
+    "name": "bulk_etl",
     "facets": {
       "lineage": {
         "_producer": "https://example.com/etl",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
         "entries": [
           { "namespace": "postgresql://warehouse:5432", "name": "table_c", "type": "DATASET",
             "inputs": [{ "namespace": "postgresql://warehouse:5432", "name": "table_a", "type": "DATASET" }] },
@@ -24,7 +26,6 @@ ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. LineageRunF
       }
     }
   },
-  "job": { "namespace": "http://etl-server:8080", "name": "bulk_etl" },
   "inputs": [
     { "namespace": "postgresql://warehouse:5432", "name": "table_a" },
     { "namespace": "postgresql://warehouse:5432", "name": "table_b" }
@@ -43,12 +44,13 @@ ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. LineageRunF
 This example shows how the new facets can replace ColumnLevelLineageDatasetFacet.
 
 ```json
-"run": {
-  "runId": "abc-123",
+"job": {
+  "namespace": "http://etl-server:8080",
+  "name": "analytics_etl",
   "facets": {
     "lineage": {
       "_producer": "...",
-      "_schemaURL": "...",
+      "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
       "entries": [
         { "namespace": "postgresql://analytics:5432", "name": "output", "type": "DATASET",
           "fields": {
@@ -178,8 +180,8 @@ Conceptually, the event still establishes:
 transactions (DATASET) ──> fraud_detector (JOB)
 ```
 
-That edge is implicit in the RunEvent boundary, not repeated in `LineageRunFacet`. 
-OpenLineage consumer may use that to visualize the relationship.
+That edge is implicit in the RunEvent boundary, not repeated in a lineage facet.
+An OpenLineage consumer may use it to visualise the relationship.
 
 ## 7. Data generator — job produces data without tracked input
 
@@ -211,17 +213,19 @@ That edge is implicit in the RunEvent boundary, not repeated with a `LineageJobI
 
 The same extract task as in previous example, but the producer knows that `total` was derived via a `sum()` aggregation over the (untracked) external API response. 
 There is still no tracked upstream dataset, so the entry's top-level `inputs` is `[]`. 
-The per-field detail names an `LineageJobInput` (`type: JOB` with no `namespace`/`name`), which resolves to the event's own job, and carries the transformation:
+The per-field detail names a `LineageJobInput` (`type: JOB` with no `namespace`/`name`), which resolves to the event's own job, and carries the transformation:
 
 ```json
 {
   "eventType": "COMPLETE",
-  "run": {
-    "runId": "abc-789",
+  "run": { "runId": "abc-789" },
+  "job": {
+    "namespace": "airflow://prod",
+    "name": "data_pipeline.extract_task",
     "facets": {
       "lineage": {
         "_producer": "https://example.com/extract",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
         "entries": [
           { "namespace": "postgres://prod", "name": "extracted_data", "type": "DATASET",
             "inputs": [],
@@ -237,7 +241,6 @@ The per-field detail names an `LineageJobInput` (`type: JOB` with no `namespace`
       }
     }
   },
-  "job": { "namespace": "airflow://prod", "name": "data_pipeline.extract_task" },
   "inputs": [],
   "outputs": [
     { "namespace": "postgres://prod", "name": "extracted_data" }
@@ -280,17 +283,19 @@ Note that `runId` is omitted on both ends — declared lineage describes the job
 
 ## 10. Job-to-job — observed chain on RunEvent
 
-The same data flow as Example 8, observed at runtime by an integration that can identify both the upstream and downstream runs. `runId` is populated on each end, binding the chain to specific executions:
+The same data flow as Example 9, observed at runtime by an integration that can identify both the upstream and downstream runs. `runId` is populated on each end, binding the chain to specific executions:
 
 ```json
 {
   "eventType": "COMPLETE",
-  "run": {
-    "runId": "run-b-001",
+  "run": { "runId": "run-b-001" },
+  "job": {
+    "namespace": "airflow://prod",
+    "name": "dag_b.task_1",
     "facets": {
       "lineage": {
         "_producer": "https://example.com/airflow",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
         "entries": [
           { "namespace": "airflow://prod", "name": "dag_b.task_1", "type": "JOB",
             "runId": "run-b-001",
@@ -303,7 +308,6 @@ The same data flow as Example 8, observed at runtime by an integration that can 
       }
     }
   },
-  "job": { "namespace": "airflow://prod", "name": "dag_b.task_1" },
   "inputs": [],
   "outputs": []
 }
@@ -316,12 +320,14 @@ A streaming job in a Flink cluster feeds an in-memory topic consumed by a job in
 ```json
 {
   "eventType": "COMPLETE",
-  "run": {
-    "runId": "beam-run-77",
+  "run": { "runId": "beam-run-77" },
+  "job": {
+    "namespace": "beam://analytics",
+    "name": "enrichment_pipeline",
     "facets": {
       "lineage": {
         "_producer": "https://example.com/beam",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
         "entries": [
           { "namespace": "beam://analytics", "name": "enrichment_pipeline", "type": "JOB",
             "runId": "beam-run-77",
@@ -333,7 +339,6 @@ A streaming job in a Flink cluster feeds an in-memory topic consumed by a job in
       }
     }
   },
-  "job": { "namespace": "beam://analytics", "name": "enrichment_pipeline" },
   "inputs": [],
   "outputs": []
 }
@@ -348,12 +353,14 @@ Reading specific columns from a structured table and writing to an unstructured 
 ```json
 {
   "eventType": "COMPLETE",
-  "run": {
-    "runId": "abc-012",
+  "run": { "runId": "abc-012" },
+  "job": {
+    "namespace": "analytics",
+    "name": "event_processor",
     "facets": {
       "lineage": {
         "_producer": "https://example.com/export",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageRunFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
         "entries": [
           { "namespace": "file://", "name": "R.pdf", "type": "DATASET",
             "inputs": [
@@ -365,7 +372,6 @@ Reading specific columns from a structured table and writing to an unstructured 
       }
     }
   },
-  "job": { "namespace": "analytics", "name": "event_processor" },
   "inputs": [
     { "namespace": "postgres://prod", "name": "X" }
   ],

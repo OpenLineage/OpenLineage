@@ -32,45 +32,31 @@ The natural facet. Lives on datasets in DatasetEvent. The target entity is impli
 
 > Note: no `namespace`, `name`, or `type` on this facet — the target is the dataset it's attached to.
 
-## LineageRunFacet (RunFacet)
-
-TODO: remove
-
-Lives on the run object in RunEvent. Contains an array of `LineageEntry` objects, each identifying a target entity explicitly by namespace, name, and type, along with its source inputs and optional column-level detail.
-
-```json
-"LineageRunFacet": {
-  "type": "object",
-  "description": "Explicit lineage observed during this run. Describes data flow between entities at entity and/or column granularity.",
-  "allOf": [{ "$ref": "#/$defs/RunFacet" }],
-  "properties": {
-    "entries": {
-      "type": "array",
-      "description": "Lineage entries describing data flow observed during this run.",
-      "items": {
-        "$ref": "#/$defs/LineageEntry"
-      }
-    }
-  },
-  "required": ["entries"]
-}
-```
-
 ## LineageJobFacet (JobFacet)
 
-Lives on the job object in JobEvent. Same structure as LineageRunFacet.
+The primary lineage facet. It is a **JobFacet**, so it lives on the `job` object — which is present on both `RunEvent` and `JobEvent`. There is no separate run-level lineage facet: lineage is treated as a property of the *job*, not of each individual run.
+
+It contains an array of entries, each identifying a target entity explicitly by namespace, name, and type, along with its source inputs and optional column-level detail. Each entry is a `LineageDatasetEntry` or a `LineageJobEntry`.
+
+The same facet is used on both event types; only the *interpretation* differs, keyed by the event type it rides on (see the semantics section of the proposal):
+
+- On a **JobEvent**, it describes the job's declared/static data flow, using **replace** semantics (the latest event is the complete picture).
+- On a **RunEvent**, it describes data flow observed during that run, using OpenLineage's usual **accumulative** run semantics, and MAY bind edges to specific executions via the optional `runId` on job-typed entries/inputs.
 
 ```json
 "LineageJobFacet": {
   "type": "object",
-  "description": "Explicit lineage declared for this job definition. Describes designed/static data flow at entity and/or column granularity.",
+  "description": "Explicit lineage for a job. Describes data flow between entities at entity and/or column granularity. On a JobEvent it is the job's declared/static lineage; on a RunEvent it is lineage observed during that run. Supersedes ColumnLineageDatasetFacet for job-scoped lineage.",
   "allOf": [{ "$ref": "#/$defs/JobFacet" }],
   "properties": {
     "entries": {
       "type": "array",
-      "description": "Lineage entries describing data flow designed for this job.",
+      "description": "Lineage entries describing data flow for this job. Each entry describes ONE target entity and what feeds into it. The 'type' field discriminates between dataset targets and job targets: dataset targets may be fed by datasets or by explicit upstream jobs; job targets may be fed by datasets or jobs when the target job must be identified independently from the event's own job.",
       "items": {
-        "$ref": "#/$defs/LineageEntry"
+        "oneOf": [
+          { "$ref": "#/$defs/LineageDatasetEntry" },
+          { "$ref": "#/$defs/LineageJobEntry" }
+        ]
       }
     }
   },
@@ -80,22 +66,7 @@ Lives on the job object in JobEvent. Same structure as LineageRunFacet.
 
 ## Shared Types
 
-### LineageEntry (discriminated union)
-
-TODO: when LineageJobFacet coalesces to LineageRunFacet, we don't need this
-
-Used by LineageRunFacet and LineageJobFacet. Each entry describes ONE target entity and what feeds into it. The `type` field discriminates between dataset targets and job targets. Dataset targets may be fed by datasets or by explicit upstream jobs; job targets may be fed by datasets or jobs when the target job must be identified independently from the event's own job:
-
-```json
-"LineageEntry": {
-  "oneOf": [
-    { "$ref": "#/$defs/LineageDatasetEntry" },
-    { "$ref": "#/$defs/LineageJobEntry" }
-  ]
-}
-```
-
-The `enum` constraint on each subtype's `type` field (`"DATASET"` or `"JOB"`) ensures only one branch can match during validation.
+Entries in `LineageJobFacet.entries` are a discriminated union of `LineageDatasetEntry` and `LineageJobEntry`. The `enum` constraint on each subtype's `type` field (`"DATASET"` or `"JOB"`) ensures only one branch can match during validation.
 
 ### LineageDatasetEntry
 
@@ -140,15 +111,26 @@ A lineage target that is a dataset. Supports both entity-level and column-level 
 
 ### LineageJobEntry
 
-A lineage target that is a job. Used when the target job must be identified explicitly, such as **job-to-job chains** or other cross-job handoffs with no intermediate tracked dataset. It is not used to model the ordinary sink case for the event's own job; that is represented by input datasets that appear in the event `inputs` array but do not feed any tracked output dataset. Does not support column-level lineage (`fields`), but supports an optional `runId` to tie to a specific execution:
+A lineage target that is a job. It has two forms, set by whether `namespace` and `name` are present:
 
-When we describe current job, we don't 
+- with `namespace` and `name`: another job, identified explicitly. This is the job-to-job chain case, where a job hands data to another job with no intermediate tracked dataset.
+- without `namespace` or `name`: the event's own job. Use this only to add transformation detail for the sink case, where a job consumes data but writes no tracked dataset to hang that detail on. Its identity comes from the event's top-level `job` (and `run` on a RunEvent).
+
+Emit `namespace` and `name` together or omit both. It supports an optional `runId` to tie it to a specific run:
 
 ```json
 "LineageJobEntry": {
   "type": "object",
-  "description": "Describes data flowing into a target job. Used when the target job must be identified explicitly.",
+  "description": "Describes data flowing into a target job. With namespace and name, it identifies another job explicitly (a job-to-job chain). Without them, the target is the event's own job, used only to add transformation detail for the sink case.",
   "properties": {
+    "namespace": {
+      "type": "string",
+      "description": "The namespace of the target job. Omit together with 'name' to mean the event's own job."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name of the target job. Omit together with 'namespace' to mean the event's own job."
+    },
     "type": {
       "type": "string",
       "enum": ["JOB"],
@@ -286,7 +268,7 @@ A source input that is a job. Used when data comes from an explicitly identified
 
 > Either both `namespace` and `name` are present (an explicitly identified job) or both are absent (the event's own job). A producer SHOULD NOT emit one without the other.
 
-TODO: explain that when refering to current job, we are inferring current namespace/name/runId from the job on the top-level event
+When both are absent, the source job is the event's own job. A consumer resolves its `namespace` and `name` from the top-level event's `job`, and its run from the top-level event's `run` on a RunEvent. This is why those fields are omitted rather than repeated: the event already carries them, and restating them risks drift.
 
 ### LineageTransformation
 
