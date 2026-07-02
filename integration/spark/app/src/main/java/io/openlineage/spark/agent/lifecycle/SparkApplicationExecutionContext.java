@@ -135,19 +135,21 @@ class SparkApplicationExecutionContext implements ExecutionContext {
         && eventEmitter.getParentJobNamespace().isPresent()) {
       OpenLineage ol = olContext.getOpenLineage();
       return ol.newParentRunFacet(
-          ol.newParentRunFacetRun(eventEmitter.getParentRunId().get()),
+          ol.newParentRunFacetRun(eventEmitter.getParentRunId().get(), null),
           ol.newParentRunFacetJob(
-              eventEmitter.getParentJobNamespace().get(), eventEmitter.getParentJobName().get()),
+              eventEmitter.getParentJobNamespace().get(),
+              eventEmitter.getParentJobName().get(),
+              null),
           ol.newParentRunFacetRoot(
               ol.newRootRun(
-                  eventEmitter.getRootParentRunId().orElse(eventEmitter.getParentRunId().get())),
+                  eventEmitter.getRootParentRunId().orElse(eventEmitter.getParentRunId().get()),
+                  null),
               ol.newRootJob(
                   eventEmitter
                       .getRootParentJobNamespace()
                       .orElse(eventEmitter.getParentJobNamespace().get()),
-                  eventEmitter
-                      .getRootParentJobName()
-                      .orElse(eventEmitter.getParentJobName().get()))));
+                  eventEmitter.getRootParentJobName().orElse(eventEmitter.getParentJobName().get()),
+                  null)));
     }
     return null;
   }

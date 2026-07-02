@@ -86,11 +86,11 @@ class OpenLineageRunEventBuilderTest {
     when(runEventContext.getApplicationParentRunFacet())
         .thenReturn(
             openLineage.newParentRunFacet(
-                openLineage.newParentRunFacetRun(UUID.randomUUID()),
-                openLineage.newParentRunFacetJob("ns", "jobName"),
+                openLineage.newParentRunFacetRun(UUID.randomUUID(), null),
+                openLineage.newParentRunFacetJob("ns", "jobName", null),
                 openLineage.newParentRunFacetRoot(
-                    openLineage.newRootRun(UUID.randomUUID()),
-                    openLineage.newRootJob("ns", "rootJobName"))));
+                    openLineage.newRootRun(UUID.randomUUID(), null),
+                    openLineage.newRootJob("ns", "rootJobName", null))));
     when(runEventContext.loadNodes(anyMap(), anyMap()))
         .thenReturn(Collections.singletonList(mock(SparkListenerSQLExecutionEnd.class)));
     when(config.getCircuitBreaker()).thenReturn(circuitBreakerConfig);
