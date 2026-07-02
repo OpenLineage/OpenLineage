@@ -217,12 +217,12 @@ class OpenLineageTest {
                     .build())
             .parent(
                 ol.newParentRunFacetBuilder()
-                    .job(ol.newParentRunFacetJob("parent-namespace", "parent-name"))
-                    .run(ol.newParentRunFacetRun(parentId))
+                    .job(ol.newParentRunFacetJob("parent-namespace", "parent-name", null))
+                    .run(ol.newParentRunFacetRun(parentId, null))
                     .root(
                         ol.newParentRunFacetRoot(
-                            ol.newRootRun(rootParentId),
-                            ol.newRootJob("root-namespace", "root-job-name")))
+                            ol.newRootRun(rootParentId, null),
+                            ol.newRootJob("root-namespace", "root-job-name", null)))
                     .build())
             .build();
     Run run = ol.newRunBuilder().runId(runId).facets(runFacets).build();
