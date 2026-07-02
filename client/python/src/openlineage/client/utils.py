@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+from collections import OrderedDict
 from typing import Any, ClassVar, cast
 
 import attr
@@ -55,9 +56,48 @@ def deep_merge_dicts(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[Any, 
     return merged
 
 
+def split_into_list(value: str | list[str]) -> list[str]:
+    if isinstance(value, list):
+        return value
+    return [item.strip() for item in value.split(";") if item.strip()]
+
+
 class RedactMixin:
     _skip_redact: ClassVar[list[str]] = []
 
     @property
     def skip_redact(self) -> list[str]:
         return self._skip_redact
+
+
+class LogDeduplicationFilter(logging.Filter):
+    """
+    Deduplicates log records with level > DEBUG based on the fully formatted
+    message. First occurrence is logged at the original level; subsequent
+    occurrences are demoted to DEBUG.
+
+    Deduplication scope is bounded using an LRU cache to prevent unbounded
+    memory growth.
+    """
+
+    def __init__(self, max_messages: int = 5_000) -> None:
+        super().__init__()
+        self._seen: OrderedDict[str, None] = OrderedDict()
+        self._max = max_messages
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno <= logging.DEBUG:
+            return True
+
+        message = record.getMessage()
+
+        if message in self._seen:
+            record.levelno = logging.DEBUG
+            record.levelname = logging.getLevelName(logging.DEBUG)
+            self._seen.move_to_end(message)
+        else:
+            self._seen[message] = None
+            if len(self._seen) > self._max:
+                self._seen.popitem(last=False)
+
+        return True
