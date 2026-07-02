@@ -15,14 +15,14 @@ plugins {
     id "com.gradleup.shadow" version "9.4.2"
     id "pmd"
     id "io.freefair.lombok" version "9.5.0"
-    id "com.github.gmazzo.buildconfig" version "6.0.9"
+    id "com.github.gmazzo.buildconfig" version "6.0.10"
 }
 
 ext {
     projectDescription = "S3 OpenLineage transport library"
-    s3MockVersion = "5.0.0"
+    s3MockVersion = "5.1.0"
     testcontainersVersion = "2.0.5"
-    awssdkVersion = "2.45.1"
+    awssdkVersion = "2.46.15"
 }
 
 sourceSets {
