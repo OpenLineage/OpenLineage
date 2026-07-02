@@ -426,11 +426,16 @@ class OpenLineageValidationAction(ValidationAction):
         if url.scheme == "bigquery":
             return Source(scheme="bigquery", connection_url="bigquery")
 
+        hostname = url.hostname or ""
+        authority = f"[{hostname}]" if ":" in hostname else hostname
+        if authority and url.port is not None:
+            authority = f"{authority}:{url.port}"
+
         return Source(
             scheme=url.scheme,
             authority=url.hostname,
             # Remove credentials from the URL if present
-            connection_url=url._replace(netloc=url.hostname, query=None, fragment=None).geturl(),
+            connection_url=url._replace(netloc=authority, query=None, fragment=None).geturl(),
         )
 
     def results_facet(self, validation_result: ExpectationSuiteValidationResult):
