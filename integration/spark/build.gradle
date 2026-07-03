@@ -172,6 +172,7 @@ shadowJar {
         exclude(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark40", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":snowflake"))
         exclude(project(path: ":iceberg"))
         exclude(project(path: ":gcp"))
