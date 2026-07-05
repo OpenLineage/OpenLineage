@@ -12,7 +12,7 @@ plugins {
     id 'signing'
     id "com.adarshr.test-logger" version "4.0.0"
     id 'com.diffplug.spotless' version '7.0.2'
-    id "com.gradleup.shadow" version "9.4.2"
+    id "com.gradleup.shadow" version "9.4.3"
     id "pmd"
     id "io.freefair.lombok" version "9.5.0"
 }
@@ -23,8 +23,8 @@ ext {
 
 dependencies {
     implementation("software.amazon.kinesis:amazon-kinesis-producer:1.0.7")
-    implementation("software.amazon.awssdk:sts:2.46.15")
-    implementation("software.amazon.awssdk:auth:2.46.15")
+    implementation("software.amazon.awssdk:sts:2.46.17")
+    implementation("software.amazon.awssdk:auth:2.46.17")
 }
 
 apply from: '../transports.build.gradle'
