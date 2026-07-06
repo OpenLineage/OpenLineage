@@ -27,11 +27,11 @@ ext {
 
     assertjVersion = '3.27.7'
     bigqueryVersion = '0.42.2'
-    junit5Version = '5.11.4'
+    junit5Version = '5.14.4'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.11'
     testcontainersVersion = '1.21.4'
-    awssdkVersion = '2.46.15'
+    awssdkVersion = '2.46.17'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
@@ -157,7 +157,7 @@ dependencies {
     testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.16")
-    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.26.0"))
+    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.26.1"))
     testRuntimeOnly("org.apache.logging.log4j:log4j-api")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core")
     testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
