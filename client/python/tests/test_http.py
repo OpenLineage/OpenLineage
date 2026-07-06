@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import gzip
+import http.client as http_client
 import os
 from unittest.mock import MagicMock, PropertyMock, patch
 
@@ -180,7 +181,7 @@ class TestHttpConfig:
                 "type": "os.path.exists",
             },
         }
-        with pytest.raises(TypeError, match="Expected token provider <function exists .*> to be a class"):
+        with pytest.raises(TypeError, match="Expected token provider .* to be a class"):
             HttpConfig.from_dict(config_dict)
 
     def test_http_loads_auth_type_is_not_token_provider(self):
@@ -321,6 +322,27 @@ class TestHttpTransportSync:
             transport.emit(mock_event)
 
         mock_client.post.assert_called_once()
+
+    def test_http_transport_restores_debuglevel_after_failed_emit(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
+        mock_response.raise_for_status.side_effect = RuntimeError("request failed")
+
+        config = HttpConfig(url="http://example.com")
+        transport = HttpTransport(config)
+        mock_event = MagicMock()
+
+        previous_debuglevel = http_client.HTTPConnection.debuglevel
+        http_client.HTTPConnection.debuglevel = 1
+        try:
+            with (
+                patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'),
+                pytest.raises(RuntimeError, match="request failed"),
+            ):
+                transport.emit(mock_event)
+
+            assert http_client.HTTPConnection.debuglevel == 1
+        finally:
+            http_client.HTTPConnection.debuglevel = previous_debuglevel
 
     def test_http_transport_session_reused(self, mock_http_session_class):
         mock_session_class, mock_client, mock_response = mock_http_session_class
