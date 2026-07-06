@@ -34,6 +34,7 @@ updates:
     ignore:
       - dependency-name: "org.slf4j.slf4j-api"
       - dependency-name: "org.openapi.generator"
+      - dependency-name: "gradle-wrapper"
     # https://til.simonwillison.net/github/dependabot-python-setup
     groups:
       client/java:
@@ -85,10 +86,18 @@ updates:
       - dependency-name: "com.google.guava*"
       - dependency-name: "org.junit.jupiter:junit-jupiter"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "org.junit.jupiter:junit-jupiter-api"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "org.junit:junit-bom"
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.testcontainers:testcontainers-bom"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "gradle-wrapper"
+      - dependency-name: "com.google.cloud.spark:*bigquery*"
+      - dependency-name: "org.apache.kafka:kafka-clients"
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-serialization-json"
+      - dependency-name: "org.javassist:javassist"
+      - dependency-name: "plugin.serialization"
     groups:
       integration/spark:
         patterns:
