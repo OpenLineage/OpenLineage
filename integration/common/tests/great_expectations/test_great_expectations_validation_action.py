@@ -5,6 +5,7 @@ import datetime
 import os
 import sqlite3
 import tempfile
+from urllib.parse import urlparse
 
 import pandas
 import pytest
@@ -344,3 +345,20 @@ def test_dataset_from_pandas_source_v3_api(tmpdir):
         k in input_ds["inputFacets"]
         for k in ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
     )
+
+
+@pytest.mark.parametrize(
+    ("url", "expected_connection_url"),
+    [
+        ("postgresql://user:pass@localhost:5432/db?sslmode=require", "postgresql://localhost:5432/db"),
+        ("postgresql://user:pass@localhost:0/db", "postgresql://localhost:0/db"),
+        ("postgresql://user:pass@[::1]/db", "postgresql://[::1]/db"),
+    ],
+)
+def test_source_strips_credentials_and_preserves_authority(url, expected_connection_url):
+    action = OpenLineageValidationAction.__new__(OpenLineageValidationAction)
+
+    source = action._source(urlparse(url))
+
+    assert source.scheme == "postgresql"
+    assert source.connection_url == expected_connection_url
