@@ -452,6 +452,133 @@ class TestAsyncHttpTransport:
             assert pending_events[0] == request
             assert "run-123" not in transport.pending_completion_events
 
+    def test_async_transport_mark_failed_start_event_releases_pending(self):
+        """A failed START should not drop its pending completion events - they should be
+        released for their own delivery attempt, the same as a successful START would."""
+        config = AsyncHttpConfig(url="http://example.com")
+        transport = AsyncHttpTransport(config)
+
+        with closing_immediately(transport) as transport:
+            request = Request(
+                event_id="run-123-COMPLETE",
+                run_id="run-123",
+                body=b"data",
+                event_type="COMPLETE",
+                headers={"header": "value"},
+            )
+            start_request = Request(
+                event_id="run-123-START",
+                run_id="run-123",
+                body=b"data",
+                event_type="START",
+                headers={"header": "value"},
+            )
+
+            transport._add_event(start_request)
+            transport._add_event(request)
+            transport._add_pending_completion_event(request)
+
+            released = transport._mark_failed(start_request)
+
+            assert len(released) == 1
+            assert released[0] == request
+            assert "run-123" not in transport.pending_completion_events
+            # The completion event is still tracked as pending - it hasn't been given
+            # up on, just handed back for its own delivery attempt.
+            assert transport.events.get(request.event_id) == "pending"
+            assert transport.event_stats["pending"] == 1
+
+    def test_start_retryable_failure_holds_pending_until_retries_exhausted(self):
+        """A retryable START failure (5xx, timeout) must not release its pending completion
+        events on every failed attempt - only once the START has genuinely given up."""
+        config = AsyncHttpConfig(url="http://example.com")
+        config.retry = {"total": 2, "backoff_factor": 0.01, "status_forcelist": [503]}
+        transport = AsyncHttpTransport(config)
+
+        with closing_immediately(transport) as transport:
+            import asyncio
+
+            async def test_body():
+                start_request = Request(
+                    event_id="run-1-START", run_id="run-1", event_type="START", body="", headers={}
+                )
+                completion_request = Request(
+                    event_id="run-1-COMPLETE", run_id="run-1", event_type="COMPLETE", body="", headers={}
+                )
+                transport._add_event(start_request)
+                transport._add_event(completion_request)
+                transport._add_pending_completion_event(completion_request)
+
+                call_count = 0
+
+                async def fake_post(*args, **kwargs):
+                    nonlocal call_count
+                    call_count += 1
+                    # Every attempt but the last is still retryable - the completion event
+                    # must still be waiting on the START at this point.
+                    if call_count <= config.retry["total"]:
+                        assert "run-1" in transport.pending_completion_events
+                    return MagicMock(status_code=503)
+
+                mock_client = MagicMock()
+                mock_client.post = fake_post
+
+                semaphore = asyncio.Semaphore(1)
+                released = await transport._process_event(
+                    mock_client, semaphore, start_request, from_main_queue=False
+                )
+
+                # initial attempt + 2 retries
+                assert call_count == 3
+                assert len(released) == 1
+                assert released[0] == completion_request
+                assert "run-1" not in transport.pending_completion_events
+
+            asyncio.run(test_body())
+
+    def test_start_permanent_failure_releases_pending_immediately(self):
+        """A non-retryable START failure (e.g. 4xx) has nothing to exhaust - it's terminal
+        on the first attempt, so its pending completion events are released right away."""
+        config = AsyncHttpConfig(url="http://example.com")
+        config.retry = {"total": 5, "backoff_factor": 0.01, "status_forcelist": [503]}
+        transport = AsyncHttpTransport(config)
+
+        with closing_immediately(transport) as transport:
+            import asyncio
+
+            async def test_body():
+                start_request = Request(
+                    event_id="run-2-START", run_id="run-2", event_type="START", body="", headers={}
+                )
+                completion_request = Request(
+                    event_id="run-2-COMPLETE", run_id="run-2", event_type="COMPLETE", body="", headers={}
+                )
+                transport._add_event(start_request)
+                transport._add_event(completion_request)
+                transport._add_pending_completion_event(completion_request)
+
+                call_count = 0
+
+                async def fake_post(*args, **kwargs):
+                    nonlocal call_count
+                    call_count += 1
+                    return MagicMock(status_code=401)  # not in status_forcelist
+
+                mock_client = MagicMock()
+                mock_client.post = fake_post
+
+                semaphore = asyncio.Semaphore(1)
+                released = await transport._process_event(
+                    mock_client, semaphore, start_request, from_main_queue=False
+                )
+
+                assert call_count == 1
+                assert len(released) == 1
+                assert released[0] == completion_request
+                assert "run-2" not in transport.pending_completion_events
+
+            asyncio.run(test_body())
+
     def test_async_transport_mark_failed(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)

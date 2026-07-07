@@ -275,6 +275,8 @@ class AsyncHttpTransport(Transport):
             transport=transport,
         ) as client:
             last_processed_time = time.time()
+            idle_sleep = 0.01
+            max_idle_sleep = 1.0
             while not _should_exit():
                 processed_items = False
                 while not self.event_queue.empty() and len(active_tasks) < self.max_concurrent:
@@ -297,6 +299,7 @@ class AsyncHttpTransport(Transport):
                 # Update last processed time if we processed items
                 if processed_items:
                     last_processed_time = time.time()
+                    idle_sleep = 0.01
 
                 if active_tasks:
                     done, _ = await asyncio.wait(
@@ -346,7 +349,10 @@ class AsyncHttpTransport(Transport):
                             self.event_stats["failed"],
                         )
                         last_processed_time = current_time
-                    await asyncio.sleep(0.01)
+                    # Back off exponentially while idle instead of busy-polling at a fixed
+                    # interval forever; reset to the fast interval as soon as work arrives.
+                    await asyncio.sleep(idle_sleep)
+                    idle_sleep = min(idle_sleep * 2, max_idle_sleep)
 
             log.debug(
                 "AsyncHttpTransport event loop worker completed. "
@@ -363,7 +369,8 @@ class AsyncHttpTransport(Transport):
         request: Request,
         from_main_queue: bool = True,
     ) -> list[Request]:
-        """Process a single event and return any pending completion events if this was a successful START"""
+        """Process a single event and return any pending completion events released because
+        this was a START event that either succeeded or exhausted its retries"""
         pending_events = []
 
         log.debug("Processing event %s", request.event_id)
@@ -371,7 +378,8 @@ class AsyncHttpTransport(Transport):
         def handle_failure(
             response: httpx.Response | None = None, exception: Exception | None = None
         ) -> None:
-            self._mark_failed(request)
+            nonlocal pending_events
+            pending_events = self._mark_failed(request)
 
             if response is not None:
                 log.error(
@@ -467,13 +475,31 @@ class AsyncHttpTransport(Transport):
                 return self.pending_completion_events.pop(request.run_id, [])
         return []
 
-    def _mark_failed(self, request: Request) -> None:
+    def _mark_failed(self, request: Request) -> list[Request]:
         with self.event_lock:
             log.debug("Marking event %s as failed", request.event_id)
             self.event_stats["pending"] -= 1
             self.event_stats["failed"] += 1
             if self.events.get(request.event_id) == "pending":
                 del self.events[request.event_id]
+
+            # If this was a START event that failed, it will never succeed and release its
+            # pending completion events. A failed START doesn't mean the completion event
+            # itself is undeliverable - a transient error, or the START landing via a
+            # different path, can still leave it worth sending - so we requeue it for its
+            # own attempt at delivery, exactly like a completion event released by a
+            # successful START, rather than dropping it here.
+            if request.run_id and request.event_type == "START":
+                released = self.pending_completion_events.pop(request.run_id, [])
+                if released:
+                    log.debug(
+                        "START event for run %s failed after exhausting retries; requeuing %d "
+                        "pending completion event(s) that were waiting for it.",
+                        request.run_id,
+                        len(released),
+                    )
+                return released
+        return []
 
     def _add_pending_completion_event(self, request: Request) -> None:
         if not request.run_id:
