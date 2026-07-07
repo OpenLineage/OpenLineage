@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
@@ -117,21 +118,31 @@ class DatadogTransport(Transport):
                 "max_concurrent_requests": config.max_concurrent_requests,
             }
         )
-        async_http_config = AsyncHttpConfig.from_dict(async_config)
-        self.async_http = AsyncHttpTransport(async_http_config)
+        self._async_http_config = AsyncHttpConfig.from_dict(async_config)
+        # AsyncHttpTransport spawns a worker thread on construction, so it's built lazily,
+        # on the first event that actually routes to it, instead of unconditionally here.
+        self.async_http: AsyncHttpTransport | None = None
+        self._async_http_lock = threading.Lock()
+
+    def _get_async_http(self) -> AsyncHttpTransport:
+        if self.async_http is None:
+            with self._async_http_lock:
+                if self.async_http is None:
+                    self.async_http = AsyncHttpTransport(self._async_http_config)
+        return self.async_http
 
     def emit(self, event: Event) -> Any:
         # Check if event has JobTypeJobFacet with integration = "dbt"
         should_use_async = self._should_use_async_transport(event)
 
         if should_use_async:
-            return self.async_http.emit(event)
+            return self._get_async_http().emit(event)
         else:
             return self.http.emit(event)
 
     def close(self, timeout: float = -1) -> bool:
         http_result = self.http.close(timeout)
-        async_result = self.async_http.close(timeout)
+        async_result = self.async_http.close(timeout) if self.async_http is not None else True
         return http_result and async_result
 
     def _should_use_async_transport(self, event: Event) -> bool:
