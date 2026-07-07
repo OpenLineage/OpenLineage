@@ -1,8 +1,18 @@
 # Proposal: Explicit Lineage — Facet-Based Approach
 
 **Issue**: [OpenLineage#4359](https://github.com/OpenLineage/OpenLineage/issues/4359)  
-**Status**: Draft  
+**Status**: Experimental  
 **Date**: 2026-04-02
+
+---
+
+> Experimental
+>
+> This proposal is experimental. It is a large change to how OpenLineage models
+> lineage, so we are still actively looking for feedback. We may merge the code
+> and the spec, and ship it as part of the OpenLineage libraries. We may also
+> change it or drop the idea altogether. If you have a use case, an objection or
+> a suggestion, please raise it on the issue.
 
 ---
 
