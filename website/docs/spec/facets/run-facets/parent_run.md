@@ -15,9 +15,13 @@ The root job represents the initial operation that started the whole chain of pa
 Airflow DAG execution that eventually spawned Airflow tasks which then spawned Spark jobs.
 
 The `job` and `run` objects, both at the parent level and at the root level, can also optionally carry a `facets` field.
-This lets a producer forward a selected subset of facets of that parent/root job or run into the child event, for convenience -
+This lets a producer forward a selected subset of facets from that parent/root job or run into the child event, for convenience -
 for example, when the child cannot reliably resolve the parent's own event to look them up itself.
-It is not meant to be a full copy of the parent event: resolving the parent's own event remains the recommended way to get full information.
+
+This mechanism is not designed to replace the information contained in the parent run's own event, and should not be treated as
+a source of truth if the two ever differ. In practice, the forwarded facets and the parent's own event should never diverge, but
+the specification only defines the shape of this field - it cannot guarantee that every implementation keeps the forwarded values
+in sync with the parent's own event. Resolving the parent run's own event remains the authoritative way to get full information.
 
 Example: 
 
