@@ -384,19 +384,21 @@ class HttpTransport(Transport):
         # Override this setting to make sure it does not happen.
         prev_debuglevel = http_client.HTTPConnection.debuglevel
         http_client.HTTPConnection.debuglevel = 0
-        body, headers = self._prepare_request(Serde.to_json(event))
+        try:
+            body, headers = self._prepare_request(Serde.to_json(event))
 
-        resp = self.session.post(
-            url=urljoin(self.url, self.endpoint),
-            data=body,
-            headers=headers,
-            timeout=self.timeout,
-            verify=self.verify,
-        )
-        resp.close()
-        http_client.HTTPConnection.debuglevel = prev_debuglevel
-        resp.raise_for_status()
-        return resp
+            resp = self.session.post(
+                url=urljoin(self.url, self.endpoint),
+                data=body,
+                headers=headers,
+                timeout=self.timeout,
+                verify=self.verify,
+            )
+            resp.close()
+            resp.raise_for_status()
+            return resp
+        finally:
+            http_client.HTTPConnection.debuglevel = prev_debuglevel
 
     @property
     def session(self) -> Session:
