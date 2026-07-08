@@ -199,9 +199,17 @@ func buildType(
 
 	case "object":
 		// map-like object: additionalProperties present and no explicit properties.
-		if t.AdditionalProperties != nil && len(t.Properties) == 0 {
+		mapShape := t
+		if mapShape.AdditionalProperties == nil && len(mapShape.Properties) == 0 && len(t.AnyOf) == 1 {
+			// Schemas like Job.facets/Run.facets in OpenLineage.json (and facet-forwarding fields that
+			// mirror them) wrap the map shape inside a single-branch anyOf:
+			// {"type": "object", "anyOf": [{"type": "object", "additionalProperties": {...}}]}.
+			// Unwrap it so the map is still detected.
+			mapShape = t.AnyOf[0]
+		}
+		if mapShape.AdditionalProperties != nil && len(mapShape.Properties) == 0 {
 			// additionalProperties: true (or an empty schema) → map[string]interface{}
-			ap := r.Resolve(t.AdditionalProperties)
+			ap := r.Resolve(mapShape.AdditionalProperties)
 			var elem Type
 			if ap == nil || (len(ap.Type) == 0 && ap.Ref == "" && len(ap.Properties) == 0) {
 				elem = Any{}

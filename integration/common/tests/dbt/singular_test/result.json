@@ -48,7 +48,7 @@
         },
         "parent": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run": {
             "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
           },
@@ -146,7 +146,7 @@
         },
         "parent": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run": {
             "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
           },
@@ -244,7 +244,7 @@
         },
         "parent": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run": {
             "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
           },
@@ -342,7 +342,7 @@
         },
         "parent": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run": {
             "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
           },

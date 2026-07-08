@@ -1635,7 +1635,7 @@ func NewParentRunFacet(
 ) *ParentRunFacet {
 	return &ParentRunFacet{
 		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json",
+		SchemaURL: "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json",
 		Job:       job,
 		Run:       run,
 	}

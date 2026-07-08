@@ -222,6 +222,16 @@ def format_and_save_output(
         if header:
             tmpfile.write(header + "\n")
         output = output.replace("from .OpenLineage", "from openlineage.client.generated.base")
+        # types used only as generic args (e.g. dict[str, OpenLineage.JobFacet]) get a qualified
+        # "from . import OpenLineage" import instead of a direct one; rewrite to match. PascalCase-only
+        # so we don't touch the "OpenLineage.json" substring in schema URL string literals.
+        qualified_names = sorted(set(re.findall(r"\bOpenLineage\.([A-Z]\w*)", output)))
+        if qualified_names:
+            output = re.sub(r"\bOpenLineage\.([A-Z]\w*)", r"\1", output)
+            output = output.replace(
+                "from . import OpenLineage",
+                f"from openlineage.client.generated.base import {', '.join(qualified_names)}",
+            )
         imports_section, rest_of_code = separate_imports(output)
         tmpfile.write(imports_section)
         if add_set_producer_code:
