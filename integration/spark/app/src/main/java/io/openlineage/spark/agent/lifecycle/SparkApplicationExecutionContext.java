@@ -134,22 +134,42 @@ class SparkApplicationExecutionContext implements ExecutionContext {
         && eventEmitter.getParentJobName().isPresent()
         && eventEmitter.getParentJobNamespace().isPresent()) {
       OpenLineage ol = olContext.getOpenLineage();
-      return ol.newParentRunFacet(
-          ol.newParentRunFacetRun(eventEmitter.getParentRunId().get(), null),
-          ol.newParentRunFacetJob(
-              eventEmitter.getParentJobNamespace().get(),
-              eventEmitter.getParentJobName().get(),
-              null),
-          ol.newParentRunFacetRoot(
-              ol.newRootRun(
-                  eventEmitter.getRootParentRunId().orElse(eventEmitter.getParentRunId().get()),
-                  null),
-              ol.newRootJob(
-                  eventEmitter
-                      .getRootParentJobNamespace()
-                      .orElse(eventEmitter.getParentJobNamespace().get()),
-                  eventEmitter.getRootParentJobName().orElse(eventEmitter.getParentJobName().get()),
-                  null)));
+      return ol.newParentRunFacetBuilder()
+          .run(
+              ol.newParentRunFacetRunBuilder()
+                  .runId(eventEmitter.getParentRunId().get())
+                  .facets(eventEmitter.getParentRunFacets().orElse(null))
+                  .build())
+          .job(
+              ol.newParentRunFacetJobBuilder()
+                  .namespace(eventEmitter.getParentJobNamespace().get())
+                  .name(eventEmitter.getParentJobName().get())
+                  .facets(eventEmitter.getParentJobFacets().orElse(null))
+                  .build())
+          .root(
+              ol.newParentRunFacetRootBuilder()
+                  .run(
+                      ol.newRootRunBuilder()
+                          .runId(
+                              eventEmitter
+                                  .getRootParentRunId()
+                                  .orElse(eventEmitter.getParentRunId().get()))
+                          .facets(eventEmitter.getRootParentRunFacets().orElse(null))
+                          .build())
+                  .job(
+                      ol.newRootJobBuilder()
+                          .namespace(
+                              eventEmitter
+                                  .getRootParentJobNamespace()
+                                  .orElse(eventEmitter.getParentJobNamespace().get()))
+                          .name(
+                              eventEmitter
+                                  .getRootParentJobName()
+                                  .orElse(eventEmitter.getParentJobName().get()))
+                          .facets(eventEmitter.getRootParentJobFacets().orElse(null))
+                          .build())
+                  .build())
+          .build();
     }
     return null;
   }

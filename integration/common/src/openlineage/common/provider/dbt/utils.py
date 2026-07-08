@@ -1,5 +1,6 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import json
 import logging
 import os
 import uuid
@@ -117,10 +118,67 @@ def generate_random_log_file_name() -> str:
     return log_directory_name
 
 
+def get_parent_run_metadata_from_context() -> ParentRunMetadata | None:
+    """
+    Parses the standardized OPENLINEAGE_CONTEXT env var, a JSON payload shaped like:
+    {"parent": {"run": {...}, "job": {...}, "root": {"run": {...}, "job": {...}}}}
+    Returns None (rather than raising) on any missing/malformed input, so callers can fall back
+    to the legacy OPENLINEAGE_PARENT_ID / OPENLINEAGE_ROOT_PARENT_ID env vars.
+    """
+    raw = os.getenv("OPENLINEAGE_CONTEXT")
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        log.warning(
+            "Received OPENLINEAGE_CONTEXT but failed to parse it as JSON; ignoring.",
+        )
+        log.debug("Exception details", exc_info=True)
+        return None
+
+    parent_info = data.get("parent") if isinstance(data, dict) else None
+    if not isinstance(parent_info, dict):
+        log.debug("OPENLINEAGE_CONTEXT is missing a valid 'parent' key; ignoring")
+        return None
+
+    try:
+        run, job = parent_info["run"], parent_info["job"]
+        run_id, job_namespace, job_name = run["runId"], job["namespace"], job["name"]
+    except (KeyError, TypeError) as e:
+        log.warning("OPENLINEAGE_CONTEXT.parent is missing required run/job fields; ignoring. Error: %s", e)
+        log.debug("Exception details", exc_info=True)
+        return None
+
+    root = parent_info.get("root") or {}
+    root_run, root_job = root.get("run") or {}, root.get("job") or {}
+    # default root to self, matching legacy OPENLINEAGE_ROOT_PARENT_ID-absent behavior
+    root_run_id = root_run.get("runId", run_id)
+    root_job_namespace = root_job.get("namespace", job_namespace)
+    root_job_name = root_job.get("name", job_name)
+
+    return ParentRunMetadata(
+        run_id=run_id,
+        job_name=job_name,
+        job_namespace=job_namespace,
+        job_facets=job.get("facets"),
+        run_facets=run.get("facets"),
+        root_parent_run_id=root_run_id,
+        root_parent_job_name=root_job_name,
+        root_parent_job_namespace=root_job_namespace,
+        root_job_facets=root_job.get("facets"),
+        root_run_facets=root_run.get("facets"),
+    )
+
+
 def get_parent_run_metadata():
     """
     The parent job that started the dbt command. Usually the scheduler (Airflow, ...etc)
     """
+    from_context = get_parent_run_metadata_from_context()
+    if from_context is not None:
+        return from_context
+
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     root_parent_id = os.getenv("OPENLINEAGE_ROOT_PARENT_ID")
     parent_run_metadata = None

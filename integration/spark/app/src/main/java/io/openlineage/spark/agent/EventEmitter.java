@@ -36,6 +36,10 @@ public class EventEmitter {
   @Getter private Optional<String> rootParentJobName;
   @Getter private Optional<String> rootParentJobNamespace;
   @Getter private Optional<UUID> rootParentRunId;
+  @Getter private Optional<OpenLineage.ParentRunFacetJobFacets> parentJobFacets;
+  @Getter private Optional<OpenLineage.ParentRunFacetRunFacets> parentRunFacets;
+  @Getter private Optional<OpenLineage.RootJobFacets> rootParentJobFacets;
+  @Getter private Optional<OpenLineage.RootRunFacets> rootParentRunFacets;
   @Getter private UUID applicationRunId;
   @Getter @Setter private String applicationJobName;
   @Getter private Optional<List<String>> customEnvironmentVariables;
@@ -49,6 +53,10 @@ public class EventEmitter {
     this.rootParentJobName = Optional.ofNullable(config.getRootParentJobName());
     this.rootParentJobNamespace = Optional.ofNullable(config.getRootParentJobNamespace());
     this.rootParentRunId = convertToUUID(config.getRootParentRunId());
+    this.parentJobFacets = Optional.ofNullable(config.getParentJobFacets());
+    this.parentRunFacets = Optional.ofNullable(config.getParentRunFacets());
+    this.rootParentJobFacets = Optional.ofNullable(config.getRootParentJobFacets());
+    this.rootParentRunFacets = Optional.ofNullable(config.getRootParentRunFacets());
     this.overriddenAppName = Optional.ofNullable(config.getOverriddenAppName());
     this.overriddenApplicationRunId = Optional.ofNullable(config.getOverriddenApplicationRunId());
     this.customEnvironmentVariables =
