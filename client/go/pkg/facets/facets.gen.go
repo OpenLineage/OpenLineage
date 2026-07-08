@@ -1064,6 +1064,8 @@ type OwnershipJobFacetOwner struct {
 
 // ParentRunFacetJob
 type ParentRunFacetJob struct {
+	// Selected subset of facets of the parent job (not the current job), forwarded here for convenience. See the parent job's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The unique name for that job within that namespace
 	Name string `json:"name"`
 	// The namespace containing that job
@@ -1078,6 +1080,8 @@ type ParentRunFacetRoot struct {
 
 // ParentRunFacetRun
 type ParentRunFacetRun struct {
+	// Selected subset of facets of the parent run (not the current run), forwarded here for convenience. See the parent run's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The globally unique ID of the run associated with the job.
 	RunID string `json:"runId"`
 }
@@ -1097,6 +1101,8 @@ type PartitionSubsetConditionPartition struct {
 
 // RootJob
 type RootJob struct {
+	// Selected subset of facets of the root job (not the current job), forwarded here for convenience. See the root job's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The unique name containing root job within that namespace
 	Name string `json:"name"`
 	// The namespace containing root job
@@ -1105,6 +1111,8 @@ type RootJob struct {
 
 // RootRun
 type RootRun struct {
+	// Selected subset of facets of the root run (not the current run), forwarded here for convenience. See the root run's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The globally unique ID of the root run associated with the root job.
 	RunID string `json:"runId"`
 }

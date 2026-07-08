@@ -45,11 +45,11 @@ class OpenLineageRunEventTest {
         ol.newRunFacetsBuilder()
             .parent(
                 ol.newParentRunFacet(
-                    ol.newParentRunFacetRun(runId),
-                    ol.newParentRunFacetJob("namespace", "jobName"),
+                    ol.newParentRunFacetRun(runId, null),
+                    ol.newParentRunFacetJob("namespace", "jobName", null),
                     ol.newParentRunFacetRoot(
-                        ol.newRootRun(rootParentRunId),
-                        ol.newRootJob("root-namespace", "root-job-name"))))
+                        ol.newRootRun(rootParentRunId, null),
+                        ol.newRootJob("root-namespace", "root-job-name", null))))
             .errorMessage(ol.newErrorMessageRunFacet("failed", "JAVA", "<stack_trace>"))
             .build();
     OpenLineage.Run run = ol.newRun(runId, runFacets);

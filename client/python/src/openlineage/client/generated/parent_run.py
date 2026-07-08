@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 import attr
-from openlineage.client.generated.base import RunFacet
+from openlineage.client.generated.base import JobFacet, RunFacet
 from openlineage.client.utils import RedactMixin
 
 
@@ -24,6 +24,11 @@ class Job(RedactMixin):
 
     Example: myjob.mytask
     """
+    facets: dict[str, JobFacet] | None = attr.field(factory=dict)
+    """
+    Selected subset of facets of the parent job (not the current job), forwarded here for convenience.
+    See the parent job's own event for full information.
+    """
 
 
 @attr.define
@@ -40,7 +45,7 @@ class ParentRunFacet(RunFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet"
+        return "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet"
 
     @classmethod
     def create(cls, runId: str, namespace: str, name: str) -> "ParentRunFacet":  # noqa: N803
@@ -75,11 +80,16 @@ class RootJob(RedactMixin):
 
     Example: myjob.mytask
     """
+    facets: dict[str, JobFacet] | None = attr.field(factory=dict)
+    """
+    Selected subset of facets of the root job (not the current job), forwarded here for convenience. See
+    the root job's own event for full information.
+    """
     _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/RootJob"
+        return "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/RootJob"
 
 
 @attr.define
@@ -87,11 +97,16 @@ class RootRun(RedactMixin):
     runId: str = attr.field()  # noqa: N815
     """The globally unique ID of the root run associated with the root job."""
 
+    facets: dict[str, RunFacet] | None = attr.field(factory=dict)
+    """
+    Selected subset of facets of the root run (not the current run), forwarded here for convenience. See
+    the root run's own event for full information.
+    """
     _skip_redact: ClassVar[list[str]] = ["runId"]
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/RootRun"
+        return "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/RootRun"
 
     @runId.validator
     def runid_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
@@ -104,6 +119,12 @@ class RootRun(RedactMixin):
 class Run(RedactMixin):
     runId: str = attr.field()  # noqa: N815
     """The globally unique ID of the run associated with the job."""
+
+    facets: dict[str, RunFacet] | None = attr.field(factory=dict)
+    """
+    Selected subset of facets of the parent run (not the current run), forwarded here for convenience.
+    See the parent run's own event for full information.
+    """
 
     @runId.validator
     def runid_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
