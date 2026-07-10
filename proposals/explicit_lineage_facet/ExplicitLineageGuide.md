@@ -195,7 +195,7 @@ new model. The `total` column of `output` aggregates `amount` from `input`:
             "total": {
               "inputs": [
                 { "namespace": "postgresql://analytics:5432", "name": "input", "type": "DATASET", "field": "amount",
-                  "transformations": [{ "type": "INDIRECT", "subtype": "AGGREGATION" }] }
+                  "transformations": [{ "type": "DIRECT", "subtype": "AGGREGATION" }] }
               ]
             }
           }
@@ -266,7 +266,6 @@ A view derives from base tables with no job in the picture. Use
 
 ```json
 {
-  "eventType": "COMPLETE",
   "eventTime": "2026-03-25T10:00:00.000Z",
   "dataset": {
     "namespace": "postgresql://warehouse:5432",
@@ -382,7 +381,7 @@ stays `[]`, because there is still no tracked upstream dataset:
             "fields": {
               "total": {
                 "inputs": [
-                  { "type": "JOB", "transformations": [{ "type": "INDIRECT", "subtype": "AGGREGATION", "description": "sum()" }] }
+                  { "type": "JOB", "transformations": [{ "type": "DIRECT", "subtype": "AGGREGATION", "description": "sum()" }] }
                 ]
               }
             }
@@ -414,7 +413,6 @@ JobEvent it is the declared chain, with `runId` omitted:
 
 ```json
 {
-  "eventType": "COMPLETE",
   "job": {
     "namespace": "airflow://prod",
     "name": "dag_b",

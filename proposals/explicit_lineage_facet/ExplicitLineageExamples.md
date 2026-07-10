@@ -57,7 +57,7 @@ This example shows how the new facets can replace ColumnLevelLineageDatasetFacet
             "total": {
               "inputs": [
                 { "namespace": "postgresql://analytics:5432", "name": "input", "type": "DATASET", "field": "amount",
-                  "transformations": [{ "type": "INDIRECT", "subtype": "AGGREGATION" }] }
+                  "transformations": [{ "type": "DIRECT", "subtype": "AGGREGATION" }] }
               ]
             }
           }
@@ -107,7 +107,6 @@ A VIEW derives from base tables. No job involved. LineageDatasetFacet on the dat
 
 ```json
 {
-  "eventType": "COMPLETE",
   "eventTime": "2026-03-25T10:00:00.000Z",
   "dataset": {
     "namespace": "postgresql://warehouse:5432",
@@ -130,7 +129,7 @@ A VIEW derives from base tables. No job involved. LineageDatasetFacet on the dat
 
 ## 5. Static job lineage (on JobEvent)
 
-A catalog declares what a job is designed to do. LineageJobFacet on the job:
+A catalog declares what a job is designed to do. This is treated as design/static lineage because the event does not contain a run section. LineageJobFacet on the job:
 
 ```json
 {
@@ -232,7 +231,7 @@ The per-field detail names a `LineageJobInput` (`type: JOB` with no `namespace`/
             "fields": {
               "total": {
                 "inputs": [
-                  { "type": "JOB", "transformations": [{ "type": "INDIRECT", "subtype": "AGGREGATION", "description": "sum()" }] }
+                  { "type": "JOB", "transformations": [{ "type": "DIRECT", "subtype": "AGGREGATION", "description": "sum()" }] }
                 ]
               }
             }
@@ -256,7 +255,6 @@ A stored procedure `dag_b.task_1` reads its input from upstream `dag_a.task_3` v
 
 ```json
 {
-  "eventType": "COMPLETE",
   "job": {
     "namespace": "airflow://prod",
     "name": "dag_b",
@@ -380,4 +378,3 @@ Reading specific columns from a structured table and writing to an unstructured 
   ]
 }
 ```
-

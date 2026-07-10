@@ -102,7 +102,7 @@ extract_task (JOB) ──> transformed_data (DATASET)
   "fields": {
     "total": {
       "inputs": [
-        { "type": "JOB", "transformations": [{ "type": "INDIRECT", "subtype": "AGGREGATION", "description": "sum()" }] }
+        { "type": "JOB", "transformations": [{ "type": "DIRECT", "subtype": "AGGREGATION", "description": "sum()" }] }
       ]
     }
   }
