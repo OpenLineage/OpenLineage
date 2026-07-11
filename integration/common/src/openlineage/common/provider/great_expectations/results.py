@@ -4,9 +4,8 @@
 from typing import Any
 
 import attr
-from openlineage.common.utils import get_from_nullable_chain
-
 from great_expectations.core import ExpectationValidationResult
+from openlineage.common.utils import get_from_nullable_chain
 
 
 @attr.define
@@ -76,6 +75,7 @@ class FileSizeExpectationsParser(ExpectationsParser):
             FileSizeExpectationsParser.facet_key,
             get_from_nullable_chain(expectation_result, ["result", "observed_value"]),
         )
+
 
 class ColumnExpectationsParser(ExpectationsParser):
     """
