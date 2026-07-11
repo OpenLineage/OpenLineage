@@ -68,11 +68,14 @@ class EqualRowCountExpectationsParser(BetweenRowCountExpectationsParser):
 
 class FileSizeExpectationsParser(ExpectationsParser):
     expectation_key = "expect_file_size_to_be_between"
+    facet_key = "fileSize"
 
     @staticmethod
     def parse_expectation_result(expectation_result: dict) -> ExpectationsParserResult:  # type: ignore # noqa
-        pass  # TODO: file asset validation
-
+        return ExpectationsParserResult(
+            FileSizeExpectationsParser.facet_key,
+            get_from_nullable_chain(expectation_result, ["result", "observed_value"]),
+        )
 
 class ColumnExpectationsParser(ExpectationsParser):
     """
