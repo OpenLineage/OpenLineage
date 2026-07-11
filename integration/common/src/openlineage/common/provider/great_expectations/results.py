@@ -189,7 +189,7 @@ class ValuesQuantileExpectationParser(ColumnExpectationsParser):
 EXPECTATIONS_PARSERS = [
     BetweenRowCountExpectationsParser,
     EqualRowCountExpectationsParser,
-    # FileSizeExpectationsParser,
+    FileSizeExpectationsParser,
 ]
 
 COLUMN_EXPECTATIONS_PARSER = [
