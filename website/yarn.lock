@@ -228,45 +228,45 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/api-client@npm:0.22.1":
-  version: 0.22.1
-  resolution: "@argos-ci/api-client@npm:0.22.1"
+"@argos-ci/api-client@npm:0.24.0":
+  version: 0.24.0
+  resolution: "@argos-ci/api-client@npm:0.24.0"
   dependencies:
     debug: "npm:^4.4.3"
     openapi-fetch: "npm:^0.17.0"
     p-retry: "npm:^8.0.0"
-  checksum: 10c0/4ef92c4775cce33d28c6026e5512f5dcb6da0220b1670b5b699f3563c3e79af744f4f32e8d51c0e54ae70f0dad7792752f54c0994a8dc0596d7f029627728f4e
+  checksum: 10c0/8d9238ce9dd2d986145436552ce51f3b037f1a0d584c5915bfe2d187316ae56513d4ecf6572b1b96ce8a5a014ddc3014cc50759ee0b5b2d8e2e28cd730f6cc22
   languageName: node
   linkType: hard
 
-"@argos-ci/browser@npm:6.2.0":
-  version: 6.2.0
-  resolution: "@argos-ci/browser@npm:6.2.0"
-  checksum: 10c0/11e53d40945e5fe79b7cefa12a6d1b2008b89f05247285082f92ab44a0d1c27b23cbbf76d69d41bd516e44527e7b38c13726e3ac8a7ad928599ef9aaa34e2e84
+"@argos-ci/browser@npm:6.4.0":
+  version: 6.4.0
+  resolution: "@argos-ci/browser@npm:6.4.0"
+  checksum: 10c0/d88294f0e54295b4b97e4f67271252e06d7e89a3d0df00cabd6014cc4b4c063e2a0fc82e4132de52d95ebddbde76512eeecf99d328c71aea91615386709aa695
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^5.1.3":
-  version: 5.1.3
-  resolution: "@argos-ci/cli@npm:5.1.3"
+"@argos-ci/cli@npm:^6.1.0":
+  version: 6.1.0
+  resolution: "@argos-ci/cli@npm:6.1.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.22.1"
-    "@argos-ci/core": "npm:6.2.3"
+    "@argos-ci/api-client": "npm:0.24.0"
+    "@argos-ci/core": "npm:6.4.0"
     commander: "npm:^15.0.0"
     open: "npm:^11.0.0"
     ora: "npm:^9.4.0"
     update-notifier: "npm:^7.3.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/648fe24aa013314cf1acccd809b99409cbb44051d313705597237974e10a9a77e38247cec4aa727cdf04508c13c02be24e7cc76b17e9eb53179b2466c354e805
+  checksum: 10c0/5c0ba969350b20eb8155b36941ad65844eb95a7fa096e11838d15598f0a156e5bc82fcaf4673d79b1a2d4f0daddea5afcb331dba7d896ab5177a9cdc4a72a515
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:6.2.3":
-  version: 6.2.3
-  resolution: "@argos-ci/core@npm:6.2.3"
+"@argos-ci/core@npm:6.4.0":
+  version: 6.4.0
+  resolution: "@argos-ci/core@npm:6.4.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.22.1"
+    "@argos-ci/api-client": "npm:0.24.0"
     "@argos-ci/util": "npm:4.0.0"
     convict: "npm:^6.2.5"
     debug: "npm:^4.4.3"
@@ -275,20 +275,20 @@ __metadata:
     p-retry: "npm:^8.0.0"
     sharp: "npm:^0.35.2"
     tmp: "npm:^0.2.7"
-  checksum: 10c0/ed0e614a5268e8f64aca82576313faa15119f20aaaf16a5db256a2d25d4828d66662d2a58708474692bba0ec3abc27fa132a6e3a79835de5038b588229181295
+  checksum: 10c0/d29cf664a424daa6f013aa332d69f2fd02184eb51e0a5fe522b1558bb27112038e7a47876cfddf4084fc6fa5b6f2e08cdbcc6b765a523ed714310d8dd71d8aff
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^7.1.1":
-  version: 7.1.1
-  resolution: "@argos-ci/playwright@npm:7.1.1"
+"@argos-ci/playwright@npm:^7.3.0":
+  version: 7.3.0
+  resolution: "@argos-ci/playwright@npm:7.3.0"
   dependencies:
-    "@argos-ci/browser": "npm:6.2.0"
-    "@argos-ci/core": "npm:6.2.3"
+    "@argos-ci/browser": "npm:6.4.0"
+    "@argos-ci/core": "npm:6.4.0"
     "@argos-ci/util": "npm:4.0.0"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
-  checksum: 10c0/5242be89c1dc89c03b4fec0637d8fbd854b1e41213c804e0a40388c55488b9c2d25db2627842a6bb7ae7685905c2ed88720e687b59dc9a7239d551e89c653d02
+  checksum: 10c0/638efe69a806196ad90588d306056106794740dd063f7cadbc8c0a6ad2f77f753ffeb796eeda2ed8db3d2ad6407a53f696b2e1894c1eaddb5190ae5bb315f10f
   languageName: node
   linkType: hard
 
@@ -5299,8 +5299,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^5.1.3"
-    "@argos-ci/playwright": "npm:^7.1.1"
+    "@argos-ci/cli": "npm:^6.1.0"
+    "@argos-ci/playwright": "npm:^7.3.0"
     "@playwright/test": "npm:^1.61.1"
     cheerio: "npm:^1.2.0"
   languageName: unknown
@@ -7037,7 +7037,7 @@ __metadata:
     docusaurus-lunr-search: "npm:^3.5.0"
     lodash: "npm:^4.18.1"
     lunr: "npm:^2.3.9"
-    motion: "npm:^12.42.0"
+    motion: "npm:^12.42.2"
     postcss: "npm:^8.5.16"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
@@ -7893,7 +7893,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-motion@npm:^12.42.0":
+"framer-motion@npm:^12.42.2":
   version: 12.42.2
   resolution: "framer-motion@npm:12.42.2"
   dependencies:
@@ -10885,11 +10885,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion@npm:^12.42.0":
-  version: 12.42.0
-  resolution: "motion@npm:12.42.0"
+"motion@npm:^12.42.2":
+  version: 12.42.2
+  resolution: "motion@npm:12.42.2"
   dependencies:
-    framer-motion: "npm:^12.42.0"
+    framer-motion: "npm:^12.42.2"
     tslib: "npm:^2.4.0"
   peerDependencies:
     "@emotion/is-prop-valid": "*"
@@ -10902,7 +10902,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10c0/5589172986a3a0bd3c11295d29190a01ef82a3a8b995b3db5cfe10a95f83a57ca72d5180034082c7ffee6c1389514342c330b147369ef6570b71d02cb482825c
+  checksum: 10c0/44c333efe50fadb8ede589e237694e05dd73bed09c66f26ebcf89ca8a7449e77e55a0d3f2df6c1bdc00ee8de7f4e6fe957ef219d8002008472d978f4979ddab5
   languageName: node
   linkType: hard
 
