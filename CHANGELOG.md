@@ -6,6 +6,8 @@
 
 * **Dbt: Capture incremental-strategy config and run-wide full_refresh** [`#4716`](https://github.com/OpenLineage/OpenLineage/pull/4716) [@himakolavennu](https://github.com/himakolavennu)
   *Capture how an incremental dbt model rebuilds data: a per-model `DbtIncrementalConfig` (strategy, unique key, incremental predicates, on-schema-change, microbatch parameters, partition_by, and a full_refresh override) on the `dbt_model` dataset facet, plus a run-wide `full_refresh` on `DbtRunRunFacet` read from `run_results.json` args (local/cloud) or the dbt command line (structured logs).*
+* **dbt: Emit exposures as a dataset facet on dbt model datasets** [`#4705`](https://github.com/OpenLineage/OpenLineage/pull/4705) [@himakolavennu](https://github.com/himakolavennu)
+  *Adds a `DbtExposuresDatasetFacet` attached to a built model's output and input datasets, listing the exposures that consume each (the input case covers source-backed exposures). Attached in both the classic (manifest/run_results) and structured-logs paths, on successful models only, letting consumers build TABLE → EXPOSURE lineage for dbt Core. Addresses [#926](https://github.com/OpenLineage/OpenLineage/issues/926).*
 
 ## [1.51.0](https://github.com/OpenLineage/OpenLineage/compare/1.50.0...1.51.0)
 

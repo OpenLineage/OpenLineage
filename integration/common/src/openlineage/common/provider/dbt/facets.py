@@ -171,6 +171,36 @@ class DbtModelDatasetFacet(DatasetFacet):
 
 
 @attr.define
+class DbtExposure:
+    """A single dbt exposure that depends on a dbt model.
+
+    Exposures are declared in dbt ``.yml`` files and describe downstream consumers of dbt
+    models (dashboards, notebooks, ML applications, ...). See
+    https://docs.getdbt.com/docs/build/exposures.
+    """
+
+    unique_id: str
+    name: str
+    type: str | None = attr.field(default=None)
+    url: str | None = attr.field(default=None)
+
+
+@attr.define
+class DbtExposuresDatasetFacet(DatasetFacet):
+    """Dataset facet listing the exposures that consume a dbt model's output dataset.
+
+    Attached to a model's output dataset when the model builds successfully, so consumers
+    can build TABLE -> EXPOSURE lineage without needing access to the manifest.
+    """
+
+    exposures: list[DbtExposure] = attr.field(factory=list)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return GITHUB_LOCATION + "dbt-exposures-dataset-facet.json"
+
+
+@attr.define
 class DbtNodeJobFacet(JobFacet):
     """Job facet containing dbt node metadata.
 

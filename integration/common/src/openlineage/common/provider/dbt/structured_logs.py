@@ -227,6 +227,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         else:
             return {}
 
+    def _exposures_manifest(self) -> dict:
+        return self.compiled_manifest
+
     def parse(self) -> Generator[RunEvent, None, None]:  # type: ignore[override]
         """
         This executes the dbt command and parses the structured log events emitted.
@@ -506,10 +509,16 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         else:
             self.logger.info("Node %s has an unknown node status %s", node_unique_id, node_status)
 
-        inputs = [
-            self.node_to_dataset(node=model_input, has_facets=True)
-            for model_input in self._get_model_inputs(node_unique_id)
-        ]
+        # Attach exposures only on a successful (COMPLETE) build.
+        succeeded = event_type == RunState.COMPLETE
+        inputs = []
+        for model_input in self._get_model_inputs(node_unique_id):
+            input_dataset = self.node_to_dataset(node=model_input, has_facets=True)
+            if succeeded:
+                input_dataset.facets.update(  # type: ignore
+                    self._exposures_facets(model_input.metadata_node.get("unique_id"))
+                )
+            inputs.append(input_dataset)
         outputs = []
         if node := self._get_model_node(node_unique_id):
             output_dataset = self.node_to_output_dataset(node=node, has_facets=True)
@@ -521,6 +530,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                     column_lineage = self.get_column_lineage(output_dataset.namespace, compiled_sql)
                     if column_lineage:
                         output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
+
+                if succeeded:
+                    output_dataset.facets.update(self._exposures_facets(node_unique_id))  # type: ignore
             outputs = [output_dataset]
 
         if resource_type == "test":
