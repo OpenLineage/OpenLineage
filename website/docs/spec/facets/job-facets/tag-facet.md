@@ -14,17 +14,19 @@ Example:
     ...
     "job": {
         "facets": {
-            "_producer": "https://some.producer.com/version/1.0",
-            "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/TagsJobFacet.json",
-            "tags": [{
-                "key": "environment",
-                "value": "production",
-                "source": "CONFIG" 
-            }, {
-                "key": "team",
-                "value": "data-engineering",
-                "source": "CONFIG"
-            }]
+            "tags": {
+                "_producer": "https://some.producer.com/version/1.0",
+                "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/TagsJobFacet.json",
+                "tags": [{
+                    "key": "environment",
+                    "value": "production",
+                    "source": "CONFIG" 
+                }, {
+                    "key": "team",
+                    "value": "data-engineering",
+                    "source": "CONFIG"
+                }]
+            }
         }
     }
     ...

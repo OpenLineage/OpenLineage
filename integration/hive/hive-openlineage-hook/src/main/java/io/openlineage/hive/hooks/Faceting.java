@@ -527,13 +527,14 @@ public class Faceting {
     return olContext
         .getOpenLineage()
         .newParentRunFacetBuilder()
-        .run(olContext.getOpenLineage().newParentRunFacetRun(uuid.get()))
+        .run(olContext.getOpenLineage().newParentRunFacetRun(uuid.get(), null))
         .job(
             olContext
                 .getOpenLineage()
                 .newParentRunFacetJob(
                     olContext.getOpenLineageConfig().getParentJobNamespace(),
-                    olContext.getOpenLineageConfig().getParentJobName()))
+                    olContext.getOpenLineageConfig().getParentJobName(),
+                    null))
         .build();
   }
 
