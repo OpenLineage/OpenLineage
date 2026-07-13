@@ -4,9 +4,8 @@
 from typing import Any
 
 import attr
-from openlineage.common.utils import get_from_nullable_chain
-
 from great_expectations.core import ExpectationValidationResult
+from openlineage.common.utils import get_from_nullable_chain
 
 
 @attr.define
@@ -68,10 +67,14 @@ class EqualRowCountExpectationsParser(BetweenRowCountExpectationsParser):
 
 class FileSizeExpectationsParser(ExpectationsParser):
     expectation_key = "expect_file_size_to_be_between"
+    facet_key = "fileSize"
 
     @staticmethod
     def parse_expectation_result(expectation_result: dict) -> ExpectationsParserResult:  # type: ignore # noqa
-        pass  # TODO: file asset validation
+        return ExpectationsParserResult(
+            FileSizeExpectationsParser.facet_key,
+            get_from_nullable_chain(expectation_result, ["result", "observed_value"]),
+        )
 
 
 class ColumnExpectationsParser(ExpectationsParser):
@@ -186,7 +189,7 @@ class ValuesQuantileExpectationParser(ColumnExpectationsParser):
 EXPECTATIONS_PARSERS = [
     BetweenRowCountExpectationsParser,
     EqualRowCountExpectationsParser,
-    # FileSizeExpectationsParser,
+    FileSizeExpectationsParser,
 ]
 
 COLUMN_EXPECTATIONS_PARSER = [

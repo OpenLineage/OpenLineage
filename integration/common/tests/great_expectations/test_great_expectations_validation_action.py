@@ -9,10 +9,6 @@ from urllib.parse import urlparse
 
 import pandas
 import pytest
-from openlineage.common.provider.great_expectations import OpenLineageValidationAction
-from sqlalchemy import create_engine
-
-from great_expectations import get_context
 from great_expectations.core import (
     ExpectationSuiteValidationResult,
     ExpectationValidationResult,
@@ -24,6 +20,10 @@ from great_expectations.data_context.types.resource_identifiers import (
     ValidationResultIdentifier,
 )
 from great_expectations.expectations.expectation_configuration import ExpectationConfiguration
+from openlineage.common.provider.great_expectations import OpenLineageValidationAction
+from sqlalchemy import create_engine
+
+from great_expectations import get_context
 
 current_env = os.environ
 
@@ -362,3 +362,43 @@ def test_source_strips_credentials_and_preserves_authority(url, expected_connect
 
     assert source.scheme == "postgresql"
     assert source.connection_url == expected_connection_url
+
+
+def test_file_size_expectations_parser():
+    from openlineage.common.provider.great_expectations.results import (
+        FileSizeExpectationsParser,
+    )
+
+    result = ExpectationValidationResult(
+        success=True,
+        expectation_config=ExpectationConfiguration(
+            type="expect_file_size_to_be_between",
+            kwargs={"min_value": 0, "max_value": 1000},
+        ),
+        result={"observed_value": 512},
+    )
+
+    assert FileSizeExpectationsParser.can_accept(result)
+    parsed = FileSizeExpectationsParser.parse_expectation_result(result)
+    assert parsed.facet_key == "fileSize"
+    assert parsed.value == 512
+    assert parsed.column_id is None
+
+
+def test_file_size_expectations_parser_null_result():
+    from openlineage.common.provider.great_expectations.results import (
+        FileSizeExpectationsParser,
+    )
+
+    result = ExpectationValidationResult(
+        success=False,
+        expectation_config=ExpectationConfiguration(
+            type="expect_file_size_to_be_between",
+            kwargs={"min_value": 0, "max_value": 100},
+        ),
+        result={},
+    )
+
+    parsed = FileSizeExpectationsParser.parse_expectation_result(result)
+    assert parsed.facet_key == "fileSize"
+    assert parsed.value is None
