@@ -9,6 +9,20 @@ from datetime import datetime
 from typing import Literal
 from urllib.parse import urlparse
 
+from great_expectations.checkpoint import ValidationAction
+from great_expectations.compatibility.pydantic import validator
+from great_expectations.core import ExpectationSuiteValidationResult
+from great_expectations.data_context.types.resource_identifiers import (
+    ValidationResultIdentifier,
+)
+from great_expectations.execution_engine import (
+    PandasExecutionEngine,
+    SqlAlchemyExecutionEngine,
+)
+from great_expectations.execution_engine.sqlalchemy_batch_data import (
+    SqlAlchemyBatchData,
+)
+from great_expectations.validator.validator import Validator
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
 from openlineage.client.facet_v2 import (
@@ -34,21 +48,6 @@ from openlineage.common.provider.great_expectations.results import (
 )
 from openlineage.common.provider.snowflake import fix_snowflake_sqlalchemy_uri
 from openlineage.common.sql import parse
-
-from great_expectations.checkpoint import ValidationAction
-from great_expectations.compatibility.pydantic import validator
-from great_expectations.core import ExpectationSuiteValidationResult
-from great_expectations.data_context.types.resource_identifiers import (
-    ValidationResultIdentifier,
-)
-from great_expectations.execution_engine import (
-    PandasExecutionEngine,
-    SqlAlchemyExecutionEngine,
-)
-from great_expectations.execution_engine.sqlalchemy_batch_data import (
-    SqlAlchemyBatchData,
-)
-from great_expectations.validator.validator import Validator
 
 # There is no guarantee that SqlAlchemy is available with Great Expectations.
 # Especially, it could be used only with Pandas datasets, in which case

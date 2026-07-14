@@ -3,13 +3,12 @@
 
 
 import attr
+from great_expectations.core import IDDict
+from great_expectations.core.batch import BatchMarkers
 from openlineage.client.facet import BaseFacet
 from openlineage.common.provider.great_expectations.results import (
     GreatExpectationsAssertion,
 )
-
-from great_expectations.core import IDDict
-from great_expectations.core.batch import BatchMarkers
 
 try:
     from great_expectations.core.batch import (
