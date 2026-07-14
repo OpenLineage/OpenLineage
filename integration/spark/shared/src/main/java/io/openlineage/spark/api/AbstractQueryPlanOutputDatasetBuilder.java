@@ -7,6 +7,7 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +45,15 @@ public abstract class AbstractQueryPlanOutputDatasetBuilder<P extends LogicalPla
   }
 
   protected boolean includeDatasetVersion(SparkListenerEvent event) {
-    return event instanceof SparkListenerSQLExecutionEnd;
+    // Computing the dataset version can require an extra catalog lookup (for example, Iceberg's
+    // IcebergHandler#getDatasetVersion calls TableCatalog#loadTable()). When the datasetVersion
+    // facet is disabled, skip that lookup entirely instead of computing it and discarding the
+    // result at emit time - the extra load is not just wasted work, it can also race with a
+    // concurrent, not-yet-committed write and repopulate a catalog-side table cache with a stale
+    // pre-commit reference (see https://github.com/apache/iceberg/issues/10493 and
+    // https://github.com/OpenLineage/OpenLineage/issues/4040).
+    return event instanceof SparkListenerSQLExecutionEnd
+        && !FacetUtils.isFacetDisabled(context, "datasetVersion");
   }
 
   @Override
