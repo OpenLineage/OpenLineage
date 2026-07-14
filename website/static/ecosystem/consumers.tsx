@@ -206,4 +206,13 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://data-rentgen.readthedocs.io/",
     org_url: "https://mws.ru",
   },
+  {
+    image: "precisely_purple_logo.svg",
+    org: "Precisely",
+    full_name: "Precisely Data Integrity Suite",
+    description:
+      "Precisely Data Integrity Suite ingests OpenLineage events from data pipelines and query engines—including Snowflake, dbt, Airflow, and Spark—to automatically build end-to-end data lineage, enabling data governance, impact analysis, and trusted data cataloging across the enterprise.",
+    docs_url: "https://www.precisely.com/blog/engineering/openlineage-integration-bridging-open-standards-with-the-precisely-data-integrity-suite/",
+    org_url: "https://www.precisely.com/",
+  },
 ];
