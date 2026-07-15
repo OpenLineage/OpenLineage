@@ -4,8 +4,9 @@
 from typing import Any
 
 import attr
-from great_expectations.core import ExpectationValidationResult
 from openlineage.common.utils import get_from_nullable_chain
+
+from great_expectations.core import ExpectationValidationResult
 
 
 @attr.define

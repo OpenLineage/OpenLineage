@@ -9,6 +9,10 @@ from urllib.parse import urlparse
 
 import pandas
 import pytest
+from openlineage.common.provider.great_expectations import OpenLineageValidationAction
+from sqlalchemy import create_engine
+
+from great_expectations import get_context
 from great_expectations.core import (
     ExpectationSuiteValidationResult,
     ExpectationValidationResult,
@@ -20,10 +24,6 @@ from great_expectations.data_context.types.resource_identifiers import (
     ValidationResultIdentifier,
 )
 from great_expectations.expectations.expectation_configuration import ExpectationConfiguration
-from openlineage.common.provider.great_expectations import OpenLineageValidationAction
-from sqlalchemy import create_engine
-
-from great_expectations import get_context
 
 current_env = os.environ
 
