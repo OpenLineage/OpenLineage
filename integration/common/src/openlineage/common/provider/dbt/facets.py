@@ -55,10 +55,51 @@ class DbtRunRunFacet(BaseFacet):
     project_version: str | None = attr.field(default=None)
     profile_name: str | None = attr.field(default=None)
     account_id: str | None = attr.field(default=None)
+    # Run-wide --full-refresh flag for the invocation; None when it wasn't set.
+    full_refresh: bool | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "dbt-run-run-facet.json"
+
+
+@attr.define
+class DbtPartitionBy:
+    """A dbt ``partition_by`` config.
+
+    BigQuery expresses it as an object (``field``/``data_type``/``granularity``); Spark and
+    other adapters express it as a single column or a list of columns (``columns``).
+    Integer-range and ingestion-time partitioning details beyond these keys are not captured.
+    """
+
+    field: str | None = attr.field(default=None)
+    data_type: str | None = attr.field(default=None)
+    granularity: str | None = attr.field(default=None)
+    columns: list[str] | None = attr.field(default=None)
+
+
+@attr.define
+class DbtIncrementalConfig:
+    """How an incremental dbt model rebuilds data, from its resolved ``config``.
+
+    Populated only for ``materialized == "incremental"``; its presence marks the model
+    incremental even when no individual field is set.
+    """
+
+    # A None strategy means the adapter default; dbt omits it from the manifest.
+    strategy: str | None = attr.field(default=None)
+    unique_key: list[str] | None = attr.field(default=None)
+    # Config-declared SQL filters that bound the rows the merge scans
+    # (dbt ``incremental_predicates``, or the Spark ``predicates`` alias).
+    incremental_predicates: list[str] | None = attr.field(default=None)
+    on_schema_change: str | None = attr.field(default=None)
+    event_time: str | None = attr.field(default=None)
+    batch_size: str | None = attr.field(default=None)
+    begin: str | None = attr.field(default=None)
+    lookback: int | None = attr.field(default=None)
+    partition_by: DbtPartitionBy | None = attr.field(default=None)
+    # Per-model ``config.full_refresh`` override; the run-wide flag is a run-level concern.
+    full_refresh: bool | None = attr.field(default=None)
 
 
 @attr.define
@@ -73,6 +114,8 @@ class DbtModelConfig:
     access: str | None = attr.field(default=None)
     owner: str | None = attr.field(default=None)
     group: str | None = attr.field(default=None)
+    # Set only for materialized == "incremental"; presence marks the model incremental.
+    incremental: DbtIncrementalConfig | None = attr.field(default=None)
 
 
 @attr.define

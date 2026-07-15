@@ -2266,3 +2266,60 @@ class TestTestRunFacet:
         result = ol_event_to_dict(processor.parse_node_finished_event(event))
 
         assert "test" not in result["run"]["facets"]
+
+
+class TestFullRefreshFromCommandLine:
+    """Covers detecting the run-wide --full-refresh flag on the dbt command line,
+    the log-driven path's substitute for run_results.json args."""
+
+    def test_full_refresh(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "--full-refresh"])
+            is True
+        )
+
+    def test_full_refresh_short_flag(self):
+        assert DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "-f"]) is True
+
+    def test_no_full_refresh(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "--no-full-refresh"])
+            is False
+        )
+
+    def test_last_flag_wins_no_then_full(self):
+        # dbt resolves the flag last-occurrence-wins
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(
+                ["dbt", "run", "--no-full-refresh", "--full-refresh"]
+            )
+            is True
+        )
+
+    def test_last_flag_wins_full_then_no(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(
+                ["dbt", "run", "--full-refresh", "--no-full-refresh"]
+            )
+            is False
+        )
+
+    def test_absent(self):
+        assert DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run"]) is None
+
+    def test_flag_flows_to_run_facet(self):
+        # end-to-end: the CLI flag is wired through to the emitted DbtRunRunFacet
+        processor = DbtStructuredLogsProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="dbt-test-namespace",
+            project_dir=CURRENT_DIR,
+            target="postgres",
+            dbt_command_line=["dbt", "run", "--full-refresh"],
+        )
+        processor._dbt_invocation_id = "test-invocation-id"
+        processor.project_name = "jaffle_shop"
+        processor.project_version = "1.0.0"
+        processor.profile_name = "jaffle_shop"
+
+        facet = processor.dbt_run_run_facet()["dbt_run"]
+        assert facet.full_refresh is True

@@ -35,9 +35,11 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
+    DbtIncrementalConfig,
     DbtModelConfig,
     DbtModelDatasetFacet,
     DbtNodeJobFacet,
+    DbtPartitionBy,
     DbtRunRunFacet,
     DbtVersionRunFacet,
     ParentRunMetadata,
@@ -185,6 +187,7 @@ class DbtArtifactProcessor:
         self.skip_errors = skip_errors
         self.run_metadata: dict[str, Any] = {}
         self.command = None
+        self.full_refresh: bool | None = None
         self.models = models or []
         self.selector = selector
         self.manifest_version = None
@@ -210,6 +213,7 @@ class DbtArtifactProcessor:
 
         self.run_metadata = run_result["metadata"]
         self.command = run_result["args"]["which"]
+        self.full_refresh = self._full_refresh_from_args(run_result["args"])
 
         self.extract_adapter_type(profile)
         self.extract_dataset_namespace(profile)
@@ -837,7 +841,8 @@ class DbtArtifactProcessor:
     def _create_dbt_model_dataset_facet(self, node: ModelNode) -> DbtModelDatasetFacet | None:
         """Build a DbtModelDatasetFacet from a dbt manifest node's resolved ``config``.
 
-        Reads ``materialized``/``access``/``owner``/``group`` from ``node.metadata_node["config"]``.
+        Reads ``materialized``/``access``/``owner``/``group`` from ``node.metadata_node["config"]``,
+        plus the incremental rebuild config for ``materialized == "incremental"`` models.
         Returns ``None`` when the node carries none of them, so we don't attach an empty facet.
         The node's ``meta`` map is emitted separately as tags (see ``_build_tags_run_facet``).
         """
@@ -848,10 +853,88 @@ class DbtArtifactProcessor:
             owner=raw_config.get("owner") or None,
             group=raw_config.get("group") or None,
         )
+        if model_config.materialized == "incremental":
+            model_config.incremental = self._build_incremental_config(raw_config)
         if not any(attr.astuple(model_config)):
             return None
 
         return DbtModelDatasetFacet(config=model_config)
+
+    def _build_incremental_config(self, raw_config: dict) -> DbtIncrementalConfig:
+        """Read the incremental rebuild config from a resolved dbt node ``config``.
+
+        Always returns a config object so the caller can use its presence to mark a model
+        incremental, even when no individual field is set.
+        """
+        strategy = raw_config.get("incremental_strategy") or None
+        incremental = DbtIncrementalConfig(
+            strategy=strategy,
+            unique_key=self._to_string_list(raw_config.get("unique_key")),
+            # incremental_predicates is the cross-adapter key; predicates is a Spark alias.
+            incremental_predicates=(
+                self._to_string_list(raw_config.get("incremental_predicates"))
+                or self._to_string_list(raw_config.get("predicates"))
+            ),
+            on_schema_change=raw_config.get("on_schema_change") or None,
+            partition_by=self._parse_partition_by(raw_config.get("partition_by")),
+        )
+        # Microbatch parameters apply only to the microbatch strategy. dbt resolves defaults
+        # (notably lookback=1) onto every model, so gate them to avoid emitting a phantom
+        # time window on merge/insert_overwrite models.
+        if strategy == "microbatch":
+            incremental.event_time = raw_config.get("event_time") or None
+            incremental.batch_size = raw_config.get("batch_size") or None
+            incremental.begin = raw_config.get("begin") or None
+            lookback = raw_config.get("lookback")
+            # bool is an int subclass; reject it so a stray true/false is not read as a count.
+            if isinstance(lookback, int) and not isinstance(lookback, bool):
+                incremental.lookback = lookback
+        full_refresh = raw_config.get("full_refresh")
+        if isinstance(full_refresh, bool):
+            incremental.full_refresh = full_refresh
+        return incremental
+
+    @staticmethod
+    def _full_refresh_from_args(args: dict) -> bool | None:
+        """Read the run-wide --full-refresh flag from run_results.json args.
+
+        Returns ``None`` when the flag is absent so the facet can omit it rather than
+        report a default the invocation never set.
+        """
+        value = args.get("full_refresh")
+        return value if isinstance(value, bool) else None
+
+    @staticmethod
+    def _to_string_list(raw: Any) -> list[str] | None:
+        """Normalize a dbt config value (single string, list, or None) into a list of strings.
+
+        Empty and non-string elements are dropped; returns ``None`` when nothing remains.
+        """
+        if isinstance(raw, str):
+            return [raw] if raw else None
+        if isinstance(raw, (list, tuple)):
+            values = [element for element in raw if isinstance(element, str) and element]
+            return values or None
+        return None
+
+    @staticmethod
+    def _parse_partition_by(raw: Any) -> DbtPartitionBy | None:
+        """Normalize dbt's polymorphic ``partition_by`` config.
+
+        BigQuery uses an object ({field, data_type, granularity}); Spark and other adapters use a
+        single column or a list of columns. Returns ``None`` when nothing is set.
+        """
+        if isinstance(raw, dict):
+            partition = DbtPartitionBy(
+                field=raw.get("field") or None,
+                data_type=raw.get("data_type") or None,
+                granularity=raw.get("granularity") or None,
+            )
+            if not any(attr.astuple(partition)):
+                return None
+            return partition
+        columns = DbtArtifactProcessor._to_string_list(raw)
+        return DbtPartitionBy(columns=columns) if columns else None
 
     @staticmethod
     def _meta_tag_value(value: Any) -> str:

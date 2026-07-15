@@ -304,5 +304,6 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
                 project_version=self.project_version,
                 profile_name=self.profile_name,
                 dbt_runtime="core",
+                full_refresh=self.full_refresh,
             )
         }
