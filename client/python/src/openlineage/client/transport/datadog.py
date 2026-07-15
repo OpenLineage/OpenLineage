@@ -25,8 +25,10 @@ SITE_MAPPING = {
     "us5.datadoghq.com": "https://data-obs-intake.us5.datadoghq.com",
     "datadoghq.eu": "https://data-obs-intake.datadoghq.eu",
     "ddog-gov.com": "https://data-obs-intake.ddog-gov.com",
+    "us2.ddog-gov.com": "https://data-obs-intake.us2.ddog-gov.com",
     "ap1.datadoghq.com": "https://data-obs-intake.ap1.datadoghq.com",
     "ap2.datadoghq.com": "https://data-obs-intake.ap2.datadoghq.com",
+    "uk1.datadoghq.com": "https://data-obs-intake.uk1.datadoghq.com",
     "datad0g.com": "https://data-obs-intake.datad0g.com",
 }
 
