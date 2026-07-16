@@ -29,7 +29,7 @@ requests==2.34.2
 rich==15.0.0
 rich-click==1.9.8
 six==1.17.0
-typing_extensions==4.15.0
+typing_extensions==4.16.0
 urllib3==2.7.0
 wrapt==2.2.2
 yarl==1.24.2
