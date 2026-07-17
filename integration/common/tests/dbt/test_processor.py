@@ -159,6 +159,35 @@ def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
     )
 
 
+@pytest.mark.parametrize(
+    "profile, expected",
+    [
+        # port given: the branch that already separates it with a colon
+        (
+            {"method": "http", "host": "myhost.databricks.com", "port": 443},
+            "spark://myhost.databricks.com:443",
+        ),
+        (
+            {"method": "thrift", "host": "myhost.databricks.com", "port": 10001},
+            "spark://myhost.databricks.com:10001",
+        ),
+        # port omitted: dbt-spark defaults it, so the profile has no port key
+        ({"method": "http", "host": "myhost.databricks.com"}, "spark://myhost.databricks.com:443"),
+        ({"method": "odbc", "host": "myhost.databricks.com"}, "spark://myhost.databricks.com:443"),
+        (
+            {"method": "thrift", "host": "myhost.databricks.com"},
+            "spark://myhost.databricks.com:10001",
+        ),
+    ],
+)
+def test_spark_namespace_separates_the_port(dbt_artifact_processor, profile, expected):
+    dbt_artifact_processor.adapter_type = Adapter.SPARK
+
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    assert dbt_artifact_processor.dataset_namespace == expected
+
+
 def test_extract_adapter_type_fabric(dbt_artifact_processor):
     # dbt-fabric profiles use `type: fabric`; the enum name must match so
     # `Adapter[type.upper()]` resolves it without NotImplementedError.

@@ -969,9 +969,9 @@ class DbtArtifactProcessor:
                 SparkConnectionMethod.HTTP.value,
                 SparkConnectionMethod.ODBC.value,
             ]:
-                port = "443"
+                port = ":443"
             elif profile["method"] == SparkConnectionMethod.THRIFT.value:
-                port = "10001"
+                port = ":10001"
 
             if profile["method"] in SparkConnectionMethod.methods():
                 return f"spark://{profile['host']}{port}"
