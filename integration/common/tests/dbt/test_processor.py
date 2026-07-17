@@ -188,6 +188,8 @@ def test_spark_namespace_separates_the_port(dbt_artifact_processor, profile, exp
     dbt_artifact_processor.extract_dataset_namespace(profile)
 
     assert dbt_artifact_processor.dataset_namespace == expected
+
+
 class TestGetDbtProfilesDir:
     """dbt looks in the working directory only if it holds a profiles.yml, then ~/.dbt."""
 
