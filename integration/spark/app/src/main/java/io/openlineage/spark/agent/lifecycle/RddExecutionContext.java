@@ -29,6 +29,7 @@ import io.openlineage.spark.agent.util.DatasetReducerUtils;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.RemovePathPatternUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.StreamingContextUtils;
 import io.openlineage.spark.agent.vendor.gcp.facets.builder.GcpJobFacetBuilder;
@@ -425,16 +426,18 @@ class RddExecutionContext implements ExecutionContext {
 
   protected List<OpenLineage.OutputDataset> buildOutputs(
       List<URI> outputs, boolean withOutputStatistics) {
-    return DatasetReducerUtils.outputs(
+    return RemovePathPatternUtils.removeOutputsPathPattern(
         olContext,
-        outputs.stream()
-            .map(
-                d ->
-                    buildOutputDataset(
-                        d,
-                        withOutputStatistics
-                            && outputs.size() == 1)) // output statistics only for single output
-            .collect(Collectors.toList()));
+        DatasetReducerUtils.outputs(
+            olContext,
+            outputs.stream()
+                .map(
+                    d ->
+                        buildOutputDataset(
+                            d,
+                            withOutputStatistics
+                                && outputs.size() == 1)) // output statistics only for single output
+                .collect(Collectors.toList())));
   }
 
   protected OpenLineage.InputDataset buildInputDataset(
@@ -535,11 +538,13 @@ class RddExecutionContext implements ExecutionContext {
 
   protected List<OpenLineage.InputDataset> buildInputs(
       List<DatasetIdentifier> inputs, boolean withInputStatistics) {
-    return DatasetReducerUtils.inputs(
+    return RemovePathPatternUtils.removeInputsPathPattern(
         olContext,
-        inputs.stream()
-            .map(d -> buildInputDataset(d, withInputStatistics && inputs.size() == 1))
-            .collect(Collectors.toList()));
+        DatasetReducerUtils.inputs(
+            olContext,
+            inputs.stream()
+                .map(d -> buildInputDataset(d, withInputStatistics && inputs.size() == 1))
+                .collect(Collectors.toList())));
   }
 
   protected List<URI> findOutputs(RDD<?> rdd, JobConf jobConf) {
