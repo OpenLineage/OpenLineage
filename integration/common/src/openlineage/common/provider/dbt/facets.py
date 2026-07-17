@@ -65,11 +65,22 @@ class DbtRunRunFacet(BaseFacet):
 
 @attr.define
 class DbtPartitionBy:
-    """A dbt ``partition_by`` config.
+    """A dbt ``partition_by`` config for an incremental model.
 
-    BigQuery expresses it as an object (``field``/``data_type``/``granularity``); Spark and
-    other adapters express it as a single column or a list of columns (``columns``).
-    Integer-range and ingestion-time partitioning details beyond these keys are not captured.
+    Two mutually exclusive shapes, selected by adapter — a consumer should branch on
+    whichever group is present rather than expect both:
+
+    - **BigQuery** → ``field`` / ``data_type`` / ``granularity`` (object form); ``columns`` unset.
+    - **Spark / other adapters** → ``columns``; the BigQuery fields unset.
+
+    Integer-range and ingestion-time partitioning beyond these keys is not captured.
+
+    Fields:
+        field: BigQuery partition column. Example: ``"created_at"``.
+        data_type: BigQuery partition type — ``date``/``timestamp``/``datetime``/``int64``.
+            Example: ``"timestamp"``.
+        granularity: BigQuery time grain — ``hour``/``day``/``month``/``year``. Example: ``"day"``.
+        columns: Spark/other partition column(s). Example: ``["ds"]`` or ``["region", "ds"]``.
     """
 
     field: str | None = attr.field(default=None)
@@ -84,13 +95,39 @@ class DbtIncrementalConfig:
 
     Populated only for ``materialized == "incremental"``; its presence marks the model
     incremental even when no individual field is set.
+
+    Which fields are populated depends on ``strategy`` — a consumer should read them by
+    strategy:
+
+    - **all strategies:** ``strategy``, ``on_schema_change``, ``full_refresh``.
+    - **merge / delete+insert:** ``unique_key``, ``incremental_predicates``.
+    - **microbatch:** ``event_time``, ``batch_size``, ``begin``, ``lookback``.
+    - **insert_overwrite:** ``partition_by``.
+
+    Fields:
+        strategy: Incremental strategy — e.g. ``"merge"``, ``"append"``, ``"delete+insert"``,
+            ``"insert_overwrite"``, ``"microbatch"``. ``None`` means the adapter default
+            (dbt omits it from the manifest).
+        unique_key: Key column(s) used to match existing rows (merge / delete+insert).
+            Example: ``["id"]``.
+        incremental_predicates: Config-declared SQL filters that bound the rows the merge
+            scans (dbt ``incremental_predicates``, or the Spark ``predicates`` alias).
+            Example: ``["dbt_valid_to is null"]``.
+        on_schema_change: Reaction to source schema changes — ``ignore`` (default) /
+            ``append_new_columns`` / ``sync_all_columns`` / ``fail``.
+        event_time: (microbatch) timestamp column dbt batches on. Example: ``"event_ts"``.
+        batch_size: (microbatch) batch grain — ``hour``/``day``/``month``/``year``.
+        begin: (microbatch) lower bound for the first batch, ISO-8601 date or datetime.
+            Example: ``"2024-01-01"``.
+        lookback: (microbatch) number of prior batches to reprocess for late-arriving rows;
+            integer >= 0, default ``1``. Example: ``2``.
+        partition_by: (insert_overwrite) partition config; see ``DbtPartitionBy``.
+        full_refresh: Per-model ``config.full_refresh`` override. The run-wide
+            ``--full-refresh`` flag is a run-level concern on ``DbtRunRunFacet`` instead.
     """
 
-    # A None strategy means the adapter default; dbt omits it from the manifest.
     strategy: str | None = attr.field(default=None)
     unique_key: list[str] | None = attr.field(default=None)
-    # Config-declared SQL filters that bound the rows the merge scans
-    # (dbt ``incremental_predicates``, or the Spark ``predicates`` alias).
     incremental_predicates: list[str] | None = attr.field(default=None)
     on_schema_change: str | None = attr.field(default=None)
     event_time: str | None = attr.field(default=None)
@@ -98,7 +135,6 @@ class DbtIncrementalConfig:
     begin: str | None = attr.field(default=None)
     lookback: int | None = attr.field(default=None)
     partition_by: DbtPartitionBy | None = attr.field(default=None)
-    # Per-model ``config.full_refresh`` override; the run-wide flag is a run-level concern.
     full_refresh: bool | None = attr.field(default=None)
 
 
