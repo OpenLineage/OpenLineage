@@ -1436,6 +1436,33 @@ def test_client_keeps_key_case_for_existing_tags(transport, run_event_multi):
         assert event_tags == expected_tags
 
 
+def test_client_keeps_key_case_for_existing_tags_with_uppercase_user_key(transport, run_event_multi):
+    """
+    Tags set through config keep their case, so a user key can reach _update_tag_facet
+    uppercased. Matching against the facet must stay case-insensitive in that direction
+    too, otherwise the integration tag is neither dropped nor overridden and both end up
+    on the event.
+    """
+    config = {"tags": {"run": {"ENVIRONMENT": "PRODUCTION"}}}
+
+    run_event_multi.run.facets["tags"] = tags_run.TagsRunFacet(
+        tags=[tags_run.TagsRunFacetFields("environment", "STAGING", "INTEGRATION")]
+    )
+
+    expected_tags = [
+        tags_run.TagsRunFacetFields("environment", "PRODUCTION", "USER"),
+        tags_run.TagsRunFacetFields(
+            "openlineage_client_version", OPENLINEAGE_CLIENT_VERSION, "OPENLINEAGE_CLIENT"
+        ),
+    ]
+
+    client = OpenLineageClient(transport=transport, config=config)
+    client.emit(run_event_multi)
+
+    event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
+    assert event_tags == sorted(expected_tags, key=lambda x: x.key)
+
+
 def test_client_creates_tag_facets_for_job_events(transport, job_event_multi):
     """
     Same code is used for run and job events to update facets. This just verifies

@@ -555,7 +555,7 @@ class OpenLineageClient:
         """
 
         # Get tags from the facet that will not be updated (Do not have the same key as a user tag)
-        user_tag_keys = [tag.key for tag in user_tags]
+        user_tag_keys = [tag.key.lower() for tag in user_tags]
         keep_tags = []
         if tags_facet.tags is not None:
             keep_tags = [tag for tag in tags_facet.tags if tag.key.lower() not in user_tag_keys]
@@ -567,8 +567,8 @@ class OpenLineageClient:
             facet_tag_keys = {tag.key.lower(): tag.key for tag in tags_facet.tags}
 
         for user_tag in user_tags:
-            if user_tag.key in facet_tag_keys:
-                facet_tag_key = facet_tag_keys[user_tag.key]
+            if user_tag.key.lower() in facet_tag_keys:
+                facet_tag_key = facet_tag_keys[user_tag.key.lower()]
                 if user_tag.source == "USER":
                     log.info("Overriding integration-supplied tag `%s` with user-supplied tag", facet_tag_key)
                 user_tag.key = facet_tag_key
