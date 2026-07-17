@@ -694,7 +694,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
             if query_id := get_from_nullable_chain(event, ["data", "query_id"]):
                 run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
-                    externalQueryId=query_id, source="source"
+                    externalQueryId=query_id, source=self.dataset_namespace
                 )
 
         return generate_run_event(
