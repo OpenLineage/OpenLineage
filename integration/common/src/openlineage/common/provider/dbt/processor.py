@@ -540,7 +540,7 @@ class DbtArtifactProcessor:
                 continue
             parent_node = manifest_nodes.get(parent_id)
             if parent_node:
-                ptype = "model" if parent_id.startswith("model.") else "source"
+                ptype = "source" if parent_id.startswith("source.") else "model"
                 ns, nm, _, _ = self.extract_dataset_data(
                     ModelNode(type=ptype, metadata_node=parent_node), None, has_facets=False
                 )
