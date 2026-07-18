@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import pickle
 from unittest import mock
 
 from attr import asdict, define
@@ -258,6 +259,31 @@ def test_with_additional_properties_isinstance_works():
 
     assert isinstance(changed_facet, documentation_job.DocumentationJobFacet)
     assert isinstance(changed_facet, BaseFacet)
+
+
+def test_with_additional_properties_is_picklable():
+    """Regression test for https://github.com/OpenLineage/OpenLineage/issues/4216."""
+    documentation_facet = documentation_job.DocumentationJobFacet(description="desc")
+    changed_facet = documentation_facet.with_additional_properties(new_prop="new_value")
+
+    pickled = pickle.loads(pickle.dumps(changed_facet))  # noqa: S301
+
+    assert pickled == changed_facet
+    assert pickled.new_prop == "new_value"
+    assert isinstance(pickled, documentation_job.DocumentationJobFacet)
+
+
+def test_with_additional_properties_chained_is_picklable():
+    """Pickling should also work after multiple chained `with_additional_properties` calls."""
+    documentation_facet = documentation_job.DocumentationJobFacet(description="desc")
+    changed_facet = documentation_facet.with_additional_properties(new_prop="new_value")
+    changed_facet = changed_facet.with_additional_properties(other_prop="other_value")
+
+    pickled = pickle.loads(pickle.dumps(changed_facet))  # noqa: S301
+
+    assert pickled == changed_facet
+    assert pickled.new_prop == "new_value"
+    assert pickled.other_prop == "other_value"
 
 
 def test_facet_copy_serialization_base_facet():

@@ -152,6 +152,8 @@ def parse_and_generate(
                 "typing.Any",
                 "typing.cast",
                 "openlineage.client.constants.DEFAULT_PRODUCER",
+                "openlineage.client.utils.add_additional_properties",
+                "openlineage.client.utils.reduce_with_additional_properties",
             ],
         )
 
