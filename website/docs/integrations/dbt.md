@@ -60,31 +60,31 @@ Right now, `openlineage-dbt` supports these dbt adapters:
 * `dremio`
 * `duckdb`
 
-First, install the integration:
+First, we need to install the integration:
 
 ```bash
 pip3 install openlineage-dbt
 ```
 
-Next, specify where you want dbt to send OpenLineage events by setting the `OPENLINEAGE_URL` environment variable. For example, to send OpenLineage events to a local instance of Marquez, use:
+Next, we specify where we want dbt to send OpenLineage events by setting the `OPENLINEAGE_URL` environment variable. For example, to send OpenLineage events to a local instance of Marquez, use:
 
 ```bash
 OPENLINEAGE_URL=http://localhost:5000
 ```
 
-Finally, you can optionally specify a namespace where the lineage events will be stored. For example, to use the namespace "dev":
+Finally, we can optionally specify a namespace where the lineage events will be stored. For example, to use the namespace "dev":
 
 ```bash
 OPENLINEAGE_NAMESPACE=dev
 ```
 
-You can also override the job name sent by dbt OpenLineage events by providing env variable:
+You can also override the job name sent by dbt OpenLineage events by providing env variable
 ```bash
 OPENLINEAGE_DBT_JOB_NAME=<your-job-name>
 ```
 or passing `--openlineage-dbt-job-name <your-job-name>` in the dbt command line.
 
-More configuration parameters can be found in the [Python client documentation](../client/python/configuration.md).
+More configuration parameters can be found in [Python client documentation](../client/python/configuration.md)
 
 #### Running dbt with OpenLineage
 
