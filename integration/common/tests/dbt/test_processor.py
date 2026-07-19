@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import os
 from unittest.mock import MagicMock
 
 import pytest
@@ -10,6 +11,7 @@ from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
 from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
+from openlineage.common.provider.dbt.utils import get_dbt_profiles_dir
 
 DBT_VERSION = "0.0.1"
 JOB_NAMESPACE = "job-namespace"
@@ -157,6 +159,72 @@ def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
         dbt_artifact_processor.dataset_namespace
         == "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1433"
     )
+
+
+@pytest.mark.parametrize(
+    "profile, expected",
+    [
+        # port given: the branch that already separates it with a colon
+        (
+            {"method": "http", "host": "myhost.databricks.com", "port": 443},
+            "spark://myhost.databricks.com:443",
+        ),
+        (
+            {"method": "thrift", "host": "myhost.databricks.com", "port": 10001},
+            "spark://myhost.databricks.com:10001",
+        ),
+        # port omitted: dbt-spark defaults it, so the profile has no port key
+        ({"method": "http", "host": "myhost.databricks.com"}, "spark://myhost.databricks.com:443"),
+        ({"method": "odbc", "host": "myhost.databricks.com"}, "spark://myhost.databricks.com:443"),
+        (
+            {"method": "thrift", "host": "myhost.databricks.com"},
+            "spark://myhost.databricks.com:10001",
+        ),
+    ],
+)
+def test_spark_namespace_separates_the_port(dbt_artifact_processor, profile, expected):
+    dbt_artifact_processor.adapter_type = Adapter.SPARK
+
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    assert dbt_artifact_processor.dataset_namespace == expected
+
+
+class TestGetDbtProfilesDir:
+    """dbt looks in the working directory only if it holds a profiles.yml, then ~/.dbt."""
+
+    def test_command_line_wins(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("DBT_PROFILES_DIR", str(tmp_path / "from_env"))
+        monkeypatch.chdir(tmp_path)
+
+        got = get_dbt_profiles_dir(["dbt", "run", "--profiles-dir", "/from/command"])
+
+        assert got == "/from/command"
+
+    def test_env_var_wins_over_working_directory(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("DBT_PROFILES_DIR", "/from/env")
+        monkeypatch.chdir(tmp_path)
+
+        got = get_dbt_profiles_dir(["dbt", "run"])
+
+        assert got == "/from/env"
+
+    def test_working_directory_when_it_holds_a_profile(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("DBT_PROFILES_DIR", raising=False)
+        (tmp_path / "profiles.yml").write_text("")
+        monkeypatch.chdir(tmp_path)
+
+        got = get_dbt_profiles_dir(["dbt", "run"])
+
+        assert got == str(tmp_path)
+
+    def test_default_directory_when_working_directory_has_no_profile(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("DBT_PROFILES_DIR", raising=False)
+        monkeypatch.chdir(tmp_path)
+
+        got = get_dbt_profiles_dir(["dbt", "run"])
+
+        assert got == os.path.expanduser("~/.dbt/")
 
 
 def test_extract_adapter_type_fabric(dbt_artifact_processor):
