@@ -334,11 +334,13 @@ type JobTypeJobFacet struct {
 	SchemaURL string `json:"_schemaURL"`
 	// set to true to delete a facet
 	Deleted *bool `json:"_deleted,omitempty"`
+	// Describes how and what the job emits in its events
+	EmissionPattern *JobTypeJobFacetEmissionPattern `json:"emissionPattern,omitempty"`
 	// OpenLineage integration type of this job: for example SPARK|DBT|AIRFLOW|FLINK
 	Integration string `json:"integration"`
 	// Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is an integration-specific field.
 	JobType *string `json:"jobType,omitempty"`
-	// Job processing type like: BATCH or STREAMING
+	// Job processing type: BATCH (finite jobs with clear start/end), STREAMING (continuous jobs processing data streams), or SERVICE (continuous long-running services). BATCH jobs are finite and emit START/COMPLETE/FAIL/ABORT events. STREAMING and SERVICE jobs are continuous with no natural completion point.
 	ProcessingType string `json:"processingType"`
 }
 
@@ -1016,6 +1018,16 @@ type JobIdentifier struct {
 	Namespace string `json:"namespace"`
 }
 
+// JobTypeJobFacetEmissionPattern — Describes how and what the job emits in its events
+type JobTypeJobFacetEmissionPattern struct {
+	// Define if individual events are self-sufficient and can be processed individually, or need to be combined by consumer. ACCUMULATIVE: Events may contain only partial information and the complete information can be collected by combining information from all the events emitted by a specific job run. COMPLETE_SNAPSHOT: events contain complete state for a specific time window (events can be processed independently).
+	EventContentMode string `json:"eventContentMode"`
+	// Defines when events are emitted. EVENT_BASED: events emitted on lifecycle transitions (START/COMPLETE/FAIL/ABORT). PERIODIC: events emitted at regular time intervals.
+	EventTrigger string `json:"eventTrigger"`
+	// Time window duration for periodic event emissions in seconds. Only applicable when eventTrigger is PERIODIC. Required when eventTrigger is PERIODIC and eventContentMode is COMPLETE_SNAPSHOT.
+	WindowDuration *int64 `json:"windowDuration,omitempty"`
+}
+
 // LifecycleStateChangeDatasetFacetPreviousIdentifier — Previous name of the dataset in case of renaming it.
 type LifecycleStateChangeDatasetFacetPreviousIdentifier struct {
 	Name      string `json:"name"`
@@ -1052,6 +1064,8 @@ type OwnershipJobFacetOwner struct {
 
 // ParentRunFacetJob
 type ParentRunFacetJob struct {
+	// Selected subset of facets of the parent job (not the current job), forwarded here for convenience. See the parent job's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The unique name for that job within that namespace
 	Name string `json:"name"`
 	// The namespace containing that job
@@ -1066,6 +1080,8 @@ type ParentRunFacetRoot struct {
 
 // ParentRunFacetRun
 type ParentRunFacetRun struct {
+	// Selected subset of facets of the parent run (not the current run), forwarded here for convenience. See the parent run's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The globally unique ID of the run associated with the job.
 	RunID string `json:"runId"`
 }
@@ -1085,6 +1101,8 @@ type PartitionSubsetConditionPartition struct {
 
 // RootJob
 type RootJob struct {
+	// Selected subset of facets of the root job (not the current job), forwarded here for convenience. See the root job's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The unique name containing root job within that namespace
 	Name string `json:"name"`
 	// The namespace containing root job
@@ -1093,6 +1111,8 @@ type RootJob struct {
 
 // RootRun
 type RootRun struct {
+	// Selected subset of facets of the root run (not the current run), forwarded here for convenience. See the root run's own event for full information.
+	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The globally unique ID of the root run associated with the root job.
 	RunID string `json:"runId"`
 }

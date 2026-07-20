@@ -31,11 +31,18 @@ idea {
 }
 
 ext {
-    assertjVersion = "3.27.6"
+    assertjVersion = "3.27.7"
     commonsLangVersion = "3.12.0"
+    deltaVersion = "4.1.0"
     junit5Version = "5.11.4"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.16.2"
+    micrometerVersion = "1.17.0"
+    // Open source Unity Catalog. The Spark connector at this version is built for Spark 4 / Scala
+    // 2.13, which is why Unity Catalog support lives in this module. Used as a test-only dependency.
+    unityCatalogVersion = "0.4.1"
+    // Provides the abfss:// filesystem (AzureBlobFileSystem) for the Unity Catalog Azure tests.
+    // Keep aligned with the hadoop-client version resolved on the test runtime classpath.
+    hadoopAzureVersion = "3.4.2"
 
     sparkVersion = project.findProperty("spark40.spark.version")
     scalaBinaryVersion = "2.13"
@@ -50,6 +57,9 @@ dependencies {
 
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
+    // Needed by UnityCatalogHandler to resolve Delta tables; provided at runtime by the user's Delta
+    // installation, hence compileOnly.
+    compileOnly("io.delta:delta-spark_4.0_2.13:${deltaVersion}")
 
     // TODO: Remove 'testFixturesApi' and replace with 'testImplementation'
     // TODO: Completely remove the test dependency on 'shared'
@@ -68,12 +78,48 @@ dependencies {
 
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     scala213CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
+    scala213CompileOnly("io.delta:delta-spark_4.0_2.13:${deltaVersion}")
 
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
+    testScala213Implementation("org.apache.hadoop:hadoop-azure:${hadoopAzureVersion}")
+    testScala213Implementation(testFixtures(project(path: ":test-commons")))
+    testScala213Implementation("io.delta:delta-spark_4.0_2.13:${deltaVersion}")
+    testScala213Implementation("io.unitycatalog:unitycatalog-spark_2.13:${unityCatalogVersion}")
+    testScala213Implementation("io.unitycatalog:unitycatalog-server:${unityCatalogVersion}")
+    testScala213Implementation("io.unitycatalog:unitycatalog-client:${unityCatalogVersion}")
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala213Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
+}
+
+// The open source Unity Catalog test server pulls in dependencies (Iceberg, Spring) that publish
+// strict JVM 11/17 metadata. Spark 4 already requires JVM 17, so bump the JVM-version attribute on
+// the Scala 2.13 test classpaths only to allow resolution. The published main artifact keeps the
+// project-wide JVM 8 target so it stays consumable by the JVM-8 agent jar.
+["testScala213CompileClasspath", "testScala213RuntimeClasspath"].each { cfgName ->
+    configurations.named(cfgName).configure {
+        attributes {
+            attribute(
+                org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+        }
+    }
+}
+
+// Tests tagged 'azure' require a live Unity Catalog server backed by Azure ADLS Gen2 (abfss) and
+// credentials, so they are excluded from normal runs. Enable them with '-Pazure', e.g.
+//   ./gradlew :spark40:executeTestScala213 -Pazure
+// (with -Pazure the test fails fast unless its required parameters are provided; see
+// AzureDynamicParameter).
+tasks.withType(Test).configureEach {
+    useJUnitPlatform {
+        if (!project.hasProperty("azure")) {
+            excludeTags "azure"
+        }
+    }
+    // Forward the dynamic test parameters (see DynamicParameter) to the forked test JVM; all use
+    // the openlineage.tests.* namespace (here, openlineage.tests.azure.*).
+    systemProperties(System.properties.findAll { it.key.toString().startsWith("openlineage.tests") })
 }

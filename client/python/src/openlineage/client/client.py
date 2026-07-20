@@ -452,11 +452,40 @@ class OpenLineageClient:
             env_vars := self._collect_environment_variables()
         ):
             event.run.facets = event.run.facets or {}
+
+            # Vars the client was configured to collect from the environment
+            client_collected_env_vars = [
+                environment_variables_run.EnvironmentVariable(name=name, value=value)
+                for name, value in env_vars.items()
+            ]
+
+            # Vars already provided in the event
+            event_env_vars: list[environment_variables_run.EnvironmentVariable] = []
+            current_env_vars_facet = event.run.facets.get("environmentVariables")
+            if isinstance(current_env_vars_facet, environment_variables_run.EnvironmentVariablesRunFacet):
+                event_env_vars = current_env_vars_facet.environmentVariables or []
+
+            # Event-supplied vars take precedence; skip client vars that would overwrite them
+            event_env_vars_by_name = {ev.name: ev for ev in event_env_vars}
+            additional_env_vars = []
+            for client_env_var in client_collected_env_vars:
+                if client_env_var.name in event_env_vars_by_name:
+                    event_env_var_value = event_env_vars_by_name[client_env_var.name].value
+                    if client_env_var.value != event_env_var_value:
+                        log.warning(
+                            "Environment variable `%s` is already present in the event with value `%s`, "
+                            "but the OpenLineage client wanted to set it to `%s`. "
+                            "Keeping the event-supplied value `%s`.",
+                            client_env_var.name,
+                            event_env_var_value,
+                            client_env_var.value,
+                            event_env_var_value,
+                        )
+                else:
+                    additional_env_vars.append(client_env_var)
+
             event.run.facets["environmentVariables"] = environment_variables_run.EnvironmentVariablesRunFacet(
-                environmentVariables=[
-                    environment_variables_run.EnvironmentVariable(name=name, value=value)
-                    for name, value in env_vars.items()
-                ]
+                environmentVariables=event_env_vars + additional_env_vars
             )
         return event
 
@@ -526,7 +555,7 @@ class OpenLineageClient:
         """
 
         # Get tags from the facet that will not be updated (Do not have the same key as a user tag)
-        user_tag_keys = [tag.key for tag in user_tags]
+        user_tag_keys = [tag.key.lower() for tag in user_tags]
         keep_tags = []
         if tags_facet.tags is not None:
             keep_tags = [tag for tag in tags_facet.tags if tag.key.lower() not in user_tag_keys]
@@ -538,8 +567,8 @@ class OpenLineageClient:
             facet_tag_keys = {tag.key.lower(): tag.key for tag in tags_facet.tags}
 
         for user_tag in user_tags:
-            if user_tag.key in facet_tag_keys:
-                facet_tag_key = facet_tag_keys[user_tag.key]
+            if user_tag.key.lower() in facet_tag_keys:
+                facet_tag_key = facet_tag_keys[user_tag.key.lower()]
                 if user_tag.source == "USER":
                     log.info("Overriding integration-supplied tag `%s` with user-supplied tag", facet_tag_key)
                 user_tag.key = facet_tag_key

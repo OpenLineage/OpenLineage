@@ -8,10 +8,10 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,10 +65,10 @@ public class IcebergHandler implements CatalogHandler {
   @Override
   public boolean hasClasses() {
     try {
-      IcebergHandler.class.getClassLoader().loadClass("org.apache.iceberg.catalog.Catalog");
+      IcebergHandler.class.getClassLoader().loadClass("org.apache.iceberg.spark.SparkCatalog");
       return true;
-    } catch (Exception e) {
-      log.debug("The iceberg catalog is not present");
+    } catch (NoClassDefFoundError | Exception e) {
+      log.debug("The iceberg spark catalog is not present");
     }
     return false;
   }

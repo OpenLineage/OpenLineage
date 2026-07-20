@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -115,5 +116,10 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
     }
     builder.add(new JdbcColumnLineageVisitor(context));
     return builder.build();
+  }
+
+  @Override
+  public List<CatalogHandler> getCatalogHandlers(OpenLineageContext context) {
+    return DefaultCatalogHandlers.list(context);
   }
 }

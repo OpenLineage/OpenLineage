@@ -12,17 +12,17 @@ plugins {
     id 'signing'
     id "com.adarshr.test-logger" version "4.0.0"
     id 'com.diffplug.spotless' version '7.0.2'
-    id "com.gradleup.shadow" version "9.4.2"
+    id "com.gradleup.shadow" version "9.4.3"
     id "pmd"
     id "io.freefair.lombok" version "9.5.0"
-    id "com.github.gmazzo.buildconfig" version "6.0.9"
+    id "com.github.gmazzo.buildconfig" version "6.0.10"
 }
 
 ext {
     projectDescription = "S3 OpenLineage transport library"
-    s3MockVersion = "5.0.0"
+    s3MockVersion = "5.1.0"
     testcontainersVersion = "2.0.5"
-    awssdkVersion = "2.45.1"
+    awssdkVersion = "2.46.21"
 }
 
 sourceSets {
@@ -47,10 +47,10 @@ dependencies {
 }
 
 shadowJar {
-    relocate "software.amazon", "io.openlineage.client.shaded.software.amazon"
-    relocate "org.apache", "io.openlineage.client.shaded.org.apache"
-    relocate "org.reactivestreams", "io.openlineage.client.shaded.org.reactivestreams"
-    relocate "org.slf4j", "io.openlineage.client.shaded.org.slf4j"
+    relocate "software.amazon", "io.openlineage.client.transports.s3.shaded.software.amazon"
+    relocate "org.apache", "io.openlineage.client.transports.s3.shaded.org.apache"
+    relocate "org.reactivestreams", "io.openlineage.client.transports.s3.shaded.org.reactivestreams"
+    relocate "org.slf4j", "io.openlineage.client.transports.s3.shaded.org.slf4j"
 }
 
 apply from: '../transports.build.gradle'

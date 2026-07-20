@@ -143,6 +143,12 @@
   classes:
     - class_name: JobTypeJobFacet
       redact_fields: []
+    - class_name: EmissionPattern
+      redact_fields: []
+    - class_name: EventCompleteness
+      redact_fields: []
+    - class_name: EventTrigger
+      redact_fields: []
 - module: lifecycle_state_change_dataset
   classes:
     - class_name: LifecycleStateChange

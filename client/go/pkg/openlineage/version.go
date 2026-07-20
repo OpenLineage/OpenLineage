@@ -7,4 +7,4 @@ package openlineage
 
 // Version is the current version of the OpenLineage Go client.
 // This value is updated automatically during releases.
-const Version = "1.49.0-SNAPSHOT"
+const Version = "1.52.0-SNAPSHOT"

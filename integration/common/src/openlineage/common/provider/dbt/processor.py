@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections
 import datetime
+import json
 import logging
 from abc import abstractmethod
 from collections.abc import Sequence
@@ -34,6 +35,8 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
+    DbtModelConfig,
+    DbtModelDatasetFacet,
     DbtNodeJobFacet,
     DbtRunRunFacet,
     DbtVersionRunFacet,
@@ -351,10 +354,8 @@ class DbtArtifactProcessor:
                 job_facets["sql"] = sql_job.SQLJobFacet(query=sql, dialect=self.extract_dialect())
 
             run_facets: dict[str, RunFacet] = {}
-            if tags := output_node.get("tags", None):
-                run_facets["tags"] = tags_run.TagsRunFacet(
-                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-                )
+            if tags_facet := self._build_tags_run_facet(output_node.get("tags"), output_node.get("meta")):
+                run_facets["tags"] = tags_facet
 
             output_dataset = self.node_to_output_dataset(
                 ModelNode(
@@ -436,10 +437,8 @@ class DbtArtifactProcessor:
             }
 
             run_facets: dict[str, RunFacet] = {}
-            if tags := node.get("tags", None):
-                run_facets["tags"] = tags_run.TagsRunFacet(
-                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-                )
+            if tags_facet := self._build_tags_run_facet(node.get("tags"), node.get("meta")):
+                run_facets["tags"] = tags_facet
 
             run_id = str(generate_new_uuid())
             dataset_facets: dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
@@ -498,10 +497,8 @@ class DbtArtifactProcessor:
             run_facets_per_test: dict[str, RunFacet] = {
                 "test": test_run.TestRunFacet(tests=[test_obj]),
             }
-            if tags := test_node.get("tags", None):
-                run_facets_per_test["tags"] = tags_run.TagsRunFacet(
-                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-                )
+            if tags_facet := self._build_tags_run_facet(test_node.get("tags"), test_node.get("meta")):
+                run_facets_per_test["tags"] = tags_facet
 
             job_facets_per_test: dict[str, JobFacet] = {
                 "jobType": job_type_job.JobTypeJobFacet(
@@ -817,6 +814,9 @@ class DbtArtifactProcessor:
                 facets["ownership"] = ownership_dataset.OwnershipDatasetFacet(
                     owners=[ownership_dataset.Owner(name=name) for name in names]
                 )
+
+            if dbt_model_facet := self._create_dbt_model_dataset_facet(node):
+                facets["dbt_model"] = dbt_model_facet
         else:
             facets = {}
         if node.type == "source":
@@ -833,6 +833,53 @@ class DbtArtifactProcessor:
             facets,
             input_facets,
         )
+
+    def _create_dbt_model_dataset_facet(self, node: ModelNode) -> DbtModelDatasetFacet | None:
+        """Build a DbtModelDatasetFacet from a dbt manifest node's resolved ``config``.
+
+        Reads ``materialized``/``access``/``owner``/``group`` from ``node.metadata_node["config"]``.
+        Returns ``None`` when the node carries none of them, so we don't attach an empty facet.
+        The node's ``meta`` map is emitted separately as tags (see ``_build_tags_run_facet``).
+        """
+        raw_config = node.metadata_node.get("config") or {}
+        model_config = DbtModelConfig(
+            materialized=raw_config.get("materialized") or None,
+            access=raw_config.get("access") or None,
+            owner=raw_config.get("owner") or None,
+            group=raw_config.get("group") or None,
+        )
+        if not any(attr.astuple(model_config)):
+            return None
+
+        return DbtModelDatasetFacet(config=model_config)
+
+    @staticmethod
+    def _meta_tag_value(value: Any) -> str:
+        """Render a dbt ``meta`` value as a tag value string.
+
+        Booleans use dbt's lowercase ``true``/``false`` (matching how plain dbt tags are emitted),
+        other scalars are stringified, and nested structures fall back to compact JSON.
+        """
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        if isinstance(value, str):
+            return value
+        if isinstance(value, (int, float)):
+            return str(value)
+        return json.dumps(value)
+
+    def _build_tags_run_facet(self, tags: list | None, meta: dict | None) -> tags_run.TagsRunFacet | None:
+        """Build a TagsRunFacet from a dbt node's ``tags`` and ``meta``.
+
+        Plain dbt ``tags`` keep ``source="DBT"`` and value ``"true"``; each ``meta`` entry becomes a
+        key/value tag with ``source="DBT_META"``. Returns ``None`` when there is nothing to emit.
+        """
+        fields = [tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in (tags or [])]
+        fields += [
+            tags_run.TagsRunFacetFields(key=key, value=self._meta_tag_value(value), source="DBT_META")
+            for key, value in (meta or {}).items()
+        ]
+        return tags_run.TagsRunFacet(tags=fields) if fields else None
 
     @staticmethod
     def extract_metadata_fields(columns: list[dict]) -> list[schema_dataset.SchemaDatasetFacetFields]:
@@ -922,9 +969,9 @@ class DbtArtifactProcessor:
                 SparkConnectionMethod.HTTP.value,
                 SparkConnectionMethod.ODBC.value,
             ]:
-                port = "443"
+                port = ":443"
             elif profile["method"] == SparkConnectionMethod.THRIFT.value:
-                port = "10001"
+                port = ":10001"
 
             if profile["method"] in SparkConnectionMethod.methods():
                 return f"spark://{profile['host']}{port}"

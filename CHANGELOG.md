@@ -1,6 +1,80 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.48.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.51.0...HEAD)
+
+## [1.51.0](https://github.com/OpenLineage/OpenLineage/compare/1.50.0...1.51.0)
+
+### Added
+
+* **Dbt: Capture dbt model meta/config values** [`#4653`](https://github.com/OpenLineage/OpenLineage/pull/4653) [@mobuchowski](https://github.com/mobuchowski)
+  *Capture per-model `config` values (e.g. `materialized`, `access`, `owner`, `group`) and the user-defined `meta` map from the dbt manifest into a new `dbt_model` dataset facet, attached in both the legacy/local and structured-logs dbt processors.*
+* **Spark: Add support for open source Unity Catalog (Spark 4.0)** [`#3674`](https://github.com/OpenLineage/OpenLineage/pull/3674) [@arturowczarek](https://github.com/arturowczarek)
+  *Add a catalog handler for the open source Unity Catalog's `UCSingleCatalog` Spark catalog so output dataset facets are produced when using OSS Unity Catalog, which cannot reuse the existing `DeltaHandler` implementation.*
+* **Spec: Extend jobTypeJobFacet to capture event emission lifecycle** [`#4592`](https://github.com/OpenLineage/OpenLineage/pull/4592) [@jakub-moravec](https://github.com/jakub-moravec)
+  *Extend the Job Type facet so producers, particularly streaming producers that emit a single event covering a time period rather than START/RUNNING/COMPLETE events, can document the lifecycle of the OpenLineage events consumers should expect.*
+
+### Fixed
+
+* **Spark: Fix missing output lineage for insertInto with append mode** [`#4676`](https://github.com/OpenLineage/OpenLineage/pull/4676) [@mishrasangeeta87](https://github.com/mishrasangeeta87)
+  *Fix a bug where `df.write.mode("append").insertInto(table)` did not emit an output dataset, by extracting the target table directly from the `AppendData` logical plan, aligning append-mode handling with overwrite-mode.*
+* **Spark: Fix Unity Catalog symlink metadata on Databricks** [`#4660`](https://github.com/OpenLineage/OpenLineage/pull/4660) [@mishrasangeeta87](https://github.com/mishrasangeeta87)
+  *Build Databricks Unity Catalog table symlinks using the fully qualified table name and a `unity-catalog` namespace instead of one derived from the underlying storage path, giving lineage consumers stable, catalog-qualified identifiers.*
+* **Client/Java: Change shaded paths to avoid conflicts when using composite transport** [`#4652`](https://github.com/OpenLineage/OpenLineage/pull/4652) [@tnazarew](https://github.com/tnazarew)
+  *Relocate shaded classes per-transport (e.g. `io.openlineage.client.transports.gcs.shaded.x`) instead of to a single shared shaded package, fixing Google library version conflicts when combining `gcs` and `gcplineage` transports in a composite transport.*
+* **Client/Java: Normalize abfs/wasb to abfss/wasbs in ObjectStorageDatasetExtractor** [`#4661`](https://github.com/OpenLineage/OpenLineage/pull/4661) [@arturowczarek](https://github.com/arturowczarek)
+  *Treat `abfs://` and `wasb://` URIs the same as their TLS variants (`abfss`/`wasbs`) when deriving the object-storage namespace, since they point at the same underlying files and only differ in transport.*
+* **Client/Java: Stop swallowing actual cause when using CompositeTransport** [`#4666`](https://github.com/OpenLineage/OpenLineage/pull/4666) [@mobuchowski](https://github.com/mobuchowski)
+  *Preserve the underlying exception instead of only its message when a `CompositeTransport` emit fails, so the real cause is visible instead of being lost.*
+* **Common: Handle trailing command options** [`#4624`](https://github.com/OpenLineage/OpenLineage/pull/4624) [@hcthakur2004](https://github.com/hcthakur2004)
+  *Avoid indexing past the end of command-line arguments when a trailing option has no value.*
+* **Common: Preserve nullable chain input** [`#4627`](https://github.com/OpenLineage/OpenLineage/pull/4627) [@hcthakur2004](https://github.com/hcthakur2004)
+  *Avoid mutating the caller-provided chain in `get_from_nullable_chain`, keeping it reusable after lookup.*
+* **GreatExpectations: Preserve datasource URL ports** [`#4679`](https://github.com/OpenLineage/OpenLineage/pull/4679) [@hcthakur2004](https://github.com/hcthakur2004)
+  *Preserve the port on a datasource URL when Great Expectations strips credentials from it.*
+* **Python: Isolate Datadog config defaults** [`#4586`](https://github.com/OpenLineage/OpenLineage/pull/4586) [@hcthakur2004](https://github.com/hcthakur2004)
+  *Replace shared, mutable Datadog config dictionary defaults with per-instance factories so retry and async transport rule defaults aren't accidentally shared across instances.*
+* **Python: Support file URI transport paths** [`#4656`](https://github.com/OpenLineage/OpenLineage/pull/4656) [@hcthakur2004](https://github.com/hcthakur2004)
+  *Normalize local `file://` URIs before opening file transport paths so events can be appended through a `file://` log path.*
+* **Spark: Fix Iceberg handler detection to probe SparkCatalog instead of Catalog** [`#4665`](https://github.com/OpenLineage/OpenLineage/pull/4665) [@arturowczarek](https://github.com/arturowczarek)
+  *Detect Iceberg by the presence of the `iceberg-spark` `SparkCatalog` class rather than `iceberg-core`'s `Catalog`, so the Iceberg handler no longer activates in environments where `iceberg-core` is on the classpath without `iceberg-spark`.*
+
+## [1.50.0](https://github.com/OpenLineage/OpenLineage/compare/1.49.0...1.50.0)
+
+### Added
+
+* **Client/Java: Add timeout-aware run event emission support** [`#4613`](https://github.com/OpenLineage/OpenLineage/pull/4613) [@jsingh-yelp](https://github.com/jsingh-yelp)
+  *Add a timeout-aware `emit` overload to the Java client and `Transport` API, allowing callers to provide a bounded wait when emitting `RunEvent`s; Kafka transport uses the timeout to wait for producer acknowledgement before returning.*
+* **Flink: Add support for OpenLineage events in detached Flink Session Mode** [`#4596`](https://github.com/OpenLineage/OpenLineage/pull/4596) [@jsingh-yelp](https://github.com/jsingh-yelp)
+  *Enable full OpenLineage lifecycle events (RUNNING, COMPLETE, FAIL) for Flink jobs submitted in detached Session Mode by introducing `OpenLineageDetachedJobStatusChangedListener` that initialises the Flink job ID from the REST API, bypassing the missing `JobCreatedEvent` on the JobManager side.*
+
+### Fixed
+
+* **Flink: Emit ABORT event for canceled jobs instead of FAIL** [`#4615`](https://github.com/OpenLineage/OpenLineage/pull/4615) [@wangxiaojing](https://github.com/wangxiaojing)
+  *Map `JobStatus.CANCELED` to `EventType.ABORT` in Flink 2 job status handling; previously all non-FINISHED terminal statuses were mapped to FAIL, causing user-canceled jobs to appear as failures in downstream OpenLineage consumers.*
+* **Python: Fix env var facet overwriting event-supplied values** [`#4635`](https://github.com/OpenLineage/OpenLineage/pull/4635) [@kacpermuda](https://github.com/kacpermuda)
+  *Merge client-configured environment variables into any `environmentVariables` facet already set by the producer instead of replacing it; event-supplied values take precedence and a warning is logged on conflict.*
+* **Spark: Fix missing Iceberg scan report facet using scanReportSupplier** [`#4633`](https://github.com/OpenLineage/OpenLineage/pull/4633) [@fm100](https://github.com/fm100)
+  *Fix missing `IcebergScanReport` input dataset facet in CTAS/RTAS queries by reading the report directly from `scanReportSupplier` when available, rather than relying on `OpenLineageMetricsReporter` which is registered after the scan has already occurred.*
+
+## [1.49.0](https://github.com/OpenLineage/OpenLineage/compare/1.48.0...1.49.0)
+
+### Added
+
+* **Java: Add CassandraJdbcExtractor** [`#4610`](https://github.com/OpenLineage/OpenLineage/pull/4610) [@matveeysv](https://github.com/matveeysv)
+  *Add `CassandraJdbcExtractor` to parse Cassandra JDBC URLs according to the driver specification, enabling lineage tracking for Cassandra databases via JDBC.*
+
+### Fixed
+
+* **dbt: Add missing column lineage for structured log processor** [`#4599`](https://github.com/OpenLineage/OpenLineage/pull/4599) [@fm100](https://github.com/fm100)
+  *Fix missing column lineage facet in `DbtStructuredLogsProcessor` when using `--consume-structured-logs` option by attaching the column lineage facet to the output dataset on node finished events.*
+* **dbt: Use fully qualified job ID for externalQuery run facet for BigQuery** [`#4591`](https://github.com/OpenLineage/OpenLineage/pull/4591) [@fm100](https://github.com/fm100)
+  *Use a fully qualified job ID (with project ID and location) for the `externalQueryId` in the `externalQuery` run facet when using the dbt-bigquery adapter; also adds `externalQuery` run facet support when using `--consume-structured-logs`.*
+* **Spark: Fix GCP Dataproc jobId when job has multiple attempts** [`#4598`](https://github.com/OpenLineage/OpenLineage/pull/4598) [@codelixir](https://github.com/codelixir)
+  *Exclude the `dataproc_job_attempt_timestamp` tag prefix when reading the job ID from Yarn tags in the GCP Dataproc facet, preventing the attempt timestamp from being reported as the job ID on retried jobs.*
+* **Spark: Fix Lakehouse detection mechanism** [`#4611`](https://github.com/OpenLineage/OpenLineage/pull/4611) [@tnazarew](https://github.com/tnazarew)
+  *Fix incorrect Spark configuration properties used in the Lakehouse Hive Catalog detection logic and extend catalog detection to `V2SessionCatalogHandler` used by DatasetBuilders.*
+* **Spark: Fix Snowflake column lineage for quoted identifiers** [`#4602`](https://github.com/OpenLineage/OpenLineage/pull/4602) [@mrpalash-amz](https://github.com/mrpalash-amz)
+  *Fix missing column lineage when the Snowflake Spark connector uses quoted identifiers (e.g. in AWS Glue ETL with `dbtable` path) by applying `stripQuotes()` normalization on both sides of identifier comparisons in `ColumnLevelLineageBuilder` and `SqlCollector`.*
 
 ## [1.48.0](https://github.com/OpenLineage/OpenLineage/compare/1.47.1...1.48.0)
 

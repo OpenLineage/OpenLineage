@@ -12,14 +12,14 @@ plugins {
     id 'signing'
     id 'com.adarshr.test-logger' version '4.0.0'
     id 'com.diffplug.spotless' version '7.0.2'
-    id 'com.gradleup.shadow' version '9.4.2'
+    id 'com.gradleup.shadow' version '9.4.3'
     id 'pmd'
     id 'io.freefair.lombok' version '9.5.0'
 }
 
 ext {
     projectDescription = 'DataZone OpenLineage transport library'
-    awsSdkVersion = '2.45.1'
+    awsSdkVersion = '2.46.21'
 }
 
 dependencies {
@@ -30,8 +30,8 @@ dependencies {
 }
 
 shadowJar {
-    relocate 'software.amazon', 'io.openlineage.client.shaded.software.amazon'
-    relocate 'org.apache', 'io.openlineage.client.shaded.org.apache'
+    relocate 'software.amazon', 'io.openlineage.client.transports.datazone.shaded.software.amazon'
+    relocate 'org.apache', 'io.openlineage.client.transports.datazone.shaded.org.apache'
     exclude 'org.slf4j'
 }
 

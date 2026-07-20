@@ -74,6 +74,22 @@ def test_client_with_file_transport_append_emits() -> None:
             assert_test_events(log_line, test_event)
 
 
+def test_client_with_file_transport_append_emits_to_file_uri(tmp_path) -> None:
+    log_file_path = tmp_path / "events.jsonl"
+    config = FileConfig(append=True, log_file_path=log_file_path.as_uri())
+    transport = FileTransport(config)
+
+    client = OpenLineageClient(transport=transport)
+
+    test_event_set = emit_test_events(client)
+
+    log_lines = log_file_path.read_text().splitlines()
+    for i, raw_log_line in enumerate(log_lines):
+        log_line = json.loads(raw_log_line)
+        test_event = test_event_set[i]
+        assert_test_events(log_line, test_event)
+
+
 def test_client_with_file_transport_write_emits() -> None:
     log_dir = tempfile.TemporaryDirectory()
 

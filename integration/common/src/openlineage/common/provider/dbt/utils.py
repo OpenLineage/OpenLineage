@@ -9,7 +9,7 @@ from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, R
 from openlineage.common.provider.dbt.facets import ParentRunMetadata
 from openlineage.common.utils import get_from_nullable_chain, parse_single_arg
 
-__version__ = "1.49.0"
+__version__ = "1.52.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 
 # for which command structured logs consumption is implemented
@@ -84,8 +84,11 @@ def get_dbt_profiles_dir(command: list[str]) -> str:
     """
     from_command = parse_single_arg(command, ["--profiles-dir"])
     from_env_var = os.getenv("DBT_PROFILES_DIR")
-    default_dir = "~/.dbt/"
-    current_working_directory = os.getcwd()
+    default_dir = os.path.expanduser("~/.dbt/")
+    # dbt only falls back to the working directory when it actually holds a
+    # profiles.yml, otherwise it uses default_dir.
+    cwd = os.getcwd()
+    current_working_directory = cwd if os.path.exists(os.path.join(cwd, "profiles.yml")) else None
     return from_command or from_env_var or current_working_directory or default_dir
 
 

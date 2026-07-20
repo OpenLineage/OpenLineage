@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CosmosHandler;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.junit.jupiter.api.Test;
 

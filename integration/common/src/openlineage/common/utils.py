@@ -26,10 +26,8 @@ def get_from_nullable_chain(source: Any, chain: list[str]) -> Any | None:
     if not result:
         return None
     """
-    chain.reverse()
     try:
-        while chain:
-            next_key = chain.pop()
+        for next_key in chain:
             if isinstance(source, dict):
                 source = source.get(next_key)
             else:
@@ -54,7 +52,7 @@ def parse_single_arg(args, keys: list[str], default=None) -> str | None:
     """
     for key in keys:
         for i, arg in enumerate(args):
-            if arg == key and len(args) > i:
+            if arg == key and i + 1 < len(args):
                 return args[i + 1]
             if arg.startswith(f"{key}="):
                 return arg.split("=", 1)[1]

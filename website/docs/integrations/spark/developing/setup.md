@@ -9,10 +9,10 @@ The integration expects `openlineage-java`, `spark-extension-interfaces` and `op
 your local maven repository, so before building/testing the Spark integration you need to first build and publish
 the required dependencies.
 
-You can do it using the convenience script:
+You can do it using [Task](https://taskfile.dev/installation/):
 
 ```sh
-./buildDependencies.sh
+task setup
 ```
 
 ## Testing
@@ -20,17 +20,17 @@ You can do it using the convenience script:
 To run the tests, from the current directory run:
 
 ```sh
-./gradlew test
+task test
 ```
 
-To run the integration tests, from the current directory run:
+To run the integration tests (requires Docker), from the current directory run:
 
 ```sh
-./gradlew integrationTest
+task integration-test
 ```
 
 ## Build jar
 
 ```sh
-./gradlew shadowJar
+task jar
 ```
