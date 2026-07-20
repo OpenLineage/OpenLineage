@@ -7,6 +7,7 @@ from openlineage.common.utils import (
     add_command_line_arg,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
+    has_command_line_option,
     parse_multiple_args,
     parse_single_arg,
     remove_command_line_option,
@@ -166,6 +167,42 @@ def test_add_or_replace_command_line_option(command_line, option, replace_option
 def test_remove_command_line_option(command_line, command_option, expected_command_line):
     actual_command_line = remove_command_line_option(command_line, command_option)
     assert actual_command_line == expected_command_line
+
+
+@pytest.mark.parametrize(
+    "command_line, command_option, expected_command_line",
+    [
+        (
+            ["dbt", "run", "--openlineage-dbt-job-name", "myjob", "--select", "orders"],
+            "--openlineage-dbt-job-name",
+            ["dbt", "run", "--select", "orders"],
+        ),
+        (
+            ["dbt", "run", "--openlineage-dbt-job-name=myjob", "--select", "orders"],
+            "--openlineage-dbt-job-name",
+            ["dbt", "run", "--select", "orders"],
+        ),
+    ],
+    ids=["space_form", "equals_form"],
+)
+def test_remove_command_line_option_with_value(command_line, command_option, expected_command_line):
+    # parse_single_arg accepts both `{key} {value}` and `{key}={value}`, so the
+    # matching removal must strip the option in either form.
+    actual_command_line = remove_command_line_option(command_line, command_option, remove_value=True)
+    assert actual_command_line == expected_command_line
+
+
+@pytest.mark.parametrize(
+    "command_line, command_option, expected",
+    [
+        (["dbt", "run", "--openlineage-dbt-job-name", "myjob"], "--openlineage-dbt-job-name", True),
+        (["dbt", "run", "--openlineage-dbt-job-name=myjob"], "--openlineage-dbt-job-name", True),
+        (["dbt", "run", "--select", "orders"], "--openlineage-dbt-job-name", False),
+    ],
+    ids=["space_form", "equals_form", "absent"],
+)
+def test_has_command_line_option(command_line, command_option, expected):
+    assert has_command_line_option(command_line, command_option) is expected
 
 
 @pytest.mark.parametrize(
