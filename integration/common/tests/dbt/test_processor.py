@@ -417,6 +417,21 @@ class TestParseSingularTests:
         assert assertion.success is True
         assert assertion.column is None
 
+    def test_seed_parent_resolves_to_alias_not_name(self, processor):
+        """A seed materializes as a real table addressed by its alias, like a
+        model -- only true sources are addressed by their logical name."""
+        manifest_nodes = {
+            "seed.project.raw_customers": {
+                "name": "raw_customers",
+                "alias": "customers_physical",
+                "database": "db",
+                "schema": "public",
+            },
+        }
+        parent_map = {"test.project.assert_seed": ["seed.project.raw_customers"]}
+        inputs = processor._resolve_test_inputs("test.project.assert_seed", parent_map, manifest_nodes)
+        assert [i.name for i in inputs] == ["db.public.customers_physical"]
+
 
 class TestParseFailures:
     """Tests for failure-count extraction in parse_assertions (generic tests)."""
