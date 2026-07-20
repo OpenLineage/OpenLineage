@@ -108,6 +108,7 @@ impl Visit for TableFactor {
                 lateral: _,
                 subquery,
                 alias,
+                sample: _,
             } => {
                 context.push_frame();
                 subquery.visit(context)?;
@@ -622,13 +623,15 @@ impl Visit for Statement {
                     TableObject::TableFunction(func) => {
                         func.visit(context)?;
                     }
+                    TableObject::TableQuery(_) => {}
                 }
             }
-            Statement::Merge { table, source, .. } => {
-                if let Some(table_name) = get_table_name_from_table_factor(table, &*context) {
+            Statement::Merge(merge) => {
+                if let Some(table_name) = get_table_name_from_table_factor(&merge.table, &*context)
+                {
                     context.add_output(table_name);
                 }
-                source.visit(context)?;
+                merge.source.visit(context)?;
             }
             Statement::CreateTable(ct) => {
                 if let Some(query) = &ct.query {

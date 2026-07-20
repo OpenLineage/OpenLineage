@@ -12,7 +12,7 @@ use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use rust_impl::{get_generic_dialect, parse_multiple_statements};
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct QuoteStyle(rust_impl::QuoteStyle);
 
@@ -55,11 +55,11 @@ impl QuoteStyle {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DbTableMeta(rust_impl::DbTableMeta);
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Ident(rust_impl::ident_wrapper::IdentWrapper);
 
@@ -144,7 +144,7 @@ impl DbTableMeta {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ColumnMeta(rust_impl::ColumnMeta);
 
@@ -185,7 +185,7 @@ impl ColumnMeta {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ColumnLineage {
     pub descendant: ColumnMeta,
@@ -268,7 +268,7 @@ impl ColumnLineage {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExtractionError(rust_impl::ExtractionError);
 
@@ -340,7 +340,7 @@ impl ExtractionError {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SqlMeta {
     #[pyo3(get)]
