@@ -82,5 +82,6 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
                 profile_name=self.profile["name"],
                 dbt_runtime="cloud",
                 account_id=self.account_id,
+                full_refresh=self.full_refresh,
             )
         }

@@ -41,14 +41,12 @@ def deep_merge_dicts(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[Any, 
 
     This function merges two dictionaries while handling nested dictionaries.
     For keys that exist in both dictionaries, the values from dict2 take precedence.
-    If a key exists in both dictionaries and the values are dictionaries themselves,
-    they are merged recursively.
-    This function merges only dictionaries. If key is of different type, e.g. list
-    it does not work properly.
+    Two values are merged recursively only when both of them are dictionaries;
+    otherwise the value from dict2 replaces the one from dict1.
     """
     merged = dict1.copy()
     for k, v in dict2.items():
-        if k in merged and isinstance(v, dict):
+        if k in merged and isinstance(v, dict) and isinstance(merged.get(k), dict):
             merged[k] = deep_merge_dicts(merged.get(k, {}), v)
         else:
             merged[k] = v
