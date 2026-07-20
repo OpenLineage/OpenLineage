@@ -51,6 +51,8 @@ class FlinkConfigParserTest {
       ConfigOptions.key("openlineage.flink.enableDetachedJobTracking")
           .booleanType()
           .noDefaultValue();
+  ConfigOption restApiBaseUrlOption =
+      ConfigOptions.key("openlineage.restApiBaseUrl").stringType().noDefaultValue();
 
   @BeforeEach
   void beforeEach() {
@@ -162,5 +164,15 @@ class FlinkConfigParserTest {
     configuration.set(enableDetachedJobTrackingOption, true);
     config = FlinkConfigParser.parse(configuration);
     assertThat(config.getEnableDetachedJobTracking()).isTrue();
+  }
+
+  @Test
+  void testRestApiBaseUrl() {
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getRestApiBaseUrl()).isNull();
+
+    configuration.set(restApiBaseUrlOption, "http://example-host:18081");
+    config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getRestApiBaseUrl()).isEqualTo("http://example-host:18081");
   }
 }
