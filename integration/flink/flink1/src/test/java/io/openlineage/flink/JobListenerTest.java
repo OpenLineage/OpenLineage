@@ -304,7 +304,10 @@ class JobListenerTest {
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(listenerConfiguration), eq(jobId), eq(JobTypeUtils.STREAMING), eq(transformations)))
+              eq(listenerConfiguration),
+              eq(jobId),
+              eq(JobTypeUtils.STREAMING),
+              eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
