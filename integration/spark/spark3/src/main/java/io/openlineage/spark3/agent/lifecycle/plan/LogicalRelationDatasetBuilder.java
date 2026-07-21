@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
-import org.apache.spark.sql.connector.catalog.CatalogManager;
+import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import scala.Option;
@@ -72,16 +72,24 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       return;
     }
 
-    CatalogManager catalogManager = context.getSparkSession().get().sessionState().catalogManager();
-    Optional.of(catalogManager.catalog(catalogName))
-        .filter(catalogPlugin -> catalogPlugin instanceof TableCatalog)
-        .map(TableCatalog.class::cast)
-        .ifPresent(
-            tableCatalog ->
-                CatalogUtils.addStorageAndCatalogFacets(
-                    context,
-                    tableCatalog,
-                    ScalaConversionUtils.fromMap(catalogTable.properties()),
-                    builder));
+    try {
+      // Spark 4.2 changed CatalogManager from a class to an interface. Invoke catalog reflectively
+      // so this module remains binary-compatible with both the Spark 3 and Spark 4 APIs.
+      Object catalogManager = context.getSparkSession().get().sessionState().catalogManager();
+      CatalogPlugin catalogPlugin =
+          (CatalogPlugin) MethodUtils.invokeMethod(catalogManager, "catalog", catalogName);
+      Optional.ofNullable(catalogPlugin)
+          .filter(plugin -> plugin instanceof TableCatalog)
+          .map(TableCatalog.class::cast)
+          .ifPresent(
+              tableCatalog ->
+                  CatalogUtils.addStorageAndCatalogFacets(
+                      context,
+                      tableCatalog,
+                      ScalaConversionUtils.fromMap(catalogTable.properties()),
+                      builder));
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      log.debug("Unable to retrieve catalog, cannot add catalog/storage facets", e);
+    }
   }
 }

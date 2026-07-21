@@ -46,6 +46,8 @@ import scala.collection.immutable.HashMap;
 // This test is disabled for Spark 4.x versions, as the LogicalPlan constructor has changed
 @DisabledIfSystemProperty(named = "spark.version", matches = "([4].*)")
 class LogicalPlanSerializerTest {
+  private static final int JDBC_RELATION_PARAMETER_COUNT = 4;
+  private static final int JDBC_RELATION_WITH_METRICS_PARAMETER_COUNT = 5;
   private static final String TEST_DATA = "test_data";
   private static final String NAME = "name";
   private static final String TEST = "test";
@@ -68,14 +70,12 @@ class LogicalPlanSerializerTest {
         ScalaConversionUtils.fromJavaMap(
             Collections.singletonMap("driver", Driver.class.getName()));
     JDBCRelation relation =
-        new JDBCRelation(
+        newJdbcRelation(
             new StructType(
                 new StructField[] {
                   new StructField(NAME, StringType$.MODULE$, false, Metadata.empty())
                 }),
-            new Partition[] {},
-            new JDBCOptions(jdbcUrl, sparkTableName, map),
-            mock(SparkSession.class));
+            new JDBCOptions(jdbcUrl, sparkTableName, map));
 
     LogicalRelation instance;
     Aggregate instanceAggregate;
@@ -239,5 +239,23 @@ class LogicalPlanSerializerTest {
         .satisfies(new MatchesMapRecursively(expectedCommandNode, Collections.singleton(EXPR_ID)));
     assertThat(hadoopFSActualNode)
         .satisfies(new MatchesMapRecursively(expectedHadoopFSNode, Collections.singleton(EXPR_ID)));
+  }
+
+  private JDBCRelation newJdbcRelation(StructType schema, JDBCOptions options)
+      throws InvocationTargetException, InstantiationException, IllegalAccessException {
+    Constructor<?> constructor = JDBCRelation.class.getDeclaredConstructors()[0];
+    Object[] parameters;
+    if (constructor.getParameterCount() == JDBC_RELATION_PARAMETER_COUNT) {
+      parameters = new Object[] {schema, new Partition[] {}, options, mock(SparkSession.class)};
+    } else if (constructor.getParameterCount() == JDBC_RELATION_WITH_METRICS_PARAMETER_COUNT) {
+      parameters =
+          new Object[] {
+            schema, new Partition[] {}, options, new HashMap<>(), mock(SparkSession.class)
+          };
+    } else {
+      throw new IllegalStateException(
+          "Unsupported JDBCRelation constructor: " + constructor.toGenericString());
+    }
+    return (JDBCRelation) constructor.newInstance(parameters);
   }
 }
