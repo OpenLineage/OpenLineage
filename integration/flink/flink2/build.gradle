@@ -73,7 +73,7 @@ dependencies {
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
-    testImplementation 'org.mock-server:mockserver-client-java:7.4.0'
+    testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.3.0'
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
