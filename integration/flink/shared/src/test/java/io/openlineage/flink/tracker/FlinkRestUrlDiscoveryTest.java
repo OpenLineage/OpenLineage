@@ -48,7 +48,8 @@ class FlinkRestUrlDiscoveryTest {
 
   @Test
   void testDiscoverViaMiniDispatcherReturnsEmptyWhenUnavailable() {
-    Optional<String> discovered = FlinkRestUrlDiscovery.discoverViaMiniDispatcherRestEndpoint("localhost");
+    Optional<String> discovered =
+        FlinkRestUrlDiscovery.discoverViaMiniDispatcherRestEndpoint("localhost");
 
     assertThat(discovered).isEmpty();
   }

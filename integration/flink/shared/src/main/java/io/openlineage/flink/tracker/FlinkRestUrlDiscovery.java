@@ -29,8 +29,8 @@ import org.apache.flink.configuration.RestOptions;
 /**
  * Utility for discovering the actual Flink REST API URL at runtime.
  *
- * <p>In Flink Application mode with host network (Kubernetes), the actual bound REST port of
- * {@code MiniDispatcherRestEndpoint} may differ from the configured {@code rest.port}. Discovery
+ * <p>In Flink Application mode with host network (Kubernetes), the actual bound REST port of {@code
+ * MiniDispatcherRestEndpoint} may differ from the configured {@code rest.port}. Discovery
  * strategies (tried in order):
  *
  * <ol>
@@ -63,7 +63,8 @@ public class FlinkRestUrlDiscovery {
 
   private FlinkRestUrlDiscovery() {}
 
-  public static String resolveJobsApiUrl(ReadableConfig flinkConfig, String restApiBaseUrlOverride) {
+  public static String resolveJobsApiUrl(
+      ReadableConfig flinkConfig, String restApiBaseUrlOverride) {
     if (restApiBaseUrlOverride != null && !restApiBaseUrlOverride.isEmpty()) {
       String base = restApiBaseUrlOverride.replaceAll("/+$", "");
       log.info("Using configured OpenLineage restApiBaseUrl: {}", base);
