@@ -65,6 +65,7 @@ dependencies {
     testImplementation "commons-codec:commons-codec:1.22.0"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
