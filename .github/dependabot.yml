@@ -65,7 +65,6 @@ updates:
       - dependency-name: "org.junit:junit-bom"
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.scala-lang:scala-library"
-        update-types: ["version-update:semver-major"]
     groups:
       integration/flink:
         patterns:
