@@ -83,6 +83,7 @@ dependencies {
     testFixturesApi(platform("org.junit:junit-bom:${junit5Version}"))
     testFixturesApi("org.junit.jupiter:junit-jupiter")
     testFixturesApi("org.junit.jupiter:junit-jupiter-params")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testFixturesApi("org.junit-pioneer:junit-pioneer:1.9.1")
     testFixturesApi("org.postgresql:postgresql:${postgresqlVersion}")
     testFixturesApi("org.xerial:sqlite-jdbc:${sqlLiteVersion}")

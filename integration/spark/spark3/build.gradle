@@ -72,6 +72,7 @@ dependencies {
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testFixturesApi("org.junit-pioneer:junit-pioneer:1.9.1")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
