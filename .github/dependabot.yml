@@ -56,6 +56,8 @@ updates:
       - dependency-name: "plugin.serialization"
       - dependency-name: "org.jetbrains.kotlinx:kotlinx-serialization-json"
       - dependency-name: "org.mock-server:mockserver-client-java"
+      - dependency-name: "org.apache.kafka:kafka-clients"
+      - dependency-name: "org.apache.flink:flink-connector-kafka"
       - dependency-name: "org.junit.jupiter:junit-jupiter"
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.junit.jupiter:junit-jupiter-params"
