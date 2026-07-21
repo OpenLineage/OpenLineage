@@ -51,6 +51,10 @@ class FlinkConfigParserTest {
       ConfigOptions.key("openlineage.flink.enableDetachedJobTracking")
           .booleanType()
           .noDefaultValue();
+  ConfigOption disableCheckpointTrackingOption =
+      ConfigOptions.key("openlineage.flink.disableCheckpointTracking")
+          .booleanType()
+          .noDefaultValue();
 
   @BeforeEach
   void beforeEach() {
@@ -162,5 +166,15 @@ class FlinkConfigParserTest {
     configuration.set(enableDetachedJobTrackingOption, true);
     config = FlinkConfigParser.parse(configuration);
     assertThat(config.getEnableDetachedJobTracking()).isTrue();
+  }
+
+  @Test
+  void testDisableCheckpointTracking() {
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getDisableCheckpointTracking()).isFalse();
+
+    configuration.set(disableCheckpointTrackingOption, true);
+    config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getDisableCheckpointTracking()).isTrue();
   }
 }
