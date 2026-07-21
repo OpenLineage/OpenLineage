@@ -93,12 +93,40 @@ commands:
           echo spark=$SPARK java=$JAVA scala=$SCALA
           JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
           JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-          JAVA_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java")
-          JAVAC_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac")
-            
+          JAVA21_HOME='/usr/lib/jvm/java-21-openjdk-amd64'
+
+          case "$JAVA" in
+            8)
+              JAVA_HOME="$JAVA8_HOME"
+              JAVA_TEST_HOME="$JAVA8_HOME"
+              JAVA_BIN="$JAVA8_HOME/jre/bin/java"
+              JAVAC_BIN="$JAVA8_HOME/bin/javac"
+              ;;
+            17)
+              JAVA_HOME="$JAVA17_HOME"
+              JAVA_TEST_HOME="$JAVA17_HOME"
+              JAVA_BIN="$JAVA17_HOME/bin/java"
+              JAVAC_BIN="$JAVA17_HOME/bin/javac"
+              ;;
+            21)
+              # Keep Gradle build tools on Java 17; launch test processes with Java 21 below.
+              JAVA_HOME="$JAVA17_HOME"
+              JAVA_TEST_HOME="$JAVA21_HOME"
+              JAVA_BIN="$JAVA21_HOME/bin/java"
+              JAVAC_BIN="$JAVA21_HOME/bin/javac"
+              ;;
+            *)
+              echo "Unsupported Java version: $JAVA" >&2
+              exit 1
+              ;;
+          esac
+
           echo 'export JAVA17_HOME="/usr/lib/jvm/java-17-openjdk-amd64"' >> "$BASH_ENV"
+          echo 'export JAVA21_HOME="/usr/lib/jvm/java-21-openjdk-amd64"' >> "$BASH_ENV"
           echo "export SPARK=\"${SPARK}\"" >> "$BASH_ENV"
           echo "export JAVA=\"${JAVA}\"" >> "$BASH_ENV"
+          echo "export JAVA_HOME=\"${JAVA_HOME}\"" >> "$BASH_ENV"
+          echo "export JAVA_TEST_HOME=\"${JAVA_TEST_HOME}\"" >> "$BASH_ENV"
           echo "export JAVA_BIN=\"${JAVA_BIN}\"" >> "$BASH_ENV"
           echo "export JAVAC_BIN=\"${JAVAC_BIN}\"" >> "$BASH_ENV"
           echo "export SCALA=\"${SCALA}\"" >> "$BASH_ENV"
@@ -607,7 +635,7 @@ jobs:
           echo "Setting default Java to ${JAVA_BIN}"
           sudo update-alternatives --set java ${JAVA_BIN}
           sudo update-alternatives --set javac ${JAVAC_BIN}
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Papp.java.test.home=${JAVA_TEST_HOME}
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
@@ -661,7 +689,7 @@ jobs:
             - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
-      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Papp.java.test.home=${JAVA_TEST_HOME}
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
           path: app/build/test-results/integrationTest

@@ -34,7 +34,9 @@ workflows:
                 'java:8-spark:3.5.6-scala:2.13-full-tests',
                 'java:17-spark:3.5.6-scala:2.12-full-tests',
                 'java:17-spark:3.5.6-scala:2.13',
-                'java:17-spark:4.0.0-scala:2.13'
+                'java:17-spark:4.0.0-scala:2.13',
+                'java:17-spark:4.2.0-scala:2.13',
+                'java:21-spark:4.2.0-scala:2.13'
               ]
           requires:
             - build-integration-sql-java
@@ -125,7 +127,9 @@ workflows:
                 'java:8-spark:3.5.6-scala:2.13-full-tests',
                 'java:17-spark:3.5.6-scala:2.12-full-tests',
                 'java:17-spark:3.5.6-scala:2.13',
-                'java:17-spark:4.0.0-scala:2.13'
+                'java:17-spark:4.0.0-scala:2.13',
+                'java:17-spark:4.2.0-scala:2.13',
+                'java:21-spark:4.2.0-scala:2.13'
               ]
           requires:
             - approval-integration-spark

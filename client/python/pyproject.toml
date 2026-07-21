@@ -23,6 +23,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
   "attrs>=20.0",
@@ -68,7 +69,7 @@ optional-dependencies.docs = [
 optional-dependencies.generator = [
   "ruff",
   "click",
-  "datamodel-code-generator==0.33.0"
+  "datamodel-code-generator==0.43.1"
 ]
 optional-dependencies.dev = [
   "mypy",
@@ -157,7 +158,7 @@ addopts = [
 legacy_tox_ini = """
 [tox]
 requires = tox-uv
-env_list = py310,py311,py312,py313
+env_list = py310,py311,py312,py313,py314
 skip_missing_interpreters = true
 
 [testenv]
