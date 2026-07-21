@@ -281,7 +281,7 @@ class JobListenerTest {
   @SneakyThrows
   void testOnJobSubmittedSkipsCheckpointTrackingWhenDisabled() {
     Configuration configuration = new Configuration();
-    configuration.setBoolean("openlineage.disableCheckpointTracking", true);
+    configuration.setBoolean("openlineage.flink.disableCheckpointTracking", true);
 
     StreamExecutionEnvironment streamExecutionEnvironment =
         new StreamExecutionEnvironment(configuration);

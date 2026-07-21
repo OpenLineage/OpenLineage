@@ -52,10 +52,6 @@ class FlinkConfigParserTest {
           .booleanType()
           .noDefaultValue();
   ConfigOption disableCheckpointTrackingOption =
-      ConfigOptions.key("openlineage.disableCheckpointTracking")
-          .booleanType()
-          .noDefaultValue();
-  ConfigOption flinkDisableCheckpointTrackingOption =
       ConfigOptions.key("openlineage.flink.disableCheckpointTracking")
           .booleanType()
           .noDefaultValue();
@@ -178,11 +174,6 @@ class FlinkConfigParserTest {
     assertThat(config.getDisableCheckpointTracking()).isFalse();
 
     configuration.set(disableCheckpointTrackingOption, true);
-    config = FlinkConfigParser.parse(configuration);
-    assertThat(config.getDisableCheckpointTracking()).isTrue();
-
-    configuration.removeConfig(disableCheckpointTrackingOption);
-    configuration.set(flinkDisableCheckpointTrackingOption, true);
     config = FlinkConfigParser.parse(configuration);
     assertThat(config.getDisableCheckpointTracking()).isTrue();
   }

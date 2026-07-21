@@ -41,9 +41,7 @@ public class FlinkConfigParser {
           "openlineage.flink.enableDetachedJobTracking",
           "openlineage.enableDetachedJobTracking",
           "openlineage.flink.detachedStartEventEmitTimeoutInSeconds",
-          "openlineage.detachedStartEventEmitTimeoutInSeconds",
-          "openlineage.flink.disableCheckpointTracking",
-          "openlineage.disableCheckpointTracking");
+          "openlineage.detachedStartEventEmitTimeoutInSeconds");
 
   public static FlinkOpenLineageConfig parse(Configuration configuration) {
     // TRY READING CONFIG FROM FILE
@@ -121,6 +119,9 @@ public class FlinkConfigParser {
   }
 
   private static List<String> getJsonPath(String keyPath) {
+    if ("openlineage.flink.disableCheckpointTracking".equals(keyPath)) {
+      return Arrays.asList("disableCheckpointTracking");
+    }
     Optional<String> propertyPath =
         PROPERTIES_PREFIXES.stream().filter(keyPath::startsWith).findAny();
     List<String> pathKeys =
