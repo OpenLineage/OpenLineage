@@ -240,14 +240,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/api-client@npm:0.25.0":
-  version: 0.25.0
-  resolution: "@argos-ci/api-client@npm:0.25.0"
+"@argos-ci/api-client@npm:0.26.0":
+  version: 0.26.0
+  resolution: "@argos-ci/api-client@npm:0.26.0"
   dependencies:
     debug: "npm:^4.4.3"
     openapi-fetch: "npm:^0.17.0"
     p-retry: "npm:^8.0.0"
-  checksum: 10c0/237f0f8effce76604c4998014bf4a6441860cc710c79b1306dbe48aad621b19a869fd74bebd8c206b5fd0d0477a5b422128c3e8507c5e720c3bd2c5dea928b8c
+  checksum: 10c0/b32a29912a75ab685586e1bf9fd459fd2923fb9386ec540dff6f270003545aa2b0dae863d423ee40e85c932ebe31bdeff5736f617990c5902783b146683bf3ac
   languageName: node
   linkType: hard
 
@@ -258,27 +258,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^6.2.0":
-  version: 6.2.0
-  resolution: "@argos-ci/cli@npm:6.2.0"
+"@argos-ci/cli@npm:^6.3.0":
+  version: 6.3.0
+  resolution: "@argos-ci/cli@npm:6.3.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.25.0"
-    "@argos-ci/core": "npm:6.6.0"
+    "@argos-ci/api-client": "npm:0.26.0"
+    "@argos-ci/core": "npm:6.6.1"
     commander: "npm:^15.0.0"
     open: "npm:^11.0.0"
     ora: "npm:^9.4.0"
     update-notifier: "npm:^7.3.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/b1bfc97b9680aaef20eb58692b9fe564d454e02b93d149e0d9a328e9dbbb97960fb174e0962bc22accb16aa7613fe0570a5d29c04b8afa021dbb956a9a527b5a
+  checksum: 10c0/6c1a8fcf7bbb2269e4c09b5e673a7d93cd06cc885e4b055341c3af75e78e98f525b297ed752d6eaa1f53af3afaf82a3063ed48a0471fdca21c73712db739dfde
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:6.6.0":
-  version: 6.6.0
-  resolution: "@argos-ci/core@npm:6.6.0"
+"@argos-ci/core@npm:6.6.1":
+  version: 6.6.1
+  resolution: "@argos-ci/core@npm:6.6.1"
   dependencies:
-    "@argos-ci/api-client": "npm:0.25.0"
+    "@argos-ci/api-client": "npm:0.26.0"
     "@argos-ci/util": "npm:4.0.4"
     convict: "npm:^6.2.5"
     debug: "npm:^4.4.3"
@@ -287,20 +287,20 @@ __metadata:
     p-retry: "npm:^8.0.0"
     sharp: "npm:^0.35.2"
     tmp: "npm:^0.2.7"
-  checksum: 10c0/7de3a83cafd385e03f282c40ab803cebef5f1631bb3ababf3924f56c1701b4e9bb2baced8a5dc0a44d7f1707057a253fd10f5a2bbca8e05aa86c5fde7c9d3a04
+  checksum: 10c0/f8a65782b886a7ac2a79bf7b39995a5474e8819cf27120b6feea074643c5899c71d75cca08f30d6577d55d0bf6aa931f4d673a769ad28b17d3b2be5262dd7dfa
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^7.3.5":
-  version: 7.3.5
-  resolution: "@argos-ci/playwright@npm:7.3.5"
+"@argos-ci/playwright@npm:^7.3.6":
+  version: 7.3.6
+  resolution: "@argos-ci/playwright@npm:7.3.6"
   dependencies:
     "@argos-ci/browser": "npm:6.4.4"
-    "@argos-ci/core": "npm:6.6.0"
+    "@argos-ci/core": "npm:6.6.1"
     "@argos-ci/util": "npm:4.0.4"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
-  checksum: 10c0/db44183080de6740a518dd4ae50ebb430364ea2ce9ccd0124eab6cfdd01a00b0239cafa92571d710abd98c0699d9088141668b29eb7f8ac8c75a6890c6b24a4e
+  checksum: 10c0/93029c06d3736a9cd24df5148d3489de055dfab03692f7cae8a26f5ab3d361b8578a2432b769cd4422ee98024c2357617549f1ed6e78a6aa03c4160e7094ed72
   languageName: node
   linkType: hard
 
@@ -5303,8 +5303,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^6.2.0"
-    "@argos-ci/playwright": "npm:^7.3.5"
+    "@argos-ci/cli": "npm:^6.3.0"
+    "@argos-ci/playwright": "npm:^7.3.6"
     "@playwright/test": "npm:^1.61.1"
     cheerio: "npm:^1.2.0"
   languageName: unknown
@@ -7032,7 +7032,7 @@ __metadata:
     lodash: "npm:^4.18.1"
     lunr: "npm:^2.3.9"
     motion: "npm:^12.42.2"
-    postcss: "npm:^8.5.18"
+    postcss: "npm:^8.5.19"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -12490,14 +12490,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.5.18":
-  version: 8.5.18
-  resolution: "postcss@npm:8.5.18"
+"postcss@npm:^8.5.19":
+  version: 8.5.19
+  resolution: "postcss@npm:8.5.19"
   dependencies:
     nanoid: "npm:^3.3.12"
     picocolors: "npm:^1.1.1"
     source-map-js: "npm:^1.2.1"
-  checksum: 10c0/6fbab24a457ca5b90d423c333d0bab13e6646fda646e83235eed892f9e4f2dc6c50689ddc5ac1632fc085be2e096d2e8e03779ac092de6353e1cfcbbc3681685
+  checksum: 10c0/302af9e4dfa8cce4f43af1798576b3a77ab7b23abac5522328c6c7a830d49b31281cba9d6071e478e6970a05ef82346d1570b8fbffae912f26a4f1a1a07f0a44
   languageName: node
   linkType: hard
 
