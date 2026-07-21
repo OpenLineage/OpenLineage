@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.51.0...HEAD)
 
+### Added
+
+* **Dbt: Capture incremental-strategy config and run-wide full_refresh** [`#4716`](https://github.com/OpenLineage/OpenLineage/pull/4716) [@himakolavennu](https://github.com/himakolavennu)
+  *Capture how an incremental dbt model rebuilds data: a per-model `DbtIncrementalConfig` (strategy, unique key, incremental predicates, on-schema-change, microbatch parameters, partition_by, and a full_refresh override) on the `dbt_model` dataset facet, plus a run-wide `full_refresh` on `DbtRunRunFacet` read from `run_results.json` args (local/cloud) or the dbt command line (structured logs).*
+
 ## [1.51.0](https://github.com/OpenLineage/OpenLineage/compare/1.50.0...1.51.0)
 
 ### Added

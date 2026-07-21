@@ -122,6 +122,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         super().__init__(*args, **kwargs)
 
         self.dbt_command_line: list[str] = dbt_command_line
+        # No run_results.json on the log-driven path; read the flag off the command line instead.
+        self.full_refresh = self._full_refresh_from_command_line(self.dbt_command_line)
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
         self.is_random_logfile: bool = is_random_logfile(command=self.dbt_command_line)
@@ -148,6 +150,22 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.processed_bytes = 0
 
         self.dbt_command_return_code = 0
+
+    @staticmethod
+    def _full_refresh_from_command_line(command_line: list[str]) -> bool | None:
+        """Detect the --full-refresh flag on the dbt command line.
+
+        dbt resolves --full-refresh / --no-full-refresh last-occurrence-wins, so the last
+        matching token decides. Returns ``None`` when neither is present so the facet omits
+        the flag rather than assuming a default.
+        """
+        full_refresh: bool | None = None
+        for token in command_line:
+            if token in ("--full-refresh", "-f"):
+                full_refresh = True
+            elif token == "--no-full-refresh":
+                full_refresh = False
+        return full_refresh
 
     @cached_property
     def dbt_command(self) -> str | None:
@@ -795,6 +813,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 project_version=self.project_version,
                 profile_name=self.profile_name,
                 dbt_runtime="core",
+                full_refresh=self.full_refresh,
             )
         }
 

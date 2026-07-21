@@ -621,11 +621,16 @@ class TestAsyncHttpTransport:
         with closing_immediately(transport) as transport:
             assert transport._all_processed()  # No events
             request = Request("event-1", "", {})
+            duplicate = Request("event-1", "", {})
 
             transport._add_event(request)
+            transport._add_event(duplicate)
             assert not transport._all_processed()  # Pending event
 
             transport._mark_success(request)
+            assert not transport._all_processed()  # Duplicate event still pending
+
+            transport._mark_success(duplicate)
             assert transport._all_processed()  # All processed
 
 
