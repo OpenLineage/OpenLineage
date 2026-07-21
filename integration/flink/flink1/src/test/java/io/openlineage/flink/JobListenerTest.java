@@ -276,4 +276,41 @@ class JobListenerTest {
       verify(tracker, times(1)).startTracking(eq(openLineageContext), any());
     }
   }
+
+  @Test
+  @SneakyThrows
+  void testOnJobSubmittedSkipsCheckpointTrackingWhenDisabled() {
+    Configuration configuration = new Configuration();
+    configuration.setBoolean("openlineage.disableCheckpointTracking", true);
+
+    StreamExecutionEnvironment streamExecutionEnvironment =
+        new StreamExecutionEnvironment(configuration);
+    Configuration listenerConfiguration =
+        (Configuration) streamExecutionEnvironment.getConfiguration();
+    FieldUtils.writeField(
+        FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true),
+        streamExecutionEnvironment,
+        transformations,
+        true);
+
+    listener =
+        OpenLineageFlinkJobListener.builder()
+            .executionEnvironment(streamExecutionEnvironment)
+            .jobTracker(tracker)
+            .jobNamespace(jobId.getJobNamespace())
+            .jobName(jobId.getJobName())
+            .build();
+
+    try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
+        mockStatic(FlinkExecutionContextFactory.class)) {
+      when(FlinkExecutionContextFactory.getContext(
+              eq(listenerConfiguration), eq(jobId), eq(JobTypeUtils.STREAMING), eq(transformations)))
+          .thenReturn(context);
+      doNothing().when(context).onJobSubmitted();
+
+      listener.onJobSubmitted(jobClient, null);
+      verify(context, times(1)).onJobSubmitted();
+      verify(tracker, times(0)).startTracking(eq(openLineageContext), any());
+    }
+  }
 }

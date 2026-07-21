@@ -41,7 +41,9 @@ public class FlinkConfigParser {
           "openlineage.flink.enableDetachedJobTracking",
           "openlineage.enableDetachedJobTracking",
           "openlineage.flink.detachedStartEventEmitTimeoutInSeconds",
-          "openlineage.detachedStartEventEmitTimeoutInSeconds");
+          "openlineage.detachedStartEventEmitTimeoutInSeconds",
+          "openlineage.flink.disableCheckpointTracking",
+          "openlineage.disableCheckpointTracking");
 
   public static FlinkOpenLineageConfig parse(Configuration configuration) {
     // TRY READING CONFIG FROM FILE
