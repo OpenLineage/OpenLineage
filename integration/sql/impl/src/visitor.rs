@@ -536,6 +536,13 @@ impl Visit for Select {
 
         context.set_column_context(None);
 
+        if let Some(selection) = &self.selection {
+            context.push_frame();
+            selection.visit(context)?;
+            let frame = context.pop_frame().unwrap();
+            context.collect_aliases(&frame);
+        }
+
         if let Some(into) = &self.into {
             context.add_output(convert_to_idents(&into.name))
         }
