@@ -35,6 +35,8 @@ that returns `LineageGraph` object. This object contains all the lineage informa
 
 Additionally, after a job is triggered, OpenLineage integration starts job tracker thread that periodically polls
 lineage metadata updates from Flink jobs API. Currently, it is used to collect information about the checkpoints processed.
+If your runtime REST endpoint differs from the configured `rest.address`/`rest.port`, you can override it with
+`openlineage.restApiBaseUrl`. This is especially useful in Application mode deployments.
 
 ## Column Level Lineage
 
