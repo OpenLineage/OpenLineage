@@ -2323,6 +2323,8 @@ class TestFullRefreshFromCommandLine:
 
         facet = processor.dbt_run_run_facet()["dbt_run"]
         assert facet.full_refresh is True
+
+
 def _command_completed_event(path):
     """Return the CommandCompleted dbt log event from a fixture list."""
     events = yaml.safe_load(open(path))
