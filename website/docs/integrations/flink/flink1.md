@@ -18,8 +18,9 @@ of both Flink's built-in operators, but also user-provided `Sources`, `Sinks` an
 OpenLineage integration processes dataflow graph. Currently, OpenLineage is interested only in information contained 
 in `Sources` and `Sinks`, as they are the places where Flink interacts with external systems. 
 
-After job submission, OpenLineage integration starts actively listening to checkpoints - this gives insight into 
-whether the job runs properly.
+After job submission, OpenLineage integration can start actively listening to checkpoints - this gives insight into 
+whether the job runs properly. Set `openlineage.flink.disableCheckpointTracking=true` to disable checkpoint polling
+and checkpoint-driven `RUNNING` events when that metadata is not needed.
 
 ## Limitations
 

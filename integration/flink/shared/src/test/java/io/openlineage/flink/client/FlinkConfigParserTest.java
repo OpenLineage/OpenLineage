@@ -53,6 +53,10 @@ class FlinkConfigParserTest {
           .noDefaultValue();
   ConfigOption restApiBaseUrlOption =
       ConfigOptions.key("openlineage.restApiBaseUrl").stringType().noDefaultValue();
+  ConfigOption disableCheckpointTrackingOption =
+      ConfigOptions.key("openlineage.flink.disableCheckpointTracking")
+          .booleanType()
+          .noDefaultValue();
 
   @BeforeEach
   void beforeEach() {
@@ -174,5 +178,15 @@ class FlinkConfigParserTest {
     configuration.set(restApiBaseUrlOption, "http://example-host:18081");
     config = FlinkConfigParser.parse(configuration);
     assertThat(config.getRestApiBaseUrl()).isEqualTo("http://example-host:18081");
+  }
+
+  @Test
+  void testDisableCheckpointTracking() {
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getDisableCheckpointTracking()).isFalse();
+
+    configuration.set(disableCheckpointTrackingOption, true);
+    config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getDisableCheckpointTracking()).isTrue();
   }
 }

@@ -33,10 +33,12 @@ of `org.apache.flink.core.execution.JobStatusChangedListener`. One of its subcla
 `org.apache.flink.streaming.runtime.execution.JobCreatedEvent` which contains a method
 that returns `LineageGraph` object. This object contains all the lineage information about the job.
 
-Additionally, after a job is triggered, OpenLineage integration starts job tracker thread that periodically polls
+Additionally, after a job is triggered, OpenLineage integration can start a job tracker thread that periodically polls
 lineage metadata updates from Flink jobs API. Currently, it is used to collect information about the checkpoints processed.
 If your runtime REST endpoint differs from the configured `rest.address`/`rest.port`, you can override it with
 `openlineage.restApiBaseUrl`. This is especially useful in Application mode deployments.
+Set `openlineage.flink.disableCheckpointTracking` to `true` if you want to disable checkpoint polling and checkpoint-driven
+`RUNNING` events.
 
 ## Column Level Lineage
 
@@ -83,5 +85,6 @@ post-submission lifecycle events correlate back to the original `START`.
 ### Limitation
 
 Unlike the default flow, detached job tracking does not emit an immediate `RUNNING` event right after `START`
-to avoid race conditions. Later `RUNNING` events will be emitted as normal from checkpoint tracking using the
-`openlineage.trackingIntervalInSeconds` interval.
+to avoid race conditions. When checkpoint tracking is enabled, later `RUNNING` events are emitted from checkpoint tracking using the
+`openlineage.trackingIntervalInSeconds` interval. Set `openlineage.flink.disableCheckpointTracking=true`
+to suppress checkpoint polling and those checkpoint-driven `RUNNING` updates.

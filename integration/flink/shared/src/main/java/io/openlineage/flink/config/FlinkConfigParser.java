@@ -119,6 +119,9 @@ public class FlinkConfigParser {
   }
 
   private static List<String> getJsonPath(String keyPath) {
+    if ("openlineage.flink.disableCheckpointTracking".equals(keyPath)) {
+      return Arrays.asList("disableCheckpointTracking");
+    }
     Optional<String> propertyPath =
         PROPERTIES_PREFIXES.stream().filter(keyPath::startsWith).findAny();
     List<String> pathKeys =

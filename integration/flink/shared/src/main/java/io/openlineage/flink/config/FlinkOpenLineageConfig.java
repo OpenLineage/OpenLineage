@@ -47,6 +47,10 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   @Getter
   private String restApiBaseUrl;
 
+  @JsonProperty("disableCheckpointTracking")
+  @Setter
+  private Boolean disableCheckpointTracking;
+
   public FlinkOpenLineageConfig() {
     super();
     datasetConfig = new FlinkDatasetConfig();
@@ -63,7 +67,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       Integer trackingIntervalInSeconds,
       Integer detachedStartEventEmitTimeoutInSeconds,
       Boolean enableDetachedJobTracking,
-      String restApiBaseUrl) {
+      String restApiBaseUrl,
+      Boolean disableCheckpointTracking) {
     super(
         transportConfig,
         facetsConfig,
@@ -77,6 +82,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
     this.detachedStartEventEmitTimeoutInSeconds = detachedStartEventEmitTimeoutInSeconds;
     this.enableDetachedJobTracking = enableDetachedJobTracking;
     this.restApiBaseUrl = restApiBaseUrl;
+    this.disableCheckpointTracking = disableCheckpointTracking;
   }
 
   @Override
@@ -93,7 +99,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(
             detachedStartEventEmitTimeoutInSeconds, other.detachedStartEventEmitTimeoutInSeconds),
         mergePropertyWith(enableDetachedJobTracking, other.enableDetachedJobTracking),
-        mergePropertyWith(restApiBaseUrl, other.restApiBaseUrl));
+        mergePropertyWith(restApiBaseUrl, other.restApiBaseUrl),
+        mergePropertyWith(disableCheckpointTracking, other.disableCheckpointTracking));
   }
 
   public Integer getTrackingIntervalInSeconds() {
@@ -108,5 +115,9 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   public Boolean getEnableDetachedJobTracking() {
     return Optional.ofNullable(enableDetachedJobTracking)
         .orElse(DEFAULT_ENABLE_DETACHED_JOB_TRACKING);
+  }
+
+  public Boolean getDisableCheckpointTracking() {
+    return Optional.ofNullable(disableCheckpointTracking).orElse(false);
   }
 }

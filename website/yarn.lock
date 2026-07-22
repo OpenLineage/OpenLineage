@@ -7032,7 +7032,7 @@ __metadata:
     lodash: "npm:^4.18.1"
     lunr: "npm:^2.3.9"
     motion: "npm:^12.42.2"
-    postcss: "npm:^8.5.17"
+    postcss: "npm:^8.5.18"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -9433,13 +9433,13 @@ __metadata:
   linkType: hard
 
 "js-yaml@npm:^4.1.0":
-  version: 4.1.1
-  resolution: "js-yaml@npm:4.1.1"
+  version: 4.3.0
+  resolution: "js-yaml@npm:4.3.0"
   dependencies:
     argparse: "npm:^2.0.1"
   bin:
     js-yaml: bin/js-yaml.js
-  checksum: 10c0/561c7d7088c40a9bb53cc75becbfb1df6ae49b34b5e6e5a81744b14ae8667ec564ad2527709d1a6e7d5e5fa6d483aa0f373a50ad98d42fde368ec4a190d4fae7
+  checksum: 10c0/058b30473d6915ca5b4feb11e2f7d4d97242f98d00a798ed48dd90b46b7c640398afe9128c5db22c5300f8c6528fe2a174b9a93f351a70ebc28c6203938d8bff
   languageName: node
   linkType: hard
 
@@ -10909,11 +10909,11 @@ __metadata:
   linkType: hard
 
 "nanoid@npm:^3.3.12":
-  version: 3.3.12
-  resolution: "nanoid@npm:3.3.12"
+  version: 3.3.16
+  resolution: "nanoid@npm:3.3.16"
   bin:
     nanoid: bin/nanoid.cjs
-  checksum: 10c0/ba142b7b39e11e80c16dd74b0365d407880c87c1cf7e1480956981ae940ee36060fa5b6f092cd1e315184dd19244c657bd017d03327bd3c62247d691c5e8edfb
+  checksum: 10c0/bbf2dcffe22d2b62d16de2711752070b539c0f644c7916f823ad6521986b2078cbe524f2d6240f58c46e9141ea0c7b87a029e100c0f7f175228cacaf30e41bba
   languageName: node
   linkType: hard
 
@@ -12490,14 +12490,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.5.17":
-  version: 8.5.17
-  resolution: "postcss@npm:8.5.17"
+"postcss@npm:^8.5.18":
+  version: 8.5.18
+  resolution: "postcss@npm:8.5.18"
   dependencies:
     nanoid: "npm:^3.3.12"
     picocolors: "npm:^1.1.1"
     source-map-js: "npm:^1.2.1"
-  checksum: 10c0/5ff97c377a34becb6dc51262eb3f892c474459c682506eff04bac3b65bc6af4451802b40341af4e69956c05665a4a298dec975ba12d75e1310dfa3d89b9f587d
+  checksum: 10c0/6fbab24a457ca5b90d423c333d0bab13e6646fda646e83235eed892f9e4f2dc6c50689ddc5ac1632fc085be2e096d2e8e03779ac092de6353e1cfcbbc3681685
   languageName: node
   linkType: hard
 
@@ -15395,8 +15395,8 @@ __metadata:
   linkType: hard
 
 "ws@npm:^7.3.1":
-  version: 7.5.11
-  resolution: "ws@npm:7.5.11"
+  version: 7.5.13
+  resolution: "ws@npm:7.5.13"
   peerDependencies:
     bufferutil: ^4.0.1
     utf-8-validate: ^5.0.2
@@ -15405,7 +15405,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 10c0/7972670b676fb1ccba73b0899ca3c2e04e8c2075629c2614cced7f556536f96a672bbf4619fc5a06c8b8720bb839a47ca88c69c95dc14c9c61a99fbecba1c866
+  checksum: 10c0/e223726bbda5768ed58ec9252d04eda7018ef380ea122bb94e595a4d7a02b5baeb423933936576fddb8fa51b642375f7ae814bf0f6f5d9a3ce290566578a8c5a
   languageName: node
   linkType: hard
 

@@ -95,7 +95,11 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
     } catch (Exception e) {
       log.error("Triggering event caused an exception", e);
     }
-    tracker.startTracking(context, this::onJobCheckpoint);
+    if (context.getConfig().getDisableCheckpointTracking()) {
+      log.info("Checkpoint tracking is disabled via disableCheckpointTracking config");
+    } else {
+      tracker.startTracking(context, this::onJobCheckpoint);
+    }
   }
 
   private void onJobCheckpoint(CheckpointFacet checkpointFacet) {
