@@ -65,6 +65,15 @@ class JdbcDatasetUtilsTestForMySql {
                 "jdbc:mysql://hostname:3307", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3307")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:3307",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue(
+            "namespace", "mysql://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:3307")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
