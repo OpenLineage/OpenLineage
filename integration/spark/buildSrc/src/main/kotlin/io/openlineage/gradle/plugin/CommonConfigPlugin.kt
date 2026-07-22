@@ -97,7 +97,11 @@ class CommonConfigPlugin : Plugin<Project> {
                 showStandardStreams = true
             }
 
-            if (target.hasProperty("java.test.home")) {
+            if (target.path == ":app" && target.hasProperty("app.java.test.home")) {
+                // The app project exercises the selected Spark runtime. Keep tests for modules
+                // compiled against older Spark versions on the Gradle JVM for compatibility.
+                executable = "${target.findProperty("app.java.test.home")}/bin/java"
+            } else if (target.hasProperty("java.test.home")) {
                 // Allow running tests with a specific JDK (e.g. Java 17) independently of the
                 // JDK used to run Gradle. Mirrors the java.compile.home mechanism for compilation.
                 executable = "${target.findProperty("java.test.home")}/bin/java"
