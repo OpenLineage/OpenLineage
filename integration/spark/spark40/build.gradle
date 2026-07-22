@@ -34,7 +34,7 @@ ext {
     assertjVersion = "3.27.7"
     commonsLangVersion = "3.12.0"
     deltaVersion = "4.1.0"
-    junit5Version = "5.11.4"
+    junit5Version = "5.14.4"
     mockitoVersion = "4.11.0"
     micrometerVersion = "1.17.0"
     // Open source Unity Catalog. The Spark connector at this version is built for Spark 4 / Scala
@@ -42,7 +42,7 @@ ext {
     unityCatalogVersion = "0.4.1"
     // Provides the abfss:// filesystem (AzureBlobFileSystem) for the Unity Catalog Azure tests.
     // Keep aligned with the hadoop-client version resolved on the test runtime classpath.
-    hadoopAzureVersion = "3.4.2"
+    hadoopAzureVersion = "3.5.0"
 
     sparkVersion = project.findProperty("spark40.spark.version")
     scalaBinaryVersion = "2.13"
@@ -68,6 +68,7 @@ dependencies {
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
@@ -90,6 +91,7 @@ dependencies {
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testScala213RuntimeOnly("org.junit.platform:junit-platform-launcher")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala213Implementation("io.micrometer:micrometer-core:${micrometerVersion}")

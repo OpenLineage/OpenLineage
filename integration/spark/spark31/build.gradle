@@ -21,7 +21,7 @@ scalaVariants {
 
 ext {
     assertjVersion = "3.27.7"
-    junit5Version = "5.11.4"
+    junit5Version = "5.14.4"
     mockitoVersion = "4.11.0"
     micrometerVersion = "1.17.0"
     sparkVersion = project.findProperty("spark31.spark.version")
@@ -40,6 +40,7 @@ dependencies {
     testFixturesApi("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
@@ -56,6 +57,7 @@ dependencies {
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testScala212RuntimeOnly("org.junit.platform:junit-platform-launcher")
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")

@@ -34,15 +34,15 @@ ext {
     awaitilityVersion = "4.3.0"
     bigqueryVersion = "0.42.2"
     databricksVersion = "0.1.5"
-    junit5Version = "5.11.4"
+    junit5Version = "5.14.4"
     kafkaClientsVersion = "4.1.1"
     micrometerVersion = '1.17.0'
     mockitoVersion = "4.11.0"
     mockserverVersion = "5.14.0"
-    postgresqlVersion = "42.7.11"
+    postgresqlVersion = "42.7.13"
     sqlLiteVersion = "3.53.2.0"
     testcontainersVersion = "1.19.3"
-    awsSdkVersion = '2.46.15'
+    awsSdkVersion = '2.47.6'
 
     sparkVersion = project.findProperty("shared.spark.version")
     sparkSeries = sparkVersion.substring(0, 3)
@@ -83,6 +83,7 @@ dependencies {
     testFixturesApi(platform("org.junit:junit-bom:${junit5Version}"))
     testFixturesApi("org.junit.jupiter:junit-jupiter")
     testFixturesApi("org.junit.jupiter:junit-jupiter-params")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testFixturesApi("org.junit-pioneer:junit-pioneer:1.9.1")
     testFixturesApi("org.postgresql:postgresql:${postgresqlVersion}")
     testFixturesApi("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
@@ -154,6 +155,7 @@ dependencies {
     testScala212Implementation(platform("org.junit:junit-bom:${junit5Version}"))
     testScala212Implementation("org.junit.jupiter:junit-jupiter")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-params")
+    testScala212RuntimeOnly("org.junit.platform:junit-platform-launcher")
     testScala212Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
@@ -211,6 +213,7 @@ dependencies {
     testScala213Implementation(platform("org.junit:junit-bom:${junit5Version}"))
     testScala213Implementation("org.junit.jupiter:junit-jupiter")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-params")
+    testScala213RuntimeOnly("org.junit.platform:junit-platform-launcher")
     testScala213Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
