@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import static io.openlineage.client.OpenLineage.RunEvent.EventType.COMPLETE;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.START;
 import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
@@ -118,7 +117,7 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                         .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(applicationEnd.time())))
-                .eventType(COMPLETE)
+                .eventType(getStatus())
                 .jobBuilder(getJobBuilder())
                 .jobFacetsBuilder(getJobFacetsBuilder())
                 .overwriteRunId(Optional.of(olContext.getApplicationUuid()))

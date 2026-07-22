@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.client.OpenLineage.RunEvent.EventType.COMPLETE;
+import static io.openlineage.client.OpenLineage.RunEvent.EventType.FAIL;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -79,7 +81,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
   private final String sparkVersion = package$.MODULE$.SPARK_VERSION();
-
+  private boolean failedJobsFound = false;
   /**
    * Id of the last active job. Has to be stored within the listener, as some jobs use both
    * RddExecutionContext and SparkSQLExecutionContext. jobId is required for to collect job metrics
@@ -243,6 +245,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
     log.debug("onJobEnd called [{}].", jobEnd);
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
+
     meterRegistry.counter("openlineage.spark.event.job.end").increment();
     circuitBreaker.run(
         () -> {
@@ -251,6 +254,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           }
           return null;
         });
+    if (context.getStatus() == FAIL) {
+      failedJobsFound = true;
+    }
   }
 
   @Override
@@ -308,7 +314,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
     circuitBreaker.run(
         () -> {
-          getSparkApplicationExecutionContext().end(applicationEnd);
+          getSparkApplicationExecutionContext()
+              .updateStatus(failedJobsFound ? FAIL : COMPLETE)
+              .end(applicationEnd);
           return null;
         });
     close();
