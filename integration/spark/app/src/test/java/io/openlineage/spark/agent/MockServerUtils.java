@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -157,6 +158,29 @@ public class MockServerUtils {
                     .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
                     .findAny()
                     .isPresent());
+
+    return Arrays.stream(mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+        .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Wait for at least one recorded event that matches the given predicate, then return all events
+   * currently recorded. Use this instead of {@link #getEventsEmitted(ClientAndServer)} when the
+   * caller depends on a specific event (e.g. the COMPLETE event for a specific output) that may
+   * arrive after other events, to avoid races where the predicate-matching event has not yet been
+   * delivered when the assertion runs.
+   */
+  public static List<RunEvent> getEventsEmitted(
+      ClientAndServer mockServer, Predicate<RunEvent> predicate) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(60))
+        .until(
+            () ->
+                Arrays.stream(
+                        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+                    .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+                    .anyMatch(predicate));
 
     return Arrays.stream(mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
         .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
