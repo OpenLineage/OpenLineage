@@ -58,6 +58,7 @@ public class IcebergHandler implements CatalogHandler {
             new SnowflakeCatalogTypeHandler(),
             new RestCatalogTypeHandler(),
             new BigQueryMetastoreCatalogTypeHandler(),
+            new JdbcCatalogTypeHandler(),
             new HadoopCatalogTypeHandler(),
             new HiveCatalogTypeHandler());
   }
