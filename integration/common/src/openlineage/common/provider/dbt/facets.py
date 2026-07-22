@@ -20,20 +20,26 @@ class ParentRunMetadata:
     root_parent_job_name: str | None = attr.field(default=None)
     root_parent_job_namespace: str | None = attr.field(default=None)
     root_parent_run_id: str | None = attr.field(default=None)
+    job_facets: dict | None = attr.field(default=None)
+    run_facets: dict | None = attr.field(default=None)
+    root_job_facets: dict | None = attr.field(default=None)
+    root_run_facets: dict | None = attr.field(default=None)
 
     def to_openlineage(self) -> parent_run.ParentRunFacet:
         root = None
         if self.root_parent_run_id and self.root_parent_job_namespace and self.root_parent_job_name:
             root = parent_run.Root(
-                run=parent_run.RootRun(runId=self.root_parent_run_id),
+                run=parent_run.RootRun(runId=self.root_parent_run_id, facets=self.root_run_facets),
                 job=parent_run.RootJob(
-                    namespace=self.root_parent_job_namespace, name=self.root_parent_job_name
+                    namespace=self.root_parent_job_namespace,
+                    name=self.root_parent_job_name,
+                    facets=self.root_job_facets,
                 ),
             )
 
         return parent_run.ParentRunFacet(
-            run=parent_run.Run(runId=self.run_id),
-            job=parent_run.Job(namespace=self.job_namespace, name=self.job_name),
+            run=parent_run.Run(runId=self.run_id, facets=self.run_facets),
+            job=parent_run.Job(namespace=self.job_namespace, name=self.job_name, facets=self.job_facets),
             root=root,
         )
 
