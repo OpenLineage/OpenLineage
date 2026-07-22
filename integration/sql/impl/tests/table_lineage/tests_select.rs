@@ -14,6 +14,20 @@ fn select_simple() {
         }
     )
 }
+
+#[test]
+fn select_where_exists_subquery() {
+    assert_eq!(
+        test_sql("SELECT 1 WHERE EXISTS (SELECT 1 FROM customers);")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers"]),
+            out_tables: vec![]
+        }
+    )
+}
+
 #[test]
 fn select_from_schema_table() {
     assert_eq!(
