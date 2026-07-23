@@ -1,0 +1,15 @@
+transport:
+  type: gcplineage
+  projectId: your_gcp_project_id
+  location: us
+  mode: async
+  credentialsFile: path/to/credentials.json
+  retry:
+    maxAttempts: 5
+    retryDelayMultiplier: 2
+    rpcTimeoutMultiplier: 2
+    totalTimeout: PT6S
+    initialRetryDelay: PT1S
+    maxRetryDelay: PT1S
+    initialRpcTimeout: PT1S
+    maxRpcTimeout: PT1S
