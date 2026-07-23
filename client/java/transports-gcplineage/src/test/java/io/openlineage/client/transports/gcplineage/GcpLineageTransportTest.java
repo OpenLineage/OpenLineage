@@ -13,11 +13,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.api.core.ApiFuture;
+import com.google.api.gax.retrying.RetrySettings;
 import com.google.api.gax.rpc.AsyncTaskException;
+import com.google.cloud.datacatalog.lineage.v1.LineageSettings;
 import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
 import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
 import com.google.cloud.datalineage.producerclient.helpers.OpenLineageHelper;
 import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient;
+import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClientSettings;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClient;
 import datalineage.shaded.org.threeten.bp.Duration;
 import datalineage.shaded.org.threeten.bp.format.DateTimeParseException;
@@ -28,6 +31,8 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -162,6 +167,54 @@ class GcpLineageTransportTest {
         () -> {
           new GcpLineageTransport.ProducerClientWrapper(config);
         });
+  }
+
+  @Test
+  void testPassingRetryConfigToSettings(@TempDir Path tempDir)
+      throws GeneralSecurityException,
+          IOException,
+          NoSuchFieldException,
+          IllegalAccessException,
+          NoSuchMethodException,
+          InvocationTargetException {
+    Path mockCredentialsFile = createMockCredentialsFile(tempDir);
+
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
+    config.setCredentialsFile(mockCredentialsFile.toString());
+
+    GcpLineageRetryConfig retryConfig = new GcpLineageRetryConfig();
+    retryConfig.setMaxAttempts(11);
+    retryConfig.setRetryDelayMultiplier(12.0);
+    retryConfig.setRpcTimeoutMultiplier(13.0);
+    retryConfig.setTotalTimeout("PT6S");
+    retryConfig.setInitialRetryDelay("PT1S");
+    retryConfig.setMaxRetryDelay("PT3S");
+    retryConfig.setInitialRpcTimeout("PT1S");
+    retryConfig.setMaxRpcTimeout("PT3S");
+    config.setRetryConfig(retryConfig);
+
+    GcpLineageTransport gcpLineageTransport = new GcpLineageTransport(config);
+    GcpLineageTransport.ProducerClientWrapper wrapper =
+        getValue("producerClientWrapper", GcpLineageTransport.class, gcpLineageTransport);
+
+    Method method =
+        GcpLineageTransport.ProducerClientWrapper.class.getDeclaredMethod(
+            "createSettings", GcpLineageTransportConfig.class, LineageSettings.Builder.class);
+    method.setAccessible(true);
+    AsyncLineageProducerClientSettings.Builder invoke =
+        (AsyncLineageProducerClientSettings.Builder)
+            method.invoke(wrapper, config, AsyncLineageProducerClientSettings.newBuilder());
+
+    RetrySettings retrySettings = invoke.processOpenLineageRunEventSettings().getRetrySettings();
+
+    assertEquals(11, retrySettings.getMaxAttempts());
+    assertEquals(12.0, retrySettings.getRetryDelayMultiplier());
+    assertEquals(13.0, retrySettings.getRpcTimeoutMultiplier());
+    assertEquals(Duration.ofSeconds(6), retrySettings.getTotalTimeout());
+    assertEquals(Duration.ofSeconds(1), retrySettings.getInitialRetryDelay());
+    assertEquals(Duration.ofSeconds(3), retrySettings.getMaxRetryDelay());
+    assertEquals(Duration.ofSeconds(1), retrySettings.getInitialRpcTimeout());
+    assertEquals(Duration.ofSeconds(3), retrySettings.getMaxRpcTimeout());
   }
 
   public static OpenLineage.RunEvent runEvent() {

@@ -8,6 +8,7 @@ import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.FixedCredentialsProvider;
+import com.google.api.gax.retrying.RetrySettings;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
@@ -171,6 +172,48 @@ public class GcpLineageTransport extends Transport {
       if (config.getEndpoint() != null) {
         builder.setEndpoint(config.getEndpoint());
       }
+
+      GcpLineageRetryConfig conf = config.getRetryConfig();
+      if (conf != null) {
+        RetrySettings current = builder.processOpenLineageRunEventSettings().getRetrySettings();
+        RetrySettings build =
+            current.toBuilder()
+                .setMaxAttempts(
+                    conf.getMaxAttempts() != null
+                        ? conf.getMaxAttempts()
+                        : current.getMaxAttempts())
+                .setTotalTimeout(
+                    conf.getTotalTimeout() != null
+                        ? conf.getTotalTimeout()
+                        : current.getTotalTimeout())
+                .setInitialRetryDelay(
+                    conf.getInitialRetryDelay() != null
+                        ? conf.getInitialRetryDelay()
+                        : current.getInitialRetryDelay())
+                .setRetryDelayMultiplier(
+                    conf.getRetryDelayMultiplier() != null
+                        ? conf.getRetryDelayMultiplier()
+                        : current.getRetryDelayMultiplier())
+                .setMaxRetryDelay(
+                    conf.getMaxRetryDelay() != null
+                        ? conf.getMaxRetryDelay()
+                        : current.getMaxRetryDelay())
+                .setInitialRpcTimeout(
+                    conf.getInitialRpcTimeout() != null
+                        ? conf.getInitialRpcTimeout()
+                        : current.getInitialRpcTimeout())
+                .setRpcTimeoutMultiplier(
+                    conf.getRpcTimeoutMultiplier() != null
+                        ? conf.getRpcTimeoutMultiplier()
+                        : current.getRpcTimeoutMultiplier())
+                .setMaxRpcTimeout(
+                    conf.getMaxRpcTimeout() != null
+                        ? conf.getMaxRpcTimeout()
+                        : current.getMaxRpcTimeout())
+                .build();
+        builder.processOpenLineageRunEventSettings().setRetrySettings(build);
+      }
+
       if (config.getProjectId() != null) {
         builder.setQuotaProjectId(config.getProjectId());
       }
