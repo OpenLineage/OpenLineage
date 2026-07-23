@@ -217,6 +217,19 @@ fn select_bq_array_function() {
 }
 
 #[test]
+fn select_bq_array_subquery() {
+    assert_eq!(
+        test_sql_dialect("SELECT ARRAY(SELECT id FROM source_table)", "bigquery")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("source_table")],
+            out_tables: vec![],
+        }
+    )
+}
+
+#[test]
 fn select_identifier_function() {
     let test_cases = vec![
         ("target", vec![table("target")]),

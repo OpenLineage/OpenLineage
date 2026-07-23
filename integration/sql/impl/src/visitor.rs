@@ -409,7 +409,7 @@ impl Visit for Function {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match &self.args {
             FunctionArguments::None => {}
-            FunctionArguments::Subquery(_) => {}
+            FunctionArguments::Subquery(query) => query.visit(context)?,
             FunctionArguments::List(arguments) => {
                 for arg in &arguments.args {
                     arg.visit(context)?;
