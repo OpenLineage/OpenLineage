@@ -67,15 +67,18 @@ If you switch formats later, existing lineage nodes won’t connect to new ones.
 A `Job` is a recurring data transformation with inputs and outputs. Each execution is captured as a `Run` with
 corresponding metadata.
 A `Run` event identifies the `Job` it instances by providing the job’s unique identifier.
-The `Job` identifier is composed of a `Namespace` and `Name`. The job namespace is usually set in OpenLineage client
+The `Job` identifier is composed of a `Namespace` and `Name`. 
+
+While the job namespace is usually configurable in OpenLineage client, the table bellow documents best practices for job namespace prefixes. 
 config. The job name is unique within its namespace.
 
-| Job type     | Name                          | Example                                                      |
-|:-------------|:------------------------------|:-------------------------------------------------------------|
-| Airflow task | `{dag_id}.{task_id}`          | `orders_etl.count_orders`                                    |
-| Spark job    | `{appName}.{command}.{table}` | `my_awesome_app.execute_insert_into_hive_table.mydb_mytable` |
-| SQL          | `{schema}.{table}`            | `gx.validate_datasets`                                       |
-| Debezium     | `{topic.prefix}.{taskId}`     | `inventory.0`                                                |
+| Job type     | Namespace prefix.             | Name                          | Example                                                      |
+|:-------------|:------------------------------|:------------------------------|:-------------------------------------------------------------|
+| Airflow task | `airflow://`                  | `{dag_id}.{task_id}`          | `orders_etl.count_orders`                                    |
+| Spark job    | `spark://`                    | `{appName}.{command}.{table}` | `my_awesome_app.execute_insert_into_hive_table.mydb_mytable` |
+| AWS Glue Spark job | `awsglue-spark://`                    | `{appName}.{command}.{table}` | `my_awesome_app.execute_insert_into_hive_table.mydb_mytable` |
+| SQL          | `sql://`                  | `{schema}.{table}`            | `gx.validate_datasets`                                       |
+| Debezium     | `debezium://`                  | `{topic.prefix}.{taskId}`     | `inventory.0`                                                |
 
 ## Run Naming
 
