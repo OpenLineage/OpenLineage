@@ -370,6 +370,26 @@ def test_get_config_file_content(root: Path) -> None:
     }
 
 
+def test_get_config_file_content_reads_utf8(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
+    config_path = tmp_path / "openlineage.yml"
+    config_path.write_text("transport:\n  type: console\nmetadata: café\n", encoding="utf-8")
+    real_open = open
+
+    def open_with_ascii_default(file, mode="r", *args, **kwargs):
+        if "b" not in mode and kwargs.get("encoding") is None:
+            kwargs["encoding"] = "ascii"
+        return real_open(file, mode, *args, **kwargs)
+
+    mocker.patch("builtins.open", side_effect=open_with_ascii_default)
+
+    result = OpenLineageClient._get_config_file_content(str(config_path))  # noqa: SLF001
+
+    assert result == {"transport": {"type": "console"}, "metadata": "café"}
+
+
 @patch("yaml.safe_load", return_value=None)
 def test_get_config_file_content_empty(mock_yaml) -> None:  # noqa: ARG001
     result = OpenLineageClient._get_config_file_content("empty.yml")  # noqa: SLF001
