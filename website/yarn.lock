@@ -240,14 +240,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/api-client@npm:0.25.0":
-  version: 0.25.0
-  resolution: "@argos-ci/api-client@npm:0.25.0"
+"@argos-ci/api-client@npm:0.26.0":
+  version: 0.26.0
+  resolution: "@argos-ci/api-client@npm:0.26.0"
   dependencies:
     debug: "npm:^4.4.3"
     openapi-fetch: "npm:^0.17.0"
     p-retry: "npm:^8.0.0"
-  checksum: 10c0/237f0f8effce76604c4998014bf4a6441860cc710c79b1306dbe48aad621b19a869fd74bebd8c206b5fd0d0477a5b422128c3e8507c5e720c3bd2c5dea928b8c
+  checksum: 10c0/b32a29912a75ab685586e1bf9fd459fd2923fb9386ec540dff6f270003545aa2b0dae863d423ee40e85c932ebe31bdeff5736f617990c5902783b146683bf3ac
   languageName: node
   linkType: hard
 
@@ -258,27 +258,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^6.2.0":
-  version: 6.2.0
-  resolution: "@argos-ci/cli@npm:6.2.0"
+"@argos-ci/cli@npm:^6.3.0":
+  version: 6.3.0
+  resolution: "@argos-ci/cli@npm:6.3.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.25.0"
-    "@argos-ci/core": "npm:6.6.0"
+    "@argos-ci/api-client": "npm:0.26.0"
+    "@argos-ci/core": "npm:6.6.1"
     commander: "npm:^15.0.0"
     open: "npm:^11.0.0"
     ora: "npm:^9.4.0"
     update-notifier: "npm:^7.3.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/b1bfc97b9680aaef20eb58692b9fe564d454e02b93d149e0d9a328e9dbbb97960fb174e0962bc22accb16aa7613fe0570a5d29c04b8afa021dbb956a9a527b5a
+  checksum: 10c0/6c1a8fcf7bbb2269e4c09b5e673a7d93cd06cc885e4b055341c3af75e78e98f525b297ed752d6eaa1f53af3afaf82a3063ed48a0471fdca21c73712db739dfde
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:6.6.0":
-  version: 6.6.0
-  resolution: "@argos-ci/core@npm:6.6.0"
+"@argos-ci/core@npm:6.6.1":
+  version: 6.6.1
+  resolution: "@argos-ci/core@npm:6.6.1"
   dependencies:
-    "@argos-ci/api-client": "npm:0.25.0"
+    "@argos-ci/api-client": "npm:0.26.0"
     "@argos-ci/util": "npm:4.0.4"
     convict: "npm:^6.2.5"
     debug: "npm:^4.4.3"
@@ -287,20 +287,20 @@ __metadata:
     p-retry: "npm:^8.0.0"
     sharp: "npm:^0.35.2"
     tmp: "npm:^0.2.7"
-  checksum: 10c0/7de3a83cafd385e03f282c40ab803cebef5f1631bb3ababf3924f56c1701b4e9bb2baced8a5dc0a44d7f1707057a253fd10f5a2bbca8e05aa86c5fde7c9d3a04
+  checksum: 10c0/f8a65782b886a7ac2a79bf7b39995a5474e8819cf27120b6feea074643c5899c71d75cca08f30d6577d55d0bf6aa931f4d673a769ad28b17d3b2be5262dd7dfa
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^7.3.5":
-  version: 7.3.5
-  resolution: "@argos-ci/playwright@npm:7.3.5"
+"@argos-ci/playwright@npm:^7.3.6":
+  version: 7.3.6
+  resolution: "@argos-ci/playwright@npm:7.3.6"
   dependencies:
     "@argos-ci/browser": "npm:6.4.4"
-    "@argos-ci/core": "npm:6.6.0"
+    "@argos-ci/core": "npm:6.6.1"
     "@argos-ci/util": "npm:4.0.4"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
-  checksum: 10c0/db44183080de6740a518dd4ae50ebb430364ea2ce9ccd0124eab6cfdd01a00b0239cafa92571d710abd98c0699d9088141668b29eb7f8ac8c75a6890c6b24a4e
+  checksum: 10c0/93029c06d3736a9cd24df5148d3489de055dfab03692f7cae8a26f5ab3d361b8578a2432b769cd4422ee98024c2357617549f1ed6e78a6aa03c4160e7094ed72
   languageName: node
   linkType: hard
 
@@ -5303,8 +5303,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^6.2.0"
-    "@argos-ci/playwright": "npm:^7.3.5"
+    "@argos-ci/cli": "npm:^6.3.0"
+    "@argos-ci/playwright": "npm:^7.3.6"
     "@playwright/test": "npm:^1.61.1"
     cheerio: "npm:^1.2.0"
   languageName: unknown
@@ -5401,12 +5401,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"autoprefixer@npm:^10.5.2":
-  version: 10.5.2
-  resolution: "autoprefixer@npm:10.5.2"
+"autoprefixer@npm:^10.5.4":
+  version: 10.5.4
+  resolution: "autoprefixer@npm:10.5.4"
   dependencies:
-    browserslist: "npm:^4.28.4"
-    caniuse-lite: "npm:^1.0.30001799"
+    browserslist: "npm:^4.28.6"
+    caniuse-lite: "npm:^1.0.30001806"
     fraction.js: "npm:^5.3.4"
     picocolors: "npm:^1.1.1"
     postcss-value-parser: "npm:^4.2.0"
@@ -5414,7 +5414,7 @@ __metadata:
     postcss: ^8.1.0
   bin:
     autoprefixer: bin/autoprefixer
-  checksum: 10c0/588fec73c061da8a95f6a7f4f0cde811a581087852325564d2d8f15c9356b204db50c1566c57e06dc0b1bcdf2b8ff10f85e89ef08d94c10f0e5ba187a4c52690
+  checksum: 10c0/274ebc9fa50ac0d7a5aa9bc29baa502f2d2006f47a899dac2de4ba86c989defaa62b096e68692e15d53c9ed2b62c57dd047ceba61d344908d8b6e61f220a10e8
   languageName: node
   linkType: hard
 
@@ -5508,12 +5508,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"baseline-browser-mapping@npm:^2.10.38":
-  version: 2.10.42
-  resolution: "baseline-browser-mapping@npm:2.10.42"
+"baseline-browser-mapping@npm:^2.10.44":
+  version: 2.11.1
+  resolution: "baseline-browser-mapping@npm:2.11.1"
   bin:
     baseline-browser-mapping: dist/cli.cjs
-  checksum: 10c0/4a9f54818d17d8dbee69096563b2cd5e2175f66752c479f1c10d31e072c1c2b7241a9bdaee78d5236178c581ca2735e75fbb0d0877d6492958eed9f6e46e03f3
+  checksum: 10c0/15c07b1d9f1e6198cc12cd9061e97a2f17f5c138e5335cd92a4a50734cc326d159ab5d7bcef9de62c54bf546b3c77aa16a5927e625c3d1f6b0ce8b586639615c
   languageName: node
   linkType: hard
 
@@ -5673,18 +5673,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"browserslist@npm:^4.28.4":
-  version: 4.28.4
-  resolution: "browserslist@npm:4.28.4"
+"browserslist@npm:^4.28.6":
+  version: 4.28.7
+  resolution: "browserslist@npm:4.28.7"
   dependencies:
-    baseline-browser-mapping: "npm:^2.10.38"
-    caniuse-lite: "npm:^1.0.30001799"
-    electron-to-chromium: "npm:^1.5.376"
-    node-releases: "npm:^2.0.48"
+    baseline-browser-mapping: "npm:^2.10.44"
+    caniuse-lite: "npm:^1.0.30001806"
+    electron-to-chromium: "npm:^1.5.393"
+    node-releases: "npm:^2.0.51"
     update-browserslist-db: "npm:^1.2.3"
   bin:
     browserslist: cli.js
-  checksum: 10c0/d86f7319c0e3243ca5122335a98b9de8e007fb10fb5643e5f3ed69428fe81ee8646cf1a7663bcfb65bdfddbe505d39406da7ce30052e65c99df9d02336635a7c
+  checksum: 10c0/dc41922a9ff0d81e5492498bdab2d932e3a3222f4277814ba38ee64f4e51f26e5244a7cce0777b4cac3ceff6eb196f5cadbb2a832620973a7f9c39611f6bc78e
   languageName: node
   linkType: hard
 
@@ -5862,10 +5862,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"caniuse-lite@npm:^1.0.30001799":
-  version: 1.0.30001800
-  resolution: "caniuse-lite@npm:1.0.30001800"
-  checksum: 10c0/107ad692b89ce3b6c060f39159a19577b6b171c678a9174fbe827a6f3b2c3c9cd67f1e46076aa4731cefbd21ba2da754ca2300c6a448c7a05bdda078f73fa3b0
+"caniuse-lite@npm:^1.0.30001806":
+  version: 1.0.30001806
+  resolution: "caniuse-lite@npm:1.0.30001806"
+  checksum: 10c0/9442c8afff0968e9b2ce0104a7340c1ce4a5c09f469ccb9eef10d25712ea0afe542486e5318c697c70dd502f988cfc04eaa1c9438c92ac3bcf4d708a2a17bee1
   languageName: node
   linkType: hard
 
@@ -7026,7 +7026,7 @@ __metadata:
     "@mui/material": "npm:^5.14.18"
     "@tsconfig/docusaurus": "npm:^2.0.8"
     "@types/react": "npm:^18.3.12"
-    autoprefixer: "npm:^10.5.2"
+    autoprefixer: "npm:^10.5.4"
     classnames: "npm:^2.5.1"
     docusaurus-lunr-search: "npm:^3.5.0"
     lodash: "npm:^4.18.1"
@@ -7226,10 +7226,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron-to-chromium@npm:^1.5.376":
-  version: 1.5.387
-  resolution: "electron-to-chromium@npm:1.5.387"
-  checksum: 10c0/49ac2f2431f48da75fbd30e4daee2304927d208adcdf4847b84ecc196785e94b1f6f873c093b59e61d14e928873518d294dc94803f4f8707ad7113aafe8dadd4
+"electron-to-chromium@npm:^1.5.393":
+  version: 1.5.395
+  resolution: "electron-to-chromium@npm:1.5.395"
+  checksum: 10c0/f1e6f10ab7499ef528afcdcfdd8b900c10388e3fcc19333a0de2f0824404740e5450c675469d32c106cc2bfc08db2de88b925523a0d15540bcd8f65355e2ed7b
   languageName: node
   linkType: hard
 
@@ -11003,10 +11003,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-releases@npm:^2.0.48":
-  version: 2.0.50
-  resolution: "node-releases@npm:2.0.50"
-  checksum: 10c0/ac75ed433864114cfd9862034960bb4f49838343dc9fc31dc7d5be8189ce5f39510ad0bb3a697efe3193d50ab6921e7a3a6ce3aae2a6f8abe62719ffd40a4cac
+"node-releases@npm:^2.0.51":
+  version: 2.0.51
+  resolution: "node-releases@npm:2.0.51"
+  checksum: 10c0/6cf3fe1f9eabe02ce6de67e9db77b73edc9f5625003791e1f8f239f8e2a851450a5aeb1eff2cc43cfb26312e19b26bfe07626bf428479e6a76f56553fc6148da
   languageName: node
   linkType: hard
 
