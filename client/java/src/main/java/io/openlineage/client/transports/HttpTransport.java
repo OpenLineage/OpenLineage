@@ -37,6 +37,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
+import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
@@ -52,6 +53,7 @@ import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
 import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
 @Slf4j
@@ -109,9 +111,16 @@ public final class HttpTransport extends Transport {
             .setResponseTimeout(timeout)
             .build();
 
+    int maxRetries = httpConfig.getMaxRetries() != null ? httpConfig.getMaxRetries() : 1;
+    long retryInterval =
+        httpConfig.getRetryIntervalMillis() != null ? httpConfig.getRetryIntervalMillis() : 1000L;
+
     return HttpClientBuilder.create()
         .setDefaultRequestConfig(requestConfig)
         .setConnectionManager(connectionManagerBuilder.build())
+        .setRetryStrategy(
+            new DefaultHttpRequestRetryStrategy(
+                maxRetries, TimeValue.ofMilliseconds(retryInterval)))
         .setDefaultRequestConfig(requestConfig)
         .build();
   }
