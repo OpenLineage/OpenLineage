@@ -694,6 +694,9 @@ impl Visit for Statement {
                         }
                     }
                 }
+                for assignment in &update.assignments {
+                    assignment.value.visit(context)?;
+                }
                 if let Some(expr) = &update.selection {
                     expr.visit(context)?;
                 }
