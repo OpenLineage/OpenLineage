@@ -275,6 +275,10 @@ tasks.named("shadowJar", ShadowJar.class) {
         exclude 'com.fasterxml.jackson.annotation.JsonIgnoreProperties'
         exclude 'com.fasterxml.jackson.annotation.JsonIgnoreType'
     }
+    // jackson-core 2.18+ ships FastDoubleParser as Java 21/22 multi-release classes that the
+    // shadow plugin's ASM cannot relocate; the Java 8 base classes remain and are fully functional.
+    exclude 'META-INF/versions/21/**'
+    exclude 'META-INF/versions/22/**'
     manifest {
         attributes([
                 'Created-By'            : "Gradle ${gradle.gradleVersion}",

@@ -23,7 +23,7 @@ ext {
     assertjVersion = '3.25.3'
     mockitoVersion = '4.11.0'
     sparkVersion = '3.2.4'
-    jacksonVersion = '2.15.3'
+    jacksonVersion = '2.18.8'
 }
 
 final def mainSourceSet = sourceSets.main
@@ -238,6 +238,11 @@ shadowJar {
 
     relocate('io.openlineage.client', 'io.openlineage.spark.shade.client')
     relocate('com.fasterxml', 'io.openlineage.spark.shade.com.fasterxml')
+
+    // jackson-core 2.18+ ships FastDoubleParser as Java 21/22 multi-release classes that the
+    // shadow plugin's ASM cannot relocate; the Java 8 base classes remain and are fully functional.
+    exclude 'META-INF/versions/21/**'
+    exclude 'META-INF/versions/22/**'
 
     archiveClassifier = ''
     // avoid conflict with any client version of that lib
