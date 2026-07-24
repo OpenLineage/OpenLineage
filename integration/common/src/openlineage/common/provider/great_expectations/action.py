@@ -506,7 +506,7 @@ class OpenLineageValidationAction(ValidationAction):
             for expectation in validation_result.results:
                 assertions.append(
                     GreatExpectationsAssertion(
-                        expectationType=expectation["expectation_config"]["expectation_type"],
+                        expectationType=expectation["expectation_config"]["type"],
                         success=expectation["success"],
                         column=expectation["expectation_config"]["kwargs"].get("column", None),
                     )
