@@ -726,22 +726,36 @@ impl Visit for Statement {
                 }
             }
             Statement::Delete(delete) => {
-                match &delete.from {
+                let tables = match &delete.from {
                     FromTable::WithFromKeyword(tables) | FromTable::WithoutKeyword(tables) => {
-                        for table in tables {
+                        tables
+                    }
+                };
+
+                if delete.tables.is_empty() {
+                    for table in tables {
+                        if let Some(output) =
+                            get_table_name_from_table_factor(&table.relation, &*context)
+                        {
+                            context.add_output(output);
+                        }
+                        for join in &table.joins {
                             if let Some(output) =
-                                get_table_name_from_table_factor(&table.relation, &*context)
+                                get_table_name_from_table_factor(&join.relation, &*context)
                             {
                                 context.add_output(output);
                             }
-                            for join in &table.joins {
-                                if let Some(join_output) =
-                                    get_table_name_from_table_factor(&join.relation, &*context)
-                                {
-                                    context.add_output(join_output);
-                                }
-                            }
                         }
+                    }
+                } else {
+                    for table in tables {
+                        table.relation.visit(context)?;
+                        for join in &table.joins {
+                            join.relation.visit(context)?;
+                        }
+                    }
+                    for table in &delete.tables {
+                        context.move_input_to_output(convert_to_idents(table));
                     }
                 }
 
