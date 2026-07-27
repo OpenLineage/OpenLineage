@@ -85,6 +85,25 @@ fn delete_mysql_multiple_tables() {
 }
 
 #[test]
+fn delete_mysql_preserves_previous_inputs() {
+    assert_eq!(
+        test_multiple_sql_dialect(
+            vec![
+                "SELECT * FROM t1",
+                "DELETE t1 FROM t1 JOIN t2 ON t1.id = t2.id",
+            ],
+            "mysql",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["t1", "t2"]),
+            out_tables: tables(vec!["t1"]),
+        }
+    );
+}
+
+#[test]
 fn delete_identifier_function() {
     let test_cases = vec![
         ("target", vec![table("target")]),

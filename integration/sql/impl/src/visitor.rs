@@ -748,6 +748,7 @@ impl Visit for Statement {
                         }
                     }
                 } else {
+                    let existing_inputs = context.inputs.clone();
                     for table in tables {
                         table.relation.visit(context)?;
                         for join in &table.joins {
@@ -757,6 +758,7 @@ impl Visit for Statement {
                     for table in &delete.tables {
                         context.move_input_to_output(convert_to_idents(table));
                     }
+                    context.inputs.extend(existing_inputs);
                 }
 
                 if let Some(using) = &delete.using {
