@@ -7032,7 +7032,7 @@ __metadata:
     lodash: "npm:^4.18.1"
     lunr: "npm:^2.3.9"
     motion: "npm:^12.42.2"
-    postcss: "npm:^8.5.19"
+    postcss: "npm:^8.5.20"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -10908,7 +10908,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^3.3.12":
+"nanoid@npm:^3.3.16":
   version: 3.3.16
   resolution: "nanoid@npm:3.3.16"
   bin:
@@ -12490,14 +12490,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.5.19":
-  version: 8.5.19
-  resolution: "postcss@npm:8.5.19"
+"postcss@npm:^8.5.20":
+  version: 8.5.20
+  resolution: "postcss@npm:8.5.20"
   dependencies:
-    nanoid: "npm:^3.3.12"
+    nanoid: "npm:^3.3.16"
     picocolors: "npm:^1.1.1"
     source-map-js: "npm:^1.2.1"
-  checksum: 10c0/302af9e4dfa8cce4f43af1798576b3a77ab7b23abac5522328c6c7a830d49b31281cba9d6071e478e6970a05ef82346d1570b8fbffae912f26a4f1a1a07f0a44
+  checksum: 10c0/9c7a0e32c77ac54c5613f974e6ccc97d4a70fdb3bf242617f3fb4d652e5c62a37c86c589e6e7a2d1e7120f80bc169cdf673482b88bd75020d2a44899fa569c13
   languageName: node
   linkType: hard
 
@@ -14387,15 +14387,15 @@ __metadata:
   linkType: hard
 
 "tar@npm:^7.5.2":
-  version: 7.5.19
-  resolution: "tar@npm:7.5.19"
+  version: 7.5.22
+  resolution: "tar@npm:7.5.22"
   dependencies:
     "@isaacs/fs-minipass": "npm:^4.0.0"
     chownr: "npm:^3.0.0"
     minipass: "npm:^7.1.2"
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
-  checksum: 10c0/7022e8cb04a8ceccc0689f2c731743fa2aab2e3c3f559f7dbc37b65ef7d5913049b427284eded2ec0765c5db5ff72dd7939fe2ae15785ff422cef2116c95d798
+  checksum: 10c0/1311f6be85a8157ac4c9147bae43e13923d2a1aae15e4aa1bd5239e4e03d2cf53cfe103dde7f35832fbb4c938b042856bc8e9a0afd29abd05e2d1608788c4fea
   languageName: node
   linkType: hard
 
