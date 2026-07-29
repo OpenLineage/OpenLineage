@@ -57,7 +57,7 @@ public class AggregateVisitor implements OperatorVisitor {
     String outputExpressionString = String.format("GROUP BY %s", sql);
 
     ExprId exprId = NamedExpression.newExprId();
-    builder.addDatasetDependency(exprId, outputExpressionString, sql);
+    builder.addDatasetDependency(exprId, outputExpressionString);
 
     grouppingExpressions.forEach(
         e ->

@@ -24,6 +24,11 @@ public class ColumnLineageConfig {
   // reflect it set to true
   private Boolean datasetLineageEnabled;
 
+  /**
+   * Determines if column lineage transformations should carry a human readable description of the
+   * expression they were derived from, e.g. {@code sum(a + b) AS c}. Disabled by default, as the
+   * descriptions noticeably increase the size of the emitted events.
+   */
   private Boolean descriptionsEnabled;
 
   private Integer schemaSizeLimit;

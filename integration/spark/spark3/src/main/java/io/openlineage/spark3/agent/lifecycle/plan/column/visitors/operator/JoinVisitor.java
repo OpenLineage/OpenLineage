@@ -39,7 +39,7 @@ public class JoinVisitor implements OperatorVisitor {
       String description = join.condition().get().sql();
       String outputExpressionString =
           String.format("%s JOIN ON %s", join.joinType().sql(), description);
-      builder.addDatasetDependency(exprId, outputExpressionString, description);
+      builder.addDatasetDependency(exprId, outputExpressionString);
       ExpressionTraverser.of(
               join.condition().get(),
               exprId,

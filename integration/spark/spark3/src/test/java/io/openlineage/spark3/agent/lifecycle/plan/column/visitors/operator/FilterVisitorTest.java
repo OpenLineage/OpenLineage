@@ -65,8 +65,7 @@ class FilterVisitorTest {
 
       String filterDescription = "((name1 = name2) AND (name3 > 5))";
       verify(builder, times(1))
-          .addDatasetDependency(
-              datasetDependencyExpression, "WHERE " + filterDescription, filterDescription);
+          .addDatasetDependency(datasetDependencyExpression, "WHERE " + filterDescription);
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,

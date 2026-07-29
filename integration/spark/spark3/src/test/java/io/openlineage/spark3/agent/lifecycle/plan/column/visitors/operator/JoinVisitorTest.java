@@ -69,8 +69,7 @@ class JoinVisitorTest {
 
       String joinDescription = "(name1 = name2)";
       verify(builder, times(1))
-          .addDatasetDependency(
-              datasetDependencyExpression, "INNER JOIN ON " + joinDescription, joinDescription);
+          .addDatasetDependency(datasetDependencyExpression, "INNER JOIN ON " + joinDescription);
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,

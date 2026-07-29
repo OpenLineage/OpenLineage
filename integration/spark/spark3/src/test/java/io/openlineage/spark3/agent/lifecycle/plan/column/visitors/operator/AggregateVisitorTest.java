@@ -93,8 +93,7 @@ class AggregateVisitorTest {
               EXPR_ID_2,
               "name3",
               TransformationInfo.aggregation("count(name2) AS name3", true));
-      verify(builder, times(1))
-          .addDatasetDependency(datasetDependencyExpression, "GROUP BY name1", "name1");
+      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression, "GROUP BY name1");
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,

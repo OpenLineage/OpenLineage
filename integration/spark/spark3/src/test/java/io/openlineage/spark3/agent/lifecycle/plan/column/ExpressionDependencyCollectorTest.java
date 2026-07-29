@@ -121,13 +121,11 @@ class ExpressionDependencyCollectorTest {
       String sortColumns = "name1 null null";
       String joinCondition = "(name1 = name2)";
       String filterCondition = "(" + joinCondition + " AND (name3 > 5))";
-      verify(builder, times(1))
-          .addDatasetDependency(ExprId.apply(0), "SORT BY " + sortColumns, sortColumns);
+      verify(builder, times(1)).addDatasetDependency(ExprId.apply(0), "SORT BY " + sortColumns);
 
+      verify(builder, times(1)).addDatasetDependency(ExprId.apply(1), "WHERE " + filterCondition);
       verify(builder, times(1))
-          .addDatasetDependency(ExprId.apply(1), "WHERE " + filterCondition, filterCondition);
-      verify(builder, times(1))
-          .addDatasetDependency(ExprId.apply(2), "INNER JOIN ON " + joinCondition, joinCondition);
+          .addDatasetDependency(ExprId.apply(2), "INNER JOIN ON " + joinCondition);
 
       verify(builder, times(1))
           .addDependency(

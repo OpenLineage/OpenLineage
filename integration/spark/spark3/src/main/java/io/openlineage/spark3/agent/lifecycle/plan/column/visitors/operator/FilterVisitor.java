@@ -35,7 +35,7 @@ public class FilterVisitor implements OperatorVisitor {
     Filter filter = (Filter) operator;
     ExprId exprId = NamedExpression.newExprId();
     String description = filter.condition().sql();
-    builder.addDatasetDependency(exprId, String.format("WHERE %s", description), description);
+    builder.addDatasetDependency(exprId, String.format("WHERE %s", description));
     ExpressionTraverser.of(
             filter.condition(),
             exprId,

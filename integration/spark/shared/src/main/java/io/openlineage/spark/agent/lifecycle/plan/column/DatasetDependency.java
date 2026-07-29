@@ -14,7 +14,6 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 public class DatasetDependency {
   @Getter private ExprId exprId;
   @Getter private String outputExpression;
-  @Getter private String description;
 
   @Override
   public String toString() {
@@ -29,6 +28,7 @@ public class DatasetDependency {
 
   @Override
   public boolean equals(Object o) {
+    if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DatasetDependency that = (DatasetDependency) o;
     return Objects.equals(exprId, that.exprId)

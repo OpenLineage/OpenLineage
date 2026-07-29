@@ -42,7 +42,7 @@ public class SortVisitor implements OperatorVisitor {
             .collect(Collectors.joining(";"));
     String outputExpressionString = String.format("SORT BY %s", description);
     ExprId exprId = NamedExpression.newExprId();
-    builder.addDatasetDependency(exprId, outputExpressionString, description);
+    builder.addDatasetDependency(exprId, outputExpressionString);
     ScalaConversionUtils.fromSeq(sort.order())
         .forEach(
             e ->

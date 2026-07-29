@@ -56,8 +56,7 @@ class SortVisitorTest {
       visitor.apply(sort, builder);
 
       verify(builder, times(1))
-          .addDatasetDependency(
-              datasetDependencyExpression, "SORT BY name1 null null", "name1 null null");
+          .addDatasetDependency(datasetDependencyExpression, "SORT BY name1 null null");
       verify(builder, times(1))
           .addDependency(
               datasetDependencyExpression,
