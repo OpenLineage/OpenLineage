@@ -7,10 +7,10 @@ use crate::lineage::*;
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CreateTableLikeKind, Expr, FromTable, Function, FunctionArg,
-    FunctionArgExpr, FunctionArguments, Ident, ObjectName, ObjectNamePart, Query,
-    RenameTableNameKind, Select, SelectItem, SetExpr, Statement, Subscript, Table, TableFactor,
-    TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec,
-    WindowType, With,
+    FunctionArgExpr, FunctionArguments, Ident, Join, JoinConstraint, JoinOperator, ObjectName,
+    ObjectNamePart, Query, RenameTableNameKind, Select, SelectItem, SetExpr, Statement, Subscript,
+    Table, TableFactor, TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value,
+    ValueWithSpan, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
@@ -473,6 +473,48 @@ impl Visit for WindowSpec {
     }
 }
 
+impl Visit for Join {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        self.relation.visit(context)?;
+
+        let constraint = match &self.join_operator {
+            JoinOperator::Join(constraint)
+            | JoinOperator::Inner(constraint)
+            | JoinOperator::Left(constraint)
+            | JoinOperator::LeftOuter(constraint)
+            | JoinOperator::Right(constraint)
+            | JoinOperator::RightOuter(constraint)
+            | JoinOperator::FullOuter(constraint)
+            | JoinOperator::CrossJoin(constraint)
+            | JoinOperator::Semi(constraint)
+            | JoinOperator::LeftSemi(constraint)
+            | JoinOperator::RightSemi(constraint)
+            | JoinOperator::Anti(constraint)
+            | JoinOperator::LeftAnti(constraint)
+            | JoinOperator::RightAnti(constraint)
+            | JoinOperator::StraightJoin(constraint) => constraint,
+            JoinOperator::AsOf {
+                match_condition,
+                constraint,
+            } => {
+                match_condition.visit(context)?;
+                constraint
+            }
+            JoinOperator::CrossApply
+            | JoinOperator::OuterApply
+            | JoinOperator::ArrayJoin
+            | JoinOperator::LeftArrayJoin
+            | JoinOperator::InnerArrayJoin => return Ok(()),
+        };
+
+        if let JoinConstraint::On(expr) = constraint {
+            expr.visit(context)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
         // If we're selecting from a single table, that table becomes the default
@@ -503,7 +545,7 @@ impl Visit for Select {
 
             for join in &table.joins {
                 context.push_frame();
-                join.relation.visit(context)?;
+                join.visit(context)?;
                 let frame = context.pop_frame().unwrap();
                 context.collect_aliases(&frame);
                 context.collect(frame);
@@ -688,7 +730,7 @@ impl Visit for Statement {
                             for table_with_joins in tables {
                                 table_with_joins.relation.visit(context)?;
                                 for join in &table_with_joins.joins {
-                                    join.relation.visit(context)?;
+                                    join.visit(context)?;
                                 }
                             }
                         }
@@ -752,7 +794,7 @@ impl Visit for Statement {
                     for table in tables {
                         table.relation.visit(context)?;
                         for join in &table.joins {
-                            join.relation.visit(context)?;
+                            join.visit(context)?;
                         }
                     }
                     for table in &delete.tables {
@@ -765,7 +807,7 @@ impl Visit for Statement {
                     for table in using {
                         table.relation.visit(context)?;
                         for join in &table.joins {
-                            join.relation.visit(context)?;
+                            join.visit(context)?;
                         }
                     }
                 }
