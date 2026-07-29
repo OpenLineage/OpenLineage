@@ -9,39 +9,113 @@ To learn more about dbt, visit the [documentation site](https://docs.getdbt.com)
 
 ## How does dbt work with OpenLineage?
 
-dbt generates rich metadata that OpenLineage uses to trace datasets, jobs, and lineage. The OpenLineage dbt integration has evolved to support three main approaches for collecting lineage, each with different capabilities and trade-offs:
+dbt generates rich telemetry and metadata that OpenLineage uses to trace datasets, jobs, and lineage.
 
-1. **dbt CLI Wrapper (`dbt-ol`)**
-2. **Artifact Processor**
-3. **Structured Log Processor**
+OpenLineage processes dbt telemetry using **two primary parsing mechanisms** based on *when* and *how* metadata is collected:
+
+1. **Artifact Processor (Post-Run)**: Extracts lineage after dbt finishes by parsing generated JSON artifacts (`manifest.json`, `run_results.json`, and optionally `catalog.json`).
+2. **Structured Log Processor (Real-Time)**: Extracts lineage while dbt runs by consuming dbt's structured JSON log stream in real time.
+
+### Ingestion Approaches & Parsing Modes Comparison
+
+| Feature / Dimension | Artifact Processor Mode | Structured Log Processor Mode |
+| :--- | :--- | :--- |
+| **Parsing Mechanism** | Post-Run (Parses `manifest.json`, `run_results.json`, `catalog.json`) | Real-Time (Streams & parses JSON log lines as dbt runs) |
+| **Telemetry Source** | Target JSON artifact files | Standard Output / JSON Log Stream |
+| **Event Hierarchy** | Flat node events (`START`, `COMPLETE`/`FAIL` per node) | Nested hierarchy (`Command → Node → Query`) |
+| **Query Capture** | Retains only the last query ID per node (from `run_results.json`) | Captures all sequential SQL queries executed by a node |
+| **Schema & Catalog** | Full schema & column data types when `catalog.json` exists | Basic metadata from execution logs |
+| **Key Advantage** | High schema fidelity; simple post-run execution | Instant real-time observability; full multi-query visibility |
+| **Assumptions / Trade-offs** | Requires dbt command to finish before emitting lineage | Assumes query log events arrive sequentially in stdout |
+| **Execution Options** | `dbt-ol run` (CLI default) or `DbtLocalArtifactProcessor` (Cosmos/Airflow) | `dbt-ol run --consume-structured-logs` |
 
 ---
 
-### Ingestion Approaches Comparison
+## Core Parsing Mechanisms
 
-| Feature | dbt CLI Wrapper (`dbt-ol`) | Artifact Processor | Structured Log Processor |
-| :--- | :--- | :--- | :--- |
-| **Ingestion Type** | Post-Run | Post-Run | Real-Time (Streaming) |
-| **Telemetry Source** | Target JSON files | Target JSON files | JSON Log Stream |
-| **Hierarchy Level** | Node (Models/Tests) | Node (Models/Tests) | Command → Node → Query |
-| **Best For** | Standalone CLI runs, simple cron | Airflow Operators (e.g., Cosmos) | Real-time dashboards, long-running jobs |
+### 1. Artifact Processor (Post-Run Parsing)
 
----
-
-### 1. dbt CLI Wrapper (`dbt-ol`)
-
-This is the standard approach for standalone dbt execution.
+The Artifact Processor extracts lineage after a dbt run completes by parsing dbt's generated JSON artifact files.
 
 #### How it Works
-The `dbt-ol` command acts as a wrapper around the standard `dbt` executable:
-1. It executes the dbt command you provide (e.g., `dbt-ol run`).
-2. Once the execution completes, the wrapper reads dbt’s generated JSON artifacts from the `target/` directory:
-   * `manifest.json` (the project's dependency graph)
-   * `run_results.json` (execution outcomes, timing, and statuses)
-   * `catalog.json` (schema and column metadata, if generated)
-3. It parses the metadata, translates it to OpenLineage schemas, and emits the events to the configured `OPENLINEAGE_URL`.
+1. When dbt finishes, the processor reads three target JSON files from the `target/` directory:
+   * `manifest.json`: Contains the complete dependency graph, compiled SQL queries, and node definitions.
+   * `run_results.json`: Contains execution results, execution status, node timing, and query IDs.
+   * `catalog.json` *(optional)*: Contains database schema information, column data types, and table statistics.
+2. The processor converts the node metadata into OpenLineage dataset and job definitions, linking parent dependencies to child models.
 
-#### Preparing a dbt project for OpenLineage
+#### Event Emission Model
+* **Events per Command**: The Artifact Processor emits a pair of events (**START** and **COMPLETE** or **FAIL**) for every executed dbt node (model, seed, snapshot, or test). 
+* For example, if a `dbt run` executes 5 models, the Artifact Processor will emit 10 OpenLineage events (5 `START` events followed by 5 `COMPLETE`/`FAIL` events).
+
+#### OpenLineage Facets Emitted
+The Artifact Processor enriches OpenLineage events with rich dbt-specific and standard facets:
+
+* **Always Present (Core Facets)**:
+  * **Job Facet — `dbt_node_metadata`**: Contains node details including `unique_id`, `resource_type`, `materialization`, `original_file_path`, and `tags`.
+  * **Run Facet — `dbt_version`**: Contains the dbt core version and active database adapter name.
+  * **Dataset Facet — `symlink_identifiers`**: Contains the database, schema, and table/view names for input and output datasets.
+  * **Dataset Facet — `documentation`**: Contains model-level and dataset descriptions from dbt project documentation.
+* **Optional Facets**:
+  * **Dataset Facet — `schema`**: Detailed column names and data types (emitted when `catalog.json` is available).
+  * **Job Facet — `sql`**: Compiled SQL source code for the model or test.
+  * **Dataset Facet — `columnLineage`**: Fine-grained column-level input/output mapping (when column-level lineage parsing is enabled).
+  * **Job Facet — `dbt_exposures`**: Metadata for downstream dbt exposures.
+
+#### Programmatic & Orchestrator Usage
+Orchestrators like Apache Airflow (e.g., using [Astronomer Cosmos](https://astronomer.github.io/astronomer-cosmos/)) invoke the `DbtLocalArtifactProcessor` library directly after dbt task completion to parse artifacts without requiring CLI wrappers.
+
+---
+
+### 2. Structured Log Processor (Real-Time Streaming)
+
+The Structured Log Processor is a real-time integration method that parses dbt's JSON log stream while the dbt process executes.
+
+#### How it Works
+Starting with dbt Core v1.x, dbt emits structured JSON log events (JSON lines) during execution.
+1. The integration listens to dbt's log stream (either from stdout or log files).
+2. As log events occur (such as `MainReportVersion`, `NodeStart`, `SQLQuery`, `NodeFinished`), the processor parses them on the fly.
+3. OpenLineage events are emitted **in real-time** while the dbt run is actively executing.
+
+#### Event Hierarchy & Structural Differences
+Unlike the Artifact Processor which produces flat node-level events after execution, the Structured Log Processor constructs a **nested execution hierarchy**:
+
+1. **dbt Command Run**: An overall parent event representing the complete `dbt` invocation (e.g. `dbt run`).
+2. **Node Runs**: Nested child events for each model or test execution, linked to the main dbt command parent run.
+3. **Query Executions**: Individual SQL query execution events nested under their respective node runs.
+
+```text
+dbt Command Run (Parent)
+ └── Node Run: model_a (Child)
+      ├── Query Run: CREATE TEMP TABLE... (Grandchild)
+      └── Query Run: INSERT INTO model_a... (Grandchild)
+ └── Node Run: model_b (Child)
+```
+
+#### Query Capture & Multi-Query Attribution
+* **Multi-Query Capture**: If a single dbt model executes multiple SQL statements (e.g., pre-hooks, temporary table creation, main model transformation, and post-hooks):
+  * **Artifact Processor**: `run_results.json` only retains the last adapter response / query ID for a node, dropping earlier queries.
+  * **Structured Log Processor**: Captures every individual SQL query event emitted by dbt as it executes.
+* **Sequential Log Attribution Assumption**: The Structured Log Processor attributes SQL queries to nodes under the assumption that query log events arrive **sequentially**. It assigns each captured query ID to the currently active model node based on the stream event order.
+
+---
+
+## Using the dbt CLI Wrapper (`dbt-ol`)
+
+The `dbt-ol` CLI command is a 1:1 drop-in replacement for the standard `dbt` command. It executes your standard `dbt` subcommands and automatically handles OpenLineage event generation and submission.
+
+### Execution Modes in `dbt-ol`
+
+* **Artifact Mode (Default)**: Executes standard `dbt` and parses target artifacts post-run:
+  ```bash
+  dbt-ol run
+  ```
+* **Structured Log Mode**: Streams JSON logs and emits events in real-time as models run:
+  ```bash
+  dbt-ol run --consume-structured-logs
+  ```
+
+### Supported dbt Adapters
 
 Right now, `openlineage-dbt` supports these dbt adapters:
 
@@ -60,79 +134,33 @@ Right now, `openlineage-dbt` supports these dbt adapters:
 * `dremio`
 * `duckdb`
 
-First, we need to install the integration:
+### Installation & Configuration
+
+First, install the integration:
 
 ```bash
 pip3 install openlineage-dbt
 ```
 
-Next, we specify where we want dbt to send OpenLineage events by setting the `OPENLINEAGE_URL` environment variable. For example, to send OpenLineage events to a local instance of Marquez, use:
+Next, set the `OPENLINEAGE_URL` environment variable:
 
 ```bash
 OPENLINEAGE_URL=http://localhost:5000
 ```
 
-Finally, we can optionally specify a namespace where the lineage events will be stored. For example, to use the namespace "dev":
+Optionally, set the namespace:
 
 ```bash
 OPENLINEAGE_NAMESPACE=dev
 ```
 
-You can also override the job name sent by dbt OpenLineage events by providing env variable
+You can also override the job name sent by dbt OpenLineage events by setting the environment variable:
 ```bash
 OPENLINEAGE_DBT_JOB_NAME=<your-job-name>
 ```
-or passing `--openlineage-dbt-job-name <your-job-name>` in the dbt command line.
+or by passing `--openlineage-dbt-job-name <your-job-name>` on the command line.
 
-More configuration parameters can be found in [Python client documentation](../client/python/configuration.md)
-
-#### Running dbt with OpenLineage
-
-To run your dbt project with OpenLineage collection, simply replace `dbt` with `dbt-ol`:
-
-```bash
-dbt-ol run
-```
-
-The `dbt-ol` wrapper supports all of the standard `dbt` subcommands, and is safe to use as a substitution (i.e., in an alias). Once the run has completed, you will see output containing the number of events sent via the OpenLineage API:
-
-```bash
-Completed successfully
-
-Done. PASS=2 WARN=0 ERROR=0 SKIP=0 TOTAL=2
-Emitted 4 openlineage events
-```
-
----
-
-### 2. Artifact Processor
-
-The Artifact Processor is a library-level integration used by orchestrators to extract lineage post-run.
-
-#### How it Works
-Instead of running a CLI wrapper, an orchestrator (such as Apache Airflow using operators like [Astronomer Cosmos](https://astronomer.github.io/astronomer-cosmos/)) runs standard dbt commands. Once the run completes, the orchestrator triggers the OpenLineage `DbtLocalArtifactProcessor` library directly:
-1. The processor reads the generated `manifest.json`, `run_results.json`, and `catalog.json` files from the specified target directory.
-2. It parses the files and constructs/emits the OpenLineage events.
-
-#### Relationship to the Wrapper
-The `dbt-ol` wrapper actually uses the same underlying artifact parsing logic as the Artifact Processor. The key difference is that the wrapper executes the dbt command and handles the file paths automatically, while the Artifact Processor is designed to be called programmatically by orchestrators that manage their own file locations and execution lifecycles.
-
----
-
-### 3. Structured Log Processor
-
-The Structured Log Processor is a real-time integration method that parses JSON logs streamingly.
-
-#### How it Works
-Starting with dbt Core v1.x, dbt supports structured logging, emitting execution events as JSON lines.
-1. The integration listens to the structured log stream output by dbt (via standard output or log files).
-2. It parses the log events (such as node execution start, query start, node completion) as they occur.
-3. OpenLineage events are emitted **in real-time** while the dbt run is actively executing.
-
-#### Capabilities & Benefits
-* **Real-time streaming**: Events are emitted as models finish, providing instant observability without waiting for the whole run to complete.
-* **Richer Event Hierarchies**: Supports a detailed `command → node → SQL query` execution hierarchy.
-* **Query-level Fidelity**: Can observe specific SQL query executions that are omitted or lost in the final post-run artifacts.
+More configuration parameters can be found in [Python client documentation](../client/python/configuration.md).
 
 ---
 
