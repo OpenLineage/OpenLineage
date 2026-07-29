@@ -293,11 +293,11 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
     assertColumnDependsOnType(
         facet, "d", FILE, T3_EXPECTED_NAME, "d", TransformationInfo.identity("d"));
     List<String> outputs = Arrays.asList("a", "b", "c", "d");
-    String joinCondition1 = "INNER JOIN ON ((tmp.a = tmp2.a))";
+    String joinCondition1 = "INNER JOIN ON (tmp.a = tmp2.a)";
     List<String> joinConditiondescriptions2 =
         Arrays.asList(
-            "INNER JOIN ON ((tmp3.a = spark_catalog.default.t3.a))",
-            "INNER JOIN ON ((tmp.a = spark_catalog.default.t3.a))");
+            "INNER JOIN ON (tmp3.a = spark_catalog.default.t3.a)",
+            "INNER JOIN ON (tmp.a = spark_catalog.default.t3.a)");
     assertAllColumnsDependsOnType(
         facet,
         outputs,

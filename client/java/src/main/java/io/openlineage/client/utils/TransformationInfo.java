@@ -227,6 +227,18 @@ public class TransformationInfo {
     return new TransformationInfo(Types.INDIRECT, subType, description, isMasking);
   }
 
+  /**
+   * Returns a {@link TransformationInfo} identical to this one, except for the description. Returns
+   * {@code this} when the description is already equal, so cached instances are preserved.
+   *
+   * @param description - description of the transformation
+   */
+  public TransformationInfo withDescription(String description) {
+    return Objects.equals(this.description, description)
+        ? this
+        : new TransformationInfo(type, subType, description, masking);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

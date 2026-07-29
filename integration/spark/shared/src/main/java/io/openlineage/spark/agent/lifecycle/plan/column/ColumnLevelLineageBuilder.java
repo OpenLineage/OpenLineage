@@ -62,6 +62,7 @@ public class ColumnLevelLineageBuilder {
   private final Map<ExprId, Dependency> commonDependencies = new HashMap<>();
 
   private int dependenciesAdded;
+  private Boolean descriptionsEnabled;
 
   public ColumnLevelLineageBuilder(
       @NonNull final OpenLineage.SchemaDatasetFacet schema,
@@ -128,37 +129,46 @@ public class ColumnLevelLineageBuilder {
     }
     dependenciesAdded++;
 
+    boolean descriptionsEnabled = isDescriptionsEnabled();
+    String outputExpression = descriptionsEnabled ? outputExpressionString : "";
+    TransformationInfo transformation =
+        descriptionsEnabled ? transformationInfo : transformationInfo.withDescription("");
+
+    // Dependency instances are shared between outputs to keep memory usage down. The cached
+    // instance can only be reused when the description-carrying fields match as well, otherwise
+    // an output would be attributed the description of an unrelated expression.
     Dependency dependency = commonDependencies.get(inputExprId);
 
-    if (dependency != null && transformationInfo.equals(dependency.getTransformationInfo())) {
-      // no need to create new dependency object
-    } else {
-      // store dependency in common dependencies
-      dependency =
-          new Dependency(
-              inputExprId,
-              isDescriptionsEnabled() ? outputExpressionString : "",
-              transformationInfo.merge(
-                  TransformationInfo.identity(
-                      isDescriptionsEnabled() ? transformationInfo.getDescription() : ""),
-                  (d1, d2) -> d2));
+    if (dependency == null
+        || !transformation.equals(dependency.getTransformationInfo())
+        || !outputExpression.equals(dependency.getOutputExpression())) {
+      dependency = new Dependency(inputExprId, outputExpression, transformation);
       commonDependencies.put(inputExprId, dependency);
     }
 
     exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(dependency);
   }
 
-  private @NotNull Boolean isDescriptionsEnabled() {
-    return Optional.of(context.getOpenLineageConfig())
-        .map(SparkOpenLineageConfig::getColumnLineageConfig)
-        .map(ColumnLineageConfig::getDescriptionsEnabled)
-        .orElse(false);
+  /**
+   * Resolved on first use rather than in the constructor, because callers are allowed to adjust the
+   * config after the builder has been created. {@code addDependency} is called once per expression
+   * dependency - up to {@link #COMPUTED_DEPENDENCY_HARD_LIMIT} times - so this must not walk the
+   * config on every call.
+   */
+  private boolean isDescriptionsEnabled() {
+    if (descriptionsEnabled == null) {
+      descriptionsEnabled =
+          Optional.ofNullable(context.getOpenLineageConfig())
+              .map(SparkOpenLineageConfig::getColumnLineageConfig)
+              .map(ColumnLineageConfig::getDescriptionsEnabled)
+              .orElse(false);
+    }
+    return descriptionsEnabled;
   }
 
-  public void addDatasetDependency(ExprId outputExprId, String outputExpression, String sql) {
-    String description = isDescriptionsEnabled() ? sql : "";
-    String outputString = isDescriptionsEnabled() ? outputExpression : "";
-    datasetDependencies.add(new DatasetDependency(outputExprId, outputString, description));
+  public void addDatasetDependency(ExprId outputExprId, String outputExpression) {
+    datasetDependencies.add(
+        new DatasetDependency(outputExprId, isDescriptionsEnabled() ? outputExpression : ""));
   }
 
   public boolean hasOutputs() {
@@ -173,11 +183,8 @@ public class ColumnLevelLineageBuilder {
   }
 
   public Optional<String> getOutputExpressionByExprId(ExprId exprId) {
-    return exprDependencies.entrySet().stream()
-        .filter(e -> e.getKey().equals(exprId))
-        .findAny()
-        .map(Map.Entry::getValue)
-        .flatMap(list -> list.stream().findFirst())
+    return Optional.ofNullable(exprDependencies.get(exprId))
+        .flatMap(dependencies -> dependencies.stream().findFirst())
         .map(Dependency::getOutputExpression);
   }
 
