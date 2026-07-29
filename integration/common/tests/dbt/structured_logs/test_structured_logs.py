@@ -2266,3 +2266,211 @@ class TestTestRunFacet:
         result = ol_event_to_dict(processor.parse_node_finished_event(event))
 
         assert "test" not in result["run"]["facets"]
+
+
+class TestFullRefreshFromCommandLine:
+    """Covers detecting the run-wide --full-refresh flag on the dbt command line,
+    the log-driven path's substitute for run_results.json args."""
+
+    def test_full_refresh(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "--full-refresh"])
+            is True
+        )
+
+    def test_full_refresh_short_flag(self):
+        assert DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "-f"]) is True
+
+    def test_no_full_refresh(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "--no-full-refresh"])
+            is False
+        )
+
+    def test_last_flag_wins_no_then_full(self):
+        # dbt resolves the flag last-occurrence-wins
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(
+                ["dbt", "run", "--no-full-refresh", "--full-refresh"]
+            )
+            is True
+        )
+
+    def test_last_flag_wins_full_then_no(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(
+                ["dbt", "run", "--full-refresh", "--no-full-refresh"]
+            )
+            is False
+        )
+
+    def test_absent(self):
+        assert DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run"]) is None
+
+    def test_flag_flows_to_run_facet(self):
+        # end-to-end: the CLI flag is wired through to the emitted DbtRunRunFacet
+        processor = DbtStructuredLogsProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="dbt-test-namespace",
+            project_dir=CURRENT_DIR,
+            target="postgres",
+            dbt_command_line=["dbt", "run", "--full-refresh"],
+        )
+        processor._dbt_invocation_id = "test-invocation-id"
+        processor.project_name = "jaffle_shop"
+        processor.project_version = "1.0.0"
+        processor.profile_name = "jaffle_shop"
+
+        facet = processor.dbt_run_run_facet()["dbt_run"]
+        assert facet.full_refresh is True
+
+
+def _command_completed_event(path):
+    """Return the CommandCompleted dbt log event from a fixture list."""
+    events = yaml.safe_load(open(path))
+    return next(event for event in events if event["info"]["name"] == "CommandCompleted")
+
+
+def test_command_completed_no_longer_carries_exposures():
+    """Exposures used to be attached to the run wrapper COMPLETE event; they now live on
+    the model's output dataset instead (see test_node_finished_attaches_exposures_on_success_only
+    below), so CommandCompleted events must never carry a dbt_exposures run facet."""
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir=CURRENT_DIR,
+        target="postgres",
+        dbt_command_line=["dbt", "run"],
+    )
+    processor.dataset_namespace = "postgres://the-namespace"
+    processor.dbt_run_metadata = ParentRunMetadata(
+        run_id=DUMMY_UUID_4,
+        job_name="dbt-run-my-project",
+        job_namespace="dbt-test-namespace",
+    )
+    processor._compiled_manifest = {
+        "nodes": {
+            "model.p.orders": {"database": "db", "schema": "public", "name": "orders"},
+        },
+        "exposures": {
+            "exposure.p.dash": {
+                "unique_id": "exposure.p.dash",
+                "name": "dash",
+                "type": "dashboard",
+                "depends_on": {"nodes": ["model.p.orders"]},
+            },
+        },
+    }
+
+    success_event = processor._parse_command_completed_event(
+        _command_completed_event(CURRENT_DIR + "/postgres/events/logs/successful_CommandCompleted.yaml")
+    )
+    assert "dbt_exposures" not in success_event.run.facets
+
+    failed_event = processor._parse_command_completed_event(
+        _command_completed_event(CURRENT_DIR + "/postgres/events/logs/failed_CommandCompleted.yaml")
+    )
+    assert "dbt_exposures" not in failed_event.run.facets
+
+
+def test_node_finished_attaches_exposures_on_success_only():
+    """The dbt_exposures dataset facet is attached to a model's output dataset when the
+    model builds successfully (COMPLETE), and omitted when it fails (FAIL)."""
+    processor = node_finished_processor()
+    processor._compiled_manifest["exposures"] = {
+        "exposure.jaffle_shop.dash": {
+            "unique_id": "exposure.jaffle_shop.dash",
+            "name": "dash",
+            "type": "dashboard",
+            "depends_on": {"nodes": ["model.jaffle_shop.orders"]},
+        },
+    }
+
+    success_event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="model.jaffle_shop.orders", resource_type="model", node_status="success"
+        )
+    )
+    success_output_facets = ol_event_to_dict(success_event)["outputs"][0]["facets"]
+    assert "dbt_exposures" in success_output_facets
+    facet = success_event.outputs[0].facets["dbt_exposures"]
+    assert [exposure.unique_id for exposure in facet.exposures] == ["exposure.jaffle_shop.dash"]
+
+    fail_event = processor.parse_node_finished_event(
+        node_finished_event(unique_id="model.jaffle_shop.orders", resource_type="model", node_status="fail")
+    )
+    fail_output_facets = ol_event_to_dict(fail_event)["outputs"][0]["facets"]
+    assert "dbt_exposures" not in fail_output_facets
+
+
+def test_node_finished_no_exposures_has_no_exposures_facet():
+    processor = node_finished_processor()
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="model.jaffle_shop.orders", resource_type="model", node_status="success"
+        )
+    )
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+    assert "dbt_exposures" not in output_facets
+
+
+def test_node_finished_attaches_source_backed_exposure_to_input_on_success_only():
+    """A source-backed exposure (depends_on a source() the model reads) lands on the model's
+    INPUT dataset when the model builds successfully, and is omitted on failure. A
+    model-backed exposure still lands on the output."""
+    processor = node_finished_processor()
+    processor._compiled_manifest["sources"] = {
+        "source.jaffle_shop.raw.events": {
+            "database": "RAW",
+            "schema": "INGEST",
+            "alias": "events",
+            "name": "events",
+            "unique_id": "source.jaffle_shop.raw.events",
+            "columns": {},
+            "meta": {},
+            "tags": [],
+        },
+    }
+    processor._compiled_manifest["parent_map"]["model.jaffle_shop.orders"] = ["source.jaffle_shop.raw.events"]
+    processor._compiled_manifest["exposures"] = {
+        "exposure.jaffle_shop.model_dash": {
+            "unique_id": "exposure.jaffle_shop.model_dash",
+            "name": "model_dash",
+            "type": "dashboard",
+            "depends_on": {"nodes": ["model.jaffle_shop.orders"]},
+        },
+        "exposure.jaffle_shop.source_dash": {
+            "unique_id": "exposure.jaffle_shop.source_dash",
+            "name": "source_dash",
+            "type": "dashboard",
+            "depends_on": {"nodes": ["source.jaffle_shop.raw.events"]},
+        },
+    }
+
+    success_event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="model.jaffle_shop.orders", resource_type="model", node_status="success"
+        )
+    )
+
+    # Source-backed exposure lands on the input dataset.
+    assert len(success_event.inputs) == 1
+    input_facets = success_event.inputs[0].facets
+    assert "dbt_exposures" in input_facets
+    assert [e.unique_id for e in input_facets["dbt_exposures"].exposures] == [
+        "exposure.jaffle_shop.source_dash"
+    ]
+
+    # Model-backed exposure still lands on the output dataset.
+    output_facets = success_event.outputs[0].facets
+    assert [e.unique_id for e in output_facets["dbt_exposures"].exposures] == [
+        "exposure.jaffle_shop.model_dash"
+    ]
+
+    # On a failed build, nothing is attached to the input.
+    processor.node_id_to_inputs = {}
+    fail_event = processor.parse_node_finished_event(
+        node_finished_event(unique_id="model.jaffle_shop.orders", resource_type="model", node_status="fail")
+    )
+    assert "dbt_exposures" not in fail_event.inputs[0].facets

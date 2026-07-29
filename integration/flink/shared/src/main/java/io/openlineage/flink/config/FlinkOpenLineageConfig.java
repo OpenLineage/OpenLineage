@@ -42,6 +42,10 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   @Setter
   private Boolean enableDetachedJobTracking;
 
+  @JsonProperty("disableCheckpointTracking")
+  @Setter
+  private Boolean disableCheckpointTracking;
+
   public FlinkOpenLineageConfig() {
     super();
     datasetConfig = new FlinkDatasetConfig();
@@ -57,7 +61,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       JobConfig jobConfig,
       Integer trackingIntervalInSeconds,
       Integer detachedStartEventEmitTimeoutInSeconds,
-      Boolean enableDetachedJobTracking) {
+      Boolean enableDetachedJobTracking,
+      Boolean disableCheckpointTracking) {
     super(
         transportConfig,
         facetsConfig,
@@ -70,6 +75,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
     this.trackingIntervalInSeconds = trackingIntervalInSeconds;
     this.detachedStartEventEmitTimeoutInSeconds = detachedStartEventEmitTimeoutInSeconds;
     this.enableDetachedJobTracking = enableDetachedJobTracking;
+    this.disableCheckpointTracking = disableCheckpointTracking;
   }
 
   @Override
@@ -85,7 +91,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(trackingIntervalInSeconds, other.trackingIntervalInSeconds),
         mergePropertyWith(
             detachedStartEventEmitTimeoutInSeconds, other.detachedStartEventEmitTimeoutInSeconds),
-        mergePropertyWith(enableDetachedJobTracking, other.enableDetachedJobTracking));
+        mergePropertyWith(enableDetachedJobTracking, other.enableDetachedJobTracking),
+        mergePropertyWith(disableCheckpointTracking, other.disableCheckpointTracking));
   }
 
   public Integer getTrackingIntervalInSeconds() {
@@ -100,5 +107,9 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   public Boolean getEnableDetachedJobTracking() {
     return Optional.ofNullable(enableDetachedJobTracking)
         .orElse(DEFAULT_ENABLE_DETACHED_JOB_TRACKING);
+  }
+
+  public Boolean getDisableCheckpointTracking() {
+    return Optional.ofNullable(disableCheckpointTracking).orElse(false);
   }
 }

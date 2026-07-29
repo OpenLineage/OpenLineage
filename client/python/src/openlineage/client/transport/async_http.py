@@ -516,7 +516,7 @@ class AsyncHttpTransport(Transport):
 
     def _all_processed(self) -> bool:
         with self.event_lock:
-            return len(self.events) == 0
+            return self.event_stats["pending"] == 0
 
     def emit(self, event: Event) -> None:
         event_str = Serde.to_json(event)

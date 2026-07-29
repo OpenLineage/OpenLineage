@@ -9,6 +9,7 @@ import logging
 from abc import abstractmethod
 from collections.abc import Sequence
 from enum import Enum
+from functools import cached_property
 from typing import Any
 
 import attr
@@ -35,9 +36,13 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
+    DbtExposure,
+    DbtExposuresDatasetFacet,
+    DbtIncrementalConfig,
     DbtModelConfig,
     DbtModelDatasetFacet,
     DbtNodeJobFacet,
+    DbtPartitionBy,
     DbtRunRunFacet,
     DbtVersionRunFacet,
     ParentRunMetadata,
@@ -185,10 +190,14 @@ class DbtArtifactProcessor:
         self.skip_errors = skip_errors
         self.run_metadata: dict[str, Any] = {}
         self.command = None
+        self.full_refresh: bool | None = None
         self.models = models or []
         self.selector = selector
         self.manifest_version = None
         self.adapter_type: Adapter | None = None
+        # Populated by parse(); retained so manifest-declared exposures can be indexed
+        # and attached to the datasets they depend on.
+        self.manifest: dict[str, Any] = {}
 
     @property
     def dbt_run_metadata(self):
@@ -206,10 +215,12 @@ class DbtArtifactProcessor:
         Parse dbt manifest and run_result and produce OpenLineage events.
         """
         manifest, run_result, profile, catalog = self.get_dbt_metadata()
+        self.manifest = manifest
         self.manifest_version = self.get_schema_version(manifest)
 
         self.run_metadata = run_result["metadata"]
         self.command = run_result["args"]["which"]
+        self.full_refresh = self._full_refresh_from_args(run_result["args"])
 
         self.extract_adapter_type(profile)
         self.extract_dataset_namespace(profile)
@@ -295,22 +306,29 @@ class DbtArtifactProcessor:
             output_node = nodes[name]
             started_at, completed_at = self.get_timings(run["timing"])
 
-            inputs = []
+            # (node_id, node) so exposures depending on an input can be looked up below.
+            inputs: list[tuple[str, ModelNode]] = []
             for node in context.manifest["parent_map"][run["unique_id"]]:
                 if node.startswith("model."):
                     inputs.append(
-                        ModelNode(
-                            type="model",
-                            metadata_node=nodes[node],
-                            catalog_node=get_from_nullable_chain(context.catalog, ["nodes", node]),
+                        (
+                            node,
+                            ModelNode(
+                                type="model",
+                                metadata_node=nodes[node],
+                                catalog_node=get_from_nullable_chain(context.catalog, ["nodes", node]),
+                            ),
                         )
                     )
                 elif node.startswith("source."):
                     inputs.append(
-                        ModelNode(
-                            type="source",
-                            metadata_node=context.manifest["sources"][node],
-                            catalog_node=get_from_nullable_chain(context.catalog, ["sources", node]),
+                        (
+                            node,
+                            ModelNode(
+                                type="source",
+                                metadata_node=context.manifest["sources"][node],
+                                catalog_node=get_from_nullable_chain(context.catalog, ["sources", node]),
+                            ),
                         )
                     )
 
@@ -373,6 +391,19 @@ class DbtArtifactProcessor:
                 if column_lineage:
                     output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
 
+            # Attach exposures only for successful builds (FAIL emits no outputs, skipped
+            # nodes are filtered above).
+            succeeded = run["status"] == "success"
+            input_datasets = []
+            for node_id, input_node in inputs:
+                input_dataset = self.node_to_dataset(input_node, has_facets=True)
+                if succeeded:
+                    input_dataset.facets.update(self._exposures_facets(node_id))  # type: ignore
+                input_datasets.append(input_dataset)
+
+            if succeeded:
+                output_dataset.facets.update(self._exposures_facets(run["unique_id"]))  # type: ignore
+
             events.add(
                 self.to_openlineage_events(
                     run["status"],
@@ -380,7 +411,7 @@ class DbtArtifactProcessor:
                     completed_at,
                     self.get_run(run_id=run_id, query_id=query_id, run_facets=run_facets),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
-                    [self.node_to_dataset(node, has_facets=True) for node in inputs],
+                    input_datasets,
                     output_dataset,
                 )
             )
@@ -540,7 +571,7 @@ class DbtArtifactProcessor:
                 continue
             parent_node = manifest_nodes.get(parent_id)
             if parent_node:
-                ptype = "model" if parent_id.startswith("model.") else "source"
+                ptype = "source" if parent_id.startswith("source.") else "model"
                 ns, nm, _, _ = self.extract_dataset_data(
                     ModelNode(type=ptype, metadata_node=parent_node), None, has_facets=False
                 )
@@ -837,7 +868,8 @@ class DbtArtifactProcessor:
     def _create_dbt_model_dataset_facet(self, node: ModelNode) -> DbtModelDatasetFacet | None:
         """Build a DbtModelDatasetFacet from a dbt manifest node's resolved ``config``.
 
-        Reads ``materialized``/``access``/``owner``/``group`` from ``node.metadata_node["config"]``.
+        Reads ``materialized``/``access``/``owner``/``group`` from ``node.metadata_node["config"]``,
+        plus the incremental rebuild config for ``materialized == "incremental"`` models.
         Returns ``None`` when the node carries none of them, so we don't attach an empty facet.
         The node's ``meta`` map is emitted separately as tags (see ``_build_tags_run_facet``).
         """
@@ -848,10 +880,88 @@ class DbtArtifactProcessor:
             owner=raw_config.get("owner") or None,
             group=raw_config.get("group") or None,
         )
+        if model_config.materialized == "incremental":
+            model_config.incremental = self._build_incremental_config(raw_config)
         if not any(attr.astuple(model_config)):
             return None
 
         return DbtModelDatasetFacet(config=model_config)
+
+    def _build_incremental_config(self, raw_config: dict) -> DbtIncrementalConfig:
+        """Read the incremental rebuild config from a resolved dbt node ``config``.
+
+        Always returns a config object so the caller can use its presence to mark a model
+        incremental, even when no individual field is set.
+        """
+        strategy = raw_config.get("incremental_strategy") or None
+        incremental = DbtIncrementalConfig(
+            strategy=strategy,
+            unique_key=self._to_string_list(raw_config.get("unique_key")),
+            # incremental_predicates is the cross-adapter key; predicates is a Spark alias.
+            incremental_predicates=(
+                self._to_string_list(raw_config.get("incremental_predicates"))
+                or self._to_string_list(raw_config.get("predicates"))
+            ),
+            on_schema_change=raw_config.get("on_schema_change") or None,
+            partition_by=self._parse_partition_by(raw_config.get("partition_by")),
+        )
+        # Microbatch parameters apply only to the microbatch strategy. dbt resolves defaults
+        # (notably lookback=1) onto every model, so gate them to avoid emitting a phantom
+        # time window on merge/insert_overwrite models.
+        if strategy == "microbatch":
+            incremental.event_time = raw_config.get("event_time") or None
+            incremental.batch_size = raw_config.get("batch_size") or None
+            incremental.begin = raw_config.get("begin") or None
+            lookback = raw_config.get("lookback")
+            # bool is an int subclass; reject it so a stray true/false is not read as a count.
+            if isinstance(lookback, int) and not isinstance(lookback, bool):
+                incremental.lookback = lookback
+        full_refresh = raw_config.get("full_refresh")
+        if isinstance(full_refresh, bool):
+            incremental.full_refresh = full_refresh
+        return incremental
+
+    @staticmethod
+    def _full_refresh_from_args(args: dict) -> bool | None:
+        """Read the run-wide --full-refresh flag from run_results.json args.
+
+        Returns ``None`` when the flag is absent so the facet can omit it rather than
+        report a default the invocation never set.
+        """
+        value = args.get("full_refresh")
+        return value if isinstance(value, bool) else None
+
+    @staticmethod
+    def _to_string_list(raw: Any) -> list[str] | None:
+        """Normalize a dbt config value (single string, list, or None) into a list of strings.
+
+        Empty and non-string elements are dropped; returns ``None`` when nothing remains.
+        """
+        if isinstance(raw, str):
+            return [raw] if raw else None
+        if isinstance(raw, (list, tuple)):
+            values = [element for element in raw if isinstance(element, str) and element]
+            return values or None
+        return None
+
+    @staticmethod
+    def _parse_partition_by(raw: Any) -> DbtPartitionBy | None:
+        """Normalize dbt's polymorphic ``partition_by`` config.
+
+        BigQuery uses an object ({field, data_type, granularity}); Spark and other adapters use a
+        single column or a list of columns. Returns ``None`` when nothing is set.
+        """
+        if isinstance(raw, dict):
+            partition = DbtPartitionBy(
+                field=raw.get("field") or None,
+                data_type=raw.get("data_type") or None,
+                granularity=raw.get("granularity") or None,
+            )
+            if not any(attr.astuple(partition)):
+                return None
+            return partition
+        columns = DbtArtifactProcessor._to_string_list(raw)
+        return DbtPartitionBy(columns=columns) if columns else None
 
     @staticmethod
     def _meta_tag_value(value: Any) -> str:
@@ -1029,6 +1139,38 @@ class DbtArtifactProcessor:
 
     @abstractmethod
     def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]: ...
+
+    def _exposures_manifest(self) -> dict:
+        """Manifest to read ``exposures`` from (overridden where it lives elsewhere)."""
+        return self.manifest
+
+    @cached_property
+    def _exposures_by_node_id(self) -> dict[str, list[DbtExposure]]:
+        """Exposures indexed by each node id in their ``depends_on.nodes``.
+
+        Lets a model's input/output datasets look up the exposures that consume them.
+        """
+        raw_exposures = self._exposures_manifest().get("exposures") or {}
+        index: dict[str, list[DbtExposure]] = collections.defaultdict(list)
+        for raw_exposure in raw_exposures.values():
+            exposure = DbtExposure(
+                unique_id=raw_exposure.get("unique_id"),
+                name=raw_exposure.get("name"),
+                type=raw_exposure.get("type"),
+                url=raw_exposure.get("url"),
+            )
+            for node_id in get_from_nullable_chain(raw_exposure, ["depends_on", "nodes"]) or []:
+                index[node_id].append(exposure)
+        return dict(index)
+
+    def _exposures_facets(self, node_id: str | None) -> dict[str, DbtExposuresDatasetFacet]:
+        """Exposures dataset facet for the dataset with this node id, or empty if none.
+
+        Applies to both a model's output and its inputs; the input case covers
+        source-backed exposures, since a source only ever appears as an input.
+        """
+        exposures = self._exposures_by_node_id.get(node_id) if node_id else None
+        return {"dbt_exposures": DbtExposuresDatasetFacet(exposures=exposures)} if exposures else {}
 
     def processing_engine_facet(self) -> dict[str, processing_engine_run.ProcessingEngineRunFacet]:
         dbt_version = self.run_metadata.get("dbt_version")

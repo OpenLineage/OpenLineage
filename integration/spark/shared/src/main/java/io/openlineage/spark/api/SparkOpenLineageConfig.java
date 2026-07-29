@@ -8,6 +8,7 @@ package io.openlineage.spark.api;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
@@ -43,6 +44,10 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private String rootParentJobName;
   private String rootParentJobNamespace;
   private String rootParentRunId;
+  private OpenLineage.ParentRunFacetJobFacets parentJobFacets;
+  private OpenLineage.ParentRunFacetRunFacets parentRunFacets;
+  private OpenLineage.RootJobFacets rootParentJobFacets;
+  private OpenLineage.RootRunFacets rootParentRunFacets;
   private String overriddenAppName;
   private String overriddenApplicationRunId;
   private String testExtensionProvider;
@@ -71,6 +76,10 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String rootParentJobName,
       String rootParentJobNamespace,
       String rootParentRunId,
+      OpenLineage.ParentRunFacetJobFacets parentJobFacets,
+      OpenLineage.ParentRunFacetRunFacets parentRunFacets,
+      OpenLineage.RootJobFacets rootParentJobFacets,
+      OpenLineage.RootRunFacets rootParentRunFacets,
       String overriddenAppName,
       String overriddenApplicationRunId,
       String testExtensionProvider,
@@ -93,6 +102,10 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.rootParentJobName = rootParentJobName;
     this.rootParentJobNamespace = rootParentJobNamespace;
     this.rootParentRunId = rootParentRunId;
+    this.parentJobFacets = parentJobFacets;
+    this.parentRunFacets = parentRunFacets;
+    this.rootParentJobFacets = rootParentJobFacets;
+    this.rootParentRunFacets = rootParentRunFacets;
     this.overriddenAppName = overriddenAppName;
     this.overriddenApplicationRunId = overriddenApplicationRunId;
     this.testExtensionProvider = testExtensionProvider;
@@ -181,6 +194,10 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(rootParentJobName, other.rootParentJobName),
         mergePropertyWith(rootParentJobNamespace, other.rootParentJobNamespace),
         mergePropertyWith(rootParentRunId, other.rootParentRunId),
+        mergePropertyWith(parentJobFacets, other.parentJobFacets),
+        mergePropertyWith(parentRunFacets, other.parentRunFacets),
+        mergePropertyWith(rootParentJobFacets, other.rootParentJobFacets),
+        mergePropertyWith(rootParentRunFacets, other.rootParentRunFacets),
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
         mergePropertyWith(overriddenApplicationRunId, other.overriddenApplicationRunId),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),

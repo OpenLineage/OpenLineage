@@ -368,6 +368,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
         eventEmitter.getApplicationRunId(),
         eventEmitter.getApplicationJobName(),
         eventEmitter.getJobNamespace(),
+        null,
+        null,
         eventEmitter
             .getRootParentRunId()
             .orElse(eventEmitter.getParentRunId().orElse(eventEmitter.getApplicationRunId())),
@@ -376,7 +378,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
             .orElse(eventEmitter.getParentJobName().orElse(eventEmitter.getApplicationJobName())),
         eventEmitter
             .getRootParentJobNamespace()
-            .orElse(eventEmitter.getParentJobNamespace().orElse(eventEmitter.getJobNamespace())));
+            .orElse(eventEmitter.getParentJobNamespace().orElse(eventEmitter.getJobNamespace())),
+        eventEmitter.getRootParentRunFacets().orElse(null),
+        eventEmitter.getRootParentJobFacets().orElse(null));
   }
 
   protected OpenLineage.JobBuilder buildJob() {

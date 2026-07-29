@@ -417,6 +417,21 @@ class TestParseSingularTests:
         assert assertion.success is True
         assert assertion.column is None
 
+    def test_seed_parent_resolves_to_alias_not_name(self, processor):
+        """A seed materializes as a real table addressed by its alias, like a
+        model -- only true sources are addressed by their logical name."""
+        manifest_nodes = {
+            "seed.project.raw_customers": {
+                "name": "raw_customers",
+                "alias": "customers_physical",
+                "database": "db",
+                "schema": "public",
+            },
+        }
+        parent_map = {"test.project.assert_seed": ["seed.project.raw_customers"]}
+        inputs = processor._resolve_test_inputs("test.project.assert_seed", parent_map, manifest_nodes)
+        assert [i.name for i in inputs] == ["db.public.customers_physical"]
+
 
 class TestParseFailures:
     """Tests for failure-count extraction in parse_assertions (generic tests)."""
@@ -662,6 +677,135 @@ class TestDbtModelDatasetFacet:
         _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(node, None, has_facets=True)
         assert "dbt_model" in facets
         assert facets["dbt_model"].config.materialized == "table"
+
+
+class TestDbtIncrementalConfig:
+    """Covers the incremental rebuild config attached to the dbt_model facet for
+    ``materialized == "incremental"`` models."""
+
+    def _node(self, config):
+        from openlineage.common.provider.dbt.processor import ModelNode
+
+        base = {"database": "db", "schema": "sch", "alias": "orders", "columns": {}, "config": config}
+        return ModelNode(type="model", metadata_node=base)
+
+    def test_none_for_non_incremental_models(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(self._node({"materialized": "table"}))
+        assert facet.config.incremental is None
+
+    def test_present_even_when_no_fields_set(self, dbt_artifact_processor):
+        # presence alone marks the model incremental, mirroring the manifest
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental"})
+        )
+        incremental = facet.config.incremental
+        assert incremental is not None
+        assert incremental.strategy is None
+        assert incremental.unique_key is None
+
+    def test_extracts_merge_config(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node(
+                {
+                    "materialized": "incremental",
+                    "incremental_strategy": "merge",
+                    "unique_key": "id",
+                    "incremental_predicates": ["dbt_valid_to is null"],
+                    "on_schema_change": "append_new_columns",
+                }
+            )
+        )
+        incremental = facet.config.incremental
+        assert incremental.strategy == "merge"
+        assert incremental.unique_key == ["id"]
+        assert incremental.incremental_predicates == ["dbt_valid_to is null"]
+        assert incremental.on_schema_change == "append_new_columns"
+
+    def test_unique_key_list_preserved(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "unique_key": ["a", "", "b"]})
+        )
+        assert facet.config.incremental.unique_key == ["a", "b"]
+
+    def test_predicates_alias_fallback(self, dbt_artifact_processor):
+        # the Spark ``predicates`` alias is used only when incremental_predicates is absent
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "predicates": ["ds >= '2024-01-01'"]})
+        )
+        assert facet.config.incremental.incremental_predicates == ["ds >= '2024-01-01'"]
+
+    def test_microbatch_params_gated_to_microbatch(self, dbt_artifact_processor):
+        # a non-microbatch model with a resolved lookback default must not emit it
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "incremental_strategy": "merge", "lookback": 1})
+        )
+        assert facet.config.incremental.lookback is None
+        assert facet.config.incremental.event_time is None
+
+    def test_microbatch_params_captured(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node(
+                {
+                    "materialized": "incremental",
+                    "incremental_strategy": "microbatch",
+                    "event_time": "event_ts",
+                    "batch_size": "day",
+                    "begin": "2024-01-01",
+                    "lookback": 2,
+                }
+            )
+        )
+        incremental = facet.config.incremental
+        assert incremental.event_time == "event_ts"
+        assert incremental.batch_size == "day"
+        assert incremental.begin == "2024-01-01"
+        assert incremental.lookback == 2
+
+    def test_partition_by_bigquery_object(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node(
+                {
+                    "materialized": "incremental",
+                    "partition_by": {"field": "created_at", "data_type": "timestamp", "granularity": "day"},
+                }
+            )
+        )
+        partition = facet.config.incremental.partition_by
+        assert partition.field == "created_at"
+        assert partition.data_type == "timestamp"
+        assert partition.granularity == "day"
+        assert partition.columns is None
+
+    def test_partition_by_column_list(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "partition_by": ["ds", "region"]})
+        )
+        partition = facet.config.incremental.partition_by
+        assert partition.columns == ["ds", "region"]
+        assert partition.field is None
+
+    def test_full_refresh_override(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "full_refresh": False})
+        )
+        assert facet.config.incremental.full_refresh is False
+
+
+class TestFullRefreshFromArgs:
+    """Covers the run-wide --full-refresh flag read from run_results.json args."""
+
+    def test_true(self, dbt_artifact_processor):
+        assert dbt_artifact_processor._full_refresh_from_args({"full_refresh": True}) is True
+
+    def test_false(self, dbt_artifact_processor):
+        assert dbt_artifact_processor._full_refresh_from_args({"full_refresh": False}) is False
+
+    def test_absent(self, dbt_artifact_processor):
+        assert dbt_artifact_processor._full_refresh_from_args({}) is None
+
+    def test_non_bool_ignored(self, dbt_artifact_processor):
+        # a stray non-boolean value must not be reported as a flag
+        assert dbt_artifact_processor._full_refresh_from_args({"full_refresh": "true"}) is None
 
 
 class TestDbtMetaTags:

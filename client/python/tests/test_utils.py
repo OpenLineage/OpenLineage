@@ -58,6 +58,15 @@ def test_deep_merge_dicts_non_dict_values():
     assert deep_merge_dicts(dict1, dict2) == expected
 
 
+def test_deep_merge_dicts_scalar_replaced_by_dict():
+    # dict2's value takes precedence when the two sides are not both dicts;
+    # a scalar in dict1 must not be recursed into (it raised AttributeError).
+    dict1 = {"transport": "http"}
+    dict2 = {"transport": {"type": "console"}}
+    expected = {"transport": {"type": "console"}}
+    assert deep_merge_dicts(dict1, dict2) == expected
+
+
 def test_deep_merge_dicts_empty_dicts():
     dict1 = {}
     dict2 = {"a": 1}
