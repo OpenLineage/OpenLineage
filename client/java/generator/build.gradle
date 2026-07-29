@@ -27,5 +27,11 @@ dependencies {
     implementation group: 'com.squareup', name: 'javapoet', version: '1.13.0'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.16'
+
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.13.4'
+    testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-launcher'
 }
 
+test {
+    useJUnitPlatform()
+}
