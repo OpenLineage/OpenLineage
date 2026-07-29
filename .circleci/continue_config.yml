@@ -330,6 +330,8 @@ jobs:
       - run: |
           uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.0" --notest
           uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.0" --skip-pkg-install
+          uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.3" --notest
+          uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.3" --skip-pkg-install
           uv run --python 3.10 mypy --install-types --non-interactive --ignore-missing-imports src
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
