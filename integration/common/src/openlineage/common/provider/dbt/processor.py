@@ -632,19 +632,17 @@ class DbtArtifactProcessor:
                 if any(node.startswith(prefix) for prefix in ["model.", "source.", "seed."]):
                     model_node = node
 
-            if self.manifest_version >= 12:  # type: ignore
+            # test_metadata presence is the canonical dbt discriminator between generic tests
+            # (always have test_metadata, regardless of manifest version) and singular tests
+            # (plain SQL files, never have it). Do not gate this on manifest_version.
+            test_metadata = test_node.get("test_metadata")
+            if test_metadata:
+                name = test_metadata["name"]
+                node_columns = test_metadata
+            else:
+                # Singular test — no test_metadata, use node name directly
                 name = test_node["name"]
                 node_columns = test_node
-
-            else:
-                test_metadata = test_node.get("test_metadata")
-                if test_metadata:
-                    name = test_metadata["name"]
-                    node_columns = test_metadata
-                else:
-                    # Singular test — no test_metadata, use node name directly
-                    name = test_node["name"]
-                    node_columns = test_node
 
             # Extract severity from config, normalize to lowercase
             config = test_node.get("config", {})
@@ -659,8 +657,10 @@ class DbtArtifactProcessor:
             assertions[model_node].append(
                 data_quality_assertions_dataset.Assertion(
                     assertion=name,
+                    name=test_node.get("name"),
                     success=True if run["status"] == "pass" else False,
-                    column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
+                    column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"])
+                    or test_node.get("column_name"),
                     severity=severity,
                     actual=actual,
                     expected=expected,
