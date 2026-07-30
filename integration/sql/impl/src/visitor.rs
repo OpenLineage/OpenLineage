@@ -585,6 +585,13 @@ impl Visit for Select {
             context.collect_aliases(&frame);
         }
 
+        if let Some(having) = &self.having {
+            context.push_frame();
+            having.visit(context)?;
+            let frame = context.pop_frame().unwrap();
+            context.collect_aliases(&frame);
+        }
+
         if let Some(into) = &self.into {
             context.add_output(convert_to_idents(&into.name))
         }
