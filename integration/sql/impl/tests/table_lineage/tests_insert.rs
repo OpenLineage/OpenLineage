@@ -98,7 +98,7 @@ fn insert_snowflake_table() {
 #[test]
 fn insert_overwrite_table() {
     assert_eq!(
-        test_sql(
+        test_sql_dialect(
             "\
         INSERT OVERWRITE TABLE schema.dps
         PARTITION (ds = '2022-03-30')
@@ -119,7 +119,8 @@ fn insert_overwrite_table() {
             pid,
             uid,
             pii_userid
-    "
+    ",
+            "hive"
         )
         .unwrap()
         .table_lineage,
@@ -133,14 +134,15 @@ fn insert_overwrite_table() {
 #[test]
 fn insert_overwrite_subqueries() {
     assert_eq!(
-        test_sql(
+        test_sql_dialect(
             "
         INSERT OVERWRITE TABLE mytable
         PARTITION (ds = '2022-03-31')
         SELECT
             *
         FROM
-        (SELECT * FROM table2) a"
+        (SELECT * FROM table2) a",
+            "hive"
         )
         .unwrap()
         .table_lineage,
@@ -154,7 +156,7 @@ fn insert_overwrite_subqueries() {
 #[test]
 fn insert_overwrite_multiple_subqueries() {
     assert_eq!(
-        test_sql(
+        test_sql_dialect(
             "
         INSERT OVERWRITE TABLE mytable
         PARTITION (ds = '2022-03-31')
@@ -166,7 +168,8 @@ fn insert_overwrite_multiple_subqueries() {
          SELECT * FROM table3
          UNION ALL
          SELECT * FROM table4) a
-         "
+         ",
+            "hive"
         )
         .unwrap()
         .table_lineage,
@@ -477,7 +480,7 @@ fn test_triple_statements_insert_insert_insert() {
 #[test]
 fn insert_overwrite_multiple_unions() {
     assert_eq!(
-        test_sql(
+        test_sql_dialect(
             "
             INSERT OVERWRITE TABLE d_d_n.a_p_s_v
             PARTITION (ds = '2022-05-01')
@@ -529,7 +532,8 @@ fn insert_overwrite_multiple_unions() {
             GROUP BY
                 sub.p_i,
                 sub.u_i
-        "
+        ",
+            "hive"
         )
         .unwrap()
         .table_lineage,
@@ -543,7 +547,7 @@ fn insert_overwrite_multiple_unions() {
 #[test]
 fn insert_overwrite_partition_dates() {
     assert_eq!(
-        test_sql(
+        test_sql_dialect(
             "\
         INSERT OVERWRITE TABLE ddw.aps2
         PARTITION (ds = '2022-05-01')
@@ -661,7 +665,8 @@ fn insert_overwrite_partition_dates() {
             sub.pid,
             sub.uid,
             sub.userkey
-        "
+        ",
+            "hive"
         )
         .unwrap()
         .table_lineage,

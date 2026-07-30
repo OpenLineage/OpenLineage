@@ -14,6 +14,20 @@ fn select_simple() {
         }
     )
 }
+
+#[test]
+fn select_where_exists_subquery() {
+    assert_eq!(
+        test_sql("SELECT 1 WHERE EXISTS (SELECT 1 FROM customers);")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers"]),
+            out_tables: vec![]
+        }
+    )
+}
+
 #[test]
 fn select_from_schema_table() {
     assert_eq!(
@@ -197,6 +211,19 @@ fn select_bq_array_function() {
             .table_lineage,
         TableLineage {
             in_tables: vec![table("my_bq_dataset.my_table_2")],
+            out_tables: vec![],
+        }
+    )
+}
+
+#[test]
+fn select_bq_array_subquery() {
+    assert_eq!(
+        test_sql_dialect("SELECT ARRAY(SELECT id FROM source_table)", "bigquery")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("source_table")],
             out_tables: vec![],
         }
     )

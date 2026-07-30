@@ -254,6 +254,10 @@ public class OpenLineageDetachedJobStatusChangedListener implements JobStatusCha
   }
 
   private void startTrackingIfNeeded() {
+    if (context.getConfig().getDisableCheckpointTracking()) {
+      log.info("Checkpoint tracking is disabled via disableCheckpointTracking config");
+      return;
+    }
     if (!jobTrackingStarted && !terminalStatusObserved && tracker != null) {
       tracker.startTracking(context, this::onJobCheckpoint);
       jobTrackingStarted = true;

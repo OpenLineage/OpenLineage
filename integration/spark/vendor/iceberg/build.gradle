@@ -12,7 +12,7 @@ plugins {
 
 ext {
     assertjVersion = '3.27.7'
-    junit5Version = '5.11.4'
+    junit5Version = '5.14.4'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.30'
     micrometerVersion = '1.14.1'
@@ -66,6 +66,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")

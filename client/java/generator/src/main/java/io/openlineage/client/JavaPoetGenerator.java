@@ -350,7 +350,8 @@ public class JavaPoetGenerator {
           .returns(additionalPropertiesType)
           .addModifiers(PUBLIC)
           .addCode("return $N;", fieldName)
-          .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build());
+          .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
+          .addAnnotation(AnnotationSpec.builder(JsonIgnore.class).build());
       type
           .getParents()
           .stream()
@@ -364,6 +365,13 @@ public class JavaPoetGenerator {
         .build());
       modelClassBuilder.addField(
           FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
+              // JsonIgnore keeps this field out of Jackson's regular bean-property resolution.
+              // Without it, an incoming JSON property literally named "additionalProperties"
+              // (e.g. a column named "additionalProperties" in ColumnLineageDatasetFacetFields)
+              // collides with this field's own name and gets deserialized as if it were the
+              // whole map, instead of being routed through @JsonAnySetter as one entry.
+              // See https://github.com/OpenLineage/OpenLineage/issues/4086
+              .addAnnotation(JsonIgnore.class)
               .addAnnotation(JsonAnySetter.class)
               .build());
     }
@@ -747,10 +755,15 @@ public class JavaPoetGenerator {
         .addModifiers(PUBLIC)
         .addCode("return $N;", fieldName)
         .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
+        .addAnnotation(AnnotationSpec.builder(JsonIgnore.class).build())
         .addAnnotation(Override.class)
         .build());
     classBuilder.addField(
         FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
+        // See the matching field in modelClass() for why JsonIgnore is required here:
+        // it prevents a JSON property literally named "additionalProperties" from colliding
+        // with this field's own name during deserialization (issue #4086).
+        .addAnnotation(JsonIgnore.class)
         .addAnnotation(JsonAnySetter.class)
         .build());
 
