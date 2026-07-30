@@ -7,12 +7,9 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -23,21 +20,17 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.Table;
-import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.SparkSessionCatalog;
-import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.jspecify.annotations.NonNull;
 
 @Slf4j
 public class IcebergHandler implements CatalogHandler {
-  private static final String ICEBERG_PATH_IDENTIFIER_CLASS_NAME =
-      "org.apache.iceberg.spark.PathIdentifier";
 
   private final OpenLineageContext context;
   private final List<BaseCatalogTypeHandler> catalogTypeHandlers;
@@ -56,6 +49,7 @@ public class IcebergHandler implements CatalogHandler {
             new NessieCatalogTypeHandler(),
             new GlueCatalogTypeHandler(),
             new SnowflakeCatalogTypeHandler(),
+            //            new LakehouseRestCatalogTypeHandler(),
             new RestCatalogTypeHandler(),
             new BigQueryMetastoreCatalogTypeHandler(),
             new HadoopCatalogTypeHandler(),
@@ -131,100 +125,24 @@ public class IcebergHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    String catalogName = tableCatalog.name();
-    Map<String, String> sparkRuntimeConfig = ScalaConversionUtils.fromMap(session.conf().getAll());
-    Map<String, String> catalogConf = getCatalogProperties(sparkRuntimeConfig, catalogName);
-    BaseCatalogTypeHandler catalogTypeHandler = getCatalogTypeHandler(catalogConf);
-    String warehouseLocation = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
 
-    // Several things to be aware of:
-    // 1. You can read iceberg data without using an Iceberg catalog
-    // 2. You can't write iceberg data without using an Iceberg catalog (Spark crashes)
-    // 3. Iceberg will configure a default catalog called "default_iceberg". This catalog (usually)
-    // lacks the warehouse property.
-    // 4. When you read the metadata.json path of an Iceberg dataset, the concrete type of the
-    // Identifier interface is "org.apache.iceberg.spark.PathIdentifier"
+    Map<String, String> catalogConf = getCatalogConf(session, tableCatalog);
+    BaseCatalogTypeHandler catalogTypeHandler =
+        getCatalogTypeHandler(getCatalogConf(session, tableCatalog));
+    DatasetIdentifier primaryIdentifier =
+        catalogTypeHandler.getPrimaryIdentifier(session, catalogConf, identifier, tableCatalog);
 
-    // A heuristic to check for:
-    // Is the catalog name "default_iceberg"?
-    // Is the warehouse property set?
-    // Is the identifier of type "org.apache.iceberg.spark.PathIdentifier"?
-    // If the answer to all 3 is "YES" then we cannot assume that we are reading from a catalog that
-    // belongs to this Spark application
-    boolean isDefaultIcebergCatalog = "default_iceberg".equals(catalogName);
-    boolean lacksWarehouseProperty =
-        warehouseLocation == null || warehouseLocation.trim().isEmpty();
-    boolean isPathIdentifier =
-        ICEBERG_PATH_IDENTIFIER_CLASS_NAME.equals(identifier.getClass().getName());
-    Optional<Table> table = getIcebergTable(tableCatalog, identifier);
-    Optional<Path> maybeTableLocation = table.map(tbl -> new Path(tbl.location()));
-
-    // S3 Tables identity comes from catalog config and the logical Spark identifier, not
-    // table.location(). Build it before path-based fallback so NoSuchTableException paths
-    // (for example, create-like operations) can still produce a stable dataset name.
-    Optional<DatasetIdentifier> primaryOverride =
-        catalogTypeHandler.getPrimaryIdentifier(session, catalogConf, identifier, catalogName);
-    if (primaryOverride.isPresent()) {
-      DatasetIdentifier di = primaryOverride.get();
-      maybeTableLocation.ifPresent(
-          loc -> {
-            String authority = loc.toUri().getAuthority();
-            if (authority != null) {
-              di.withSymlink("/", "s3://" + authority, SymlinkType.LOCATION);
-            }
-          });
-      return di;
-    }
-
-    Optional<DatasetIdentifier> maybeSymlink = Optional.empty();
-    if (isDefaultIcebergCatalog && lacksWarehouseProperty && isPathIdentifier) {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Encountered an Iceberg-formatted dataset ({}) that does not belong to the configured Iceberg catalog (catalog={})",
-            identifierToString(identifier),
-            catalogName);
-      }
-      maybeTableLocation = table.map(tbl -> new Path(tbl.location()));
-    } else {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Encountered an Iceberg-formatted dataset ({}) that belongs to the configured Iceberg catalog (catalog={})",
-            identifierToString(identifier),
-            catalogName);
-      }
-      String tableName = identifier.toString();
-      maybeSymlink = catalogTypeHandler.getIdentifier(session, catalogConf, tableName);
-    }
-
-    if (!maybeTableLocation.isPresent() && warehouseLocation == null) {
-      log.debug(
-          "The catalog type is 'rest' and the table location and warehouse location is empty. This is likely a table that is being created");
-      throw new MissingDatasetIdentifierCatalogException(
-          "No table location found. Probably needs to create table first");
-    }
-
-    Path tableLocation =
-        maybeTableLocation.orElseGet(
-            () -> catalogTypeHandler.defaultTableLocation(new Path(warehouseLocation), identifier));
-
-    if (maybeSymlink.isPresent() && catalogTypeHandler.shouldOverridePrimary()) {
-      DatasetIdentifier primaryDi = maybeSymlink.get();
-      DatasetIdentifier physicalDi = PathUtils.fromPath(tableLocation);
-      primaryDi.withSymlink(physicalDi.getName(), physicalDi.getNamespace(), SymlinkType.TABLE);
-      return primaryDi;
-    }
-
-    DatasetIdentifier di = PathUtils.fromPath(tableLocation);
-    maybeSymlink.ifPresent(
-        symlink -> di.withSymlink(symlink.getName(), symlink.getNamespace(), SymlinkType.TABLE));
-    return di;
+    return catalogTypeHandler
+        .getSymlinkIdentifiers(session, catalogConf, identifier.toString())
+        .map(primaryIdentifier::withSymlink)
+        .orElse(primaryIdentifier);
   }
 
-  private String identifierToString(Identifier identifier) {
-    Class<? extends Identifier> cls = identifier.getClass();
-    String[] namespace = identifier.namespace();
-    String ns = namespace.length > 1 ? Arrays.toString(namespace) : namespace[0];
-    return String.format("%s(namespace=%s; name=%s)", cls.getSimpleName(), ns, identifier.name());
+  private @NonNull Map<String, String> getCatalogConf(
+      SparkSession session, TableCatalog tableCatalog) {
+    String catalogName = tableCatalog.name();
+    Map<String, String> sparkRuntimeConfig = ScalaConversionUtils.fromMap(session.conf().getAll());
+    return getCatalogProperties(sparkRuntimeConfig, catalogName);
   }
 
   private void logMap(String message, Map<String, String> map) {
@@ -271,111 +189,10 @@ public class IcebergHandler implements CatalogHandler {
   @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
-    return getIcebergTable(tableCatalog, identifier)
-        .map(table -> table.currentSnapshot())
+    return getCatalogTypeHandler(getCatalogProperties(properties, tableCatalog.name()))
+        .getIcebergTable(tableCatalog, identifier)
+        .map(Table::currentSnapshot)
         .map(snapshot -> Long.toString(snapshot.snapshotId()));
-  }
-
-  @SneakyThrows
-  private Optional<Table> getIcebergTable(TableCatalog tableCatalog, Identifier identifier) {
-    try {
-      if (tableCatalog instanceof SparkCatalog) {
-        SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
-        org.apache.spark.sql.connector.catalog.Table loadedTable =
-            sparkCatalog.loadTable(identifier);
-
-        // Handle different table implementations safely
-        if (loadedTable instanceof SparkTable) {
-          SparkTable sparkTable = (SparkTable) loadedTable;
-          return Optional.ofNullable(sparkTable.table());
-        } else {
-          // Handle SparkChangelogTable and other unknown table types
-          log.warn(
-              "Loaded table is not a SparkTable instance. Table type: {}, identifier: {}. "
-                  + "Attempting to extract Iceberg Table using reflection.",
-              loadedTable.getClass().getName(),
-              identifier);
-
-          // Try to extract the underlying Iceberg Table using reflection
-          // SparkChangelogTable and other wrappers typically have a table() method
-          Optional<Table> reflectedTable = extractIcebergTableViaReflection(loadedTable);
-          if (reflectedTable.isPresent()) {
-            log.debug(
-                "Successfully extracted Iceberg Table via reflection for identifier: {}",
-                identifier);
-            return reflectedTable;
-          }
-
-          log.warn(
-              "Unable to extract Iceberg Table from table type: {} for identifier: {}. "
-                  + "Returning empty to avoid ClassCastException.",
-              loadedTable.getClass().getName(),
-              identifier);
-          return Optional.empty();
-        }
-      } else if (tableCatalog instanceof SparkSessionCatalog) {
-        TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
-        SparkSessionCatalog sparkCatalog = (SparkSessionCatalog) tableCatalog;
-        return Optional.ofNullable(sparkCatalog.icebergCatalog().loadTable(tableIdentifier));
-      } else {
-        log.warn(
-            "Unknown catalog type: {} for identifier: {}. Expected SparkCatalog or SparkSessionCatalog.",
-            tableCatalog.getClass().getName(),
-            identifier);
-        return Optional.empty();
-      }
-    } catch (ClassCastException e) {
-      log.error(
-          "ClassCastException while loading table from catalog. Catalog type: {}, identifier: {}",
-          tableCatalog.getClass().getName(),
-          identifier,
-          e);
-      return Optional.empty();
-    } catch (Exception e) {
-      if (e instanceof org.apache.spark.sql.catalyst.analysis.NoSuchTableException
-          || e instanceof org.apache.iceberg.exceptions.NoSuchTableException) {
-        // probably trying to obtain table details on START event while table does not exist
-        log.debug("Table does not exist: {}", identifier);
-        return Optional.empty();
-      }
-      log.error("Unexpected error while loading table: {}", identifier, e);
-      throw e;
-    }
-  }
-
-  /**
-   * Attempts to extract an Iceberg Table from unknown table implementations using reflection. This
-   * handles cases like SparkChangelogTable and future table types that wrap an Iceberg Table.
-   *
-   * @param table The loaded Spark table
-   * @return Optional containing the Iceberg Table if successfully extracted, empty otherwise
-   */
-  private Optional<Table> extractIcebergTableViaReflection(
-      org.apache.spark.sql.connector.catalog.Table table) {
-    try {
-      // Try to invoke table() method which is common across Iceberg table implementations
-      java.lang.reflect.Method tableMethod = table.getClass().getMethod("table");
-      Object result = tableMethod.invoke(table);
-
-      if (result instanceof Table) {
-        return Optional.of((Table) result);
-      } else if (result != null) {
-        log.warn(
-            "table() method returned non-Table type: {} for table class: {}",
-            result.getClass().getName(),
-            table.getClass().getName());
-      }
-    } catch (NoSuchMethodException e) {
-      log.debug(
-          "No table() method found on table type: {}. This may not be an Iceberg table wrapper.",
-          table.getClass().getName());
-    } catch (Exception e) {
-      log.warn(
-          "Failed to extract Iceberg Table via reflection from table type: {}",
-          table.getClass().getName(),
-          e);
-    }
-    return Optional.empty();
   }
 
   @Override
