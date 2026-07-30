@@ -60,6 +60,23 @@ fn select_join() {
 }
 
 #[test]
+fn select_join_condition_subquery() {
+    assert_eq!(
+        test_sql(
+            "SELECT a.id
+             FROM a
+             JOIN b ON b.id IN (SELECT c.id FROM c)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b", "c"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
 fn select_inner_join() {
     assert_eq!(
         test_sql(
