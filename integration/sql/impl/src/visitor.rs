@@ -608,7 +608,14 @@ impl Visit for SetExpr {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
             SetExpr::Select(select) => select.visit(context),
-            SetExpr::Values(_) => Ok(()),
+            SetExpr::Values(values) => {
+                for row in &values.rows {
+                    for expression in row.iter() {
+                        expression.visit(context)?;
+                    }
+                }
+                Ok(())
+            }
             SetExpr::Insert(stmt) => stmt.visit(context),
             SetExpr::Query(q) => q.visit(context),
             SetExpr::SetOperation {

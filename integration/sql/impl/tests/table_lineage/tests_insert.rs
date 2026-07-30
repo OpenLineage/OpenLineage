@@ -18,6 +18,19 @@ fn insert_values() {
 }
 
 #[test]
+fn insert_values_subquery() {
+    assert_eq!(
+        test_sql("INSERT INTO report (total) VALUES ((SELECT count(*) FROM orders))",)
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["orders"]),
+            out_tables: tables(vec!["report"])
+        }
+    );
+}
+
+#[test]
 fn insert_cols_values() {
     assert_eq!(
         test_sql("INSERT INTO tbl(col1, col2) VALUES (1, 2), (2, 3)",)
