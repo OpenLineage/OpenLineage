@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +44,7 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
+  @SneakyThrows
   DatasetIdentifier getPrimaryIdentifier(
       SparkSession session,
       Map<String, String> catalogConf,
@@ -86,13 +88,17 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
                           "Unable to determine the location of the Iceberg dataset %s in catalog %s",
                           identifierToString(identifier), tableCatalog.name())));
     }
-    return super.getPrimaryIdentifier(session, catalogConf, identifier, tableCatalog);
+
+    return super.getPrimaryIdentifier(session, catalogConf, identifier, tableCatalog)
+        .withSymlink(
+            new DatasetIdentifier.Symlink(
+                identifier.toString(),
+                PathUtils.prepareHiveUri(getUri(session, catalogConf)).toString(),
+                DatasetIdentifier.SymlinkType.TABLE));
   }
 
-  @Override
-  @SneakyThrows
-  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
-      SparkSession session, Map<String, String> catalogConf, String table) {
+  private static URI getUri(SparkSession session, Map<String, String> catalogConf)
+      throws URISyntaxException {
     URI metastoreUri;
     String confUri = catalogConf.get(CatalogProperties.URI);
     if (confUri == null) {
@@ -102,11 +108,14 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
     } else {
       metastoreUri = new URI(confUri);
     }
-    return Optional.of(
-        new DatasetIdentifier.Symlink(
-            table,
-            PathUtils.prepareHiveUri(metastoreUri).toString(),
-            DatasetIdentifier.SymlinkType.TABLE));
+    return metastoreUri;
+  }
+
+  @Override
+  @SneakyThrows
+  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
+      SparkSession session, Map<String, String> catalogConf, String table) {
+    return Optional.empty();
   }
 
   private String identifierToString(Identifier identifier) {
