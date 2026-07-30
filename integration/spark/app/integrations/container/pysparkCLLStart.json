@@ -99,7 +99,7 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "description": "INNER JOIN ON (t1.a = t2.a)",
                       "masking": false
                     },
                     {
@@ -130,7 +130,7 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "description": "INNER JOIN ON (t1.a = t2.a)",
                       "masking": false
                     },
                     {
@@ -172,7 +172,7 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "description": "INNER JOIN ON (t1.a = t2.a)",
                       "masking": false
                     },
                     {
@@ -197,7 +197,7 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "description": "INNER JOIN ON (t1.a = t2.a)",
                       "masking": false
                     },
                     {
@@ -246,7 +246,7 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "description": "INNER JOIN ON (t1.a = t2.a)",
                       "masking": false
                     },
                     {
@@ -271,7 +271,7 @@
                     {
                       "type": "INDIRECT",
                       "subtype": "JOIN",
-                      "description": "INNER JOIN ON ((t1.a = t2.a))",
+                      "description": "INNER JOIN ON (t1.a = t2.a)",
                       "masking": false
                     },
                     {
