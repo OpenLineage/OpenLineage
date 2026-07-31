@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 import com.google.api.core.ApiFuture;
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.api.gax.rpc.AsyncTaskException;
-import com.google.cloud.datacatalog.lineage.v1.LineageSettings;
 import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
 import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
 import com.google.cloud.datalineage.producerclient.helpers.OpenLineageHelper;
@@ -31,8 +30,6 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -171,12 +168,7 @@ class GcpLineageTransportTest {
 
   @Test
   void testPassingRetryConfigToSettings(@TempDir Path tempDir)
-      throws GeneralSecurityException,
-          IOException,
-          NoSuchFieldException,
-          IllegalAccessException,
-          NoSuchMethodException,
-          InvocationTargetException {
+      throws GeneralSecurityException, IOException {
     Path mockCredentialsFile = createMockCredentialsFile(tempDir);
 
     GcpLineageTransportConfig config = new GcpLineageTransportConfig();
@@ -193,17 +185,9 @@ class GcpLineageTransportTest {
     retryConfig.setMaxRpcTimeout("PT3S");
     config.setRetryConfig(retryConfig);
 
-    GcpLineageTransport gcpLineageTransport = new GcpLineageTransport(config);
-    GcpLineageTransport.ProducerClientWrapper wrapper =
-        getValue("producerClientWrapper", GcpLineageTransport.class, gcpLineageTransport);
-
-    Method method =
-        GcpLineageTransport.ProducerClientWrapper.class.getDeclaredMethod(
-            "createSettings", GcpLineageTransportConfig.class, LineageSettings.Builder.class);
-    method.setAccessible(true);
     AsyncLineageProducerClientSettings.Builder invoke =
-        (AsyncLineageProducerClientSettings.Builder)
-            method.invoke(wrapper, config, AsyncLineageProducerClientSettings.newBuilder());
+        GcpLineageTransport.ProducerClientWrapper.createSettings(
+            config, AsyncLineageProducerClientSettings.newBuilder());
 
     RetrySettings retrySettings = invoke.processOpenLineageRunEventSettings().getRetrySettings();
 

@@ -51,17 +51,17 @@ public class GcpLineageTransport extends Transport {
   }
 
   @Override
-  public void emit(OpenLineage.@NonNull RunEvent runEvent) {
+  public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     producerClientWrapper.emitEvent(runEvent);
   }
 
   @Override
-  public void emit(OpenLineage.@NonNull DatasetEvent datasetEvent) {
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
     producerClientWrapper.emitEvent(datasetEvent);
   }
 
   @Override
-  public void emit(OpenLineage.@NonNull JobEvent jobEvent) {
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
     producerClientWrapper.emitEvent(jobEvent);
   }
 
@@ -70,6 +70,7 @@ public class GcpLineageTransport extends Transport {
     producerClientWrapper.close();
   }
 
+  @SuppressWarnings("PMD.NullAssignment")
   static class ProducerClientWrapper implements Closeable {
     private final SyncLineageClient syncLineageClient;
     private final AsyncLineageClient asyncLineageClient;
@@ -167,7 +168,7 @@ public class GcpLineageTransport extends Transport {
       return createSettings(config, builder).build();
     }
 
-    private static <T extends LineageSettings.Builder> T createSettings(
+    static <T extends LineageSettings.Builder> T createSettings(
         GcpLineageTransportConfig config, T builder) throws IOException {
       if (config.getEndpoint() != null) {
         builder.setEndpoint(config.getEndpoint());
