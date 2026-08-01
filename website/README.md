@@ -8,16 +8,16 @@ All content for this Docusaurus site can be found in `website/`. Contributions a
 
 We love new blog posts and welcome content about OpenLineage! Good topics include:
 
-* experiences from users of all kinds
-* supporting products and technologies
-* proposals for discussion.
+- experiences from users of all kinds
+- supporting products and technologies
+- proposals for discussion.
 
 If you are familiar with the GitHub pull request process, proposing a new blog post is easy:
 
 1. Fork this project.
 2. Make a new directory in `website/blog`.
-3. Add your author information -- name, title, url (optional), image_url (optional) -- to `blog/authors.yml`. 
-4. Create an `index.mdx` file in the new directory containing your blog. The `title`, `date`, `authors`, and `description` front matter fields are required. For the authors field, put the author name you added to `authors.yml` in an array (`[Doe]`). Please add any images to the new directory. Recommended: use one of the other posts as a template. 
+3. Add your author information -- name, title, url (optional), image_url (optional) -- to `blog/authors.yml`.
+4. Create an `index.mdx` file in the new directory containing your blog. The `title`, `date`, `authors`, and `description` front matter fields are required. For the authors field, put the author name you added to `authors.yml` in an array (`[Doe]`). Please add any images to the new directory. Recommended: use one of the other posts as a template.
 5. Run the site locally to test it (recommended).
 6. Commit your changes and open a pull request.
 
@@ -90,16 +90,17 @@ These Markdown pages can be found in `src/pages`.
 
 ### Building OpenAPI docs
 
-To build the OpenAPI docs using `redoc-cli`, run:
+To build the OpenAPI docs using `scripts/build-docs.sh`, run:
 
 ```shell
-% yarn run build:docs
+$ corepack yarn build:docs
 ```
 
 ## Local testing
 
 > [!IMPORTANT]
 > Requires Node.js (`>=24.0.0`) and Corepack. Corepack must be enabled prior to running installation or development commands:
+>
 > ```shell
 > corepack enable
 > ```
@@ -121,27 +122,27 @@ $ corepack yarn
 If desired, build the docs locally:
 
 ```shell
-$ yarn build
+$ corepack yarn build
 ```
 
-This command generates static content into the `build` directory. If you want to look at it, run:
+This command generates static content into the `build` directory. To preview the production build locally, run Docusaurus's built-in serve command:
 
 ```shell
-$ cd build && python3 -m http.server
+$ corepack yarn serve
 ```
 
 ## Local server start
 
-Tell Yarn to start a development server:
+Tell Corepack and Yarn to start a development server:
 
 ```shell
-$ yarn start
+$ corepack yarn start
 ```
 
 The server uses port 3000 by default. If the port is already allocated, you can specify a different one:
 
 ```shell
-$ yarn start --port 3001
+$ corepack yarn start --port 3001
 ```
 
 ## Deployment
