@@ -6,11 +6,11 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    AccessExpr, AlterTableOperation, CreateTableLikeKind, Expr, FromTable, Function, FunctionArg,
-    FunctionArgExpr, FunctionArguments, Ident, Join, JoinConstraint, JoinOperator, ObjectName,
-    ObjectNamePart, Query, RenameTableNameKind, Select, SelectItem, SetExpr, Statement, Subscript,
-    Table, TableFactor, TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value,
-    ValueWithSpan, WindowSpec, WindowType, With,
+    AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
+    Function, FunctionArg, FunctionArgExpr, FunctionArguments, Ident, Join, JoinConstraint,
+    JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select, SelectItem,
+    SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
+    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
@@ -840,26 +840,33 @@ impl Visit for Statement {
                     context.add_output(convert_to_idents(name))
                 }
             }
-            Statement::CopyIntoSnowflake { into, from_obj, .. } => {
-                context.add_output(convert_to_idents(into));
-                if let Some(from_object) = from_obj {
-                    if from_object.to_string().contains("gcs://")
-                        || from_object.to_string().contains("s3://")
-                        || from_object.to_string().contains("azure://")
-                    {
+            Statement::CopyIntoSnowflake {
+                kind,
+                into,
+                from_obj,
+                from_query,
+                ..
+            } => match kind {
+                CopyIntoSnowflakeKind::Table => {
+                    context.add_output(convert_to_idents(into));
+                    if let Some(from_object) = from_obj {
                         context.add_non_table_input(
-                            vec![Ident::new(
-                                from_object.to_string().replace(['\"', '\''], ""),
-                            )], // just unquoted location URL with,
+                            convert_copy_location_to_idents(from_object),
                             true,
                             true,
                         );
-                    } else {
-                        // Stage
-                        context.add_non_table_input(convert_to_idents(from_object), true, true);
-                    };
+                    }
                 }
-            }
+                CopyIntoSnowflakeKind::Location => {
+                    context.add_non_table_output(convert_copy_location_to_idents(into), true, true);
+                    if let Some(from_object) = from_obj {
+                        context.add_input(convert_to_idents(from_object));
+                    }
+                    if let Some(query) = from_query {
+                        query.visit(context)?;
+                    }
+                }
+            },
             Statement::Use(use_enum) => {
                 // We expect either one id (USE [...] foo;) or two ids (USE [...] foo.bar;)
                 let (first_id, second_id) = match use_enum {
@@ -995,6 +1002,15 @@ fn get_table_name_from_identifier_function_args(args: &[FunctionArg]) -> Option<
             _ => None,
         },
         _ => None,
+    }
+}
+
+fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
+    let location = object_name.to_string();
+    if location.contains("gcs://") || location.contains("s3://") || location.contains("azure://") {
+        vec![Ident::new(location.replace(['\"', '\''], ""))]
+    } else {
+        convert_to_idents(object_name)
     }
 }
 
