@@ -99,7 +99,10 @@ To build the OpenAPI docs using `redoc-cli`, run:
 ## Local testing
 
 > [!IMPORTANT]
-> Requires Node (>=18.0) and Yarn.
+> Requires Node.js (`>=24.0.0`) and Corepack. Corepack must be enabled prior to running installation or development commands:
+> ```shell
+> corepack enable
+> ```
 
 First, clone the repo and change into the `website` directory:
 
@@ -107,10 +110,10 @@ First, clone the repo and change into the `website` directory:
 $ git clone git@github.com:OpenLineage/OpenLineage.git && cd website
 ```
 
-Next, install the Node dependencies for the project using Yarn:
+Next, install the Node dependencies for the project using Corepack and Yarn:
 
 ```shell
-$ yarn
+$ corepack yarn
 ```
 
 ## Local site build (optional)
