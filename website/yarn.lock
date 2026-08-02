@@ -240,14 +240,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/api-client@npm:0.26.0":
-  version: 0.26.0
-  resolution: "@argos-ci/api-client@npm:0.26.0"
+"@argos-ci/api-client@npm:0.27.0":
+  version: 0.27.0
+  resolution: "@argos-ci/api-client@npm:0.27.0"
   dependencies:
     debug: "npm:^4.4.3"
     openapi-fetch: "npm:^0.17.0"
     p-retry: "npm:^8.0.0"
-  checksum: 10c0/b32a29912a75ab685586e1bf9fd459fd2923fb9386ec540dff6f270003545aa2b0dae863d423ee40e85c932ebe31bdeff5736f617990c5902783b146683bf3ac
+  checksum: 10c0/99109bfc2f708ab69dc44e07d8ce78a95384e28f3303919adc74b54fa20a7ea76ebb16f9a866812e8e507d053e20727e86b938b4d29f521a17494c804248f3a5
   languageName: node
   linkType: hard
 
@@ -258,28 +258,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^6.3.0":
-  version: 6.3.0
-  resolution: "@argos-ci/cli@npm:6.3.0"
+"@argos-ci/cli@npm:^6.5.0":
+  version: 6.5.0
+  resolution: "@argos-ci/cli@npm:6.5.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.26.0"
-    "@argos-ci/core": "npm:6.6.1"
+    "@argos-ci/api-client": "npm:0.27.0"
+    "@argos-ci/core": "npm:6.7.0"
     commander: "npm:^15.0.0"
     open: "npm:^11.0.0"
     ora: "npm:^9.4.0"
     update-notifier: "npm:^7.3.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/6c1a8fcf7bbb2269e4c09b5e673a7d93cd06cc885e4b055341c3af75e78e98f525b297ed752d6eaa1f53af3afaf82a3063ed48a0471fdca21c73712db739dfde
+  checksum: 10c0/7323192fe5855738cb2077468ecbf1bb85effd669af5d55ad3c9e8c6478b88ca0225b8d29316f4e806903fc83e018a59ed23955a886f311ec830aab4ef5e599d
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:6.6.1":
-  version: 6.6.1
-  resolution: "@argos-ci/core@npm:6.6.1"
+"@argos-ci/core@npm:6.7.0":
+  version: 6.7.0
+  resolution: "@argos-ci/core@npm:6.7.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.26.0"
-    "@argos-ci/util": "npm:4.0.4"
+    "@argos-ci/api-client": "npm:0.27.0"
+    "@argos-ci/util": "npm:4.1.0"
     convict: "npm:^6.2.5"
     debug: "npm:^4.4.3"
     fast-glob: "npm:^3.3.3"
@@ -287,27 +287,27 @@ __metadata:
     p-retry: "npm:^8.0.0"
     sharp: "npm:^0.35.2"
     tmp: "npm:^0.2.7"
-  checksum: 10c0/f8a65782b886a7ac2a79bf7b39995a5474e8819cf27120b6feea074643c5899c71d75cca08f30d6577d55d0bf6aa931f4d673a769ad28b17d3b2be5262dd7dfa
+  checksum: 10c0/18bfcdb00b2a4148ff49a45a7b63c959ae05fa748c6da394593bba7a70b2e40582afcdf58122b0e56d2f557409ed19c897ec00a6d9017402685dac3e758601ba
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^7.3.6":
-  version: 7.3.6
-  resolution: "@argos-ci/playwright@npm:7.3.6"
+"@argos-ci/playwright@npm:^7.4.0":
+  version: 7.4.0
+  resolution: "@argos-ci/playwright@npm:7.4.0"
   dependencies:
     "@argos-ci/browser": "npm:6.4.4"
-    "@argos-ci/core": "npm:6.6.1"
-    "@argos-ci/util": "npm:4.0.4"
+    "@argos-ci/core": "npm:6.7.0"
+    "@argos-ci/util": "npm:4.1.0"
     chalk: "npm:^5.6.2"
     debug: "npm:^4.4.3"
-  checksum: 10c0/93029c06d3736a9cd24df5148d3489de055dfab03692f7cae8a26f5ab3d361b8578a2432b769cd4422ee98024c2357617549f1ed6e78a6aa03c4160e7094ed72
+  checksum: 10c0/4d047962c7f4f7de8e27db039f966f126f02a613ce629eaaba1c1ca860701eedac218e9a998cf7d1280b6c593bb9a2cf7ae6db6b28ef013d025c2f865f6e5019
   languageName: node
   linkType: hard
 
-"@argos-ci/util@npm:4.0.4":
-  version: 4.0.4
-  resolution: "@argos-ci/util@npm:4.0.4"
-  checksum: 10c0/c86a534cd8fbe7d8c6aef648dfa83326ed74c0c8e97cae26f66b2d714f91e0af9237c94c47d64837f4da5e4961b1d40d322ae5b498354a3b799295f0ba0fc8cf
+"@argos-ci/util@npm:4.1.0":
+  version: 4.1.0
+  resolution: "@argos-ci/util@npm:4.1.0"
+  checksum: 10c0/7b8e8ec7896abf49cbbaa9c4c6e06f6fbc3d8362607bcdb8c8203d2844828a4d7000b0d41f1da8cf553b8c6c3facf77854cb815757100e1889ee47ecd960cfea
   languageName: node
   linkType: hard
 
@@ -4078,14 +4078,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:^1.61.1":
-  version: 1.61.1
-  resolution: "@playwright/test@npm:1.61.1"
+"@playwright/test@npm:^1.62.0":
+  version: 1.62.0
+  resolution: "@playwright/test@npm:1.62.0"
   dependencies:
-    playwright: "npm:1.61.1"
+    playwright: "npm:1.62.0"
   bin:
     playwright: cli.js
-  checksum: 10c0/45004139eaa7c7ec8129e4ed77a9d734aa09ed40b69162b871e4123f1d70217b7b73651431a9343ed5090d5fed11c6df1bff2a56ff4b87dc7b0371b5da87cf9c
+  checksum: 10c0/1132666c5cc4955fb043d41447475b4947e6571bd390e1b7c9fdcc9381cb58563fa7f86509a4a61e572e9b0f7ff2d9d9027eb9ee8b1f24bea7423b52b4308436
   languageName: node
   linkType: hard
 
@@ -5303,9 +5303,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^6.3.0"
-    "@argos-ci/playwright": "npm:^7.3.6"
-    "@playwright/test": "npm:^1.61.1"
+    "@argos-ci/cli": "npm:^6.5.0"
+    "@argos-ci/playwright": "npm:^7.4.0"
+    "@playwright/test": "npm:^1.62.0"
     cheerio: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
@@ -7032,7 +7032,7 @@ __metadata:
     lodash: "npm:^4.18.1"
     lunr: "npm:^2.3.9"
     motion: "npm:^12.42.2"
-    postcss: "npm:^8.5.20"
+    postcss: "npm:^8.5.23"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -11595,27 +11595,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.61.1":
-  version: 1.61.1
-  resolution: "playwright-core@npm:1.61.1"
+"playwright-core@npm:1.62.0":
+  version: 1.62.0
+  resolution: "playwright-core@npm:1.62.0"
   bin:
     playwright-core: cli.js
-  checksum: 10c0/c28896ba82a602182e240ed4f9c467fb0dd9cb57d510f8aba9f25183fe1cde3a0105725a29baffa4157fe885bbb11e228032a2aad0424111584fde45303f07bd
+  checksum: 10c0/bc7c770cc4118a7ea65d2c357fc271aaef49af6b5b8964aa19d765d4ea3473e56af926f693123fd63ed6e580830059905722ac68fbf22a31a5b1533e11600228
   languageName: node
   linkType: hard
 
-"playwright@npm:1.61.1":
-  version: 1.61.1
-  resolution: "playwright@npm:1.61.1"
+"playwright@npm:1.62.0":
+  version: 1.62.0
+  resolution: "playwright@npm:1.62.0"
   dependencies:
     fsevents: "npm:2.3.2"
-    playwright-core: "npm:1.61.1"
+    playwright-core: "npm:1.62.0"
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     playwright: cli.js
-  checksum: 10c0/cea1bc4d2a64ec3ef683891606774029da7b8a8036ed98332565cec2f8e89549ca1fab9a89fbfba4e08e27e0d7e7d148031e965af66d5ff97bb3c34058cfcad0
+  checksum: 10c0/14d2d2c35e4ef88cf69d9e6c5bf351ff47fe9cd00da09da9f48da8aaf75ebdb266330c073cb217821785fb35d7e5d9d89789220b208329e4934aaaa43da260f3
   languageName: node
   linkType: hard
 
@@ -12490,14 +12490,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.5.20":
-  version: 8.5.20
-  resolution: "postcss@npm:8.5.20"
+"postcss@npm:^8.5.23":
+  version: 8.5.23
+  resolution: "postcss@npm:8.5.23"
   dependencies:
     nanoid: "npm:^3.3.16"
     picocolors: "npm:^1.1.1"
     source-map-js: "npm:^1.2.1"
-  checksum: 10c0/9c7a0e32c77ac54c5613f974e6ccc97d4a70fdb3bf242617f3fb4d652e5c62a37c86c589e6e7a2d1e7120f80bc169cdf673482b88bd75020d2a44899fa569c13
+  checksum: 10c0/ed714e635b330bb42666ecdd0c0b4f30224ded15b0b0052d6bc2b92832f2cf17d1c1141359453f96f0a84f8fbf4c405a74df187f559163b8f31131b2535455aa
   languageName: node
   linkType: hard
 
