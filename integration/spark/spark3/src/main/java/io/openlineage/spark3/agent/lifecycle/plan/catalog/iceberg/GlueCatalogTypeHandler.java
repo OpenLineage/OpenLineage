@@ -45,7 +45,7 @@ class GlueCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
-  Optional<DatasetIdentifier> getIdentifier(
+  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
       SparkSession session, Map<String, String> catalogConf, String table) {
     SparkContext sparkContext = session.sparkContext();
     Optional<String> arn =
@@ -53,6 +53,11 @@ class GlueCatalogTypeHandler extends BaseCatalogTypeHandler {
     if (!arn.isPresent()) {
       log.warn("Glue catalog ARN is unavailable; omitting Glue table symlink for table {}.", table);
     }
-    return arn.map(s -> new DatasetIdentifier(GLUE_TABLE_PREFIX + table.replace(".", "/"), s));
+    return arn.map(
+        s ->
+            new DatasetIdentifier.Symlink(
+                GLUE_TABLE_PREFIX + table.replace(".", "/"),
+                s,
+                DatasetIdentifier.SymlinkType.TABLE));
   }
 }
