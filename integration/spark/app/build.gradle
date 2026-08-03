@@ -31,7 +31,7 @@ ext {
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.13'
     testcontainersVersion = '1.21.4'
-    awssdkVersion = '2.49.0'
+    awssdkVersion = '2.49.3'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
@@ -123,7 +123,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.53.2.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.53.2.1')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
