@@ -12,7 +12,6 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
@@ -36,9 +35,8 @@ class RestCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   boolean matchesCatalogType(Map<String, String> catalogConf) {
-    return isRestCatalog(catalogConf);
-    //        && !catalogConf.getOrDefault(CatalogProperties.URI,
-    // "").startsWith(BIGLAKE_CATALOG_URI);
+    return isRestCatalog(catalogConf)
+        && !catalogConf.getOrDefault(CatalogProperties.URI, "").startsWith(BIGLAKE_CATALOG_URI);
   }
 
   @Override
@@ -69,16 +67,6 @@ class RestCatalogTypeHandler extends BaseCatalogTypeHandler {
     String uri = new URI(confUri).toString();
     return Optional.of(
         new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE));
-  }
-
-  @Override
-  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
-    if (catalogConf.getOrDefault(CatalogProperties.URI, "").startsWith(BIGLAKE_CATALOG_URI)) {
-      Map<String, String> properties = new HashMap<>();
-      properties.put("gcp_project_id", catalogConf.get("header.x-goog-user-project"));
-      return properties;
-    }
-    return super.catalogProperties(catalogConf);
   }
 
   protected static boolean isRestCatalog(Map<String, String> catalogConf) {
