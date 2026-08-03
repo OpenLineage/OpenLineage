@@ -99,7 +99,7 @@
                     {
                       "type": "DIRECT",
                       "subtype": "IDENTITY",
-                      "description": "",
+                      "description": "event_id",
                       "masking": false
                     }
                   ]
@@ -112,7 +112,7 @@
                     {
                       "type": "DIRECT",
                       "subtype": "IDENTITY",
-                      "description": "",
+                      "description": "updates.event_id",
                       "masking": false
                     }
                   ]
@@ -128,14 +128,14 @@
                   "transformations": [
                     {
                       "type": "DIRECT",
-                      "subtype": "IDENTITY",
-                      "description": "",
+                      "subtype": "TRANSFORMATION",
+                      "description": "coalesce(spark_catalog.default.updates.updated_at, CAST(0 AS BIGINT)) AS updated_at",
                       "masking": false
                     },
                     {
                       "type": "INDIRECT",
                       "subtype": "CONDITIONAL",
-                      "description": "",
+                      "description": "coalesce(spark_catalog.default.updates.updated_at, CAST(0 AS BIGINT)) AS updated_at",
                       "masking": false
                     }
                   ]
