@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json",
+  "$defs": {
+    "LineageDatasetFacet": {
+      "type": "object",
+      "description": "Explicit lineage for this dataset. Describes which source entities feed into it, at entity and/or field granularity.",
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "inputs": {
+              "type": "array",
+              "description": "Dataset-level source inputs. A source with a field represents a dataset-wide operation where that field affects the entire target dataset.",
+              "items": {
+                "$ref": "#/$defs/LineageInput"
+              }
+            },
+            "fields": {
+              "type": "object",
+              "description": "Field-level lineage. Maps target field names to their source inputs.",
+              "additionalProperties": {
+                "$ref": "#/$defs/LineageFieldEntry"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LineageJobFacet": {
+      "type": "object",
+      "description": "Explicit lineage for a job. On a JobEvent it is the job's declared lineage; on a RunEvent it is lineage observed during that run.",
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "entries": {
+              "type": "array",
+              "description": "Lineage entries describing target entities and the source entities that feed them.",
+              "items": {
+                "$ref": "#/$defs/LineageEntry"
+              }
+            }
+          },
+          "required": ["entries"]
+        }
+      ]
+    },
+    "LineageEntry": {
+      "description": "A target dataset or job in an explicit lineage relationship.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LineageDatasetEntry"
+        },
+        {
+          "$ref": "#/$defs/LineageJobEntry"
+        }
+      ]
+    },
+    "LineageDatasetEntry": {
+      "type": "object",
+      "description": "Describes data flowing into a target dataset from source entities, at entity and/or field granularity.",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "The namespace of the target dataset."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the target dataset."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["DATASET"],
+          "description": "The target entity type. Must be DATASET."
+        },
+        "inputs": {
+          "type": "array",
+          "description": "Entity-level inputs feeding this target dataset. An empty array explicitly means that the target has no tracked upstream source.",
+          "items": {
+            "$ref": "#/$defs/LineageInput"
+          }
+        },
+        "fields": {
+          "type": "object",
+          "description": "Field-level lineage. Maps target field names to their source inputs.",
+          "additionalProperties": {
+            "$ref": "#/$defs/LineageFieldEntry"
+          }
+        }
+      },
+      "required": ["namespace", "name", "type"]
+    },
+    "LineageJobEntry": {
+      "type": "object",
+      "description": "Describes data flowing into a target job. Without namespace and name, the target is the event's own job.",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "The namespace of the target job. Omit together with name to refer to the event's own job."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the target job. Omit together with namespace to refer to the event's own job."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["JOB"],
+          "description": "The target entity type. Must be JOB."
+        },
+        "runId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The target job run when the relationship is tied to a specific execution."
+        },
+        "inputs": {
+          "type": "array",
+          "description": "Source inputs feeding this target job.",
+          "items": {
+            "$ref": "#/$defs/LineageInput"
+          }
+        }
+      },
+      "required": ["type"]
+    },
+    "LineageInput": {
+      "description": "A source dataset or job in an explicit lineage relationship.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LineageDatasetInput"
+        },
+        {
+          "$ref": "#/$defs/LineageJobInput"
+        }
+      ]
+    },
+    "LineageDatasetInput": {
+      "type": "object",
+      "description": "A source dataset that feeds data into a lineage target.",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "The namespace of the source dataset."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the source dataset."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["DATASET"],
+          "description": "The source entity type. Must be DATASET."
+        },
+        "field": {
+          "type": "string",
+          "description": "The source field. At entity level it represents a dataset-wide dependency; at field level it identifies the source field."
+        },
+        "transformations": {
+          "type": "array",
+          "description": "Transformations applied to the source data.",
+          "items": {
+            "$ref": "#/$defs/LineageTransformation"
+          }
+        }
+      },
+      "required": ["namespace", "name", "type"]
+    },
+    "LineageJobInput": {
+      "type": "object",
+      "description": "A source job that feeds data into a lineage target. Without namespace and name, the source is the event's own job.",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "The namespace of the source job. Omit together with name to refer to the event's own job."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the source job. Omit together with namespace to refer to the event's own job."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["JOB"],
+          "description": "The source entity type. Must be JOB."
+        },
+        "runId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The source job run when the relationship is tied to a specific execution."
+        },
+        "transformations": {
+          "type": "array",
+          "description": "Transformations applied by the source job to produce the data.",
+          "items": {
+            "$ref": "#/$defs/LineageTransformation"
+          }
+        }
+      },
+      "required": ["type"]
+    },
+    "LineageFieldEntry": {
+      "type": "object",
+      "description": "Field-level lineage for a single target field.",
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "description": "Source entities and/or fields that feed into this target field.",
+          "items": {
+            "$ref": "#/$defs/LineageInput"
+          }
+        }
+      },
+      "required": ["inputs"]
+    },
+    "LineageTransformation": {
+      "type": "object",
+      "description": "A transformation applied to source data in a lineage relationship.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "The transformation type, such as DIRECT or INDIRECT."
+        },
+        "subtype": {
+          "type": "string",
+          "description": "The transformation subtype, such as IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY, WINDOW, SORT, or CONDITIONAL."
+        },
+        "description": {
+          "type": "string",
+          "description": "A string representation of the transformation."
+        },
+        "masking": {
+          "type": "boolean",
+          "description": "Whether the transformation masks the source data."
+        }
+      },
+      "required": ["type"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "lineage": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LineageDatasetFacet"
+        },
+        {
+          "$ref": "#/$defs/LineageJobFacet"
+        }
+      ]
+    }
+  }
+}
