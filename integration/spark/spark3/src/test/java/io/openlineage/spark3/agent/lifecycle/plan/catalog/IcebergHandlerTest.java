@@ -150,6 +150,97 @@ class IcebergHandlerTest {
 
   @Test
   @SneakyThrows
+  void testGetDatasetIdentifierForJdbcCatalog() {
+    // Regression test for https://github.com/OpenLineage/OpenLineage/issues/4677: an Iceberg
+    // catalog configured with type=jdbc (Iceberg's JdbcCatalog) has no dedicated
+    // BaseCatalogTypeHandler, so it used to fall back to HiveCatalogTypeHandler, which tried to
+    // parse the JDBC connection string as a Hive Thrift metastore URI and threw an uncaught
+    // URISyntaxException - causing the whole dataset (input or output) to be silently dropped
+    // from the emitted lineage event rather than just missing its symlink.
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.test.type",
+                "jdbc",
+                "spark.sql.catalog.test.uri",
+                "jdbc:postgresql://metastore-host:5432/icebergdb",
+                "spark.sql.catalog.test.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"database"}, "table"),
+            new HashMap<>());
+
+    // The primary identifier is still the table's physical storage location - this part already
+    // worked before the fix, since it doesn't go through the catalog type handler.
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+
+    // The catalog symlink is what used to throw. It should now resolve using the same JDBC URL
+    // parsing used for plain JDBC datasets elsewhere in the Spark integration.
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "postgres://metastore-host:5432")
+        .hasFieldOrPropertyWithValue("name", "icebergdb.database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForJdbcCatalogWithCatalogImpl() {
+    // The Iceberg JDBC catalog can also be configured via catalog-impl instead of type=jdbc.
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.test.catalog-impl",
+                "org.apache.iceberg.jdbc.JdbcCatalog",
+                "spark.sql.catalog.test.uri",
+                "jdbc:postgresql://metastore-host:5432/icebergdb",
+                "spark.sql.catalog.test.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"database"}, "table"),
+            new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "postgres://metastore-host:5432")
+        .hasFieldOrPropertyWithValue("name", "icebergdb.database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
   void testGetDatasetIdentifierForRest() {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
