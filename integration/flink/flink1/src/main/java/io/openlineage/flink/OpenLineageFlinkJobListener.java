@@ -6,6 +6,8 @@
 package io.openlineage.flink;
 
 import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
+import io.openlineage.flink.config.FlinkConfigParser;
+import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
 import io.openlineage.flink.utils.ClassUtils;
@@ -188,7 +190,13 @@ public class OpenLineageFlinkJobListener implements JobListener {
       jobContexts.put(jobClient.getJobID(), context);
       context.onJobSubmitted();
 
-      jobTracker.startTracking(context.getOlContext(), context::onJobCheckpoint);
+      FlinkOpenLineageConfig olConfig =
+          FlinkConfigParser.parse((Configuration) executionEnvironment.getConfiguration());
+      if (olConfig.getDisableCheckpointTracking()) {
+        log.info("Checkpoint tracking is disabled via disableCheckpointTracking config");
+      } else {
+        jobTracker.startTracking(context.getOlContext(), context::onJobCheckpoint);
+      }
     } catch (IllegalAccessException e) {
       log.error("Can't access the field. ", e);
     }

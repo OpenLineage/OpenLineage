@@ -17,7 +17,9 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.util.DatasetReducerUtils;
+import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.sql.ColumnMeta;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,7 +52,7 @@ public class ColumnLevelLineageBuilder {
   private static final Integer RETURNED_INPUT_FIELD_LIMIT = 100000;
 
   private Map<ExprId, Set<Dependency>> exprDependencies = new HashMap<>();
-  private List<ExprId> datasetDependencies = new LinkedList<>();
+  private List<DatasetDependency> datasetDependencies = new LinkedList<>();
   @Getter private Map<ExprId, Set<Input>> inputs = new HashMap<>();
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
@@ -60,6 +62,7 @@ public class ColumnLevelLineageBuilder {
   private final Map<ExprId, Dependency> commonDependencies = new HashMap<>();
 
   private int dependenciesAdded;
+  private Boolean descriptionsEnabled;
 
   public ColumnLevelLineageBuilder(
       @NonNull final OpenLineage.SchemaDatasetFacet schema,
@@ -105,33 +108,67 @@ public class ColumnLevelLineageBuilder {
    * @param outputExprId
    * @param inputExprId
    */
-  public void addDependency(ExprId outputExprId, ExprId inputExprId) {
-    addDependency(outputExprId, inputExprId, TransformationInfo.identity());
+  public void addDependency(
+      ExprId outputExprId, ExprId inputExprId, String outputExpressionString) {
+    addDependency(outputExprId, inputExprId, outputExpressionString, TransformationInfo.identity());
   }
 
   public void addDependency(
-      ExprId outputExprId, ExprId inputExprId, TransformationInfo transformationInfo) {
+      ExprId outputExprId,
+      ExprId inputExprId,
+      String outputExpressionString,
+      TransformationInfo transformationInfo) {
     if (dependenciesAdded > COMPUTED_DEPENDENCY_HARD_LIMIT) {
       // do nothing -> hard limit of allowed dependencies reached
       return;
     }
+
+    if (outputExprId.equals(inputExprId)) {
+      // no expression should have direct dependency on itself
+      return;
+    }
     dependenciesAdded++;
 
+    boolean descriptionsEnabled = isDescriptionsEnabled();
+    String outputExpression = descriptionsEnabled ? outputExpressionString : "";
+    TransformationInfo transformation =
+        descriptionsEnabled ? transformationInfo : transformationInfo.withDescription("");
+
+    // Dependency instances are shared between outputs to keep memory usage down. The cached
+    // instance can only be reused when the description-carrying fields match as well, otherwise
+    // an output would be attributed the description of an unrelated expression.
     Dependency dependency = commonDependencies.get(inputExprId);
 
-    if (dependency != null && transformationInfo.equals(dependency.getTransformationInfo())) {
-      // no need to create new dependency object
-    } else {
-      // store dependency in common dependencies
-      dependency = new Dependency(inputExprId, transformationInfo);
+    if (dependency == null
+        || !transformation.equals(dependency.getTransformationInfo())
+        || !outputExpression.equals(dependency.getOutputExpression())) {
+      dependency = new Dependency(inputExprId, outputExpression, transformation);
       commonDependencies.put(inputExprId, dependency);
     }
 
     exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(dependency);
   }
 
-  public void addDatasetDependency(ExprId outputExprId) {
-    datasetDependencies.add(outputExprId);
+  /**
+   * Resolved on first use rather than in the constructor, because callers are allowed to adjust the
+   * config after the builder has been created. {@code addDependency} is called once per expression
+   * dependency - up to {@link #COMPUTED_DEPENDENCY_HARD_LIMIT} times - so this must not walk the
+   * config on every call.
+   */
+  private boolean isDescriptionsEnabled() {
+    if (descriptionsEnabled == null) {
+      descriptionsEnabled =
+          Optional.ofNullable(context.getOpenLineageConfig())
+              .map(SparkOpenLineageConfig::getColumnLineageConfig)
+              .map(ColumnLineageConfig::getDescriptionsEnabled)
+              .orElse(false);
+    }
+    return descriptionsEnabled;
+  }
+
+  public void addDatasetDependency(ExprId outputExprId, String outputExpression) {
+    datasetDependencies.add(
+        new DatasetDependency(outputExprId, isDescriptionsEnabled() ? outputExpression : ""));
   }
 
   public boolean hasOutputs() {
@@ -143,6 +180,12 @@ public class ColumnLevelLineageBuilder {
         .filter(fields -> stripQuotes(fields.getName()).equals(stripQuotes(field)))
         .findAny()
         .map(f -> outputs.get(f));
+  }
+
+  public Optional<String> getOutputExpressionByExprId(ExprId exprId) {
+    return Optional.ofNullable(exprDependencies.get(exprId))
+        .flatMap(dependencies -> dependencies.stream().findFirst())
+        .map(Dependency::getOutputExpression);
   }
 
   @Override
@@ -267,13 +310,15 @@ public class ColumnLevelLineageBuilder {
     }
 
     ExprId outputExprId = outputs.get(outputField.get());
-    return getInputsUsedFor(outputExprId);
+    String outputExpressionString = isDescriptionsEnabled() ? outputName : "";
+    return getInputsUsedFor(outputExprId, outputExpressionString);
   }
 
   @NotNull
-  private List<TransformedInput> getInputsUsedFor(ExprId outputExprId) {
+  private List<TransformedInput> getInputsUsedFor(
+      ExprId outputExprId, String outputExpressionString) {
     List<TransformedInput> collect =
-        findDependentInputs(outputExprId).stream()
+        findDependentInputs(outputExprId, outputExpressionString).stream()
             .filter(dependency -> inputs.containsKey(dependency.getExprId()))
             .flatMap(
                 dependency ->
@@ -284,13 +329,17 @@ public class ColumnLevelLineageBuilder {
     return collect;
   }
 
-  private List<Dependency> findDependentInputs(ExprId outputExprId) {
+  private List<Dependency> findDependentInputs(ExprId outputExprId, String outputExpressionString) {
     Set<Dependency> dependentInputs = new HashSet<>();
-    dependentInputs.add(new Dependency(outputExprId, TransformationInfo.identity()));
+    Dependency e =
+        new Dependency(
+            outputExprId,
+            outputExpressionString,
+            TransformationInfo.identity(outputExpressionString));
+    dependentInputs.add(e);
     boolean continueSearch = true;
 
-    Set<Dependency> newDependentInputs =
-        Collections.singleton(new Dependency(outputExprId, TransformationInfo.identity()));
+    Set<Dependency> newDependentInputs = Collections.singleton(e);
     while (continueSearch) {
       newDependentInputs =
           newDependentInputs.stream()
@@ -329,7 +378,7 @@ public class ColumnLevelLineageBuilder {
 
   private List<TransformedInput> datasetDependencyInputs() {
     return datasetDependencies.stream()
-        .flatMap(e -> getInputsUsedFor(e).stream())
+        .flatMap(e -> getInputsUsedFor(e.getExprId(), e.getOutputExpression()).stream())
         .distinct()
         .collect(Collectors.toList());
   }

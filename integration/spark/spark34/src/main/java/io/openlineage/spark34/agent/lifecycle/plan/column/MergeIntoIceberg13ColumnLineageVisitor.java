@@ -82,7 +82,8 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
               .getBuilder()
               .addDependency(
                   ((LogicalPlan) namedRelation).output().apply(i).exprId(),
-                  queryOutputs.get(i).exprId());
+                  queryOutputs.get(i).exprId(),
+                  ((LogicalPlan) namedRelation).output().apply(i).name());
         }
       }
     }
@@ -105,7 +106,10 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
               log.debug(
                   "Adding dependency: {}, {}", outputs.get(i).exprId(), inputs.get(i + 1).exprId());
             }
-            context.getBuilder().addDependency(outputs.get(i).exprId(), inputs.get(i + 1).exprId());
+            context
+                .getBuilder()
+                .addDependency(
+                    outputs.get(i).exprId(), inputs.get(i + 1).exprId(), outputs.get(i).name());
           }
           break;
         } else {

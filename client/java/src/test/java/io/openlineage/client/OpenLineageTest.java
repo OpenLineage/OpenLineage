@@ -18,7 +18,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacet;
 import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacetColumnMetricsAdditional;
 import io.openlineage.client.OpenLineage.DatasetEvent;
+import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputField;
 import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.JobEvent;
 import io.openlineage.client.OpenLineage.JobFacets;
@@ -168,6 +170,60 @@ class OpenLineageTest {
     assertEquals(now, read.getEventTime());
     assertEquals(Boolean.TRUE, read.getDataset().getFacets().getDocumentation().get_deleted());
     assertEquals(Boolean.TRUE, read.getDataset().getFacets().getDocumentation().isDeleted());
+  }
+
+  @Test
+  void jsonRunEventWithColumnNamedAdditionalPropertiesDeserialization()
+      throws JsonProcessingException {
+    // Regression test for https://github.com/OpenLineage/OpenLineage/issues/4086
+    // A column lineage "fields" entry keyed by the literal column name "additionalProperties"
+    // used to collide with Jackson's own @JsonAnyGetter/@JsonAnySetter catch-all property of the
+    // same name on ColumnLineageDatasetFacetFields, causing deserialization to fail.
+    URI producer = URI.create("producer");
+    OpenLineage ol = new OpenLineage(producer);
+    UUID runId = UUID.randomUUID();
+    Run run = ol.newRun(runId, null);
+    Job job = ol.newJob("namespace", "jobName", null);
+
+    InputField inputField =
+        ol.newInputField(
+            "input-namespace", "input-dataset", "input-column", Collections.emptyList());
+    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional columnFacet =
+        ol.newColumnLineageDatasetFacetFieldsAdditional(
+            Collections.singletonList(inputField), null, null);
+    OpenLineage.ColumnLineageDatasetFacetFields fields =
+        ol.newColumnLineageDatasetFacetFieldsBuilder()
+            .put("additionalProperties", columnFacet)
+            .build();
+    OpenLineage.ColumnLineageDatasetFacet columnLineage =
+        ol.newColumnLineageDatasetFacetBuilder().fields(fields).build();
+    DatasetFacets outputFacets = ol.newDatasetFacetsBuilder().columnLineage(columnLineage).build();
+    List<OutputDataset> outputs =
+        Arrays.asList(ol.newOutputDataset("ons", "output", outputFacets, null));
+
+    RunEvent runStateUpdate =
+        ol.newRunEvent(
+            now,
+            OpenLineage.RunEvent.EventType.COMPLETE,
+            run,
+            job,
+            Collections.emptyList(),
+            outputs);
+
+    String json = mapper.writeValueAsString(runStateUpdate);
+
+    // This used to throw MismatchedInputException before the fix.
+    RunEvent read = mapper.readValue(json, RunEvent.class);
+
+    OpenLineage.ColumnLineageDatasetFacetFields readFields =
+        read.getOutputs().get(0).getFacets().getColumnLineage().getFields();
+    assertEquals(1, readFields.getAdditionalProperties().size());
+    OpenLineage.ColumnLineageDatasetFacetFieldsAdditional readColumn =
+        readFields.getAdditionalProperties().get("additionalProperties");
+    assertEquals(1, readColumn.getInputFields().size());
+    assertEquals("input-namespace", readColumn.getInputFields().get(0).getNamespace());
+    assertEquals("input-dataset", readColumn.getInputFields().get(0).getName());
+    assertEquals("input-column", readColumn.getInputFields().get(0).getField());
   }
 
   @Test

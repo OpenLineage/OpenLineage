@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionTraverser;
@@ -24,7 +25,12 @@ public class ProjectVisitor implements OperatorVisitor {
     ScalaConversionUtils.fromSeq(((Project) operator).projectList())
         .forEach(
             expression ->
-                ExpressionTraverser.of((Expression) expression, expression.exprId(), builder)
+                ExpressionTraverser.of(
+                        (Expression) expression,
+                        expression.exprId(),
+                        expression.qualifiedName(),
+                        TransformationInfo.identity(((Expression) expression).sql()),
+                        builder)
                     .traverse());
   }
 }

@@ -34,6 +34,29 @@ def test_structured_logs(command_line: str, number_of_calls: int, monkeypatch):
 
 
 @pytest.mark.parametrize(
+    "job_name_args",
+    [
+        ["--openlineage-dbt-job-name", "myjob"],
+        ["--openlineage-dbt-job-name=myjob"],
+    ],
+    ids=["space_form", "equals_form"],
+)
+def test_main_strips_openlineage_job_name_before_dbt(job_name_args, monkeypatch):
+    # The dbt-ol-only --openlineage-dbt-job-name option must be consumed by the
+    # wrapper: whether it is passed as `--opt value` or `--opt=value`, it must not
+    # leak into the args handed to dbt (dbt exits non-zero on an unknown option).
+    mock_consume_local_artifacts = mock.MagicMock()
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", mock_consume_local_artifacts)
+    monkeypatch.setattr("sys.argv", ["dbt-ol", "run", *job_name_args, "--select", "orders"])
+
+    main()
+
+    passed_args = mock_consume_local_artifacts.call_args.kwargs["args"]
+    assert not any(arg.startswith("--openlineage-dbt-job-name") for arg in passed_args)
+    assert mock_consume_local_artifacts.call_args.kwargs["openlineage_job_name"] == "myjob"
+
+
+@pytest.mark.parametrize(
     "command_line, os_envs, function_kwargs",
     [
         (

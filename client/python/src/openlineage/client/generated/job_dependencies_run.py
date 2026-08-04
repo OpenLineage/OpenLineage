@@ -7,7 +7,7 @@ from typing import Any, ClassVar, cast
 
 import attr
 from openlineage.client.generated.base import RunFacet
-from openlineage.client.utils import RedactMixin
+from openlineage.client.utils import RedactMixin, add_additional_properties, reduce_with_additional_properties
 
 
 @attr.define
@@ -63,23 +63,15 @@ class JobDependency(RedactMixin):
 
     def with_additional_properties(self, **kwargs: Any) -> "JobDependency":
         """Add additional properties to updated class instance."""
-        current_attrs = [a.name for a in attr.fields(self.__class__)]
+        return cast(JobDependency, add_additional_properties(self, **kwargs))
 
-        new_class = attr.make_class(
-            self.__class__.__name__,
-            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
-            bases=(self.__class__,),
-        )
-        new_class.__module__ = self.__class__.__module__
-        attrs = attr.fields(self.__class__)
-        for a in attrs:
-            if not a.init:
-                continue
-            attr_name = a.name  # To deal with private attributes.
-            init_name = a.alias
-            if init_name not in kwargs:
-                kwargs[init_name] = getattr(self, attr_name)
-        return cast(JobDependency, new_class(**kwargs))
+    def __reduce__(self) -> tuple[Any, ...]:
+        """Support pickling instances created via `with_additional_properties`.
+
+        `with_additional_properties` builds a new class at runtime, which the default pickling
+        mechanism can't resolve back to by name; see `reduce_with_additional_properties`.
+        """
+        return reduce_with_additional_properties(self)
 
     @staticmethod
     def _get_schema() -> str:
