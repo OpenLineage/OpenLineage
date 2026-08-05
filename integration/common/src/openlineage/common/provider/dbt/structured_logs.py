@@ -642,6 +642,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return dq.Assertion(
             assertion=name,
+            name=manifest_test_node.get("name"),
             success=success,
             column=column,
             severity=severity,
