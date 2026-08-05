@@ -57,6 +57,22 @@ fn update_table_from_subquery() {
 }
 
 #[test]
+fn update_table_from_assignment_subquery() {
+    assert_eq!(
+        test_sql(
+            "UPDATE dataset.Inventory
+            SET quantity = (SELECT quantity FROM dataset.NewArrivals)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["dataset.NewArrivals"]),
+            out_tables: tables(vec!["dataset.Inventory"])
+        }
+    )
+}
+
+#[test]
 fn update_identifier_function() {
     let test_cases = vec![
         (

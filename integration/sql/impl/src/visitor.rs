@@ -6,11 +6,11 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    AccessExpr, AlterTableOperation, CreateTableLikeKind, Expr, FromTable, Function, FunctionArg,
-    FunctionArgExpr, FunctionArguments, Ident, ObjectName, ObjectNamePart, Query,
-    RenameTableNameKind, Select, SelectItem, SetExpr, Statement, Subscript, Table, TableFactor,
-    TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec,
-    WindowType, With,
+    AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
+    Function, FunctionArg, FunctionArgExpr, FunctionArguments, Ident, Join, JoinConstraint,
+    JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select, SelectItem,
+    SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
+    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
@@ -108,6 +108,7 @@ impl Visit for TableFactor {
                 lateral: _,
                 subquery,
                 alias,
+                sample: _,
             } => {
                 context.push_frame();
                 subquery.visit(context)?;
@@ -408,7 +409,7 @@ impl Visit for Function {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match &self.args {
             FunctionArguments::None => {}
-            FunctionArguments::Subquery(_) => {}
+            FunctionArguments::Subquery(query) => query.visit(context)?,
             FunctionArguments::List(arguments) => {
                 for arg in &arguments.args {
                     arg.visit(context)?;
@@ -472,6 +473,48 @@ impl Visit for WindowSpec {
     }
 }
 
+impl Visit for Join {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        self.relation.visit(context)?;
+
+        let constraint = match &self.join_operator {
+            JoinOperator::Join(constraint)
+            | JoinOperator::Inner(constraint)
+            | JoinOperator::Left(constraint)
+            | JoinOperator::LeftOuter(constraint)
+            | JoinOperator::Right(constraint)
+            | JoinOperator::RightOuter(constraint)
+            | JoinOperator::FullOuter(constraint)
+            | JoinOperator::CrossJoin(constraint)
+            | JoinOperator::Semi(constraint)
+            | JoinOperator::LeftSemi(constraint)
+            | JoinOperator::RightSemi(constraint)
+            | JoinOperator::Anti(constraint)
+            | JoinOperator::LeftAnti(constraint)
+            | JoinOperator::RightAnti(constraint)
+            | JoinOperator::StraightJoin(constraint) => constraint,
+            JoinOperator::AsOf {
+                match_condition,
+                constraint,
+            } => {
+                match_condition.visit(context)?;
+                constraint
+            }
+            JoinOperator::CrossApply
+            | JoinOperator::OuterApply
+            | JoinOperator::ArrayJoin
+            | JoinOperator::LeftArrayJoin
+            | JoinOperator::InnerArrayJoin => return Ok(()),
+        };
+
+        if let JoinConstraint::On(expr) = constraint {
+            expr.visit(context)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
         // If we're selecting from a single table, that table becomes the default
@@ -502,7 +545,7 @@ impl Visit for Select {
 
             for join in &table.joins {
                 context.push_frame();
-                join.relation.visit(context)?;
+                join.visit(context)?;
                 let frame = context.pop_frame().unwrap();
                 context.collect_aliases(&frame);
                 context.collect(frame);
@@ -535,6 +578,20 @@ impl Visit for Select {
 
         context.set_column_context(None);
 
+        if let Some(selection) = &self.selection {
+            context.push_frame();
+            selection.visit(context)?;
+            let frame = context.pop_frame().unwrap();
+            context.collect_aliases(&frame);
+        }
+
+        if let Some(having) = &self.having {
+            context.push_frame();
+            having.visit(context)?;
+            let frame = context.pop_frame().unwrap();
+            context.collect_aliases(&frame);
+        }
+
         if let Some(into) = &self.into {
             context.add_output(convert_to_idents(&into.name))
         }
@@ -551,7 +608,14 @@ impl Visit for SetExpr {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
             SetExpr::Select(select) => select.visit(context),
-            SetExpr::Values(_) => Ok(()),
+            SetExpr::Values(values) => {
+                for row in &values.rows {
+                    for expression in row.iter() {
+                        expression.visit(context)?;
+                    }
+                }
+                Ok(())
+            }
             SetExpr::Insert(stmt) => stmt.visit(context),
             SetExpr::Query(q) => q.visit(context),
             SetExpr::SetOperation {
@@ -622,13 +686,15 @@ impl Visit for Statement {
                     TableObject::TableFunction(func) => {
                         func.visit(context)?;
                     }
+                    TableObject::TableQuery(_) => {}
                 }
             }
-            Statement::Merge { table, source, .. } => {
-                if let Some(table_name) = get_table_name_from_table_factor(table, &*context) {
+            Statement::Merge(merge) => {
+                if let Some(table_name) = get_table_name_from_table_factor(&merge.table, &*context)
+                {
                     context.add_output(table_name);
                 }
-                source.visit(context)?;
+                merge.source.visit(context)?;
             }
             Statement::CreateTable(ct) => {
                 if let Some(query) = &ct.query {
@@ -678,11 +744,14 @@ impl Visit for Statement {
                             for table_with_joins in tables {
                                 table_with_joins.relation.visit(context)?;
                                 for join in &table_with_joins.joins {
-                                    join.relation.visit(context)?;
+                                    join.visit(context)?;
                                 }
                             }
                         }
                     }
+                }
+                for assignment in &update.assignments {
+                    assignment.value.visit(context)?;
                 }
                 if let Some(expr) = &update.selection {
                     expr.visit(context)?;
@@ -713,30 +782,46 @@ impl Visit for Statement {
                 }
             }
             Statement::Delete(delete) => {
-                match &delete.from {
+                let tables = match &delete.from {
                     FromTable::WithFromKeyword(tables) | FromTable::WithoutKeyword(tables) => {
-                        for table in tables {
+                        tables
+                    }
+                };
+
+                if delete.tables.is_empty() {
+                    for table in tables {
+                        if let Some(output) =
+                            get_table_name_from_table_factor(&table.relation, &*context)
+                        {
+                            context.add_output(output);
+                        }
+                        for join in &table.joins {
                             if let Some(output) =
-                                get_table_name_from_table_factor(&table.relation, &*context)
+                                get_table_name_from_table_factor(&join.relation, &*context)
                             {
                                 context.add_output(output);
                             }
-                            for join in &table.joins {
-                                if let Some(join_output) =
-                                    get_table_name_from_table_factor(&join.relation, &*context)
-                                {
-                                    context.add_output(join_output);
-                                }
-                            }
                         }
                     }
+                } else {
+                    let existing_inputs = context.inputs.clone();
+                    for table in tables {
+                        table.relation.visit(context)?;
+                        for join in &table.joins {
+                            join.visit(context)?;
+                        }
+                    }
+                    for table in &delete.tables {
+                        context.move_input_to_output(convert_to_idents(table));
+                    }
+                    context.inputs.extend(existing_inputs);
                 }
 
                 if let Some(using) = &delete.using {
                     for table in using {
                         table.relation.visit(context)?;
                         for join in &table.joins {
-                            join.relation.visit(context)?;
+                            join.visit(context)?;
                         }
                     }
                 }
@@ -755,26 +840,33 @@ impl Visit for Statement {
                     context.add_output(convert_to_idents(name))
                 }
             }
-            Statement::CopyIntoSnowflake { into, from_obj, .. } => {
-                context.add_output(convert_to_idents(into));
-                if let Some(from_object) = from_obj {
-                    if from_object.to_string().contains("gcs://")
-                        || from_object.to_string().contains("s3://")
-                        || from_object.to_string().contains("azure://")
-                    {
+            Statement::CopyIntoSnowflake {
+                kind,
+                into,
+                from_obj,
+                from_query,
+                ..
+            } => match kind {
+                CopyIntoSnowflakeKind::Table => {
+                    context.add_output(convert_to_idents(into));
+                    if let Some(from_object) = from_obj {
                         context.add_non_table_input(
-                            vec![Ident::new(
-                                from_object.to_string().replace(['\"', '\''], ""),
-                            )], // just unquoted location URL with,
+                            convert_copy_location_to_idents(from_object),
                             true,
                             true,
                         );
-                    } else {
-                        // Stage
-                        context.add_non_table_input(convert_to_idents(from_object), true, true);
-                    };
+                    }
                 }
-            }
+                CopyIntoSnowflakeKind::Location => {
+                    context.add_non_table_output(convert_copy_location_to_idents(into), true, true);
+                    if let Some(from_object) = from_obj {
+                        context.add_input(convert_to_idents(from_object));
+                    }
+                    if let Some(query) = from_query {
+                        query.visit(context)?;
+                    }
+                }
+            },
             Statement::Use(use_enum) => {
                 // We expect either one id (USE [...] foo;) or two ids (USE [...] foo.bar;)
                 let (first_id, second_id) = match use_enum {
@@ -910,6 +1002,15 @@ fn get_table_name_from_identifier_function_args(args: &[FunctionArg]) -> Option<
             _ => None,
         },
         _ => None,
+    }
+}
+
+fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
+    let location = object_name.to_string();
+    if location.contains("gcs://") || location.contains("s3://") || location.contains("azure://") {
+        vec![Ident::new(location.replace(['\"', '\''], ""))]
+    } else {
+        convert_to_idents(object_name)
     }
 }
 

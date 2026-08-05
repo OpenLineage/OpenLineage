@@ -113,7 +113,7 @@ public class CatalogDatasetFacetUtils {
       //noinspection unchecked
       return Optional.ofNullable(
               ((Option<String>) MethodUtils.invokeMethod(identifier, "catalog")).get())
-          .map(catalogName -> session.sessionState().catalogManager().catalog(catalogName));
+          .flatMap(catalogName -> SparkSessionUtils.catalog(session, catalogName));
     } catch (NoSuchMethodException
         | IllegalAccessException
         | InvocationTargetException
