@@ -17,6 +17,8 @@ import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.CopyIntoCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.CopyIntoCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnEndDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnStartDatasetBuilder;
@@ -32,6 +34,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.column.JdbcColumnLineageVisitor;
 import io.openlineage.spark31.agent.lifecycle.plan.AlterTableDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
@@ -58,6 +61,8 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new DataSourceV2RelationInputOnStartDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationInputOnEndDatasetBuilder(context, datasetFactory))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
+            .add(new CopyIntoCommandInputDatasetBuilder(context))
+            .add(new TableContentChangeInputDatasetBuilder(context))
             .add(new SubqueryAliasInputDatasetBuilder(context));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
@@ -78,6 +83,7 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
+            .add(new CopyIntoCommandOutputDatasetBuilder(context))
             .add(new CreateReplaceDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))

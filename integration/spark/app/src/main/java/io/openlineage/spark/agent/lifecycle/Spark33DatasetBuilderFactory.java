@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.CopyIntoCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetBuilder;
@@ -42,6 +43,7 @@ public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
+            .add(new CopyIntoCommandOutputDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new CreateReplaceDatasetBuilder(context))
