@@ -3,9 +3,11 @@ title: "Toward More Precise Lineage: Introducing Explicit Lineage Facets"
 date: 2026-08-04
 authors: 
 - Obuchowski
+- Moravec
+- Antunes
 - Le Dem
 - Shein
-- Moravec
+
 description: OpenLineage's implicit edge model works for most pipelines, but breaks down for multi-output jobs, dataset derivations, and job-to-job handoffs. Explicit lineage facets fix that.
 ---
 
@@ -15,9 +17,9 @@ OpenLineage has always been built on a simple, powerful idea: capture what a job
 
 ## The problem with implicit edges
 
-OpenLineage expresses lineage through `inputs` and `outputs` arrays on run and job events. The implicit rule is straightforward: everything in `inputs` feeds everything in `outputs`. For the common case - one job, one input, one output - this works perfectly. For most Spark jobs, most dbt models, and most Airflow tasks, the rule is correct and produces an accurate lineage graph.
+OpenLineage expresses lineage through `inputs` and `outputs` arrays on run and job events. The implicit rule is straightforward: everything in `inputs` feeds everything in `outputs`. For the common case - one job, one input, one output - this works perfectly. Most Spark jobs, dbt models, and Airflow tasks produce a single logical output, so all recorded inputs can be associated with that output without ambiguity, and correct data lineage is captured. 
 
-The problem surfaces when a single job handles multiple independent data flows simultaneously. Imagine a bulk ETL job that reads tables A and B and writes tables C and D, where the real edges are A → C and B → D. OpenLineage today infers four edges: A → C, A → D, B → C, and B → D. Two of those are wrong. The graph is technically complete but logically imprecise, and that imprecision compounds as pipelines grow.
+The limitation however becomes more noticeable when a single job handles several independent data flows. Consider a bulk ETL job that reads tables A and B and writes tables C and D, where A feeds C and B feeds D. From the event alone, a consumer may infer four edges: A → C, A → D, B → C, and B → D. The additional edges do not reflect the intended flow and can make the resulting lineage graph less precise.
 
 ![Cartesian product of inputs x outputs](./cartesian.png)
 
@@ -34,7 +36,7 @@ These are not edge cases. They are patterns that producers in the community have
 
 ## Explicit lineage facets: the proposal
 
-The proposal introduces two new facets - `LineageJobFacet` and `LineageDatasetFacet` - that let producers express lineage explicitly rather than letting consumers infer it. The core idea is simple: instead of leaving consumers to draw edges between all inputs and outputs, producers state the edges directly. And the new facets allow doing that on any granularity, and describe any data lineage relationship, not only the ones that fit the input-job-output conceptualization.
+The proposal introduces two new facets - `LineageJobFacet` and `LineageDatasetFacet` - that allow producers to describe lineage relationships directly. Instead of assuming that every input contributes to every output, consumers can use the relationships provided by the producer. The facets support dataset-level and column-level mappings, dataset-to-dataset derivations, and data passed directly between jobs, enabling OpenLineage producers to capture lineage on any level of granularity granularity, and describe also relationships that do not fit the input-job-output conceptualization.
 
 :::note
 The full proposal, schema definitions, and examples are available in the [OpenLineage repository](https://github.com/OpenLineage/OpenLineage/tree/main/proposals/explicit_lineage_facet) under `proposals/explicit_lineage_facet/`. This is an experimental proposal actively seeking feedback from the community.
@@ -59,7 +61,7 @@ The new model covers the full range of lineage patterns in a single, unified str
 }
 ```
 
-The `inputs` and `outputs` arrays remain populated for backward compatibility and for dataset facet attachments. But when a lineage facet is present, consumers derive edges from it - not from the cartesian product.
+The `inputs` and `outputs` arrays remain populated for backward compatibility and for dataset facet attachments. But when a lineage facet is present, consumers should derive edges from it - not from the cartesian product.
 
 **Dataset-to-dataset derivation, no job required.** A database view derives from base tables. There is no job executing here - just a structural relationship.
 
@@ -128,7 +130,11 @@ The proposal also supersedes `ColumnLineageDatasetFacet` (CLL). Everything CLL c
 
 New facets are optional. Existing producers continue working exactly as they do today - no changes required. This is the standard extensibility mechanism in OpenLineage: new facets can be added without modifying or invalidating existing events.
 
-Sunsetting of ColumnLineage facet by the new facets will be gradual. To enable teams to migrate at their own pace, the proposal includes automatic bidirectional translation in the OpenLineage client libraries, controlled by a configuration option:
+Sunsetting of ColumnLineage facet by the new facets will be gradual. To make adoption easier for teams at different stages of migration, the proposal extends the OpenLineage Java and Python clients with translation between the two representations during event emission. 
+
+A client can derive new lineage facets from existing `inputs`, `outputs`, and CLL. Other way around, the client can generate the legacy representation from explicit lineage facets (but will lose information about lineage the legace model cannot express today - such as dataset-only or job-to-job lineage).
+
+Translation applies to `RunEvent` and `JobEvent`; `DatasetEvent` lineage has no legacy equivalent. A configuration option controls which translations the client performs:
 
 | Mode | Producer emits | Client generates | Use case |
 |------|---------------|-----------------|----------|
@@ -142,7 +148,7 @@ With `compatibility = both` as the default, neither producers nor consumers need
 
 ### For producers
 
-If you maintain an OpenLineage integration, this proposal gives you a path to express what you actually know about your data flows, not just what fits the current model. The new facets let you express the truth: precise dataset-level edges where that is what you know, column-level detail where you have it, and nothing where you don't - all in the same event.
+If you maintain an OpenLineage integration, this proposal gives you a path to express more information about your data flows, not just what fits the current model. The new facets let producers represent lineage at the level of detail available to them: precise dataset-level edges where known, column-level mappings where available, and mixed levels of detail within the same event.
 
 ### For consumers
 
@@ -176,4 +182,4 @@ OpenLineage succeeds because producers and consumers build on a shared specifica
 
 ---
 
-*The Explicit Lineage Facet is an experimental proposal under active review. Feedback is welcome via the GitHub issue. The proposal may be changed or updated based on community input.*
+*The Explicit Lineage Facet is an experimental feature under active review. Feedback is welcome via the GitHub issue. The proposal may be changed or updated based on community input.*

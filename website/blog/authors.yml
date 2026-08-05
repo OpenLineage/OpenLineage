@@ -104,6 +104,12 @@ Shein:
 
 Moravec:
     name: Jakub Moravec
-    title: OpenLineage Committer
+    title: OpenLineage Committer & Product Manager at IBM
     url: https://github.com/jakub-moravec
     image_url: https://github.com/jakub-moravec.png
+
+Antunes:
+    name: Nelson Antunes
+    title: OpenLineage Contributor & Software Engineer at Pentaho
+    url: https://github.com/nantunes
+    image_url: https://github.com/nantunes.png
