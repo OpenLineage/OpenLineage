@@ -271,13 +271,11 @@ def consume_local_artifacts(
 ):
     logger = logging.getLogger("openlineage.dbt")
     logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
-    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
-    parent_run_metadata = None
-    # We can get this if we have been orchestrated by an external system like airflow
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
-
-    if parent_id:
-        parent_run_metadata = get_parent_run_metadata()
+    # We can get this if we have been orchestrated by an external system like airflow.
+    # get_parent_run_metadata() reads OPENLINEAGE_CONTEXT first and only then the legacy
+    # OPENLINEAGE_PARENT_ID, so it must not be gated on the legacy variable being set.
+    parent_run_metadata = get_parent_run_metadata()
     client = OpenLineageClient()
 
     processor = DbtLocalArtifactProcessor(
