@@ -49,7 +49,7 @@ public class IcebergHandler implements CatalogHandler {
             new NessieCatalogTypeHandler(),
             new GlueCatalogTypeHandler(),
             new SnowflakeCatalogTypeHandler(),
-            //            new LakehouseRestCatalogTypeHandler(),
+            new LakehouseRestCatalogTypeHandler(),
             new RestCatalogTypeHandler(),
             new BigQueryMetastoreCatalogTypeHandler(),
             new HadoopCatalogTypeHandler(),
