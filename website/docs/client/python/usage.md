@@ -69,7 +69,7 @@ from openlineage.client.event_v2 import (
     RunState,
 )
 from openlineage.client.uuid import generate_new_uuid
-from datetime import datetime
+from datetime import datetime, timezone
 ```
 
 Then, in the same file, initialize the Python client:
@@ -118,7 +118,7 @@ a START run event:
 client.emit(
 	RunEvent(
 		eventType=RunState.START,
-		eventTime=datetime.now().isoformat(),
+		eventTime=datetime.now(timezone.utc).isoformat(),
 		run=run, 
         job=job, 
         producer=producer,
@@ -131,7 +131,7 @@ and, finally, a COMPLETE run event:
 client.emit(
 	RunEvent(
 		eventType=RunState.COMPLETE,
-		eventTime=datetime.now().isoformat(),
+		eventTime=datetime.now(timezone.utc).isoformat(),
 		run=run, job=job, producer=producer,
 		inputs=[inventory],
 		outputs=[menus, orders],
@@ -141,7 +141,7 @@ client.emit(
 
 Now you have a complete script for creating datasets and a run event! Execute it in the terminal to send the metadata to Marquez:
 ```bash
-python3 generate_scripts.py
+python3 generate_events.py
 ```
 
 Marquez will update itself automatically, so the new job and datasets should now be visible in the UI. Clicking on the jobs icon (the icon with the three interlocking gears), will make the `example.order_data` job appear in the list of jobs:
