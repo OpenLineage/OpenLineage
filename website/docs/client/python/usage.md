@@ -8,6 +8,7 @@ title: Usage Example
 To try out the client, follow the steps below to install and explore OpenLineage, Marquez (the reference implementation of OpenLineage), and the client itself. Then, the instructions will show you how to use these tools to add a run event and datasets to an existing namespace.
 
 ### Prerequisites
+
 - Docker 17.05+
 - Docker Compose 1.29.1+
 - Git (preinstalled on most versions of MacOS; verify your version with `git version`)
@@ -16,18 +17,22 @@ To try out the client, follow the steps below to install and explore OpenLineage
 ### Install OpenLineage and Marquez
 
 Clone the Marquez Github repository:
+
 ```bash
 git clone https://github.com/MarquezProject/marquez.git
 ```
 
 ### Install the Python client
+
 ```bash
 pip install openlineage-python
 ```
 
 ### Start Docker and Marquez
+
 Start Docker Desktop
 Run Marquez with preloaded data:
+
 ```bash
 cd marquez
 ./docker/up.sh --seed
@@ -40,6 +45,7 @@ Take a moment to explore Marquez to get a sense of how metadata is displayed in 
 Next, configure OpenLineage and add a script to your project that will generate a new job and new datasets within an existing namespace (here we’re using the `food_delivery` namespace that got passed to Marquez with the `–seed` argument we used earlier).
 
 Create a directory for your script:
+
 ```bash
 ..
 mkdir python_scripts && cd python_scripts
@@ -73,6 +79,7 @@ from datetime import datetime, timezone
 ```
 
 Then, in the same file, initialize the Python client:
+
 ```python
 client = OpenLineageClient()
 ```
@@ -90,13 +97,14 @@ client = OpenLineageClient(config={
 
 > For more details about options to setup OpenLineageClient such as API tokens or HTTP transport settings, please refer to the following [example](https://github.com/OpenLineage/OpenLineage/blob/main/client/python/tests/test_http.py)
 
-
 Specify the producer of the new lineage metadata with a string:
+
 ```python
 producer = "OpenLineage.io/website/blog"
 ```
 
 Now you can create some basic dataset objects. These require a namespace and name:
+
 ```python
 inventory = Dataset(namespace="food_delivery", name="public.inventory")
 menus = Dataset(namespace="food_delivery", name="public.menus_1")
@@ -104,29 +112,33 @@ orders = Dataset(namespace="food_delivery", name="public.orders_1")
 ```
 
 You can also create a job object (we’ve borrowed this one from the existing `food_delivery` namespace):
+
 ```python
 job = Job(namespace="food_delivery", name="example.order_data")
 ```
 
 To create a run object you’ll need to specify a unique ID:
+
 ```python
 run = Run(runId=str(generate_new_uuid()))
 ```
 
 a START run event:
+
 ```python
 client.emit(
 	RunEvent(
 		eventType=RunState.START,
 		eventTime=datetime.now(timezone.utc).isoformat(),
-		run=run, 
-        job=job, 
+		run=run,
+        job=job,
         producer=producer,
 	)
 )
 ```
 
 and, finally, a COMPLETE run event:
+
 ```python
 client.emit(
 	RunEvent(
@@ -140,6 +152,7 @@ client.emit(
 ```
 
 Now you have a complete script for creating datasets and a run event! Execute it in the terminal to send the metadata to Marquez:
+
 ```bash
 python3 generate_events.py
 ```
@@ -197,21 +210,21 @@ client = OpenLineageClient(
 )
 
 # If you want to log to a file instead of Marquez
-# from openlineage.client import OpenLineageClient
-# from openlineage.client.transport.file import FileConfig, FileTransport
-# 
-# file_config = FileConfig(
-#     log_file_path="ol.json",
-#     append=True,
+# client = OpenLineageClient(
+#     config={
+#         "transport": {
+#             "type": "file",
+#             "log_file_path": "ol.json",
+#             "append": True,
+#         }
+#     }
 # )
-# 
-# client = OpenLineageClient(transport=FileTransport(file_config))
 
 
 # generates job facet
 def job(job_name, sql, location):
     facets = {"sql": sql_job.SQLJobFacet(query=sql)}
-    if location != None:
+    if location is not None:
         facets.update(
             {
                 "sourceCodeLocation": source_code_location_job.SourceCodeLocationJobFacet(
@@ -222,7 +235,7 @@ def job(job_name, sql, location):
     return Job(namespace=namespace, name=job_name, facets=facets)
 
 
-# generates run racet
+# generates run facet
 def run(run_id, hour):
     return Run(
         runId=run_id,
@@ -237,7 +250,7 @@ def run(run_id, hour):
 
 # generates dataset
 def dataset(name, schema=None, ns=namespace):
-    if schema == None:
+    if schema is None:
         facets = {}
     else:
         facets = {"schema": schema}
@@ -245,22 +258,27 @@ def dataset(name, schema=None, ns=namespace):
 
 
 # generates output dataset
-def outputDataset(dataset, stats):
-    output_facets = {"stats": stats, "outputStatistics": stats}
-    return OutputDataset(dataset.namespace,
-                         dataset.name,
-                         facets=dataset.facets,
-                         outputFacets=output_facets)
+def outputDataset(dataset, stats=None):
+    output_facets = {"stats": stats, "outputStatistics": stats} if stats is not None else {}
+    return OutputDataset(
+        namespace=dataset.namespace,
+        name=dataset.name,
+        facets=dataset.facets,
+        outputFacets=output_facets,
+    )
 
 
 # generates input dataset
-def inputDataset(dataset, dq):
+def inputDataset(dataset, dq=None):
     input_facets = {
         "dataQuality": dq,
-    }
-    return InputDataset(dataset.namespace, dataset.name,
-                        facets=dataset.facets,
-                        inputFacets=input_facets)
+    } if dq is not None else {}
+    return InputDataset(
+        namespace=dataset.namespace,
+        name=dataset.name,
+        facets=dataset.facets,
+        inputFacets=input_facets,
+    )
 
 
 def twoDigits(n):
@@ -396,6 +414,7 @@ for event in events:
     client.emit(event)
 
 ```
+
 The resulting lineage events received by Marquez would look like this.
 
 ![the Marquez graph](./mqz_graph_example.png)
