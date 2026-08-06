@@ -8,6 +8,7 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.utils.CopyIntoCommandUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
@@ -19,9 +20,9 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias;
 
 /**
- * Extracts output datasets from the Databricks-specific {@code CopyIntoCommand}. Since the class
- * belongs to the Databricks runtime and is not available at compile time, reflection is used to
- * access its {@code target()} method.
+ * Extracts output datasets from the Databricks-specific {@code CopyIntoCommand} or {@code
+ * CopyIntoCommandEdge}. Since these classes belong to the Databricks runtime and are not available
+ * at compile time, reflection is used to access their {@code target()} method.
  */
 @Slf4j
 public class CopyIntoCommandOutputDatasetBuilder
@@ -33,9 +34,7 @@ public class CopyIntoCommandOutputDatasetBuilder
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    return x.getClass()
-        .getCanonicalName()
-        .endsWith("sql.transaction.tahoe.commands.CopyIntoCommand");
+    return CopyIntoCommandUtils.isCopyIntoCommand(x);
   }
 
   @Override

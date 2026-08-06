@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.utils.DeleteUpdateCommandUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -17,8 +18,8 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
 
 /**
- * Extracts input datasets from the subqueries of a {@link DeleteFromTable} or an {@link
- * UpdateTable}.
+ * Extracts input datasets from the subqueries of a {@link DeleteFromTable}, an {@link UpdateTable}
+ * or of the Databricks Delta command the same statement is resolved to.
  *
  * <p>Tables referenced from a WHERE clause or from an UPDATE assignment live inside expressions,
  * not inside the children of the plan node:
@@ -30,7 +31,9 @@ import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
  *                +- plan: the subquery reading another table
  * </pre>
  *
- * The regular traversal only walks children, so those tables were missing from the event.
+ * The regular traversal only walks children, so those tables were missing from the event. {@code
+ * subqueries()} is available on the Databricks commands as well, because the condition is one of
+ * their expressions.
  */
 public class TableContentChangeInputDatasetBuilder
     extends AbstractQueryPlanInputDatasetBuilder<LogicalPlan> {
@@ -41,7 +44,9 @@ public class TableContentChangeInputDatasetBuilder
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    return (x instanceof DeleteFromTable) || (x instanceof UpdateTable);
+    return (x instanceof DeleteFromTable)
+        || (x instanceof UpdateTable)
+        || DeleteUpdateCommandUtils.isDeleteOrUpdateCommand(x);
   }
 
   @Override
