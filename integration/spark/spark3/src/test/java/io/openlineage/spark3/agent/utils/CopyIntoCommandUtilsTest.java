@@ -7,7 +7,9 @@ package io.openlineage.spark3.agent.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class CopyIntoCommandUtilsTest {
 
@@ -23,5 +25,13 @@ class CopyIntoCommandUtilsTest {
         .isTrue();
     assertThat(CopyIntoCommandUtils.matchesCommandClassName("AppendData")).isFalse();
     assertThat(CopyIntoCommandUtils.matchesCommandClassName(null)).isFalse();
+  }
+
+  @Test
+  void testTargetWhenCommandHasNoSuchMember() {
+    LogicalPlan plan = Mockito.mock(LogicalPlan.class);
+    assertThat(CopyIntoCommandUtils.target(plan)).isEmpty();
+    assertThat(CopyIntoCommandUtils.sourcePath(plan)).isEmpty();
+    assertThat(CopyIntoCommandUtils.sourceQuery(plan)).isEmpty();
   }
 }
