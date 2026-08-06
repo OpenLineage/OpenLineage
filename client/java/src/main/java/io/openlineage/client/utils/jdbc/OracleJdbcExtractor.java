@@ -6,9 +6,11 @@
 package io.openlineage.client.utils.jdbc;
 
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -33,9 +35,54 @@ public class OracleJdbcExtractor implements JdbcExtractor {
     String uri = rawUri.replaceFirst(URI_START, "").replaceAll(URI_END, "");
 
     if (uri.contains("(")) {
-      throw new URISyntaxException(uri, "TNS format is unsupported for now");
+      return extractTns(uri, properties);
     }
     return extractUri(uri, properties);
+  }
+
+  /**
+   * Handles TNS connect descriptors, e.g. {@code
+   * (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=h)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=s)))}.
+   * Pulls out every ADDRESS (host/port) and the CONNECT_DATA identifier, then reuses
+   * OverridingJdbcExtractor for the actual formatting instead of duplicating it here.
+   */
+  private JdbcLocation extractTns(String uri, Properties properties) throws URISyntaxException {
+    TnsDescriptor root = TnsDescriptor.parse(uri);
+
+    List<String> hostPorts = new ArrayList<>();
+    for (TnsDescriptor address : root.findAll("ADDRESS")) {
+      Optional<String> host = address.childValue("HOST");
+      if (!host.isPresent()) {
+        continue;
+      }
+      Optional<String> port = address.childValue("PORT");
+      hostPorts.add(port.map(p -> host.get() + ":" + p).orElseGet(host::get));
+    }
+    if (hostPorts.isEmpty()) {
+      throw new URISyntaxException(uri, "No ADDRESS entries found in TNS descriptor");
+    }
+
+    String identifier =
+        root.findAll("CONNECT_DATA").stream()
+            .findFirst()
+            .flatMap(
+                cd ->
+                    cd.childValue("SERVICE_NAME")
+                        .map(Optional::of)
+                        .orElseGet(
+                            () ->
+                                cd.childValue("SID")
+                                    .map(Optional::of)
+                                    .orElseGet(() -> cd.childValue("INSTANCE_NAME"))))
+            .orElse(null);
+
+    String normalizedUri =
+        SCHEME
+            + "://"
+            + StringUtils.join(hostPorts, ",")
+            + (identifier != null ? "/" + identifier : "");
+
+    return new OverridingJdbcExtractor(SCHEME, DEFAULT_PORT).extract(normalizedUri, properties);
   }
 
   @SuppressWarnings("PMD")
