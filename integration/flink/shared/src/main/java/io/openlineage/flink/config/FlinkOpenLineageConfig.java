@@ -42,6 +42,11 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   @Setter
   private Boolean enableDetachedJobTracking;
 
+  @JsonProperty("restApiBaseUrl")
+  @Setter
+  @Getter
+  private String restApiBaseUrl;
+
   @JsonProperty("disableCheckpointTracking")
   @Setter
   private Boolean disableCheckpointTracking;
@@ -62,6 +67,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       Integer trackingIntervalInSeconds,
       Integer detachedStartEventEmitTimeoutInSeconds,
       Boolean enableDetachedJobTracking,
+      String restApiBaseUrl,
       Boolean disableCheckpointTracking) {
     super(
         transportConfig,
@@ -75,6 +81,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
     this.trackingIntervalInSeconds = trackingIntervalInSeconds;
     this.detachedStartEventEmitTimeoutInSeconds = detachedStartEventEmitTimeoutInSeconds;
     this.enableDetachedJobTracking = enableDetachedJobTracking;
+    this.restApiBaseUrl = restApiBaseUrl;
     this.disableCheckpointTracking = disableCheckpointTracking;
   }
 
@@ -92,6 +99,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(
             detachedStartEventEmitTimeoutInSeconds, other.detachedStartEventEmitTimeoutInSeconds),
         mergePropertyWith(enableDetachedJobTracking, other.enableDetachedJobTracking),
+        mergePropertyWith(restApiBaseUrl, other.restApiBaseUrl),
         mergePropertyWith(disableCheckpointTracking, other.disableCheckpointTracking));
   }
 
