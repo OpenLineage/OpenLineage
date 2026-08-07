@@ -1,0 +1,7 @@
+type {{ .StructName }} struct {
+{{- range .FieldDecls }}
+{{ . }}
+{{- end }}
+}
+
+

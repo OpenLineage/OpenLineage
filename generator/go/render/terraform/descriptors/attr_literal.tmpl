@@ -1,0 +1,12 @@
+{{- if eq .Kind "Map" -}}
+schema.MapAttribute{Optional: true, Description: {{ printf "%q" .Description }}, ElementType: {{ .ElemType }}}
+{{- else if eq .Kind "String" -}}
+{{- if .Required -}}
+requiredString({{ printf "%q" .Description }})
+{{- else -}}
+optionalString({{ printf "%q" .Description }})
+{{- end -}}
+{{- else -}}
+schema.{{ .Kind }}Attribute{ {{- if .Required }}Required: true{{ else }}Optional: true{{ end }}, Description: {{ printf "%q" .Description }} }
+{{- end -}}
+
