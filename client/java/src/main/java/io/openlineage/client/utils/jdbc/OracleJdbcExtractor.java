@@ -55,8 +55,8 @@ public class OracleJdbcExtractor implements JdbcExtractor {
       if (!host.isPresent()) {
         continue;
       }
-      Optional<String> port = address.childValue("PORT");
-      hostPorts.add(port.map(p -> host.get() + ":" + p).orElseGet(host::get));
+      String port = address.childValue("PORT").orElse(DEFAULT_PORT);
+      hostPorts.add(host.get() + ":" + port);
     }
     if (hostPorts.isEmpty()) {
       throw new URISyntaxException(uri, "No ADDRESS entries found in TNS descriptor");
