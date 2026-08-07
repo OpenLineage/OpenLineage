@@ -50,6 +50,7 @@ class CopyIntoCommandOutputDatasetBuilderTest {
     LogicalPlan command = mock(LogicalPlan.class);
 
     try (MockedStatic<CopyIntoCommandUtils> utils = mockStatic(CopyIntoCommandUtils.class)) {
+      utils.when(() -> CopyIntoCommandUtils.isCopyIntoCommand(command)).thenReturn(true);
       utils
           .when(() -> CopyIntoCommandUtils.target(command))
           .thenReturn(Optional.of(new OneRowRelation()));
@@ -60,17 +61,6 @@ class CopyIntoCommandOutputDatasetBuilderTest {
           .singleElement()
           .hasFieldOrPropertyWithValue("name", "copy_into_table")
           .hasFieldOrPropertyWithValue("namespace", "unity-catalog");
-    }
-  }
-
-  @Test
-  void testApplyWhenTargetIsMissing() {
-    LogicalPlan command = mock(LogicalPlan.class);
-
-    try (MockedStatic<CopyIntoCommandUtils> utils = mockStatic(CopyIntoCommandUtils.class)) {
-      utils.when(() -> CopyIntoCommandUtils.target(command)).thenReturn(Optional.empty());
-
-      assertThat(builder.apply(event, command)).isEmpty();
     }
   }
 

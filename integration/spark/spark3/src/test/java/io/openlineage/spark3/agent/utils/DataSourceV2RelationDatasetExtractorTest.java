@@ -292,7 +292,8 @@ class DataSourceV2RelationDatasetExtractorTest {
                   () ->
                       PlanUtils3.getDatasetIdentifier(
                           openLineageContext, tableCatalog, identifier, tableProperties))
-              .thenThrow(new IllegalStateException("no default path for a unity catalog namespace"));
+              .thenThrow(
+                  new IllegalStateException("no default path for a unity catalog namespace"));
 
           DatasetFactory<OpenLineage.OutputDataset> outputFactory =
               DatasetFactory.output(openLineageContext);

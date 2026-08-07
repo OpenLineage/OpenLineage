@@ -50,8 +50,11 @@ class CopyIntoCommandInputDatasetBuilderTest {
     givenInputVisitorReturning("source_table", "unity-catalog");
 
     try (MockedStatic<CopyIntoCommandUtils> utils = mockStatic(CopyIntoCommandUtils.class)) {
+      utils.when(() -> CopyIntoCommandUtils.isCopyIntoCommand(command)).thenReturn(true);
       utils.when(() -> CopyIntoCommandUtils.sourcePath(command)).thenReturn(Optional.empty());
-      utils.when(() -> CopyIntoCommandUtils.sourceQuery(command)).thenReturn(Optional.of(sourceQuery));
+      utils
+          .when(() -> CopyIntoCommandUtils.sourceQuery(command))
+          .thenReturn(Optional.of(sourceQuery));
 
       List<InputDataset> inputs = builder.apply(event, command);
 
@@ -77,8 +80,7 @@ class CopyIntoCommandInputDatasetBuilderTest {
           }
         };
 
-    when(context.getInputDatasetQueryPlanVisitors())
-        .thenReturn(Collections.singletonList(visitor));
+    when(context.getInputDatasetQueryPlanVisitors()).thenReturn(Collections.singletonList(visitor));
     when(context.getInputDatasetBuilders()).thenReturn(Collections.emptyList());
   }
 }
