@@ -45,6 +45,39 @@ def serialize(inst, field, value):
     return value
 
 
+def _extract_node_events(dbt_events):
+    invocation_start = dbt_events.starts[0]
+    if dbt_events.fails and dbt_events.fails[-1].job.name == invocation_start.job.name:
+        invocation_end = dbt_events.fails[-1]
+    elif dbt_events.completes and dbt_events.completes[-1].job.name == invocation_start.job.name:
+        invocation_end = dbt_events.completes[-1]
+    else:
+        invocation_end = None
+
+    node_starts = dbt_events.starts[1:]
+    node_completes = [e for e in dbt_events.completes if e is not invocation_end]
+    node_fails = [e for e in dbt_events.fails if e is not invocation_end]
+    return node_starts + node_completes + node_fails
+
+
+def _normalize_node_events_for_fixture(node_events, invocation_start, parent_run_metadata):
+    import copy
+
+    node_events_copy = copy.deepcopy(node_events)
+    for event in node_events_copy:
+        if "parent" in event["run"]["facets"]:
+            assert event["run"]["facets"]["parent"]["run"]["runId"] == invocation_start.run.runId
+            assert event["run"]["facets"]["parent"]["job"]["name"] == invocation_start.job.name
+            assert event["run"]["facets"]["parent"]["job"]["namespace"] == invocation_start.job.namespace
+            if parent_run_metadata:
+                event["run"]["facets"]["parent"] = attr.asdict(
+                    parent_run_metadata.to_openlineage(), value_serializer=serialize
+                )
+            else:
+                del event["run"]["facets"]["parent"]
+    return node_events_copy
+
+
 @pytest.mark.parametrize(
     ("path", "job_name"),
     [
@@ -72,10 +105,17 @@ def test_dbt_parse_and_compare_event(path, job_name, parent_run_metadata):
     )
     processor.dbt_run_metadata = parent_run_metadata
     dbt_events = processor.parse()
-    events = [
-        attr.asdict(event, value_serializer=serialize)
-        for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
-    ]
+
+    # Verify top-level dbt invocation event
+    assert len(dbt_events.starts) >= 1
+    invocation_start = dbt_events.starts[0]
+    assert invocation_start.eventType.value == "START"
+    assert invocation_start.job.facets["jobType"].jobType == "JOB"
+    if parent_run_metadata:
+        assert invocation_start.run.facets["parent"].run.runId == parent_run_metadata.run_id
+
+    events = [attr.asdict(event, value_serializer=serialize) for event in _extract_node_events(dbt_events)]
+    events = _normalize_node_events_for_fixture(events, invocation_start, parent_run_metadata)
     with open(f"{path}/result.json") as f:
         assert match(json.load(f), events)
 
@@ -108,10 +148,11 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata,
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
-    events = [
-        attr.asdict(event, value_serializer=serialize)
-        for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
-    ]
+    assert len(dbt_events.starts) >= 1
+    assert dbt_events.starts[0].job.facets["jobType"].jobType == "JOB"
+
+    events = [attr.asdict(event, value_serializer=serialize) for event in _extract_node_events(dbt_events)]
+    events = _normalize_node_events_for_fixture(events, dbt_events.starts[0], parent_run_metadata)
     with open(f"{path}/result.json") as f:
         assert match(json.load(f), events)
 
@@ -139,10 +180,11 @@ def test_dbt_parse_singular_test_event(mock_datetime, mock_uuid, parent_run_meta
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
-    events = [
-        attr.asdict(event, value_serializer=serialize)
-        for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
-    ]
+    assert len(dbt_events.starts) >= 1
+    assert dbt_events.starts[0].job.facets["jobType"].jobType == "JOB"
+
+    events = [attr.asdict(event, value_serializer=serialize) for event in _extract_node_events(dbt_events)]
+    events = _normalize_node_events_for_fixture(events, dbt_events.starts[0], parent_run_metadata)
     with open(f"{path}/result.json") as f:
         assert match(json.load(f), events)
 
@@ -174,10 +216,11 @@ def test_dbt_parse_profile_with_env_vars(mock_uuid, parent_run_metadata):
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
-    events = [
-        attr.asdict(event, value_serializer=serialize)
-        for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
-    ]
+    assert len(dbt_events.starts) >= 1
+    assert dbt_events.starts[0].job.facets["jobType"].jobType == "JOB"
+
+    events = [attr.asdict(event, value_serializer=serialize) for event in _extract_node_events(dbt_events)]
+    events = _normalize_node_events_for_fixture(events, dbt_events.starts[0], parent_run_metadata)
     with open(CURRENT_DIR + "/env_vars/result.json") as f:
         assert match(json.load(f), events)
 
