@@ -158,7 +158,11 @@ public class InputFieldsCollector {
     } else if (node instanceof OneRowRelation
         || node instanceof LocalRelation
         || node instanceof ExternalRDD
-        || node instanceof LogicalRDD) {
+        || node instanceof LogicalRDD
+        // ResolvedIdentifier (Spark 3.4+) is a write target, not an input source — skip silently.
+        // Class name check avoids a compile-time dependency on Spark 3.4+ APIs.
+        || "org.apache.spark.sql.catalyst.analysis.ResolvedIdentifier"
+            .equals(node.getClass().getCanonicalName())) {
       // skip without warning
     } else if (node instanceof LeafNode) {
       log.warn("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());
