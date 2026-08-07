@@ -18,6 +18,7 @@ import scala.Option;
 
 class CopyIntoCommandUtilsTest {
 
+  private static final String FILE_FORMAT = "CSV";
   private static final String VOLUME_PATH =
       "/Volumes/sangeeta_catalog/default/sangeeta_vol/input/csv_input";
 
@@ -57,7 +58,7 @@ class CopyIntoCommandUtilsTest {
   void testTargetFromMemberWithUnknownName() {
     DataSourceV2Relation targetRelation = catalogRelation();
     CopyIntoCommandEdge command =
-        new CopyIntoCommandEdge("CSV", targetRelation, new OneRowRelation(), VOLUME_PATH);
+        new CopyIntoCommandEdge(FILE_FORMAT, targetRelation, new OneRowRelation(), VOLUME_PATH);
 
     assertThat(CopyIntoCommandUtils.targetFromCommand(command)).contains(targetRelation);
   }
@@ -65,7 +66,7 @@ class CopyIntoCommandUtilsTest {
   @Test
   void testSourcePathFromMemberWithUnknownName() {
     CopyIntoCommandEdge command =
-        new CopyIntoCommandEdge("CSV", catalogRelation(), new OneRowRelation(), VOLUME_PATH);
+        new CopyIntoCommandEdge(FILE_FORMAT, catalogRelation(), new OneRowRelation(), VOLUME_PATH);
 
     assertThat(CopyIntoCommandUtils.sourcePathFromCommand(command)).contains(VOLUME_PATH);
   }
@@ -75,7 +76,7 @@ class CopyIntoCommandUtilsTest {
     DataSourceV2Relation targetRelation = catalogRelation();
     OneRowRelation sourceRelation = new OneRowRelation();
     CopyIntoCommandEdge command =
-        new CopyIntoCommandEdge("CSV", targetRelation, sourceRelation, VOLUME_PATH);
+        new CopyIntoCommandEdge(FILE_FORMAT, targetRelation, sourceRelation, VOLUME_PATH);
 
     assertThat(CopyIntoCommandUtils.sourceQueryFromCommand(command)).contains(sourceRelation);
   }
@@ -84,7 +85,7 @@ class CopyIntoCommandUtilsTest {
   @Test
   void testTargetIsEmptyWhenNoMemberIsCatalogBacked() {
     CopyIntoCommandEdge command =
-        new CopyIntoCommandEdge("CSV", new OneRowRelation(), new OneRowRelation(), VOLUME_PATH);
+        new CopyIntoCommandEdge(FILE_FORMAT, new OneRowRelation(), new OneRowRelation(), VOLUME_PATH);
 
     assertThat(CopyIntoCommandUtils.targetFromCommand(command)).isEmpty();
   }

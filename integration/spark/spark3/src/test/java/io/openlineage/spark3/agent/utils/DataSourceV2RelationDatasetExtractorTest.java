@@ -49,6 +49,8 @@ import org.mockito.MockedStatic;
 import scala.Option;
 
 class DataSourceV2RelationDatasetExtractorTest {
+  private static final String NAME = "name";
+
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   SparkSession sparkSession = mock(SparkSession.class);
   DatasetFactory<Dataset> datasetFactory = mock(DatasetFactory.class);
@@ -80,7 +82,7 @@ class DataSourceV2RelationDatasetExtractorTest {
       try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
         DatasetIdentifier di = mock(DatasetIdentifier.class);
         when(di.getNamespace()).thenReturn("file://tmp");
-        when(di.getName()).thenReturn("name");
+        when(di.getName()).thenReturn(NAME);
 
         OpenLineage.DatasetFacets datasetFacets = mock(OpenLineage.DatasetFacets.class);
         OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
@@ -218,7 +220,7 @@ class DataSourceV2RelationDatasetExtractorTest {
 
     assertEquals(1, result.size());
     assertThat(result.get(0))
-        .hasFieldOrPropertyWithValue("name", "some-name")
+        .hasFieldOrPropertyWithValue(NAME, "some-name")
         .hasFieldOrPropertyWithValue("namespace", "some-namespace");
 
     OpenLineage.DatasetFacet datasetFacet =
@@ -264,7 +266,7 @@ class DataSourceV2RelationDatasetExtractorTest {
 
     assertEquals(1, result.size());
     assertThat(result.get(0))
-        .hasFieldOrPropertyWithValue("name", "bigquery-public-data.samples.shakespeare")
+        .hasFieldOrPropertyWithValue(NAME, "bigquery-public-data.samples.shakespeare")
         .hasFieldOrPropertyWithValue("namespace", "bigquery");
   }
 
@@ -303,7 +305,7 @@ class DataSourceV2RelationDatasetExtractorTest {
 
           assertEquals(1, result.size());
           assertThat(result.get(0))
-              .hasFieldOrPropertyWithValue("name", "catalog.db.table")
+              .hasFieldOrPropertyWithValue(NAME, "catalog.db.table")
               .hasFieldOrPropertyWithValue("namespace", "unity-catalog");
         }
       }

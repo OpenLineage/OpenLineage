@@ -20,6 +20,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * covariant {@code withNewChildrenInternal} override. The reflective extraction works on plain
  * objects, so the fixture exercises the same code the runtime hits.
  */
+@SuppressWarnings("PMD.UnusedPrivateField") // fields are read by CopyIntoCommandUtils via reflection
 public class CopyIntoCommandEdge {
 
   private final String fileFormatName;
