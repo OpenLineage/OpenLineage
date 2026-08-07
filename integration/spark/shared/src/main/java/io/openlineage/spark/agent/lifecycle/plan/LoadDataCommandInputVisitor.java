@@ -41,7 +41,7 @@ public class LoadDataCommandInputVisitor
       return Collections.singletonList(
           inputDataset().sparkDatasetBuilder().dataset(PathUtils.fromPath(new Path(path))).build());
     } catch (Exception e) {
-      // A LOAD DATA path may be a glob or an otherwise unparseable location
+      // A LOAD DATA path may be a glob or an otherwise unparsable location
       log.warn("Could not build an input dataset from LOAD DATA path {}", path, e);
       return Collections.emptyList();
     }

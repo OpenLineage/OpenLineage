@@ -29,7 +29,7 @@ import scala.Option;
 /**
  * Resolves Unity Catalog table identity through the V2 catalog API when legacy {@code
  * getTableMetadata} is unavailable, matching the path used by {@code DataSourceV2Relation} and
- * {@link io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder}.
+ * {@code CreateReplaceOutputDatasetBuilder}.
  */
 @Slf4j
 public final class UnityCatalogTableDatasetUtils {

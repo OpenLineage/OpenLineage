@@ -242,7 +242,7 @@ public class DataSourceV2RelationDatasetExtractor {
   /**
    * Unity Catalog managed tables may have no resolvable storage location. Fall back to the
    * qualified {@code catalog.schema.table} name in the {@code unity-catalog} namespace, matching
-   * {@link io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder}.
+   * {@code CreateReplaceOutputDatasetBuilder}.
    */
   private static Optional<DatasetIdentifier> unityCatalogIdentifier(
       OpenLineageContext context, TableCatalog tableCatalog, Identifier identifier) {
