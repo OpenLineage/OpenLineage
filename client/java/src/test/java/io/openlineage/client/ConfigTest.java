@@ -312,13 +312,17 @@ class ConfigTest {
     HttpConfig overwriteHttpConfig = new HttpConfig();
 
     baseHttpConfig.setEndpoint("endpoint1");
+    baseHttpConfig.setMaxRetries(2);
     overwriteHttpConfig.setEndpoint("endpoint2");
+    overwriteHttpConfig.setRetryIntervalMillis(2500);
 
     base.setTransportConfig(baseHttpConfig);
     overwrite.setTransportConfig(overwriteHttpConfig);
 
     OpenLineageConfig config = (OpenLineageConfig) base.mergeWith(overwrite);
     assertThat(((HttpConfig) config.getTransportConfig()).getEndpoint()).isEqualTo("endpoint2");
+    assertThat(((HttpConfig) config.getTransportConfig()).getMaxRetries()).isEqualTo(2);
+    assertThat(((HttpConfig) config.getTransportConfig()).getRetryIntervalMillis()).isEqualTo(2500);
   }
 
   @Test
