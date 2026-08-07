@@ -66,3 +66,37 @@ def test_lineage_dataset_facet_preserves_explicit_empty_inputs() -> None:
     assert serialized["_schemaURL"].endswith("LineageFacet.json#/$defs/LineageDatasetFacet")
     assert serialized["inputs"] == []
     assert serialized["fields"]["generated_at"]["inputs"][0]["type"] == "JOB"
+
+
+def test_lineage_dataset_inputs_are_omitted_when_unspecified() -> None:
+    source_job = lineage.LineageJobInput(type=lineage.Type3.JOB)
+    fields = {"generated_at": lineage.LineageFieldEntry(inputs=[source_job])}
+
+    dataset_facet = lineage.LineageDatasetFacet(
+        fields=fields,
+        producer="https://example.com/catalog",
+    )
+    dataset_entry = lineage.LineageDatasetEntry(
+        namespace="postgresql://warehouse",
+        name="analytics.generated",
+        type=lineage.Type.DATASET,
+        fields=fields,
+    )
+    dataset_entry_with_empty_inputs = lineage.LineageDatasetEntry(
+        namespace="postgresql://warehouse",
+        name="analytics.without_upstream",
+        type=lineage.Type.DATASET,
+        inputs=[],
+    )
+
+    serialized_facet = Serde.to_dict(dataset_facet)
+    serialized_entries = Serde.to_dict(
+        lineage.LineageJobFacet(
+            entries=[dataset_entry, dataset_entry_with_empty_inputs],
+            producer="https://example.com/lineage",
+        )
+    )["entries"]
+
+    assert "inputs" not in serialized_facet
+    assert "inputs" not in serialized_entries[0]
+    assert serialized_entries[1]["inputs"] == []

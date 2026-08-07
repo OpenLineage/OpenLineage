@@ -27,7 +27,7 @@ class LineageDatasetEntry(RedactMixin):
     type: Type  # noqa: A003
     """The target entity type. Must be DATASET."""
 
-    inputs: list[LineageInput] | None = attr.field(factory=list)
+    inputs: list[LineageInput] | None = attr.field(default=None)
     """
     Entity-level inputs feeding this target dataset. An empty array explicitly means that the target has
     no tracked upstream source.
@@ -49,7 +49,7 @@ class LineageDatasetFacet(DatasetFacet):
     field granularity.
     """
 
-    inputs: list[LineageInput] | None = attr.field(factory=list)
+    inputs: list[LineageInput] | None = attr.field(default=None)
     """
     Dataset-level source inputs. A source with a field represents a dataset-wide operation where that
     field affects the entire target dataset.

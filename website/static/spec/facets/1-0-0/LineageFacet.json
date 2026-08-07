@@ -127,6 +127,10 @@
           }
         }
       },
+      "dependentRequired": {
+        "namespace": ["name"],
+        "name": ["namespace"]
+      },
       "required": ["type"]
     },
     "LineageInput": {
@@ -200,6 +204,10 @@
             "$ref": "#/$defs/LineageTransformation"
           }
         }
+      },
+      "dependentRequired": {
+        "namespace": ["name"],
+        "name": ["namespace"]
       },
       "required": ["type"]
     },

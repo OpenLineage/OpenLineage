@@ -79,8 +79,11 @@ class {{ class_name }}:
     {#- attrs requires field() for validators -#}
     {%- if 'True' == validators.validator_needed(field.type_hint) %} = attr.field() {%- endif -%}
     {%- if not (field.required or (field.represented_default == 'None' and field.strip_default_none)) -%}
-        {#- use factories for list and dict types -#}
-        {%- if 'list' in type_hint -%}
+        {#- preserve absent-vs-empty semantics for explicitly configured collection fields -#}
+        {%- if field.name in (none_default_fields | default([])) -%}
+            {%- set default_value = 'default=None' -%}
+        {#- use factories for other list and dict types -#}
+        {%- elif 'list' in type_hint -%}
             {%- set default_value = 'factory=list' -%}
         {%- elif 'dict' in type_hint -%}
             {%- set default_value = 'factory=dict' -%}
