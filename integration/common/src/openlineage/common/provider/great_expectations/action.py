@@ -117,9 +117,13 @@ class OpenLineageValidationAction(ValidationAction):
         return v or str(generate_new_uuid())
 
     def __init__(self, data_context=None, **data):
-        # data_context is required by ValidationAction in some GE versions
-        # but we don't use it directly
-        super().__init__(data_context=data_context, **data)
+        # data_context is required by ValidationAction in some GE versions but we don't use it
+        # directly. Since 1.0 the base action is a pydantic model that forbids extra fields and
+        # declares no data_context, so forwarding it unconditionally makes the action impossible
+        # to construct — only pass it on where the base actually accepts it.
+        if "data_context" in getattr(ValidationAction, "__fields__", {}):
+            data["data_context"] = data_context
+        super().__init__(**data)
 
         # Initialize OpenLineage client
         if self.openlineage_host is not None:
@@ -506,7 +510,7 @@ class OpenLineageValidationAction(ValidationAction):
             for expectation in validation_result.results:
                 assertions.append(
                     GreatExpectationsAssertion(
-                        expectationType=expectation["expectation_config"]["expectation_type"],
+                        expectationType=expectation["expectation_config"]["type"],
                         success=expectation["success"],
                         column=expectation["expectation_config"]["kwargs"].get("column", None),
                     )

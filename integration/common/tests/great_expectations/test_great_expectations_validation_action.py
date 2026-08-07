@@ -380,7 +380,7 @@ def test_file_size_expectations_parser():
 
     assert FileSizeExpectationsParser.can_accept(result)
     parsed = FileSizeExpectationsParser.parse_expectation_result(result)
-    assert parsed.facet_key == "fileSize"
+    assert parsed.facet_key == "bytes"
     assert parsed.value == 512
     assert parsed.column_id is None
 
@@ -400,5 +400,21 @@ def test_file_size_expectations_parser_null_result():
     )
 
     parsed = FileSizeExpectationsParser.parse_expectation_result(result)
-    assert parsed.facet_key == "fileSize"
+    assert parsed.facet_key == "bytes"
     assert parsed.value is None
+
+
+def test_data_quality_facet_and_assertions_on_ge_1x():
+    # Great Expectations 1.0 renamed ExpectationConfiguration.expectation_type to
+    # `type`; the parsers must read the new key so metrics are still emitted and
+    # assertion parsing does not raise on any supported (>=1.0) release.
+    facet = OpenLineageValidationAction.parse_data_quality_facet(None, result_suite)
+    assert facet is not None
+    assert facet.rowCount == 10
+
+    assertions = OpenLineageValidationAction.parse_assertions(None, result_suite)
+    assert assertions is not None
+    assert {a.expectationType for a in assertions.assertions} == {
+        "expect_table_row_count_to_equal",
+        "expect_column_sum_to_be_between",
+    }
