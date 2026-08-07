@@ -1,0 +1,32 @@
+{
+  "lineage": {
+    "_producer": "https://example.com/catalog",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageDatasetFacet",
+    "inputs": [
+      {
+        "namespace": "postgresql://warehouse:5432",
+        "name": "public.customers",
+        "type": "DATASET"
+      }
+    ],
+    "fields": {
+      "customer_id": {
+        "inputs": [
+          {
+            "namespace": "postgresql://warehouse:5432",
+            "name": "public.customers",
+            "type": "DATASET",
+            "field": "id",
+            "transformations": [
+              {
+                "type": "DIRECT",
+                "subtype": "IDENTITY",
+                "masking": false
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
