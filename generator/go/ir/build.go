@@ -62,8 +62,9 @@ func buildObject(
 
 	if t == nil {
 		return &ObjectDef{
-			TypeName: suggestedName,
-			Required: map[string]bool{},
+			TypeName:          suggestedName,
+			Required:          map[string]bool{},
+			DependentRequired: map[string][]string{},
 		}
 	}
 
@@ -79,10 +80,11 @@ func buildObject(
 	}
 
 	obj := &ObjectDef{
-		TypeName:    typeName,
-		Description: t.Description,
-		Fields:      nil,
-		Required:    map[string]bool{},
+		TypeName:          typeName,
+		Description:       t.Description,
+		Fields:            nil,
+		Required:          map[string]bool{},
+		DependentRequired: map[string][]string{},
 	}
 
 	// ✅ Register early to break cycles
@@ -98,6 +100,7 @@ func buildObject(
 		for _, name := range o.Required {
 			obj.Required[name] = true
 		}
+		mergeDependentRequired(obj.DependentRequired, o.DependentRequired)
 	}
 
 	// 2) Properties — from all schemas (required + optional), first definition wins
@@ -143,6 +146,33 @@ func buildObject(
 	})
 
 	return obj
+}
+
+func mergeDependentRequired(target, source map[string][]string) {
+	properties := make([]string, 0, len(source))
+	for property := range source {
+		properties = append(properties, property)
+	}
+	sort.Strings(properties)
+
+	for _, property := range properties {
+		dependencies := append([]string(nil), source[property]...)
+		sort.Strings(dependencies)
+		for _, dependency := range dependencies {
+			if !contains(target[property], dependency) {
+				target[property] = append(target[property], dependency)
+			}
+		}
+	}
+}
+
+func contains(values []string, value string) bool {
+	for _, candidate := range values {
+		if candidate == value {
+			return true
+		}
+	}
+	return false
 }
 
 // -----------------------------------------------------------------------------

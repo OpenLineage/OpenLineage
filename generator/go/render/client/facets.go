@@ -48,10 +48,17 @@ func RenderStructs(facets []ir.Facet) string {
 	unions := collectUnionTypes(sorted)
 	enums := collectEnumTypes(sorted)
 	nested := collectNestedTypes(sorted)
+	hasDependentRequired := false
+	for _, f := range sorted {
+		hasDependentRequired = hasDependentRequired || len(f.Root.DependentRequired) > 0
+	}
+	for _, obj := range nested {
+		hasDependentRequired = hasDependentRequired || len(obj.DependentRequired) > 0
+	}
 
 	// Choose imports based on what types are actually used.
 	imports := "\t\"time\"\n"
-	if len(unions) > 0 {
+	if len(unions) > 0 || hasDependentRequired {
 		imports = "\t\"encoding/json\"\n\t\"fmt\"\n\t\"time\"\n"
 	}
 
@@ -160,6 +167,7 @@ func emitFacetStruct(b *strings.Builder, f ir.Facet) {
 	}
 
 	b.WriteString("}\n\n")
+	emitDependentRequiredMethods(b, f.Root)
 }
 
 // ── Nested struct ─────────────────────────────────────────────────────────────
@@ -179,6 +187,84 @@ func emitNestedStruct(b *strings.Builder, obj *ir.ObjectDef) {
 		emitStructFieldDecl(b, &obj.Fields[i])
 	}
 	b.WriteString("}\n\n")
+	emitDependentRequiredMethods(b, obj)
+}
+
+func emitDependentRequiredMethods(b *strings.Builder, obj *ir.ObjectDef) {
+	if len(obj.DependentRequired) == 0 {
+		return
+	}
+
+	properties := make([]string, 0, len(obj.DependentRequired))
+	for property := range obj.DependentRequired {
+		properties = append(properties, property)
+	}
+	sort.Strings(properties)
+
+	fmt.Fprintf(b, "// Validate checks the dependentRequired constraints for %s.\n", obj.TypeName)
+	fmt.Fprintf(b, "func (v %s) Validate() error {\n", obj.TypeName)
+	for _, property := range properties {
+		propertyField := objectFieldByJSONName(obj, property)
+		dependencies := append([]string(nil), obj.DependentRequired[property]...)
+		sort.Strings(dependencies)
+		for _, dependency := range dependencies {
+			dependencyField := objectFieldByJSONName(obj, dependency)
+			fmt.Fprintf(
+				b,
+				"\tif %s && %s {\n\t\treturn fmt.Errorf(%q)\n\t}\n",
+				fieldPresentExpr("v", propertyField),
+				fieldAbsentExpr("v", dependencyField),
+				fmt.Sprintf("property %q is required when %q is set", dependency, property),
+			)
+		}
+	}
+	b.WriteString("\treturn nil\n}\n\n")
+
+	fmt.Fprintf(b, "// MarshalJSON validates %s before serialization.\n", obj.TypeName)
+	fmt.Fprintf(b, "func (v %s) MarshalJSON() ([]byte, error) {\n", obj.TypeName)
+	b.WriteString("\tif err := v.Validate(); err != nil {\n\t\treturn nil, err\n\t}\n")
+	fmt.Fprintf(b, "\ttype plain %s\n", obj.TypeName)
+	b.WriteString("\treturn json.Marshal(plain(v))\n}\n\n")
+
+	fmt.Fprintf(b, "// UnmarshalJSON validates %s after deserialization.\n", obj.TypeName)
+	fmt.Fprintf(b, "func (v *%s) UnmarshalJSON(data []byte) error {\n", obj.TypeName)
+	fmt.Fprintf(b, "\ttype plain %s\n", obj.TypeName)
+	b.WriteString("\tvar decoded plain\n")
+	b.WriteString("\tif err := json.Unmarshal(data, &decoded); err != nil {\n\t\treturn err\n\t}\n")
+	fmt.Fprintf(b, "\t*v = %s(decoded)\n", obj.TypeName)
+	b.WriteString("\treturn v.Validate()\n}\n\n")
+}
+
+func objectFieldByJSONName(obj *ir.ObjectDef, jsonName string) *ir.Field {
+	for i := range obj.Fields {
+		if obj.Fields[i].JSONName == jsonName {
+			return &obj.Fields[i]
+		}
+	}
+	log.Fatalf("dependentRequired on %s references unknown property %q", obj.TypeName, jsonName)
+	return nil
+}
+
+func fieldPresentExpr(receiver string, field *ir.Field) string {
+	if field.Required {
+		return "true"
+	}
+	goName := genutil.FormatGoFieldName(field.GoName)
+	if _, ok := field.Type.(ir.Union); ok {
+		return fmt.Sprintf("%s.%s.V != nil", receiver, goName)
+	}
+	return fmt.Sprintf("%s.%s != nil", receiver, goName)
+}
+
+func fieldAbsentExpr(receiver string, field *ir.Field) string {
+	if field.Required {
+		return "false"
+	}
+	goName := genutil.FormatGoFieldName(field.GoName)
+	if _, ok := field.Type.(ir.Union); ok {
+		return fmt.Sprintf("%s.%s.V == nil", receiver, goName)
+	}
+	return fmt.Sprintf("%s.%s == nil", receiver, goName)
 }
 
 // emitStructFieldDecl emits a single struct field declaration with a JSON tag.
@@ -571,6 +657,24 @@ func sameObjectShape(a, b *ir.ObjectDef) bool {
 	for i := range a.Fields {
 		if a.Fields[i].JSONName != b.Fields[i].JSONName {
 			return false
+		}
+	}
+	return sameDependentRequired(a.DependentRequired, b.DependentRequired)
+}
+
+func sameDependentRequired(a, b map[string][]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for property, dependencies := range a {
+		other, ok := b[property]
+		if !ok || len(dependencies) != len(other) {
+			return false
+		}
+		for i := range dependencies {
+			if dependencies[i] != other[i] {
+				return false
+			}
 		}
 	}
 	return true
