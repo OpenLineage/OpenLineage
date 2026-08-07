@@ -85,7 +85,8 @@ class CopyIntoCommandUtilsTest {
   @Test
   void testTargetIsEmptyWhenNoMemberIsCatalogBacked() {
     CopyIntoCommandEdge command =
-        new CopyIntoCommandEdge(FILE_FORMAT, new OneRowRelation(), new OneRowRelation(), VOLUME_PATH);
+        new CopyIntoCommandEdge(
+            FILE_FORMAT, new OneRowRelation(), new OneRowRelation(), VOLUME_PATH);
 
     assertThat(CopyIntoCommandUtils.targetFromCommand(command)).isEmpty();
   }
