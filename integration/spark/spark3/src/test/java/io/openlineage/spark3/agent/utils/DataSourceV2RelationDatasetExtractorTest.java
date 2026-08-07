@@ -20,6 +20,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
+import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -31,6 +32,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 import org.apache.spark.sql.connector.catalog.Identifier;
@@ -46,6 +49,8 @@ import org.mockito.MockedStatic;
 import scala.Option;
 
 class DataSourceV2RelationDatasetExtractorTest {
+  private static final String NAME = "name";
+
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   SparkSession sparkSession = mock(SparkSession.class);
   DatasetFactory<Dataset> datasetFactory = mock(DatasetFactory.class);
@@ -77,7 +82,7 @@ class DataSourceV2RelationDatasetExtractorTest {
       try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
         DatasetIdentifier di = mock(DatasetIdentifier.class);
         when(di.getNamespace()).thenReturn("file://tmp");
-        when(di.getName()).thenReturn("name");
+        when(di.getName()).thenReturn(NAME);
 
         OpenLineage.DatasetFacets datasetFacets = mock(OpenLineage.DatasetFacets.class);
         OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
@@ -215,7 +220,7 @@ class DataSourceV2RelationDatasetExtractorTest {
 
     assertEquals(1, result.size());
     assertThat(result.get(0))
-        .hasFieldOrPropertyWithValue("name", "some-name")
+        .hasFieldOrPropertyWithValue(NAME, "some-name")
         .hasFieldOrPropertyWithValue("namespace", "some-namespace");
 
     OpenLineage.DatasetFacet datasetFacet =
@@ -261,8 +266,50 @@ class DataSourceV2RelationDatasetExtractorTest {
 
     assertEquals(1, result.size());
     assertThat(result.get(0))
-        .hasFieldOrPropertyWithValue("name", "bigquery-public-data.samples.shakespeare")
+        .hasFieldOrPropertyWithValue(NAME, "bigquery-public-data.samples.shakespeare")
         .hasFieldOrPropertyWithValue("namespace", "bigquery");
+  }
+
+  @Test
+  void testExtractFallsBackToUnityCatalogNameWhenLocationResolutionFails() {
+    SparkConf sparkConf = new SparkConf();
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getOpenLineage())
+        .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(dataSourceV2Relation.schema()).thenReturn(new StructType());
+
+    try (MockedStatic<PlanUtils3> planUtils = mockStatic(PlanUtils3.class)) {
+      try (MockedStatic<DatabricksUtils> databricks = mockStatic(DatabricksUtils.class)) {
+        try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
+          databricks
+              .when(() -> DatabricksUtils.isDatabricksUnityCatalogEnabled(sparkConf))
+              .thenReturn(true);
+          databricks
+              .when(() -> DatabricksUtils.qualifiedUnityCatalogTableName(tableCatalog, identifier))
+              .thenReturn("catalog.db.table");
+          planUtils
+              .when(
+                  () ->
+                      PlanUtils3.getDatasetIdentifier(
+                          openLineageContext, tableCatalog, identifier, tableProperties))
+              .thenThrow(
+                  new IllegalStateException("no default path for a unity catalog namespace"));
+
+          DatasetFactory<OpenLineage.OutputDataset> outputFactory =
+              DatasetFactory.output(openLineageContext);
+          List<OpenLineage.OutputDataset> result =
+              DataSourceV2RelationDatasetExtractor.extract(
+                  outputFactory, openLineageContext, dataSourceV2Relation, false);
+
+          assertEquals(1, result.size());
+          assertThat(result.get(0))
+              .hasFieldOrPropertyWithValue(NAME, "catalog.db.table")
+              .hasFieldOrPropertyWithValue("namespace", "unity-catalog");
+        }
+      }
+    }
   }
 
   @Test
