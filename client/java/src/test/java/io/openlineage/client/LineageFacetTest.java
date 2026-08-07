@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -157,5 +158,25 @@ class LineageFacetTest {
                 .getInputs()
                 .get(0))
         .isInstanceOf(LineageJobInput.class);
+  }
+
+  @Test
+  void jobIdentityRequiresNamespaceAndNameTogether() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            openLineage
+                .newLineageJobEntryBuilder()
+                .namespace("https://example.com/jobs")
+                .type(LineageJobEntry.Type.JOB)
+                .build());
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            openLineage
+                .newLineageJobInputBuilder()
+                .name("upstream_job")
+                .type(LineageJobInput.Type.JOB)
+                .build());
   }
 }

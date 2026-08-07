@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import ClassVar, Union
+from typing import Any, ClassVar, Union
 
 import attr
 from openlineage.client.generated.base import DatasetFacet, JobFacet
@@ -144,6 +144,24 @@ class LineageJobEntry(RedactMixin):
 
         UUID(value)
 
+    @name.validator
+    def name_dependent_required_check(self, attribute: Any, value: Any) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        missing = [name for name in ["namespace"] if getattr(self, name) is None]
+        if missing:
+            msg = f"{', '.join(missing)} required when name is set"
+            raise ValueError(msg)
+
+    @namespace.validator
+    def namespace_dependent_required_check(self, attribute: Any, value: Any) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        missing = [name for name in ["name"] if getattr(self, name) is None]
+        if missing:
+            msg = f"{', '.join(missing)} required when namespace is set"
+            raise ValueError(msg)
+
 
 @attr.define
 class LineageJobFacet(JobFacet):
@@ -195,6 +213,24 @@ class LineageJobInput(RedactMixin):
         from uuid import UUID
 
         UUID(value)
+
+    @name.validator
+    def name_dependent_required_check(self, attribute: Any, value: Any) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        missing = [name for name in ["namespace"] if getattr(self, name) is None]
+        if missing:
+            msg = f"{', '.join(missing)} required when name is set"
+            raise ValueError(msg)
+
+    @namespace.validator
+    def namespace_dependent_required_check(self, attribute: Any, value: Any) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        missing = [name for name in ["name"] if getattr(self, name) is None]
+        if missing:
+            msg = f"{', '.join(missing)} required when namespace is set"
+            raise ValueError(msg)
 
 
 @attr.define

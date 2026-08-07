@@ -299,7 +299,29 @@ public class JavaPoetGenerator {
     if (type.hasAdditionalProperties()) {
       constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>()", "additionalProperties", LinkedHashMap.class).build());
     }
+    addDependentRequiredValidation(type, constructor);
     return constructor.build();
+  }
+
+  private void addDependentRequiredValidation(
+      ObjectResolvedType type, MethodSpec.Builder constructor) {
+    type.getDependentRequired()
+        .forEach(
+            (property, dependencies) ->
+                dependencies.forEach(
+                    dependency ->
+                        constructor
+                            .beginControlFlow(
+                                "if (this.$N != null && this.$N == null)", property, dependency)
+                            .addStatement(
+                                "throw new $T($S)",
+                                IllegalArgumentException.class,
+                                "property \""
+                                    + dependency
+                                    + "\" is required when \""
+                                    + property
+                                    + "\" is set")
+                            .endControlFlow()));
   }
 
   private TypeSpec modelClass(ObjectResolvedType type) {
@@ -707,6 +729,7 @@ public class JavaPoetGenerator {
       if (type.hasAdditionalProperties()) {
         addAdditionalProperties(type, classBuilder, constructor);
       }
+      addDependentRequiredValidation(type, constructor);
       classBuilder.addMethod(constructor.build());
       containerTypeBuilder.addType(classBuilder.build());
 
