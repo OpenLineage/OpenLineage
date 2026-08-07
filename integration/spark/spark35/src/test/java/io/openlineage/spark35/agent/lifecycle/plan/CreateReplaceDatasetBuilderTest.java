@@ -53,6 +53,8 @@ import scala.collection.immutable.Map;
 class CreateReplaceDatasetBuilderTest {
 
   private static final String TABLE = "table";
+  private static final String SOME_KEY = "some-key";
+  private static final String SOME_VALUE = "some-value";
   SparkContext sparkContext = mock(SparkContext.class);
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
@@ -103,7 +105,7 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.writeOptions())
         .thenReturn(
-            ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap(SOME_KEY, SOME_VALUE)));
     verifyApply(
         (LogicalPlan) logicalPlan,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
@@ -130,7 +132,7 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.writeOptions())
         .thenReturn(
-            ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap(SOME_KEY, SOME_VALUE)));
     verifyApply(
         (LogicalPlan) logicalPlan,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
@@ -247,7 +249,7 @@ class CreateReplaceDatasetBuilderTest {
       when(logicalPlan.tableSchema()).thenReturn(schema);
       when(logicalPlan.writeOptions())
           .thenReturn(
-              ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
+              ScalaConversionUtils.fromJavaMap(Collections.singletonMap(SOME_KEY, SOME_VALUE)));
 
       when(PlanUtils3.getDatasetIdentifier(
               openLineageContext,
@@ -271,7 +273,7 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.writeOptions())
         .thenReturn(
-            ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap(SOME_KEY, SOME_VALUE)));
 
     verifyApply(
         (LogicalPlan) logicalPlan,
