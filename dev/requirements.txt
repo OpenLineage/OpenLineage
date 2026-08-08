@@ -3,7 +3,7 @@ aiosignal==1.4.0
 async-timeout==5.0.1
 attr==0.3.2
 attrs==26.1.0
-certifi==2026.6.17
+certifi==2026.7.22
 cffi==2.1.0
 chardet==7.4.3
 charset-normalizer==3.4.9
@@ -31,5 +31,5 @@ rich-click==1.9.8
 six==1.17.0
 typing_extensions==4.16.0
 urllib3==2.7.0
-wrapt==2.2.2
-yarl==1.24.2
+wrapt==2.3.0
+yarl==1.24.5
