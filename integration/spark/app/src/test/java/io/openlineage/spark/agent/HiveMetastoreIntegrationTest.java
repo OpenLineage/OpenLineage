@@ -68,7 +68,6 @@ class HiveMetastoreIntegrationTest {
   @BeforeEach
   void beforeEach() throws IOException {
     FileUtils.deleteDirectory(new File("/tmp/hive-metastore/"));
-    MockServerUtils.clearRequests(mockServer);
     spark =
         SparkSession.builder()
             .master("local[*]")
@@ -86,6 +85,11 @@ class HiveMetastoreIntegrationTest {
                 "http://localhost:" + MOCKSERVER_PORT + "/api/v1/lineage")
             .enableHiveSupport()
             .getOrCreate();
+    // The Hive metastore container is shared across tests, so table definitions persist even after
+    // the warehouse directory is wiped. Drop the database so CREATE TABLE IF NOT EXISTS statements
+    // actually execute (and emit events) instead of becoming no-ops for an already-existing table.
+    spark.sql("DROP DATABASE IF EXISTS hive3 CASCADE");
+    MockServerUtils.clearRequests(mockServer);
   }
 
   @Test

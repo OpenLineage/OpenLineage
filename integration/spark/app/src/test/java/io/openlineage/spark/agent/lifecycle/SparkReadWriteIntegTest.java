@@ -622,13 +622,21 @@ class SparkReadWriteIntegTest {
 
     String sparkVersion = System.getProperty(SPARK_VERSION);
     String scalaBinaryVersion = System.getProperty("scala.binary.version");
+    // Append a unique run id so that concurrent CI runs (and re-runs of the same Spark/Scala
+    // version) do not write to the same S3 keys. Sharing keys causes `mode("overwrite")` from one
+    // run to delete files that another run's FileOutputCommitter is about to rename, which
+    // surfaces as a NoSuchKey error during commit.
+    String runId = UUID.randomUUID().toString().substring(0, 8);
 
     String aDatasetName =
-        String.format("rdd_a_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
+        String.format("rdd_a_%s_%s_%s", sparkVersion, scalaBinaryVersion, runId)
+            .replace(".", "_");
     String bDatasetName =
-        String.format("rdd_b_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
+        String.format("rdd_b_%s_%s_%s", sparkVersion, scalaBinaryVersion, runId)
+            .replace(".", "_");
     String cDatasetName =
-        String.format("rdd_c_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
+        String.format("rdd_c_%s_%s_%s", sparkVersion, scalaBinaryVersion, runId)
+            .replace(".", "_");
 
     String bucketUrl = System.getenv("S3_BUCKET");
 
