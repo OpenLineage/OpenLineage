@@ -278,6 +278,8 @@ class TestAsyncHttpTransport:
                 result = transport.wait_for_completion(timeout=1.0)
                 assert result  # Should succeed immediately
 
+            assert not transport.may_exit.is_set()
+
     def test_async_http_transport_get_stats(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
@@ -320,6 +322,7 @@ class TestAsyncHttpTransport:
             result = transport.close(timeout=1.0)
 
             assert result
+            assert transport.may_exit.is_set()
             mock_wait.assert_called_once_with(1.0)
 
     @patch("httpx.AsyncClient")

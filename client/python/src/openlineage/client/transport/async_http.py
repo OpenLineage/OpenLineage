@@ -597,7 +597,6 @@ class AsyncHttpTransport(Transport):
             bool: True if all events were processed, False if some events were not processed.
         """
         log.debug("Waiting for events completion for %.3f seconds", timeout)
-        self.may_exit.set()
         start_time = time.time()
         while timeout < 0 or time.time() - start_time < timeout:
             if self._all_processed():
@@ -611,6 +610,7 @@ class AsyncHttpTransport(Transport):
 
     def close(self, timeout: float = -1.0) -> bool:
         log.debug("Closing Async HTTP transport with timeout %.3f seconds", timeout)
+        self.may_exit.set()
         result = self.wait_for_completion(timeout)
         self.should_exit.set()
         self.events = {}
