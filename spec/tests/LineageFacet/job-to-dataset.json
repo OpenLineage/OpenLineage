@@ -1,0 +1,21 @@
+{
+  "lineage": {
+    "_producer": "https://example.com/orchestrator",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
+    "entries": [
+      {
+        "namespace": "postgresql://warehouse:5432",
+        "name": "public.daily_summary",
+        "type": "DATASET",
+        "inputs": [
+          {
+            "namespace": "airflow://production",
+            "name": "daily.extract",
+            "type": "JOB",
+            "runId": "b7dce052-51a6-4d66-98b9-5fd8b78a79c7"
+          }
+        ]
+      }
+    ]
+  }
+}

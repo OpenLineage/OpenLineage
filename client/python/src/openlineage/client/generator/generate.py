@@ -35,6 +35,13 @@ HEADER = (FILE_LOCATION / "header.py").resolve().read_text()
 # structures to customize code generation
 REDACT_FIELDS = yaml.safe_load((PYTHON_CLIENT_DIR_LOCATION / "redact_fields.yml").read_text())
 
+# Optional collection fields normally use empty factories in generated models. These fields
+# distinguish an omitted value from an explicitly empty collection, so they must default to None.
+NONE_DEFAULT_FIELDS = {
+    "LineageDatasetEntry": ["inputs"],
+    "LineageDatasetFacet": ["inputs"],
+}
+
 
 def get_redact_fields(module_name: str) -> dict[str, dict[str, list[str]]]:
     module_entry = next((entry for entry in REDACT_FIELDS if entry == module_name), None)
@@ -76,7 +83,16 @@ def main(output_location: pathlib.Path) -> None:
                 }
             )
 
-    extra_template_data = defaultdict(dict, deep_merge_dicts(extra_redact_fields, extra_schema_urls))
+    extra_none_default_fields = {
+        class_name: {"none_default_fields": fields} for class_name, fields in NONE_DEFAULT_FIELDS.items()
+    }
+    extra_template_data = defaultdict(
+        dict,
+        deep_merge_dicts(
+            deep_merge_dicts(extra_redact_fields, extra_schema_urls),
+            extra_none_default_fields,
+        ),
+    )
 
     results = parse_and_generate(locations, extra_template_data)
 

@@ -16,7 +16,7 @@ ETL job reads A,B and writes C,D. Only A->C and B->D are real edges. `LineageJob
     "facets": {
       "lineage": {
         "_producer": "https://example.com/etl",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "postgresql://warehouse:5432", "name": "table_c", "type": "DATASET",
             "inputs": [{ "namespace": "postgresql://warehouse:5432", "name": "table_a", "type": "DATASET" }] },
@@ -50,7 +50,7 @@ This example shows how the new facets can replace ColumnLevelLineageDatasetFacet
   "facets": {
     "lineage": {
       "_producer": "...",
-      "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+      "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
       "entries": [
         { "namespace": "postgresql://analytics:5432", "name": "output", "type": "DATASET",
           "fields": {
@@ -114,7 +114,7 @@ A VIEW derives from base tables. No job involved. LineageDatasetFacet on the dat
     "facets": {
       "lineage": {
         "_producer": "https://example.com/catalog",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageDatasetFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageDatasetFacet",
         "inputs": [
           { "namespace": "postgresql://warehouse:5432", "name": "public.customers", "type": "DATASET" },
           { "namespace": "postgresql://warehouse:5432", "name": "public.orders", "type": "DATASET" }
@@ -139,7 +139,7 @@ A catalog declares what a job is designed to do. This is treated as design/stati
     "facets": {
       "lineage": {
         "_producer": "https://example.com/catalog",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "postgresql://warehouse:5432", "name": "output_table", "type": "DATASET",
             "inputs": [
@@ -224,7 +224,7 @@ The per-field detail names a `LineageJobInput` (`type: JOB` with no `namespace`/
     "facets": {
       "lineage": {
         "_producer": "https://example.com/extract",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "postgres://prod", "name": "extracted_data", "type": "DATASET",
             "inputs": [],
@@ -261,7 +261,7 @@ A stored procedure `dag_b.task_1` reads its input from upstream `dag_a.task_3` v
     "facets": {
       "lineage": {
         "_producer": "https://example.com/catalog",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "airflow://prod", "name": "dag_b.task_1", "type": "JOB",
             "inputs": [
@@ -293,7 +293,7 @@ The same data flow as Example 9, observed at runtime by an integration that can 
     "facets": {
       "lineage": {
         "_producer": "https://example.com/airflow",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "airflow://prod", "name": "dag_b.task_1", "type": "JOB",
             "runId": "run-b-001",
@@ -325,7 +325,7 @@ A streaming job in a Flink cluster feeds an in-memory topic consumed by a job in
     "facets": {
       "lineage": {
         "_producer": "https://example.com/beam",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "beam://analytics", "name": "enrichment_pipeline", "type": "JOB",
             "runId": "beam-run-77",
@@ -358,7 +358,7 @@ Reading specific columns from a structured table and writing to an unstructured 
     "facets": {
       "lineage": {
         "_producer": "https://example.com/export",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "file://", "name": "R.pdf", "type": "DATASET",
             "inputs": [
