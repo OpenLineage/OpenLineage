@@ -23,9 +23,9 @@ ext {
 
 dependencies {
     compileOnly('com.google.code.findbugs:jsr305:3.0.2')
-    implementation("com.google.cloud.datalineage:producerclient:1.1.0")
+    implementation("com.google.cloud.datalineage:producerclient:1.1.1")
 
-    testImplementation("com.google.cloud.datalineage:producerclient:1.1.0")
+    testImplementation("com.google.cloud.datalineage:producerclient:1.1.1")
 }
 
 shadowJar {
