@@ -181,6 +181,15 @@ export const Consumers: Array<Partner> = [
     org_url: "https://www.selectstar.com/",
   },
   {
+    image: "Solidatus_logo.svg",
+    org: "Solidatus",
+    full_name: "Solidatus",
+    description:
+      "Solidatus stitches OpenLineage events from tools such as Spark, Airflow, and dbt into a governed, version-controlled, column-level lineage knowledge graph — adding business context, audit history, and impact analysis, with coverage beyond OpenLineage, for data and AI workflows.",
+    docs_url: "https://www.solidatus.com/product/openlineage/",
+    org_url: "https://www.solidatus.com/",
+  },
+  {
     image: "Collibra_logo_RGB.svg",
     org: "Collibra",
     full_name: "Collibra",
