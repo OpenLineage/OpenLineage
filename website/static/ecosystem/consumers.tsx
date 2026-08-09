@@ -225,4 +225,13 @@ export const Consumers: Array<Partner> = [
       "https://www.precisely.com/blog/engineering/openlineage-integration-bridging-open-standards-with-the-precisely-data-integrity-suite/",
     org_url: "https://www.precisely.com/",
   },
+  {
+    image: "foundational_logo.svg",
+    org: "Foundational",
+    full_name: "Foundational",
+    description:
+      "Foundational ingests runtime OpenLineage events from pipelines that already emit them, combining that metadata with the column-level lineage it derives from static analysis of pipeline code.",
+    docs_url: "https://docs.foundational.io/en/articles/10304496-openlineage-support-in-foundational",
+    org_url: "https://www.foundational.io/",
+  },
 ];
