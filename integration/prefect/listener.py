@@ -75,7 +75,7 @@ class PrefectOpenLineageListener:
 			version = response.json()
 			return version
 		except TypeError:
-			logger.info("Cannot get Prefect version. Did you set the PREFECT_API_URL?")
+			logger.info("Cannot get the Prefect version. Did you set the PREFECT_API_URL?")
 
 	async def get_flow_ns(self, flow_run_id: str) -> str:
 		"""
@@ -130,7 +130,7 @@ class PrefectOpenLineageListener:
 			logging.info("No datasets found for task run.")
 			return []
 
-	async def get_parent_runs(self, payload: dict, prefect_task_run_id: str) -> list[dict] | list:
+	async def get_parent_runs(self, payload: dict, prefect_task_run_id: str) -> list[dict] | []:
 		try:
 			parent_runs = []
 			task_parents = payload["task_run"]["task_inputs"]["__parents__"]
