@@ -967,6 +967,28 @@ class TestAsyncHttpTransportErrorHandling:
                 assert result
                 assert call_count > 2
 
+    def test_wait_for_completion_keeps_worker_alive_for_later_events(self):
+        """wait_for_completion() should only wait, not shut down the worker.
+
+        Regression test for https://github.com/OpenLineage/OpenLineage/issues/4823:
+        the worker used to exit permanently once the queue drained (may_exit was set
+        by wait_for_completion), so events emitted afterwards were never processed.
+        """
+        config = AsyncHttpConfig(url="http://example.com")
+        transport = AsyncHttpTransport(config)
+
+        with closing_immediately(transport) as transport:
+            assert transport.wait_for_completion(timeout=1)
+            assert not transport.may_exit.is_set()
+
+            # Give the worker a chance to observe the exit signal, if one was (wrongly) set.
+            time.sleep(0.2)
+            assert transport.worker_thread.is_alive()
+
+        # close() is the one lifecycle method that should allow the worker to exit.
+        assert transport.may_exit.is_set()
+        assert not transport.worker_thread.is_alive()
+
     def test_task_exception_handling_in_event_loop(self, mock_async_http_client_class):
         """Test exception handling when tasks raise exceptions in event loop"""
         config = AsyncHttpConfig(url="http://example.com", max_concurrent_requests=1)
