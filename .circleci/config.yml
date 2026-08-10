@@ -74,6 +74,14 @@ jobs:
               echo "Not a pull request build. Removing approval steps."
               python dev/filter_approvals.py
             else
+              # --- Token diagnostic (temporary): verify collaborator endpoint access ---
+              echo "Token scopes: $(gh auth status 2>&1 | grep -i 'token scopes' | sed 's/^[[:space:]]*-[[:space:]]*//' || echo '<none>')"
+              if gh api "repos/OpenLineage/OpenLineage/collaborators/mobuchowski" >/dev/null 2>&1; then
+                echo "Collaborator endpoint: functional (known maintainer detected)"
+              else
+                echo "Collaborator endpoint: NOT functional (token lacks push access and/or read:org scope)"
+              fi
+              # --- End token diagnostic ---
               PR_AUTHOR=$(gh pr view "$CIRCLE_PULL_REQUEST" --repo OpenLineage/OpenLineage --json author -q .author.login 2>/dev/null)
               COMMITTER="${CIRCLE_USERNAME:-}"
               COMMITTER_LOWER=$(echo "$COMMITTER" | tr '[:upper:]' '[:lower:]')
