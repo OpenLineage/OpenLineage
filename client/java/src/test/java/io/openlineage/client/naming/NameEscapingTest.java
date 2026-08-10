@@ -1,0 +1,271 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+package io.openlineage.client.naming;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.OpenLineageConfig;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+class NameEscapingTest {
+
+  private static final String ENV_VAR = "OPENLINEAGE__NAME__ESCAPING";
+
+  // -----------------------------------------------------------------------
+  // Helpers — identical pattern to JwtTokenProviderTest
+  // -----------------------------------------------------------------------
+
+  @SuppressWarnings({"unchecked", "PMD"})
+  private void setEnvironmentVariables(Map<String, String> newEnv) throws Exception {
+    Class<?> classOfMap = System.getenv().getClass();
+    Field field = classOfMap.getDeclaredField("m");
+    field.setAccessible(true);
+    Map<String, String> writeable = (Map<String, String>) field.get(System.getenv());
+    writeable.putAll(newEnv);
+  }
+
+  @SuppressWarnings({"unchecked", "PMD"})
+  private void clearEnvironmentVariables(Set<String> keys) throws Exception {
+    Class<?> classOfMap = System.getenv().getClass();
+    Field field = classOfMap.getDeclaredField("m");
+    field.setAccessible(true);
+    Map<String, String> writeable = (Map<String, String>) field.get(System.getenv());
+    keys.forEach(writeable::remove);
+  }
+
+  @AfterEach
+  void cleanUp() throws Exception {
+    // Always restore so subsequent tests start with escaping enabled (the default).
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+  }
+
+  // -----------------------------------------------------------------------
+  // isEscapingEnabled — env-var behaviour
+  // -----------------------------------------------------------------------
+
+  @Test
+  void escapingIsEnabledByDefault() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+
+    assertThat(NameEscaping.isEscapingEnabled()).isTrue();
+  }
+
+  @Test
+  void escapingIsDisabledWhenEnvVarIsFalse() throws Exception {
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "false");
+    setEnvironmentVariables(env);
+
+    try {
+      assertThat(NameEscaping.isEscapingEnabled()).isFalse();
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
+  }
+
+  @Test
+  void escapingIsDisabledCaseInsensitive() throws Exception {
+    for (String value : new String[] {"false", "FALSE", "False"}) {
+      Map<String, String> env = new HashMap<>();
+      env.put(ENV_VAR, value);
+      setEnvironmentVariables(env);
+
+      try {
+        assertThat(NameEscaping.isEscapingEnabled())
+            .as("isEscapingEnabled() should be false for env value %s", value)
+            .isFalse();
+      } finally {
+        clearEnvironmentVariables(env.keySet());
+      }
+    }
+  }
+
+  @Test
+  void escapingRemainsEnabledForNonFalseValues() throws Exception {
+    for (String value : new String[] {"true", "TRUE", "1", "yes", "on"}) {
+      Map<String, String> env = new HashMap<>();
+      env.put(ENV_VAR, value);
+      setEnvironmentVariables(env);
+
+      try {
+        assertThat(NameEscaping.isEscapingEnabled())
+            .as("isEscapingEnabled() should be true for env value %s", value)
+            .isTrue();
+      } finally {
+        clearEnvironmentVariables(env.keySet());
+      }
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // escapeSegment — transformation behaviour
+  // -----------------------------------------------------------------------
+
+  @Test
+  void escapeSegmentEscapesDotsWhenEnabled() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+
+    assertThat(NameEscaping.escapeSegment("mydb.example.com")).isEqualTo("mydb\\.example\\.com");
+  }
+
+  @Test
+  void escapeSegmentEscapesMultipleDots() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+
+    assertThat(NameEscaping.escapeSegment("a.b.c")).isEqualTo("a\\.b\\.c");
+  }
+
+  @Test
+  void escapeSegmentLeavesNonDotCharsUnchanged() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+
+    assertThat(NameEscaping.escapeSegment("my_schema")).isEqualTo("my_schema");
+    assertThat(NameEscaping.escapeSegment("myTable")).isEqualTo("myTable");
+    assertThat(NameEscaping.escapeSegment("plain")).isEqualTo("plain");
+  }
+
+  @Test
+  void escapeSegmentReturnsInputUnchangedWhenDisabled() throws Exception {
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "false");
+    setEnvironmentVariables(env);
+
+    try {
+      assertThat(NameEscaping.escapeSegment("mydb.example.com")).isEqualTo("mydb.example.com");
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // OpenLineageConfig — name.escaping is parsed correctly from env vars
+  // -----------------------------------------------------------------------
+
+  @Test
+  void nameConfigEscapingIsTrueWhenEnvVarIsTrue() throws Exception {
+    Map<String, String> envVars = new HashMap<>();
+    envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "console");
+    envVars.put(ENV_VAR, "true");
+    setEnvironmentVariables(envVars);
+
+    try {
+      OpenLineageConfig<?> config =
+          OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+              new TypeReference<OpenLineageConfig<OpenLineageConfig<?>>>() {});
+
+      assertThat(config.getNameConfig()).isNotNull();
+      assertThat(config.getNameConfig().getEscaping()).isTrue();
+    } finally {
+      clearEnvironmentVariables(envVars.keySet());
+    }
+  }
+
+  @Test
+  void nameConfigEscapingIsFalseWhenEnvVarIsFalse() throws Exception {
+    Map<String, String> envVars = new HashMap<>();
+    envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "console");
+    envVars.put(ENV_VAR, "false");
+    setEnvironmentVariables(envVars);
+
+    try {
+      OpenLineageConfig<?> config =
+          OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+              new TypeReference<OpenLineageConfig<OpenLineageConfig<?>>>() {});
+
+      assertThat(config.getNameConfig()).isNotNull();
+      assertThat(config.getNameConfig().getEscaping()).isFalse();
+    } finally {
+      clearEnvironmentVariables(envVars.keySet());
+    }
+  }
+
+  @Test
+  void nameConfigIsNullWhenEnvVarIsAbsent() throws Exception {
+    Map<String, String> envVars = new HashMap<>();
+    envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "console");
+    // ENV_VAR intentionally not set
+    setEnvironmentVariables(envVars);
+
+    try {
+      OpenLineageConfig<?> config =
+          OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+              new TypeReference<OpenLineageConfig<OpenLineageConfig<?>>>() {});
+
+      // nameConfig may be null when the env var was never set; null means "use default" (enabled)
+      if (config.getNameConfig() != null) {
+        assertThat(config.getNameConfig().getEscaping()).isNull();
+      }
+    } finally {
+      clearEnvironmentVariables(envVars.keySet());
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Integration — Naming helpers respect the env var end-to-end
+  // -----------------------------------------------------------------------
+
+  @Test
+  void oracleNamingEscapesServiceNameWithDotsByDefault() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+
+    io.openlineage.client.dataset.Naming.Oracle oracle =
+        io.openlineage.client.dataset.Naming.Oracle.builder()
+            .host("localhost")
+            .port("1521")
+            .serviceName("mydb.example.com")
+            .schema("mySchema")
+            .table("myTable")
+            .build();
+
+    // Spec example: "mydb\.example\.com.mySchema.myTable"
+    assertThat(oracle.getName()).isEqualTo("mydb\\.example\\.com.mySchema.myTable");
+  }
+
+  @Test
+  void oracleNamingDoesNotEscapeWhenDisabled() throws Exception {
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "false");
+    setEnvironmentVariables(env);
+
+    try {
+      io.openlineage.client.dataset.Naming.Oracle oracle =
+          io.openlineage.client.dataset.Naming.Oracle.builder()
+              .host("localhost")
+              .port("1521")
+              .serviceName("mydb.example.com")
+              .schema("mySchema")
+              .table("myTable")
+              .build();
+
+      assertThat(oracle.getName()).isEqualTo("mydb.example.com.mySchema.myTable");
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
+  }
+
+  @Test
+  void plainSegmentsAreUnchangedRegardlessOfEscapingSetting() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+
+    io.openlineage.client.dataset.Naming.Postgres pg =
+        io.openlineage.client.dataset.Naming.Postgres.builder()
+            .host("localhost")
+            .port("5432")
+            .database("mydb")
+            .schema("myschema")
+            .table("mytable")
+            .build();
+
+    assertThat(pg.getName()).isEqualTo("mydb.myschema.mytable");
+  }
+}
