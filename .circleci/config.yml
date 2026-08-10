@@ -66,7 +66,7 @@ jobs:
             NIGHTLY_RUN: << pipeline.parameters.nightly-run >>
             INTEGRATION_TYPE: << pipeline.parameters.integration-type >>
       - run:
-          name: Remove approval steps if committer is the PR author.
+          name: Remove approval steps if committer is the PR author or a project committer.
           command: |
             pip install pyyaml==6.0.1
             if [ -z "$CIRCLE_PULL_REQUEST" ]; then
@@ -75,15 +75,21 @@ jobs:
               python dev/filter_approvals.py
             else
               PR_AUTHOR=$(gh pr view "$CIRCLE_PULL_REQUEST" --repo OpenLineage/OpenLineage --json author -q .author.login 2>/dev/null)
-              COMMITTER=$(echo "${CIRCLE_USERNAME:-}" | tr '[:upper:]' '[:lower:]')
-              AUTHOR=$(echo "${PR_AUTHOR:-}" | tr '[:upper:]' '[:lower:]')
-              echo "Committer: ${CIRCLE_USERNAME:-<unset>}"
+              COMMITTER="${CIRCLE_USERNAME:-}"
+              COMMITTER_LOWER=$(echo "$COMMITTER" | tr '[:upper:]' '[:lower:]')
+              AUTHOR_LOWER=$(echo "$PR_AUTHOR" | tr '[:upper:]' '[:lower:]')
+              echo "Committer: ${COMMITTER:-<unset>}"
               echo "PR author: ${PR_AUTHOR:-<unknown>}"
-              if [ -n "$COMMITTER" ] && [ -n "$AUTHOR" ] && [ "$COMMITTER" == "$AUTHOR" ]; then
+              if [ -n "$COMMITTER_LOWER" ] && [ -n "$AUTHOR_LOWER" ] && [ "$COMMITTER_LOWER" == "$AUTHOR_LOWER" ]; then
                 echo "Committer is the PR author. Removing approval steps."
                 python dev/filter_approvals.py
+              elif [ -n "$COMMITTER" ] && gh api "repos/OpenLineage/OpenLineage/collaborators/$COMMITTER" >/dev/null 2>&1; then
+                # Covers committers who push to their own fork: they are trusted
+                # collaborators of the repo even though the PR comes from a fork.
+                echo "Committer is a project committer. Removing approval steps."
+                python dev/filter_approvals.py
               else
-                echo "Committer is not the PR author. Keeping approval steps."
+                echo "Committer is not the PR author and not a project committer. Keeping approval steps."
               fi
             fi
       - run: |
