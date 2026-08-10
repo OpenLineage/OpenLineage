@@ -635,7 +635,7 @@ jobs:
           echo "Setting default Java to ${JAVA_BIN}"
           sudo update-alternatives --set java ${JAVA_BIN}
           sudo update-alternatives --set javac ${JAVAC_BIN}
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Papp.java.test.home=${JAVA_TEST_HOME}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Papp.java.test.home=${JAVA_TEST_HOME} -Pspark.docker.java.version=${JAVA}
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
@@ -689,7 +689,7 @@ jobs:
             - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
-      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Papp.java.test.home=${JAVA_TEST_HOME}
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Papp.java.test.home=${JAVA_TEST_HOME} -Pspark.docker.java.version=${JAVA}
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
           path: app/build/test-results/integrationTest

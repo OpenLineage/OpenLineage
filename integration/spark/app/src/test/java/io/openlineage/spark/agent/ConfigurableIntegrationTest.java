@@ -11,6 +11,7 @@ import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J2_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
+import static io.openlineage.spark.agent.SparkContainerUtils.oneShotStartupCheckStrategy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.spark.agent.util.RunEventVerifier;
@@ -24,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,7 +43,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 /**
  * Contains generic & configurable integration test which can be triggered through CLI script to
@@ -182,8 +181,7 @@ class ConfigurableIntegrationTest {
                     output.write(outputFrame.getUtf8String());
                   }
                 })
-            .waitingFor(Wait.forLogMessage(config.getDocker().getWaitForLogMessage(), 1))
-            .withStartupTimeout(Duration.of(10, ChronoUnit.MINUTES))
+            .withStartupCheckStrategy(oneShotStartupCheckStrategy(Duration.ofMinutes(10)))
             .withCommand(command.toArray(new String[] {}));
 
     log.debug("Host root openlineage dir is {}", System.getProperty("host.dir"));
