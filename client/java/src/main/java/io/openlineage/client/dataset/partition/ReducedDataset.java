@@ -86,7 +86,7 @@ class ReducedDataset {
   }
 
   private boolean hasSameFacets(ReducedDataset other) {
-    if (!dataset.getFacets().equals(other.dataset.getFacets())) {
+    if (!Objects.equals(dataset.getFacets(), other.dataset.getFacets())) {
       return false;
     }
 
