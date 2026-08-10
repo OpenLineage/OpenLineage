@@ -20,6 +20,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1InputDatasetBu
 import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1OutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandOutputDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
@@ -44,6 +45,7 @@ public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
             .add(new DeleteCommandOutputDatasetBuilder(context))
+            .add(new UpdateCommandOutputDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new CreateReplaceDatasetBuilder(context))
