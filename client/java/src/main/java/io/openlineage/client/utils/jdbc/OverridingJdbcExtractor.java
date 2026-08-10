@@ -16,7 +16,7 @@ public class OverridingJdbcExtractor extends GenericJdbcExtractor implements Jdb
   private String overrideScheme;
   private String defaultPort;
   private static Pattern HOST_PORT_FORMAT =
-      Pattern.compile("^(?<host>[\\[\\]\\w\\d.-]+):(?<port>\\d+)?");
+      Pattern.compile("^(?<host>\\[.*]|[^:\\]]+):(?<port>\\d+)?$");
 
   public OverridingJdbcExtractor(String overrideScheme) {
     this(overrideScheme, null);

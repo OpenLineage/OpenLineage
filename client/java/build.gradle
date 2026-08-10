@@ -54,7 +54,7 @@ repositories {
 
 ext {
     assertjVersion = '3.27.7'
-    jacksonVersion = "2.15.3"
+    jacksonVersion = "2.18.8"
     junit5Version = '5.13.4'
     lombokVersion = '1.18.46'
     mockitoVersion = '5.23.0'
@@ -76,7 +76,7 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation "com.fasterxml.jackson.module:jackson-module-blackbird:${jacksonVersion}"
     implementation 'org.apache.commons:commons-lang3:3.20.0'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.2'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.3'
     implementation 'commons-logging:commons-logging:1.4.0'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation "io.micrometer:micrometer-core:${micrometerVersion}"

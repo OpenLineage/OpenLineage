@@ -24,7 +24,7 @@ ext {
     assertjVersion = '3.27.7'
     junit5Version = '5.14.4'
     lombokVersion = '1.18.46'
-    jacksonVersion = "2.15.3"
+    jacksonVersion = "2.18.8"
     mockitoVersion = '5.2.0'
     testcontainersVersion = '1.21.4'
     micrometerVersion = '1.17.0'
@@ -46,7 +46,7 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.2'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.3'
     testImplementation "org.apache.flink:flink-java:$testedFlinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java:$testedFlinkVersion"
     testImplementation platform('org.junit:junit-bom:5.14.4')
