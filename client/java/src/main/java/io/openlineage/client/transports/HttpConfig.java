@@ -66,6 +66,16 @@ public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig
   @Setter
   private @Nullable Integer retryIntervalMillis;
 
+  @JsonProperty("retryIntervalMultiplier")
+  @Getter
+  @Setter
+  private @Nullable Double retryIntervalMultiplier;
+
+  @JsonProperty("maxRetryIntervalMillis")
+  @Getter
+  @Setter
+  private @Nullable Integer maxRetryIntervalMillis;
+
   @Override
   public HttpConfig mergeWithNonNull(HttpConfig other) {
     return new HttpConfig(
@@ -78,6 +88,8 @@ public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig
         mergePropertyWith(compression, other.compression),
         mergePropertyWith(sslContextConfig, other.sslContextConfig),
         mergePropertyWith(maxRetries, other.maxRetries),
-        mergePropertyWith(retryIntervalMillis, other.retryIntervalMillis));
+        mergePropertyWith(retryIntervalMillis, other.retryIntervalMillis),
+        mergePropertyWith(retryIntervalMultiplier, other.retryIntervalMultiplier),
+        mergePropertyWith(maxRetryIntervalMillis, other.maxRetryIntervalMillis));
   }
 }
