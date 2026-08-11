@@ -20,6 +20,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
+import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -27,6 +28,7 @@ import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
@@ -51,10 +53,13 @@ import scala.collection.immutable.Map;
 class CreateReplaceDatasetBuilderTest {
 
   private static final String TABLE = "table";
+  private static final String SOME_KEY = "some-key";
+  private static final String SOME_VALUE = "some-value";
+  SparkContext sparkContext = mock(SparkContext.class);
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
           .sparkSession(mock(SparkSession.class))
-          .sparkContext(mock(SparkContext.class))
+          .sparkContext(sparkContext)
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
           .meterRegistry(new SimpleMeterRegistry())
           .openLineageConfig(new SparkOpenLineageConfig())
@@ -100,7 +105,7 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.writeOptions())
         .thenReturn(
-            ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap(SOME_KEY, SOME_VALUE)));
     verifyApply(
         (LogicalPlan) logicalPlan,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
@@ -127,7 +132,7 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.writeOptions())
         .thenReturn(
-            ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap(SOME_KEY, SOME_VALUE)));
     verifyApply(
         (LogicalPlan) logicalPlan,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
@@ -244,7 +249,7 @@ class CreateReplaceDatasetBuilderTest {
       when(logicalPlan.tableSchema()).thenReturn(schema);
       when(logicalPlan.writeOptions())
           .thenReturn(
-              ScalaConversionUtils.fromJavaMap(Collections.singletonMap("some-key", "some-value")));
+              ScalaConversionUtils.fromJavaMap(Collections.singletonMap(SOME_KEY, SOME_VALUE)));
 
       when(PlanUtils3.getDatasetIdentifier(
               openLineageContext,
@@ -257,6 +262,95 @@ class CreateReplaceDatasetBuilderTest {
           builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L, Option.empty()), logicalPlan);
       assertEquals(0, outputDatasets.size());
     }
+  }
+
+  @Test
+  void testApplyWhenTableSpecIsNotAvailable() {
+    ReplaceTableAsSelect logicalPlan = mock(ReplaceTableAsSelect.class);
+    when(logicalPlan.name()).thenReturn(namePlan);
+    when(logicalPlan.tableName()).thenReturn(tableName);
+    when(logicalPlan.tableSpec()).thenThrow(new NoSuchMethodError("tableSpec"));
+    when(logicalPlan.tableSchema()).thenReturn(schema);
+    when(logicalPlan.writeOptions())
+        .thenReturn(
+            ScalaConversionUtils.fromJavaMap(Collections.singletonMap(SOME_KEY, SOME_VALUE)));
+
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+  }
+
+  @Test
+  void testApplyFallsBackToQuerySchema() {
+    StructType querySchema = new StructType().add("id", "int");
+    LogicalPlan query = mock(LogicalPlan.class);
+    when(query.schema()).thenReturn(querySchema);
+
+    CreateTableAsSelect logicalPlan = mock(CreateTableAsSelect.class);
+    when(logicalPlan.name()).thenReturn(namePlan);
+    when(logicalPlan.tableName()).thenReturn(tableName);
+    when(logicalPlan.tableSpec()).thenReturn(tableSpec);
+    when(logicalPlan.tableSchema()).thenThrow(new NoSuchMethodError("tableSchema"));
+    when(logicalPlan.query()).thenReturn(query);
+    when(logicalPlan.writeOptions()).thenReturn(new HashMap<>());
+
+    DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      when(PlanUtils3.getDatasetIdentifier(
+              eq(openLineageContext), eq(catalog), eq(tableName), anyMap()))
+          .thenReturn(Optional.of(di));
+
+      List<OpenLineage.OutputDataset> outputDatasets =
+          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L, Option.empty()), logicalPlan);
+
+      assertEquals(1, outputDatasets.size());
+      assertEquals(
+          "id", outputDatasets.get(0).getFacets().getSchema().getFields().get(0).getName());
+    }
+  }
+
+  @Test
+  void testApplyFallsBackToUnityCatalogName() {
+    SparkConf sparkConf = new SparkConf();
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+
+    ReplaceTableAsSelect logicalPlan = mock(ReplaceTableAsSelect.class);
+    when(logicalPlan.name()).thenReturn(namePlan);
+    when(logicalPlan.tableName()).thenReturn(tableName);
+    when(logicalPlan.tableSpec()).thenReturn(tableSpec);
+    when(logicalPlan.tableSchema()).thenReturn(schema);
+    when(logicalPlan.writeOptions()).thenReturn(new HashMap<>());
+
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      try (MockedStatic<DatabricksUtils> databricks = mockStatic(DatabricksUtils.class)) {
+        databricks
+            .when(() -> DatabricksUtils.isDatabricksUnityCatalogEnabled(sparkConf))
+            .thenReturn(true);
+        databricks
+            .when(() -> DatabricksUtils.qualifiedUnityCatalogTableName(catalog, tableName))
+            .thenReturn("catalog.db.table");
+        when(PlanUtils3.getDatasetIdentifier(
+                eq(openLineageContext), eq(catalog), eq(tableName), anyMap()))
+            .thenThrow(new IllegalStateException("no default path for a unity catalog namespace"));
+
+        List<OpenLineage.OutputDataset> outputDatasets =
+            builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L, Option.empty()), logicalPlan);
+
+        assertEquals(1, outputDatasets.size());
+        assertEquals("catalog.db.table", outputDatasets.get(0).getName());
+        assertEquals("unity-catalog", outputDatasets.get(0).getNamespace());
+      }
+    }
+  }
+
+  @Test
+  void testApplyWhenCatalogCannotBeResolved() {
+    ReplaceTableAsSelect logicalPlan = mock(ReplaceTableAsSelect.class);
+    when(logicalPlan.name()).thenReturn(mock(LogicalPlan.class));
+    when(logicalPlan.tableName()).thenReturn(tableName);
+
+    assertThat(builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L, Option.empty()), logicalPlan))
+        .isEmpty();
   }
 
   @Test
