@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import pandas
 import pytest
+from openlineage.common import __version__
 from openlineage.common.provider.great_expectations import OpenLineageValidationAction
 from sqlalchemy import create_engine
 
@@ -418,3 +419,44 @@ def test_data_quality_facet_and_assertions_on_ge_1x():
         "expect_table_row_count_to_equal",
         "expect_column_sum_to_be_between",
     }
+
+
+def test_emitted_event_producer_and_event_time(tmpdir):
+    df = pandas.DataFrame({"name": ["Alice", "Bob"]})
+
+    ctx = get_context(context_root_dir=str(tmpdir / "gx"), mode="ephemeral")
+    ctx.suites.add(ExpectationSuite("test_suite"))
+
+    from great_expectations.datasource.fluent import PandasDatasource
+
+    datasource = PandasDatasource(name="pandas_datasource")
+    ctx.add_datasource(datasource=datasource)
+    asset = datasource.add_dataframe_asset(name="test_dataframe")
+    validator = ctx.get_validator(
+        batch_request=asset.build_batch_request(options={"dataframe": df}),
+        expectation_suite_name="test_suite",
+    )
+
+    action = OpenLineageValidationAction(
+        name="openlineage_test_action",
+        openlineage_host="http://localhost:5000",
+        openlineage_namespace="test_ns",
+        do_publish=False,
+        job_name="test_expectations_job",
+    )
+    ol_result = action._run(
+        validation_result_suite=validator.validate(),
+        validation_result_suite_identifier=ValidationResultIdentifier(
+            ExpectationSuiteIdentifier("test_suite"), RunIdentifier(run_name="test_run"), "batch_id"
+        ),
+        data_asset=validator,
+    )
+
+    # The spec types eventTime as an RFC 3339 date-time, which carries an offset.
+    assert datetime.datetime.fromisoformat(ol_result["eventTime"]).tzinfo is not None
+
+    # producer must be a usable URI: a real version and a path that exists in the repo.
+    assert ol_result["producer"] == (
+        f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}"
+        "/integration/common/src/openlineage/common/provider/great_expectations"
+    )
