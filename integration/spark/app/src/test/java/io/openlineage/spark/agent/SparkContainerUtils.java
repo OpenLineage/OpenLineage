@@ -37,13 +37,12 @@ import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 @Slf4j
 public class SparkContainerUtils {
-  public static final String SPARK_DOCKER_CONTAINER_WAIT_MESSAGE = ".*Shutdown hook called.*";
-
   public static final DockerImageName MOCKSERVER_IMAGE =
       DockerImageName.parse("mockserver/mockserver")
           .withTag("mockserver-" + MockServerClient.class.getPackage().getImplementationVersion());
@@ -130,10 +129,16 @@ public class SparkContainerUtils {
             .withNetwork(network)
             .withNetworkAliases("spark")
             .withLogConsumer(SparkContainerUtils::consumeOutput)
-            .waitingFor(Wait.forLogMessage(waitMessage, 1))
-            .withStartupTimeout(Duration.of(10, ChronoUnit.MINUTES))
             .dependsOn(mockServerContainer)
             .withCommand(command);
+
+    if (waitMessage == null) {
+      container.withStartupCheckStrategy(oneShotStartupCheckStrategy(Duration.ofMinutes(10)));
+    } else {
+      container
+          .waitingFor(Wait.forLogMessage(waitMessage, 1))
+          .withStartupTimeout(Duration.ofMinutes(10));
+    }
 
     final Path buildDir = Paths.get(System.getProperty("build.dir")).toAbsolutePath();
     mountPath(container, buildDir.resolve("gcloud"), Paths.get("/opt/gcloud"));
@@ -166,7 +171,7 @@ public class SparkContainerUtils {
     return makePysparkContainerWithDefaultConf(
         network,
         "http://openlineageclient:1080",
-        SPARK_DOCKER_CONTAINER_WAIT_MESSAGE,
+        null,
         mockServerContainer,
         namespace,
         urlParams,
@@ -251,6 +256,12 @@ public class SparkContainerUtils {
   public static void addSparkConfig(List<String> command, String value) {
     command.add("--conf");
     command.add(value);
+  }
+
+  public static OneShotStartupCheckStrategy oneShotStartupCheckStrategy(Duration timeout) {
+    OneShotStartupCheckStrategy strategy = new OneShotStartupCheckStrategy();
+    strategy.withTimeout(timeout);
+    return strategy;
   }
 
   static void runPysparkContainerWithDefaultConf(

@@ -182,7 +182,7 @@ export const Producers: Array<Partner> = [
     org: "Foundational",
     full_name: "Foundational",
     description:
-      "Foundational exports code-time lineage as OpenLineage events, derived from static analysis of pipeline code across dbt, Airflow, Spark, Snowflake, BigQuery and more, for consumption by any OpenLineage-compatible catalog.",
+      "Foundational exports code-time lineage as OpenLineage events, derived from static analysis of pipeline code across any type of programming language such as Python, Java, COBOL, Scala and more, for consumption by any OpenLineage-compatible catalog.",
     docs_url: "https://docs.foundational.io/en/articles/10304496-openlineage-support-in-foundational",
     org_url: "https://www.foundational.io/",
   },
