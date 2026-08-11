@@ -700,6 +700,7 @@ class TestDbtMetaTags:
         assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "DBT_META")]
 
 
+# Unit tests for top-level dbt invocation run events
 class TestDbtInvocationEvents:
     """Covers top-level dbt invocation run event generation in DbtArtifactProcessor."""
 
