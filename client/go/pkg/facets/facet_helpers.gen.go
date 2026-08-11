@@ -10,7 +10,6 @@ import "time"
 
 // InputDatasetFacets holds all InputDatasetFacet facets for an OpenLineage event.
 type InputDatasetFacets struct {
-	DataQualityAssertionsDatasetFacet   *DataQualityAssertionsDatasetFacet   `json:"dataQualityAssertions,omitempty"`
 	DataQualityMetricsInputDatasetFacet *DataQualityMetricsInputDatasetFacet `json:"dataQualityMetrics,omitempty"`
 	IcebergScanReportInputDatasetFacet  *IcebergScanReportInputDatasetFacet  `json:"icebergScanReport,omitempty"`
 	InputStatisticsInputDatasetFacet    *InputStatisticsInputDatasetFacet    `json:"inputStatistics,omitempty"`
@@ -26,20 +25,21 @@ type OutputDatasetFacets struct {
 
 // DatasetFacets holds all DatasetFacet facets for an OpenLineage event.
 type DatasetFacets struct {
-	CatalogDatasetFacet              *CatalogDatasetFacet              `json:"catalog,omitempty"`
-	ColumnLineageDatasetFacet        *ColumnLineageDatasetFacet        `json:"columnLineage,omitempty"`
-	DataQualityMetricsDatasetFacet   *DataQualityMetricsDatasetFacet   `json:"dataQualityMetrics,omitempty"`
-	DatasetTypeDatasetFacet          *DatasetTypeDatasetFacet          `json:"datasetType,omitempty"`
-	DatasetVersionDatasetFacet       *DatasetVersionDatasetFacet       `json:"version,omitempty"`
-	DatasourceDatasetFacet           *DatasourceDatasetFacet           `json:"dataSource,omitempty"`
-	DocumentationDatasetFacet        *DocumentationDatasetFacet        `json:"documentation,omitempty"`
-	HierarchyDatasetFacet            *HierarchyDatasetFacet            `json:"hierarchy,omitempty"`
-	LifecycleStateChangeDatasetFacet *LifecycleStateChangeDatasetFacet `json:"lifecycleStateChange,omitempty"`
-	OwnershipDatasetFacet            *OwnershipDatasetFacet            `json:"ownership,omitempty"`
-	SchemaDatasetFacet               *SchemaDatasetFacet               `json:"schema,omitempty"`
-	StorageDatasetFacet              *StorageDatasetFacet              `json:"storage,omitempty"`
-	SymlinksDatasetFacet             *SymlinksDatasetFacet             `json:"symlinks,omitempty"`
-	TagsDatasetFacet                 *TagsDatasetFacet                 `json:"tags,omitempty"`
+	CatalogDatasetFacet               *CatalogDatasetFacet               `json:"catalog,omitempty"`
+	ColumnLineageDatasetFacet         *ColumnLineageDatasetFacet         `json:"columnLineage,omitempty"`
+	DataQualityAssertionsDatasetFacet *DataQualityAssertionsDatasetFacet `json:"dataQualityAssertions,omitempty"`
+	DataQualityMetricsDatasetFacet    *DataQualityMetricsDatasetFacet    `json:"dataQualityMetrics,omitempty"`
+	DatasetTypeDatasetFacet           *DatasetTypeDatasetFacet           `json:"datasetType,omitempty"`
+	DatasetVersionDatasetFacet        *DatasetVersionDatasetFacet        `json:"version,omitempty"`
+	DatasourceDatasetFacet            *DatasourceDatasetFacet            `json:"dataSource,omitempty"`
+	DocumentationDatasetFacet         *DocumentationDatasetFacet         `json:"documentation,omitempty"`
+	HierarchyDatasetFacet             *HierarchyDatasetFacet             `json:"hierarchy,omitempty"`
+	LifecycleStateChangeDatasetFacet  *LifecycleStateChangeDatasetFacet  `json:"lifecycleStateChange,omitempty"`
+	OwnershipDatasetFacet             *OwnershipDatasetFacet             `json:"ownership,omitempty"`
+	SchemaDatasetFacet                *SchemaDatasetFacet                `json:"schema,omitempty"`
+	StorageDatasetFacet               *StorageDatasetFacet               `json:"storage,omitempty"`
+	SymlinksDatasetFacet              *SymlinksDatasetFacet              `json:"symlinks,omitempty"`
+	TagsDatasetFacet                  *TagsDatasetFacet                  `json:"tags,omitempty"`
 }
 
 // JobFacets holds all JobFacet facets for an OpenLineage event.
@@ -165,6 +165,35 @@ func (f *ColumnLineageDatasetFacet) WithDeleted(deleted bool) *ColumnLineageData
 // WithDataset sets the Dataset field on this ColumnLineageDatasetFacet.
 func (f *ColumnLineageDatasetFacet) WithDataset(dataset []InputField) *ColumnLineageDatasetFacet {
 	f.Dataset = dataset
+
+	return f
+}
+
+var _ DatasetFacet = (*DataQualityAssertionsDatasetFacet)(nil)
+
+// Apply sets this DataQualityAssertionsDatasetFacet facet in the DatasetFacets container.
+func (f *DataQualityAssertionsDatasetFacet) Apply(facets **DatasetFacets) {
+	if *facets == nil {
+		*facets = &DatasetFacets{}
+	}
+	(*facets).DataQualityAssertionsDatasetFacet = f
+}
+
+// NewDataQualityAssertionsDatasetFacet creates a new DataQualityAssertionsDatasetFacet facet.
+func NewDataQualityAssertionsDatasetFacet(
+	producer string,
+	assertions []DataQualityAssertionsDatasetFacetAssertion,
+) *DataQualityAssertionsDatasetFacet {
+	return &DataQualityAssertionsDatasetFacet{
+		Producer:   producer,
+		SchemaURL:  "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json",
+		Assertions: assertions,
+	}
+}
+
+// WithDeleted sets the Deleted field on this DataQualityAssertionsDatasetFacet.
+func (f *DataQualityAssertionsDatasetFacet) WithDeleted(deleted bool) *DataQualityAssertionsDatasetFacet {
+	f.Deleted = &deleted
 
 	return f
 }
@@ -603,28 +632,6 @@ func (f *TagsDatasetFacet) WithTags(tags []TagsDatasetFacetFields) *TagsDatasetF
 	f.Tags = tags
 
 	return f
-}
-
-var _ InputDatasetFacet = (*DataQualityAssertionsDatasetFacet)(nil)
-
-// Apply sets this DataQualityAssertionsDatasetFacet facet in the InputDatasetFacets container.
-func (f *DataQualityAssertionsDatasetFacet) Apply(facets **InputDatasetFacets) {
-	if *facets == nil {
-		*facets = &InputDatasetFacets{}
-	}
-	(*facets).DataQualityAssertionsDatasetFacet = f
-}
-
-// NewDataQualityAssertionsDatasetFacet creates a new DataQualityAssertionsDatasetFacet facet.
-func NewDataQualityAssertionsDatasetFacet(
-	producer string,
-	assertions []DataQualityAssertionsDatasetFacetAssertion,
-) *DataQualityAssertionsDatasetFacet {
-	return &DataQualityAssertionsDatasetFacet{
-		Producer:   producer,
-		SchemaURL:  "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json",
-		Assertions: assertions,
-	}
 }
 
 var _ InputDatasetFacet = (*DataQualityMetricsInputDatasetFacet)(nil)
