@@ -5,7 +5,7 @@ import copy
 import logging
 import os
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from urllib.parse import urlparse
 
@@ -21,6 +21,7 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.serde import Serde
 from openlineage.client.uuid import generate_new_uuid
+from openlineage.common import __version__
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.dataset import Dataset as OLDataset
 from openlineage.common.provider.great_expectations.facets import (
@@ -64,6 +65,11 @@ except ImportError:
 
 
 log = logging.getLogger(__name__)
+
+PRODUCER = (
+    f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}"
+    "/integration/common/src/openlineage/common/provider/great_expectations"
+)
 
 
 class OpenLineageValidationAction(ValidationAction):
@@ -211,12 +217,12 @@ class OpenLineageValidationAction(ValidationAction):
             )
         run_event = RunEvent(
             eventType=RunState.COMPLETE,
-            eventTime=datetime.now().isoformat(),
+            eventTime=datetime.now(timezone.utc).isoformat(),
             run=Run(runId=str(self.openlineage_run_id), facets=run_facets),
             job=Job(self.openlineage_namespace, job_name, facets=job_facets),  # type: ignore [arg-type]
             inputs=datasets,  # type: ignore[arg-type]
             outputs=[],
-            producer="https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations",
+            producer=PRODUCER,
         )
         if self.do_publish:
             self.openlineage_client.emit(run_event)  # type: ignore [attr-defined]
