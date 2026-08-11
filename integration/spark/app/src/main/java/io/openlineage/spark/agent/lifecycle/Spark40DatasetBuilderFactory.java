@@ -35,6 +35,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1OutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandOutputDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.WriteIcebergDeltaDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.WriteToMicroBatchDataSourceV1DatasetBuilder;
@@ -68,6 +70,7 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new CreateReplaceInputDatasetBuilder(context))
             .add(new DeleteCommandInputDatasetBuilder(context))
+            .add(new UpdateCommandInputDatasetBuilder(context))
             .add(new SparkExtensionV1InputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
             .add(new StreamingDataSourceV2ScanRelationDatasetBuilder(context))
@@ -93,6 +96,7 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
             .add(new DeleteCommandOutputDatasetBuilder(context))
+            .add(new UpdateCommandOutputDatasetBuilder(context))
             .add(new CreateReplaceOutputDatasetBuilder(context))
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))

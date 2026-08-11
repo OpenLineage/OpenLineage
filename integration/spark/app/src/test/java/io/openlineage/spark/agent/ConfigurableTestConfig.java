@@ -220,6 +220,5 @@ public class ConfigurableTestConfig {
   public static class DockerTestConfig {
     String image;
     String sparkSubmit = "./bin/spark-submit";
-    String waitForLogMessage = ".*ShutdownHookManager - Shutdown hook called.*";
   }
 }

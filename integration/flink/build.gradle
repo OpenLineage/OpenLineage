@@ -232,6 +232,10 @@ shadowJar {
     relocate 'org.apache.commons.lang3', 'io.openlineage.flink.shaded.org.apache.commons.lang3'
     relocate "org.HdrHistogram", "io.openlineage.flink.shaded.org.hdrhistogram"
     relocate "org.LatencyUtils", "io.openlineage.flink.shaded.org.latencyutils"
+    // jackson-core 2.18+ ships FastDoubleParser as Java 21/22 multi-release classes that the
+    // shadow plugin's ASM cannot relocate; the Java 8 base classes remain and are fully functional.
+    exclude 'META-INF/versions/21/**'
+    exclude 'META-INF/versions/22/**'
     dependencies {
         exclude(dependency('org.slf4j::'))
     }
