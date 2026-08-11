@@ -60,6 +60,8 @@
                                 "success": false,
                                 "column": "customer_id",
                                 "severity": "error",
+                                "actual": "1",
+                                "expected": "0",
                                 "name": "unique_customers_customer_id"
                             },
                             {
@@ -67,6 +69,8 @@
                                 "success": false,
                                 "column": "customer_id",
                                 "severity": "error",
+                                "actual": "Test failure",
+                                "expected": "0",
                                 "name": "not_null_customers_customer_id"
                             }
                         ]
@@ -893,6 +897,8 @@
                                 "success": false,
                                 "column": "customer_id",
                                 "severity": "error",
+                                "actual": "1",
+                                "expected": "0",
                                 "name": "unique_customers_customer_id"
                             },
                             {
@@ -900,6 +906,8 @@
                                 "success": false,
                                 "column": "customer_id",
                                 "severity": "error",
+                                "actual": "Test failure",
+                                "expected": "0",
                                 "name": "not_null_customers_customer_id"
                             }
                         ]
