@@ -249,7 +249,7 @@ class DbtArtifactProcessor:
         start_time = min(started_at_list) if started_at_list else fallback_time
         complete_time = max(completed_at_list) if completed_at_list else fallback_time
 
-        run_facets = {
+        run_facets: dict[str, RunFacet] = {
             **(self.dbt_version_facet() or {}),
             **(self.dbt_run_run_facet() or {}),
             **(self.processing_engine_facet() or {}),
@@ -257,7 +257,7 @@ class DbtArtifactProcessor:
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
-        job_facets = {
+        job_facets: dict[str, JobFacet] = {
             "jobType": job_type_job.JobTypeJobFacet(
                 jobType="JOB",
                 integration="DBT",
