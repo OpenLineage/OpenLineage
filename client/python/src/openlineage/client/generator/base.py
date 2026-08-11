@@ -16,6 +16,7 @@ from datamodel_code_generator import DataModelType, PythonVersion  # type: ignor
 from datamodel_code_generator.imports import Import  # type: ignore[import-not-found]
 from datamodel_code_generator.model import get_data_model_types  # type: ignore[import-not-found]
 from datamodel_code_generator.model import pydantic as pydantic_model
+from datamodel_code_generator.parser import LiteralType  # type: ignore[import-not-found]
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser  # type: ignore[import-not-found]
 from datamodel_code_generator.types import Types  # type: ignore[import-not-found]
 
@@ -137,6 +138,7 @@ def parse_and_generate(
             special_field_name_prefix="",
             use_schema_description=True,
             field_constraints=True,
+            enum_field_as_literal=LiteralType.One,
             use_union_operator=True,
             use_standard_collections=True,
             base_class="openlineage.client.utils.RedactMixin",

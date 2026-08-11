@@ -3,8 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
-from typing import ClassVar, Union
+from typing import ClassVar, Literal, Union
 
 import attr
 from openlineage.client.generated.base import DatasetFacet, JobFacet
@@ -24,7 +23,7 @@ class LineageDatasetEntry(RedactMixin):
     name: str
     """The name of the target dataset."""
 
-    type: Type  # noqa: A003
+    type: Literal["DATASET"]  # noqa: A003
     """The target entity type. Must be DATASET."""
 
     inputs: list[LineageInput] | None = attr.field(default=None)
@@ -72,7 +71,7 @@ class LineageDatasetInput(RedactMixin):
     name: str
     """The name of the source dataset."""
 
-    type: Type2  # noqa: A003
+    type: Literal["DATASET"]  # noqa: A003
     """The source entity type. Must be DATASET."""
 
     field: str | None = attr.field(default=None)
@@ -115,7 +114,7 @@ class LineageJobEntry(RedactMixin):
     job.
     """
 
-    type: Type1  # noqa: A003
+    type: Literal["JOB"]  # noqa: A003
     """The target entity type. Must be JOB."""
 
     namespace: str | None = attr.field(default=None)
@@ -167,7 +166,7 @@ class LineageJobInput(RedactMixin):
     event's own job.
     """
 
-    type: Type3  # noqa: A003
+    type: Literal["JOB"]  # noqa: A003
     """The source entity type. Must be JOB."""
 
     namespace: str | None = attr.field(default=None)
@@ -220,27 +219,3 @@ class LineageTransformation(RedactMixin):
     @staticmethod
     def _get_schema() -> str:
         return "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageTransformation"
-
-
-class Type(Enum):
-    """The target entity type. Must be DATASET."""
-
-    DATASET = "DATASET"
-
-
-class Type1(Enum):
-    """The target entity type. Must be JOB."""
-
-    JOB = "JOB"
-
-
-class Type2(Enum):
-    """The source entity type. Must be DATASET."""
-
-    DATASET = "DATASET"
-
-
-class Type3(Enum):
-    """The source entity type. Must be JOB."""
-
-    JOB = "JOB"
