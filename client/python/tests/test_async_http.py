@@ -280,6 +280,33 @@ class TestAsyncHttpTransport:
 
             assert not transport.may_exit.is_set()
 
+    def test_wait_for_completion_keeps_worker_available_for_later_events(self):
+        config = AsyncHttpConfig(url="http://example.com")
+        transport = AsyncHttpTransport(config)
+
+        async def process_event(client, semaphore, request, from_main_queue=True):
+            transport._mark_success(request)
+            if from_main_queue:
+                transport.event_queue.task_done()
+            return []
+
+        with closing_immediately(transport) as transport:
+            assert transport.wait_for_completion(timeout=1.0)
+
+            # Give the worker time to observe a stale exit signal before emitting again.
+            time.sleep(0.2)
+            assert transport.worker_thread.is_alive()
+
+            with (
+                patch.object(transport, "_process_event", side_effect=process_event) as mock_process,
+                patch.object(Serde, "to_json", return_value='{"test": "event"}'),
+            ):
+                transport.emit(MagicMock())
+                assert transport.wait_for_completion(timeout=1.0)
+
+            mock_process.assert_awaited_once()
+            assert transport.get_stats()["success"] == 1
+
     def test_async_http_transport_get_stats(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
