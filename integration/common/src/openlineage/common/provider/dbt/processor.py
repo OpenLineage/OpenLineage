@@ -458,9 +458,8 @@ class DbtArtifactProcessor:
             namespace, name, dataset_facets, _ = self.extract_dataset_data(
                 ModelNode(type=node_type, metadata_node=node), assertion_facet, has_facets=False
             )
-            # Keep the assertion facet in both locations for compatibility, while
-            # retaining dataset facets such as the Athena Glue symlink.
-            dataset_facets["dataQualityAssertions"] = assertion_facet  # type: ignore[assignment]
+            # Keep dataset facets such as the Athena Glue symlink alongside the assertions.
+            dataset_facets["dataQualityAssertions"] = assertion_facet
 
             job_name = self._format_dataset_name(
                 node["database"],
@@ -508,9 +507,7 @@ class DbtArtifactProcessor:
                         InputDataset(
                             namespace=namespace,
                             name=name,
-                            inputFacets={"dataQualityAssertions": assertion_facet},
-                            # TODO: remove this next release
-                            facets=dataset_facets,  # type: ignore
+                            facets=dataset_facets,
                         )
                     ],
                     None,
@@ -845,7 +842,7 @@ class DbtArtifactProcessor:
                 )
 
             if assertions:
-                input_facets["dataQualityAssertions"] = assertions
+                facets["dataQualityAssertions"] = assertions
 
             if node.catalog_node:
                 fields = self.extract_catalog_fields(

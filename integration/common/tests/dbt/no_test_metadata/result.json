@@ -53,7 +53,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -67,32 +67,6 @@
                                 "success": false,
                                 "column": "customer_id",
                                 "severity": "error",
-                                "name": "not_null_customers_customer_id"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": false,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "actual": "1",
-                                "expected": "0",
-                                "name": "unique_customers_customer_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": false,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "actual": "Test failure",
-                                "expected": "0",
                                 "name": "not_null_customers_customer_id"
                             }
                         ]
@@ -156,85 +130,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": true,
-                                "column": "order_id",
-                                "severity": "error",
-                                "name": "unique_orders_order_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "order_id",
-                                "severity": "error",
-                                "name": "not_null_orders_order_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "name": "not_null_orders_customer_id"
-                            },
-                            {
-                                "assertion": "relationships",
-                                "success": true,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "name": "relationships_orders_customer_id__customer_id__ref_customers_"
-                            },
-                            {
-                                "assertion": "accepted_values",
-                                "success": true,
-                                "column": "status",
-                                "severity": "error",
-                                "name": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "amount",
-                                "severity": "error",
-                                "name": "not_null_orders_amount"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "credit_card_amount",
-                                "severity": "error",
-                                "name": "not_null_orders_credit_card_amount"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "coupon_amount",
-                                "severity": "error",
-                                "name": "not_null_orders_coupon_amount"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "bank_transfer_amount",
-                                "severity": "error",
-                                "name": "not_null_orders_bank_transfer_amount"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "gift_card_amount",
-                                "severity": "error",
-                                "name": "not_null_orders_gift_card_amount"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -367,29 +263,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": true,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "name": "unique_stg_customers_customer_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "name": "not_null_stg_customers_customer_id"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -466,36 +340,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": true,
-                                "column": "payment_id",
-                                "severity": "error",
-                                "name": "unique_stg_payments_payment_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "payment_id",
-                                "severity": "error",
-                                "name": "not_null_stg_payments_payment_id"
-                            },
-                            {
-                                "assertion": "accepted_values",
-                                "success": true,
-                                "column": "payment_method",
-                                "severity": "error",
-                                "name": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -579,36 +424,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": true,
-                                "column": "order_id",
-                                "severity": "error",
-                                "name": "unique_stg_orders_order_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "order_id",
-                                "severity": "error",
-                                "name": "not_null_stg_orders_order_id"
-                            },
-                            {
-                                "assertion": "accepted_values",
-                                "success": true,
-                                "column": "status",
-                                "severity": "error",
-                                "name": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -692,85 +508,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": true,
-                                "column": "order_id",
-                                "severity": "error",
-                                "name": "unique_orders_order_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "order_id",
-                                "severity": "error",
-                                "name": "not_null_orders_order_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "name": "not_null_orders_customer_id"
-                            },
-                            {
-                                "assertion": "relationships",
-                                "success": true,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "name": "relationships_orders_customer_id__customer_id__ref_customers_"
-                            },
-                            {
-                                "assertion": "accepted_values",
-                                "success": true,
-                                "column": "status",
-                                "severity": "error",
-                                "name": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "amount",
-                                "severity": "error",
-                                "name": "not_null_orders_amount"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "credit_card_amount",
-                                "severity": "error",
-                                "name": "not_null_orders_credit_card_amount"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "coupon_amount",
-                                "severity": "error",
-                                "name": "not_null_orders_coupon_amount"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "bank_transfer_amount",
-                                "severity": "error",
-                                "name": "not_null_orders_bank_transfer_amount"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "gift_card_amount",
-                                "severity": "error",
-                                "name": "not_null_orders_gift_card_amount"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -903,29 +641,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": true,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "name": "unique_stg_customers_customer_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "name": "not_null_stg_customers_customer_id"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -1002,36 +718,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": true,
-                                "column": "payment_id",
-                                "severity": "error",
-                                "name": "unique_stg_payments_payment_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "payment_id",
-                                "severity": "error",
-                                "name": "not_null_stg_payments_payment_id"
-                            },
-                            {
-                                "assertion": "accepted_values",
-                                "success": true,
-                                "column": "payment_method",
-                                "severity": "error",
-                                "name": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -1115,36 +802,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": true,
-                                "column": "order_id",
-                                "severity": "error",
-                                "name": "unique_stg_orders_order_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": true,
-                                "column": "order_id",
-                                "severity": "error",
-                                "name": "not_null_stg_orders_order_id"
-                            },
-                            {
-                                "assertion": "accepted_values",
-                                "success": true,
-                                "column": "status",
-                                "severity": "error",
-                                "name": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -1228,7 +886,7 @@
                 "facets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "assertion": "unique",
@@ -1242,32 +900,6 @@
                                 "success": false,
                                 "column": "customer_id",
                                 "severity": "error",
-                                "name": "not_null_customers_customer_id"
-                            }
-                        ]
-                    }
-                },
-                "inputFacets": {
-                    "dataQualityAssertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
-                        "assertions": [
-                            {
-                                "assertion": "unique",
-                                "success": false,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "actual": "1",
-                                "expected": "0",
-                                "name": "unique_customers_customer_id"
-                            },
-                            {
-                                "assertion": "not_null",
-                                "success": false,
-                                "column": "customer_id",
-                                "severity": "error",
-                                "actual": "Test failure",
-                                "expected": "0",
                                 "name": "not_null_customers_customer_id"
                             }
                         ]
