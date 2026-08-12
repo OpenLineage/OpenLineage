@@ -92,6 +92,7 @@ def node_finished_processor(adapter_type=Adapter.SNOWFLAKE, dataset_namespace="t
                 "database": "REPORTING",
                 "schema": "TEST_GENERAL_dbt_test__audit",
                 "alias": "not_null_orders_id",
+                "name": "not_null_orders_id",
                 "unique_id": "test.jaffle_shop.not_null_orders_id",
                 "columns": {},
                 "meta": {},
@@ -434,6 +435,25 @@ def test_node_finished_bigquery_missing_job_id_has_no_external_query():
     )
 
     assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
+
+
+def test_test_node_finished_assertion_carries_test_name():
+    # The run_results path sets Assertion.name from the manifest node; the structured-logs
+    # path has to produce the same facet.
+    processor = node_finished_processor()
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="test.jaffle_shop.not_null_orders_id",
+            resource_type="test",
+            node_status="pass",
+        ),
+    )
+    assertions = ol_event_to_dict(event)["inputs"][0]["facets"]["dataQualityAssertions"]["assertions"]
+
+    assert len(assertions) == 1
+    assert assertions[0]["assertion"] == "not_null"
+    assert assertions[0]["name"] == "not_null_orders_id"
 
 
 def test_test_node_finished_has_no_external_query():

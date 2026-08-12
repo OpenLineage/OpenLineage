@@ -1,0 +1,191 @@
+{
+  "$comment": "Copyright 2018-2026 contributors to the OpenLineage project; SPDX-License-Identifier: Apache-2.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "LineageDatasetFacet": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "OpenLineage.json#/$defs/DatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LineageInput"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LineageJobFacet": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "OpenLineage.json#/$defs/JobFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LineageEntry"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LineageEntry": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LineageDatasetEntry"
+        },
+        {
+          "$ref": "#/$defs/LineageJobEntry"
+        }
+      ]
+    },
+    "LineageDatasetEntry": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "DATASET"
+          ]
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "LineageJobEntry": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "JOB"
+          ]
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "LineageInput": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LineageDatasetInput"
+        },
+        {
+          "$ref": "#/$defs/LineageJobInput"
+        }
+      ]
+    },
+    "LineageDatasetInput": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "DATASET"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "LineageJobInput": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "JOB"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "LegacyChoice": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LegacyFirst"
+        },
+        {
+          "$ref": "#/$defs/LegacySecond"
+        }
+      ]
+    },
+    "LegacyFirst": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "FIRST"
+        }
+      }
+    },
+    "LegacySecond": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "SECOND"
+        }
+      }
+    },
+    "PlainChoice": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PlainFirst"
+        },
+        {
+          "$ref": "#/$defs/PlainSecond"
+        }
+      ]
+    },
+    "PlainFirst": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "PlainSecond": {
+      "type": "object",
+      "properties": {
+        "otherValue": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "lineage": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LineageDatasetFacet"
+        },
+        {
+          "$ref": "#/$defs/LineageJobFacet"
+        }
+      ]
+    },
+    "legacy": {
+      "$ref": "#/$defs/LegacyChoice"
+    },
+    "plain": {
+      "$ref": "#/$defs/PlainChoice"
+    }
+  }
+}

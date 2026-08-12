@@ -25,7 +25,7 @@ ext {
     testedflinkVersion = project.getProperty('flink.version')
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
     assertjVersion = '3.27.7'
-    jacksonVersion = "2.15.3"
+    jacksonVersion = "2.18.8"
     junit5Version = '5.14.4'
     lombokVersion = '1.18.46'
     scalaLibraryVersion = '2.12.20'
@@ -62,7 +62,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-connector-test-utils:$testedflinkVersion"
     testImplementation "org.apache.kafka:kafka-clients:4.1.1"
     testImplementation "org.testcontainers:kafka:1.21.4"
-    testImplementation "commons-codec:commons-codec:1.22.0"
+    testImplementation "commons-codec:commons-codec:1.22.1"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"

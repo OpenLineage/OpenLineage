@@ -12,7 +12,7 @@ import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONA
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_SCALA_FIXTURES_JAR_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
-import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
+import static io.openlineage.spark.agent.SparkContainerUtils.oneShotStartupCheckStrategy;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static org.testcontainers.containers.Network.newNetwork;
 
@@ -56,7 +56,6 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -363,8 +362,7 @@ class SparkIcebergMetadataJsonTest {
             .withNetwork(NETWORK)
             .withNetworkAliases("spark")
             .withLogConsumer(SparkContainerUtils::consumeOutput)
-            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
-            .withStartupTimeout(Duration.ofSeconds(60L))
+            .withStartupCheckStrategy(oneShotStartupCheckStrategy(Duration.ofSeconds(60L)))
             .withCommand(command)
             .withCreateContainerCmdModifier(
                 createContainerCmd ->

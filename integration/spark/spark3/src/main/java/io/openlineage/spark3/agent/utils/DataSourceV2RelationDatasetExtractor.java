@@ -12,6 +12,7 @@ import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
+import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -84,8 +86,12 @@ public class DataSourceV2RelationDatasetExtractor {
                 }
 
                 Map<String, String> tableProperties = relation.table().properties();
-                CatalogUtils.addStorageAndCatalogFacets(
-                    context, tableCatalog, tableProperties, datasetFacetsBuilder);
+                try {
+                  CatalogUtils.addStorageAndCatalogFacets(
+                      context, tableCatalog, tableProperties, datasetFacetsBuilder);
+                } catch (Exception | NoSuchMethodError | NoClassDefFoundError e) {
+                  log.warn("Could not add catalog facets of table {}", identifier.getName(), e);
+                }
               }
               datasetFacetsBuilder
                   .getFacets()
@@ -209,10 +215,54 @@ public class DataSourceV2RelationDatasetExtractor {
     TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
     Map<String, String> tableProperties = relation.table().properties();
 
-    // Get the dataset identifier
-    return PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties)
+    Optional<DatasetIdentifier> datasetIdentifier =
+        resolveDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
+    if (datasetIdentifier.isPresent()) {
+      return Collections.singletonList(datasetIdentifier.get());
+    }
+
+    return unityCatalogIdentifier(context, tableCatalog, identifier)
         .map(Collections::singletonList)
         .orElse(Collections.emptyList());
+  }
+
+  private static Optional<DatasetIdentifier> resolveDatasetIdentifier(
+      OpenLineageContext context,
+      TableCatalog tableCatalog,
+      Identifier identifier,
+      Map<String, String> tableProperties) {
+    try {
+      return PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
+    } catch (Exception | NoSuchMethodError | NoClassDefFoundError e) {
+      log.warn("Could not resolve dataset identifier of table {}", identifier, e);
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Unity Catalog managed tables may have no resolvable storage location. Fall back to the
+   * qualified {@code catalog.schema.table} name in the {@code unity-catalog} namespace, matching
+   * {@code CreateReplaceOutputDatasetBuilder}.
+   */
+  private static Optional<DatasetIdentifier> unityCatalogIdentifier(
+      OpenLineageContext context, TableCatalog tableCatalog, Identifier identifier) {
+    boolean unityCatalogEnabled =
+        context
+            .getSparkContext()
+            .map(SparkContext::getConf)
+            .map(DatabricksUtils::isDatabricksUnityCatalogEnabled)
+            .orElse(false);
+
+    if (!unityCatalogEnabled) {
+      return Optional.empty();
+    }
+
+    String name = DatabricksUtils.qualifiedUnityCatalogTableName(tableCatalog, identifier);
+    log.warn(
+        "Could not resolve the location of Unity Catalog table {}, falling back to its qualified name",
+        name);
+    return Optional.of(
+        new DatasetIdentifier(name, DatabricksUtils.UNITY_CATALOG_SYMLINK_NAMESPACE));
   }
 
   private static Optional<DatasetIdentifier> getDatasetIdentifierFromRelation(

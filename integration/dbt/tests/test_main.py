@@ -1,5 +1,6 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import json
 from unittest import mock
 
 import pytest
@@ -205,6 +206,44 @@ def test_consume_local_artifacts_propagates_root_parent_metadata(monkeypatch):
 
     # Child events use processor.dbt_run_metadata as their parent facet — root must
     # point at the orchestrator that started us, not be left blank.
+    md = processor.dbt_run_metadata
+    assert md.root_parent_run_id == parent_run_id
+    assert md.root_parent_job_name == parent_job
+    assert md.root_parent_job_namespace == parent_namespace
+
+
+def test_consume_local_artifacts_reads_parent_from_openlineage_context(monkeypatch):
+    """OPENLINEAGE_CONTEXT alone must identify the parent: it is the standardized
+    replacement for OPENLINEAGE_PARENT_ID, so an orchestrator that only sets the
+    new variable still has to end up as the parent of the dbt run."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "dddddddd-0000-0000-0000-000000000004"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_CONTEXT": json.dumps(
+            {
+                "parent": {
+                    "run": {"runId": parent_run_id},
+                    "job": {"namespace": parent_namespace, "name": parent_job},
+                }
+            }
+        ),
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
     md = processor.dbt_run_metadata
     assert md.root_parent_run_id == parent_run_id
     assert md.root_parent_job_name == parent_job
