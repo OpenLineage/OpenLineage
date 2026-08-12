@@ -36,4 +36,26 @@ class CopyIntoSqlUtilsTest {
     assertThat(CopyIntoSqlUtils.isCopyIntoStatement(SQL)).isTrue();
     assertThat(CopyIntoSqlUtils.isCopyIntoStatement("SELECT 1")).isFalse();
   }
+
+  @Test
+  void testParsesCatalogQualifiedTargetTable() {
+    String sql = "COPY INTO catalog.schema.copy_into_table FROM '/path/to/source'";
+
+    assertThat(CopyIntoSqlUtils.targetTable(sql)).contains("catalog.schema.copy_into_table");
+  }
+
+  @Test
+  void testParsesDoubleQuotedSourcePath() {
+    String sql = "COPY INTO copy_into_table FROM \"/Volumes/catalog/schema/vol/input\"";
+
+    assertThat(CopyIntoSqlUtils.sourcePath(sql)).contains("/Volumes/catalog/schema/vol/input");
+  }
+
+  @Test
+  void testReturnsEmptyForBlankSql() {
+    assertThat(CopyIntoSqlUtils.targetTable(null)).isEmpty();
+    assertThat(CopyIntoSqlUtils.targetTable("   ")).isEmpty();
+    assertThat(CopyIntoSqlUtils.sourcePath(null)).isEmpty();
+    assertThat(CopyIntoSqlUtils.isCopyIntoStatement(null)).isFalse();
+  }
 }
