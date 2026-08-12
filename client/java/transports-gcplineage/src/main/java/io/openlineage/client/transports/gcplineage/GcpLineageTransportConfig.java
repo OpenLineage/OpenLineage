@@ -4,6 +4,7 @@
 */
 package io.openlineage.client.transports.gcplineage;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.MergeConfig;
 import io.openlineage.client.transports.TransportConfig;
 import javax.annotation.Nullable;
@@ -36,6 +37,11 @@ public class GcpLineageTransportConfig
 
   @Getter @Setter private @Nullable String gracefulShutdownDuration;
 
+  @JsonProperty("retry")
+  @Getter
+  @Setter
+  private @Nullable GcpLineageRetryConfig retryConfig;
+
   @Override
   public GcpLineageTransportConfig mergeWithNonNull(GcpLineageTransportConfig other) {
     return new GcpLineageTransportConfig(
@@ -44,6 +50,7 @@ public class GcpLineageTransportConfig
         mergePropertyWith(credentialsFile, other.credentialsFile),
         mergePropertyWith(location, other.location),
         mergePropertyWith(mode, other.mode),
-        mergePropertyWith(gracefulShutdownDuration, other.gracefulShutdownDuration));
+        mergePropertyWith(gracefulShutdownDuration, other.gracefulShutdownDuration),
+        mergePropertyWith(retryConfig, other.retryConfig));
   }
 }

@@ -5,6 +5,7 @@
 
 package io.openlineage.client.transports.gcs;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.MergeConfig;
 import io.openlineage.client.transports.TransportConfig;
 import javax.annotation.Nullable;
@@ -24,12 +25,24 @@ public class GcsTransportConfig implements TransportConfig, MergeConfig<GcsTrans
   @Getter @Setter private @Nullable String credentialsFile;
   @Getter @Setter private @Nullable String fileNamePrefix;
 
+  @JsonProperty("maxRetries")
+  @Getter
+  @Setter
+  private @Nullable Integer maxRetries;
+
+  @JsonProperty("retryIntervalMillis")
+  @Getter
+  @Setter
+  private @Nullable Integer retryIntervalMillis;
+
   @Override
   public GcsTransportConfig mergeWithNonNull(GcsTransportConfig other) {
     return new GcsTransportConfig(
         mergePropertyWith(projectId, other.projectId),
         mergePropertyWith(bucketName, other.bucketName),
         mergePropertyWith(credentialsFile, other.credentialsFile),
-        mergePropertyWith(fileNamePrefix, other.fileNamePrefix));
+        mergePropertyWith(fileNamePrefix, other.fileNamePrefix),
+        mergePropertyWith(maxRetries, other.maxRetries),
+        mergePropertyWith(retryIntervalMillis, other.retryIntervalMillis));
   }
 }

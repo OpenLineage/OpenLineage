@@ -17,6 +17,8 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
 
 @Slf4j
 class SnowflakeCatalogTypeHandler extends BaseCatalogTypeHandler {
@@ -38,23 +40,34 @@ class SnowflakeCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
-  Optional<DatasetIdentifier> getIdentifier(
-      SparkSession session, Map<String, String> catalogConf, String table) {
+  DatasetIdentifier getPrimaryIdentifier(
+      SparkSession session,
+      Map<String, String> catalogConf,
+      Identifier identifier,
+      TableCatalog tableCatalog) {
+    // symlink and primary inverted in snowflake
+    DatasetIdentifier symlink =
+        super.getPrimaryIdentifier(session, catalogConf, identifier, tableCatalog);
     String accountIdentifier =
         SnowflakeUtils.parseAccountIdentifier(catalogConf.get(CatalogProperties.URI));
     log.debug(
         "Getting identifier for Snowflake Iceberg REST catalog, account={}", accountIdentifier);
     String warehouse = catalogConf.getOrDefault(CatalogProperties.WAREHOUSE_LOCATION, "");
-    String fullName = warehouse.isEmpty() ? table : warehouse + "." + table;
-    return Optional.of(
-        new DatasetIdentifier(
+    String fullName =
+        warehouse.isEmpty() ? identifier.toString() : warehouse + "." + identifier.toString();
+
+    return new DatasetIdentifier(
             fullName.toUpperCase(Locale.ROOT),
-            SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + accountIdentifier));
+            SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX + accountIdentifier)
+        .withSymlink(
+            new DatasetIdentifier.Symlink(
+                symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE));
   }
 
   @Override
-  boolean shouldOverridePrimary() {
-    return true;
+  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
+      SparkSession session, Map<String, String> catalogConf, String table) {
+    return Optional.empty();
   }
 
   @Override

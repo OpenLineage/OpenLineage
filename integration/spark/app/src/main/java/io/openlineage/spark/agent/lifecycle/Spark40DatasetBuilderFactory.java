@@ -22,6 +22,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnSta
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnEndInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnStartInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeInputDatasetBuilder;
@@ -33,8 +35,11 @@ import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1OutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandOutputDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.WriteIcebergDeltaDatasetBuilder;
+import io.openlineage.spark34.agent.lifecycle.plan.WriteToMicroBatchDataSourceV1DatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.DropTableDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder;
@@ -64,6 +69,8 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new DataSourceV2ScanRelationOnEndInputDatasetBuilder(context, datasetFactory))
             .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new CreateReplaceInputDatasetBuilder(context))
+            .add(new DeleteCommandInputDatasetBuilder(context))
+            .add(new UpdateCommandInputDatasetBuilder(context))
             .add(new SparkExtensionV1InputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
             .add(new StreamingDataSourceV2ScanRelationDatasetBuilder(context))
@@ -88,12 +95,15 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
+            .add(new DeleteCommandOutputDatasetBuilder(context))
+            .add(new UpdateCommandOutputDatasetBuilder(context))
             .add(new CreateReplaceOutputDatasetBuilder(context))
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new DropTableDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
-            .add(new AlterTableCommandDatasetBuilder(context));
+            .add(new AlterTableCommandDatasetBuilder(context))
+            .add(new WriteToMicroBatchDataSourceV1DatasetBuilder(context, datasetFactory));
 
     if (ReplaceIcebergDataDatasetBuilder.hasClasses()) {
       builder.add(new ReplaceIcebergDataDatasetBuilder(context));

@@ -118,6 +118,48 @@ fn parse_copy_into_with_snowflake_internal_stages() {
 }
 
 #[test]
+fn parse_copy_into_location_from_table() {
+    assert_eq!(
+        parse_sql(
+            "COPY INTO @namespace.stage FROM db.schema.source_table",
+            &SnowflakeDialect {},
+            None,
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["db.schema.source_table"]),
+            out_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                "@namespace.stage".to_string(),
+                true,
+                true,
+            )],
+        }
+    );
+}
+
+#[test]
+fn parse_copy_into_location_from_query() {
+    assert_eq!(
+        parse_sql(
+            "COPY INTO 's3://bucket/path' FROM (SELECT * FROM db.schema.source_table)",
+            &SnowflakeDialect {},
+            None,
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["db.schema.source_table"]),
+            out_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                "s3://bucket/path".to_string(),
+                true,
+                true,
+            )],
+        }
+    );
+}
+
+#[test]
 fn parse_pivot_table() {
     assert_eq!(
         parse_sql(
@@ -136,4 +178,26 @@ fn parse_pivot_table() {
             out_tables: tables(vec![])
         }
     );
+}
+
+#[test]
+fn parse_pivot_derived_table() {
+    let meta = parse_sql(
+        concat!(
+            "SELECT * FROM (SELECT region, amount FROM sales) AS s ",
+            "PIVOT(SUM(amount) FOR region IN ('EAST')) AS p"
+        ),
+        &SnowflakeDialect {},
+        None,
+    )
+    .unwrap();
+
+    assert_eq!(
+        meta.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["sales"]),
+            out_tables: vec![],
+        }
+    );
+    assert!(meta.errors.is_empty());
 }

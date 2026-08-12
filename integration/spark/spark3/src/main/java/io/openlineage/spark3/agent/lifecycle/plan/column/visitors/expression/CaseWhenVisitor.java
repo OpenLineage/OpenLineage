@@ -36,9 +36,11 @@ public class CaseWhenVisitor implements ExpressionVisitor {
     branches.stream()
         .map(e -> e._1)
         .forEach(e -> traverser.copyFor(e, TransformationInfo.indirect(CONDITIONAL)).traverse());
-    branches.stream().map(e -> e._2).forEach(e -> traverser.copyFor(e).traverse());
+    branches.stream()
+        .map(e -> e._2)
+        .forEach(e -> traverser.copyFor(e, TransformationInfo.transformation()).traverse());
     if (expr.elseValue().isDefined()) {
-      traverser.copyFor(expr.elseValue().get()).traverse();
+      traverser.copyFor(expr.elseValue().get(), TransformationInfo.transformation()).traverse();
     }
   }
 }
