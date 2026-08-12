@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import datetime
 import os
+import uuid
 from unittest.mock import MagicMock
 
 import pytest
@@ -705,6 +707,7 @@ class TestDbtInvocationEvents:
 
     def test_generate_invocation_events_success(self, dbt_artifact_processor):
         from openlineage.client.event_v2 import RunState
+        from openlineage.client.uuid import generate_static_uuid
         from openlineage.common.provider.dbt.facets import ParentRunMetadata
 
         inv_id = "11111111-1111-1111-1111-111111111111"
@@ -739,7 +742,10 @@ class TestDbtInvocationEvents:
         assert res is not None
         assert res.start.eventType == RunState.START
         assert res.complete.eventType == RunState.COMPLETE
-        assert res.start.run.runId == inv_id
+        dt = datetime.datetime.fromisoformat("2026-08-01T10:00:00.000000+00:00")
+        expected_uuid = str(generate_static_uuid(dt, inv_id.encode("utf-8")))
+        assert res.start.run.runId == expected_uuid
+        assert uuid.UUID(res.start.run.runId).version == 7
         assert res.start.eventTime == "2026-08-01T10:00:00.000000Z"
         assert res.complete.eventTime == "2026-08-01T10:01:00.000000Z"
         assert res.start.run.facets["parent"].run.runId == parent_id
@@ -747,6 +753,7 @@ class TestDbtInvocationEvents:
 
     def test_generate_invocation_events_failure(self, dbt_artifact_processor):
         from openlineage.client.event_v2 import RunState
+        from openlineage.client.uuid import generate_static_uuid
 
         inv_id = "22222222-2222-2222-2222-222222222222"
 
@@ -774,20 +781,30 @@ class TestDbtInvocationEvents:
         assert res is not None
         assert res.start.eventType == RunState.START
         assert res.fail.eventType == RunState.FAIL
-        assert res.fail.run.runId == inv_id
+        dt = datetime.datetime.fromisoformat("2026-08-01T10:00:00.000000+00:00")
+        expected_uuid = str(generate_static_uuid(dt, inv_id.encode("utf-8")))
+        assert res.fail.run.runId == expected_uuid
+        assert uuid.UUID(res.fail.run.runId).version == 7
 
     def test_child_node_gets_invocation_parent(self, dbt_artifact_processor):
+        from openlineage.client.uuid import generate_static_uuid
+
         inv_id = "33333333-3333-3333-3333-333333333333"
         child_run_id = "44444444-4444-4444-4444-444444444444"
 
         context = DbtRunContext(
             manifest={"nodes": {}},
-            run_results={"metadata": {"invocation_id": inv_id}, "results": []},
+            run_results={
+                "metadata": {"invocation_id": inv_id, "generated_at": "2026-08-01T10:00:00.000000Z"},
+                "results": [],
+            },
         )
         dbt_artifact_processor.run_metadata = context.run_results["metadata"]
         dbt_artifact_processor.command = "run"
         dbt_artifact_processor.generate_invocation_events(context)
 
         child_run = dbt_artifact_processor.get_run(run_id=child_run_id)
-        assert child_run.facets["parent"].run.runId == inv_id
+        dt = datetime.datetime.fromisoformat("2026-08-01T10:00:00.000000+00:00")
+        expected_uuid = str(generate_static_uuid(dt, inv_id.encode("utf-8")))
+        assert child_run.facets["parent"].run.runId == expected_uuid
         assert child_run.facets["parent"].job.name == "dbt-run"

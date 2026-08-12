@@ -33,7 +33,7 @@ from openlineage.client.facet_v2 import (
     tags_run,
     test_run,
 )
-from openlineage.client.uuid import generate_new_uuid
+from openlineage.client.uuid import generate_new_uuid, generate_static_uuid
 from openlineage.common.provider.dbt.facets import (
     DbtModelConfig,
     DbtModelDatasetFacet,
@@ -211,25 +211,6 @@ class DbtArtifactProcessor:
         return f"dbt-{self.command}" if self.command else "dbt-invocation"
 
     def generate_invocation_events(self, context: DbtRunContext) -> DbtRunResult | None:
-        raw_invocation_id = self.run_metadata.get("invocation_id")
-        try:
-            if raw_invocation_id:
-                import uuid as _uuid
-
-                _uuid.UUID(raw_invocation_id)
-                invocation_id = raw_invocation_id
-            else:
-                invocation_id = str(generate_new_uuid())
-        except ValueError:
-            invocation_id = str(generate_new_uuid())
-        job_name = self.invocation_job_name
-
-        self._invocation_parent_metadata = ParentRunMetadata(
-            run_id=invocation_id,
-            job_name=job_name,
-            job_namespace=self.job_namespace,
-        )
-
         started_at_list = []
         completed_at_list = []
         has_failure = False
@@ -249,11 +230,37 @@ class DbtArtifactProcessor:
         start_time = min(started_at_list) if started_at_list else fallback_time
         complete_time = max(completed_at_list) if completed_at_list else fallback_time
 
-        run_facets: dict[str, RunFacet] = {
-            **(self.dbt_version_facet() or {}),
-            **(self.dbt_run_run_facet() or {}),
-            **(self.processing_engine_facet() or {}),
-        }
+        try:
+            from _datetime import datetime as real_datetime
+
+            instant = real_datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+        except Exception:
+            try:
+                instant = datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+            except Exception:
+                instant = datetime.datetime.now(datetime.timezone.utc)
+
+        raw_invocation_id = self.run_metadata.get("invocation_id")
+        if raw_invocation_id:
+            invocation_id = str(generate_static_uuid(instant, raw_invocation_id.encode("utf-8")))
+        else:
+            invocation_id = str(generate_new_uuid(instant))
+
+        job_name = self.invocation_job_name
+
+        self._invocation_parent_metadata = ParentRunMetadata(
+            run_id=invocation_id,
+            job_name=job_name,
+            job_namespace=self.job_namespace,
+        )
+
+        run_facets: dict[str, Any] = {}
+        if version_facet := self.dbt_version_facet():
+            run_facets.update(version_facet)
+        if run_run_facet := self.dbt_run_run_facet():
+            run_facets.update(run_run_facet)
+        if engine_facet := self.processing_engine_facet():
+            run_facets.update(engine_facet)
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
