@@ -16,6 +16,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.CopyIntoCommandUtils;
+import io.openlineage.spark3.agent.utils.CopyIntoSqlUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +62,24 @@ class CopyIntoCommandOutputDatasetBuilderTest {
           .singleElement()
           .hasFieldOrPropertyWithValue("name", "copy_into_table")
           .hasFieldOrPropertyWithValue("namespace", "unity-catalog");
+    }
+  }
+
+  @Test
+  void testApplySkipsOutputForValidateStatement() {
+    givenTargetVisitorReturning("copy_into_table", "unity-catalog");
+    LogicalPlan command = mock(LogicalPlan.class);
+    String sql = "COPY INTO copy_into_table FROM '/path/to/source' FILEFORMAT = CSV VALIDATE";
+
+    try (MockedStatic<CopyIntoCommandUtils> utils = mockStatic(CopyIntoCommandUtils.class);
+        MockedStatic<CopyIntoSqlUtils> sqlUtils = mockStatic(CopyIntoSqlUtils.class)) {
+      utils.when(() -> CopyIntoCommandUtils.isCopyIntoCommand(command)).thenReturn(true);
+      utils.when(() -> CopyIntoCommandUtils.sqlText(context)).thenReturn(Optional.of(sql));
+      sqlUtils.when(() -> CopyIntoSqlUtils.isValidateStatement(sql)).thenReturn(true);
+
+      List<OutputDataset> outputs = builder.apply(event, command);
+
+      assertThat(outputs).isEmpty();
     }
   }
 

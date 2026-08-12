@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.CopyIntoCommandUtils;
 import java.util.Collections;
@@ -22,6 +23,8 @@ import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.OneRowRelation;
+import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -46,8 +49,9 @@ class CopyIntoCommandInputDatasetBuilderTest {
   @Test
   void testApplyDelegatesWhenOnlySourceQueryIsPresent() {
     LogicalPlan command = mock(LogicalPlan.class);
-    LogicalPlan sourceQuery = mock(LogicalPlan.class);
-    givenInputVisitorReturning("source_table", "unity-catalog");
+    OneRowRelation nestedRelation = new OneRowRelation();
+    LogicalPlan sourceQuery = new Project(ScalaConversionUtils.asScalaSeqEmpty(), nestedRelation);
+    givenInputVisitorReturning(OneRowRelation.class, "source_table", "unity-catalog");
 
     try (MockedStatic<CopyIntoCommandUtils> utils = mockStatic(CopyIntoCommandUtils.class)) {
       utils.when(() -> CopyIntoCommandUtils.isCopyIntoCommand(command)).thenReturn(true);
@@ -65,12 +69,13 @@ class CopyIntoCommandInputDatasetBuilderTest {
     }
   }
 
-  private void givenInputVisitorReturning(String name, String namespace) {
+  private void givenInputVisitorReturning(
+      Class<? extends LogicalPlan> planType, String name, String namespace) {
     PartialFunction<LogicalPlan, List<InputDataset>> visitor =
         new AbstractPartialFunction<LogicalPlan, List<InputDataset>>() {
           @Override
           public boolean isDefinedAt(LogicalPlan x) {
-            return true;
+            return planType.isInstance(x);
           }
 
           @Override

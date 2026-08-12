@@ -59,6 +59,37 @@ class CopyIntoSqlUtilsTest {
   }
 
   @Test
+  void testParsesBacktickQuotedTargetTableWithHyphen() {
+    String sql = "COPY INTO `sales-data` FROM '/path/to/source'";
+
+    assertThat(CopyIntoSqlUtils.targetTable(sql)).contains("sales-data");
+  }
+
+  @Test
+  void testParsesBacktickQuotedTargetTableWithSpace() {
+    String sql = "COPY INTO `sales data` FROM '/path/to/source'";
+
+    assertThat(CopyIntoSqlUtils.targetTable(sql)).contains("sales data");
+  }
+
+  @Test
+  void testParsesBacktickQuotedTargetTableWithEscapedBacktick() {
+    String sql = "COPY INTO `sales``data` FROM '/path/to/source'";
+
+    assertThat(CopyIntoSqlUtils.targetTable(sql)).contains("sales`data");
+  }
+
+  @Test
+  void testDetectsValidateStatement() {
+    String sql =
+        "COPY INTO copy_into_table FROM '/path/to/source' FILEFORMAT = CSV VALIDATE 15 ROWS";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isTrue();
+    assertThat(CopyIntoSqlUtils.isValidateStatement("COPY INTO t FROM '/p' FILEFORMAT = CSV"))
+        .isFalse();
+  }
+
+  @Test
   void testDetectsCaseInsensitiveCopyInto() {
     String sql = "copy into my_table from '/path/to/source'";
 

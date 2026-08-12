@@ -7,16 +7,20 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.CopyIntoCommandUtils;
 import io.openlineage.spark3.agent.utils.CopyIntoSqlUtils;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import scala.PartialFunction;
 
 /**
  * Extracts input datasets from the Databricks-specific {@code CopyIntoCommand} or {@code
@@ -58,8 +62,18 @@ public class CopyIntoCommandInputDatasetBuilder
         .orElseGet(
             () ->
                 CopyIntoCommandUtils.sourceQuery(x)
-                    .map(query -> delegate(query, event))
+                    .map(query -> datasetsFromQuery(query, event))
                     .orElse(Collections.emptyList()));
+  }
+
+  private List<InputDataset> datasetsFromQuery(LogicalPlan query, SparkListenerEvent event) {
+    PartialFunction<LogicalPlan, Collection<InputDataset>> delegateFn =
+        delegate(
+            context.getInputDatasetQueryPlanVisitors(), context.getInputDatasetBuilders(), event);
+
+    return ScalaConversionUtils.fromSeq(query.collect(delegateFn)).stream()
+        .flatMap(Collection::stream)
+        .collect(Collectors.toList());
   }
 
   private List<InputDataset> datasetsFromSql() {

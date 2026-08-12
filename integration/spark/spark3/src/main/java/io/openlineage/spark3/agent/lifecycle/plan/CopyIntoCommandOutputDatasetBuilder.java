@@ -54,6 +54,11 @@ public class CopyIntoCommandOutputDatasetBuilder
 
   @Override
   protected List<OutputDataset> apply(SparkListenerEvent event, LogicalPlan x) {
+    if (CopyIntoCommandUtils.sqlText(context)
+        .filter(CopyIntoSqlUtils::isValidateStatement)
+        .isPresent()) {
+      return Collections.emptyList();
+    }
     if (CopyIntoCommandUtils.isCopyIntoCommand(x)) {
       List<OutputDataset> datasets = datasetsFromCommand(event, x);
       if (!datasets.isEmpty()) {
