@@ -218,7 +218,7 @@ public class CopyIntoCommandUtils {
   }
 
   private static Optional<String> stringFromOriginMember(Optional<Object> value) {
-    if (value.isEmpty()) {
+    if (!value.isPresent()) {
       return Optional.empty();
     }
     Object object = value.get();
@@ -512,7 +512,7 @@ public class CopyIntoCommandUtils {
   }
 
   private static Optional<LogicalPlan> logicalPlan(Optional<Object> value) {
-    if (value.isEmpty()) {
+    if (!value.isPresent()) {
       return Optional.empty();
     }
     Object object = value.get();

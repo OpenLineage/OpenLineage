@@ -203,7 +203,11 @@ public class CopyIntoCommandOutputDatasetBuilder
   }
 
   private Optional<SparkSession> sparkSession() {
-    return context.getSparkSession().or(SparkSessionUtils::activeSession);
+    Optional<SparkSession> session = context.getSparkSession();
+    if (!session.isPresent()) {
+      session = SparkSessionUtils.activeSession();
+    }
+    return session;
   }
 
   private OutputDataset buildOutputDataset(

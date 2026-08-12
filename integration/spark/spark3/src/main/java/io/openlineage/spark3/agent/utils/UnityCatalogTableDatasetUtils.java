@@ -47,16 +47,18 @@ public final class UnityCatalogTableDatasetUtils {
 
   public static Optional<ResolvedTableDataset> resolve(
       OpenLineageContext context, SparkSession session, TableIdentifier identifier) {
-    Optional<String> catalogName =
-        tableIdentifierCatalog(identifier).or(() -> currentCatalog(session));
-    if (catalogName.isEmpty() || !identifier.database().isDefined()) {
+    Optional<String> catalogName = tableIdentifierCatalog(identifier);
+    if (!catalogName.isPresent()) {
+      catalogName = currentCatalog(session);
+    }
+    if (!catalogName.isPresent() || !identifier.database().isDefined()) {
       return Optional.empty();
     }
 
     String schema = identifier.database().get();
     String table = identifier.table();
     Optional<CatalogPlugin> catalogPlugin = SparkSessionUtils.catalog(session, catalogName.get());
-    if (catalogPlugin.isEmpty() || !(catalogPlugin.get() instanceof TableCatalog)) {
+    if (!catalogPlugin.isPresent() || !(catalogPlugin.get() instanceof TableCatalog)) {
       log.warn(
           "COPY INTO: catalog {} resolved to {}, which is not a TableCatalog",
           catalogName.get(),
@@ -71,7 +73,7 @@ public final class UnityCatalogTableDatasetUtils {
       Map<String, String> properties = loadedTable.properties();
       Optional<DatasetIdentifier> datasetIdentifier =
           datasetIdentifier(context, tableCatalog, v2Identifier, properties);
-      if (datasetIdentifier.isEmpty()) {
+      if (!datasetIdentifier.isPresent()) {
         log.warn(
             "COPY INTO: no catalog handler resolved {} from catalog {}",
             v2Identifier,
