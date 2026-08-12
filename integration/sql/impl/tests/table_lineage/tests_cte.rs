@@ -117,7 +117,7 @@ fn multiple_ctes() {
 #[test]
 fn cte_insert_overwrite() {
     assert_eq!(
-        test_sql(
+        test_sql_dialect(
             "
             WITH g_s AS (
               SELECT
@@ -185,7 +185,8 @@ fn cte_insert_overwrite() {
               grps.u_i,
               grps.uk,
               grps.grp
-        "
+        ",
+            "hive"
         )
         .unwrap()
         .table_lineage,

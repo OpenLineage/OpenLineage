@@ -1,10 +1,10 @@
 [build-system]
-requires = ["uv_build>=0.9.4,<0.12.0"]
+requires = ["uv_build>=0.9.4,<0.13.0"]
 build-backend = "uv_build"
 
 [project]
 name = "openlineage-integration-common"
-version = "1.52.0"
+version = "1.53.0"
 description = "OpenLineage common python library for integrations"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -19,6 +19,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
 dependencies = [
@@ -144,7 +146,7 @@ commands =
 """
 
 [tool.bumpversion]
-current_version = "1.52.0"
+current_version = "1.53.0"
 commit = false
 tag = false
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<rc>.*)"

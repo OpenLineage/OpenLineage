@@ -26,6 +26,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnSta
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnEndInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnStartInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeInputDatasetBuilder;
@@ -35,6 +37,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.column.JdbcColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
@@ -65,6 +69,8 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new DataSourceV2ScanRelationOnEndInputDatasetBuilder(context, datasetFactory))
             .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
+            .add(new DeleteCommandInputDatasetBuilder(context))
+            .add(new UpdateCommandInputDatasetBuilder(context))
             .add(new ViewInputDatasetBuilder(context))
             .add(new DataSourceV2RelationInputOnStartDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationInputOnEndDatasetBuilder(context, datasetFactory));
@@ -87,6 +93,8 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
+            .add(new DeleteCommandOutputDatasetBuilder(context))
+            .add(new UpdateCommandOutputDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(getCreateReplaceDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))

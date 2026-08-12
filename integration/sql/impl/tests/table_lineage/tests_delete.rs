@@ -53,6 +53,57 @@ fn delete_from_using() {
 }
 
 #[test]
+fn delete_mysql_multiple_tables() {
+    let test_cases = vec![
+        (
+            "DELETE t1 FROM t1 JOIN t2 ON t1.id = t2.id",
+            vec!["t2"],
+            vec!["t1"],
+        ),
+        (
+            "DELETE target FROM foo AS target JOIN bar AS lookup ON target.id = lookup.id",
+            vec!["bar"],
+            vec!["foo"],
+        ),
+        (
+            "DELETE t1, t2 FROM t1 JOIN t2 ON t1.id = t2.id JOIN lookup ON t1.id = lookup.id",
+            vec!["lookup"],
+            vec!["t1", "t2"],
+        ),
+    ];
+
+    for (sql, in_tables, out_tables) in test_cases {
+        assert_eq!(
+            test_sql_dialect(sql, "mysql").unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(in_tables),
+                out_tables: tables(out_tables),
+            },
+            "Failed for SQL: {sql}"
+        );
+    }
+}
+
+#[test]
+fn delete_mysql_preserves_previous_inputs() {
+    assert_eq!(
+        test_multiple_sql_dialect(
+            vec![
+                "SELECT * FROM t1",
+                "DELETE t1 FROM t1 JOIN t2 ON t1.id = t2.id",
+            ],
+            "mysql",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["t1", "t2"]),
+            out_tables: tables(vec!["t1"]),
+        }
+    );
+}
+
+#[test]
 fn delete_identifier_function() {
     let test_cases = vec![
         ("target", vec![table("target")]),

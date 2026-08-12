@@ -1,5 +1,6 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import json
 from unittest import mock
 
 import pytest
@@ -31,6 +32,29 @@ def test_structured_logs(command_line: str, number_of_calls: int, monkeypatch):
 
     assert mock_consume_structured_logs.called == number_of_calls
     assert mock_consume_local_artifacts.called == 1 - number_of_calls
+
+
+@pytest.mark.parametrize(
+    "job_name_args",
+    [
+        ["--openlineage-dbt-job-name", "myjob"],
+        ["--openlineage-dbt-job-name=myjob"],
+    ],
+    ids=["space_form", "equals_form"],
+)
+def test_main_strips_openlineage_job_name_before_dbt(job_name_args, monkeypatch):
+    # The dbt-ol-only --openlineage-dbt-job-name option must be consumed by the
+    # wrapper: whether it is passed as `--opt value` or `--opt=value`, it must not
+    # leak into the args handed to dbt (dbt exits non-zero on an unknown option).
+    mock_consume_local_artifacts = mock.MagicMock()
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", mock_consume_local_artifacts)
+    monkeypatch.setattr("sys.argv", ["dbt-ol", "run", *job_name_args, "--select", "orders"])
+
+    main()
+
+    passed_args = mock_consume_local_artifacts.call_args.kwargs["args"]
+    assert not any(arg.startswith("--openlineage-dbt-job-name") for arg in passed_args)
+    assert mock_consume_local_artifacts.call_args.kwargs["openlineage_job_name"] == "myjob"
 
 
 @pytest.mark.parametrize(
@@ -182,6 +206,44 @@ def test_consume_local_artifacts_propagates_root_parent_metadata(monkeypatch):
 
     # Child events use processor.dbt_run_metadata as their parent facet — root must
     # point at the orchestrator that started us, not be left blank.
+    md = processor.dbt_run_metadata
+    assert md.root_parent_run_id == parent_run_id
+    assert md.root_parent_job_name == parent_job
+    assert md.root_parent_job_namespace == parent_namespace
+
+
+def test_consume_local_artifacts_reads_parent_from_openlineage_context(monkeypatch):
+    """OPENLINEAGE_CONTEXT alone must identify the parent: it is the standardized
+    replacement for OPENLINEAGE_PARENT_ID, so an orchestrator that only sets the
+    new variable still has to end up as the parent of the dbt run."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "dddddddd-0000-0000-0000-000000000004"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_CONTEXT": json.dumps(
+            {
+                "parent": {
+                    "run": {"runId": parent_run_id},
+                    "job": {"namespace": parent_namespace, "name": parent_job},
+                }
+            }
+        ),
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
     md = processor.dbt_run_metadata
     assert md.root_parent_run_id == parent_run_id
     assert md.root_parent_job_name == parent_job

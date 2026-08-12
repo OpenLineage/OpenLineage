@@ -122,28 +122,28 @@ class TransformationInfoTest {
         new Object[] {
           new TransformationInfo(DIRECT, IDENTITY, "desc", false),
           new TransformationInfo(INDIRECT, TRANSFORMATION, "new desc", false),
-          new TransformationInfo(INDIRECT, TRANSFORMATION, "new desc", false)
+          new TransformationInfo(INDIRECT, TRANSFORMATION, "desc", false)
         },
 
         // 5. same as 4., but masking differs → keep all from another, result has masking true
         new Object[] {
           new TransformationInfo(DIRECT, IDENTITY, "desc", true),
           new TransformationInfo(INDIRECT, TRANSFORMATION, "new desc", false),
-          new TransformationInfo(INDIRECT, TRANSFORMATION, "new desc", true)
+          new TransformationInfo(INDIRECT, TRANSFORMATION, "desc", true)
         },
 
         // 6. neither INDIRECT → pick lower ordinal
         new Object[] {
           new TransformationInfo(DIRECT, IDENTITY, "desc", false),
           new TransformationInfo(DIRECT, AGGREGATION, "new desc", false),
-          new TransformationInfo(DIRECT, AGGREGATION, "new desc", false)
+          new TransformationInfo(DIRECT, AGGREGATION, "desc", false)
         },
 
         // 7. same as 6., but masking differs → pick lower ordinal, result has masking true
         new Object[] {
           new TransformationInfo(DIRECT, IDENTITY, "desc", true),
           new TransformationInfo(DIRECT, AGGREGATION, "new desc", false),
-          new TransformationInfo(DIRECT, AGGREGATION, "new desc", true)
+          new TransformationInfo(DIRECT, AGGREGATION, "desc", true)
         },
 
         // 8. same ordinal → keep current
@@ -164,7 +164,7 @@ class TransformationInfoTest {
         new Object[] {
           new TransformationInfo(DIRECT, IDENTITY, "desc", true),
           new TransformationInfo(DIRECT, AGGREGATION, "new desc", true),
-          new TransformationInfo(DIRECT, AGGREGATION, "new desc", true)
+          new TransformationInfo(DIRECT, AGGREGATION, "desc", true)
         });
   }
 }

@@ -6,6 +6,10 @@ on:
       - main
       - docs-env
 
+concurrency:
+  group: website-snapshot
+  cancel-in-progress: false
+
 permissions:
   id-token: write
 
@@ -104,8 +108,8 @@ jobs:
           git add .
           if ! git diff-index --quiet HEAD; then
             git commit -m "Refreshing website content from main repo.
-            
-            Source commit: 
+
+            Source commit:
             https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
             git push
           fi
