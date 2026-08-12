@@ -52,6 +52,22 @@ class CopyIntoSqlUtilsTest {
   }
 
   @Test
+  void testParsesBacktickQuotedTargetTable() {
+    String sql = "COPY INTO `catalog`.`schema`.`copy_into_table` FROM '/path/to/source'";
+
+    assertThat(CopyIntoSqlUtils.targetTable(sql)).contains("catalog.schema.copy_into_table");
+  }
+
+  @Test
+  void testDetectsCaseInsensitiveCopyInto() {
+    String sql = "copy into my_table from '/path/to/source'";
+
+    assertThat(CopyIntoSqlUtils.isCopyIntoStatement(sql)).isTrue();
+    assertThat(CopyIntoSqlUtils.targetTable(sql)).contains("my_table");
+    assertThat(CopyIntoSqlUtils.sourcePath(sql)).contains("/path/to/source");
+  }
+
+  @Test
   void testReturnsEmptyForBlankSql() {
     assertThat(CopyIntoSqlUtils.targetTable(null)).isEmpty();
     assertThat(CopyIntoSqlUtils.targetTable("   ")).isEmpty();
