@@ -27,6 +27,7 @@ import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -58,6 +59,11 @@ import scala.Option;
 
 @Slf4j
 public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkListener {
+  static final String SQL_REGISTRY_GAUGE = "openlineage.spark.state.sql_execution_registry";
+  static final String RDD_REGISTRY_GAUGE = "openlineage.spark.state.rdd_execution_registry";
+  static final String BUILDER_JOBS_GAUGE = "openlineage.spark.state.builder.jobs";
+  static final String BUILDER_STAGES_GAUGE = "openlineage.spark.state.builder.stages";
+
   // These are used only in integration tests to override default factory,
   // before SparkSession creates new listener object
   private static ContextFactory defaultContextFactory;
@@ -67,6 +73,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private MeterRegistry meterRegistry = defaultMeterRegistry;
 
   private CircuitBreaker circuitBreaker = new NoOpCircuitBreaker();
+  private boolean stateGaugesRegistered;
 
   private final Map<Long, ExecutionContext> sparkSqlExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
@@ -114,6 +121,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public void skipInitializationForTests(ContextFactory contextFactory) {
     this.contextFactory = contextFactory;
     this.meterRegistry = contextFactory.getMeterRegistry();
+    registerStateGauges();
   }
 
   @Override
@@ -239,18 +247,34 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
     if (checkIfDisabled()) {
+      ExecutionContext disabledContext = rddExecutionRegistry.remove(jobEnd.jobId());
+      if (disabledContext != null) {
+        disabledContext.evictJob(jobEnd.jobId());
+      }
+      jobMetrics.cleanUp(jobEnd.jobId());
       return;
     }
     log.debug("onJobEnd called [{}].", jobEnd);
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     meterRegistry.counter("openlineage.spark.event.job.end").increment();
-    circuitBreaker.run(
-        () -> {
-          if (context != null) {
-            context.end(jobEnd);
-          }
-          return null;
-        });
+    try {
+      circuitBreaker.run(
+          () -> {
+            if (context != null) {
+              context.end(jobEnd);
+            }
+            return null;
+          });
+    } finally {
+      if (context != null) {
+        context.evictJob(jobEnd.jobId());
+      }
+      if (context != null && context.retainsJobMetrics(jobEnd.jobId())) {
+        jobMetrics.completeJob(jobEnd.jobId());
+      } else {
+        jobMetrics.cleanUp(jobEnd.jobId());
+      }
+    }
   }
 
   @Override
@@ -291,13 +315,16 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private void clear() {
+    executionContexts().forEach(ExecutionContext::clearRetainedState);
     sparkSqlExecutionRegistry.clear();
     rddExecutionRegistry.clear();
+    jobMetrics.cleanUpAll();
   }
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
     if (checkIfDisabled()) {
+      close();
       return;
     }
     log.debug("onApplicationEnd called [{}].", applicationEnd);
@@ -306,21 +333,27 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         .counter("openlineage.spark.event.app.end.memoryusage")
         .increment(RuntimeUtils.getMemoryFractionUsage());
 
-    circuitBreaker.run(
-        () -> {
-          getSparkApplicationExecutionContext().end(applicationEnd);
-          return null;
-        });
-    close();
-    super.onApplicationEnd(applicationEnd);
+    try {
+      circuitBreaker.run(
+          () -> {
+            getSparkApplicationExecutionContext().end(applicationEnd);
+            return null;
+          });
+    } finally {
+      close();
+      super.onApplicationEnd(applicationEnd);
+    }
   }
 
   /** To close the underlying resources. */
   public void close() {
-    circuitBreaker.close();
-    clear();
-    if (contextFactory != null) {
-      contextFactory.close();
+    try {
+      circuitBreaker.close();
+    } finally {
+      clear();
+      if (contextFactory != null) {
+        contextFactory.close();
+      }
     }
   }
 
@@ -345,6 +378,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private void initializeContextFactoryIfNotInitialized() {
     if (contextFactory != null) {
+      registerStateGauges();
       return;
     }
     asJavaOptional(activeSparkContext.apply())
@@ -378,6 +412,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       initializeMetrics(config);
       contextFactory = new ContextFactory(new EventEmitter(config, appName), meterRegistry, config);
       circuitBreaker = new CircuitBreakerFactory(config.getCircuitBreaker()).build();
+      registerStateGauges();
     } catch (URISyntaxException e) {
       log.error("Unable to parse OpenLineage endpoint. Lineage events will not be collected", e);
     }
@@ -423,6 +458,39 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
                             Tag.of("openlineage.spark.integration.version", Versions.getVersion()),
                             Tag.of("openlineage.spark.version", sparkVersion),
                             Tag.of("openlineage.spark.disabled.facets", disabledFacets))));
+  }
+
+  private void registerStateGauges() {
+    if (stateGaugesRegistered || meterRegistry == null) {
+      return;
+    }
+    meterRegistry.gauge(SQL_REGISTRY_GAUGE, sparkSqlExecutionRegistry, Map::size);
+    meterRegistry.gauge(RDD_REGISTRY_GAUGE, rddExecutionRegistry, Map::size);
+    meterRegistry.gauge(
+        BUILDER_JOBS_GAUGE, this, OpenLineageSparkListener::getRetainedBuilderJobCount);
+    meterRegistry.gauge(
+        BUILDER_STAGES_GAUGE, this, OpenLineageSparkListener::getRetainedBuilderStageCount);
+    jobMetrics.registerStateGauges(meterRegistry);
+    stateGaugesRegistered = true;
+  }
+
+  private int getRetainedBuilderJobCount() {
+    return executionContexts().stream().mapToInt(ExecutionContext::getRetainedJobCount).sum();
+  }
+
+  private int getRetainedBuilderStageCount() {
+    return executionContexts().stream().mapToInt(ExecutionContext::getRetainedStageCount).sum();
+  }
+
+  private Set<ExecutionContext> executionContexts() {
+    Set<ExecutionContext> contexts = Collections.newSetFromMap(new IdentityHashMap<>());
+    synchronized (sparkSqlExecutionRegistry) {
+      contexts.addAll(sparkSqlExecutionRegistry.values());
+    }
+    synchronized (rddExecutionRegistry) {
+      contexts.addAll(rddExecutionRegistry.values());
+    }
+    return contexts;
   }
 
   /**

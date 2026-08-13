@@ -19,6 +19,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
@@ -27,8 +28,10 @@ import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.OpenLineageRunStatus;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.VisitedNodes;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
@@ -61,6 +64,7 @@ class SparkSQLExecutionContextTest {
 
   @AfterEach
   void reset() {
+    JobMetricsHolder.getInstance().cleanUpAll();
     Mockito.reset(olContext, eventEmitter, queryExecution);
   }
 
@@ -163,6 +167,7 @@ class SparkSQLExecutionContextTest {
   @Test
   void testCompleteIsSentWhenNoSqlStart(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    JobMetricsHolder.getInstance().addJobStages(0, Collections.singleton(10));
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
 
@@ -175,13 +180,16 @@ class SparkSQLExecutionContextTest {
         .hasFieldOrPropertyWithValue("eventType", EventType.START);
     assertThat(lineageEvent.getAllValues().get(1))
         .hasFieldOrPropertyWithValue("eventType", EventType.COMPLETE);
+    assertMetricsStateIsEmpty();
   }
 
   @Test
   void testFailIsSent(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(41);
     when(jobEnd.jobResult()).thenReturn(mock(JobFailed.class));
+    JobMetricsHolder.getInstance().addJobStages(41, Collections.singleton(410));
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
 
@@ -194,6 +202,140 @@ class SparkSQLExecutionContextTest {
         .hasFieldOrPropertyWithValue("eventType", EventType.START);
     assertThat(lineageEvent.getAllValues().get(1))
         .hasFieldOrPropertyWithValue("eventType", EventType.FAIL);
+    assertMetricsStateIsEmpty();
+  }
+
+  @Test
+  void testFilteredJobEndCleansMetrics(SparkSession spark) {
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(42);
+    JobMetricsHolder.getInstance().addJobStages(42, Collections.singleton(420));
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(olContext, jobEnd)).thenReturn(true);
+      context.end(jobEnd);
+    }
+
+    verify(eventEmitter, times(0)).emit(any());
+    assertMetricsStateIsEmpty();
+  }
+
+  @Test
+  void testMissingQueryExecutionOnJobEndCleansMetrics(SparkSession spark) {
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(43);
+    when(olContext.getQueryExecution()).thenReturn(Optional.empty());
+    JobMetricsHolder.getInstance().addJobStages(43, Collections.singleton(430));
+
+    context.end(jobEnd);
+
+    verify(eventEmitter, times(0)).emit(any());
+    assertMetricsStateIsEmpty();
+  }
+
+  @Test
+  void testMetricsAreRetainedOnlyUntilSqlEnd(SparkSession spark) {
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(44);
+    addMetricBearingJob(44, 440);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(jobEnd);
+
+      assertThat(JobMetricsHolder.getInstance().getJobStagesSize()).isZero();
+      assertThat(JobMetricsHolder.getInstance().getStageMetricsSize()).isZero();
+      assertThat(JobMetricsHolder.getInstance().getJobMetricsSize()).isOne();
+
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+    }
+
+    verify(eventEmitter, times(3)).emit(any());
+    assertMetricsStateIsEmpty();
+  }
+
+  @Test
+  void testSqlEndCleansMetricsWhenNoJobEndIsPending(SparkSession spark) {
+    int jobId = 49;
+    context.setActiveJobId(jobId);
+    when(olContext.getActiveJobId()).thenReturn(Optional.of(jobId));
+    JobMetricsHolder.getInstance().addJobStages(jobId, Collections.singleton(490));
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+    }
+
+    verify(eventEmitter).emit(any());
+    assertMetricsStateIsEmpty();
+  }
+
+  @Test
+  void testFailedJobMetricsAreRetainedUntilPendingSqlEnd(SparkSession spark) {
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(45);
+    when(jobEnd.jobResult()).thenReturn(mock(JobFailed.class));
+    addMetricBearingJob(45, 450);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(jobEnd);
+
+      assertThat(JobMetricsHolder.getInstance().getJobStagesSize()).isZero();
+      assertThat(JobMetricsHolder.getInstance().getStageMetricsSize()).isZero();
+      assertThat(JobMetricsHolder.getInstance().getJobMetricsSize()).isOne();
+
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+    }
+
+    assertMetricsStateIsEmpty();
+  }
+
+  @Test
+  void testFilteredSqlEndBeforeJobEndDoesNotRetainMetrics(SparkSession spark) {
+    SparkListenerSQLExecutionEnd sqlEnd = mock(SparkListenerSQLExecutionEnd.class);
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(46);
+    JobMetricsHolder.getInstance().addJobStages(46, Collections.singleton(460));
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(olContext, sqlEnd)).thenReturn(true);
+      when(EventFilterUtils.isDisabled(olContext, jobEnd)).thenReturn(false);
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(sqlEnd);
+      context.end(jobEnd);
+    }
+
+    assertMetricsStateIsEmpty();
+  }
+
+  @Test
+  void testMultipleJobsRetainOnlyLatestMetricsUntilSqlEnd(SparkSession spark) {
+    SparkListenerJobEnd firstJobEnd = mock(SparkListenerJobEnd.class);
+    SparkListenerJobEnd secondJobEnd = mock(SparkListenerJobEnd.class);
+    when(firstJobEnd.jobId()).thenReturn(47);
+    when(secondJobEnd.jobId()).thenReturn(48);
+    JobMetricsHolder holder = JobMetricsHolder.getInstance();
+    addMetricBearingJob(47, 470);
+    addMetricBearingJob(48, 480);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(firstJobEnd);
+      context.end(secondJobEnd);
+
+      assertThat(holder.getJobStagesSize()).isZero();
+      assertThat(holder.getStageMetricsSize()).isZero();
+      assertThat(holder.getJobMetricsSize()).isOne();
+
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+    }
+
+    verify(eventEmitter, times(3)).emit(any());
+    assertMetricsStateIsEmpty();
   }
 
   @Test
@@ -323,5 +465,19 @@ class SparkSQLExecutionContextTest {
       assertThat(rootJob.getNamespace()).isEqualTo("root_job_namespace");
       assertThat(rootRun.getRunId()).isEqualTo(rootUuid);
     }
+  }
+
+  private void assertMetricsStateIsEmpty() {
+    JobMetricsHolder holder = JobMetricsHolder.getInstance();
+    assertThat(holder.getJobStagesSize()).isZero();
+    assertThat(holder.getStageMetricsSize()).isZero();
+    assertThat(holder.getJobMetricsSize()).isZero();
+  }
+
+  private void addMetricBearingJob(int jobId, int stageId) {
+    TaskMetrics taskMetrics = new TaskMetrics();
+    taskMetrics.inputMetrics()._bytesRead().add(1);
+    JobMetricsHolder.getInstance().addJobStages(jobId, Collections.singleton(stageId));
+    JobMetricsHolder.getInstance().addMetrics(stageId, taskMetrics);
   }
 }

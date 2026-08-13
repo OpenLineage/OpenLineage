@@ -14,6 +14,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -24,6 +25,9 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.JobSucceeded$;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +50,11 @@ class RddExecutionContextTest {
       new RddExecutionContext(olContext, eventEmitter, runEventBuilder);
 
   private SparkConf sparkConf;
+
+  @AfterEach
+  void cleanupMetrics() {
+    JobMetricsHolder.getInstance().cleanUpAll();
+  }
 
   @BeforeEach
   void setup() {
@@ -95,5 +104,20 @@ class RddExecutionContextTest {
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getName()).isEqualTo("/tmp/input.csv");
+  }
+
+  @Test
+  void outputlessSuccessfulJobCleansMetrics() {
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(51);
+    when(jobEnd.jobResult()).thenReturn(JobSucceeded$.MODULE$);
+    JobMetricsHolder holder = JobMetricsHolder.getInstance();
+    holder.addJobStages(51, Collections.singleton(510));
+
+    context.end(jobEnd);
+
+    assertThat(holder.getJobStagesSize()).isZero();
+    assertThat(holder.getStageMetricsSize()).isZero();
+    assertThat(holder.getJobMetricsSize()).isZero();
   }
 }

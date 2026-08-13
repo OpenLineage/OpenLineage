@@ -31,11 +31,14 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.SneakyThrows;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.ActiveJob;
+import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.PartialFunction;
+import scala.collection.JavaConverters;
 
 class OpenLineageRunEventBuilderTest {
 
@@ -141,5 +144,33 @@ class OpenLineageRunEventBuilderTest {
 
     // test that the debug facet contains the timeout message
     assertThat(facet.getLogs().get(0)).startsWith("Incomplete lineage:");
+  }
+
+  @Test
+  void testEvictJobRemovesActiveJobAndStages() {
+    OpenLineageRunEventBuilder builder =
+        new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory);
+    ActiveJob activeJob = mock(ActiveJob.class);
+    Stage finalStage = mock(Stage.class);
+    Stage parentStage = mock(Stage.class);
+    when(activeJob.jobId()).thenReturn(7);
+    when(activeJob.finalStage()).thenReturn(finalStage);
+    when(finalStage.id()).thenReturn(70);
+    when(parentStage.id()).thenReturn(71);
+    when(finalStage.parents())
+        .thenReturn(
+            JavaConverters.asScalaBufferConverter(Collections.singletonList(parentStage))
+                .asScala()
+                .toList());
+
+    builder.registerJob(activeJob);
+
+    assertThat(builder.getRetainedJobCount()).isOne();
+    assertThat(builder.getRetainedStageCount()).isEqualTo(2);
+
+    builder.evictJob(7);
+
+    assertThat(builder.getRetainedJobCount()).isZero();
+    assertThat(builder.getRetainedStageCount()).isZero();
   }
 }

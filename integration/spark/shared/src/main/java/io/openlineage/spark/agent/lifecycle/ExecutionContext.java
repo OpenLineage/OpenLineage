@@ -49,4 +49,23 @@ public interface ExecutionContext {
   }
 
   default void setActiveJobId(Integer activeJobId) {}
+
+  /** Release scheduler objects retained for a completed Spark job. */
+  default void evictJob(int jobId) {}
+
+  /** Whether this context still needs a completed job's compact metrics for a later event. */
+  default boolean retainsJobMetrics(int jobId) {
+    return false;
+  }
+
+  /** Release any remaining scheduler objects retained by this context. */
+  default void clearRetainedState() {}
+
+  default int getRetainedJobCount() {
+    return 0;
+  }
+
+  default int getRetainedStageCount() {
+    return 0;
+  }
 }

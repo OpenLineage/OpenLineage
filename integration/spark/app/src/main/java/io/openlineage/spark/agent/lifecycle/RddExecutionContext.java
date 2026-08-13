@@ -254,55 +254,76 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    if (isDisabled()) {
-      log.info(
-          "OpenLineage received Spark event that is configured to be skipped: RDD SparkListenerJobEnd");
-      return;
-    }
-    log.debug("end SparkListenerJobEnd {}", jobEnd);
-    if (outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
-      // Oftentimes SparkListener is triggered for actions which do not contain any
-      // meaningful
-      // lineage data and are useless in the context of lineage graph. We assume this
-      // occurs
-      // for RDD operations which have no output dataset
-      log.info("Output RDDs are empty: skipping sending OpenLineage event");
-      return;
-    }
+    try {
+      if (isDisabled()) {
+        log.info(
+            "OpenLineage received Spark event that is configured to be skipped: RDD SparkListenerJobEnd");
+        return;
+      }
+      log.debug("end SparkListenerJobEnd {}", jobEnd);
+      if (outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
+        // Oftentimes SparkListener is triggered for actions which do not contain any
+        // meaningful
+        // lineage data and are useless in the context of lineage graph. We assume this
+        // occurs
+        // for RDD operations which have no output dataset
+        log.info("Output RDDs are empty: skipping sending OpenLineage event");
+        return;
+      }
 
-    List<InputDataset> inputDatasets = buildInputs(inputs, true);
-    List<OutputDataset> outputDatasets = buildOutputs(outputs, true);
-    RunFacetsBuilder runFacetsBuilder =
-        buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd);
+      List<InputDataset> inputDatasets = buildInputs(inputs, true);
+      List<OutputDataset> outputDatasets = buildOutputs(outputs, true);
+      RunFacetsBuilder runFacetsBuilder =
+          buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd);
 
-    olContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
-    olContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
-    FacetUtils.attachSmartDebugFacet(olContext, runFacetsBuilder);
+      olContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
+      olContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
+      FacetUtils.attachSmartDebugFacet(olContext, runFacetsBuilder);
 
-    EventType eventType = getEventType(jobEnd.jobResult());
-    OpenLineage.RunEvent event =
-        olContext
-            .getOpenLineage()
-            .newRunEventBuilder()
-            .eventTime(toZonedTime(jobEnd.time()))
-            .eventType(eventType)
-            .inputs(inputDatasets)
-            .outputs(outputDatasets)
-            .run(
-                olContext
-                    .getOpenLineage()
-                    .newRunBuilder()
-                    .runId(runId)
-                    .facets(runFacetsBuilder.build())
-                    .build())
-            .job(buildJob(jobEnd.jobId()))
-            .build();
-    if (eventType.equals(EventType.COMPLETE)) {
-      // clean up metrics on complete only
+      EventType eventType = getEventType(jobEnd.jobResult());
+      OpenLineage.RunEvent event =
+          olContext
+              .getOpenLineage()
+              .newRunEventBuilder()
+              .eventTime(toZonedTime(jobEnd.time()))
+              .eventType(eventType)
+              .inputs(inputDatasets)
+              .outputs(outputDatasets)
+              .run(
+                  olContext
+                      .getOpenLineage()
+                      .newRunBuilder()
+                      .runId(runId)
+                      .facets(runFacetsBuilder.build())
+                      .build())
+              .job(buildJob(jobEnd.jobId()))
+              .build();
+      log.debug("Posting event for end {}: {}", jobEnd, event);
+      eventEmitter.emit(event);
+    } finally {
       JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
+      runEventBuilder.evictJob(jobEnd.jobId());
     }
-    log.debug("Posting event for end {}: {}", jobEnd, event);
-    eventEmitter.emit(event);
+  }
+
+  @Override
+  public void evictJob(int jobId) {
+    runEventBuilder.evictJob(jobId);
+  }
+
+  @Override
+  public void clearRetainedState() {
+    runEventBuilder.clearRetainedState();
+  }
+
+  @Override
+  public int getRetainedJobCount() {
+    return runEventBuilder.getRetainedJobCount();
+  }
+
+  @Override
+  public int getRetainedStageCount() {
+    return runEventBuilder.getRetainedStageCount();
   }
 
   protected OpenLineage.RunFacetsBuilder buildRunFacets(

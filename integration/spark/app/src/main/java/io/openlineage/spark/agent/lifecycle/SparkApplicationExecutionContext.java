@@ -68,6 +68,21 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   public void end(SparkListenerStageCompleted stageCompleted) {}
 
   @Override
+  public void clearRetainedState() {
+    runEventBuilder.clearRetainedState();
+  }
+
+  @Override
+  public int getRetainedJobCount() {
+    return runEventBuilder.getRetainedJobCount();
+  }
+
+  @Override
+  public int getRetainedStageCount() {
+    return runEventBuilder.getRetainedStageCount();
+  }
+
+  @Override
   public void start(SparkListenerApplicationStart applicationStart) {
     String applicationId =
         olContext.getSparkContext().map(context -> context.applicationId()).orElse(null);
