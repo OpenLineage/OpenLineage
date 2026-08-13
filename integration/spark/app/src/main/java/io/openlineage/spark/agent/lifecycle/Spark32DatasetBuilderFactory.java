@@ -20,6 +20,8 @@ import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.CopyIntoCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.CopyIntoCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnEndDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnStartDatasetBuilder;
@@ -71,6 +73,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
             .add(new DeleteCommandInputDatasetBuilder(context))
             .add(new UpdateCommandInputDatasetBuilder(context))
+            .add(new CopyIntoCommandInputDatasetBuilder(context))
             .add(new ViewInputDatasetBuilder(context))
             .add(new DataSourceV2RelationInputOnStartDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationInputOnEndDatasetBuilder(context, datasetFactory));
@@ -93,6 +96,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
+            .add(new CopyIntoCommandOutputDatasetBuilder(context))
             .add(new DeleteCommandOutputDatasetBuilder(context))
             .add(new UpdateCommandOutputDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
