@@ -162,13 +162,13 @@ An example of a valid name is `BigQueryStatisticsJobFacet` and key is `bigQuery_
 
 - **ownership**: Captures the owners of the dataset
 
+- **dataQualityAssertions**: Captures the result of running data tests on a dataset or its columns.
+
 #### Input Dataset Facets
 
 - **dataQualityMetrics**: Captures dataset-level and column-level data quality metrics when scanning a dataset with a
   DataQuality library (row count, byte size, null count, distinct count, average, min, max, quantiles).
 
-- **dataQualityAssertions**: Captures the result of running data tests on a dataset or its columns.
--
 - **inputStatistics**: Captures the size of the input dataset read (row count and byte size).
 
 #### Output Dataset Facets

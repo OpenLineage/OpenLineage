@@ -50,6 +50,17 @@ type ColumnLineageDatasetFacet struct {
 	Fields map[string]ColumnLineageDatasetFacetFieldsValue `json:"fields"`
 }
 
+// list of tests performed on dataset or dataset columns, and their results
+type DataQualityAssertionsDatasetFacet struct {
+	// URI identifying the producer of this metadata.
+	Producer string `json:"_producer"`
+	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted    *bool                                        `json:"_deleted,omitempty"`
+	Assertions []DataQualityAssertionsDatasetFacetAssertion `json:"assertions"`
+}
+
 // DataQualityMetricsDatasetFacet
 type DataQualityMetricsDatasetFacet struct {
 	// URI identifying the producer of this metadata.
@@ -207,15 +218,6 @@ type TagsDatasetFacet struct {
 	Deleted *bool `json:"_deleted,omitempty"`
 	// The tags applied to the dataset facet
 	Tags []TagsDatasetFacetFields `json:"tags,omitempty"`
-}
-
-// list of tests performed on dataset or dataset columns, and their results
-type DataQualityAssertionsDatasetFacet struct {
-	// URI identifying the producer of this metadata.
-	Producer string `json:"_producer"`
-	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
-	SchemaURL  string                                       `json:"_schemaURL"`
-	Assertions []DataQualityAssertionsDatasetFacetAssertion `json:"assertions"`
 }
 
 // DataQualityMetricsInputDatasetFacet
