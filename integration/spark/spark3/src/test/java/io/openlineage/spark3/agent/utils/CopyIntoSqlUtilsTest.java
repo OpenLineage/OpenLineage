@@ -90,6 +90,73 @@ class CopyIntoSqlUtilsTest {
   }
 
   @Test
+  void testDetectsValidateStatementWithAllRows() {
+    String sql =
+        "COPY INTO copy_into_table FROM '/path/to/source' FILEFORMAT = PARQUET VALIDATE ALL";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isTrue();
+  }
+
+  @Test
+  void testDetectsValidateStatementWithoutRowLimit() {
+    String sql =
+        "COPY INTO copy_into_table FROM '/path/to/source' FILEFORMAT = CSV VALIDATE FORMAT_OPTIONS ('header' = 'true')";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isTrue();
+  }
+
+  @Test
+  void testDetectsValidateStatementFollowedByFilesClause() {
+    String sql =
+        "COPY INTO copy_into_table FROM '/path/to/source' FILEFORMAT = JSON VALIDATE FILES = ('a.json')";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isTrue();
+  }
+
+  @Test
+  void testDetectsValidateStatementFollowedByPatternClause() {
+    String sql =
+        "COPY INTO copy_into_table FROM '/path/to/source' FILEFORMAT = CSV VALIDATE PATTERN = '*.csv'";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isTrue();
+  }
+
+  @Test
+  void testDetectsValidateStatementFollowedByCopyOptions() {
+    String sql =
+        "COPY INTO copy_into_table FROM '/path/to/source' FILEFORMAT = CSV VALIDATE COPY_OPTIONS ('force' = 'true')";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isTrue();
+  }
+
+  @Test
+  void testDoesNotDetectValidateWithoutFileformat() {
+    String sql = "COPY INTO copy_into_table FROM '/path/to/source' VALIDATE 15 ROWS";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isFalse();
+  }
+
+  @Test
+  void testDoesNotDetectValidateWhenValidateAppearsInSourcePath() {
+    String sql =
+        "COPY INTO target\n"
+            + "FROM '/data/validate/files'\n"
+            + "FILEFORMAT = CSV";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isFalse();
+    assertThat(CopyIntoSqlUtils.isCopyIntoStatement(sql)).isTrue();
+    assertThat(CopyIntoSqlUtils.sourcePath(sql)).contains("/data/validate/files");
+  }
+
+  @Test
+  void testDoesNotDetectValidateWhenValidateAppearsOnlyInFormatOptions() {
+    String sql =
+        "COPY INTO copy_into_table FROM '/path/to/source' FILEFORMAT = CSV FORMAT_OPTIONS ('validateSchema' = 'true')";
+
+    assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isFalse();
+  }
+
+  @Test
   void testDetectsCaseInsensitiveCopyInto() {
     String sql = "copy into my_table from '/path/to/source'";
 

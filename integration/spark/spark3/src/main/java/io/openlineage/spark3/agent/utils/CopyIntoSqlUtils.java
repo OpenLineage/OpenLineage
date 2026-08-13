@@ -21,7 +21,12 @@ public class CopyIntoSqlUtils {
   private static final Pattern COPY_INTO_SOURCE =
       Pattern.compile("(?is)\\bFROM\\s+'([^']+)'|\\bFROM\\s+\"([^\"]+)\"");
   private static final Pattern COPY_INTO_VALIDATE =
-      Pattern.compile("(?is)\\bVALIDATE\\b(?:\\s+(?:ALL|\\d+\\s+ROWS))?");
+      Pattern.compile(
+          "(?is)\\bFILEFORMAT\\s*=\\s*[A-Z][A-Z0-9_]*"
+              + "\\s+VALIDATE\\b"
+              + "(?:\\s+(?:ALL|[1-9]\\d*\\s+ROWS))?"
+              + "(?=\\s*(?:FILES\\s*=|PATTERN\\s*=|FORMAT_OPTIONS\\s*\\(|"
+              + "COPY_OPTIONS\\s*\\(|;|$))");
 
   private CopyIntoSqlUtils() {}
 
