@@ -138,10 +138,7 @@ class CopyIntoSqlUtilsTest {
 
   @Test
   void testDoesNotDetectValidateWhenValidateAppearsInSourcePath() {
-    String sql =
-        "COPY INTO target\n"
-            + "FROM '/data/validate/files'\n"
-            + "FILEFORMAT = CSV";
+    String sql = "COPY INTO target\n" + "FROM '/data/validate/files'\n" + "FILEFORMAT = CSV";
 
     assertThat(CopyIntoSqlUtils.isValidateStatement(sql)).isFalse();
     assertThat(CopyIntoSqlUtils.isCopyIntoStatement(sql)).isTrue();
