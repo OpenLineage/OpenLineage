@@ -88,6 +88,7 @@ impl Visit for TableFactor {
                 Ok(())
             }
             TableFactor::Pivot { table, alias, .. } => {
+                table.visit(context)?;
                 if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
                     if let Some(pivot_alias) = alias {
                         context.add_table_alias(
@@ -100,7 +101,6 @@ impl Visit for TableFactor {
                             vec![pivot_alias.clone().name],
                         );
                     }
-                    context.add_input(ident);
                 }
                 Ok(())
             }
@@ -695,6 +695,7 @@ impl Visit for Statement {
                     context.add_output(table_name);
                 }
                 merge.source.visit(context)?;
+                merge.on.visit(context)?;
             }
             Statement::CreateTable(ct) => {
                 if let Some(query) = &ct.query {

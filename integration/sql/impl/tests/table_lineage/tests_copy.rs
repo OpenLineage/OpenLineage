@@ -179,3 +179,25 @@ fn parse_pivot_table() {
         }
     );
 }
+
+#[test]
+fn parse_pivot_derived_table() {
+    let meta = parse_sql(
+        concat!(
+            "SELECT * FROM (SELECT region, amount FROM sales) AS s ",
+            "PIVOT(SUM(amount) FOR region IN ('EAST')) AS p"
+        ),
+        &SnowflakeDialect {},
+        None,
+    )
+    .unwrap();
+
+    assert_eq!(
+        meta.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["sales"]),
+            out_tables: vec![],
+        }
+    );
+    assert!(meta.errors.is_empty());
+}
