@@ -54,7 +54,7 @@ repositories {
 
 ext {
     assertjVersion = '3.27.7'
-    jacksonVersion = "2.18.8"
+    jacksonVersion = "2.18.9"
     junit5Version = '5.13.4'
     lombokVersion = '1.18.46'
     mockitoVersion = '5.23.0'

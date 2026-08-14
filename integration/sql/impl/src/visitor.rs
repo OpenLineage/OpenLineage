@@ -695,6 +695,7 @@ impl Visit for Statement {
                     context.add_output(table_name);
                 }
                 merge.source.visit(context)?;
+                merge.on.visit(context)?;
             }
             Statement::CreateTable(ct) => {
                 if let Some(query) = &ct.query {
