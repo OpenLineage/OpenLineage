@@ -157,6 +157,50 @@
       redact_fields: []
     - class_name: PreviousIdentifier
       redact_fields: []
+- module: lineage
+  classes:
+    - class_name: LineageDatasetFacet
+      redact_fields: []
+    - class_name: LineageJobFacet
+      redact_fields: []
+    - class_name: LineageDatasetEntry
+      redact_fields:
+        - namespace
+        - name
+        - type
+    - class_name: LineageJobEntry
+      redact_fields:
+        - namespace
+        - name
+        - type
+        - runId
+    - class_name: LineageDatasetInput
+      redact_fields:
+        - namespace
+        - name
+        - type
+        - field
+    - class_name: LineageJobInput
+      redact_fields:
+        - namespace
+        - name
+        - type
+        - runId
+    - class_name: LineageFieldEntry
+      redact_fields: []
+    - class_name: LineageTransformation
+      redact_fields:
+        - type
+        - subtype
+        - masking
+    - class_name: Type
+      redact_fields: []
+    - class_name: Type1
+      redact_fields: []
+    - class_name: Type2
+      redact_fields: []
+    - class_name: Type3
+      redact_fields: []
 - module: nominal_time_run
   classes:
     - class_name: NominalTimeRunFacet

@@ -19,6 +19,7 @@
       "ol:core:InputStatisticsInputDatasetFacet.json",
       "ol:core:JobTypeJobFacet.json",
       "ol:core:LifecycleStateChangeDatasetFacet.json",
+      "ol:core:LineageFacet.json",
       "ol:core:NominalTimeRunFacet.json",
       "ol:core:OutputStatisticsOutputDatasetFacet.json",
       "ol:core:OwnershipDatasetFacet.json",
