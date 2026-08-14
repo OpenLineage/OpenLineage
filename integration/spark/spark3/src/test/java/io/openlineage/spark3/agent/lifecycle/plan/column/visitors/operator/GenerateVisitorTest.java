@@ -52,7 +52,17 @@ class GenerateVisitorTest {
 
     visitor.apply(generate, builder);
 
-    verify(builder).addDependency(EXPR_ID_3, EXPR_ID_1, TransformationInfo.transformation());
-    verify(builder).addDependency(EXPR_ID_3, EXPR_ID_2, TransformationInfo.transformation());
+    verify(builder)
+        .addDependency(
+            EXPR_ID_3,
+            EXPR_ID_1,
+            "name3",
+            TransformationInfo.transformation("explode(split(name1, name2, -1))"));
+    verify(builder)
+        .addDependency(
+            EXPR_ID_3,
+            EXPR_ID_2,
+            "name3",
+            TransformationInfo.transformation("explode(split(name1, name2, -1))"));
   }
 }

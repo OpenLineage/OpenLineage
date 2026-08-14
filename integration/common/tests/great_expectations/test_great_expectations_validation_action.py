@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import pandas
 import pytest
+from openlineage.common import __version__
 from openlineage.common.provider.great_expectations import OpenLineageValidationAction
 from sqlalchemy import create_engine
 
@@ -380,7 +381,7 @@ def test_file_size_expectations_parser():
 
     assert FileSizeExpectationsParser.can_accept(result)
     parsed = FileSizeExpectationsParser.parse_expectation_result(result)
-    assert parsed.facet_key == "fileSize"
+    assert parsed.facet_key == "bytes"
     assert parsed.value == 512
     assert parsed.column_id is None
 
@@ -400,5 +401,62 @@ def test_file_size_expectations_parser_null_result():
     )
 
     parsed = FileSizeExpectationsParser.parse_expectation_result(result)
-    assert parsed.facet_key == "fileSize"
+    assert parsed.facet_key == "bytes"
     assert parsed.value is None
+
+
+def test_data_quality_facet_and_assertions_on_ge_1x():
+    # Great Expectations 1.0 renamed ExpectationConfiguration.expectation_type to
+    # `type`; the parsers must read the new key so metrics are still emitted and
+    # assertion parsing does not raise on any supported (>=1.0) release.
+    facet = OpenLineageValidationAction.parse_data_quality_facet(None, result_suite)
+    assert facet is not None
+    assert facet.rowCount == 10
+
+    assertions = OpenLineageValidationAction.parse_assertions(None, result_suite)
+    assert assertions is not None
+    assert {a.expectationType for a in assertions.assertions} == {
+        "expect_table_row_count_to_equal",
+        "expect_column_sum_to_be_between",
+    }
+
+
+def test_emitted_event_producer_and_event_time(tmpdir):
+    df = pandas.DataFrame({"name": ["Alice", "Bob"]})
+
+    ctx = get_context(context_root_dir=str(tmpdir / "gx"), mode="ephemeral")
+    ctx.suites.add(ExpectationSuite("test_suite"))
+
+    from great_expectations.datasource.fluent import PandasDatasource
+
+    datasource = PandasDatasource(name="pandas_datasource")
+    ctx.add_datasource(datasource=datasource)
+    asset = datasource.add_dataframe_asset(name="test_dataframe")
+    validator = ctx.get_validator(
+        batch_request=asset.build_batch_request(options={"dataframe": df}),
+        expectation_suite_name="test_suite",
+    )
+
+    action = OpenLineageValidationAction(
+        name="openlineage_test_action",
+        openlineage_host="http://localhost:5000",
+        openlineage_namespace="test_ns",
+        do_publish=False,
+        job_name="test_expectations_job",
+    )
+    ol_result = action._run(
+        validation_result_suite=validator.validate(),
+        validation_result_suite_identifier=ValidationResultIdentifier(
+            ExpectationSuiteIdentifier("test_suite"), RunIdentifier(run_name="test_run"), "batch_id"
+        ),
+        data_asset=validator,
+    )
+
+    # The spec types eventTime as an RFC 3339 date-time, which carries an offset.
+    assert datetime.datetime.fromisoformat(ol_result["eventTime"]).tzinfo is not None
+
+    # producer must be a usable URI: a real version and a path that exists in the repo.
+    assert ol_result["producer"] == (
+        f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}"
+        "/integration/common/src/openlineage/common/provider/great_expectations"
+    )

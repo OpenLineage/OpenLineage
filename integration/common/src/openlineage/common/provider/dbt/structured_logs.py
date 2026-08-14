@@ -122,6 +122,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         super().__init__(*args, **kwargs)
 
         self.dbt_command_line: list[str] = dbt_command_line
+        # No run_results.json on the log-driven path; read the flag off the command line instead.
+        self.full_refresh = self._full_refresh_from_command_line(self.dbt_command_line)
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
         self.is_random_logfile: bool = is_random_logfile(command=self.dbt_command_line)
@@ -148,6 +150,22 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.processed_bytes = 0
 
         self.dbt_command_return_code = 0
+
+    @staticmethod
+    def _full_refresh_from_command_line(command_line: list[str]) -> bool | None:
+        """Detect the --full-refresh flag on the dbt command line.
+
+        dbt resolves --full-refresh / --no-full-refresh last-occurrence-wins, so the last
+        matching token decides. Returns ``None`` when neither is present so the facet omits
+        the flag rather than assuming a default.
+        """
+        full_refresh: bool | None = None
+        for token in command_line:
+            if token in ("--full-refresh", "-f"):
+                full_refresh = True
+            elif token == "--no-full-refresh":
+                full_refresh = False
+        return full_refresh
 
     @cached_property
     def dbt_command(self) -> str | None:
@@ -208,6 +226,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return self._compiled_manifest
         else:
             return {}
+
+    def _exposures_manifest(self) -> dict:
+        return self.compiled_manifest
 
     def parse(self) -> Generator[RunEvent, None, None]:  # type: ignore[override]
         """
@@ -488,10 +509,16 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         else:
             self.logger.info("Node %s has an unknown node status %s", node_unique_id, node_status)
 
-        inputs = [
-            self.node_to_dataset(node=model_input, has_facets=True)
-            for model_input in self._get_model_inputs(node_unique_id)
-        ]
+        # Attach exposures only on a successful (COMPLETE) build.
+        succeeded = event_type == RunState.COMPLETE
+        inputs = []
+        for model_input in self._get_model_inputs(node_unique_id):
+            input_dataset = self.node_to_dataset(node=model_input, has_facets=True)
+            if succeeded:
+                input_dataset.facets.update(  # type: ignore
+                    self._exposures_facets(model_input.metadata_node.get("unique_id"))
+                )
+            inputs.append(input_dataset)
         outputs = []
         if node := self._get_model_node(node_unique_id):
             output_dataset = self.node_to_output_dataset(node=node, has_facets=True)
@@ -503,6 +530,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                     column_lineage = self.get_column_lineage(output_dataset.namespace, compiled_sql)
                     if column_lineage:
                         output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
+
+                if succeeded:
+                    output_dataset.facets.update(self._exposures_facets(node_unique_id))  # type: ignore
             outputs = [output_dataset]
 
         if resource_type == "test":
@@ -612,6 +642,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return dq.Assertion(
             assertion=name,
+            name=manifest_test_node.get("name"),
             success=success,
             column=column,
             severity=severity,
@@ -795,6 +826,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 project_version=self.project_version,
                 profile_name=self.profile_name,
                 dbt_runtime="core",
+                full_refresh=self.full_refresh,
             )
         }
 

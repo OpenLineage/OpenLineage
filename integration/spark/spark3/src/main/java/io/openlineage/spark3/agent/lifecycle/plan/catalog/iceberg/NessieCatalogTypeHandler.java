@@ -33,11 +33,12 @@ class NessieCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   @SneakyThrows
-  Optional<DatasetIdentifier> getIdentifier(
+  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
       SparkSession session, Map<String, String> catalogConf, String table) {
     log.debug("Getting identifier for nessie");
     String confUri = catalogConf.get(CatalogProperties.URI);
     String uri = new URI(confUri).toString();
-    return Optional.of(new DatasetIdentifier(table, uri));
+    return Optional.of(
+        new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE));
   }
 }

@@ -159,6 +159,18 @@ impl<'a> Context<'a> {
         }
     }
 
+    pub fn move_input_to_output(&mut self, input: Vec<Ident>) {
+        let name = DbTableMeta::new(
+            input,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
+        let output = self.resolve_table(&name).clone();
+        self.inputs.remove(&output);
+        self.outputs.insert(output);
+    }
+
     pub fn add_non_table_output(
         &mut self,
         output: Vec<Ident>,

@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -124,14 +125,43 @@ public class TypeResolver {
               .map(refType -> visit(refType))
               .collect(Collectors.toList());
 
+          if (resolvedTypes.size() == oneOfType.getTypes().size()) {
+            Optional<Discriminator> discriminator = findDiscriminator(resolvedTypes);
+            if (discriminator.isPresent()) {
+              DiscriminatedUnionResolvedType unionType =
+                  new DiscriminatedUnionResolvedType(
+                      container,
+                      currentName,
+                      discriminator.get().getFieldName(),
+                      discriminator.get().getVariants());
+              String key = container + "." + unionType.getName();
+              if (types.put(key, unionType) != null) {
+                throw new RuntimeException("Duplicated type: " + unionType.getName());
+              }
+              baseTypes.add(unionType.getName());
+              discriminator
+                  .get()
+                  .getVariants()
+                  .values()
+                  .forEach(variant -> variant.addParent(unionType));
+              return unionType;
+            }
+          }
+
           // return first of
           return resolvedTypes.get(0);
         }
 
         @Override
-        public ResolvedType visit(AnyOfType oneOfType) {
+        public ResolvedType visit(AnyOfType anyOfType) {
           // in case of anyOf we generate code based on the first type available
-          return visit(oneOfType.getChildren().get(0));
+          List<Type> children = anyOfType.getChildren();
+          ResolvedType resolvedType = visit(children.get(0));
+          children.stream()
+              .skip(1)
+              .filter(type -> type instanceof RefType)
+              .forEach(this::visit);
+          return resolvedType;
         }
 
         @Override
@@ -226,6 +256,55 @@ public class TypeResolver {
           }
         }
 
+        private Optional<Discriminator> findDiscriminator(List<ResolvedType> resolvedTypes) {
+          List<ObjectResolvedType> variants =
+              resolvedTypes.stream()
+                  .map(TypeResolver.this::resolveObjectType)
+                  .filter(Optional::isPresent)
+                  .map(Optional::get)
+                  .collect(Collectors.toList());
+          if (variants.size() != resolvedTypes.size() || variants.size() < 2) {
+            return Optional.empty();
+          }
+
+          for (ResolvedField candidate : variants.get(0).getProperties()) {
+            if (!isSingletonEnum(candidate)) {
+              continue;
+            }
+
+            Map<String, ObjectResolvedType> variantsByValue = new LinkedHashMap<>();
+            boolean matchesAllVariants = true;
+            for (ObjectResolvedType variant : variants) {
+              Optional<ResolvedField> matchingField =
+                  variant.getProperties().stream()
+                      .filter(field -> field.getName().equals(candidate.getName()))
+                      .filter(this::isSingletonEnum)
+                      .findFirst();
+              if (!matchingField.isPresent()) {
+                matchesAllVariants = false;
+                break;
+              }
+
+              EnumResolvedType enumType = (EnumResolvedType) matchingField.get().getType();
+              String discriminatorValue = enumType.getValues().get(0);
+              if (variantsByValue.put(discriminatorValue, variant) != null) {
+                matchesAllVariants = false;
+                break;
+              }
+            }
+
+            if (matchesAllVariants) {
+              return Optional.of(new Discriminator(candidate.getName(), variantsByValue));
+            }
+          }
+          return Optional.empty();
+        }
+
+        private boolean isSingletonEnum(ResolvedField field) {
+          return field.getType() instanceof EnumResolvedType
+              && ((EnumResolvedType) field.getType()).getValues().size() == 1;
+        }
+
       };
 
       this.rootResolvedTypePerURL.put(baseUrl, rootType.accept(visitor));
@@ -257,6 +336,34 @@ public class TypeResolver {
 
   public ResolvedType getRootResolvedType(URL url) {
     return rootResolvedTypePerURL.get(url);
+  }
+
+  Optional<ObjectResolvedType> resolveObjectType(ResolvedType resolvedType) {
+    if (resolvedType instanceof ObjectResolvedType) {
+      return Optional.of((ObjectResolvedType) resolvedType);
+    }
+    if (resolvedType instanceof RefResolvedType) {
+      return Optional.ofNullable(types.get(((RefResolvedType) resolvedType).getFullName()));
+    }
+    return Optional.empty();
+  }
+
+  private static class Discriminator {
+    private final String fieldName;
+    private final Map<String, ObjectResolvedType> variants;
+
+    private Discriminator(String fieldName, Map<String, ObjectResolvedType> variants) {
+      this.fieldName = fieldName;
+      this.variants = variants;
+    }
+
+    private String getFieldName() {
+      return fieldName;
+    }
+
+    private Map<String, ObjectResolvedType> getVariants() {
+      return variants;
+    }
   }
 
   interface ResolvedType {
@@ -414,7 +521,7 @@ public class TypeResolver {
       this.container = container;
       this.objectTypes = objectTypes;
       this.name = name;
-      this.parents = parents;
+      this.parents = new LinkedHashSet<>(parents);
       this.properties = properties;
       this.additionalProperties = additionalProperties;
       this.additionalPropertiesType = additionalPropertiesType;
@@ -434,6 +541,10 @@ public class TypeResolver {
 
     public Set<ObjectResolvedType> getParents() {
       return parents;
+    }
+
+    public void addParent(ObjectResolvedType parent) {
+      parents.add(parent);
     }
 
     public List<ResolvedField> getProperties() {
@@ -481,6 +592,36 @@ public class TypeResolver {
     public int hashCode() {
       return Objects.hash(container, objectTypes, name, properties, additionalProperties,
           additionalPropertiesType, parents);
+    }
+  }
+
+  static class DiscriminatedUnionResolvedType extends ObjectResolvedType {
+    private final String discriminatorField;
+    private final Map<String, ObjectResolvedType> variants;
+
+    DiscriminatedUnionResolvedType(
+        String container,
+        String name,
+        String discriminatorField,
+        Map<String, ObjectResolvedType> variants) {
+      super(
+          container,
+          Collections.emptyList(),
+          name,
+          Collections.emptySet(),
+          Collections.emptyList(),
+          false,
+          null);
+      this.discriminatorField = discriminatorField;
+      this.variants = variants;
+    }
+
+    public String getDiscriminatorField() {
+      return discriminatorField;
+    }
+
+    public Map<String, ObjectResolvedType> getVariants() {
+      return variants;
     }
   }
 
