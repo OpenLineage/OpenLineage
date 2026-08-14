@@ -52,6 +52,8 @@ from openlineage.common.provider.snowflake import fix_account_name
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
 from openlineage_sql import parse as parse_sql
 
+_DATETIME_CLASS = datetime.datetime
+
 
 class Adapter(Enum):
     # This class represents supported adapters.
@@ -240,25 +242,20 @@ class DbtArtifactProcessor:
         complete_time = max(completed_at_list) if completed_at_list else fallback_time
 
         try:
-            from _datetime import datetime as real_datetime
-
-            instant = real_datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-        except Exception:
-            try:
-                instant = datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-            except Exception:
-                instant = datetime.datetime.now(datetime.timezone.utc)
+            instant = _DATETIME_CLASS.fromisoformat(start_time.replace("Z", "+00:00"))
+        except (ValueError, TypeError, AttributeError):
+            instant = _DATETIME_CLASS.now(datetime.timezone.utc)
 
         raw_invocation_id = self.run_metadata.get("invocation_id")
         if raw_invocation_id:
-            invocation_id = str(generate_static_uuid(instant, raw_invocation_id.encode("utf-8")))
+            run_id = str(generate_static_uuid(instant, raw_invocation_id.encode("utf-8")))
         else:
-            invocation_id = str(generate_new_uuid(instant))
+            run_id = str(generate_new_uuid(instant))
 
         job_name = self.invocation_job_name
 
         self._invocation_parent_metadata = ParentRunMetadata(
-            run_id=invocation_id,
+            run_id=run_id,
             job_name=job_name,
             job_namespace=self.job_namespace,
         )
@@ -285,7 +282,7 @@ class DbtArtifactProcessor:
         start_event = RunEvent(
             eventType=RunState.START,
             eventTime=start_time,
-            run=Run(runId=invocation_id, facets=run_facets),
+            run=Run(runId=run_id, facets=run_facets),
             job=Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
             producer=self.producer,
         )
@@ -294,7 +291,7 @@ class DbtArtifactProcessor:
         end_event = RunEvent(
             eventType=end_state,
             eventTime=complete_time,
-            run=Run(runId=invocation_id, facets=run_facets),
+            run=Run(runId=run_id, facets=run_facets),
             job=Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
             producer=self.producer,
         )
