@@ -150,6 +150,45 @@ class IcebergHandlerTest {
 
   @Test
   @SneakyThrows
+  void testGetDatasetIdentifierForHiveWhenMetastoreUriUnresolvable() {
+    // Regression: if the catalog has no `.uri` property and no metastore URI can be found in
+    // SparkConf or the Hadoop configuration either, resolving the identifier must still succeed
+    // -- the Hive symlink is supplementary, and a failure to build it must not discard the
+    // already-correctly-computed dataset identifier (which previously happened because the
+    // MissingDatasetIdentifierCatalogException thrown while building the symlink propagated out
+    // of the whole method instead of just skipping the symlink).
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hive",
+                "spark.sql.catalog.test.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+    assertThat(datasetIdentifier.getSymlinks()).isEmpty();
+  }
+
+  @Test
+  @SneakyThrows
   void testGetDatasetIdentifierForRestCatalog() {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
