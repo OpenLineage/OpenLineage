@@ -60,6 +60,7 @@ public class AvroTypeDatasetFacetVisitorDelegate {
    * accessor, so it is read reflectively. This covers records deserialized from schema registries
    * (e.g. Confluent Schema Registry, AWS Glue Schema Registry) as {@code GenericRecord}.
    */
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   private Optional<Schema> genericRecordSchema(GenericRecordAvroTypeInfo typeInfo) {
     try {
       java.lang.reflect.Field schemaField =
