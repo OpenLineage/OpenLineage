@@ -46,6 +46,23 @@ fn select_having_exists_subquery() {
 }
 
 #[test]
+fn select_aggregate_filter_subquery() {
+    assert_eq!(
+        test_sql(
+            "SELECT count(*) FILTER (
+                 WHERE EXISTS (SELECT 1 FROM customers)
+             ) FROM orders;"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers", "orders"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
 fn select_from_schema_table() {
     assert_eq!(
         test_sql("SELECT * FROM schema0.table0;",)

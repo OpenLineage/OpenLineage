@@ -300,6 +300,28 @@ fn test_simple_count() {
 }
 
 #[test]
+fn test_aggregate_filter() {
+    let output = test_sql(
+        "SELECT COUNT(*) FILTER (WHERE status = 'paid') AS paid_orders
+         FROM orders",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "paid_orders".to_string()
+            },
+            lineage: vec![ColumnMeta {
+                origin: Some(table("orders")),
+                name: "status".to_string()
+            },]
+        },]
+    );
+}
+
+#[test]
 fn test_simple_aggregate() {
     let output = test_sql(
         "SELECT RANK() OVER (PARTITION BY i.a ORDER BY i.b DESC) AS c
