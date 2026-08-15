@@ -1,32 +1,31 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-# Advisory: This integration is experimental and in active development.
-
-import attr
 from datetime import datetime
-import json
 import logging
-import os
 
-from facets import PrefectDeploymentRunFacet
+from facets.run_facets import PrefectDeploymentRunFacet
 from openlineage.client import OpenLineageClient
-from openlineage.client.event_v2 import ( Dataset )
-from openlineage.client.facet import BaseFacet, JobTypeJobFacet, NominalTimeRunFacet, ParentRunFacet
-from openlineage.client.facet_v2 import ( job_dependencies_run, processing_engine_run )
+from openlineage.client.event_v2 import Dataset
+from openlineage.client.facet import (
+    JobTypeJobFacet,
+    NominalTimeRunFacet,
+    ParentRunFacet,
+)
+from openlineage.client.facet_v2 import job_dependencies_run, processing_engine_run
 from openlineage.client.run import Job, Run, RunEvent, RunState
 
-PRODUCER: str = "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/prefect"
+PRODUCER: str = (
+    "https://github.com/OpenLineage/openlineage/integration/prefect"
+)
 
 logger: logging.Logger = logging.getLogger(__name__)
 
+
 class PrefectOpenLineageAdapter:
-    def __init__(
-        self,
-        client: OpenLineageClient | None = None
-    ):
-        self.client = client or OpenLineageClient('http://localhost:5000') # for testing
-    
+    def __init__(self, client: OpenLineageClient | None = None):
+        self.client = client or OpenLineageClient()
+
     def create_and_emit_flow_event(
         self,
         runId: str,
@@ -35,11 +34,12 @@ class PrefectOpenLineageAdapter:
         flowName: str = None,
         flowNamespace: str = None,
         prefectVersion: str = None,
-        deploymentId: str = None,
-        deploymentCreated: str = None,
-        deploymentUpdated: str = None,
-        deploymentName: str = None
+        deploymentId: str | None = None,
+        deploymentCreated: str | None = None,
+        deploymentUpdated: str | None = None,
+        deploymentName: str | None = None,
     ) -> RunEvent:
+        """Create and emit a flow-level OpenLineage event."""
 
         match eventType:
             case "START":
@@ -49,42 +49,44 @@ class PrefectOpenLineageAdapter:
             case "FAILED":
                 eventType = RunState.FAIL
 
-        run_facets = {
-            "prefectDeployment": PrefectDeploymentRunFacet(
-                deployment_id=deploymentId,
-                created=deploymentCreated,
-                updated=deploymentUpdated,
-                name=deploymentName
-        ),
-            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                version=prefectVersion,
-                name="Prefect"
-        )}
+        if deploymentId:
+            run_facets = {
+                "prefectDeployment": PrefectDeploymentRunFacet(
+                    deploymentId=deploymentId,
+                    created=deploymentCreated,
+                    updated=deploymentUpdated,
+                    name=deploymentName,
+                ),
+                "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                    version=prefectVersion, name="Prefect"
+                ),
+            }
+        else:
+            run_facets = {
+                "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                    version=prefectVersion, name="Prefect"
+                )
+            }
 
         job_facets = {
             "jobType": JobTypeJobFacet(
-                processingType="BATCH", 
-                integration="Prefect",
-                jobType="FLOW"
-        )}
+                processingType="BATCH", integration="Prefect", jobType="FLOW"
+            )
+        }
 
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
             run=Run(runId, run_facets),
-            job=Job(
-                flowNamespace,
-                flowName,
-                job_facets
-            ),
-            producer=PRODUCER
+            job=Job(flowNamespace, flowName, job_facets),
+            producer=PRODUCER,
         )
 
         try:
             self.client.emit(run_event)
-            logger.info('Emitted OpenLineage event successfully.')
-        except Exception as e:
-            logger.exception('OpenLineage event not sent.')
+            logger.info("Emitted OpenLineage event successfully.")
+        except Exception:
+            logger.exception("OpenLineage event not sent.")
 
     def create_and_emit_task_event(
         self,
@@ -98,13 +100,14 @@ class PrefectOpenLineageAdapter:
         namespace: str = None,
         jobDeps: list = None,
         prefectVersion: str = None,
-        deploymentId: str = None,
-        deploymentCreated: str = None,
-        deploymentUpdated: str = None,
-        deploymentName: str = None,
+        deploymentId: str | None = None,
+        deploymentCreated: str | None = None,
+        deploymentUpdated: str | None = None,
+        deploymentName: str | None = None,
         inputDatasets: list = [],
-        outputDatasets: list = []
+        outputDatasets: list = [],
     ) -> RunEvent:
+        """Create and emit a task-level OpenLineage event."""
 
         match eventType:
             case "START":
@@ -113,34 +116,44 @@ class PrefectOpenLineageAdapter:
                 eventType = RunState.COMPLETE
             case "FAILED":
                 eventType = RunState.FAIL
-        
-        run_facets = {
-            "nominalTime": NominalTimeRunFacet(
-                nominalStartTime=expectedEventTime
-            ),
-            "parentRun": ParentRunFacet(
-                run={"runId": flowRunId},
-                job={"namespace": namespace, "name": flowName}
-            ),
-            "prefectDeployment": PrefectDeploymentRunFacet(
-                deployment_id=deploymentId,
-                created=deploymentCreated,
-                updated=deploymentUpdated,
-                name=deploymentName
-            ),
-            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                version=prefectVersion,
-                name="Prefect"
-            )
-        }
+
+        if deploymentId:
+            run_facets = {
+                "nominalTime": NominalTimeRunFacet(nominalStartTime=expectedEventTime),
+                "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                    version=prefectVersion, name="Prefect"
+                ),
+                "parentRun": ParentRunFacet(
+                    run={"runId": flowRunId},
+                    job={"namespace": namespace, "name": flowName},
+                ),
+                "prefectDeployment": PrefectDeploymentRunFacet(
+                    deploymentId=deploymentId,
+                    created=deploymentCreated,
+                    updated=deploymentUpdated,
+                    name=deploymentName,
+                ),
+            }
+        else:
+            run_facets = {
+                "nominalTime": NominalTimeRunFacet(nominalStartTime=expectedEventTime),
+                "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                    version=prefectVersion, name="Prefect"
+                ),
+                "parentRun": ParentRunFacet(
+                    run={"runId": flowRunId},
+                    job={"namespace": namespace, "name": flowName},
+                ),
+            }
+
         if jobDeps:
             upstream_jobs = [
                 job_dependencies_run.JobDependency(
                     job=job_dependencies_run.JobIdentifier(
-                        namespace=dep["namespace"],
-                        name=dep["name"]
+                        namespace=dep["namespace"], name=dep["name"]
                     )
-                ) for dep in jobDeps
+                )
+                for dep in jobDeps
             ]
             run_facets["jobDependencies"] = (
                 job_dependencies_run.JobDependenciesRunFacet(upstream=upstream_jobs)
@@ -148,30 +161,31 @@ class PrefectOpenLineageAdapter:
 
         job_facets = {
             "jobType": JobTypeJobFacet(
-                processingType="BATCH", 
-                integration="Prefect", 
-                jobType="TASK"
-        )}
+                processingType="BATCH", integration="Prefect", jobType="TASK"
+            )
+        }
 
-        inputs = [Dataset(namespace=dataset["uri"], name=dataset["table"]) for dataset in inputDatasets]
-        outputs = [Dataset(namespace=dataset["uri"], name=dataset["table"]) for dataset in outputDatasets]
+        inputs = [
+            Dataset(namespace=dataset["uri"], name=dataset["table"])
+            for dataset in inputDatasets
+        ]
+        outputs = [
+            Dataset(namespace=dataset["uri"], name=dataset["table"])
+            for dataset in outputDatasets
+        ]
 
         run_event = RunEvent(
             eventType=eventType,
             eventTime=eventTime.isoformat(),
             run=Run(runId, run_facets),
-            job=Job(
-                namespace,
-                taskName,
-                job_facets
-            ),
+            job=Job(namespace, taskName, job_facets),
             producer=PRODUCER,
             inputs=inputs,
-            outputs=outputs
+            outputs=outputs,
         )
 
         try:
             self.client.emit(run_event)
             logger.info("Emitted OpenLineage event successfully.")
-        except Exception as e:
+        except Exception:
             logger.exception("OpenLineage event not sent.")

@@ -1,33 +1,50 @@
-# Prefect OpenLineage
+# Openlineage Prefect
 
-The Prefect OpenLineage integration listens for task and flow events using Prefect Event Clients. Information from events is supplemented with metadata from the Prefect API.
+## Basic Configuration
 
-## Configuration
+At a minimum, define a namespace, Prefect API URL and transport consisting of a type, URL and endpoint. All three can be supplied using environment variables.
 
-`OPENLINEAGE_NAMESPACE` and `PREFECT_API_URL` env variables (strings) are both required. Optionally, use a deployment variable to pass the namespace.
+For example:
+
+```sh
+export OPENLINEAGE_NAMESPACE='prefect_test' &&
+export OPENLINEAGE__TRANSPORT__TYPE='http' &&
+export OPENLINEAGE__TRANSPORT__URL='http://lineageconsumer.com:5000' &&
+export OPENLINEAGE__TRANSPORT__ENDPOINT='/api/v1/lineage' &&
+export PREFECT_API_URL='http://prefecthost.com:4200/api'
+```
+
+For more details about OpenLineage transport options and how to configure them, consult the [OpenLineage Python Client Documentation](https://openlineage.io/docs/client/python/).
+
+## Execution
+
+Import the `openlineage_prefect` package and execute `collect_and_process_runs()` in its own process.
+
+For example:
+
+```py
+import openlineage_prefect
+from openlineage_prefect.listener import PrefectOpenlineageListener
+
+async def main():
+    await PrefectOpenLineageListener().collect_and_process_runs()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
 
 ## Datasets
 
-The integration uses Prefect Table Artifacts to add datasets to OpenLineage run events.
+The integration looks for datasets in Prefect Artifacts. To attach input and output datasets to job runs, use `create_table_artifact()` from the Artifact library. Provide a namespace, typically the dataset URI, and name to the adapter via an artifact's `table` and `description`, respectively. Distinguish the type of dataset by appending `_output` or `_input` to the description.
 
-Attach a dataset object to an Artifact using the `table` param of `create_table_artifact` from the Artifacts library. Import this in your flow like so: 
-
-```py
-from prefect.artifacts import create_table_artifact
-```
-
-Datasets are dictionaries requiring a `database_uri` and `table`:
+For example:
 
 ```py
-ol_dataset = [{"database_uri":"duckdb:///customers_db", "table":"customers"}]
-```
+ol_table = [{"database_uri":"duckdb:///customers_db", "table":"customers"}]
 
-The Artifact's description provides the dataset name and type to the integration. For input datasets, end the description with `_input`, and for output datasets use `_output`: 
-
-```py
 create_table_artifact(
-    key="ingest-query",
-    table=ol_dataset,
-    description="ol-dataset_input"
+    key="upstream-insert",
+    table=ol_table,
+    description="ol-dataset_output"
 )
 ```
