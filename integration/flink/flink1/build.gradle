@@ -46,7 +46,7 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.3'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.4'
     testImplementation "org.apache.flink:flink-java:$testedFlinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java:$testedFlinkVersion"
     testImplementation platform('org.junit:junit-bom:5.14.4')
