@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Literal, get_type_hints
 
+import pytest
 from openlineage.client.facet_v2 import lineage
 from openlineage.client.serde import Serde
 
@@ -109,3 +111,17 @@ def test_lineage_dataset_inputs_are_omitted_when_unspecified() -> None:
     assert "inputs" not in serialized_facet
     assert "inputs" not in serialized_entries[0]
     assert serialized_entries[1]["inputs"] == []
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: lineage.LineageJobEntry(type="JOB", namespace="jobs"),
+        lambda: lineage.LineageJobEntry(type="JOB", name="job"),
+        lambda: lineage.LineageJobInput(type="JOB", namespace="jobs"),
+        lambda: lineage.LineageJobInput(type="JOB", name="job"),
+    ],
+)
+def test_lineage_job_identity_fields_must_be_paired(factory: Callable[[], object]) -> None:
+    with pytest.raises(ValueError, match="required when"):
+        factory()

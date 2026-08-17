@@ -55,6 +55,7 @@ TEMPLATES_LOCATION = FILE_LOCATION / "templates"
 # Contains schema URLs and base IDs parsed from specification files
 SCHEMA_URLS: dict[str, str] = {}
 BASE_IDS: dict[str, str] = {}
+DEPENDENT_REQUIRED: dict[str, dict[str, list[str]]] = {}
 
 
 def deep_merge_dicts(dict1: dict[str, Any], dict2: dict[str, Any]) -> dict[str, Any]:
@@ -76,6 +77,19 @@ def deep_merge_dicts(dict1: dict[str, Any], dict2: dict[str, Any]) -> dict[str, 
     return merged
 
 
+def collect_dependent_required(schema: dict[str, Any]) -> dict[str, list[str]]:
+    """Collect dependentRequired constraints from an object and its inline allOf schemas."""
+    combined: dict[str, list[str]] = {}
+    schemas = [schema, *(item for item in schema.get("allOf", []) if isinstance(item, dict))]
+    for object_schema in schemas:
+        for property_name, dependencies in object_schema.get("dependentRequired", {}).items():
+            combined_dependencies = combined.setdefault(property_name, [])
+            combined_dependencies.extend(
+                dependency for dependency in dependencies if dependency not in combined_dependencies
+            )
+    return combined
+
+
 def parse_additional_data(spec: dict[str, Any], file_name: str) -> None:
     """Parse additional data from spec files.
 
@@ -83,13 +97,18 @@ def parse_additional_data(spec: dict[str, Any], file_name: str) -> None:
         * schema URLs
         * base IDs
 
-    Updates the module-level SCHEMA_URLS and BASE_IDS dictionaries
+    Updates the module-level SCHEMA_URLS, BASE_IDS, and DEPENDENT_REQUIRED dictionaries
     that can be imported by other modules.
     """
     base_id = spec["$id"]
-    for name, _ in spec["$defs"].items():
+    for name, definition in spec["$defs"].items():
         SCHEMA_URLS[name] = f"{base_id}#/$defs/{name}"
         BASE_IDS[file_name] = spec["$id"]
+        dependent_required = collect_dependent_required(definition)
+        if dependent_required:
+            DEPENDENT_REQUIRED[name] = dependent_required
+        else:
+            DEPENDENT_REQUIRED.pop(name, None)
 
 
 def load_specs(base_spec_location: pathlib.Path, facets_spec_location: pathlib.Path) -> list[pathlib.Path]:
@@ -117,6 +136,15 @@ def parse_and_generate(
 ) -> dict[str, Any]:
     """Parse and generate data models from a given specification."""
     temporary_locations = []
+
+    dependent_required_template_data = {
+        class_name: {"dependent_required": dependencies}
+        for class_name, dependencies in DEPENDENT_REQUIRED.items()
+    }
+    extra_template_data = deep_merge_dicts(
+        extra_template_data or {},
+        dependent_required_template_data,
+    )
 
     current_dir = pathlib.Path.cwd()
     with tempfile.TemporaryDirectory() as tmp:

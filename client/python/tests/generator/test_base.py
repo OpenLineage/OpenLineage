@@ -10,8 +10,10 @@ from unittest import mock
 import pytest
 from openlineage.client.generator.base import (
     BASE_IDS,
+    DEPENDENT_REQUIRED,
     SCHEMA_URLS,
     camel_to_snake,
+    collect_dependent_required,
     deep_merge_dicts,
     load_specs,
     parse_additional_data,
@@ -45,10 +47,17 @@ def test_parse_additional_data() -> None:
     # Reset global dictionaries
     SCHEMA_URLS.clear()
     BASE_IDS.clear()
+    DEPENDENT_REQUIRED.clear()
 
     spec = {
         "$id": "https://openlineage.io/spec/facets/1-0-0/TestFacet.json",
-        "$defs": {"TestFacet": {"type": "object"}, "AnotherFacet": {"type": "object"}},
+        "$defs": {
+            "TestFacet": {
+                "type": "object",
+                "dependentRequired": {"namespace": ["name"]},
+            },
+            "AnotherFacet": {"type": "object"},
+        },
     }
 
     parse_additional_data(spec, "TestFacet.json")
@@ -61,6 +70,22 @@ def test_parse_additional_data() -> None:
         == "https://openlineage.io/spec/facets/1-0-0/TestFacet.json#/$defs/AnotherFacet"
     )
     assert BASE_IDS["TestFacet.json"] == "https://openlineage.io/spec/facets/1-0-0/TestFacet.json"
+    assert DEPENDENT_REQUIRED == {"TestFacet": {"namespace": ["name"]}}
+
+
+def test_collect_dependent_required_merges_inline_all_of() -> None:
+    schema = {
+        "dependentRequired": {"namespace": ["name"]},
+        "allOf": [
+            {"$ref": "#/$defs/Base"},
+            {"dependentRequired": {"namespace": ["runId"], "name": ["namespace"]}},
+        ],
+    }
+
+    assert collect_dependent_required(schema) == {
+        "namespace": ["name", "runId"],
+        "name": ["namespace"],
+    }
 
 
 @pytest.fixture

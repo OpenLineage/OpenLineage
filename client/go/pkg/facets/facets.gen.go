@@ -1198,6 +1198,37 @@ type LineageJobEntry struct {
 	Type LineageJobEntryType `json:"type"`
 }
 
+// Validate checks the dependentRequired constraints for LineageJobEntry.
+func (v LineageJobEntry) Validate() error {
+	if v.Name != nil && v.Namespace == nil {
+		return fmt.Errorf("property \"namespace\" is required when \"name\" is set")
+	}
+	if v.Namespace != nil && v.Name == nil {
+		return fmt.Errorf("property \"name\" is required when \"namespace\" is set")
+	}
+	return nil
+}
+
+// MarshalJSON validates LineageJobEntry before serialization.
+func (v LineageJobEntry) MarshalJSON() ([]byte, error) {
+	if err := v.Validate(); err != nil {
+		return nil, err
+	}
+	type plain LineageJobEntry
+	return json.Marshal(plain(v))
+}
+
+// UnmarshalJSON validates LineageJobEntry after deserialization.
+func (v *LineageJobEntry) UnmarshalJSON(data []byte) error {
+	type plain LineageJobEntry
+	var decoded plain
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*v = LineageJobEntry(decoded)
+	return v.Validate()
+}
+
 // LineageJobInput — A source job that feeds data into a lineage target. Without namespace and name, the source is the event's own job.
 type LineageJobInput struct {
 	// The name of the source job. Omit together with namespace to refer to the event's own job.
@@ -1210,6 +1241,37 @@ type LineageJobInput struct {
 	Transformations []LineageTransformation `json:"transformations,omitempty"`
 	// The source entity type. Must be JOB.
 	Type LineageJobInputType `json:"type"`
+}
+
+// Validate checks the dependentRequired constraints for LineageJobInput.
+func (v LineageJobInput) Validate() error {
+	if v.Name != nil && v.Namespace == nil {
+		return fmt.Errorf("property \"namespace\" is required when \"name\" is set")
+	}
+	if v.Namespace != nil && v.Name == nil {
+		return fmt.Errorf("property \"name\" is required when \"namespace\" is set")
+	}
+	return nil
+}
+
+// MarshalJSON validates LineageJobInput before serialization.
+func (v LineageJobInput) MarshalJSON() ([]byte, error) {
+	if err := v.Validate(); err != nil {
+		return nil, err
+	}
+	type plain LineageJobInput
+	return json.Marshal(plain(v))
+}
+
+// UnmarshalJSON validates LineageJobInput after deserialization.
+func (v *LineageJobInput) UnmarshalJSON(data []byte) error {
+	type plain LineageJobInput
+	var decoded plain
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*v = LineageJobInput(decoded)
+	return v.Validate()
 }
 
 // LineageTransformation — A transformation applied to source data in a lineage relationship.

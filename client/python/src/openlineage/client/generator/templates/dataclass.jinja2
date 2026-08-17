@@ -198,4 +198,17 @@ class {{ class_name }}:
 {%- for field in fields -%}
     {{ validators.validator(field.name, field.type_hint, field.required) }}
 {%- endfor -%}
+{#- add object-level dependentRequired validators -#}
+{%- for property, dependencies in (dependent_required | default({}) | dictsort) %}
+    @{{ property }}.validator
+    def {{ property | lower }}_dependent_required_check(
+        self, attribute: Any, value: Any
+    ) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        missing = [name for name in {{ dependencies }} if getattr(self, name) is None]
+        if missing:
+            msg = f"{', '.join(missing)} required when {{ property }} is set"
+            raise ValueError(msg)
+{%- endfor -%}
 {%- endif -%}

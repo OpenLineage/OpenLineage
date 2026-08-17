@@ -559,6 +559,23 @@ public class TypeResolver {
       return additionalPropertiesType;
     }
 
+    public Map<String, List<String>> getDependentRequired() {
+      Map<String, List<String>> combined = new LinkedHashMap<>();
+      for (ObjectType objectType : objectTypes) {
+        objectType
+            .getDependentRequired()
+            .forEach(
+                (property, dependencies) -> {
+                  List<String> combinedDependencies =
+                      combined.computeIfAbsent(property, ignored -> new ArrayList<>());
+                  dependencies.stream()
+                      .filter(dependency -> !combinedDependencies.contains(dependency))
+                      .forEach(combinedDependencies::add);
+                });
+      }
+      return combined;
+    }
+
     public void setAdditionalProperties(boolean additionalProperties) {
       this.additionalProperties = additionalProperties;
     }
