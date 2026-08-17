@@ -197,8 +197,8 @@ class DbtArtifactProcessor:
         self.manifest_version = None
         self.adapter_type: Adapter | None = None
         # Set for adapters that can provide a stable catalog identifier in addition to
-        # the primary dataset namespace. For Athena, this is populated from the dbt
-        # profile's account ID or assume-role ARN; no AWS API call is made.
+        # the primary dataset namespace. For Athena, this is populated from the supported
+        # assume-role ARN or a best-effort STS lookup; lookup failures leave it unset.
         self.dataset_symlink_namespace: str | None = None
         # Populated by parse(); retained so manifest-declared exposures can be indexed
         # and attached to the datasets they depend on.
@@ -875,10 +875,10 @@ class DbtArtifactProcessor:
 
         dbt-athena identifies the catalog and Glue database separately in its
         manifest: ``database`` is the catalog (usually ``awsdatacatalog``) and
-        ``schema`` is the Glue database. The AWS account is only available to
-        this integration when dbt exposes it in the profile, either directly or
-        in an assume-role ARN. In all other cases the existing Athena identifier
-        is retained and no symlink is emitted.
+        ``schema`` is the Glue database. The AWS account is taken from the
+        supported ``assume_role_arn`` when available, or resolved with a
+        best-effort STS lookup. If neither path succeeds, the existing Athena
+        identifier is retained and no symlink is emitted.
         """
         if self.adapter_type != Adapter.ATHENA or not self.dataset_symlink_namespace:
             return None
