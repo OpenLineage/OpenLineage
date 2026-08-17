@@ -1072,18 +1072,13 @@ class DbtArtifactProcessor:
 
     @staticmethod
     def _extract_profile_aws_account_id(profile: dict) -> str | None:
-        """Extract an AWS account ID from values already present in a dbt profile."""
-        account_id = profile.get("account_id")
-        if account_id is not None and str(account_id).strip():
-            return str(account_id).strip()
-
-        for key in ("assume_role_arn", "role_arn"):
-            role_arn = profile.get(key)
-            if not isinstance(role_arn, str):
-                continue
-            parts = role_arn.split(":")
-            if len(parts) > 4 and parts[0] == "arn" and parts[2] == "iam" and parts[4]:
-                return parts[4]
+        """Extract the account ID from dbt-athena's supported role ARN setting."""
+        role_arn = profile.get("assume_role_arn")
+        if not isinstance(role_arn, str):
+            return None
+        parts = role_arn.split(":")
+        if len(parts) > 4 and parts[0] == "arn" and parts[2] == "iam" and parts[4]:
+            return parts[4]
         return None
 
     def _lookup_aws_account_id(self, profile: dict) -> str | None:
@@ -1114,7 +1109,7 @@ class DbtArtifactProcessor:
                 profile_name=profile.get("aws_profile_name"),
             )
 
-            role_arn = profile.get("assume_role_arn") or profile.get("role_arn")
+            role_arn = profile.get("assume_role_arn")
             if role_arn:
                 assume_role_kwargs = {
                     "RoleArn": role_arn,
@@ -1149,9 +1144,9 @@ class DbtArtifactProcessor:
         if self.adapter_type != Adapter.ATHENA:
             return None
 
-        # Avoid an AWS call when dbt already exposes the catalog account in the
-        # profile, but fall back to the effective credential identity for the
-        # common aws_profile_name/default credential-chain case.
+        # Avoid an AWS call when the supported assume_role_arn already exposes
+        # the target account, but fall back to the effective credential identity
+        # for the common aws_profile_name/default credential-chain case.
         account_id = self._extract_profile_aws_account_id(profile) or self._lookup_aws_account_id(profile)
         if not account_id:
             return None

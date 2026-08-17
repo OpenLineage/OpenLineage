@@ -195,15 +195,13 @@ def test_spark_namespace_separates_the_port(dbt_artifact_processor, profile, exp
 @pytest.mark.parametrize(
     "profile",
     [
-        {"region_name": "us-east-1", "account_id": "123456789012"},
         {
             "region_name": "us-east-1",
             "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena",
         },
-        {"region_name": "us-east-1", "role_arn": "arn:aws:iam::123456789012:role/dbt-athena"},
     ],
 )
-def test_athena_dataset_symlink_uses_profile_account(dbt_artifact_processor, profile):
+def test_athena_dataset_symlink_uses_assume_role_account(dbt_artifact_processor, profile):
     dbt_artifact_processor.adapter_type = Adapter.ATHENA
     dbt_artifact_processor.extract_dataset_namespace(profile)
 
