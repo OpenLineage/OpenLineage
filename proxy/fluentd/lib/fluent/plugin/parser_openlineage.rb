@@ -111,15 +111,29 @@ module Fluent
             )
 
             facet_schema["properties"].each { |property, ref|
-              facet_name =  ref["$ref"]&.gsub("#/$defs/", "")
-              parents = []
-              facet_schema["$defs"][facet_name]["allOf"]&.each { |definition|
-                unless definition["$ref"].nil?
-                  parents.append(definition["$ref"].gsub("#/$defs/", ""))
-                end
-              }
-              parents.each {|parent|
-              add_ref_as_parent_property(schema_json, parent, facet_name, property)
+              # A facet property may be a direct $ref to a definition or a
+              # union (anyOf/oneOf) of $refs, e.g. LineageFacet's "lineage"
+              # property which can resolve to either a dataset or a job facet.
+              facet_names = []
+              if ref["$ref"]
+                facet_names = [ref["$ref"].gsub("#/$defs/", "")]
+              elsif ref["anyOf"] || ref["oneOf"]
+                facet_names = (ref["anyOf"] || ref["oneOf"]).map { |r|
+                  r["$ref"]&.gsub("#/$defs/", "")
+                }.compact
+              end
+
+              facet_defs = facet_schema["$defs"] || {}
+              facet_names.each { |facet_name|
+                parents = []
+                facet_defs[facet_name]&.fetch("allOf", [])&.each { |definition|
+                  unless definition["$ref"].nil?
+                    parents.append(definition["$ref"].gsub("#/$defs/", ""))
+                  end
+                }
+                parents.each {|parent|
+                  add_ref_as_parent_property(schema_json, parent, facet_name, property)
+                }
               }
             }
             # include facets' definitions within schema

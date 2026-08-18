@@ -8,6 +8,7 @@ package io.openlineage.client;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,6 +67,17 @@ class GeneratorTest {
   }
 
   @Test
+  void generatesDependentRequiredValidation() throws Exception {
+    String source = generate();
+
+    assertTrue(source.contains("if (this.namespace != null && this.name == null)"));
+    assertTrue(
+        source.contains(
+            "property \\\"name\\\" is required when \\\"namespace\\\" is set"));
+    assertTrue(source.contains("if (this.name != null && this.namespace == null)"));
+  }
+
+  @Test
   void generatedUnionDeserializesToItsConcreteVariant() throws Exception {
     generate();
     Path generatedSource = outputDirectory.resolve("OpenLineage.java");
@@ -97,6 +109,14 @@ class GeneratorTest {
               .readValue("{\"type\":\"DATASET\",\"namespace\":\"warehouse\"}", unionType);
 
       assertEquals("LineageDatasetEntry", value.getClass().getSimpleName());
+
+      Class<?> inputUnionType =
+          classLoader.loadClass("io.openlineage.client.OpenLineage$LineageInput");
+      assertThrows(
+          com.fasterxml.jackson.core.JsonProcessingException.class,
+          () ->
+              new ObjectMapper()
+                  .readValue("{\"type\":\"JOB\",\"name\":\"partial\"}", inputUnionType));
     }
   }
 

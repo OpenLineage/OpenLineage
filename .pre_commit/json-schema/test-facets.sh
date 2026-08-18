@@ -7,6 +7,10 @@
 
 set -e
 
+# See check-spec.sh: resolve the absolute openlineage.io $refs from the in-repo
+# published mirror instead of over the network.
+SPEC_MIRROR="https://openlineage.io/spec/=website/static/spec/"
+
 while [ "$1" ]; do
   event_type=$(basename "$1" .json)
   shopt -s nullglob
@@ -14,7 +18,7 @@ while [ "$1" ]; do
   if [ ${#test_events[@]} -gt 0 ]; then
     for event in "${test_events[@]}"; do
       echo "Validating ${event} against $1"
-      jv "$1" "${event}" --assert-format
+      jv --map "$SPEC_MIRROR" "$1" "${event}" --assert-format
     done
   fi
   shift

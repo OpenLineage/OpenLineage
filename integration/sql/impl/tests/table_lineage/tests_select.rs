@@ -77,6 +77,22 @@ fn select_join() {
 }
 
 #[test]
+fn select_parenthesized_join() {
+    for sql in [
+        "SELECT * FROM (foo JOIN bar ON foo.id = bar.id)",
+        "SELECT * FROM (foo JOIN bar ON foo.id = bar.id) AS joined",
+    ] {
+        assert_eq!(
+            test_sql(sql).unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["bar", "foo"]),
+                out_tables: vec![]
+            }
+        )
+    }
+}
+
+#[test]
 fn select_join_condition_subquery() {
     assert_eq!(
         test_sql(

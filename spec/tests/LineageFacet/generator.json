@@ -1,0 +1,30 @@
+{
+  "lineage": {
+    "_producer": "https://example.com/extract",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
+    "entries": [
+      {
+        "namespace": "postgresql://warehouse:5432",
+        "name": "public.extracted_data",
+        "type": "DATASET",
+        "inputs": [],
+        "fields": {
+          "total": {
+            "inputs": [
+              {
+                "type": "JOB",
+                "transformations": [
+                  {
+                    "type": "DIRECT",
+                    "subtype": "AGGREGATION",
+                    "description": "sum()"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
