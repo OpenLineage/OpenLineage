@@ -148,6 +148,20 @@ type LifecycleStateChangeDatasetFacet struct {
 	PreviousIdentifier *LifecycleStateChangeDatasetFacetPreviousIdentifier `json:"previousIdentifier,omitempty"`
 }
 
+// Explicit lineage for this dataset. Describes which source entities feed into it, at entity and/or field granularity.
+type LineageDatasetFacet struct {
+	// URI identifying the producer of this metadata.
+	Producer string `json:"_producer"`
+	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool `json:"_deleted,omitempty"`
+	// Field-level lineage. Maps target field names to their source inputs.
+	Fields map[string]LineageFieldEntry `json:"fields,omitempty"`
+	// Dataset-level source inputs. A source with a field represents a dataset-wide operation where that field affects the entire target dataset.
+	Inputs []RawLineageInput `json:"inputs,omitempty"`
+}
+
 // OwnershipDatasetFacet
 type OwnershipDatasetFacet struct {
 	// URI identifying the producer of this metadata.
@@ -342,6 +356,18 @@ type JobTypeJobFacet struct {
 	JobType *string `json:"jobType,omitempty"`
 	// Job processing type: BATCH (finite jobs with clear start/end), STREAMING (continuous jobs processing data streams), or SERVICE (continuous long-running services). BATCH jobs are finite and emit START/COMPLETE/FAIL/ABORT events. STREAMING and SERVICE jobs are continuous with no natural completion point.
 	ProcessingType string `json:"processingType"`
+}
+
+// Explicit lineage for a job. On a JobEvent it is the job's declared lineage; on a RunEvent it is lineage observed during that run.
+type LineageJobFacet struct {
+	// URI identifying the producer of this metadata.
+	Producer string `json:"_producer"`
+	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool `json:"_deleted,omitempty"`
+	// Lineage entries describing target entities and the source entities that feed them.
+	Entries []RawLineageEntry `json:"entries"`
 }
 
 // OwnershipJobFacet
@@ -645,6 +671,34 @@ const (
 	LifecycleStateChangeDatasetFacetLifecycleStateChangeTruncate  LifecycleStateChangeDatasetFacetLifecycleStateChange = "TRUNCATE"
 )
 
+// LineageDatasetEntryType is an enumerated string type.
+type LineageDatasetEntryType string
+
+const (
+	LineageDatasetEntryTypeDataset LineageDatasetEntryType = "DATASET"
+)
+
+// LineageDatasetInputType is an enumerated string type.
+type LineageDatasetInputType string
+
+const (
+	LineageDatasetInputTypeDataset LineageDatasetInputType = "DATASET"
+)
+
+// LineageJobEntryType is an enumerated string type.
+type LineageJobEntryType string
+
+const (
+	LineageJobEntryTypeJob LineageJobEntryType = "JOB"
+)
+
+// LineageJobInputType is an enumerated string type.
+type LineageJobInputType string
+
+const (
+	LineageJobInputTypeJob LineageJobInputType = "JOB"
+)
+
 // BaseSubsetCondition — The condition to define a subset
 type BaseSubsetCondition interface {
 	isBaseSubsetCondition()
@@ -743,6 +797,68 @@ func (r RawCompareSubsetConditionRight) MarshalJSON() ([]byte, error) { return j
 
 func (FieldBaseCompareExpression) isCompareSubsetConditionRight() {}
 func (LiteralCompareExpression) isCompareSubsetConditionRight()   {}
+
+// LineageEntry — A target dataset or job in an explicit lineage relationship.
+type LineageEntry interface {
+	isLineageEntry()
+}
+
+// RawLineageEntry wraps LineageEntry for JSON marshaling/unmarshaling with type dispatch.
+type RawLineageEntry struct{ V LineageEntry }
+
+func (r *RawLineageEntry) UnmarshalJSON(data []byte) error {
+	var peek struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &peek); err != nil {
+		return err
+	}
+	switch peek.Type {
+	case "DATASET":
+		r.V = new(LineageDatasetEntry)
+	case "JOB":
+		r.V = new(LineageJobEntry)
+	default:
+		return fmt.Errorf("unknown LineageEntry type: %q", peek.Type)
+	}
+	return json.Unmarshal(data, r.V)
+}
+
+func (r RawLineageEntry) MarshalJSON() ([]byte, error) { return json.Marshal(r.V) }
+
+func (LineageDatasetEntry) isLineageEntry() {}
+func (LineageJobEntry) isLineageEntry()     {}
+
+// LineageInput — A source dataset or job in an explicit lineage relationship.
+type LineageInput interface {
+	isLineageInput()
+}
+
+// RawLineageInput wraps LineageInput for JSON marshaling/unmarshaling with type dispatch.
+type RawLineageInput struct{ V LineageInput }
+
+func (r *RawLineageInput) UnmarshalJSON(data []byte) error {
+	var peek struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &peek); err != nil {
+		return err
+	}
+	switch peek.Type {
+	case "DATASET":
+		r.V = new(LineageDatasetInput)
+	case "JOB":
+		r.V = new(LineageJobInput)
+	default:
+		return fmt.Errorf("unknown LineageInput type: %q", peek.Type)
+	}
+	return json.Unmarshal(data, r.V)
+}
+
+func (r RawLineageInput) MarshalJSON() ([]byte, error) { return json.Marshal(r.V) }
+
+func (LineageDatasetInput) isLineageInput() {}
+func (LineageJobInput) isLineageInput()     {}
 
 // BinarySubsetCondition
 type BinarySubsetCondition struct {
@@ -1032,6 +1148,142 @@ type JobTypeJobFacetEmissionPattern struct {
 type LifecycleStateChangeDatasetFacetPreviousIdentifier struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
+}
+
+// LineageDatasetEntry — Describes data flowing into a target dataset from source entities, at entity and/or field granularity.
+type LineageDatasetEntry struct {
+	// Field-level lineage. Maps target field names to their source inputs.
+	Fields map[string]LineageFieldEntry `json:"fields,omitempty"`
+	// Entity-level inputs feeding this target dataset. An empty array explicitly means that the target has no tracked upstream source.
+	Inputs []RawLineageInput `json:"inputs,omitempty"`
+	// The name of the target dataset.
+	Name string `json:"name"`
+	// The namespace of the target dataset.
+	Namespace string `json:"namespace"`
+	// The target entity type. Must be DATASET.
+	Type LineageDatasetEntryType `json:"type"`
+}
+
+// LineageDatasetInput — A source dataset that feeds data into a lineage target.
+type LineageDatasetInput struct {
+	// The source field. At entity level it represents a dataset-wide dependency; at field level it identifies the source field.
+	Field *string `json:"field,omitempty"`
+	// The name of the source dataset.
+	Name string `json:"name"`
+	// The namespace of the source dataset.
+	Namespace string `json:"namespace"`
+	// Transformations applied to the source data.
+	Transformations []LineageTransformation `json:"transformations,omitempty"`
+	// The source entity type. Must be DATASET.
+	Type LineageDatasetInputType `json:"type"`
+}
+
+// LineageFieldEntry — Field-level lineage for a single target field.
+type LineageFieldEntry struct {
+	// Source entities and/or fields that feed into this target field.
+	Inputs []RawLineageInput `json:"inputs"`
+}
+
+// LineageJobEntry — Describes data flowing into a target job. Without namespace and name, the target is the event's own job.
+type LineageJobEntry struct {
+	// Source inputs feeding this target job.
+	Inputs []RawLineageInput `json:"inputs,omitempty"`
+	// The name of the target job. Omit together with namespace to refer to the event's own job.
+	Name *string `json:"name,omitempty"`
+	// The namespace of the target job. Omit together with name to refer to the event's own job.
+	Namespace *string `json:"namespace,omitempty"`
+	// The target job run when the relationship is tied to a specific execution.
+	RunID *string `json:"runId,omitempty"`
+	// The target entity type. Must be JOB.
+	Type LineageJobEntryType `json:"type"`
+}
+
+// Validate checks the dependentRequired constraints for LineageJobEntry.
+func (v LineageJobEntry) Validate() error {
+	if v.Name != nil && v.Namespace == nil {
+		return fmt.Errorf("property \"namespace\" is required when \"name\" is set")
+	}
+	if v.Namespace != nil && v.Name == nil {
+		return fmt.Errorf("property \"name\" is required when \"namespace\" is set")
+	}
+	return nil
+}
+
+// MarshalJSON validates LineageJobEntry before serialization.
+func (v LineageJobEntry) MarshalJSON() ([]byte, error) {
+	if err := v.Validate(); err != nil {
+		return nil, err
+	}
+	type plain LineageJobEntry
+	return json.Marshal(plain(v))
+}
+
+// UnmarshalJSON validates LineageJobEntry after deserialization.
+func (v *LineageJobEntry) UnmarshalJSON(data []byte) error {
+	type plain LineageJobEntry
+	var decoded plain
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*v = LineageJobEntry(decoded)
+	return v.Validate()
+}
+
+// LineageJobInput — A source job that feeds data into a lineage target. Without namespace and name, the source is the event's own job.
+type LineageJobInput struct {
+	// The name of the source job. Omit together with namespace to refer to the event's own job.
+	Name *string `json:"name,omitempty"`
+	// The namespace of the source job. Omit together with name to refer to the event's own job.
+	Namespace *string `json:"namespace,omitempty"`
+	// The source job run when the relationship is tied to a specific execution.
+	RunID *string `json:"runId,omitempty"`
+	// Transformations applied by the source job to produce the data.
+	Transformations []LineageTransformation `json:"transformations,omitempty"`
+	// The source entity type. Must be JOB.
+	Type LineageJobInputType `json:"type"`
+}
+
+// Validate checks the dependentRequired constraints for LineageJobInput.
+func (v LineageJobInput) Validate() error {
+	if v.Name != nil && v.Namespace == nil {
+		return fmt.Errorf("property \"namespace\" is required when \"name\" is set")
+	}
+	if v.Namespace != nil && v.Name == nil {
+		return fmt.Errorf("property \"name\" is required when \"namespace\" is set")
+	}
+	return nil
+}
+
+// MarshalJSON validates LineageJobInput before serialization.
+func (v LineageJobInput) MarshalJSON() ([]byte, error) {
+	if err := v.Validate(); err != nil {
+		return nil, err
+	}
+	type plain LineageJobInput
+	return json.Marshal(plain(v))
+}
+
+// UnmarshalJSON validates LineageJobInput after deserialization.
+func (v *LineageJobInput) UnmarshalJSON(data []byte) error {
+	type plain LineageJobInput
+	var decoded plain
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*v = LineageJobInput(decoded)
+	return v.Validate()
+}
+
+// LineageTransformation — A transformation applied to source data in a lineage relationship.
+type LineageTransformation struct {
+	// A string representation of the transformation.
+	Description *string `json:"description,omitempty"`
+	// Whether the transformation masks the source data.
+	Masking *bool `json:"masking,omitempty"`
+	// The transformation subtype, such as IDENTITY, AGGREGATION, FILTER, JOIN, GROUP_BY, WINDOW, SORT, or CONDITIONAL.
+	Subtype *string `json:"subtype,omitempty"`
+	// The transformation type, such as DIRECT or INDIRECT.
+	Type string `json:"type"`
 }
 
 // LiteralCompareExpression

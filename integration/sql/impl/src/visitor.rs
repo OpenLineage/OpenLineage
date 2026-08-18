@@ -139,6 +139,15 @@ impl Visit for TableFactor {
                 // treated the same here
                 Ok(())
             }
+            TableFactor::NestedJoin {
+                table_with_joins, ..
+            } => {
+                table_with_joins.relation.visit(context)?;
+                for join in &table_with_joins.joins {
+                    join.visit(context)?;
+                }
+                Ok(())
+            }
             _ => Err(anyhow!(
                 "TableFactor other than table or subquery not implemented: {self}"
             )),

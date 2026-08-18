@@ -62,8 +62,9 @@ func buildObject(
 
 	if t == nil {
 		return &ObjectDef{
-			TypeName: suggestedName,
-			Required: map[string]bool{},
+			TypeName:          suggestedName,
+			Required:          map[string]bool{},
+			DependentRequired: map[string][]string{},
 		}
 	}
 
@@ -79,10 +80,11 @@ func buildObject(
 	}
 
 	obj := &ObjectDef{
-		TypeName:    typeName,
-		Description: t.Description,
-		Fields:      nil,
-		Required:    map[string]bool{},
+		TypeName:          typeName,
+		Description:       t.Description,
+		Fields:            nil,
+		Required:          map[string]bool{},
+		DependentRequired: map[string][]string{},
 	}
 
 	// ✅ Register early to break cycles
@@ -98,6 +100,7 @@ func buildObject(
 		for _, name := range o.Required {
 			obj.Required[name] = true
 		}
+		mergeDependentRequired(obj.DependentRequired, o.DependentRequired)
 	}
 
 	// 2) Properties — from all schemas (required + optional), first definition wins
@@ -143,6 +146,33 @@ func buildObject(
 	})
 
 	return obj
+}
+
+func mergeDependentRequired(target, source map[string][]string) {
+	properties := make([]string, 0, len(source))
+	for property := range source {
+		properties = append(properties, property)
+	}
+	sort.Strings(properties)
+
+	for _, property := range properties {
+		dependencies := append([]string(nil), source[property]...)
+		sort.Strings(dependencies)
+		for _, dependency := range dependencies {
+			if !contains(target[property], dependency) {
+				target[property] = append(target[property], dependency)
+			}
+		}
+	}
+}
+
+func contains(values []string, value string) bool {
+	for _, candidate := range values {
+		if candidate == value {
+			return true
+		}
+	}
+	return false
 }
 
 // -----------------------------------------------------------------------------
@@ -302,7 +332,7 @@ func buildUnion(ctx *buildCtx, t *schemas.Type, r *resolve.Resolver, suggestedNa
 		}
 	}
 
-	// Detect a common const-valued discriminator property across all variants.
+	// Detect a common discriminator property across all variants.
 	u.DiscriminatorField, _ = detectDiscriminatorField(variantSchemas, r)
 
 	// Collect discriminator values in variant order.
@@ -310,10 +340,8 @@ func buildUnion(ctx *buildCtx, t *schemas.Type, r *resolve.Resolver, suggestedNa
 	if u.DiscriminatorField != "" {
 		for i, vs := range variantSchemas {
 			if p, ok := flatProperties(vs, r)[u.DiscriminatorField]; ok {
-				if res := r.Resolve(p); res != nil {
-					if s, ok := res.Const.(string); ok {
-						discValues[i] = s
-					}
+				if value, ok := discriminatorValue(p, r); ok {
+					discValues[i] = value
 				}
 			}
 		}
@@ -335,9 +363,9 @@ func buildUnion(ctx *buildCtx, t *schemas.Type, r *resolve.Resolver, suggestedNa
 	return u
 }
 
-// detectDiscriminatorField returns the property name whose value is a const
-// string in every variant (i.e. a discriminator tag like "type":"binary").
-// Searches each variant's direct properties and those visible through allOf.
+// detectDiscriminatorField returns the property name whose value is a const string
+// or singleton string enum in every variant. It searches each variant's direct
+// properties and those visible through allOf.
 func detectDiscriminatorField(variants []*schemas.Type, r *resolve.Resolver) (field string, values []string) {
 	if len(variants) == 0 {
 		return "", nil
@@ -352,16 +380,12 @@ func detectDiscriminatorField(variants []*schemas.Type, r *resolve.Resolver) (fi
 
 	for _, propName := range propNames {
 		propSchema := firstProps[propName]
-		res := r.Resolve(propSchema)
-		if res == nil || res.Const == nil {
-			continue
-		}
-		firstConst, ok := res.Const.(string)
+		firstValue, ok := discriminatorValue(propSchema, r)
 		if !ok {
 			continue
 		}
 
-		vals := []string{firstConst}
+		vals := []string{firstValue}
 		allHave := true
 		for _, v := range variants[1:] {
 			vProp, ok := flatProperties(v, r)[propName]
@@ -369,23 +393,33 @@ func detectDiscriminatorField(variants []*schemas.Type, r *resolve.Resolver) (fi
 				allHave = false
 				break
 			}
-			vRes := r.Resolve(vProp)
-			if vRes == nil || vRes.Const == nil {
-				allHave = false
-				break
-			}
-			vConst, ok := vRes.Const.(string)
+			vValue, ok := discriminatorValue(vProp, r)
 			if !ok {
 				allHave = false
 				break
 			}
-			vals = append(vals, vConst)
+			vals = append(vals, vValue)
 		}
 		if allHave {
 			return propName, vals
 		}
 	}
 	return "", nil
+}
+
+func discriminatorValue(t *schemas.Type, r *resolve.Resolver) (string, bool) {
+	resolved := r.Resolve(t)
+	if resolved == nil {
+		return "", false
+	}
+	if value, ok := resolved.Const.(string); ok {
+		return value, true
+	}
+	if len(resolved.Enum) == 1 {
+		value, ok := resolved.Enum[0].(string)
+		return value, ok
+	}
+	return "", false
 }
 
 // flatProperties collects all properties visible on a schema: its own Properties
