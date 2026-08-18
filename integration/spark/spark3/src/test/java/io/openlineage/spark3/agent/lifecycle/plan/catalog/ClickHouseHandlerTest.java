@@ -89,6 +89,55 @@ class ClickHouseHandlerTest {
   }
 
   @Test
+  void testGetDatasetIdentifierWithNativeProtocol() {
+    when(conf.get("spark.sql.catalog.clickhouse.protocol", "http")).thenReturn("native");
+    when(conf.get("spark.sql.catalog.clickhouse.host", "localhost")).thenReturn("ch.example.com");
+    when(conf.get("spark.sql.catalog.clickhouse.tcp_port", "9000")).thenReturn("9440");
+
+    DatasetIdentifier identifier =
+        handler.getDatasetIdentifier(
+            session,
+            catalog,
+            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Collections.emptyMap());
+
+    assertThat(identifier)
+        .hasFieldOrPropertyWithValue("namespace", "clickhouse://ch.example.com:9440")
+        .hasFieldOrPropertyWithValue("name", "mydb.mytable");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithTcpProtocolDefaults() {
+    when(conf.get(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
+    when(conf.get("spark.sql.catalog.clickhouse.protocol", "http")).thenReturn("TCP");
+
+    DatasetIdentifier identifier =
+        handler.getDatasetIdentifier(
+            session,
+            catalog,
+            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Collections.emptyMap());
+
+    assertThat(identifier.getNamespace()).isEqualTo("clickhouse://localhost:9000");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithHttpProtocolPrefix() {
+    when(conf.get(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
+    when(conf.get("spark.sql.catalog.clickhouse.protocol", "http")).thenReturn("http");
+    when(conf.get("spark.sql.catalog.clickhouse.host", "localhost")).thenReturn("ch.example.com");
+
+    DatasetIdentifier identifier =
+        handler.getDatasetIdentifier(
+            session,
+            catalog,
+            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Collections.emptyMap());
+
+    assertThat(identifier.getNamespace()).isEqualTo("clickhouse://ch.example.com:8123");
+  }
+
+  @Test
   void testGetDatasetIdentifierDefaults() {
     when(conf.get(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
 
@@ -105,16 +154,44 @@ class ClickHouseHandlerTest {
   @Test
   void testGetCatalogDatasetFacet() {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    ClickHouseCatalog namedCatalog = new ClickHouseCatalog();
+    namedCatalog.initialize("prod_ch", new CaseInsensitiveStringMap(Collections.emptyMap()));
 
     Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
-        handler.getCatalogDatasetFacet(catalog, Collections.emptyMap());
+        handler.getCatalogDatasetFacet(namedCatalog, Collections.emptyMap());
 
     assertThat(catalogDatasetFacet).isPresent();
     OpenLineage.CatalogDatasetFacet facet =
         catalogDatasetFacet.orElseThrow(AssertionError::new).getCatalogDatasetFacet();
-    assertThat(facet.getName()).isEqualTo(CLICKHOUSE);
+    assertThat(facet.getName()).isEqualTo("prod_ch");
     assertThat(facet.getFramework()).isEqualTo(CLICKHOUSE);
     assertThat(facet.getType()).isEqualTo(CLICKHOUSE);
     assertThat(facet.getSource()).isEqualTo("spark");
+  }
+
+  @Test
+  void testGetStorageDatasetFacet() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+
+    Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =
+        handler.getStorageDatasetFacet(Collections.singletonMap("engine", "MergeTree"));
+
+    assertThat(storageDatasetFacet).isPresent();
+    OpenLineage.StorageDatasetFacet facet = storageDatasetFacet.orElseThrow(AssertionError::new);
+    assertThat(facet.getStorageLayer()).isEqualTo(CLICKHOUSE);
+    assertThat(facet.getFileFormat()).isEqualTo("MergeTree");
+  }
+
+  @Test
+  void testGetStorageDatasetFacetWithoutEngine() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+
+    Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =
+        handler.getStorageDatasetFacet(Collections.emptyMap());
+
+    assertThat(storageDatasetFacet).isPresent();
+    OpenLineage.StorageDatasetFacet facet = storageDatasetFacet.orElseThrow(AssertionError::new);
+    assertThat(facet.getStorageLayer()).isEqualTo(CLICKHOUSE);
+    assertThat(facet.getFileFormat()).isEqualTo("unknown");
   }
 }

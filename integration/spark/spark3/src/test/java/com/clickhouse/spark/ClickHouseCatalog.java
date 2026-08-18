@@ -14,6 +14,13 @@ import org.apache.spark.sql.connector.expressions.Transform;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.util.CaseInsensitiveStringMap;
 
+/**
+ * Minimal stand-in for the connector's {@code com.clickhouse.spark.ClickHouseCatalog}, which is
+ * deliberately not a test dependency of this project. The fully-qualified name must stay identical
+ * to the real catalog, because {@code ClickHouseHandler#isClass} matches on the class name. Should
+ * the real connector ever be added to the test classpath, this stub would shadow it and must be
+ * removed.
+ */
 public class ClickHouseCatalog implements TableCatalog {
   private String catalogName;
 
