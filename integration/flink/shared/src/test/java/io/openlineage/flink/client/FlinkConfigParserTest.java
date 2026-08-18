@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.io.Resources;
+import io.openlineage.client.LineageCompatibility;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.flink.config.FlinkConfigParser;
 import io.openlineage.flink.config.FlinkDatasetConfig;
@@ -38,6 +39,8 @@ class FlinkConfigParserTest {
       ConfigOptions.key("openlineage.transport.headers.testHeader").stringType().noDefaultValue();
   ConfigOption testCompressionOption =
       ConfigOptions.key("openlineage.transport.compression").stringType().noDefaultValue();
+  ConfigOption lineageCompatibilityOption =
+      ConfigOptions.key("openlineage.lineage.compatibility").stringType().noDefaultValue();
 
   ConfigOption facetXDisabled =
       ConfigOptions.key("openlineage.facets.facetX.disabled").booleanType().noDefaultValue();
@@ -176,5 +179,14 @@ class FlinkConfigParserTest {
     configuration.set(disableCheckpointTrackingOption, true);
     config = FlinkConfigParser.parse(configuration);
     assertThat(config.getDisableCheckpointTracking()).isTrue();
+  }
+
+  @Test
+  void testLineageCompatibility() {
+    configuration.set(lineageCompatibilityOption, "modern");
+
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+
+    assertThat(config.getLineageConfig().getCompatibility()).isEqualTo(LineageCompatibility.MODERN);
   }
 }
