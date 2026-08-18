@@ -329,6 +329,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       eventType = COMPLETE;
     }
     emittedOnJobEnd = true;
+    updateStatus(eventType);
 
     RunEvent event =
         runEventBuilder.buildRun(
