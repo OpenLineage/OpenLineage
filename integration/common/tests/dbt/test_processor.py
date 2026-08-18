@@ -169,8 +169,7 @@ def test_fabricspark_lakehouse_namespace(dbt_artifact_processor):
     )
 
     assert dbt_artifact_processor.dataset_namespace == (
-        "fabric-lakehouse://11111111-2222-3333-4444-555555555555"
-        "/66666666-7777-8888-9999-000000000000"
+        "fabric-lakehouse://11111111-2222-3333-4444-555555555555/66666666-7777-8888-9999-000000000000"
     )
 
 
