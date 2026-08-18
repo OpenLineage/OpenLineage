@@ -27,6 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ClickHouseHandlerTest {
+  private static final String CLICKHOUSE = "clickhouse";
+
   private final OpenLineageContext context = mock(OpenLineageContext.class);
   private final ClickHouseHandler handler = new ClickHouseHandler(context);
   private final SparkSession session = mock(SparkSession.class);
@@ -35,7 +37,7 @@ class ClickHouseHandlerTest {
 
   @BeforeEach
   void beforeEach() {
-    catalog.initialize("clickhouse", new CaseInsensitiveStringMap(Collections.emptyMap()));
+    catalog.initialize(CLICKHOUSE, new CaseInsensitiveStringMap(Collections.emptyMap()));
     when(session.conf()).thenReturn(conf);
   }
 
@@ -110,9 +112,9 @@ class ClickHouseHandlerTest {
     assertThat(catalogDatasetFacet).isPresent();
     OpenLineage.CatalogDatasetFacet facet =
         catalogDatasetFacet.orElseThrow(AssertionError::new).getCatalogDatasetFacet();
-    assertThat(facet.getName()).isEqualTo("clickhouse");
-    assertThat(facet.getFramework()).isEqualTo("clickhouse");
-    assertThat(facet.getType()).isEqualTo("clickhouse");
+    assertThat(facet.getName()).isEqualTo(CLICKHOUSE);
+    assertThat(facet.getFramework()).isEqualTo(CLICKHOUSE);
+    assertThat(facet.getType()).isEqualTo(CLICKHOUSE);
     assertThat(facet.getSource()).isEqualTo("spark");
   }
 }
