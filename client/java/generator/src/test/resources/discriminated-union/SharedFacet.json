@@ -75,7 +75,14 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "name": {
+          "type": "string"
         }
+      },
+      "dependentRequired": {
+        "namespace": ["name"],
+        "name": ["namespace"]
       }
     },
     "LineageInput": {
@@ -113,7 +120,14 @@
         },
         "name": {
           "type": "string"
+        },
+        "namespace": {
+          "type": "string"
         }
+      },
+      "dependentRequired": {
+        "namespace": ["name"],
+        "name": ["namespace"]
       }
     },
     "LegacyChoice": {

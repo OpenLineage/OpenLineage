@@ -1,0 +1,48 @@
+{
+  "lineage": {
+    "_producer": "https://example.com/lineage",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
+    "entries": [
+      {
+        "namespace": "postgresql://warehouse:5432",
+        "name": "public.enriched_orders",
+        "type": "DATASET",
+        "inputs": [
+          {
+            "namespace": "postgresql://warehouse:5432",
+            "name": "public.orders",
+            "type": "DATASET"
+          },
+          {
+            "namespace": "airflow://production",
+            "name": "daily.enrichment",
+            "type": "JOB"
+          }
+        ],
+        "fields": {
+          "customer_segment": {
+            "inputs": [
+              {
+                "namespace": "postgresql://warehouse:5432",
+                "name": "public.orders",
+                "type": "DATASET",
+                "field": "customer_id"
+              },
+              {
+                "namespace": "airflow://production",
+                "name": "daily.enrichment",
+                "type": "JOB",
+                "transformations": [
+                  {
+                    "type": "DIRECT",
+                    "subtype": "TRANSFORMATION"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
