@@ -181,6 +181,7 @@ class DbtArtifactProcessor:
         models: Sequence[str] | None = None,
         selector: str | None = None,
         openlineage_job_name: str | None = None,
+        emit_dbt_invocation_event: bool = False,
     ):
         self.producer = producer
         self._dbt_run_metadata: ParentRunMetadata | None = None
@@ -198,6 +199,7 @@ class DbtArtifactProcessor:
         self.selector = selector
         self.manifest_version = None
         self.adapter_type: Adapter | None = None
+        self.emit_dbt_invocation_event = emit_dbt_invocation_event
         # Populated by parse(); retained so manifest-declared exposures can be indexed
         # and attached to the datasets they depend on.
         self.manifest: dict[str, Any] = {}
@@ -221,7 +223,8 @@ class DbtArtifactProcessor:
             return getattr(self, "job_name")
         return f"dbt-{self.command}" if self.command else "dbt-invocation"
 
-    def generate_invocation_events(self, context: DbtRunContext) -> DbtRunResult | None:
+    def _extract_invocation_run_timing(self, context: DbtRunContext) -> tuple[str, str, bool]:
+        """Extract start time, complete time, and failure status from run results."""
         started_at_list = []
         completed_at_list = []
         has_failure = False
@@ -240,18 +243,23 @@ class DbtArtifactProcessor:
         )
         start_time = min(started_at_list) if started_at_list else fallback_time
         complete_time = max(completed_at_list) if completed_at_list else fallback_time
+        return start_time, complete_time, has_failure
 
+    def _generate_invocation_run_id(self, start_time_str: str) -> str:
+        """Generate a time-sortable UUIDv7 invocation run ID."""
         try:
-            instant = _DATETIME_CLASS.fromisoformat(start_time.replace("Z", "+00:00"))
+            instant = datetime.datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
         except (ValueError, TypeError, AttributeError):
-            instant = _DATETIME_CLASS.now(datetime.timezone.utc)
+            instant = datetime.datetime.now(datetime.timezone.utc)
 
         raw_invocation_id = self.run_metadata.get("invocation_id")
         if raw_invocation_id:
-            run_id = str(generate_static_uuid(instant, raw_invocation_id.encode("utf-8")))
-        else:
-            run_id = str(generate_new_uuid(instant))
+            return str(generate_static_uuid(instant, raw_invocation_id.encode("utf-8")))
+        return str(generate_new_uuid(instant))
 
+    def generate_invocation_events(self, context: DbtRunContext) -> DbtRunResult | None:
+        start_time, complete_time, has_failure = self._extract_invocation_run_timing(context)
+        run_id = self._generate_invocation_run_id(start_time)
         job_name = self.invocation_job_name
 
         self._invocation_parent_metadata = ParentRunMetadata(
@@ -260,13 +268,11 @@ class DbtArtifactProcessor:
             job_namespace=self.job_namespace,
         )
 
-        run_facets: dict[str, Any] = {}
-        if version_facet := self.dbt_version_facet():
-            run_facets.update(version_facet)
-        if run_run_facet := self.dbt_run_run_facet():
-            run_facets.update(run_run_facet)
-        if engine_facet := self.processing_engine_facet():
-            run_facets.update(engine_facet)
+        run_facets: dict[str, Any] = {
+            **(self.dbt_version_facet() or {}),
+            **(self.dbt_run_run_facet() or {}),
+            **(self.processing_engine_facet() or {}),
+        }
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
@@ -334,7 +340,9 @@ class DbtArtifactProcessor:
             else:
                 return events
 
-        invocation_events = self.generate_invocation_events(context)
+        invocation_events = (
+            self.generate_invocation_events(context) if self.emit_dbt_invocation_event else None
+        )
         if invocation_events and invocation_events.start:
             events.starts.append(invocation_events.start)
 
@@ -1213,7 +1221,9 @@ class DbtArtifactProcessor:
                 **(self.processing_engine_facet() or {}),
             }
         )
-        parent_metadata = getattr(self, "_invocation_parent_metadata", None) or self._dbt_run_metadata
+        parent_metadata = (
+            self._invocation_parent_metadata if self.emit_dbt_invocation_event else None
+        ) or self._dbt_run_metadata
         if parent_metadata:
             run_facets["parent"] = parent_metadata.to_openlineage()
 

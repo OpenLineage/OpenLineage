@@ -1008,6 +1008,7 @@ class TestDbtInvocationEvents:
                 "results": [],
             },
         )
+        dbt_artifact_processor.emit_dbt_invocation_event = True
         dbt_artifact_processor.run_metadata = context.run_results["metadata"]
         dbt_artifact_processor.command = "run"
         dbt_artifact_processor.generate_invocation_events(context)
@@ -1017,3 +1018,23 @@ class TestDbtInvocationEvents:
         expected_uuid = str(generate_static_uuid(dt, inv_id.encode("utf-8")))
         assert child_run.facets["parent"].run.runId == expected_uuid
         assert child_run.facets["parent"].job.name == "dbt-run"
+
+    def test_child_node_without_invocation_event_flag(self, dbt_artifact_processor):
+        child_run_id = "44444444-4444-4444-4444-444444444444"
+
+        context = DbtRunContext(
+            manifest={"nodes": {}},
+            run_results={
+                "metadata": {
+                    "invocation_id": "33333333-3333-3333-3333-333333333333",
+                    "generated_at": "2026-08-01T10:00:00.000000Z",
+                },
+                "results": [],
+            },
+        )
+        dbt_artifact_processor.emit_dbt_invocation_event = False
+        dbt_artifact_processor.run_metadata = context.run_results["metadata"]
+        dbt_artifact_processor.command = "run"
+
+        child_run = dbt_artifact_processor.get_run(run_id=child_run_id)
+        assert "parent" not in child_run.facets
