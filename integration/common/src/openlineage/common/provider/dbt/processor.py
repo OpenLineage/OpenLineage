@@ -69,6 +69,7 @@ class Adapter(Enum):
     GLUE = "glue"
     CLICKHOUSE = "clickhouse"
     FABRIC = "fabric"
+    FABRICSPARK = "fabricspark"
 
     @staticmethod
     def adapters() -> str:
@@ -1058,6 +1059,18 @@ class DbtArtifactProcessor:
             if "port" in profile:
                 return f"fabric-warehouse://{profile['server']}:{profile['port']}"
             return f"fabric-warehouse://{profile['server']}"
+        elif self.adapter_type == Adapter.FABRICSPARK:
+            # A Fabric lakehouse has no host of its own to key on: every tenant
+            # reaches the same `api.fabric.microsoft.com` endpoint, so a
+            # namespace built from it would collide across workspaces. The
+            # workspace and lakehouse ids are the stable, unique address, and
+            # they are what the profile carries.
+            if "workspaceid" not in profile or "lakehouseid" not in profile:
+                raise NotImplementedError(
+                    "fabricspark profiles must define `workspaceid` and "
+                    "`lakehouseid` to build a dataset namespace."
+                )
+            return f"fabric-lakehouse://{profile['workspaceid']}/{profile['lakehouseid']}"
         elif self.adapter_type == Adapter.DREMIO:
             return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.ATHENA:
