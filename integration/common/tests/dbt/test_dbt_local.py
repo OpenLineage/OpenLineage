@@ -226,7 +226,9 @@ def test_dbt_parse_and_compare_event(path, job_name, parent_run_metadata):
         openlineage_job_name=job_name,
     )
     processor.dbt_run_metadata = parent_run_metadata
+
     dbt_events = processor.parse()
+
     events = [
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
@@ -263,6 +265,7 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata,
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
+
     events = [
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
@@ -294,6 +297,7 @@ def test_dbt_parse_singular_test_event(mock_datetime, mock_uuid, parent_run_meta
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
+
     events = [
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
@@ -329,6 +333,7 @@ def test_dbt_parse_profile_with_env_vars(mock_uuid, parent_run_metadata):
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
+
     events = [
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
@@ -559,3 +564,25 @@ class TestDbtMetadataExceptions:
         processor.load_metadata["args"]["profiles_dir"] = "./non_existent_dir/dbt/test"
         processor.get_dbt_metadata = self.simple_get_dbt_metadata(processor)
         assert processor.get_dbt_metadata is FileNotFoundError
+
+
+def test_dbt_local_invocation_events_opt_in():
+    path = CURRENT_DIR + "/small"
+    processor = DbtLocalArtifactProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        project_dir=path,
+        dbt_command_line=["dbt-ol", "run", "--profiles-dir", path],
+        job_namespace="ol-namespace",
+        emit_dbt_invocation_event=True,
+    )
+    events = processor.parse()
+    assert len(events.starts) > 0
+    assert len(events.completes) > 0
+    invocation_start = events.starts[0]
+    assert invocation_start.job.name == "dbt-run-dbt_small_test"
+    assert invocation_start.job.facets["jobType"].jobType == "JOB"
+
+    # Check child model run parent facet
+    model_start = events.starts[1]
+    assert model_start.run.facets["parent"].run.runId == invocation_start.run.runId
+    assert model_start.run.facets["parent"].job.name == "dbt-run-dbt_small_test"

@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import datetime
 import os
+import uuid
 from unittest.mock import MagicMock
 
 import pytest
@@ -906,3 +908,133 @@ class TestDbtMetaTags:
     def test_tags_and_meta_combined(self, dbt_artifact_processor):
         facet = dbt_artifact_processor._build_tags_run_facet(["core"], {"tier": "gold"})
         assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "DBT_META")]
+
+
+# Unit tests for top-level dbt invocation events
+class TestDbtInvocationEvents:
+    """Covers top-level dbt invocation run event generation in DbtArtifactProcessor."""
+
+    def test_generate_invocation_events_success(self, dbt_artifact_processor):
+        from openlineage.client.event_v2 import RunState
+        from openlineage.client.uuid import generate_static_uuid
+        from openlineage.common.provider.dbt.facets import ParentRunMetadata
+
+        inv_id = "11111111-1111-1111-1111-111111111111"
+        parent_id = "99999999-9999-9999-9999-999999999999"
+
+        context = DbtRunContext(
+            manifest={"nodes": {}},
+            run_results={
+                "metadata": {"invocation_id": inv_id},
+                "results": [
+                    {
+                        "status": "pass",
+                        "timing": [
+                            {
+                                "started_at": "2026-08-01T10:00:00.000000Z",
+                                "completed_at": "2026-08-01T10:01:00.000000Z",
+                            }
+                        ],
+                    }
+                ],
+            },
+        )
+        dbt_artifact_processor.run_metadata = context.run_results["metadata"]
+        dbt_artifact_processor.command = "run"
+        dbt_artifact_processor._dbt_run_metadata = ParentRunMetadata(
+            run_id=parent_id,
+            job_name="parent-job",
+            job_namespace="parent-namespace",
+        )
+
+        res = dbt_artifact_processor.generate_invocation_events(context)
+        assert res is not None
+        assert res.start.eventType == RunState.START
+        assert res.complete.eventType == RunState.COMPLETE
+        dt = datetime.datetime.fromisoformat("2026-08-01T10:00:00.000000+00:00")
+        expected_uuid = str(generate_static_uuid(dt, inv_id.encode("utf-8")))
+        assert res.start.run.runId == expected_uuid
+        assert uuid.UUID(res.start.run.runId).version == 7
+        assert res.start.eventTime == "2026-08-01T10:00:00.000000Z"
+        assert res.complete.eventTime == "2026-08-01T10:01:00.000000Z"
+        assert res.start.run.facets["parent"].run.runId == parent_id
+        assert res.start.job.facets["jobType"].jobType == "JOB"
+
+    def test_generate_invocation_events_failure(self, dbt_artifact_processor):
+        from openlineage.client.event_v2 import RunState
+        from openlineage.client.uuid import generate_static_uuid
+
+        inv_id = "22222222-2222-2222-2222-222222222222"
+
+        context = DbtRunContext(
+            manifest={"nodes": {}},
+            run_results={
+                "metadata": {"invocation_id": inv_id},
+                "results": [
+                    {
+                        "status": "error",
+                        "timing": [
+                            {
+                                "started_at": "2026-08-01T10:00:00.000000Z",
+                                "completed_at": "2026-08-01T10:00:30.000000Z",
+                            }
+                        ],
+                    }
+                ],
+            },
+        )
+        dbt_artifact_processor.run_metadata = context.run_results["metadata"]
+        dbt_artifact_processor.command = "run"
+
+        res = dbt_artifact_processor.generate_invocation_events(context)
+        assert res is not None
+        assert res.start.eventType == RunState.START
+        assert res.fail.eventType == RunState.FAIL
+        dt = datetime.datetime.fromisoformat("2026-08-01T10:00:00.000000+00:00")
+        expected_uuid = str(generate_static_uuid(dt, inv_id.encode("utf-8")))
+        assert res.fail.run.runId == expected_uuid
+        assert uuid.UUID(res.fail.run.runId).version == 7
+
+    def test_child_node_gets_invocation_parent(self, dbt_artifact_processor):
+        from openlineage.client.uuid import generate_static_uuid
+
+        inv_id = "33333333-3333-3333-3333-333333333333"
+        child_run_id = "44444444-4444-4444-4444-444444444444"
+
+        context = DbtRunContext(
+            manifest={"nodes": {}},
+            run_results={
+                "metadata": {"invocation_id": inv_id, "generated_at": "2026-08-01T10:00:00.000000Z"},
+                "results": [],
+            },
+        )
+        dbt_artifact_processor.emit_dbt_invocation_event = True
+        dbt_artifact_processor.run_metadata = context.run_results["metadata"]
+        dbt_artifact_processor.command = "run"
+        dbt_artifact_processor.generate_invocation_events(context)
+
+        child_run = dbt_artifact_processor.get_run(run_id=child_run_id)
+        dt = datetime.datetime.fromisoformat("2026-08-01T10:00:00.000000+00:00")
+        expected_uuid = str(generate_static_uuid(dt, inv_id.encode("utf-8")))
+        assert child_run.facets["parent"].run.runId == expected_uuid
+        assert child_run.facets["parent"].job.name == "dbt-run"
+
+    def test_child_node_without_invocation_event_flag(self, dbt_artifact_processor):
+        child_run_id = "44444444-4444-4444-4444-444444444444"
+
+        context = DbtRunContext(
+            manifest={"nodes": {}},
+            run_results={
+                "metadata": {
+                    "invocation_id": "33333333-3333-3333-3333-333333333333",
+                    "generated_at": "2026-08-01T10:00:00.000000Z",
+                },
+                "results": [],
+            },
+        )
+        dbt_artifact_processor.emit_dbt_invocation_event = False
+        dbt_artifact_processor.run_metadata = context.run_results["metadata"]
+        dbt_artifact_processor.command = "run"
+
+        child_run = dbt_artifact_processor.get_run(run_id=child_run_id)
+        assert "parent" not in child_run.facets
