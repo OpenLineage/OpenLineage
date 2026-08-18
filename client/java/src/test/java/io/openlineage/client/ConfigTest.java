@@ -33,10 +33,12 @@ import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.TransformTransport;
 import io.openlineage.client.transports.Transport;
 import io.openlineage.client.utils.TagField;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -142,6 +144,56 @@ class ConfigTest {
       OpenLineageClient client = Clients.newClient();
       assertThat(client.transport).isInstanceOf(ConsoleTransport.class);
     }
+  }
+
+  @Test
+  void testLineageCompatibilityConfigFromYaml() {
+    OpenLineageConfig config =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new TestConfigPathProvider("config/lineage.yaml"),
+            new TypeReference<OpenLineageConfig>() {});
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/lineage.yaml"));
+
+    assertThat(config.getLineageConfig().getCompatibility()).isEqualTo(LineageCompatibility.LEGACY);
+    assertThat(client.lineageCompatibility).isEqualTo(LineageCompatibility.LEGACY);
+  }
+
+  @Test
+  void testLineageCompatibilityDefaultsToNone() {
+    assertThat(new OpenLineageConfig().getLineageConfig().getCompatibility())
+        .isEqualTo(LineageCompatibility.NONE);
+    assertThat(OpenLineageClient.builder().build())
+        .extracting("lineageCompatibility")
+        .isEqualTo(LineageCompatibility.NONE);
+  }
+
+  @Test
+  void testLoadLineageCompatibilityFromEnvVars() {
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getAllEnvironmentVariables())
+          .thenReturn(
+              Map.of(
+                  "OPENLINEAGE__TRANSPORT__TYPE",
+                  "console",
+                  "OPENLINEAGE__LINEAGE__COMPATIBILITY",
+                  "modern"));
+
+      OpenLineageClient client = Clients.newClient();
+
+      assertThat(client.lineageCompatibility).isEqualTo(LineageCompatibility.MODERN);
+    }
+  }
+
+  @Test
+  void testRejectInvalidLineageCompatibility() {
+    String yaml = "lineage:\n  compatibility: invalid\n";
+
+    assertThrows(
+        OpenLineageClientException.class,
+        () ->
+            OpenLineageClientUtils.loadOpenLineageConfigYaml(
+                new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)),
+                new TypeReference<OpenLineageConfig>() {}));
   }
 
   @Test
@@ -301,6 +353,18 @@ class ConfigTest {
     OpenLineageConfig config = (OpenLineageConfig) base.mergeWith(overwrite);
     assertThat(config.getMetricsConfig()).hasSize(1);
     assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
+  }
+
+  @Test
+  void testOverwriteLineageCompatibilityConfig() {
+    OpenLineageConfig base = new OpenLineageConfig();
+    OpenLineageConfig overwrite = new OpenLineageConfig();
+    base.setLineageConfig(new LineageConfig(LineageCompatibility.LEGACY));
+    overwrite.setLineageConfig(new LineageConfig(LineageCompatibility.MODERN));
+
+    OpenLineageConfig config = (OpenLineageConfig) base.mergeWith(overwrite);
+
+    assertThat(config.getLineageConfig().getCompatibility()).isEqualTo(LineageCompatibility.MODERN);
   }
 
   @Test
