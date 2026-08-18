@@ -149,6 +149,18 @@ const config = {
       },
     ],
     [
+      "@docusaurus/plugin-client-redirects",
+      {
+        redirects: [
+          { from: "/docs/integrations/about", to: "/docs/integrations" },
+          {
+            from: "/docs/integrations/flink/about",
+            to: "/docs/integrations/flink",
+          },
+        ],
+      },
+    ],
+    [
       "docusaurus-lunr-search",
       {
         disableVersioning: false,
