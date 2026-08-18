@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.52.0...HEAD)
 
+### Added
+
+* **dbt: Support the `fabricspark` adapter** [`#4874`](https://github.com/OpenLineage/OpenLineage/pull/4874) [@calvinchengx](https://github.com/calvinchengx)  
+  *Adds `dbt-fabricspark` to the supported adapters, so a dbt project building a Fabric Lakehouse emits lineage instead of silently producing no events.*
+
 ## [1.52.0](https://github.com/OpenLineage/OpenLineage/compare/1.51.0...1.52.0)
 
 ### Added
