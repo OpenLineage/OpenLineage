@@ -31,6 +31,7 @@ class ClickHouseHandlerTest {
   private static final String DATABASE = "mydb";
   private static final String DEFAULT_HOST = "localhost";
   private static final String HTTP = "http";
+  private static final String PROTOCOL_CONF = "spark.sql.catalog.clickhouse.protocol";
   private static final String TABLE = "mytable";
 
   private final OpenLineageContext context = mock(OpenLineageContext.class);
@@ -94,7 +95,7 @@ class ClickHouseHandlerTest {
 
   @Test
   void testGetDatasetIdentifierWithNativeProtocol() {
-    when(conf.get("spark.sql.catalog.clickhouse.protocol", HTTP)).thenReturn("native");
+    when(conf.get(PROTOCOL_CONF, HTTP)).thenReturn("native");
     when(conf.get("spark.sql.catalog.clickhouse.host", DEFAULT_HOST)).thenReturn("ch.example.com");
     when(conf.get("spark.sql.catalog.clickhouse.tcp_port", "9000")).thenReturn("9440");
 
@@ -113,7 +114,7 @@ class ClickHouseHandlerTest {
   @Test
   void testGetDatasetIdentifierWithTcpProtocolDefaults() {
     when(conf.get(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
-    when(conf.get("spark.sql.catalog.clickhouse.protocol", HTTP)).thenReturn("TCP");
+    when(conf.get(PROTOCOL_CONF, HTTP)).thenReturn("TCP");
 
     DatasetIdentifier identifier =
         handler.getDatasetIdentifier(
@@ -126,9 +127,25 @@ class ClickHouseHandlerTest {
   }
 
   @Test
+  void testGetDatasetIdentifierWithSecureTcpProtocol() {
+    when(conf.get(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
+    when(conf.get(PROTOCOL_CONF, HTTP)).thenReturn("tcps");
+    when(conf.get("spark.sql.catalog.clickhouse.tcp_port", "9000")).thenReturn("9440");
+
+    DatasetIdentifier identifier =
+        handler.getDatasetIdentifier(
+            session,
+            catalog,
+            Identifier.of(new String[] {DATABASE}, TABLE),
+            Collections.emptyMap());
+
+    assertThat(identifier.getNamespace()).isEqualTo("clickhouse://localhost:9440");
+  }
+
+  @Test
   void testGetDatasetIdentifierWithHttpProtocolPrefix() {
     when(conf.get(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
-    when(conf.get("spark.sql.catalog.clickhouse.protocol", HTTP)).thenReturn(HTTP);
+    when(conf.get(PROTOCOL_CONF, HTTP)).thenReturn(HTTP);
     when(conf.get("spark.sql.catalog.clickhouse.host", DEFAULT_HOST)).thenReturn("ch.example.com");
 
     DatasetIdentifier identifier =

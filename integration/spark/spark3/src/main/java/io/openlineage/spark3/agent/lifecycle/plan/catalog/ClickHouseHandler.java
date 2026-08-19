@@ -35,6 +35,7 @@ public class ClickHouseHandler implements CatalogHandler {
   private static final String CATALOG_CONF_PREFIX = "spark.sql.catalog.";
   private static final String PROTOCOL_NATIVE = "native";
   private static final String PROTOCOL_TCP = "tcp";
+  private static final String PROTOCOL_TCPS = "tcps";
   private static final String DEFAULT_HOST = "localhost";
   private static final String DEFAULT_HTTP_PORT = "8123";
   private static final String DEFAULT_TCP_PORT = "9000";
@@ -92,12 +93,15 @@ public class ClickHouseHandler implements CatalogHandler {
 
   /**
    * The connector serves queries over http ({@code http_port}, 8123 by default) or the native tcp
-   * protocol ({@code tcp_port}, 9000 by default), selected by the {@code protocol} option. Any
-   * other value - including the connector's http default - falls back to the http port.
+   * protocol ({@code tcp_port}, 9000 by default), selected by the {@code protocol} option. The
+   * secure native {@code tcps} alias also uses the tcp port. Any other value - including the
+   * connector's http default - falls back to the http port.
    */
   private String resolvePort(RuntimeConfig conf, String prefix) {
     String protocol = conf.get(prefix + ".protocol", "http");
-    if (PROTOCOL_NATIVE.equalsIgnoreCase(protocol) || PROTOCOL_TCP.equalsIgnoreCase(protocol)) {
+    if (PROTOCOL_NATIVE.equalsIgnoreCase(protocol)
+        || PROTOCOL_TCP.equalsIgnoreCase(protocol)
+        || PROTOCOL_TCPS.equalsIgnoreCase(protocol)) {
       return conf.get(prefix + ".tcp_port", DEFAULT_TCP_PORT);
     }
     return conf.get(prefix + ".http_port", DEFAULT_HTTP_PORT);

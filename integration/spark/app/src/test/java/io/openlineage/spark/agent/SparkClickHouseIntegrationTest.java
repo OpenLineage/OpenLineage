@@ -17,12 +17,12 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.clickhouse.ClickHouseContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -33,29 +33,55 @@ import org.testcontainers.utility.DockerImageName;
  */
 @Tag("integration-test")
 @Tag("clickhouse")
-@Testcontainers
-@Slf4j
 class SparkClickHouseIntegrationTest {
-  private static final OpenLineageEndpointHandler handler = new OpenLineageEndpointHandler();
   private static final int CLICKHOUSE_HTTP_PORT = 8123;
+  private static final String CLICKHOUSE = "clickhouse";
+  private static final String CLICKHOUSE_NAMESPACE_PREFIX = "clickhouse://localhost:";
+  private static final String TABLE_NAME = "mydb.people";
+  private static final String QUALIFIED_TABLE_NAME = CLICKHOUSE + "." + TABLE_NAME;
+
+  private final OpenLineageEndpointHandler handler = new OpenLineageEndpointHandler();
+  private HttpServer server;
+  private ClickHouseContainer clickhouse;
+  private SparkSession spark;
+
+  @BeforeEach
+  void beforeEach() throws IOException, InterruptedException {
+    server = createHttpServer(handler);
+    clickhouse =
+        new ClickHouseContainer(DockerImageName.parse("clickhouse/clickhouse-server:24.8"));
+    clickhouse.start();
+
+    exec("CREATE DATABASE IF NOT EXISTS mydb");
+    exec("CREATE TABLE " + TABLE_NAME + " (id Int32, name String) ENGINE = MergeTree ORDER BY id");
+    exec("INSERT INTO " + TABLE_NAME + " VALUES (1, 'John'), (2, 'Jane')");
+  }
+
+  @AfterEach
+  void afterEach() {
+    try {
+      stopSpark();
+    } finally {
+      try {
+        if (clickhouse != null) {
+          clickhouse.stop();
+        }
+      } finally {
+        if (server != null) {
+          server.stop(0);
+        }
+      }
+    }
+  }
 
   @Test
-  void testClickHouseCatalogDatasetIdentifierWhenTableIsRead()
-      throws IOException, InterruptedException {
-    HttpServer server = createHttpServer(handler);
-    ClickHouseContainer clickhouse = startClickHouseContainer();
+  void testClickHouseCatalogDatasetIdentifierWhenTableIsRead() {
     int httpPort = clickhouse.getMappedPort(CLICKHOUSE_HTTP_PORT);
 
-    SparkSession spark =
-        createSparkSession(
-            server.getAddress().getPort(),
-            clickhouse,
-            "testClickHouseCatalogDatasetIdentifierWhenTableIsRead");
+    spark = createSparkSession("testClickHouseCatalogDatasetIdentifierWhenTableIsRead");
 
-    spark.sql("SELECT * FROM clickhouse.mydb.people").show();
-
-    clickhouse.stop();
-    spark.stop();
+    spark.sql("SELECT * FROM " + QUALIFIED_TABLE_NAME).show();
+    stopSpark();
 
     List<OpenLineage.InputDataset> inputs =
         readInputs("test_click_house_catalog_dataset_identifier_when_table_is_read");
@@ -63,27 +89,17 @@ class SparkClickHouseIntegrationTest {
     assertThat(inputs).isNotEmpty();
     inputs.forEach(
         input -> {
-          assertThat(input.getNamespace()).isEqualTo("clickhouse://localhost:" + httpPort);
-          assertThat(input.getName()).isEqualTo("mydb.people");
+          assertThat(input.getNamespace()).isEqualTo(CLICKHOUSE_NAMESPACE_PREFIX + httpPort);
+          assertThat(input.getName()).isEqualTo(TABLE_NAME);
         });
   }
 
   @Test
-  void testClickHouseCatalogDatasetFacetsWhenTableIsRead()
-      throws IOException, InterruptedException {
-    HttpServer server = createHttpServer(handler);
-    ClickHouseContainer clickhouse = startClickHouseContainer();
+  void testClickHouseCatalogDatasetFacetsWhenTableIsRead() {
+    spark = createSparkSession("testClickHouseCatalogDatasetFacetsWhenTableIsRead");
 
-    SparkSession spark =
-        createSparkSession(
-            server.getAddress().getPort(),
-            clickhouse,
-            "testClickHouseCatalogDatasetFacetsWhenTableIsRead");
-
-    spark.sql("SELECT * FROM clickhouse.mydb.people").show();
-
-    clickhouse.stop();
-    spark.stop();
+    spark.sql("SELECT * FROM " + QUALIFIED_TABLE_NAME).show();
+    stopSpark();
 
     List<OpenLineage.InputDataset> inputs =
         readInputs("test_click_house_catalog_dataset_facets_when_table_is_read");
@@ -97,7 +113,7 @@ class SparkClickHouseIntegrationTest {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     assertThat(storageFacets).isNotEmpty();
-    assertThat(storageFacets.get(0).getStorageLayer()).isEqualTo("clickhouse");
+    assertThat(storageFacets.get(0).getStorageLayer()).isEqualTo(CLICKHOUSE);
     assertThat(storageFacets.get(0).getFileFormat()).isEqualTo("MergeTree");
 
     List<OpenLineage.CatalogDatasetFacet> catalogFacets =
@@ -107,10 +123,36 @@ class SparkClickHouseIntegrationTest {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     assertThat(catalogFacets).isNotEmpty();
-    assertThat(catalogFacets.get(0).getName()).isEqualTo("clickhouse");
-    assertThat(catalogFacets.get(0).getFramework()).isEqualTo("clickhouse");
-    assertThat(catalogFacets.get(0).getType()).isEqualTo("clickhouse");
+    assertThat(catalogFacets.get(0).getName()).isEqualTo(CLICKHOUSE);
+    assertThat(catalogFacets.get(0).getFramework()).isEqualTo(CLICKHOUSE);
+    assertThat(catalogFacets.get(0).getType()).isEqualTo(CLICKHOUSE);
     assertThat(catalogFacets.get(0).getSource()).isEqualTo("spark");
+  }
+
+  @Test
+  void testClickHouseCatalogDatasetIdentifierWhenTableIsWritten() {
+    int httpPort = clickhouse.getMappedPort(CLICKHOUSE_HTTP_PORT);
+    spark = createSparkSession("testClickHouseCatalogDatasetIdentifierWhenTableIsWritten");
+
+    spark.sql(
+        "INSERT INTO " + QUALIFIED_TABLE_NAME + " SELECT CAST(3 AS INT) AS id, 'Ada' AS name");
+    stopSpark();
+
+    List<OpenLineage.OutputDataset> outputs =
+        readOutputs("test_click_house_catalog_dataset_identifier_when_table_is_written");
+
+    assertThat(outputs).isNotEmpty();
+    outputs.forEach(
+        output -> {
+          assertThat(output.getNamespace()).isEqualTo(CLICKHOUSE_NAMESPACE_PREFIX + httpPort);
+          assertThat(output.getName()).isEqualTo(TABLE_NAME);
+          OpenLineage.CatalogDatasetFacet catalogFacet = output.getFacets().getCatalog();
+          assertThat(catalogFacet).isNotNull();
+          assertThat(catalogFacet.getName()).isEqualTo(CLICKHOUSE);
+          assertThat(catalogFacet.getFramework()).isEqualTo(CLICKHOUSE);
+          assertThat(catalogFacet.getType()).isEqualTo(CLICKHOUSE);
+          assertThat(catalogFacet.getSource()).isEqualTo("spark");
+        });
   }
 
   private List<OpenLineage.InputDataset> readInputs(String jobName) {
@@ -120,26 +162,24 @@ class SparkClickHouseIntegrationTest {
         .collect(Collectors.toList());
   }
 
-  private ClickHouseContainer startClickHouseContainer() throws IOException, InterruptedException {
-    ClickHouseContainer clickhouse =
-        new ClickHouseContainer(DockerImageName.parse("clickhouse/clickhouse-server:24.8"));
-    clickhouse.start();
-
-    exec(clickhouse, "CREATE DATABASE IF NOT EXISTS mydb");
-    exec(
-        clickhouse,
-        "CREATE TABLE mydb.people (id Int32, name String) ENGINE = MergeTree ORDER BY id");
-    exec(clickhouse, "INSERT INTO mydb.people VALUES (1, 'John'), (2, 'Jane')");
-    return clickhouse;
+  private List<OpenLineage.OutputDataset> readOutputs(String jobName) {
+    return handler.getEvents(jobName).stream()
+        .filter(event -> !event.getOutputs().isEmpty())
+        .flatMap(event -> event.getOutputs().stream())
+        .collect(Collectors.toList());
   }
 
-  private void exec(ClickHouseContainer clickhouse, String sql)
-      throws IOException, InterruptedException {
+  private void exec(String sql) throws IOException, InterruptedException {
     clickhouse.execInContainer("clickhouse-client", "--query", sql);
   }
 
-  private SparkSession createSparkSession(
-      Integer httpServerPort, ClickHouseContainer clickhouse, String appName) {
+  private void stopSpark() {
+    if (spark != null && !spark.sparkContext().isStopped()) {
+      spark.stop();
+    }
+  }
+
+  private SparkSession createSparkSession(String appName) {
     Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
     String testId = TestIds.randomHex();
     Path derbySystemHome = tmpDir.resolve("derby").resolve(testId);
@@ -154,8 +194,10 @@ class SparkClickHouseIntegrationTest {
         .config("spark.sql.warehouse.dir", sparkSqlWarehouse.toString())
         .config("spark.ui.enabled", false)
         .config("spark.openlineage.transport.type", "http")
-        .config("spark.openlineage.transport.url", "http://localhost:" + httpServerPort)
+        .config(
+            "spark.openlineage.transport.url", "http://localhost:" + server.getAddress().getPort())
         .config("spark.openlineage.facets.spark_unknown.disabled", "true")
+        .config("spark.clickhouse.write.format", "json")
         .config("spark.sql.catalog.clickhouse", "com.clickhouse.spark.ClickHouseCatalog")
         .config("spark.sql.catalog.clickhouse.host", clickhouse.getHost())
         .config("spark.sql.catalog.clickhouse.protocol", "http")
