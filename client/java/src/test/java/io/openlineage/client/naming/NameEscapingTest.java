@@ -45,7 +45,7 @@ class NameEscapingTest {
 
   @AfterEach
   void cleanUp() throws Exception {
-    // Always restore so subsequent tests start with escaping enabled (the default).
+    // Always restore so subsequent tests start with escaping disabled (the default).
     clearEnvironmentVariables(Set.of(ENV_VAR));
   }
 
@@ -54,45 +54,28 @@ class NameEscapingTest {
   // -----------------------------------------------------------------------
 
   @Test
-  void escapingIsEnabledByDefault() throws Exception {
+  void escapingIsDisabledByDefault() throws Exception {
     clearEnvironmentVariables(Set.of(ENV_VAR));
 
-    assertThat(NameEscaping.isEscapingEnabled()).isTrue();
+    assertThat(NameEscaping.isEscapingEnabled()).isFalse();
   }
 
   @Test
-  void escapingIsDisabledWhenEnvVarIsFalse() throws Exception {
+  void escapingIsEnabledWhenEnvVarIsTrue() throws Exception {
     Map<String, String> env = new HashMap<>();
-    env.put(ENV_VAR, "false");
+    env.put(ENV_VAR, "true");
     setEnvironmentVariables(env);
 
     try {
-      assertThat(NameEscaping.isEscapingEnabled()).isFalse();
+      assertThat(NameEscaping.isEscapingEnabled()).isTrue();
     } finally {
       clearEnvironmentVariables(env.keySet());
     }
   }
 
   @Test
-  void escapingIsDisabledCaseInsensitive() throws Exception {
-    for (String value : new String[] {"false", "FALSE", "False"}) {
-      Map<String, String> env = new HashMap<>();
-      env.put(ENV_VAR, value);
-      setEnvironmentVariables(env);
-
-      try {
-        assertThat(NameEscaping.isEscapingEnabled())
-            .as("isEscapingEnabled() should be false for env value %s", value)
-            .isFalse();
-      } finally {
-        clearEnvironmentVariables(env.keySet());
-      }
-    }
-  }
-
-  @Test
-  void escapingRemainsEnabledForNonFalseValues() throws Exception {
-    for (String value : new String[] {"true", "TRUE", "1", "yes", "on"}) {
+  void escapingIsEnabledCaseInsensitive() throws Exception {
+    for (String value : new String[] {"true", "TRUE", "True"}) {
       Map<String, String> env = new HashMap<>();
       env.put(ENV_VAR, value);
       setEnvironmentVariables(env);
@@ -107,22 +90,58 @@ class NameEscapingTest {
     }
   }
 
+  @Test
+  void escapingRemainsDisabledForNonTrueValues() throws Exception {
+    for (String value : new String[] {"false", "FALSE", "1", "yes", "on"}) {
+      Map<String, String> env = new HashMap<>();
+      env.put(ENV_VAR, value);
+      setEnvironmentVariables(env);
+
+      try {
+        assertThat(NameEscaping.isEscapingEnabled())
+            .as("isEscapingEnabled() should be false for env value %s", value)
+            .isFalse();
+      } finally {
+        clearEnvironmentVariables(env.keySet());
+      }
+    }
+  }
+
   // -----------------------------------------------------------------------
   // escapeSegment — transformation behaviour
   // -----------------------------------------------------------------------
 
   @Test
-  void escapeSegmentEscapesDotsWhenEnabled() throws Exception {
+  void escapeSegmentReturnsInputUnchangedByDefault() throws Exception {
     clearEnvironmentVariables(Set.of(ENV_VAR));
 
-    assertThat(NameEscaping.escapeSegment("mydb.example.com")).isEqualTo("mydb\\.example\\.com");
+    assertThat(NameEscaping.escapeSegment("mydb.example.com")).isEqualTo("mydb.example.com");
+  }
+
+  @Test
+  void escapeSegmentEscapesDotsWhenEnabled() throws Exception {
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "true");
+    setEnvironmentVariables(env);
+
+    try {
+      assertThat(NameEscaping.escapeSegment("mydb.example.com")).isEqualTo("mydb\\.example\\.com");
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
   }
 
   @Test
   void escapeSegmentEscapesMultipleDots() throws Exception {
-    clearEnvironmentVariables(Set.of(ENV_VAR));
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "true");
+    setEnvironmentVariables(env);
 
-    assertThat(NameEscaping.escapeSegment("a.b.c")).isEqualTo("a\\.b\\.c");
+    try {
+      assertThat(NameEscaping.escapeSegment("a.b.c")).isEqualTo("a\\.b\\.c");
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
   }
 
   @Test
@@ -132,19 +151,6 @@ class NameEscapingTest {
     assertThat(NameEscaping.escapeSegment("my_schema")).isEqualTo("my_schema");
     assertThat(NameEscaping.escapeSegment("myTable")).isEqualTo("myTable");
     assertThat(NameEscaping.escapeSegment("plain")).isEqualTo("plain");
-  }
-
-  @Test
-  void escapeSegmentReturnsInputUnchangedWhenDisabled() throws Exception {
-    Map<String, String> env = new HashMap<>();
-    env.put(ENV_VAR, "false");
-    setEnvironmentVariables(env);
-
-    try {
-      assertThat(NameEscaping.escapeSegment("mydb.example.com")).isEqualTo("mydb.example.com");
-    } finally {
-      clearEnvironmentVariables(env.keySet());
-    }
   }
 
   // -----------------------------------------------------------------------
@@ -215,7 +221,7 @@ class NameEscapingTest {
   // -----------------------------------------------------------------------
 
   @Test
-  void oracleNamingEscapesServiceNameWithDotsByDefault() throws Exception {
+  void oracleNamingDoesNotEscapeByDefault() throws Exception {
     clearEnvironmentVariables(Set.of(ENV_VAR));
 
     io.openlineage.client.dataset.Naming.Oracle oracle =
@@ -227,14 +233,13 @@ class NameEscapingTest {
             .table("myTable")
             .build();
 
-    // Spec example: "mydb\.example\.com.mySchema.myTable"
-    assertThat(oracle.getName()).isEqualTo("mydb\\.example\\.com.mySchema.myTable");
+    assertThat(oracle.getName()).isEqualTo("mydb.example.com.mySchema.myTable");
   }
 
   @Test
-  void oracleNamingDoesNotEscapeWhenDisabled() throws Exception {
+  void oracleNamingEscapesServiceNameWithDotsWhenEnabled() throws Exception {
     Map<String, String> env = new HashMap<>();
-    env.put(ENV_VAR, "false");
+    env.put(ENV_VAR, "true");
     setEnvironmentVariables(env);
 
     try {
@@ -247,7 +252,8 @@ class NameEscapingTest {
               .table("myTable")
               .build();
 
-      assertThat(oracle.getName()).isEqualTo("mydb.example.com.mySchema.myTable");
+      // Spec example: "mydb\.example\.com.mySchema.myTable"
+      assertThat(oracle.getName()).isEqualTo("mydb\\.example\\.com.mySchema.myTable");
     } finally {
       clearEnvironmentVariables(env.keySet());
     }

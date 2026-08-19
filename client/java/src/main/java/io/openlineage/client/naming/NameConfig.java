@@ -20,13 +20,13 @@ import lombok.ToString;
  *
  * <pre>{@code
  * name:
- *   escaping: false   # disable automatic dot-escaping of name segments
+ *   escaping: true   # enable automatic dot-escaping of name segments (off by default)
  * }</pre>
  *
  * <p>The same setting can also be applied through the dynamic environment variable convention:
  *
  * <pre>{@code
- * OPENLINEAGE__NAME__ESCAPING=false
+ * OPENLINEAGE__NAME__ESCAPING=true
  * }</pre>
  *
  * <p>When the environment variable is set it takes precedence because {@link NameEscaping} reads
@@ -41,8 +41,8 @@ import lombok.ToString;
 public class NameConfig implements MergeConfig<NameConfig> {
 
   /**
-   * When {@code false}, automatic dot-escaping of name segments is disabled. Defaults to {@code
-   * null}, which is treated as {@code true} (escaping enabled) by {@link NameEscaping}.
+   * When {@code true}, automatic dot-escaping of name segments is enabled. Defaults to {@code
+   * null}, which is treated as {@code false} (escaping disabled) by {@link NameEscaping}.
    */
   @JsonProperty("escaping")
   private Boolean escaping;

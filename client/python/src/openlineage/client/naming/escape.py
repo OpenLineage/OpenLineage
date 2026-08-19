@@ -14,19 +14,17 @@ The escaping rule (from the naming specification) is:
 
     A literal ``.`` inside a segment is written as ``\\.``
 
-Escaping is **enabled by default** and can be disabled by setting the
-environment variable ``OPENLINEAGE__NAME__ESCAPING`` to ``false`` (case-
-insensitive).  This is intended as an escape hatch for producers that emit
-names that are already pre-escaped or that target consumers which do not yet
-support the escaping convention.
+Escaping is **disabled by default** and can be enabled by setting the
+environment variable ``OPENLINEAGE__NAME__ESCAPING`` to ``true`` (case-
+insensitive), or by setting ``name.escaping: true`` in the YAML configuration.
 
 Example::
 
     >>> from openlineage.client.naming.escape import escape, is_escaping_enabled
+    >>> is_escaping_enabled()
+    False
     >>> escape("mydb.example.com")
-    'mydb\\\\.example\\\\.com'
-    >>> escape("my_schema")
-    'my_schema'
+    'mydb.example.com'
 """
 
 from __future__ import annotations
@@ -37,13 +35,13 @@ _ENV_VAR = "OPENLINEAGE__NAME__ESCAPING"
 
 
 def is_escaping_enabled() -> bool:
-    """Return ``True`` if dot-escaping is enabled (the default).
+    """Return ``True`` if dot-escaping is enabled.
 
-    Escaping can be disabled by setting the environment variable
-    ``OPENLINEAGE__NAME__ESCAPING=false`` (case-insensitive).
+    Escaping is **disabled by default**. It can be enabled by setting the
+    environment variable ``OPENLINEAGE__NAME__ESCAPING=true`` (case-insensitive).
     """
-    raw = os.environ.get(_ENV_VAR, "true")
-    return raw.strip().lower() != "false"
+    raw = os.environ.get(_ENV_VAR, "false")
+    return raw.strip().lower() == "true"
 
 
 def escape(segment: str) -> str:

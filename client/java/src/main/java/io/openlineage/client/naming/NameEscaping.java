@@ -5,8 +5,6 @@
 
 package io.openlineage.client.naming;
 
-import org.apache.commons.lang3.Strings;
-
 /**
  * Utility class for escaping dots in OpenLineage name segments.
  *
@@ -18,10 +16,9 @@ import org.apache.commons.lang3.Strings;
  * <p>The escaping rule (from the naming specification) is: a literal {@code .} inside a segment is
  * written as {@code \\.}.
  *
- * <p>Escaping is <em>enabled by default</em> and can be disabled by setting the environment
- * variable {@code OPENLINEAGE__NAME__ESCAPING} to {@code false} (case-insensitive). This is
- * intended as an escape hatch for producers that emit names that are already pre-escaped or that
- * target consumers which do not yet support the escaping convention.
+ * <p>Escaping is <em>disabled by default</em> and can be enabled by setting the environment
+ * variable {@code OPENLINEAGE__NAME__ESCAPING} to {@code true} (case-insensitive), or by setting
+ * {@code name.escaping: true} in the YAML configuration.
  *
  * <p>Example:
  *
@@ -37,15 +34,15 @@ public final class NameEscaping {
   private NameEscaping() {}
 
   /**
-   * Returns {@code true} if dot-escaping is enabled (the default).
+   * Returns {@code true} if dot-escaping is enabled.
    *
-   * <p>Escaping can be disabled by setting the environment variable {@code
-   * OPENLINEAGE__NAME__ESCAPING=false} (case-insensitive).
+   * <p>Escaping is <em>disabled by default</em>. It can be enabled by setting the environment
+   * variable {@code OPENLINEAGE__NAME__ESCAPING=true} (case-insensitive).
    *
    * @return {@code true} when escaping is active
    */
   public static boolean isEscapingEnabled() {
-    return !Strings.CI.equals("false", System.getenv(ENV_VAR));
+    return Boolean.valueOf(System.getenv(ENV_VAR));
   }
 
   /**

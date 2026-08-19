@@ -15,14 +15,10 @@ const nameEscapingEnvVar = "OPENLINEAGE__NAME__ESCAPING"
 // IsNameEscapingEnabled reports whether dot-escaping of name segments is
 // enabled.
 //
-// Escaping is on by default and can be disabled by setting the environment
-// variable OPENLINEAGE__NAME__ESCAPING=false (case-insensitive).
+// Escaping is off by default and can be enabled by setting the environment
+// variable OPENLINEAGE__NAME__ESCAPING=true (case-insensitive).
 func IsNameEscapingEnabled() bool {
-	raw := os.Getenv(nameEscapingEnvVar)
-	if raw == "" {
-		return true
-	}
-	return !strings.EqualFold(strings.TrimSpace(raw), "false")
+	return strings.EqualFold(strings.TrimSpace(os.Getenv(nameEscapingEnvVar)), "true")
 }
 
 // EscapeNameSegment escapes dots in a single OpenLineage name segment.

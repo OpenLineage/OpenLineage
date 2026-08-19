@@ -34,41 +34,41 @@ func TestEscapeNameSegment_EscapingEnabled(t *testing.T) {
 	}
 }
 
-func TestEscapeNameSegment_EscapingDisabled(t *testing.T) {
-	t.Setenv("OPENLINEAGE__NAME__ESCAPING", "false")
+func TestEscapeNameSegment_EscapingDisabledByDefault(t *testing.T) {
+	t.Setenv("OPENLINEAGE__NAME__ESCAPING", "")
 
 	input := "mydb.example.com"
 	got := ol.EscapeNameSegment(input)
 	if got != input {
-		t.Errorf("EscapeNameSegment(%q) with escaping disabled = %q, want %q", input, got, input)
+		t.Errorf("EscapeNameSegment(%q) with escaping disabled by default = %q, want %q", input, got, input)
 	}
 }
 
-func TestIsNameEscapingEnabled_DefaultTrue(t *testing.T) {
+func TestIsNameEscapingEnabled_DefaultFalse(t *testing.T) {
 	t.Setenv("OPENLINEAGE__NAME__ESCAPING", "")
 
-	if !ol.IsNameEscapingEnabled() {
-		t.Error("expected escaping to be enabled by default")
+	if ol.IsNameEscapingEnabled() {
+		t.Error("expected escaping to be disabled by default")
 	}
 }
 
-func TestIsNameEscapingEnabled_FalseVariants(t *testing.T) {
-	for _, v := range []string{"false", "FALSE", "False", " false "} {
+func TestIsNameEscapingEnabled_TrueVariants(t *testing.T) {
+	for _, v := range []string{"true", "TRUE", "True", " true "} {
 		t.Run(v, func(t *testing.T) {
 			t.Setenv("OPENLINEAGE__NAME__ESCAPING", v)
-			if ol.IsNameEscapingEnabled() {
-				t.Errorf("expected escaping to be disabled for env value %q", v)
+			if !ol.IsNameEscapingEnabled() {
+				t.Errorf("expected escaping to be enabled for env value %q", v)
 			}
 		})
 	}
 }
 
-func TestIsNameEscapingEnabled_NonFalseValues(t *testing.T) {
-	for _, v := range []string{"true", "TRUE", "1", "yes", "on"} {
+func TestIsNameEscapingEnabled_NonTrueValues(t *testing.T) {
+	for _, v := range []string{"false", "FALSE", "1", "yes", "on"} {
 		t.Run(v, func(t *testing.T) {
 			t.Setenv("OPENLINEAGE__NAME__ESCAPING", v)
-			if !ol.IsNameEscapingEnabled() {
-				t.Errorf("expected escaping to be enabled for env value %q", v)
+			if ol.IsNameEscapingEnabled() {
+				t.Errorf("expected escaping to be disabled for env value %q", v)
 			}
 		})
 	}

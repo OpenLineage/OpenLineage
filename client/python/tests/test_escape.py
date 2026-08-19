@@ -7,23 +7,23 @@ from openlineage.client.naming.escape import escape, is_escaping_enabled
 
 
 class TestIsEscapingEnabled:
-    def test_enabled_by_default(self, monkeypatch):
+    def test_disabled_by_default(self, monkeypatch):
         monkeypatch.delenv("OPENLINEAGE__NAME__ESCAPING", raising=False)
-        assert is_escaping_enabled() is True
-
-    def test_disabled_when_false(self, monkeypatch):
-        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "false")
         assert is_escaping_enabled() is False
 
-    def test_disabled_case_insensitive(self, monkeypatch):
-        for value in ("false", "FALSE", "False", " false "):
-            monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", value)
-            assert is_escaping_enabled() is False, f"should be disabled for {value!r}"
+    def test_enabled_when_true(self, monkeypatch):
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
+        assert is_escaping_enabled() is True
 
-    def test_enabled_for_true_values(self, monkeypatch):
-        for value in ("true", "TRUE", "1", "yes", "on"):
+    def test_enabled_case_insensitive(self, monkeypatch):
+        for value in ("true", "TRUE", "True", " true "):
             monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", value)
             assert is_escaping_enabled() is True, f"should be enabled for {value!r}"
+
+    def test_disabled_for_non_true_values(self, monkeypatch):
+        for value in ("false", "FALSE", "1", "yes", "on"):
+            monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", value)
+            assert is_escaping_enabled() is False, f"should be disabled for {value!r}"
 
 
 class TestEscape:
@@ -32,21 +32,21 @@ class TestEscape:
         assert escape("plain") == "plain"
         assert escape("my_schema") == "my_schema"
 
-    def test_single_dot_escaped(self, monkeypatch):
+    def test_segment_unchanged_by_default(self, monkeypatch):
         monkeypatch.delenv("OPENLINEAGE__NAME__ESCAPING", raising=False)
+        assert escape("mydb.example.com") == "mydb.example.com"
+
+    def test_single_dot_escaped_when_enabled(self, monkeypatch):
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
         assert escape("a.b") == r"a\.b"
 
-    def test_multiple_dots_escaped(self, monkeypatch):
-        monkeypatch.delenv("OPENLINEAGE__NAME__ESCAPING", raising=False)
+    def test_multiple_dots_escaped_when_enabled(self, monkeypatch):
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
         assert escape("mydb.example.com") == r"mydb\.example\.com"
         assert escape("a.b.c") == r"a\.b\.c"
 
-    def test_segment_unchanged_when_escaping_disabled(self, monkeypatch):
-        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "false")
-        assert escape("mydb.example.com") == "mydb.example.com"
-
-    def test_leading_trailing_dot(self, monkeypatch):
-        monkeypatch.delenv("OPENLINEAGE__NAME__ESCAPING", raising=False)
+    def test_leading_trailing_dot_escaped_when_enabled(self, monkeypatch):
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
         assert escape(".leading") == r"\.leading"
         assert escape("trailing.") == r"trailing\."
 
@@ -54,24 +54,24 @@ class TestEscape:
 class TestEscapingIntegrationWithNaming:
     """Verify that escaping flows through the Naming helpers end-to-end."""
 
-    def test_oracle_service_name_with_dots_escaped(self, monkeypatch):
+    def test_oracle_service_name_with_dots_unescaped_by_default(self, monkeypatch):
         from openlineage.client.naming.dataset import Oracle
 
         monkeypatch.delenv("OPENLINEAGE__NAME__ESCAPING", raising=False)
-        oracle = Oracle("localhost", "1521", "mydb.example.com", "mySchema", "myTable")
-        assert oracle.get_name() == r"mydb\.example\.com.mySchema.myTable"
-
-    def test_oracle_service_name_with_dots_unescaped_when_disabled(self, monkeypatch):
-        from openlineage.client.naming.dataset import Oracle
-
-        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "false")
         oracle = Oracle("localhost", "1521", "mydb.example.com", "mySchema", "myTable")
         assert oracle.get_name() == "mydb.example.com.mySchema.myTable"
 
-    def test_bigquery_project_id_with_dots_escaped(self, monkeypatch):
+    def test_oracle_service_name_with_dots_escaped_when_enabled(self, monkeypatch):
+        from openlineage.client.naming.dataset import Oracle
+
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
+        oracle = Oracle("localhost", "1521", "mydb.example.com", "mySchema", "myTable")
+        assert oracle.get_name() == r"mydb\.example\.com.mySchema.myTable"
+
+    def test_bigquery_project_id_with_dots_escaped_when_enabled(self, monkeypatch):
         from openlineage.client.naming.dataset import BigQuery
 
-        monkeypatch.delenv("OPENLINEAGE__NAME__ESCAPING", raising=False)
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
         bq = BigQuery("my.project.id", "dataset", "table")
         assert bq.get_name() == r"my\.project\.id.dataset.table"
 
