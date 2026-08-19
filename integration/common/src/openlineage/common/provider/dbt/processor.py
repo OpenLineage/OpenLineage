@@ -31,6 +31,7 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
     schema_dataset,
     sql_job,
+    symlinks_dataset,
     tags_run,
     test_run,
 )
@@ -195,6 +196,10 @@ class DbtArtifactProcessor:
         self.selector = selector
         self.manifest_version = None
         self.adapter_type: Adapter | None = None
+        # Set for adapters that can provide a stable catalog identifier in addition to
+        # the primary dataset namespace. For Athena, this is populated from the supported
+        # assume-role ARN or a best-effort STS lookup; lookup failures leave it unset.
+        self.dataset_symlink_namespace: str | None = None
         # Populated by parse(); retained so manifest-declared exposures can be indexed
         # and attached to the datasets they depend on.
         self.manifest: dict[str, Any] = {}
@@ -441,9 +446,12 @@ class DbtArtifactProcessor:
                 assertions=node_assertions
             )
 
-            namespace, name, _, _ = self.extract_dataset_data(
+            namespace, name, dataset_facets, _ = self.extract_dataset_data(
                 ModelNode(type=node_type, metadata_node=node), assertion_facet, has_facets=False
             )
+            # Keep the assertion facet in both locations for compatibility, while
+            # retaining dataset facets such as the Athena Glue symlink.
+            dataset_facets["dataQualityAssertions"] = assertion_facet  # type: ignore[assignment]
 
             job_name = self._format_dataset_name(
                 node["database"],
@@ -472,7 +480,6 @@ class DbtArtifactProcessor:
                 run_facets["tags"] = tags_facet
 
             run_id = str(generate_new_uuid())
-            dataset_facets: dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
             # The aggregate per-model test event is FAIL when any of its assertions failed.
             # Warn-severity failures count as success so they don't block the pipeline,
             # mirroring dbt's own success/failure semantics.
@@ -492,7 +499,7 @@ class DbtArtifactProcessor:
                         InputDataset(
                             namespace=namespace,
                             name=name,
-                            inputFacets=dataset_facets,
+                            inputFacets={"dataQualityAssertions": assertion_facet},
                             # TODO: remove this next release
                             facets=dataset_facets,  # type: ignore
                         )
@@ -572,10 +579,10 @@ class DbtArtifactProcessor:
             parent_node = manifest_nodes.get(parent_id)
             if parent_node:
                 ptype = "source" if parent_id.startswith("source.") else "model"
-                ns, nm, _, _ = self.extract_dataset_data(
+                ns, nm, facets, _ = self.extract_dataset_data(
                     ModelNode(type=ptype, metadata_node=parent_node), None, has_facets=False
                 )
-                inputs.append(InputDataset(namespace=ns, name=nm))
+                inputs.append(InputDataset(namespace=ns, name=nm, facets=facets))
         return inputs
 
     def _build_test_execution(
@@ -812,14 +819,14 @@ class DbtArtifactProcessor:
         assertions: data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet | None,
         has_facets: bool = False,
     ) -> tuple[str, str, dict, dict]:
-        facets: dict[str, DatasetFacet]
+        facets: dict[str, DatasetFacet] = {}
         input_facets: dict[str, InputDatasetFacet] = {}
+        if symlink := self._create_dataset_symlink(node):
+            facets["symlinks"] = symlink
         if has_facets:
-            facets = {
-                "dataSource": datasource_dataset.DatasourceDatasetFacet(
-                    name=self.dataset_namespace, uri=self.dataset_namespace
-                ),
-            }
+            facets["dataSource"] = datasource_dataset.DatasourceDatasetFacet(
+                name=self.dataset_namespace, uri=self.dataset_namespace
+            )
 
             documentation = node.metadata_node.get("description", "")
             if documentation:
@@ -848,8 +855,6 @@ class DbtArtifactProcessor:
 
             if dbt_model_facet := self._create_dbt_model_dataset_facet(node):
                 facets["dbt_model"] = dbt_model_facet
-        else:
-            facets = {}
         if node.type == "source":
             table = node.metadata_node["name"]
         else:
@@ -863,6 +868,34 @@ class DbtArtifactProcessor:
             ),
             facets,
             input_facets,
+        )
+
+    def _create_dataset_symlink(self, node: ModelNode) -> symlinks_dataset.SymlinksDatasetFacet | None:
+        """Create an alternate catalog identifier for an Athena dataset.
+
+        dbt-athena identifies the catalog and Glue database separately in its
+        manifest: ``database`` is the catalog (usually ``awsdatacatalog``) and
+        ``schema`` is the Glue database. The AWS account is taken from the
+        supported ``assume_role_arn`` when available, or resolved with a
+        best-effort STS lookup. If neither path succeeds, the existing Athena
+        identifier is retained and no symlink is emitted.
+        """
+        if self.adapter_type != Adapter.ATHENA or not self.dataset_symlink_namespace:
+            return None
+
+        database = node.metadata_node.get("schema")
+        table = node.metadata_node.get("name" if node.type == "source" else "alias")
+        if not database or not table:
+            return None
+
+        return symlinks_dataset.SymlinksDatasetFacet(
+            identifiers=[
+                symlinks_dataset.Identifier(
+                    namespace=self.dataset_symlink_namespace,
+                    name=f"table/{database}/{table}",
+                    type="TABLE",
+                )
+            ]
         )
 
     def _create_dbt_model_dataset_facet(self, node: ModelNode) -> DbtModelDatasetFacet | None:
@@ -1035,6 +1068,90 @@ class DbtArtifactProcessor:
 
     def extract_dataset_namespace(self, profile: dict):
         self.dataset_namespace = self.extract_namespace(profile)
+        self.dataset_symlink_namespace = self._extract_dataset_symlink_namespace(profile)
+
+    @staticmethod
+    def _extract_profile_aws_account_id(profile: dict) -> str | None:
+        """Extract the account ID from dbt-athena's supported role ARN setting."""
+        role_arn = profile.get("assume_role_arn")
+        if not isinstance(role_arn, str):
+            return None
+        parts = role_arn.split(":")
+        if len(parts) > 4 and parts[0] == "arn" and parts[2] == "iam" and parts[4]:
+            return parts[4]
+        return None
+
+    def _lookup_aws_account_id(self, profile: dict) -> str | None:
+        """Best-effort account lookup using the credentials described by a dbt profile.
+
+        dbt-athena resolves its credentials through boto3 and optionally assumes an
+        IAM role. This method mirrors that resolution lazily so importing the dbt
+        integration does not require boto3. Every import, credential, and network
+        error is swallowed because account enrichment must never fail dbt or event
+        processing.
+        """
+        try:
+            import boto3  # type: ignore[import-not-found]
+        except Exception as error:
+            self.logger.debug(
+                "Skipping Athena Glue account lookup; boto3 is unavailable (%s).",
+                type(error).__name__,
+            )
+            return None
+
+        try:
+            region_name = profile.get("region_name")
+            session = boto3.session.Session(
+                aws_access_key_id=profile.get("aws_access_key_id"),
+                aws_secret_access_key=profile.get("aws_secret_access_key"),
+                aws_session_token=profile.get("aws_session_token"),
+                region_name=region_name,
+                profile_name=profile.get("aws_profile_name"),
+            )
+
+            role_arn = profile.get("assume_role_arn")
+            if role_arn:
+                assume_role_kwargs = {
+                    "RoleArn": role_arn,
+                    "RoleSessionName": profile.get("assume_role_session_name") or "dbt-athena",
+                }
+                if profile.get("assume_role_external_id"):
+                    assume_role_kwargs["ExternalId"] = profile["assume_role_external_id"]
+                if profile.get("assume_role_duration_seconds") is not None:
+                    assume_role_kwargs["DurationSeconds"] = int(profile["assume_role_duration_seconds"])
+
+                assumed_role = session.client("sts").assume_role(**assume_role_kwargs)
+                credentials = assumed_role["Credentials"]
+                session = boto3.session.Session(
+                    aws_access_key_id=credentials["AccessKeyId"],
+                    aws_secret_access_key=credentials["SecretAccessKey"],
+                    aws_session_token=credentials["SessionToken"],
+                    region_name=region_name,
+                )
+
+            account_id = session.client("sts").get_caller_identity().get("Account")
+            if account_id is None or not str(account_id).strip():
+                return None
+            return str(account_id).strip()
+        except Exception as error:
+            self.logger.debug(
+                "Skipping Athena Glue account lookup after an AWS error (%s).",
+                type(error).__name__,
+            )
+            return None
+
+    def _extract_dataset_symlink_namespace(self, profile: dict) -> str | None:
+        if self.adapter_type != Adapter.ATHENA:
+            return None
+
+        # Avoid an AWS call when the supported assume_role_arn already exposes
+        # the target account, but fall back to the effective credential identity
+        # for the common aws_profile_name/default credential-chain case.
+        account_id = self._extract_profile_aws_account_id(profile) or self._lookup_aws_account_id(profile)
+        if not account_id:
+            return None
+
+        return f"arn:aws:glue:{profile['region_name']}:{account_id}"
 
     def extract_namespace(self, profile: dict) -> str:
         """Extract namespace from profile's type"""

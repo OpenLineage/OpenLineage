@@ -3,13 +3,15 @@
 
 
 import os
+import sys
+import types
 from unittest.mock import MagicMock
 
 import pytest
 from openlineage.client.facet_v2 import external_query_run, processing_engine_run
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
-from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext
+from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext, ModelNode
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 from openlineage.common.provider.dbt.utils import get_dbt_profiles_dir
 
@@ -188,6 +190,103 @@ def test_spark_namespace_separates_the_port(dbt_artifact_processor, profile, exp
     dbt_artifact_processor.extract_dataset_namespace(profile)
 
     assert dbt_artifact_processor.dataset_namespace == expected
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [
+        {
+            "region_name": "us-east-1",
+            "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena",
+        },
+    ],
+)
+def test_athena_dataset_symlink_uses_assume_role_account(dbt_artifact_processor, profile):
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    model = ModelNode(
+        type="model",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "alias": "orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(model, None)
+
+    assert facets["symlinks"].identifiers[0].namespace == "arn:aws:glue:us-east-1:123456789012"
+    assert facets["symlinks"].identifiers[0].name == "table/analytics/orders"
+    assert facets["symlinks"].identifiers[0].type == "TABLE"
+
+
+def test_athena_dataset_symlink_uses_source_name(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"region_name": "us-east-1", "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena"}
+    )
+
+    source = ModelNode(
+        type="source",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "name": "raw_orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(source, None)
+
+    assert facets["symlinks"].identifiers[0].name == "table/analytics/raw_orders"
+
+
+def test_athena_dataset_symlink_uses_effective_profile_credentials(monkeypatch, dbt_artifact_processor):
+    class FakeStsClient:
+        def get_caller_identity(self):
+            return {"Account": "123456789012"}
+
+    class FakeSession:
+        instances = []
+
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            self.instances.append(self)
+
+        def client(self, service_name):
+            assert service_name == "sts"
+            return FakeStsClient()
+
+    fake_boto3 = types.ModuleType("boto3")
+    fake_boto3.session = types.SimpleNamespace(Session=FakeSession)
+    monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
+
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"region_name": "us-east-1", "aws_profile_name": "production"}
+    )
+
+    assert dbt_artifact_processor.dataset_symlink_namespace == "arn:aws:glue:us-east-1:123456789012"
+    assert FakeSession.instances[0].kwargs["profile_name"] == "production"
+
+
+def test_athena_dataset_symlink_is_omitted_without_profile_account(monkeypatch, dbt_artifact_processor):
+    monkeypatch.setitem(sys.modules, "boto3", None)
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace({"region_name": "us-east-1"})
+
+    model = ModelNode(
+        type="model",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "alias": "orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(model, None)
+
+    assert "symlinks" not in facets
 
 
 class TestGetDbtProfilesDir:
