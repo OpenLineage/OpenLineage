@@ -28,6 +28,10 @@ import org.junit.jupiter.api.Test;
 
 class ClickHouseHandlerTest {
   private static final String CLICKHOUSE = "clickhouse";
+  private static final String DATABASE = "mydb";
+  private static final String DEFAULT_HOST = "localhost";
+  private static final String HTTP = "http";
+  private static final String TABLE = "mytable";
 
   private final OpenLineageContext context = mock(OpenLineageContext.class);
   private final ClickHouseHandler handler = new ClickHouseHandler(context);
@@ -54,14 +58,14 @@ class ClickHouseHandlerTest {
 
   @Test
   void testGetDatasetIdentifier() {
-    when(conf.get("spark.sql.catalog.clickhouse.host", "localhost")).thenReturn("ch.example.com");
+    when(conf.get("spark.sql.catalog.clickhouse.host", DEFAULT_HOST)).thenReturn("ch.example.com");
     when(conf.get("spark.sql.catalog.clickhouse.http_port", "8123")).thenReturn("8123");
 
     DatasetIdentifier identifier =
         handler.getDatasetIdentifier(
             session,
             catalog,
-            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Identifier.of(new String[] {DATABASE}, TABLE),
             Collections.emptyMap());
 
     assertThat(identifier)
@@ -73,14 +77,14 @@ class ClickHouseHandlerTest {
   void testGetDatasetIdentifierWithNonDefaultCatalogName() {
     ClickHouseCatalog otherCatalog = new ClickHouseCatalog();
     otherCatalog.initialize("ch2", new CaseInsensitiveStringMap(Collections.emptyMap()));
-    when(conf.get("spark.sql.catalog.ch2.host", "localhost")).thenReturn("other.example.com");
+    when(conf.get("spark.sql.catalog.ch2.host", DEFAULT_HOST)).thenReturn("other.example.com");
     when(conf.get("spark.sql.catalog.ch2.http_port", "8123")).thenReturn("8124");
 
     DatasetIdentifier identifier =
         handler.getDatasetIdentifier(
             session,
             otherCatalog,
-            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Identifier.of(new String[] {DATABASE}, TABLE),
             Collections.emptyMap());
 
     assertThat(identifier)
@@ -90,15 +94,15 @@ class ClickHouseHandlerTest {
 
   @Test
   void testGetDatasetIdentifierWithNativeProtocol() {
-    when(conf.get("spark.sql.catalog.clickhouse.protocol", "http")).thenReturn("native");
-    when(conf.get("spark.sql.catalog.clickhouse.host", "localhost")).thenReturn("ch.example.com");
+    when(conf.get("spark.sql.catalog.clickhouse.protocol", HTTP)).thenReturn("native");
+    when(conf.get("spark.sql.catalog.clickhouse.host", DEFAULT_HOST)).thenReturn("ch.example.com");
     when(conf.get("spark.sql.catalog.clickhouse.tcp_port", "9000")).thenReturn("9440");
 
     DatasetIdentifier identifier =
         handler.getDatasetIdentifier(
             session,
             catalog,
-            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Identifier.of(new String[] {DATABASE}, TABLE),
             Collections.emptyMap());
 
     assertThat(identifier)
@@ -109,13 +113,13 @@ class ClickHouseHandlerTest {
   @Test
   void testGetDatasetIdentifierWithTcpProtocolDefaults() {
     when(conf.get(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
-    when(conf.get("spark.sql.catalog.clickhouse.protocol", "http")).thenReturn("TCP");
+    when(conf.get("spark.sql.catalog.clickhouse.protocol", HTTP)).thenReturn("TCP");
 
     DatasetIdentifier identifier =
         handler.getDatasetIdentifier(
             session,
             catalog,
-            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Identifier.of(new String[] {DATABASE}, TABLE),
             Collections.emptyMap());
 
     assertThat(identifier.getNamespace()).isEqualTo("clickhouse://localhost:9000");
@@ -124,14 +128,14 @@ class ClickHouseHandlerTest {
   @Test
   void testGetDatasetIdentifierWithHttpProtocolPrefix() {
     when(conf.get(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
-    when(conf.get("spark.sql.catalog.clickhouse.protocol", "http")).thenReturn("http");
-    when(conf.get("spark.sql.catalog.clickhouse.host", "localhost")).thenReturn("ch.example.com");
+    when(conf.get("spark.sql.catalog.clickhouse.protocol", HTTP)).thenReturn(HTTP);
+    when(conf.get("spark.sql.catalog.clickhouse.host", DEFAULT_HOST)).thenReturn("ch.example.com");
 
     DatasetIdentifier identifier =
         handler.getDatasetIdentifier(
             session,
             catalog,
-            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Identifier.of(new String[] {DATABASE}, TABLE),
             Collections.emptyMap());
 
     assertThat(identifier.getNamespace()).isEqualTo("clickhouse://ch.example.com:8123");
@@ -145,7 +149,7 @@ class ClickHouseHandlerTest {
         handler.getDatasetIdentifier(
             session,
             catalog,
-            Identifier.of(new String[] {"mydb"}, "mytable"),
+            Identifier.of(new String[] {DATABASE}, TABLE),
             Collections.emptyMap());
 
     assertThat(identifier.getNamespace()).isEqualTo("clickhouse://localhost:8123");
