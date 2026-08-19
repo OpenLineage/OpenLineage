@@ -16,6 +16,8 @@ import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtu
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.equalTo;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.field;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.intLiteral;
+import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.scalaUdf;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.openlineage.client.utils.TransformationInfo;
@@ -27,6 +29,7 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.If;
 import org.apache.spark.sql.catalyst.expressions.Md5;
+import org.apache.spark.sql.catalyst.expressions.ScalaUDF;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -35,6 +38,13 @@ class ExpressionTraverserTest {
   static final AttributeReference LEAF_NODE_1 = field(NAME_1, EXPR_ID_1);
   static final AttributeReference LEAF_NODE_2 = field(NAME_2, EXPR_ID_2);
   static final AttributeReference LEAF_NODE_3 = field(NAME_3, EXPR_ID_3);
+
+  static final TransformationInfo UDF_TRANSFORMATION =
+      new TransformationInfo(
+          TransformationInfo.Types.INDIRECT,
+          TransformationInfo.Subtypes.TRANSFORMATION,
+          "UDF: my_udf",
+          false);
 
   ColumnLevelLineageBuilder builder = Mockito.mock(ColumnLevelLineageBuilder.class);
 
@@ -113,6 +123,63 @@ class ExpressionTraverserTest {
 
     verify(builder)
         .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.transformation(true));
+  }
+
+  @Test
+  void udfDoesNotFallBackToDirectTransformation() {
+    ScalaUDF udf = scalaUdf("my_udf", LEAF_NODE_1);
+
+    aTraverser(udf, OUTPUT_EXPRESSION_ID).traverse();
+
+    verify(builder).addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, UDF_TRANSFORMATION);
+    verify(builder, never())
+        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.transformation());
+    verify(builder, never())
+        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.transformation(true));
+    verify(builder, never())
+        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.identity());
+  }
+
+  @Test
+  void udfNestedInAnExpressionTreeKeepsIndirectTransformation() {
+    ScalaUDF udf = scalaUdf("my_udf", LEAF_NODE_1);
+    Alias res = alias(new Add(udf, intLiteral(1))).as("a", OUTPUT_EXPRESSION_ID);
+
+    aTraverser(res, OUTPUT_EXPRESSION_ID).traverse();
+
+    // TransformationInfo.merge keeps INDIRECT once it is reached, so a UDF nested under a
+    // regular expression still yields an indirect edge rather than a direct one
+    verify(builder).addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, UDF_TRANSFORMATION);
+    verify(builder, never())
+        .addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, TransformationInfo.transformation());
+  }
+
+  @Test
+  void udfArgumentsAreStillTraversedIntoTheirLeaves() {
+    // udf(name1 + name2) -> both leaves must show up as indirect UDF dependencies
+    ScalaUDF udf = scalaUdf("my_udf", new Add(LEAF_NODE_1, LEAF_NODE_2));
+
+    aTraverser(udf, OUTPUT_EXPRESSION_ID).traverse();
+
+    verify(builder).addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_1, UDF_TRANSFORMATION);
+    verify(builder).addDependency(OUTPUT_EXPRESSION_ID, EXPR_ID_2, UDF_TRANSFORMATION);
+  }
+
+  @Test
+  void anonymousUdfGetsGenericDescription() {
+    ScalaUDF udf = scalaUdf(null, LEAF_NODE_1);
+
+    aTraverser(udf, OUTPUT_EXPRESSION_ID).traverse();
+
+    verify(builder)
+        .addDependency(
+            OUTPUT_EXPRESSION_ID,
+            EXPR_ID_1,
+            new TransformationInfo(
+                TransformationInfo.Types.INDIRECT,
+                TransformationInfo.Subtypes.TRANSFORMATION,
+                "UDF",
+                false));
   }
 
   @Test

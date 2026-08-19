@@ -2,6 +2,16 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.50.0...HEAD)
 
+### Added
+
+* **Spark: Column lineage for typed Dataset operations and UDFs**
+  *`UserDefinedExpressionVisitor` marks UDF-derived column edges as `INDIRECT`/`TRANSFORMATION` naming the function, instead of the `DIRECT`/`TRANSFORMATION` that made `myUdf(name)` indistinguishable from `upper(name)`. `TypedFilterVisitor` and `TypedGroupByVisitor` emit `INDIRECT/FILTER` and `INDIRECT/GROUP_BY` for typed `filter` and `groupByKey().mapGroups`. `TypedBoundaryFanInVisitor` optionally emits a pessimistic fan-in across the `Serialize`/`Deserialize` boundary that `map`/`mapPartitions`/`flatMap` produce, behind `spark.openlineage.columnLineage.typedBoundaryFanInEnabled` (default `false`) with a width cap `typedBoundaryFanInMaxEdges` (default `10000`).*
+
+### Fixed
+
+* **Spark: Count dataset-level dependencies against `RETURNED_INPUT_FIELD_LIMIT` in column lineage**
+  *`ColumnLevelLineageBuilder.buildFields` tested the 100 000 input-field limit against the per-field dependency lists only. Dataset-level dependencies — registered by `addDatasetDependency`, i.e. what the `Filter`, `Sort`, `Join` and `Aggregate` visitors emit — were merged into every output field afterwards inside `facetInputFields` and so escaped the guard entirely: a facet of 122 850 entries was returned against the 100 000 limit. They are now charged at their true rendered cost of (dataset dependencies × emitted output fields), since each is replicated onto every field. **Behavioural change:** a wide `Filter`/`Sort`/`Join`/`Aggregate` whose predicate spans enough columns to exceed the limit now collapses the facet to empty, which is what the limit exists to do; ordinary predicates read few columns and are unaffected. The warn logged when the limit trips names the per-field and dataset-level contributions separately.*
+
 ## [1.50.0](https://github.com/OpenLineage/OpenLineage/compare/1.49.0...1.50.0)
 
 ### Added

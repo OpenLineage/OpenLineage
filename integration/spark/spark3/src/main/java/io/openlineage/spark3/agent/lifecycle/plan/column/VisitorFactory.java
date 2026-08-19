@@ -11,6 +11,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.Cas
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.CoalesceVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.ExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.IfVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.UserDefinedExpressionVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression.WindowVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.AggregateVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.CreateTableAsSelectVisitor;
@@ -23,6 +24,9 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.JoinV
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.OperatorVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.ProjectVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.SortVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.TypedBoundaryFanInVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.TypedFilterVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.TypedGroupByVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.UnionVisitor;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,11 +43,20 @@ class VisitorFactory {
             new AggregateVisitor(),
             new JoinVisitor(),
             new FilterVisitor(),
+            new TypedFilterVisitor(),
             new SortVisitor(),
             new io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.WindowVisitor(),
             new DataSourceV2RelationVisitor(),
             new UnionVisitor(),
-            new IcebergMergeIntoVisitor()));
+            new IcebergMergeIntoVisitor(),
+            // Typed (Dataset API) operators, disjoint by plan node -- SerializeFromObject,
+            // TypedFilter, MapGroups -- so no node is claimed twice. The fan-in is scoped at the
+            // Serialize/Deserialize boundary rather than per typed node because that is where the
+            // dependency is actually severed; a visitor per MapElements/MapPartitions/AppendColumns
+            // would double-claim the boundary and emit DIRECT edges across an opaque closure.
+            // See docs/design/typed-boundary-emission-policy.md.
+            new TypedBoundaryFanInVisitor(),
+            new TypedGroupByVisitor()));
   }
 
   List<ExpressionVisitor> expressionVisitors() {
@@ -54,6 +67,11 @@ class VisitorFactory {
             new IfVisitor(),
             new CoalesceVisitor(),
             new AggregateExpressionVisitor(),
-            new WindowVisitor()));
+            new WindowVisitor(),
+            // UDFs and UDAFs: no other visitor matches a UserDefinedExpression, so this entry only
+            // has to precede ExpressionTraverser's generic children() fallback, which it does by
+            // being registered at all. A UDAF is reached through AggregateExpressionVisitor, which
+            // recurses into the AggregateExpression's aggregateFunction.
+            new UserDefinedExpressionVisitor()));
   }
 }

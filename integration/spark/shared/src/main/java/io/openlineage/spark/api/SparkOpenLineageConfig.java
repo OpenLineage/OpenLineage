@@ -141,6 +141,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       // TODO #3084: For the release 1.26.0 this flag should default to true
       columnLineageConfig.setSchemaSizeLimit(1_000);
       columnLineageConfig.setDatasetLineageEnabled(true);
+      // Ships dark: the typed-boundary fan-in is over-broad by construction, so it is opt-in.
+      columnLineageConfig.setTypedBoundaryFanInEnabled(false);
+      columnLineageConfig.setTypedBoundaryFanInMaxEdges(10_000);
     }
     return columnLineageConfig;
   }

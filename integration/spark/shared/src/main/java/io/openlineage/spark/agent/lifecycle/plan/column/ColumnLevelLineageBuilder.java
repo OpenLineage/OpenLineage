@@ -55,7 +55,12 @@ public class ColumnLevelLineageBuilder {
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
   private final OpenLineage.SchemaDatasetFacet schema;
-  private final OpenLineageContext context;
+
+  /**
+   * Exposed so that {@code OperatorVisitor}s - which only receive the builder - can read
+   * configuration such as {@link io.openlineage.spark.api.ColumnLineageConfig}.
+   */
+  @Getter private final OpenLineageContext context;
 
   private final Map<ExprId, Dependency> commonDependencies = new HashMap<>();
 
@@ -206,13 +211,24 @@ public class ColumnLevelLineageBuilder {
             .filter(pair -> !pair.getRight().isEmpty())
             .collect(Collectors.toList());
 
-    Integer fieldsDependencies =
-        collected.stream().map(Pair::getRight).map(List::size).reduce(0, Integer::sum);
+    long fieldsDependencies = collected.stream().map(Pair::getRight).mapToLong(List::size).sum();
 
-    if (fieldsDependencies > RETURNED_INPUT_FIELD_LIMIT) {
+    // Dataset-level dependencies are replicated onto EVERY emitted output field by
+    // facetInputFields, so their contribution to the rendered facet is
+    // (dataset dependencies x emitted fields), not (dataset dependencies). Counting them as one
+    // each would understate the rendered size by a factor of collected.size().
+    long datasetDependenciesRendered =
+        (long) datasetDependencyInputs.size() * (long) collected.size();
+    long renderedInputFields = fieldsDependencies + datasetDependenciesRendered;
+
+    if (renderedInputFields > RETURNED_INPUT_FIELD_LIMIT) {
       // don't return input fields
       log.warn(
-          "Amount of input fields exceeds {}. Returning empty column lineage.",
+          "Amount of input fields ({} from field dependencies + {} from {} dataset-level dependencies replicated over {} fields) exceeds {}. Returning empty column lineage.",
+          fieldsDependencies,
+          datasetDependenciesRendered,
+          datasetDependencyInputs.size(),
+          collected.size(),
           RETURNED_INPUT_FIELD_LIMIT);
       return fieldsBuilder.build();
     }

@@ -19,6 +19,7 @@ import org.apache.spark.sql.catalyst.expressions.GreaterThan;
 import org.apache.spark.sql.catalyst.expressions.Literal;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.expressions.NullOrdering;
+import org.apache.spark.sql.catalyst.expressions.ScalaUDF;
 import org.apache.spark.sql.catalyst.expressions.SortDirection;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
 import org.apache.spark.sql.types.IntegerType$;
@@ -66,6 +67,48 @@ public class ColumnLevelFixtures {
         mock(SortDirection.class),
         mock(NullOrdering.class),
         ScalaConversionUtils.asScalaSeqEmpty());
+  }
+
+  /**
+   * Builds a {@link ScalaUDF} - the expression Spark produces for {@code udf(...)} registered
+   * Scala/Java functions - over the given arguments. A {@code null} {@code udfName} models an
+   * anonymous UDF, for which Spark leaves {@code udfName} empty.
+   *
+   * <p>{@code ScalaUDF} takes the function as {@code AnyRef} but casts it to the {@code scala.
+   * FunctionN} matching the number of children in its constructor, so the arity of the supplied
+   * function must track {@code children.length} or construction fails with a {@link
+   * ClassCastException}.
+   */
+  public static ScalaUDF scalaUdf(String udfName, Expression... children) {
+    return new ScalaUDF(
+        identityFunctionOfArity(children.length),
+        IntegerType$.MODULE$,
+        asSeq(children),
+        ScalaConversionUtils.asScalaSeqEmpty(),
+        Option.empty(),
+        Option.apply(udfName),
+        false,
+        true);
+  }
+
+  /**
+   * A {@code scala.FunctionN} of the requested arity. The body is irrelevant - column lineage never
+   * evaluates a UDF - only the interface it implements matters.
+   */
+  private static Object identityFunctionOfArity(int arity) {
+    switch (arity) {
+      case 0:
+        return (scala.Function0<Object>) () -> null;
+      case 1:
+        return (scala.Function1<Object, Object>) x -> x;
+      case 2:
+        return (scala.Function2<Object, Object, Object>) (x, y) -> x;
+      case 3:
+        return (scala.Function3<Object, Object, Object, Object>) (x, y, z) -> x;
+      default:
+        throw new IllegalArgumentException(
+            "scalaUdf fixture supports up to 3 arguments, got " + arity);
+    }
   }
 
   @SafeVarargs
