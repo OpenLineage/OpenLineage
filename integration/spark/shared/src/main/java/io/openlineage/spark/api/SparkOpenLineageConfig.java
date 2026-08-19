@@ -13,6 +13,7 @@ import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.naming.NameConfig;
 import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
@@ -93,8 +94,17 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       ColumnLineageConfig columnLineageConfig,
       VendorsConfig vendors,
       FilterConfig filterConfig,
-      RunConfig run) {
-    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig, run, job);
+      RunConfig run,
+      NameConfig nameConfig) {
+    super(
+        transportConfig,
+        facetsConfig,
+        datasetConfig,
+        circuitBreaker,
+        metricsConfig,
+        run,
+        job,
+        nameConfig);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
     this.parentJobNamespace = parentJobNamespace;
@@ -211,6 +221,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
         mergePropertyWith(vendors, other.vendors),
         mergePropertyWith(filterConfig, other.filterConfig),
-        mergePropertyWith(runConfig, other.runConfig));
+        mergePropertyWith(runConfig, other.runConfig),
+        mergePropertyWith(nameConfig, other.nameConfig));
   }
 }
