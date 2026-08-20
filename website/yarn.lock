@@ -2672,6 +2672,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@docusaurus/plugin-client-redirects@npm:^3.10.2":
+  version: 3.10.2
+  resolution: "@docusaurus/plugin-client-redirects@npm:3.10.2"
+  dependencies:
+    "@docusaurus/core": "npm:3.10.2"
+    "@docusaurus/logger": "npm:3.10.2"
+    "@docusaurus/utils": "npm:3.10.2"
+    "@docusaurus/utils-common": "npm:3.10.2"
+    "@docusaurus/utils-validation": "npm:3.10.2"
+    eta: "npm:^2.2.0"
+    fs-extra: "npm:^11.1.1"
+    lodash: "npm:^4.17.21"
+    tslib: "npm:^2.6.0"
+  peerDependencies:
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+  checksum: 10c0/ab5ded6b97561047d35edf7fb6bee7e7bd795a38223873c89824e06597e762628d1ce3e72cf2c8c212c5579406a026bbacb3392d9c3b6dccbcace8239cd48801
+  languageName: node
+  linkType: hard
+
 "@docusaurus/plugin-content-blog@npm:3.10.2, @docusaurus/plugin-content-blog@npm:^3.10.2":
   version: 3.10.2
   resolution: "@docusaurus/plugin-content-blog@npm:3.10.2"
@@ -6963,6 +6983,7 @@ __metadata:
     "@babel/runtime": "npm:^8.0.0"
     "@docusaurus/core": "npm:^3.10.2"
     "@docusaurus/module-type-aliases": "npm:^3.10.2"
+    "@docusaurus/plugin-client-redirects": "npm:^3.10.2"
     "@docusaurus/plugin-content-blog": "npm:^3.10.2"
     "@docusaurus/plugin-content-docs": "npm:^3.10.2"
     "@docusaurus/preset-classic": "npm:^3.10.2"

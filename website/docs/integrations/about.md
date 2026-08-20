@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: About
+slug: /integrations
 ---
 
 # OpenLineage Integrations
