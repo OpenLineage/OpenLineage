@@ -9,6 +9,7 @@ import logging
 import queue
 import threading
 import time
+from collections import deque
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
@@ -56,7 +57,8 @@ The AsyncHttpTransport provides:
 - **Semaphore-controlled**: Uses asyncio.Semaphore to limit concurrent operations
 - **Task-based architecture**: Each event is processed as an independent asyncio task
 - **Race-condition-free**: Immediate task removal prevents double-processing of completed tasks
-- **Reserved queue capacity**: 2x configured queue size to accommodate released completion events
+- **Non-blocking event release**: Held events remain in a worker-owned backlog until request
+  capacity is available
 
 ### 3. Event Tracking and Statistics
 - **Simplified tracking**: Uses direct counters for pending, success, and failed events
@@ -206,7 +208,7 @@ class AsyncHttpTransport(Transport):
         self.compression = config.compression
 
         # Initialize async emitter components directly
-        # Create a queue with 2x the configured size to reserve space for released completion events
+        # Keep 2x actual capacity behind the producer-facing soft limit
         self.configured_queue_size = config.max_queue_size
         self.event_queue: queue.Queue[Request] = queue.Queue(maxsize=self.configured_queue_size * 2)
 
@@ -255,6 +257,7 @@ class AsyncHttpTransport(Transport):
         semaphore = asyncio.Semaphore(self.max_concurrent)
         # Keep track of active tasks
         active_tasks: set[asyncio.Task[list[Request]]] = set()
+        released_requests: deque[Request] = deque()
 
         # Httpx client for the worker
         limits = httpx.Limits(
@@ -265,7 +268,10 @@ class AsyncHttpTransport(Transport):
 
         def _should_exit() -> bool:
             return self.should_exit.is_set() or (
-                self.event_queue.empty() and not len(active_tasks) and self.may_exit.is_set()
+                self.event_queue.empty()
+                and not released_requests
+                and not len(active_tasks)
+                and self.may_exit.is_set()
             )
 
         async with httpx.AsyncClient(
@@ -279,22 +285,28 @@ class AsyncHttpTransport(Transport):
             max_idle_sleep = 1.0
             while not _should_exit():
                 processed_items = False
-                while not self.event_queue.empty() and len(active_tasks) < self.max_concurrent:
-                    try:
-                        request = self.event_queue.get_nowait()
-                        task = asyncio.create_task(
-                            self._process_event(
-                                client,
-                                semaphore,
-                                request,
-                                from_main_queue=True,
-                            ),
-                            name=request.event_id,
-                        )
-                        active_tasks.add(task)
-                        processed_items = True
-                    except queue.Empty:
-                        break
+                while len(active_tasks) < self.max_concurrent:
+                    if released_requests:
+                        request = released_requests.popleft()
+                        from_main_queue = False
+                    else:
+                        try:
+                            request = self.event_queue.get_nowait()
+                        except queue.Empty:
+                            break
+                        from_main_queue = True
+
+                    task = asyncio.create_task(
+                        self._process_event(
+                            client,
+                            semaphore,
+                            request,
+                            from_main_queue=from_main_queue,
+                        ),
+                        name=request.event_id,
+                    )
+                    active_tasks.add(task)
+                    processed_items = True
 
                 # Update last processed time if we processed items
                 if processed_items:
@@ -310,26 +322,7 @@ class AsyncHttpTransport(Transport):
                     for task in done:
                         try:
                             # Get any pending requests that can now be processed
-                            pending_requests = await task
-                            if pending_requests:
-                                # Add the released requests back to the queue - we can
-                                # process them now
-                                for request in pending_requests:
-                                    if len(active_tasks) < self.max_concurrent:
-                                        release_task = asyncio.create_task(
-                                            self._process_event(
-                                                client,
-                                                semaphore,
-                                                request,
-                                                from_main_queue=False,
-                                            ),
-                                            name=request.event_id,
-                                        )
-                                        active_tasks.add(release_task)
-                                    else:
-                                        # Put released completion events directly into the reserved queue
-                                        # space (we have 2x capacity, so these should always fit)
-                                        self.event_queue.put(request)
+                            released_requests.extend(await task)
                         except Exception:
                             log.exception("Error in event processing task")
                 # No tasks are active, didn't process any new items - sleep

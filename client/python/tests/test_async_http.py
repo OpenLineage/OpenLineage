@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import asyncio
 import datetime
 import gzip
 import hashlib
 import os
+import queue
 import threading
 import time
 from contextlib import contextmanager
@@ -306,6 +308,55 @@ class TestAsyncHttpTransport:
 
             mock_process.assert_awaited_once()
             assert transport.get_stats()["success"] == 1
+
+    def test_released_events_do_not_deadlock_full_queue(self):
+        config = AsyncHttpConfig(url="http://example.com", max_queue_size=1, max_concurrent_requests=1)
+        transport = AsyncHttpTransport(config)
+        start_processing = threading.Event()
+        finish_start = threading.Event()
+        completed = False
+
+        async def process_event(client, semaphore, request, from_main_queue=True):
+            if request.event_type == "START":
+                start_processing.set()
+                while not finish_start.is_set():
+                    await asyncio.sleep(0.01)
+
+            released = transport._mark_success(request)
+            if from_main_queue:
+                transport.event_queue.task_done()
+            return released
+
+        def event(state, second):
+            return RunEvent(
+                eventType=state,
+                eventTime=f"2026-08-20T00:00:{second:02d}Z",
+                run=Run(runId="00000000-0000-0000-0000-000000000001"),
+                job=Job(namespace="test", name="queue-release"),
+                producer="test",
+                schemaURL="test",
+            )
+
+        try:
+            with patch.object(transport, "_process_event", side_effect=process_event):
+                transport.emit(event(RunState.START, 0))
+                assert start_processing.wait(1)
+                for second in range(1, 5):
+                    transport.emit(event(RunState.RUNNING, second))
+
+                finish_start.set()
+                completed = transport.wait_for_completion(timeout=1)
+                assert completed
+                assert transport.get_stats() == {"pending": 0, "success": 5, "failed": 0}
+        finally:
+            finish_start.set()
+            if not completed:
+                while True:
+                    try:
+                        transport.event_queue.get_nowait()
+                    except queue.Empty:
+                        break
+            transport.close(timeout=1)
 
     def test_async_http_transport_get_stats(self):
         config = AsyncHttpConfig(url="http://example.com")
