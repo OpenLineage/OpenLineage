@@ -8,6 +8,7 @@ package io.openlineage.spark3.agent.utils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -18,7 +19,10 @@ import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactory;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.RelationHandler;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -27,6 +31,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,9 +52,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
+import scala.PartialFunction;
 
 class DataSourceV2RelationDatasetExtractorTest {
   private static final String NAME = "name";
+  private static final String NAMESPACE = "namespace";
+  private static final String CATALOG_DB_TABLE = "catalog.db.table";
 
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   SparkSession sparkSession = mock(SparkSession.class);
@@ -68,6 +76,7 @@ class DataSourceV2RelationDatasetExtractorTest {
     tableProperties = new HashMap<>();
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(sparkSession));
     when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
+    when(openLineageContext.getDatasetBuilderFactory()).thenReturn(DatasetBuilderFactory.EMPTY);
     when(dataSourceV2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
     when(dataSourceV2Relation.identifier()).thenReturn(Option.apply(identifier));
     when(dataSourceV2Relation.schema()).thenReturn(schema);
@@ -123,6 +132,9 @@ class DataSourceV2RelationDatasetExtractorTest {
     try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
       when(CatalogUtils.getDatasetIdentifier(
               openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenThrow(new UnsupportedCatalogException("exception"));
+      // the relation cannot be resolved either, so there is nothing left to fall back to
+      when(CatalogUtils.getDatasetIdentifierFromRelation(openLineageContext, dataSourceV2Relation))
           .thenThrow(new UnsupportedCatalogException("exception"));
 
       assertEquals(
@@ -221,7 +233,7 @@ class DataSourceV2RelationDatasetExtractorTest {
     assertEquals(1, result.size());
     assertThat(result.get(0))
         .hasFieldOrPropertyWithValue(NAME, "some-name")
-        .hasFieldOrPropertyWithValue("namespace", "some-namespace");
+        .hasFieldOrPropertyWithValue(NAMESPACE, "some-namespace");
 
     OpenLineage.DatasetFacet datasetFacet =
         result.get(0).getFacets().getAdditionalProperties().get("customFacet");
@@ -267,7 +279,7 @@ class DataSourceV2RelationDatasetExtractorTest {
     assertEquals(1, result.size());
     assertThat(result.get(0))
         .hasFieldOrPropertyWithValue(NAME, "bigquery-public-data.samples.shakespeare")
-        .hasFieldOrPropertyWithValue("namespace", "bigquery");
+        .hasFieldOrPropertyWithValue(NAMESPACE, "bigquery");
   }
 
   @Test
@@ -288,7 +300,7 @@ class DataSourceV2RelationDatasetExtractorTest {
               .thenReturn(true);
           databricks
               .when(() -> DatabricksUtils.qualifiedUnityCatalogTableName(tableCatalog, identifier))
-              .thenReturn("catalog.db.table");
+              .thenReturn(CATALOG_DB_TABLE);
           planUtils
               .when(
                   () ->
@@ -305,11 +317,172 @@ class DataSourceV2RelationDatasetExtractorTest {
 
           assertEquals(1, result.size());
           assertThat(result.get(0))
-              .hasFieldOrPropertyWithValue(NAME, "catalog.db.table")
-              .hasFieldOrPropertyWithValue("namespace", "unity-catalog");
+              .hasFieldOrPropertyWithValue(NAME, CATALOG_DB_TABLE)
+              .hasFieldOrPropertyWithValue(NAMESPACE, "unity-catalog");
         }
       }
     }
+  }
+
+  /**
+   * The relation fallback must not steal the Unity Catalog fallback's turn. A catalog that does
+   * have a {@link io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler} - a real Unity
+   * Catalog does - keeps naming its tables the Unity Catalog way even when a relation handler could
+   * have produced something too.
+   */
+  @Test
+  void testUnityCatalogFallbackWinsOverRelationFallbackForSupportedCatalog() {
+    SparkConf sparkConf = new SparkConf();
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getOpenLineage())
+        .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(dataSourceV2Relation.schema()).thenReturn(new StructType());
+
+    // a handler exists for this catalog, it just cannot resolve this particular table
+    CatalogHandler supportingHandler = mock(CatalogHandler.class);
+    when(supportingHandler.hasClasses()).thenReturn(true);
+    when(supportingHandler.isClass(tableCatalog)).thenReturn(true);
+    RelationHandler relationHandler = alwaysResolvingRelationHandler();
+    DatasetBuilderFactory factory =
+        factoryContributing(
+            Collections.singletonList(supportingHandler),
+            Collections.singletonList(relationHandler));
+    when(openLineageContext.getDatasetBuilderFactory()).thenReturn(factory);
+
+    try (MockedStatic<PlanUtils3> planUtils = mockStatic(PlanUtils3.class);
+        MockedStatic<DatabricksUtils> databricks = mockStatic(DatabricksUtils.class);
+        MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
+      databricks
+          .when(() -> DatabricksUtils.isDatabricksUnityCatalogEnabled(sparkConf))
+          .thenReturn(true);
+      databricks
+          .when(() -> DatabricksUtils.qualifiedUnityCatalogTableName(tableCatalog, identifier))
+          .thenReturn(CATALOG_DB_TABLE);
+      planUtils
+          .when(
+              () ->
+                  PlanUtils3.getDatasetIdentifier(
+                      openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenReturn(Optional.empty());
+
+      List<OpenLineage.OutputDataset> result =
+          DataSourceV2RelationDatasetExtractor.extract(
+              DatasetFactory.output(openLineageContext),
+              openLineageContext,
+              dataSourceV2Relation,
+              false);
+
+      assertEquals(1, result.size());
+      assertThat(result.get(0))
+          .hasFieldOrPropertyWithValue(NAME, CATALOG_DB_TABLE)
+          .hasFieldOrPropertyWithValue(NAMESPACE, "unity-catalog");
+    }
+  }
+
+  /** A relation handler that recognises everything and always resolves. */
+  private RelationHandler alwaysResolvingRelationHandler() {
+    RelationHandler handler = mock(RelationHandler.class);
+    when(handler.hasClasses()).thenReturn(true);
+    when(handler.isClass(dataSourceV2Relation)).thenReturn(true);
+    when(handler.getDatasetIdentifier(dataSourceV2Relation))
+        .thenReturn(new DatasetIdentifier("from-relation", "relation-namespace"));
+    return handler;
+  }
+
+  /**
+   * The cached-catalog case: no handler supports the relation's own catalog, so storage and catalog
+   * facets are resolved against the catalog that owns the table instead of coming back empty.
+   */
+  @Test
+  void testFacetsAreResolvedThroughOwningCatalogWhenCatalogUnsupported() {
+    when(openLineageContext.getOpenLineage())
+        .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(dataSourceV2Relation.schema()).thenReturn(new StructType());
+
+    TableCatalog owningCatalog = mock(TableCatalog.class);
+    Identifier owningIdentifier = mock(Identifier.class);
+    RelationHandler relationHandler = mock(RelationHandler.class);
+    when(relationHandler.hasClasses()).thenReturn(true);
+    when(relationHandler.isClass(dataSourceV2Relation)).thenReturn(true);
+    when(relationHandler.getOwningCatalog(dataSourceV2Relation))
+        .thenReturn(Optional.of(RelationHandler.OwningCatalog.of(owningCatalog, owningIdentifier)));
+    when(openLineageContext.getDatasetBuilderFactory())
+        .thenReturn(
+            factoryContributing(
+                Collections.emptyList(), Collections.singletonList(relationHandler)));
+
+    try (MockedStatic<CatalogUtils> catalogUtils = mockStatic(CatalogUtils.class);
+        MockedStatic<PlanUtils3> planUtils = mockStatic(PlanUtils3.class)) {
+      catalogUtils
+          .when(() -> CatalogUtils.getCatalogHandler(openLineageContext, tableCatalog))
+          .thenReturn(Optional.empty());
+      catalogUtils
+          .when(
+              () ->
+                  CatalogUtils.getOwningCatalogFromRelation(
+                      openLineageContext, dataSourceV2Relation))
+          .thenReturn(
+              Optional.of(RelationHandler.OwningCatalog.of(owningCatalog, owningIdentifier)));
+      catalogUtils
+          .when(
+              () ->
+                  CatalogUtils.getDatasetIdentifierFromRelation(
+                      openLineageContext, dataSourceV2Relation))
+          .thenReturn(new DatasetIdentifier("/warehouse/db/table", "file"));
+      planUtils
+          .when(
+              () ->
+                  PlanUtils3.getDatasetIdentifier(
+                      openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenReturn(Optional.empty());
+
+      List<OpenLineage.OutputDataset> result =
+          DataSourceV2RelationDatasetExtractor.extract(
+              DatasetFactory.output(openLineageContext),
+              openLineageContext,
+              dataSourceV2Relation,
+              false);
+
+      assertEquals(1, result.size());
+      assertThat(result.get(0)).hasFieldOrPropertyWithValue(NAME, "/warehouse/db/table");
+      // the facets were resolved against the owning catalog, not the relation's unsupported one
+      catalogUtils.verify(
+          () ->
+              CatalogUtils.addStorageAndCatalogFacets(
+                  eq(openLineageContext),
+                  eq(owningCatalog),
+                  eq(tableProperties),
+                  any(DatasetCompositeFacetsBuilder.class)));
+    }
+  }
+
+  private static DatasetBuilderFactory factoryContributing(
+      List<CatalogHandler> catalogHandlers, List<RelationHandler> relationHandlers) {
+    return new DatasetBuilderFactory() {
+      @Override
+      public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>> getInputBuilders(
+          OpenLineageContext context) {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
+          OpenLineageContext context) {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public List<CatalogHandler> getCatalogHandlers(OpenLineageContext context) {
+        return catalogHandlers;
+      }
+
+      @Override
+      public List<RelationHandler> getRelationHandlers(OpenLineageContext context) {
+        return relationHandlers;
+      }
+    };
   }
 
   @Test
