@@ -22,17 +22,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import lombok.SneakyThrows;
@@ -45,6 +49,7 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.util.TimeValue;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -187,6 +192,123 @@ class HttpTransportTest {
     assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
 
     verify(http, times(1)).execute(any(), any(HttpClientResponseHandler.class));
+  }
+
+  @Test
+  void httpTransportRetriesOnServiceUnavailable() throws IOException {
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    AtomicInteger requests = new AtomicInteger();
+    final int firstRequest = 1;
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          byte[] responseBody;
+          if (requests.incrementAndGet() == firstRequest) {
+            responseBody = "retry".getBytes();
+            exchange.sendResponseHeaders(503, responseBody.length);
+          } else {
+            responseBody = "ok".getBytes();
+            exchange.sendResponseHeaders(200, responseBody.length);
+          }
+          try (OutputStream outputStream = exchange.getResponseBody()) {
+            outputStream.write(responseBody);
+          }
+        });
+    server.start();
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      config.setMaxRetries(1);
+      config.setRetryIntervalMillis(1);
+
+      OpenLineageClient client = new OpenLineageClient(new HttpTransport(config));
+      client.emit(runEvent());
+
+      assertThat(requests.get()).isEqualTo(2);
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void retryIntervalUsesExponentialBackoffWithJitter() {
+    long baseRetryIntervalMillis = 100L;
+    double retryIntervalMultiplier = 2.0;
+    long maxRetryIntervalMillis = 250L;
+
+    for (int i = 0; i < 100; i++) {
+      TimeValue firstRetry =
+          HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+              baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 1);
+      TimeValue secondRetry =
+          HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+              baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 2);
+      TimeValue thirdRetry =
+          HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+              baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 3);
+
+      assertThat(firstRetry.toMilliseconds()).isBetween(0L, 100L);
+      assertThat(secondRetry.toMilliseconds()).isBetween(0L, 200L);
+      assertThat(thirdRetry.toMilliseconds()).isBetween(0L, 250L);
+    }
+  }
+
+  @Test
+  void retryIntervalReturnsZeroForNonPositiveValues() {
+    assertThat(
+            HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+                0, 2.0, 100, 1))
+        .isEqualTo(TimeValue.ZERO_MILLISECONDS);
+    assertThat(
+            HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+                100, 0.0, 100, 1))
+        .isEqualTo(TimeValue.ZERO_MILLISECONDS);
+    assertThat(
+            HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+                100, 2.0, 0, 1))
+        .isEqualTo(TimeValue.ZERO_MILLISECONDS);
+  }
+
+  @Test
+  void httpTransportRetriesUsingRetryAfterHeader() throws IOException {
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    AtomicInteger requests = new AtomicInteger();
+    final int firstRequest = 1;
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          byte[] responseBody;
+          if (requests.incrementAndGet() == firstRequest) {
+            responseBody = "retry".getBytes();
+            exchange.getResponseHeaders().add("Retry-After", "1");
+            exchange.sendResponseHeaders(503, responseBody.length);
+          } else {
+            responseBody = "ok".getBytes();
+            exchange.sendResponseHeaders(200, responseBody.length);
+          }
+          try (OutputStream outputStream = exchange.getResponseBody()) {
+            outputStream.write(responseBody);
+          }
+        });
+    server.start();
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      config.setMaxRetries(1);
+      config.setRetryIntervalMillis(1);
+      config.setRetryIntervalMultiplier(2.0);
+      config.setMaxRetryIntervalMillis(10);
+
+      OpenLineageClient client = new OpenLineageClient(new HttpTransport(config));
+      long startNanos = System.nanoTime();
+      client.emit(runEvent());
+      long elapsedMillis = (System.nanoTime() - startNanos) / 1_000_000;
+
+      assertThat(requests.get()).isEqualTo(2);
+      assertThat(elapsedMillis).isGreaterThanOrEqualTo(900L);
+    } finally {
+      server.stop(0);
+    }
   }
 
   @Test
