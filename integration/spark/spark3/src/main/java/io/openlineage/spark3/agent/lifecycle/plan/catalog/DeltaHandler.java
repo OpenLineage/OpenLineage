@@ -32,6 +32,7 @@ import scala.Option;
 @Slf4j
 public class DeltaHandler implements CatalogHandler {
   private static final String DELTA = "delta";
+  private static final String PATH_PROPERTY = "path";
   private final OpenLineageContext context;
 
   public DeltaHandler(OpenLineageContext context) {
@@ -141,11 +142,13 @@ public class DeltaHandler implements CatalogHandler {
   }
 
   private static Optional<String> location(Map<String, String> properties) {
+    Optional<String> tableLocation = property(properties, TableCatalog.PROP_LOCATION);
+    return tableLocation.isPresent() ? tableLocation : property(properties, PATH_PROPERTY);
+  }
+
+  private static Optional<String> property(Map<String, String> properties, String name) {
     return properties.entrySet().stream()
-        .filter(
-            entry ->
-                TableCatalog.PROP_LOCATION.equalsIgnoreCase(entry.getKey())
-                    || "path".equalsIgnoreCase(entry.getKey()))
+        .filter(entry -> name.equalsIgnoreCase(entry.getKey()))
         .map(Map.Entry::getValue)
         .filter(value -> value != null && !value.isEmpty())
         .findFirst();
