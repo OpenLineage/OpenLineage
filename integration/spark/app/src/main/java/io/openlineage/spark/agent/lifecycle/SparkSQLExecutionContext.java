@@ -122,9 +122,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     if (log.isDebugEnabled()) {
       log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
     }
-    // TODO: can we get failed event here?
-    // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
-    // Maybe use QueryExecutionListener?
     olContext.setActiveJobId(activeJobId);
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
@@ -135,9 +132,14 @@ class SparkSQLExecutionContext implements ExecutionContext {
       return;
     }
 
-    // only one COMPLETE event is expected, verify if jobEnd was not emitted
+    // Detect write failures (e.g., output committer failures) that occur after the Spark job
+    // completes successfully and are not visible via JobFailed.
+    Throwable executionFailure = getExecutionFailure(endEvent);
+
     EventType eventType;
-    if (emittedOnJobStart && !emittedOnJobEnd) {
+    if (executionFailure != null) {
+      eventType = FAIL;
+    } else if (emittedOnJobStart && !emittedOnJobEnd) {
       // expecting jobEnd event later on
       eventType = RUNNING;
     } else {
@@ -145,29 +147,71 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     emittedOnSqlExecutionEnd = true;
 
-    RunEvent event =
-        runEventBuilder.buildRun(
-            OpenLineageRunEventContext.builder()
-                .applicationParentRunFacet(buildApplicationParentFacet())
-                .event(endEvent)
-                .runEventBuilder(
-                    olContext
-                        .getOpenLineage()
-                        .newRunEventBuilder()
-                        .eventTime(toZonedTime(endEvent.time())))
-                .eventType(eventType)
-                .jobBuilder(buildJob())
-                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
-                .build());
+    OpenLineage.RunFacetsBuilder runFacetsBuilder = null;
+    if (executionFailure != null) {
+      runFacetsBuilder = addErrorMessageRunFacet(executionFailure);
+    }
 
-    if (eventType.equals(EventType.COMPLETE)) {
-      // clean up metrics on complete only
+    OpenLineageRunEventContext.OpenLineageRunEventContextBuilder contextBuilder =
+        OpenLineageRunEventContext.builder()
+            .applicationParentRunFacet(buildApplicationParentFacet())
+            .event(endEvent)
+            .runEventBuilder(
+                olContext
+                    .getOpenLineage()
+                    .newRunEventBuilder()
+                    .eventTime(toZonedTime(endEvent.time())))
+            .eventType(eventType)
+            .jobBuilder(buildJob())
+            .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()));
+
+    if (runFacetsBuilder != null) {
+      contextBuilder.runFacetsBuilder(runFacetsBuilder);
+    }
+
+    RunEvent event = runEventBuilder.buildRun(contextBuilder.build());
+
+    if (eventType.equals(EventType.COMPLETE) || eventType.equals(EventType.FAIL)) {
       olContext.getActiveJobId().ifPresent(i -> JobMetricsHolder.getInstance().cleanUp(i));
     }
     if (log.isDebugEnabled()) {
       log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
     }
     eventEmitter.emit(event);
+  }
+
+  private Throwable getExecutionFailure(SparkListenerSQLExecutionEnd endEvent) {
+    try {
+      // Use reflection to stay compatible with older Spark versions that may not have
+      // executionFailure() on SparkListenerSQLExecutionEnd.
+      java.lang.reflect.Method method = endEvent.getClass().getMethod("executionFailure");
+      scala.Option<?> failure = (scala.Option<?>) method.invoke(endEvent);
+      if (failure != null && failure.isDefined()) {
+        return (Throwable) failure.get();
+      }
+    } catch (NoSuchMethodException e) {
+      log.debug("executionFailure() not available on this Spark version");
+    } catch (Exception e) {
+      log.debug("Unable to check executionFailure: {}", e.getMessage());
+    }
+    return null;
+  }
+
+  private OpenLineage.RunFacetsBuilder addErrorMessageRunFacet(Throwable executionFailure) {
+    OpenLineage ol = olContext.getOpenLineage();
+    String message =
+        executionFailure.getMessage() != null
+            ? executionFailure.getMessage()
+            : executionFailure.getClass().getName();
+    String stackTrace = getStackTraceString(executionFailure);
+    return ol.newRunFacetsBuilder()
+        .errorMessage(ol.newErrorMessageRunFacet(message, "SPARK", stackTrace));
+  }
+
+  private static String getStackTraceString(Throwable t) {
+    java.io.StringWriter sw = new java.io.StringWriter();
+    t.printStackTrace(new java.io.PrintWriter(sw));
+    return sw.toString();
   }
 
   // TODO: not invoked until https://github.com/OpenLineage/OpenLineage/issues/470 is completed
@@ -345,8 +389,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
-    if (eventType.equals(EventType.COMPLETE)) {
-      // clean up metrics on complete only
+    if (eventType.equals(EventType.COMPLETE) || eventType.equals(EventType.FAIL)) {
       JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
     }
 
