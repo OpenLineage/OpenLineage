@@ -6,15 +6,19 @@
 package io.openlineage.spark34.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.execution.streaming.FileStreamSink;
 import org.apache.spark.sql.execution.streaming.sources.WriteToMicroBatchDataSourceV1;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 
@@ -52,20 +56,47 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
   @Override
   protected List<OpenLineage.OutputDataset> apply(
       SparkListenerEvent event, WriteToMicroBatchDataSourceV1 writeToMicroBatchV1) {
-    // Currently, only FileStreamSink is supported
-    if (writeToMicroBatchV1.sink() instanceof FileStreamSink) {
-      if (writeToMicroBatchV1.catalogTable().isDefined()) {
+    // Prefer catalog metadata for every sink when it is available.
+    if (writeToMicroBatchV1.catalogTable().isDefined()) {
+      return Collections.singletonList(
+          factory
+              .sparkDatasetBuilder()
+              .dataset(writeToMicroBatchV1.catalogTable().get())
+              .schema(writeToMicroBatchV1.schema())
+              .build());
+    }
+
+    if (isDeltaSink(writeToMicroBatchV1.sink())) {
+      Optional<String> path = pathWriteOption(writeToMicroBatchV1);
+      if (path.isPresent()) {
         return Collections.singletonList(
             factory
                 .sparkDatasetBuilder()
-                .dataset(writeToMicroBatchV1.catalogTable().get())
+                .dataset(PathUtils.fromPath(new Path(path.get())))
                 .schema(writeToMicroBatchV1.schema())
                 .build());
-      } else {
-        return Collections.emptyList();
       }
+      log.warn("Delta sink write has no path option; cannot extract output dataset");
+      return Collections.emptyList();
     }
+
     log.debug("Unsupported Sink type: {}", writeToMicroBatchV1.sink().getClass().getName());
     return Collections.emptyList();
+  }
+
+  private static Optional<String> pathWriteOption(WriteToMicroBatchDataSourceV1 write) {
+    return ScalaConversionUtils.<String, String>fromMap(write.writeOptions()).entrySet().stream()
+        .filter(entry -> "path".equalsIgnoreCase(entry.getKey()))
+        .map(Map.Entry::getValue)
+        .findFirst();
+  }
+
+  private static boolean isDeltaSink(Object sink) {
+    for (Class<?> clazz = sink.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
+      if ("org.apache.spark.sql.delta.sources.DeltaSink".equals(clazz.getName())) {
+        return true;
+      }
+    }
+    return false;
   }
 }
