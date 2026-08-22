@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,6 +30,7 @@ import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.connector.catalog.V1Table;
 import org.apache.spark.sql.delta.catalog.DeltaCatalog;
 import org.apache.spark.sql.delta.catalog.DeltaTableV2;
@@ -88,6 +90,156 @@ class DeltaHandlerTest {
         .hasFieldOrPropertyWithValue("name", "/some/location");
 
     assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
+  }
+
+  @Test
+  void testGetIdentifierSetsAndClearsActiveSessionForCatalogLookup() {
+    SparkSession.clearActiveSession();
+    Identifier identifier = Identifier.of(new String[] {}, "/some/location");
+    DeltaTableV2 deltaTable = mock(DeltaTableV2.class);
+    when(deltaCatalog.loadTable(identifier))
+        .thenAnswer(
+            invocation -> {
+              assertThat(SparkSession.getActiveSession().isDefined()).isTrue();
+              return deltaTable;
+            });
+    when(deltaCatalog.isPathIdentifier(identifier)).thenReturn(true);
+
+    deltaHandler.getDatasetIdentifier(
+        sparkSession, deltaCatalog, identifier, Collections.emptyMap());
+
+    assertThat(SparkSession.getActiveSession().isEmpty()).isTrue();
+  }
+
+  @Test
+  void testGetIdentifierPreservesPreExistingActiveSession() {
+    Identifier identifier = Identifier.of(new String[] {}, "/some/location");
+    DeltaTableV2 deltaTable = mock(DeltaTableV2.class);
+    when(deltaCatalog.loadTable(identifier)).thenReturn(deltaTable);
+    when(deltaCatalog.isPathIdentifier(identifier)).thenReturn(true);
+    SparkSession.setActiveSession(sparkSession);
+
+    try {
+      deltaHandler.getDatasetIdentifier(
+          sparkSession, deltaCatalog, identifier, Collections.emptyMap());
+
+      assertThat(SparkSession.getActiveSession().isDefined()).isTrue();
+      assertThat(SparkSession.getActiveSession().get()).isSameAs(sparkSession);
+    } finally {
+      SparkSession.clearActiveSession();
+    }
+  }
+
+  @Test
+  void testGetIdentifierFallsBackToLocationPropertyWhenSessionIsUnusable() {
+    Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(
+            new IllegalStateException(
+                "[INTERNAL_ERROR] No active or default Spark session found SQLSTATE: XX000"));
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(
+            sparkSession,
+            deltaCatalog,
+            identifier,
+            Collections.singletonMap(TableCatalog.PROP_LOCATION, "/some/location"));
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/some/location");
+  }
+
+  @Test
+  void testGetIdentifierFallsBackToPathWriteOptionWhenSessionIsUnusable() {
+    Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(
+            new IllegalStateException(
+                "[INTERNAL_ERROR] No active or default Spark session found SQLSTATE: XX000"));
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(
+            sparkSession,
+            deltaCatalog,
+            identifier,
+            Collections.singletonMap("PaTh", "/some/custom/location"));
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/some/custom/location");
+  }
+
+  @Test
+  void testGetIdentifierFallsBackToDefaultWarehouseLocationWhenSessionIsUnusable() {
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("No active or default Spark session found"));
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(
+            sparkSession, deltaCatalog, identifier, Collections.emptyMap());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/schema.db/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
+        .hasFieldOrPropertyWithValue("name", "schema.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  void testGetIdentifierFallsBackToPathForPathIdentifierWhenSessionIsUnusable() {
+    Identifier identifier = Identifier.of(new String[] {"delta"}, "/some/location");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("No active or default Spark session found"));
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(
+            sparkSession, deltaCatalog, identifier, Collections.emptyMap());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/some/location");
+  }
+
+  @Test
+  void testGetDatasetVersionOmitsVersionWhenSessionIsUnusable() {
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("No active or default Spark session found"));
+
+    Optional<String> version =
+        deltaHandler.getDatasetVersion(deltaCatalog, identifier, Collections.emptyMap());
+
+    assertThat(version).isEmpty();
+  }
+
+  @Test
+  void testGetDatasetVersionRethrowsUnrelatedCatalogFailures() {
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("some other failure"));
+
+    assertThrows(
+        IllegalStateException.class,
+        () -> deltaHandler.getDatasetVersion(deltaCatalog, identifier, Collections.emptyMap()));
+  }
+
+  @Test
+  void testGetIdentifierRethrowsUnrelatedCatalogFailures() {
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("some other failure"));
+
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            deltaHandler.getDatasetIdentifier(
+                sparkSession, deltaCatalog, identifier, Collections.emptyMap()));
   }
 
   @Test
