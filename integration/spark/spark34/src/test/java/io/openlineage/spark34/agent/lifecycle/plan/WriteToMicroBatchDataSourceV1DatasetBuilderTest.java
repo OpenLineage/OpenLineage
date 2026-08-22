@@ -25,6 +25,7 @@ import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
@@ -32,7 +33,6 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.delta.sources.DeltaSink;
 import org.apache.spark.sql.execution.QueryExecution;
-import org.apache.spark.sql.execution.streaming.FileStreamSink;
 import org.apache.spark.sql.execution.streaming.Sink;
 import org.apache.spark.sql.execution.streaming.sources.WriteToMicroBatchDataSourceV1;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -46,10 +46,11 @@ import scala.Option;
 
 class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
 
+  private static final String DELTA_PATH = "/tmp/delta_target";
+
   private DatasetFactory<OpenLineage.OutputDataset> factory;
   private WriteToMicroBatchDataSourceV1DatasetBuilder builder;
   private WriteToMicroBatchDataSourceV1 writeToMicroBatchV1;
-  private FileStreamSink fileStreamSink;
   private Sink unsupportedSink;
   private SparkListenerSQLExecutionEnd event;
   private StructType schema;
@@ -69,13 +70,10 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
             .openLineageConfig(new SparkOpenLineageConfig())
             .build();
 
-    @SuppressWarnings("unchecked")
-    DatasetFactory<OpenLineage.OutputDataset> typedFactory = mock(DatasetFactory.class);
-    factory = typedFactory;
+    factory = mockDatasetFactory();
     builder = new WriteToMicroBatchDataSourceV1DatasetBuilder(openLineageContext, factory);
 
     writeToMicroBatchV1 = mock(WriteToMicroBatchDataSourceV1.class);
-    fileStreamSink = mock(FileStreamSink.class);
     unsupportedSink = mock(Sink.class);
 
     QueryExecution queryExecution = mock(QueryExecution.class);
@@ -130,15 +128,6 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
   }
 
   @Test
-  void testApply_WithFileStreamSink_NoCatalogTable() {
-    when(writeToMicroBatchV1.sink()).thenReturn(fileStreamSink);
-    when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
-
-    List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
-    assertTrue(result.isEmpty());
-  }
-
-  @Test
   void testApply_WithCatalogTableRegardlessOfSink() {
     OpenLineage.OutputDataset expectedDataset = mock(OpenLineage.OutputDataset.class);
     CatalogTable catalogTable = mock(CatalogTable.class);
@@ -147,8 +136,7 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     when(writeToMicroBatchV1.schema()).thenReturn(schema);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.apply(catalogTable));
 
-    @SuppressWarnings("unchecked")
-    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder = mock(SparkDatasetBuilder.class);
+    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder = mockSparkDatasetBuilder();
     when(factory.sparkDatasetBuilder()).thenReturn(sparkBuilder);
     when(sparkBuilder.dataset(catalogTable)).thenReturn(sparkBuilder);
     when(sparkBuilder.schema(schema)).thenReturn(sparkBuilder);
@@ -171,12 +159,9 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     when(writeToMicroBatchV1.schema()).thenReturn(schema);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
     when(writeToMicroBatchV1.writeOptions())
-        .thenReturn(
-            ScalaConversionUtils.fromJavaMap(
-                Collections.singletonMap("path", "/tmp/delta_target")));
+        .thenReturn(ScalaConversionUtils.fromJavaMap(Collections.singletonMap("path", DELTA_PATH)));
 
-    @SuppressWarnings("unchecked")
-    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder = mock(SparkDatasetBuilder.class);
+    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder = mockSparkDatasetBuilder();
     when(factory.sparkDatasetBuilder()).thenReturn(sparkBuilder);
     when(sparkBuilder.dataset(any(DatasetIdentifier.class))).thenReturn(sparkBuilder);
     when(sparkBuilder.schema(schema)).thenReturn(sparkBuilder);
@@ -189,7 +174,7 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     ArgumentCaptor<DatasetIdentifier> identifierCaptor =
         ArgumentCaptor.forClass(DatasetIdentifier.class);
     verify(sparkBuilder).dataset(identifierCaptor.capture());
-    assertEquals("/tmp/delta_target", identifierCaptor.getValue().getName());
+    assertEquals(DELTA_PATH, identifierCaptor.getValue().getName());
     assertEquals("file", identifierCaptor.getValue().getNamespace());
     verify(sparkBuilder).schema(schema);
   }
@@ -203,12 +188,9 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     when(writeToMicroBatchV1.schema()).thenReturn(schema);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
     when(writeToMicroBatchV1.writeOptions())
-        .thenReturn(
-            ScalaConversionUtils.fromJavaMap(
-                Collections.singletonMap("PaTh", "/tmp/delta_target")));
+        .thenReturn(ScalaConversionUtils.fromJavaMap(Collections.singletonMap("PaTh", DELTA_PATH)));
 
-    @SuppressWarnings("unchecked")
-    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder = mock(SparkDatasetBuilder.class);
+    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder = mockSparkDatasetBuilder();
     when(factory.sparkDatasetBuilder()).thenReturn(sparkBuilder);
     when(sparkBuilder.dataset(any(DatasetIdentifier.class))).thenReturn(sparkBuilder);
     when(sparkBuilder.schema(schema)).thenReturn(sparkBuilder);
@@ -220,20 +202,36 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     ArgumentCaptor<DatasetIdentifier> identifierCaptor =
         ArgumentCaptor.forClass(DatasetIdentifier.class);
     verify(sparkBuilder).dataset(identifierCaptor.capture());
-    assertEquals("/tmp/delta_target", identifierCaptor.getValue().getName());
+    assertEquals(DELTA_PATH, identifierCaptor.getValue().getName());
   }
 
   @Test
   void testApply_WithDeltaSinkAndNoPathWriteOption() {
-    DeltaSink deltaSink = mock(DeltaSink.class);
+    assertDeltaSinkWithoutOutput(Collections.emptyMap());
+  }
 
-    when(writeToMicroBatchV1.sink()).thenReturn(deltaSink);
+  @Test
+  void testApply_WithDeltaSinkAndBlankPathWriteOption() {
+    assertDeltaSinkWithoutOutput(Collections.singletonMap("path", ""));
+  }
+
+  private void assertDeltaSinkWithoutOutput(Map<String, String> writeOptions) {
+    when(writeToMicroBatchV1.sink()).thenReturn(mock(DeltaSink.class));
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
-    when(writeToMicroBatchV1.writeOptions()).thenReturn(ScalaConversionUtils.asScalaMapEmpty());
+    when(writeToMicroBatchV1.writeOptions())
+        .thenReturn(ScalaConversionUtils.fromJavaMap(writeOptions));
 
-    List<OpenLineage.OutputDataset> result = builder.apply(event, writeToMicroBatchV1);
-
-    assertTrue(result.isEmpty());
+    assertTrue(builder.apply(event, writeToMicroBatchV1).isEmpty());
     verify(factory, never()).sparkDatasetBuilder();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static DatasetFactory<OpenLineage.OutputDataset> mockDatasetFactory() {
+    return mock(DatasetFactory.class);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static SparkDatasetBuilder<OpenLineage.OutputDataset> mockSparkDatasetBuilder() {
+    return mock(SparkDatasetBuilder.class);
   }
 }

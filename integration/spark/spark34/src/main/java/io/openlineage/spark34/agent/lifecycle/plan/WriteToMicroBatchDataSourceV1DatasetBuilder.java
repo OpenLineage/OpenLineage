@@ -31,6 +31,10 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 public class WriteToMicroBatchDataSourceV1DatasetBuilder
     extends AbstractQueryPlanOutputDatasetBuilder<WriteToMicroBatchDataSourceV1> {
 
+  private static final String DELTA_SINK_CLASS_NAME =
+      "org.apache.spark.sql.delta.sources.DeltaSink";
+  private static final String PATH_OPTION = "path";
+
   private final DatasetFactory<OpenLineage.OutputDataset> factory;
 
   public WriteToMicroBatchDataSourceV1DatasetBuilder(
@@ -86,14 +90,15 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
 
   private static Optional<String> pathWriteOption(WriteToMicroBatchDataSourceV1 write) {
     return ScalaConversionUtils.<String, String>fromMap(write.writeOptions()).entrySet().stream()
-        .filter(entry -> "path".equalsIgnoreCase(entry.getKey()))
+        .filter(entry -> PATH_OPTION.equalsIgnoreCase(entry.getKey()))
         .map(Map.Entry::getValue)
+        .filter(path -> path != null && !path.isEmpty())
         .findFirst();
   }
 
   private static boolean isDeltaSink(Object sink) {
     for (Class<?> clazz = sink.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
-      if ("org.apache.spark.sql.delta.sources.DeltaSink".equals(clazz.getName())) {
+      if (DELTA_SINK_CLASS_NAME.equals(clazz.getName())) {
         return true;
       }
     }
