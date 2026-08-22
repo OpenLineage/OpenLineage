@@ -249,9 +249,6 @@ class PrefectOpenLineageListener:
         try:
             task_run = await self.client.read_task_run(prefect_task_run_id)
             namespace = await self.get_job_ns(prefect_task_run_id)
-            print(task_run.start_time)
-            print(task_name)
-            print(namespace)
 
             # Skip task runs without a start time
             if task_run.start_time:
