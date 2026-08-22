@@ -38,6 +38,27 @@ class AdaptivePlanEventFilterTest {
   void testAdaptivePlanIsFiltered() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isCurrentPlanDeltaWrite(context)).thenReturn(true);
+      when(sparkPlan.nodeName()).thenReturn("AdaptiveSparkPlan");
+      assertTrue(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testAdaptiveNonDeltaWritePlanIsNotFiltered() {
+    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isCurrentPlanDeltaWrite(context)).thenReturn(false);
+      when(sparkPlan.nodeName()).thenReturn("AdaptiveSparkPlan");
+      assertFalse(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testAdaptiveDeltaWritePlanIsFiltered() {
+    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isCurrentPlanDeltaWrite(context)).thenReturn(true);
       when(sparkPlan.nodeName()).thenReturn("AdaptiveSparkPlan");
       assertTrue(filter.isDisabled(sparkListenerEvent));
     }
@@ -47,6 +68,7 @@ class AdaptivePlanEventFilterTest {
   void testWhenQueryExecutionIsNull() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isCurrentPlanDeltaWrite(context)).thenReturn(true);
       when(context.getQueryExecution()).thenReturn(Optional.ofNullable(null));
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }
@@ -56,6 +78,7 @@ class AdaptivePlanEventFilterTest {
   void testWhenSparkPlanIsNull() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isCurrentPlanDeltaWrite(context)).thenReturn(true);
       when(queryExecution.executedPlan()).thenReturn(null);
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }
@@ -65,6 +88,7 @@ class AdaptivePlanEventFilterTest {
   void testOtherSparkPlan() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isCurrentPlanDeltaWrite(context)).thenReturn(true);
       when(sparkPlan.nodeName()).thenReturn("OtherSparkPlan");
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }

@@ -12,7 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.execution.QueryExecution;
 
-/** Removes events generated with Adaptive Plan Execution. Those events contain duplicate events. */
+/**
+ * Removes adaptive-plan duplicate events only for queries that actually write to Delta. Previously,
+ * merely installing the Delta extension caused the only terminal event of non-Delta queries to be
+ * removed; gating on any Delta reference in the plan was still insufficient, because a non-Delta
+ * write that reads from Delta tables (e.g. Delta read into a plain Parquet
+ * InsertIntoHadoopFsRelationCommand) lost its only terminal event too.
+ */
 @Slf4j
 public class AdaptivePlanEventFilter implements EventFilter {
 
@@ -28,7 +34,7 @@ public class AdaptivePlanEventFilter implements EventFilter {
    */
   @Override
   public boolean isDisabled(SparkListenerEvent event) {
-    if (!isDeltaPlan()) {
+    if (!isDeltaPlan() || !EventFilterUtils.isCurrentPlanDeltaWrite(context)) {
       return false;
     }
 

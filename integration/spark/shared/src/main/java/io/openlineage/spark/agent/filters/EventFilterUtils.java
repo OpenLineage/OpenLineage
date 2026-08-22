@@ -14,8 +14,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.V2WriteCommand;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
+import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 @Slf4j
 public class EventFilterUtils {
@@ -54,6 +59,54 @@ public class EventFilterUtils {
 
   static Optional<LogicalPlan> getLogicalPlan(OpenLineageContext context) {
     return context.getQueryExecution().map(QueryExecution::optimizedPlan);
+  }
+
+  /**
+   * Returns true when the current optimized logical plan writes into Delta. Only the write target
+   * matters here: a query that merely reads Delta tables but writes elsewhere (e.g. plain Parquet)
+   * must keep its adaptive-plan events, because with AQE enabled those are the only terminal events
+   * of a V1 write.
+   */
+  static boolean isCurrentPlanDeltaWrite(OpenLineageContext context) {
+    try {
+      return getLogicalPlan(context).map(EventFilterUtils::isDeltaWriteRoot).orElse(false);
+    } catch (Exception | LinkageError e) {
+      log.debug("Unable to determine whether the current logical plan writes to Delta", e);
+      return false;
+    }
+  }
+
+  private static boolean isDeltaWriteRoot(LogicalPlan root) {
+    if (isDeltaClassName(root.getClass().getName())) {
+      // Delta command nodes: MergeIntoCommand, DeleteCommand, UpdateCommand, WriteIntoDelta, ...
+      return true;
+    }
+    if (root instanceof SaveIntoDataSourceCommand) {
+      // V1 save with an explicit source, e.g. df.write.format("delta").save(...)
+      SaveIntoDataSourceCommand command = (SaveIntoDataSourceCommand) root;
+      return command.dataSource() != null
+          && isDeltaClassName(command.dataSource().getClass().getName());
+    }
+    if (root instanceof V2WriteCommand) {
+      // V2 writes: AppendData, OverwriteByExpression, OverwritePartitionsDynamic, ...
+      NamedRelation table = ((V2WriteCommand) root).table();
+      if (table instanceof DataSourceV2Relation) {
+        DataSourceV2Relation relation = (DataSourceV2Relation) table;
+        return relation.table() != null && isDeltaClassName(relation.table().getClass().getName());
+      }
+      return false;
+    }
+    if (root instanceof InsertIntoHadoopFsRelationCommand) {
+      // V1 file write; Delta only when the file format itself is Delta's
+      InsertIntoHadoopFsRelationCommand command = (InsertIntoHadoopFsRelationCommand) root;
+      return command.fileFormat() != null
+          && isDeltaClassName(command.fileFormat().getClass().getName());
+    }
+    return false;
+  }
+
+  private static boolean isDeltaClassName(String className) {
+    return className.startsWith("org.apache.spark.sql.delta");
   }
 
   /**
