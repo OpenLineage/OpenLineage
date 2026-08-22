@@ -44,7 +44,7 @@ class EventFilterUtilsTest {
     OpenLineageContext context = mock(OpenLineageContext.class);
     when(context.getQueryExecution()).thenReturn(Optional.empty());
 
-    assertFalse(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertFalse(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -55,7 +55,7 @@ class EventFilterUtilsTest {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenReturn(plan);
 
-    assertFalse(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertFalse(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -66,7 +66,7 @@ class EventFilterUtilsTest {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenReturn(plan);
 
-    assertTrue(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertTrue(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -76,9 +76,9 @@ class EventFilterUtilsTest {
     DataSourceV2Relation plan = mock(DataSourceV2Relation.class);
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenReturn(plan);
-    when(plan.table()).thenReturn(new FakeDeltaTable());
+    when(plan.table()).thenReturn(mock(FakeDeltaTable.class));
 
-    assertFalse(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertFalse(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -88,9 +88,9 @@ class EventFilterUtilsTest {
     SaveIntoDataSourceCommand plan = mock(SaveIntoDataSourceCommand.class);
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenReturn(plan);
-    when(plan.dataSource()).thenReturn(new FakeDeltaProvider());
+    when(plan.dataSource()).thenReturn(mock(FakeDeltaProvider.class));
 
-    assertTrue(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertTrue(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -102,7 +102,7 @@ class EventFilterUtilsTest {
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     when(plan.dataSource()).thenReturn(mock(CreatableRelationProvider.class));
 
-    assertFalse(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertFalse(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -114,9 +114,9 @@ class EventFilterUtilsTest {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     when(plan.table()).thenReturn(relation);
-    when(relation.table()).thenReturn(new FakeDeltaTable());
+    when(relation.table()).thenReturn(mock(FakeDeltaTable.class));
 
-    assertTrue(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertTrue(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -130,7 +130,7 @@ class EventFilterUtilsTest {
     when(plan.table()).thenReturn(relation);
     when(relation.table()).thenReturn(mock(Table.class));
 
-    assertFalse(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertFalse(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -142,7 +142,7 @@ class EventFilterUtilsTest {
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     when(plan.fileFormat()).thenReturn(mock(FakeDeltaFileFormat.class));
 
-    assertTrue(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertTrue(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -156,11 +156,11 @@ class EventFilterUtilsTest {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     when(plan.fileFormat()).thenReturn(mock(FileFormat.class));
-    when(deltaInput.table()).thenReturn(new FakeDeltaTable());
+    when(deltaInput.table()).thenReturn(mock(FakeDeltaTable.class));
     when(plan.children())
         .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(deltaInput)));
 
-    assertFalse(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertFalse(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test
@@ -170,7 +170,7 @@ class EventFilterUtilsTest {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenThrow(new NoSuchMethodError());
 
-    assertFalse(EventFilterUtils.isCurrentPlanDeltaWrite(context));
+    assertFalse(EventFilterUtils.isDeltaWritePlan(context));
   }
 
   @Test

@@ -25,6 +25,8 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 @Slf4j
 public class EventFilterUtils {
 
+  private static final String DELTA_PACKAGE_PREFIX = "org.apache.spark.sql.delta.";
+
   /**
    * Method that verifies based on OpenLineageContext and SparkListenerEvent if OpenLineage event
    * has to be sent.
@@ -67,7 +69,7 @@ public class EventFilterUtils {
    * must keep its adaptive-plan events, because with AQE enabled those are the only terminal events
    * of a V1 write.
    */
-  static boolean isCurrentPlanDeltaWrite(OpenLineageContext context) {
+  static boolean isDeltaWritePlan(OpenLineageContext context) {
     try {
       return getLogicalPlan(context).map(EventFilterUtils::isDeltaWriteRoot).orElse(false);
     } catch (Exception | LinkageError e) {
@@ -77,36 +79,31 @@ public class EventFilterUtils {
   }
 
   private static boolean isDeltaWriteRoot(LogicalPlan root) {
-    if (isDeltaClassName(root.getClass().getName())) {
+    if (isDeltaImplementation(root)) {
       // Delta command nodes: MergeIntoCommand, DeleteCommand, UpdateCommand, WriteIntoDelta, ...
       return true;
     }
     if (root instanceof SaveIntoDataSourceCommand) {
       // V1 save with an explicit source, e.g. df.write.format("delta").save(...)
       SaveIntoDataSourceCommand command = (SaveIntoDataSourceCommand) root;
-      return command.dataSource() != null
-          && isDeltaClassName(command.dataSource().getClass().getName());
+      return isDeltaImplementation(command.dataSource());
     }
     if (root instanceof V2WriteCommand) {
       // V2 writes: AppendData, OverwriteByExpression, OverwritePartitionsDynamic, ...
       NamedRelation table = ((V2WriteCommand) root).table();
-      if (table instanceof DataSourceV2Relation) {
-        DataSourceV2Relation relation = (DataSourceV2Relation) table;
-        return relation.table() != null && isDeltaClassName(relation.table().getClass().getName());
-      }
-      return false;
+      return table instanceof DataSourceV2Relation
+          && isDeltaImplementation(((DataSourceV2Relation) table).table());
     }
     if (root instanceof InsertIntoHadoopFsRelationCommand) {
       // V1 file write; Delta only when the file format itself is Delta's
       InsertIntoHadoopFsRelationCommand command = (InsertIntoHadoopFsRelationCommand) root;
-      return command.fileFormat() != null
-          && isDeltaClassName(command.fileFormat().getClass().getName());
+      return isDeltaImplementation(command.fileFormat());
     }
     return false;
   }
 
-  private static boolean isDeltaClassName(String className) {
-    return className.startsWith("org.apache.spark.sql.delta");
+  private static boolean isDeltaImplementation(Object value) {
+    return value != null && value.getClass().getName().startsWith(DELTA_PACKAGE_PREFIX);
   }
 
   /**
