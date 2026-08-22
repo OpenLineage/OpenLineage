@@ -18,6 +18,8 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.hadoop.conf.Configuration;
@@ -148,6 +150,23 @@ class DeltaHandlerTest {
     assertThat(datasetIdentifier)
         .hasFieldOrPropertyWithValue("namespace", "file")
         .hasFieldOrPropertyWithValue("name", "/some/location");
+  }
+
+  @Test
+  void testGetIdentifierPrefersTableLocationOverPathWriteOption() {
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("No active or default Spark session found"));
+    Map<String, String> properties = new LinkedHashMap<>();
+    properties.put("path", "/write/option/path");
+    properties.put(TableCatalog.PROP_LOCATION, "/table/location");
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(sparkSession, deltaCatalog, identifier, properties);
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/table/location");
   }
 
   @Test
