@@ -81,6 +81,7 @@ addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, sp
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&gcsDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hadoopClientDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&icebergDependencies)
+addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&clickhouseDependencies)
 addDependenciesToConfiguration(testSourceSet.runtimeOnlyConfigurationName, spark, scala, this.&runtimeOnlyDependencies)
 addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, this.&additionalJars)
 
@@ -130,6 +131,7 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:mockserver")
     testImplementation("org.testcontainers:kafka")
+    testImplementation("org.testcontainers:clickhouse")
     testImplementation("commons-beanutils:commons-beanutils:1.11.0")
     testImplementation("org.awaitility:awaitility:4.3.0")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
@@ -234,6 +236,9 @@ tasks.named("test", Test.class) {
         }
         if (!hasIcebergDependencies(spark, scala)) {
             excludeTags "iceberg"
+        }
+        if (!hasClickHouseDependencies(spark, scala)) {
+            excludeTags "clickhouse"
         }
     }
     systemProperties = testSystemProperties(spark, scala)
@@ -431,6 +436,11 @@ tasks.register("integrationTest", Test.class) {
             logger.warn("[IntegrationTest] Excluding iceberg tests")
             excludeTags("iceberg")
         }
+        logger.warn("[IntegrationTest] hasClickHouseDependencies: ${hasClickHouseDependencies(spark, scala)}")
+        if (!hasClickHouseDependencies(spark, scala)) {
+            logger.warn("[IntegrationTest] Excluding clickhouse tests")
+            excludeTags("clickhouse")
+        }
     }
     systemProperties.put("test.output.dir", buildDirectory.dir("test-output/${name}").get().asFile.toString())
     systemProperties.put("test.results.dir", buildDirectory.dir("test-results/${name}/o").get().asFile.toString())
@@ -601,6 +611,27 @@ List<Dependency> deltaDependencies(String spark, String scala) {
     }
 }
 
+List<Dependency> clickhouseDependencies(String spark, String scala) {
+    // ClickHouse Spark connector runtime artifacts exist for Spark 3.3+ only,
+    // and for Spark 4.x with Scala 2.13 only; tests are tagged with `clickhouse`
+    // and excluded where no artifact is available.
+    final def registry = [
+            "3.3.4": "0.10.0",
+            "3.4.4": "0.10.0",
+            "3.5.6": "0.10.0",
+            "4.0.0": "0.10.0",
+    ]
+
+    def clickhouse = registry.get(spark)
+    if (clickhouse == null || (spark.startsWith("4.") && scala != "2.13")) {
+        return []
+    }
+    def shortSpark = spark.substring(0, spark.lastIndexOf('.'))
+    return [
+            dependencies.create("com.clickhouse.spark:clickhouse-spark-runtime-${shortSpark}_${scala}:${clickhouse}")
+    ]
+}
+
 List<Dependency> gcsDependencies(String spark, String scala) {
     final def registry = [
             "2.4.8": "hadoop2-2.2.9",
@@ -717,6 +748,10 @@ boolean hasDeltaDependencies(String spark, String scala) {
 
 boolean hasIcebergDependencies(String spark, String scala) {
     return !icebergDependencies(spark, scala).isEmpty()
+}
+
+boolean hasClickHouseDependencies(String spark, String scala) {
+    return !clickhouseDependencies(spark, scala).isEmpty()
 }
 
 static List<String> map(List<SourceSet> sourceSets, Function<SourceSet, String> func) {
