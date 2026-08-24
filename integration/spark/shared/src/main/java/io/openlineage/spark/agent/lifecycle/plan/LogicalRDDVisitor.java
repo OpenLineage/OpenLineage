@@ -10,6 +10,7 @@ import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.types.StructType;
@@ -41,8 +43,18 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public List<D> apply(LogicalPlan x) {
-    Set<RDD<?>> flattenedRdds = Rdds.flattenRDDs(((LogicalRDD) x).rdd(), new HashSet<>());
+    RDD<InternalRow> rdd = ((LogicalRDD) x).rdd();
+    if (rdd.isCheckpointed()) {
+      log.debug("LogicalRDD wraps checkpointed RDD id={}", rdd.id());
+      return context
+          .getCheckpointContext()
+          .getCheckpoint(rdd.id())
+          .map(checkpoint -> (List<D>) (List<?>) checkpoint.getInputDatasets())
+          .orElseGet(Collections::emptyList);
+    }
+    Set<RDD<?>> flattenedRdds = Rdds.flattenRDDs(rdd, new HashSet<>());
     List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(flattenedRdds);
     return findInputDatasets(fileLikeRdds, resolveSchema(fileLikeRdds));
   }
