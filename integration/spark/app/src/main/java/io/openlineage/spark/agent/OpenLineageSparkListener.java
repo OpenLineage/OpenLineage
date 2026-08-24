@@ -24,6 +24,7 @@ import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkVersionUtils;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,6 +64,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   static final String RDD_REGISTRY_GAUGE = "openlineage.spark.state.rdd_execution_registry";
   static final String BUILDER_JOBS_GAUGE = "openlineage.spark.state.builder.jobs";
   static final String BUILDER_STAGES_GAUGE = "openlineage.spark.state.builder.stages";
+  static final String METRICS_EXECUTION_GROUPS_GAUGE =
+      "openlineage.spark.state.job_metrics.execution_groups";
+  static final String METRICS_PENDING_JOBS_GAUGE =
+      "openlineage.spark.state.job_metrics.pending_jobs";
+
+  private static final String SQL_EXECUTION_ID_KEY = "spark.sql.execution.id";
+  private static final String SQL_EXECUTION_ROOT_ID_KEY = "spark.sql.execution.root.id";
 
   // These are used only in integration tests to override default factory,
   // before SparkSession creates new listener object
@@ -80,6 +88,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
   private final JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
+  private final JobMetricsLifecycleManager jobMetricsLifecycle =
+      new JobMetricsLifecycleManager(jobMetrics);
   private final Function1<SparkSession, SparkContext> sparkContextFromSession =
       ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
   private final Function0<Option<SparkContext>> activeSparkContext =
@@ -145,6 +155,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     getSparkSQLExecutionContext(startEvent.executionId())
         .ifPresent(
             context -> {
+              jobMetricsLifecycle.registerExecution(
+                  startEvent.executionId(), getRootExecutionId(startEvent));
               meterRegistry.counter("openlineage.spark.event.sql.start").increment();
               circuitBreaker.run(
                   () -> {
@@ -160,24 +172,28 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     log.debug("sparkSQLExecEnd with activeJobId {}", activeJobId);
     ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
     meterRegistry.counter("openlineage.spark.event.sql.end").increment();
-    if (context != null) {
-      circuitBreaker.run(
-          () -> {
-            activeJobId.ifPresent(context::setActiveJobId);
-            context.end(endEvent);
-            return null;
-          });
-    } else {
-      contextFactory
-          .createSparkSQLExecutionContext(endEvent)
-          .ifPresent(
-              c ->
-                  circuitBreaker.run(
-                      () -> {
-                        activeJobId.ifPresent(c::setActiveJobId);
-                        c.end(endEvent);
-                        return null;
-                      }));
+    try {
+      if (context != null) {
+        circuitBreaker.run(
+            () -> {
+              activeJobId.ifPresent(context::setActiveJobId);
+              context.end(endEvent);
+              return null;
+            });
+      } else {
+        contextFactory
+            .createSparkSQLExecutionContext(endEvent)
+            .ifPresent(
+                c ->
+                    circuitBreaker.run(
+                        () -> {
+                          activeJobId.ifPresent(c::setActiveJobId);
+                          c.end(endEvent);
+                          return null;
+                        }));
+      }
+    } finally {
+      jobMetricsLifecycle.endExecution(endEvent.executionId());
     }
   }
 
@@ -210,37 +226,57 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       jobMetrics.addJobStages(jobStart.jobId(), stages);
     }
 
-    Optional.ofNullable(getSqlExecutionId(jobStart.properties()))
-        .map(Optional::of)
-        .orElseGet(
-            () ->
-                asJavaOptional(
-                        SparkSession.getDefaultSession()
-                            .map(sparkContextFromSession)
-                            .orElse(activeSparkContext))
-                    .flatMap(
-                        ctx ->
-                            Optional.ofNullable(ctx.dagScheduler())
-                                .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId()))
-                                .flatMap(ScalaConversionUtils::asJavaOptional))
-                    .map(job -> getSqlExecutionId(job.properties())))
-        .map(Long::parseLong)
-        .map(id -> getExecutionContext(jobStart.jobId(), id))
-        .orElseGet(() -> getExecutionContext(jobStart.jobId()))
-        .ifPresent(
-            context -> {
-              // set it in the rddExecutionRegistry so jobEnd is called
-              activeJob.ifPresent(context::setActiveJob);
-              circuitBreaker.run(
-                  () -> {
-                    context.start(jobStart);
-                    return null;
-                  });
-            });
+    Optional<Properties> activeJobProperties = activeJob.map(ActiveJob::properties);
+    Optional<Long> executionId =
+        getLongProperty(jobStart.properties(), activeJobProperties, SQL_EXECUTION_ID_KEY);
+    Optional<Long> rootExecutionId =
+        getLongProperty(jobStart.properties(), activeJobProperties, SQL_EXECUTION_ROOT_ID_KEY);
+
+    Optional<ExecutionContext> executionContext =
+        executionId
+            .map(id -> getExecutionContext(jobStart.jobId(), id))
+            .orElseGet(() -> getExecutionContext(jobStart.jobId()));
+    executionContext.ifPresent(
+        context -> {
+          executionId.ifPresent(
+              id -> jobMetricsLifecycle.registerJob(jobStart.jobId(), id, rootExecutionId));
+          // set it in the rddExecutionRegistry so jobEnd is called
+          activeJob.ifPresent(context::setActiveJob);
+          circuitBreaker.run(
+              () -> {
+                context.start(jobStart);
+                return null;
+              });
+        });
   }
 
-  private String getSqlExecutionId(Properties properties) {
-    return properties.getProperty("spark.sql.execution.id");
+  private Optional<Long> getLongProperty(Properties properties, String key) {
+    return Optional.ofNullable(properties)
+        .map(value -> value.getProperty(key))
+        .map(Long::parseLong);
+  }
+
+  private Optional<Long> getLongProperty(
+      Properties properties, Optional<Properties> fallbackProperties, String key) {
+    Optional<Long> value = getLongProperty(properties, key);
+    return value.isPresent()
+        ? value
+        : fallbackProperties.flatMap(fallback -> getLongProperty(fallback, key));
+  }
+
+  private long getRootExecutionId(SparkListenerSQLExecutionStart startEvent) {
+    try {
+      Object rootExecutionId =
+          startEvent.getClass().getMethod("rootExecutionId").invoke(startEvent);
+      if (rootExecutionId instanceof Option && ((Option<?>) rootExecutionId).isDefined()) {
+        return ((Number) ((Option<?>) rootExecutionId).get()).longValue();
+      }
+    } catch (NoSuchMethodException e) {
+      // Spark versions before 3.4 do not expose a root execution ID.
+    } catch (IllegalAccessException | InvocationTargetException | ClassCastException e) {
+      log.debug("Unable to read Spark SQL root execution ID", e);
+    }
+    return startEvent.executionId();
   }
 
   /** called by the SparkListener when a job ends */
@@ -251,7 +287,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       if (disabledContext != null) {
         disabledContext.evictJob(jobEnd.jobId());
       }
-      jobMetrics.cleanUp(jobEnd.jobId());
+      jobMetricsLifecycle.cleanUpJob(jobEnd.jobId());
       return;
     }
     log.debug("onJobEnd called [{}].", jobEnd);
@@ -269,11 +305,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       if (context != null) {
         context.evictJob(jobEnd.jobId());
       }
-      if (context != null && context.retainsJobMetrics(jobEnd.jobId())) {
-        jobMetrics.completeJob(jobEnd.jobId());
-      } else {
-        jobMetrics.cleanUp(jobEnd.jobId());
-      }
+      jobMetricsLifecycle.completeJob(jobEnd.jobId());
     }
   }
 
@@ -318,7 +350,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     executionContexts().forEach(ExecutionContext::clearRetainedState);
     sparkSqlExecutionRegistry.clear();
     rddExecutionRegistry.clear();
-    jobMetrics.cleanUpAll();
+    jobMetricsLifecycle.cleanUpAll();
   }
 
   @Override
@@ -470,6 +502,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         BUILDER_JOBS_GAUGE, this, OpenLineageSparkListener::getRetainedBuilderJobCount);
     meterRegistry.gauge(
         BUILDER_STAGES_GAUGE, this, OpenLineageSparkListener::getRetainedBuilderStageCount);
+    meterRegistry.gauge(
+        METRICS_EXECUTION_GROUPS_GAUGE,
+        jobMetricsLifecycle,
+        JobMetricsLifecycleManager::getExecutionGroupCount);
+    meterRegistry.gauge(
+        METRICS_PENDING_JOBS_GAUGE,
+        jobMetricsLifecycle,
+        JobMetricsLifecycleManager::getPendingJobCount);
     jobMetrics.registerStateGauges(meterRegistry);
     stateGaugesRegistered = true;
   }

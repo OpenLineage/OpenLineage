@@ -16,7 +16,6 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.EventEmitter;
-import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -57,11 +56,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   private boolean emittedOnSqlExecutionStart = false;
   private boolean emittedOnSqlExecutionEnd = false;
-  private boolean sqlExecutionEnded = false;
   private boolean emittedOnJobStart = false;
   private boolean emittedOnJobEnd = false;
   private Integer activeJobId;
-  private Optional<Integer> retainedMetricsJobId = Optional.empty();
   private AtomicBoolean finished = new AtomicBoolean(false);
 
   private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
@@ -121,62 +118,51 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerSQLExecutionEnd endEvent) {
-    boolean jobEndPending = emittedOnJobStart && !emittedOnJobEnd;
-    sqlExecutionEnded = true;
-    try {
-      if (log.isDebugEnabled()) {
-        log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
-      }
-      // TODO: can we get failed event here?
-      // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
-      // Maybe use QueryExecutionListener?
-      olContext.setActiveJobId(activeJobId);
-      if (!olContext.getQueryExecution().isPresent()) {
-        log.info(NO_EXECUTION_INFO, olContext);
-        return;
-      } else if (EventFilterUtils.isDisabled(olContext, endEvent)) {
-        log.info(
-            "OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionEnd");
-        return;
-      }
-
-      // only one COMPLETE event is expected, verify if jobEnd was not emitted
-      EventType eventType;
-      if (emittedOnJobStart && !emittedOnJobEnd) {
-        // expecting jobEnd event later on
-        eventType = RUNNING;
-      } else {
-        eventType = COMPLETE;
-      }
-      emittedOnSqlExecutionEnd = true;
-
-      RunEvent event =
-          runEventBuilder.buildRun(
-              OpenLineageRunEventContext.builder()
-                  .applicationParentRunFacet(buildApplicationParentFacet())
-                  .event(endEvent)
-                  .runEventBuilder(
-                      olContext
-                          .getOpenLineage()
-                          .newRunEventBuilder()
-                          .eventTime(toZonedTime(endEvent.time())))
-                  .eventType(eventType)
-                  .jobBuilder(buildJob())
-                  .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
-                  .build());
-
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
-      }
-      eventEmitter.emit(event);
-    } finally {
-      retainedMetricsJobId.ifPresent(JobMetricsHolder.getInstance()::cleanUp);
-      retainedMetricsJobId = Optional.empty();
-      if (!jobEndPending) {
-        olContext.getActiveJobId().ifPresent(JobMetricsHolder.getInstance()::cleanUp);
-      }
+    if (log.isDebugEnabled()) {
+      log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
     }
+    // TODO: can we get failed event here?
+    // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
+    // Maybe use QueryExecutionListener?
+    olContext.setActiveJobId(activeJobId);
+    if (!olContext.getQueryExecution().isPresent()) {
+      log.info(NO_EXECUTION_INFO, olContext);
+      return;
+    } else if (EventFilterUtils.isDisabled(olContext, endEvent)) {
+      log.info(
+          "OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionEnd");
+      return;
+    }
+
+    // only one COMPLETE event is expected, verify if jobEnd was not emitted
+    EventType eventType;
+    if (emittedOnJobStart && !emittedOnJobEnd) {
+      // expecting jobEnd event later on
+      eventType = RUNNING;
+    } else {
+      eventType = COMPLETE;
+    }
+    emittedOnSqlExecutionEnd = true;
+
+    RunEvent event =
+        runEventBuilder.buildRun(
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .event(endEvent)
+                .runEventBuilder(
+                    olContext
+                        .getOpenLineage()
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(endEvent.time())))
+                .eventType(eventType)
+                .jobBuilder(buildJob())
+                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+                .build());
+
+    if (log.isDebugEnabled()) {
+      log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
+    }
+    eventEmitter.emit(event);
   }
 
   // TODO: not invoked until https://github.com/OpenLineage/OpenLineage/issues/470 is completed
@@ -311,16 +297,11 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    boolean retainMetrics = false;
     try {
       log.debug("SparkListenerJobEnd - executionId: {}", executionId);
       olContext.setActiveJobId(jobEnd.jobId());
       if (!finished.compareAndSet(false, true)) {
         log.debug("Event already finished, returning");
-        retainMetrics = emittedOnSqlExecutionStart && !sqlExecutionEnded;
-        if (retainMetrics) {
-          retainMetricsUntilSqlEnd(jobEnd.jobId());
-        }
         return;
       }
 
@@ -330,16 +311,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       } else if (EventFilterUtils.isDisabled(olContext, jobEnd)) {
         log.info(
             "OpenLineage received Spark event that is configured to be skipped: SparkListenerJobEnd");
-        retainMetrics = emittedOnSqlExecutionStart && !sqlExecutionEnded;
-        if (retainMetrics) {
-          retainMetricsUntilSqlEnd(jobEnd.jobId());
-        }
         return;
-      }
-
-      retainMetrics = emittedOnSqlExecutionStart && !sqlExecutionEnded;
-      if (retainMetrics) {
-        retainMetricsUntilSqlEnd(jobEnd.jobId());
       }
 
       // only one COMPLETE event is expected,
@@ -377,11 +349,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
       eventEmitter.emit(event);
     } finally {
       runEventBuilder.evictJob(jobEnd.jobId());
-      if (retainMetrics) {
-        JobMetricsHolder.getInstance().completeJob(jobEnd.jobId());
-      } else {
-        JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
-      }
     }
   }
 
@@ -391,14 +358,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   @Override
-  public boolean retainsJobMetrics(int jobId) {
-    return retainedMetricsJobId.filter(id -> id == jobId).isPresent();
-  }
-
-  @Override
   public void clearRetainedState() {
     runEventBuilder.clearRetainedState();
-    retainedMetricsJobId = Optional.empty();
   }
 
   @Override
@@ -409,13 +370,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public int getRetainedStageCount() {
     return runEventBuilder.getRetainedStageCount();
-  }
-
-  private void retainMetricsUntilSqlEnd(int jobId) {
-    retainedMetricsJobId
-        .filter(id -> id != jobId)
-        .ifPresent(JobMetricsHolder.getInstance()::cleanUp);
-    retainedMetricsJobId = Optional.of(jobId);
   }
 
   @Override

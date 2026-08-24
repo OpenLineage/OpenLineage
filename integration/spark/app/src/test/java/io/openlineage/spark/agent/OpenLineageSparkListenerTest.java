@@ -288,6 +288,15 @@ class OpenLineageSparkListenerTest {
         .isEqualTo(2);
     assertThat(meterRegistry.get(OpenLineageSparkListener.BUILDER_STAGES_GAUGE).gauge().value())
         .isEqualTo(3);
+    assertThat(
+            meterRegistry
+                .get(OpenLineageSparkListener.METRICS_EXECUTION_GROUPS_GAUGE)
+                .gauge()
+                .value())
+        .isEqualTo(1);
+    assertThat(
+            meterRegistry.get(OpenLineageSparkListener.METRICS_PENDING_JOBS_GAUGE).gauge().value())
+        .isZero();
     assertThat(meterRegistry.get(JobMetricsHolder.JOB_STAGES_GAUGE).gauge().value()).isEqualTo(1);
     assertThat(meterRegistry.get(JobMetricsHolder.STAGE_METRICS_GAUGE).gauge().value())
         .isEqualTo(1);
@@ -298,6 +307,12 @@ class OpenLineageSparkListenerTest {
     assertThat(meterRegistry.get(OpenLineageSparkListener.SQL_REGISTRY_GAUGE).gauge().value())
         .isZero();
     assertThat(meterRegistry.get(OpenLineageSparkListener.BUILDER_JOBS_GAUGE).gauge().value())
+        .isZero();
+    assertThat(
+            meterRegistry
+                .get(OpenLineageSparkListener.METRICS_EXECUTION_GROUPS_GAUGE)
+                .gauge()
+                .value())
         .isZero();
     assertThat(meterRegistry.get(JobMetricsHolder.JOB_STAGES_GAUGE).gauge().value()).isZero();
     assertThat(meterRegistry.get(JobMetricsHolder.STAGE_METRICS_GAUGE).gauge().value()).isZero();

@@ -7,7 +7,9 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.Mockito.atLeastOnce;
 
+import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
@@ -23,6 +25,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 @ExtendWith(SparkAgentTestExtension.class)
 @Tag("integration-test")
@@ -56,6 +60,17 @@ class JobMetricsCleanupIntegrationTest {
     StaticExecutionContextFactory.waitForExecutionEnd();
 
     assertThat(completedJobs.get()).isPositive();
+    ArgumentCaptor<RunEvent> events = ArgumentCaptor.forClass(RunEvent.class);
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeastOnce()).emit(events.capture());
+    assertThat(events.getAllValues())
+        .filteredOn(event -> event.getOutputs() != null && !event.getOutputs().isEmpty())
+        .anySatisfy(
+            event ->
+                assertThat(event.getOutputs())
+                    .anySatisfy(
+                        output ->
+                            assertThat(output.getOutputFacets().getOutputStatistics())
+                                .isNotNull()));
     assertNoRetainedMetrics(completedJobs.get());
   }
 
