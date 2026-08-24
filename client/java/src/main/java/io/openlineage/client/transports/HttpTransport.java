@@ -17,20 +17,26 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.Delegate;
@@ -46,6 +52,7 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuil
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.client5.http.utils.DateUtils;
 import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ConnectionClosedException;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
@@ -377,10 +384,25 @@ public final class HttpTransport extends Transport {
         long baseRetryIntervalMillis,
         double retryIntervalMultiplier,
         long maxRetryIntervalMillis) {
-      super(maxRetries, TimeValue.ofMilliseconds(baseRetryIntervalMillis));
+      super(
+          maxRetries,
+          TimeValue.ZERO_MILLISECONDS,
+          Arrays.asList(
+              InterruptedIOException.class,
+              UnknownHostException.class,
+              ConnectException.class,
+              ConnectionClosedException.class,
+              NoRouteToHostException.class,
+              SSLException.class),
+          Arrays.asList(500, 502, 503, 504));
       this.baseRetryIntervalMillis = baseRetryIntervalMillis;
       this.retryIntervalMultiplier = retryIntervalMultiplier;
       this.maxRetryIntervalMillis = maxRetryIntervalMillis;
+    }
+
+    @Override
+    protected boolean handleAsIdempotent(final HttpRequest request) {
+      return true;
     }
 
     @Override

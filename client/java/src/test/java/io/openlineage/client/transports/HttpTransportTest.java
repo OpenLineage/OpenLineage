@@ -40,16 +40,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import lombok.SneakyThrows;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -234,23 +239,35 @@ class HttpTransportTest {
   void retryIntervalUsesExponentialBackoffWithJitter() {
     long baseRetryIntervalMillis = 100L;
     double retryIntervalMultiplier = 2.0;
-    long maxRetryIntervalMillis = 250L;
+    long maxRetryIntervalMillis = 10000L;
 
-    for (int i = 0; i < 100; i++) {
-      TimeValue firstRetry =
-          HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
-              baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 1);
-      TimeValue secondRetry =
-          HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
-              baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 2);
-      TimeValue thirdRetry =
-          HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
-              baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 3);
-
-      assertThat(firstRetry.toMilliseconds()).isBetween(0L, 100L);
-      assertThat(secondRetry.toMilliseconds()).isBetween(0L, 200L);
-      assertThat(thirdRetry.toMilliseconds()).isBetween(0L, 250L);
+    long maxFirst = 0L;
+    long maxSecond = 0L;
+    long maxThird = 0L;
+    for (int i = 0; i < 1000; i++) {
+      maxFirst =
+          Math.max(
+              maxFirst,
+              HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+                      baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 1)
+                  .toMilliseconds());
+      maxSecond =
+          Math.max(
+              maxSecond,
+              HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+                      baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 2)
+                  .toMilliseconds());
+      maxThird =
+          Math.max(
+              maxThird,
+              HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+                      baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 3)
+                  .toMilliseconds());
     }
+
+    assertThat(maxFirst).isGreaterThan(80L);
+    assertThat(maxSecond).isGreaterThan(160L);
+    assertThat(maxThird).isGreaterThan(320L);
   }
 
   @Test
@@ -267,6 +284,63 @@ class HttpTransportTest {
             HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
                 100, 2.0, 0, 1))
         .isEqualTo(TimeValue.ZERO_MILLISECONDS);
+  }
+
+  @Test
+  void retryIntervalHonorsMaxIntervalCap() {
+    long baseRetryIntervalMillis = 100L;
+    double retryIntervalMultiplier = 2.0;
+    long maxRetryIntervalMillis = 250L;
+
+    long observedMax = 0L;
+    for (int i = 0; i < 1000; i++) {
+      long value =
+          HttpTransport.ExponentialJitterRetryStrategy.getExponentialBackoffWithJitter(
+                  baseRetryIntervalMillis, retryIntervalMultiplier, maxRetryIntervalMillis, 3)
+              .toMilliseconds();
+      assertThat(value).isBetween(0L, maxRetryIntervalMillis);
+      observedMax = Math.max(observedMax, value);
+    }
+
+    assertThat(observedMax).isGreaterThan(220L);
+  }
+
+  @Test
+  void retryDecisionDoesNotDependOnBaseRetryIntervalVsTimeout() {
+    HttpTransport.ExponentialJitterRetryStrategy strategy =
+        new HttpTransport.ExponentialJitterRetryStrategy(5, 10_000L, 2.0, 60_000L);
+    HttpResponse response = mock(HttpResponse.class);
+    when(response.getCode()).thenReturn(503);
+
+    HttpClientContext context = HttpClientContext.create();
+    context.setRequestConfig(
+        RequestConfig.custom().setResponseTimeout(Timeout.ofMilliseconds(5000)).build());
+
+    assertThat(strategy.retryRequest(response, 1, context)).isTrue();
+  }
+
+  @Test
+  void retryDecisionRetriesPostTransportErrorsUpToMaxRetries() {
+    HttpTransport.ExponentialJitterRetryStrategy strategy =
+        new HttpTransport.ExponentialJitterRetryStrategy(1, 1000L, 2.0, 60_000L);
+    BasicHttpRequest post = new BasicHttpRequest("POST", "/api/v1/lineage");
+
+    assertThat(strategy.retryRequest(post, new IOException("Connection dropped"), 1, null))
+        .isTrue();
+    assertThat(strategy.retryRequest(post, new IOException("Connection dropped"), 2, null))
+        .isFalse();
+  }
+
+  @Test
+  void retryDecisionUsesExpectedStatusCodes() {
+    HttpTransport.ExponentialJitterRetryStrategy strategy =
+        new HttpTransport.ExponentialJitterRetryStrategy(1, 1000L, 2.0, 60_000L);
+
+    assertStatusRetry(strategy, 500, true);
+    assertStatusRetry(strategy, 502, true);
+    assertStatusRetry(strategy, 503, true);
+    assertStatusRetry(strategy, 504, true);
+    assertStatusRetry(strategy, 429, false);
   }
 
   @Test
@@ -309,6 +383,13 @@ class HttpTransportTest {
     } finally {
       server.stop(0);
     }
+  }
+
+  private static void assertStatusRetry(
+      HttpTransport.ExponentialJitterRetryStrategy strategy, int statusCode, boolean expected) {
+    HttpResponse response = mock(HttpResponse.class);
+    when(response.getCode()).thenReturn(statusCode);
+    assertThat(strategy.retryRequest(response, 1, null)).isEqualTo(expected);
   }
 
   @Test
