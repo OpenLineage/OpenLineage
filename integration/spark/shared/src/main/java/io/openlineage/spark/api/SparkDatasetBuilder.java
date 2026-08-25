@@ -193,6 +193,24 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
             .build());
   }
 
+  public SparkDatasetBuilder<T> datasetType(String datasetType, String subType) {
+    inner
+        .getFacets()
+        .datasetType(
+            context
+                .getOpenLineage()
+                .newDatasetTypeDatasetFacetBuilder()
+                .datasetType(datasetType)
+                .subType(subType)
+                .build());
+    return this;
+  }
+
+  public SparkDatasetBuilder<T> datasetType(OpenLineage.DatasetTypeDatasetFacet datasetTypeFacet) {
+    inner.getFacets().datasetType(datasetTypeFacet);
+    return this;
+  }
+
   /**
    * Sets the dataset version facet. For output datasets, also triggers vendor-specific output facet
    * builders (e.g. Iceberg snapshot facets). Subclasses may override to provide richer behaviour.

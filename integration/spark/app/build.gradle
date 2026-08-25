@@ -80,6 +80,7 @@ addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, sp
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&bigqueryDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&gcsDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hadoopClientDependencies)
+addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hudiDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&icebergDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&clickhouseDependencies)
 addDependenciesToConfiguration(testSourceSet.runtimeOnlyConfigurationName, spark, scala, this.&runtimeOnlyDependencies)
@@ -239,6 +240,9 @@ tasks.named("test", Test.class) {
         }
         if (!hasClickHouseDependencies(spark, scala)) {
             excludeTags "clickhouse"
+        }
+        if (!hasHudiDependencies(spark, scala)) {
+            excludeTags "hudi"
         }
     }
     systemProperties = testSystemProperties(spark, scala)
@@ -440,6 +444,11 @@ tasks.register("integrationTest", Test.class) {
         if (!hasClickHouseDependencies(spark, scala)) {
             logger.warn("[IntegrationTest] Excluding clickhouse tests")
             excludeTags("clickhouse")
+        }
+        logger.warn("[IntegrationTest] hasHudiDependencies: ${hasHudiDependencies(spark, scala)}")
+        if (!hasHudiDependencies(spark, scala)) {
+            logger.warn("[IntegrationTest] Excluding hudi tests")
+            excludeTags("hudi")
         }
     }
     systemProperties.put("test.output.dir", buildDirectory.dir("test-output/${name}").get().asFile.toString())
@@ -675,6 +684,21 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
     ]
 }
 
+List<Dependency> hudiDependencies(String spark, String scala) {
+    final def registry = [
+            "3.4.4": "0.15.0",
+            "3.5.6": "0.15.0"
+    ]
+
+    def hudi = registry.get(spark)
+    if (hudi == null) {
+        return []
+    }
+    return [
+            dependencies.create("org.apache.hudi:hudi-spark3.5-bundle_${scala}:${hudi}")
+    ]
+}
+
 List<Dependency> additionalJars(String spark, String scala) {
     final def registry = [
             "2.4.8": [
@@ -752,6 +776,10 @@ boolean hasIcebergDependencies(String spark, String scala) {
 
 boolean hasClickHouseDependencies(String spark, String scala) {
     return !clickhouseDependencies(spark, scala).isEmpty()
+}
+
+boolean hasHudiDependencies(String spark, String scala) {
+    return !hudiDependencies(spark, scala).isEmpty()
 }
 
 static List<String> map(List<SourceSet> sourceSets, Function<SourceSet, String> func) {
