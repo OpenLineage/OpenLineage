@@ -282,16 +282,15 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
+    ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     if (checkIfDisabled()) {
-      ExecutionContext disabledContext = rddExecutionRegistry.remove(jobEnd.jobId());
-      if (disabledContext != null) {
-        disabledContext.evictJob(jobEnd.jobId());
+      if (context != null) {
+        context.evictJob(jobEnd.jobId());
       }
       jobMetricsLifecycle.cleanUpJob(jobEnd.jobId());
       return;
     }
     log.debug("onJobEnd called [{}].", jobEnd);
-    ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     meterRegistry.counter("openlineage.spark.event.job.end").increment();
     try {
       circuitBreaker.run(

@@ -301,13 +301,13 @@ class RddExecutionContext implements ExecutionContext {
       log.debug("Posting event for end {}: {}", jobEnd, event);
       eventEmitter.emit(event);
     } finally {
-      JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
-      runEventBuilder.evictJob(jobEnd.jobId());
+      evictJob(jobEnd.jobId());
     }
   }
 
   @Override
   public void evictJob(int jobId) {
+    JobMetricsHolder.getInstance().cleanUp(jobId);
     runEventBuilder.evictJob(jobId);
   }
 
