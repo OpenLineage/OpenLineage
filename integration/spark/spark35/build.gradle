@@ -45,7 +45,6 @@ dependencies {
 
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
-
     // TODO: Remove 'testFixturesApi' and replace with 'testImplementation'
     // TODO: Completely remove the test dependency on 'shared'
     testFixturesApi(project(path: ":shared"))
