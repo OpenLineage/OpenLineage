@@ -81,6 +81,7 @@ dependencies {
 
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     scala213CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
+    scala213Implementation("org.apache.hudi:hudi-spark3.5-bundle_2.13:0.15.0")
 
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
