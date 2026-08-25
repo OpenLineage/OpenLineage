@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -28,6 +29,10 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hudi.HoodieBaseRelation;
+import org.apache.hudi.common.model.HoodieTableType;
+import org.apache.hudi.common.table.HoodieTableMetaClient;
+import org.apache.hudi.storage.StoragePath;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
@@ -141,5 +146,67 @@ class LogicalRelationDatasetBuilderTest {
         assertEquals(SOME_VERSION, ds.getFacets().getVersion().getDatasetVersion());
       }
     }
+  }
+
+  @Test
+  void testApplyForHudiBaseRelationCoversMorRelations() {
+    HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
+    HoodieTableMetaClient metaClient = mock(HoodieTableMetaClient.class);
+    StoragePath storagePath = mock(StoragePath.class);
+
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+            });
+
+    when(logicalRelation.relation()).thenReturn(hudiRelation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    when(hudiRelation.basePath()).thenReturn(new Path("/tmp/hudi_mor"));
+    when(hudiRelation.schema()).thenReturn(schema);
+    when(hudiRelation.metaClient()).thenReturn(metaClient);
+    when(metaClient.getTableType()).thenReturn(HoodieTableType.MERGE_ON_READ);
+    when(metaClient.getBasePathV2()).thenReturn(storagePath);
+    when(storagePath.toUri()).thenReturn(java.net.URI.create("file:/tmp/hudi_mor"));
+
+    List<OpenLineage.Dataset> datasets =
+        visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
+
+    assertEquals(1, datasets.size());
+    OpenLineage.Dataset dataset = datasets.get(0);
+    assertEquals("file", dataset.getNamespace());
+    assertEquals("/tmp/hudi_mor", dataset.getName());
+    assertNotNull(dataset.getFacets().getSymlinks());
+  }
+
+  @Test
+  void testApplyForHudiBaseRelationCoversCowRelations() {
+    HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
+    HoodieTableMetaClient metaClient = mock(HoodieTableMetaClient.class);
+    StoragePath storagePath = mock(StoragePath.class);
+
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+            });
+
+    when(logicalRelation.relation()).thenReturn(hudiRelation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    when(hudiRelation.basePath()).thenReturn(new Path("/tmp/hudi_cow"));
+    when(hudiRelation.schema()).thenReturn(schema);
+    when(hudiRelation.metaClient()).thenReturn(metaClient);
+    when(metaClient.getTableType()).thenReturn(HoodieTableType.COPY_ON_WRITE);
+    when(metaClient.getBasePathV2()).thenReturn(storagePath);
+    when(storagePath.toUri()).thenReturn(java.net.URI.create("file:/tmp/hudi_cow"));
+
+    List<OpenLineage.Dataset> datasets =
+        visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
+
+    assertEquals(1, datasets.size());
+    OpenLineage.Dataset dataset = datasets.get(0);
+    assertEquals("file", dataset.getNamespace());
+    assertEquals("/tmp/hudi_cow", dataset.getName());
+    assertNotNull(dataset.getFacets().getSymlinks());
   }
 }
