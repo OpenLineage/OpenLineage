@@ -25,6 +25,7 @@ import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -795,6 +796,33 @@ class SparkIcebergIntegrationTest {
 
     assertThat(icebergScanReport.get().getMetadata().getAdditionalProperties())
         .containsEntry("engine-name", "spark");
+  }
+
+  @Test
+  @SneakyThrows
+  void testLocalCheckpointReadDoesNotEmitOutput() {
+    clearTables("checkpoint_source");
+    spark.sql("CREATE TABLE checkpoint_source USING iceberg AS SELECT 1 AS id");
+
+    getEventsEmittedWithJobName(mockServer, "checkpoint_source");
+    StaticExecutionContextFactory.waitForExecutionEnd();
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.table("checkpoint_source").localCheckpoint(false).count();
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    List<RunEvent> readEvents =
+        getEventsEmitted(mockServer).stream()
+            .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+            .filter(
+                e ->
+                    e.getInputs().stream()
+                        .anyMatch(input -> input.getName().endsWith("checkpoint_source")))
+            .collect(Collectors.toList());
+
+    assertThat(readEvents)
+        .isNotEmpty()
+        .allSatisfy(event -> assertThat(event.getOutputs()).isEmpty());
   }
 
   @Test
