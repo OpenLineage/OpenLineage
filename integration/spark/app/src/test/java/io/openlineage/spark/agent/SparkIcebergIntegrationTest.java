@@ -684,6 +684,73 @@ class SparkIcebergIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+  void testRewriteDataFilesReportsCompactedTable() {
+    // the job name of a plain write to the table, going through its own catalog - as opposed to the
+    // compaction's append, which goes through SparkCachedTableCatalog and so is named after it
+    String plainWriteJobName =
+        "iceberg_integration_test.append_data.spark_catalog_default_compaction_target";
+    // the catalog Iceberg registers for its table cache, which the compaction writes through
+    String cacheCatalogName = "default_cache_iceberg";
+
+    clearTables("compaction_target", "compaction_marker");
+
+    spark.sql("CREATE TABLE compaction_target (a long, b long) USING iceberg");
+    // separate inserts so each one commits its own data file and there is something to compact
+    spark.sql("INSERT INTO compaction_target VALUES (1, 2)");
+    spark.sql("INSERT INTO compaction_target VALUES (3, 4)");
+    spark.sql("INSERT INTO compaction_target VALUES (5, 6)");
+
+    getEventsEmittedWithJobName(mockServer, plainWriteJobName);
+    MockServerUtils.clearRequests(mockServer);
+
+    Row rewriteResult =
+        spark
+            .sql(
+                "CALL spark_catalog.system.rewrite_data_files("
+                    + "table => 'default.compaction_target', "
+                    + "options => map('min-input-files','2'))")
+            .head();
+
+    // guard the premise of this test: the compaction really did rewrite the files
+    assertThat(rewriteResult.getInt(0)).as("rewritten data files").isGreaterThanOrEqualTo(2);
+    assertThat(rewriteResult.getInt(1)).as("added data files").isGreaterThanOrEqualTo(1);
+
+    // a plain write after the compaction, so waiting for its event means the compaction has
+    // finished reporting too - the assertions below then see whatever it did emit, empty or not
+    spark.sql("CREATE TABLE compaction_marker USING iceberg AS SELECT * FROM compaction_target");
+    getEventsEmittedWithJobName(mockServer, "compaction_marker");
+    List<RunEvent> events = getEventsEmitted(mockServer);
+
+    // The append that writes the compacted files is the one going through
+    // SparkCachedTableCatalog, so it is named after that catalog rather than the table's own.
+    // Selecting on the cache catalog's name is what makes this test specific: every other write
+    // here - the inserts, whose events routinely land asynchronously after clearRequests, and the
+    // marker table's own append - also emits append_data, and any of those would otherwise
+    // satisfy the assertions below on their own.
+    List<RunEvent> compactionEvents =
+        events.stream()
+            .filter(e -> e.getJob().getName().contains("append_data"))
+            .filter(e -> e.getJob().getName().contains(cacheCatalogName))
+            .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+            .collect(Collectors.toList());
+
+    assertThat(compactionEvents)
+        .as("compaction must report the table it rewrote")
+        .isNotEmpty()
+        .allSatisfy(e -> assertThat(e.getOutputs()).isNotEmpty());
+
+    // and the reported dataset must be the real table, not the cache catalog's UUID key
+    assertThat(
+            compactionEvents.stream()
+                .flatMap(e -> e.getOutputs().stream())
+                .map(OutputDataset::getName)
+                .collect(Collectors.toList()))
+        .isNotEmpty()
+        .allSatisfy(name -> assertThat(name).endsWith("/default/compaction_target"));
+  }
+
+  @Test
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testScanReportFacet() {
     if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {

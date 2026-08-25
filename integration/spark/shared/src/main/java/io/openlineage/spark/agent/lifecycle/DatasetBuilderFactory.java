@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.RelationHandler;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -62,6 +63,15 @@ public interface DatasetBuilderFactory {
    * resolution flow without lower modules depending on them.
    */
   default List<CatalogHandler> getCatalogHandlers(OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  /**
+   * Relation handlers contributed by this Spark version. They resolve a dataset straight from a
+   * {@code DataSourceV2Relation}, which is the only way to identify datasets written through
+   * catalogs no {@link CatalogHandler} supports.
+   */
+  default List<RelationHandler> getRelationHandlers(OpenLineageContext context) {
     return Collections.emptyList();
   }
 }
