@@ -42,10 +42,10 @@ dependencies {
     implementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
+    implementation("org.apache.hudi:hudi-spark3.5-bundle_${scalaBinaryVersion}:0.15.0")
 
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
-
     // TODO: Remove 'testFixturesApi' and replace with 'testImplementation'
     // TODO: Completely remove the test dependency on 'shared'
     testFixturesApi(project(path: ":shared"))
@@ -61,6 +61,7 @@ dependencies {
     // Scala 2.12
     scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
     scala212Implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
+    scala212Implementation("org.apache.hudi:hudi-spark3.5-bundle_2.12:0.15.0")
 
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     scala212CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
