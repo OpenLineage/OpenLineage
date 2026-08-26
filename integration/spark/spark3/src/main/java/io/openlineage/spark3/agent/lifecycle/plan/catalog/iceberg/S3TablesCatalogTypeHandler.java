@@ -55,9 +55,7 @@ class S3TablesCatalogTypeHandler extends BaseCatalogTypeHandler {
     nameBuilder.append('.').append(identifier.name());
 
     SparkContext ctx = session.sparkContext();
-    String ns =
-        S3TablesUtils.buildS3TablesArnFromCatalogConf(
-            ctx.getConf(), ctx.hadoopConfiguration(), catalogConf);
+    String ns = S3TablesUtils.buildS3TablesArnFromCatalogConf(ctx, catalogConf);
     DatasetIdentifier di = new DatasetIdentifier(nameBuilder.toString(), ns);
     getTableLocation(identifier, tableCatalog)
         .ifPresent(

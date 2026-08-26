@@ -23,6 +23,7 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.DatasetReducerUtils;
@@ -196,18 +197,24 @@ class OpenLineageRunEventBuilder {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     List<Object> nodes = context.loadNodes(stageMap, jobMap);
     UUID runId = context.getOverwriteRunId().orElse(openLineageContext.getRunUuid());
+    CatalogUtils.EventCache catalogEventCache = CatalogUtils.newEventCache();
 
     OpenLineage.JobFacets jobFacets =
         timeouter.timeoutJobFacets(
-            () -> buildJobFacets(nodes, jobFacetBuilders, context.getJobFacetsBuilder()));
+            () ->
+                catalogEventCache.call(
+                    () -> buildJobFacets(nodes, jobFacetBuilders, context.getJobFacetsBuilder())));
     List<InputDataset> inputDatasets =
-        timeouter.timeoutInputDatasets(() -> buildInputDatasets(nodes));
+        timeouter.timeoutInputDatasets(
+            () -> catalogEventCache.call(() -> buildInputDatasets(nodes)));
     openLineageContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
     List<OutputDataset> outputDatasets =
-        timeouter.timeoutOutputDatasets(() -> buildOutputDatasets(nodes));
+        timeouter.timeoutOutputDatasets(
+            () -> catalogEventCache.call(() -> buildOutputDatasets(nodes)));
     openLineageContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
     RunFacets runFacets =
-        timeouter.timeoutRunFacets(() -> buildRunFacets(context, nodes), openLineage);
+        timeouter.timeoutRunFacets(
+            () -> catalogEventCache.call(() -> buildRunFacets(context, nodes)), openLineage);
 
     OpenLineage.RunBuilder runBuilder = openLineage.newRunBuilder().runId(runId).facets(runFacets);
     context

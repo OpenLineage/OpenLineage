@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -56,6 +57,7 @@ public class DeltaHandler implements CatalogHandler {
   }
 
   @Override
+  @SneakyThrows
   public DatasetIdentifier getDatasetIdentifier(
       SparkSession session,
       TableCatalog tableCatalog,
@@ -63,7 +65,7 @@ public class DeltaHandler implements CatalogHandler {
       Map<String, String> properties) {
     DeltaCatalog catalog = (DeltaCatalog) tableCatalog;
 
-    Table table = catalog.loadTable(identifier);
+    Table table = CatalogUtils.loadTable(catalog, identifier);
     if (catalog.isPathIdentifier(identifier)) {
       // no information in metastore, only path
       Path path = new Path(identifier.name());
@@ -127,7 +129,7 @@ public class DeltaHandler implements CatalogHandler {
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
     DeltaCatalog deltaCatalog = (DeltaCatalog) tableCatalog;
-    return DeltaVersionUtils.getDatasetVersion(deltaCatalog.loadTable(identifier));
+    return DeltaVersionUtils.getDatasetVersion(CatalogUtils.loadTable(deltaCatalog, identifier));
   }
 
   @Override

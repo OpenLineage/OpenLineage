@@ -5,8 +5,11 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.time.Duration;
+import java.util.Optional;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.SparkContext;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
@@ -20,21 +23,42 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse;
 @Slf4j
 @UtilityClass
 public class AwsAccountIdFetcher {
-  private static String accountId;
+  private static final String ACCOUNT_ID_CACHE_KEY = "aws.sts.account-id";
+  private static final Duration NEGATIVE_CACHE_TTL = Duration.ofMinutes(1);
+  private static final ApplicationMetadataCache PROCESS_CACHE = new ApplicationMetadataCache();
 
   public static String getAccountId() {
-    if (accountId == null) {
-      log.info("Building STS client.");
-      try (StsClient stsClient =
-          StsClient.builder().httpClient(UrlConnectionHttpClient.builder().build()).build()) {
-        GetCallerIdentityRequest request = GetCallerIdentityRequest.builder().build();
-        GetCallerIdentityResponse response = stsClient.getCallerIdentity(request);
-        accountId = response.account();
-        log.info("Retrieved account ID [{}].", accountId);
-      }
-    } else {
-      log.debug("Using cached account ID [{}].", accountId);
+    return PROCESS_CACHE.get(ACCOUNT_ID_CACHE_KEY, AwsAccountIdFetcher::fetchAccountId);
+  }
+
+  public static String getAccountId(SparkContext sparkContext) {
+    return getAccountIdOptional(sparkContext).orElse(null);
+  }
+
+  public static Optional<String> getAccountIdOptional(SparkContext sparkContext) {
+    return ApplicationMetadataCache.forSparkContext(sparkContext)
+        .getOptional(
+            ACCOUNT_ID_CACHE_KEY,
+            () -> {
+              try {
+                return Optional.ofNullable(fetchAccountId());
+              } catch (Exception e) {
+                log.warn("Unable to retrieve AWS account ID.", e);
+                return Optional.empty();
+              }
+            },
+            NEGATIVE_CACHE_TTL);
+  }
+
+  private static String fetchAccountId() {
+    log.info("Building STS client.");
+    try (StsClient stsClient =
+        StsClient.builder().httpClient(UrlConnectionHttpClient.builder().build()).build()) {
+      GetCallerIdentityRequest request = GetCallerIdentityRequest.builder().build();
+      GetCallerIdentityResponse response = stsClient.getCallerIdentity(request);
+      String accountId = response.account();
+      log.info("Retrieved account ID [{}].", accountId);
+      return accountId;
     }
-    return accountId;
   }
 }

@@ -64,7 +64,7 @@ public class AlterTableCommandDatasetBuilder
     Table table;
     try {
       // resolvedTable has only old metadata (before alter)
-      table = resolvedTable.catalog().loadTable(resolvedTable.identifier());
+      table = CatalogUtils.loadTable(resolvedTable.catalog(), resolvedTable.identifier());
     } catch (NoSuchTableException e) {
       return Collections.emptyList();
     }

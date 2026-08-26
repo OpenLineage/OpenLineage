@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
+import io.openlineage.spark.agent.util.ApplicationMetadataCache;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.Header;
+import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 import scala.Tuple2;
 
@@ -75,6 +77,7 @@ class GCPUtilsTest {
 
   @AfterEach
   public void afterEach() {
+    ApplicationMetadataCache.invalidate(sparkContext);
     mockServer.reset();
 
     Tuple2<String, String>[] configuration = sparkConf.getAll();
@@ -113,6 +116,11 @@ class GCPUtilsTest {
 
     Map<String, Object> dataprocRunFacet = GCPUtils.getDataprocRunFacetMap(sparkContext);
     assertThat(dataprocRunFacet).isEqualTo(EXPECTED_FACET_DATAPROC_CLUSTER);
+    verifyRequestedOnce(GCPUtils.PROJECT_ID_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.DATAPROC_REGION_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.CLUSTER_UUID_ENDPOINT);
+    verifyNotRequested(GCPUtils.BATCH_ID_ENDPOINT);
+    verifyNotRequested(GCPUtils.SESSION_ID_ENDPOINT);
   }
 
   @Test
@@ -134,6 +142,11 @@ class GCPUtilsTest {
 
     Map<String, Object> dataprocRunFacet = GCPUtils.getDataprocRunFacetMap(sparkContext);
     assertThat(dataprocRunFacet).isEqualTo(EXPECTED_FACET_DATAPROC_BATCH);
+    verifyRequestedOnce(GCPUtils.PROJECT_ID_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.DATAPROC_REGION_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.BATCH_ID_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.BATCH_UUID_ENDPOINT);
+    verifyNotRequested(GCPUtils.SESSION_ID_ENDPOINT);
   }
 
   @Test
@@ -155,6 +168,19 @@ class GCPUtilsTest {
 
     Map<String, Object> dataprocRunFacet = GCPUtils.getDataprocRunFacetMap(sparkContext);
     assertThat(dataprocRunFacet).isEqualTo(EXPECTED_FACET_DATAPROC_SESSION);
+    verifyRequestedOnce(GCPUtils.PROJECT_ID_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.DATAPROC_REGION_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.BATCH_ID_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.SESSION_ID_ENDPOINT);
+    verifyRequestedOnce(GCPUtils.SESSION_UUID_ENDPOINT);
+  }
+
+  private static void verifyRequestedOnce(String endpoint) {
+    mockServer.verify(request(endpoint).withHeader(METADATA_HEADER), VerificationTimes.exactly(1));
+  }
+
+  private static void verifyNotRequested(String endpoint) {
+    mockServer.verify(request(endpoint).withHeader(METADATA_HEADER), VerificationTimes.exactly(0));
   }
 
   static {

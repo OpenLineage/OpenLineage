@@ -122,6 +122,7 @@ class AlterTableCommandDatasetBuilderTest {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockCatalog = mockStatic(CatalogUtils.class)) {
+        when(CatalogUtils.loadTable(tableCatalog, identifier)).thenReturn(table);
         when(CatalogUtils.getDatasetVersion(
                 openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(Optional.of("v2"));

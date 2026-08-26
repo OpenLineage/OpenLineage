@@ -9,12 +9,15 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.jetbrains.annotations.NotNull;
 
 @Slf4j
@@ -28,13 +31,47 @@ public class AwsUtils {
   private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
   private static final String SPARK_SQL_CATALOG_PREFIX = "spark.sql.catalog.";
   private static final String GLUE_CATALOG_SUFFIX = "GlueCatalog";
+  private static final String AWS_REGION_CACHE_KEY = "aws.imds.region";
+  private static final String GLUE_ARN_CACHE_KEY = "aws.glue.catalog-arn";
+  private static final Duration NEGATIVE_CACHE_TTL = Duration.ofMinutes(1);
 
   public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
+    return getGlueArn(
+        sparkConf,
+        hadoopConf,
+        AwsUtils::awsRegion,
+        () -> Optional.ofNullable(AwsAccountIdFetcher.getAccountId()));
+  }
+
+  public static Optional<String> getGlueArn(SparkContext sparkContext) {
+    SparkConf sparkConf = sparkContext.getConf();
+    Configuration hadoopConf = sparkContext.hadoopConfiguration();
+    if (!isHiveUsingGlue(sparkConf, hadoopConf) && !isIcebergUsingGlue(sparkConf)) {
+      return Optional.empty();
+    }
+    return ApplicationMetadataCache.forSparkContext(sparkContext)
+        .getOptional(
+            GLUE_ARN_CACHE_KEY,
+            () ->
+                getGlueArn(
+                    sparkConf,
+                    hadoopConf,
+                    () -> awsRegion(sparkContext),
+                    () -> AwsAccountIdFetcher.getAccountIdOptional(sparkContext)),
+            NEGATIVE_CACHE_TTL);
+  }
+
+  private static Optional<String> getGlueArn(
+      SparkConf sparkConf,
+      Configuration hadoopConf,
+      Supplier<Optional<String>> regionSupplier,
+      Supplier<Optional<String>> accountIdSupplier) {
     if (isHiveUsingGlue(sparkConf, hadoopConf) || isIcebergUsingGlue(sparkConf)) {
-      return awsRegion()
+      return regionSupplier
+          .get()
           .flatMap(
               region ->
-                  getGlueCatalogId(sparkConf, hadoopConf)
+                  getGlueCatalogId(sparkConf, hadoopConf, accountIdSupplier)
                       .map(glueCatalogId -> "arn:aws:glue:" + region + ":" + glueCatalogId));
     } else {
       return Optional.empty();
@@ -48,7 +85,7 @@ public class AwsUtils {
    * where the application is running and optional, extra configuration.
    */
   private static @NotNull Optional<String> getGlueCatalogId(
-      SparkConf sparkConf, Configuration hadoopConf) {
+      SparkConf sparkConf, Configuration hadoopConf, Supplier<Optional<String>> accountIdSupplier) {
     /*
     The ID of the Glue catalog can be specified explicitly. If it is not, then the account ID of the current account
     is used.
@@ -75,7 +112,7 @@ public class AwsUtils {
     } else {
       log.debug("Fetching current account ID to use as the catalog ID.");
       try {
-        return Optional.ofNullable(AwsAccountIdFetcher.getAccountId());
+        return accountIdSupplier.get();
       } catch (Exception e) {
         log.warn("Unable to retrieve AWS account ID to build Glue catalog ARN.", e);
         return Optional.empty();
@@ -131,6 +168,11 @@ public class AwsUtils {
       log.debug("Failed to get region from EC2 metadata service", e);
       return Optional.empty();
     }
+  }
+
+  public static @NotNull Optional<String> awsRegion(SparkContext sparkContext) {
+    return ApplicationMetadataCache.forSparkContext(sparkContext)
+        .getOptional(AWS_REGION_CACHE_KEY, AwsUtils::awsRegion, NEGATIVE_CACHE_TTL);
   }
 
   /**

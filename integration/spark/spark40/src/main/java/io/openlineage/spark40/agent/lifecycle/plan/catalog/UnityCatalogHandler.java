@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -73,7 +74,7 @@ public class UnityCatalogHandler implements CatalogHandler {
 
     Table table;
     try {
-      table = tableCatalog.loadTable(identifier);
+      table = CatalogUtils.loadTable(tableCatalog, identifier);
     } catch (NoSuchTableException e) {
       log.error("Failed to get dataset identifier because table {} doesn't exist", identifier, e);
       throw new RuntimeException(e);
@@ -158,7 +159,7 @@ public class UnityCatalogHandler implements CatalogHandler {
   @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
-    Table table = tableCatalog.loadTable(identifier);
+    Table table = CatalogUtils.loadTable(tableCatalog, identifier);
     if (table instanceof DeltaTableV2) {
       return DeltaVersionUtils.getDatasetVersion(table);
     } else {

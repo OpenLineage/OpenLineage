@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.util;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Value;
@@ -15,6 +16,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 
 /**
  * Utilities for detecting and building dataset identifiers for AWS S3 Tables. S3 Tables can be
@@ -109,7 +111,23 @@ public class S3TablesUtils {
   public static String buildS3TablesArnFromCatalogConf(
       SparkConf sparkConf, Configuration hadoopConf, Map<String, String> catalogConf) {
     Optional<BucketInfo> info = extractBucketFromCatalogConf(catalogConf);
-    return composeArn(sparkConf, hadoopConf, info);
+    return composeArn(
+        sparkConf,
+        hadoopConf,
+        info,
+        AwsUtils::awsRegion,
+        () -> Optional.ofNullable(AwsAccountIdFetcher.getAccountId()));
+  }
+
+  public static String buildS3TablesArnFromCatalogConf(
+      SparkContext sparkContext, Map<String, String> catalogConf) {
+    Optional<BucketInfo> info = extractBucketFromCatalogConf(catalogConf);
+    return composeArn(
+        sparkContext.getConf(),
+        sparkContext.hadoopConfiguration(),
+        info,
+        () -> AwsUtils.awsRegion(sparkContext),
+        () -> AwsAccountIdFetcher.getAccountIdOptional(sparkContext));
   }
 
   // ----- internals -----
@@ -135,10 +153,14 @@ public class S3TablesUtils {
   }
 
   private static String composeArn(
-      SparkConf sparkConf, Configuration hadoopConf, Optional<BucketInfo> info) {
+      SparkConf sparkConf,
+      Configuration hadoopConf,
+      Optional<BucketInfo> info,
+      Supplier<Optional<String>> regionSupplier,
+      Supplier<Optional<String>> accountIdSupplier) {
     Optional<String> resolvedRegion = info.flatMap(b -> b.region);
     if (!resolvedRegion.isPresent()) {
-      resolvedRegion = AwsUtils.awsRegion();
+      resolvedRegion = regionSupplier.get();
     }
     if (!resolvedRegion.isPresent()) {
       log.warn("Unable to resolve AWS region for S3 Tables namespace; using 'unknown'.");
@@ -146,7 +168,7 @@ public class S3TablesUtils {
 
     Optional<String> resolvedAccount = info.flatMap(b -> b.account);
     if (!resolvedAccount.isPresent()) {
-      resolvedAccount = resolveAccountId(sparkConf, hadoopConf);
+      resolvedAccount = resolveAccountId(sparkConf, hadoopConf, accountIdSupplier);
     }
     if (!resolvedAccount.isPresent()) {
       log.warn("Unable to resolve AWS account ID for S3 Tables namespace; using 'unknown'.");
@@ -160,7 +182,8 @@ public class S3TablesUtils {
     return info.map(b -> prefix + ":bucket/" + b.bucketName).orElse(prefix);
   }
 
-  private static Optional<String> resolveAccountId(SparkConf sparkConf, Configuration hadoopConf) {
+  private static Optional<String> resolveAccountId(
+      SparkConf sparkConf, Configuration hadoopConf, Supplier<Optional<String>> accountIdSupplier) {
     // Mirror the order AwsUtils.getGlueCatalogId uses: explicit catalog id wins, then EMR/Glue job
     // account, then STS. Keeps behavior consistent across V1/V2 paths and avoids a network call in
     // test environments that set the account explicitly.
@@ -184,7 +207,7 @@ public class S3TablesUtils {
       }
     }
     try {
-      return Optional.ofNullable(AwsAccountIdFetcher.getAccountId());
+      return accountIdSupplier.get();
     } catch (Exception e) {
       log.debug("Could not retrieve AWS account ID", e);
       return Optional.empty();

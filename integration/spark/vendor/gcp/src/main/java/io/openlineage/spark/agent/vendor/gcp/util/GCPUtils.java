@@ -8,10 +8,12 @@ package io.openlineage.spark.agent.vendor.gcp.util;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.openlineage.client.Environment;
+import io.openlineage.spark.agent.util.ApplicationMetadataCache;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.NameNormalizer;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -55,6 +57,7 @@ public class GCPUtils {
   private static final String METADATA_FLAVOUR = "Metadata-Flavor";
   private static final String GOOGLE = "Google";
   private static final String SPARK_DIST_CLASSPATH = "SPARK_DIST_CLASSPATH";
+  private static final String DATAPROC_METADATA_CACHE_KEY = "gcp.dataproc.application-metadata";
 
   enum ResourceType {
     CLUSTER,
@@ -87,8 +90,39 @@ public class GCPUtils {
   // Remove suppression after PMD is updated to >=7.0.0
   @SuppressWarnings("PMD.SwitchStmtsShouldHaveDefault")
   public static Map<String, Object> getDataprocRunFacetMap(SparkContext context) {
+    return new HashMap<>(getDataprocApplicationMetadata(context).getRunFacetProperties());
+  }
+
+  public static Map<String, Object> getOriginFacetMap(SparkContext sparkContext) {
+    return new HashMap<>(getDataprocApplicationMetadata(sparkContext).getOriginProperties());
+  }
+
+  private static DataprocApplicationMetadata getDataprocApplicationMetadata(SparkContext context) {
+    return ApplicationMetadataCache.forSparkContext(context)
+        .get(DATAPROC_METADATA_CACHE_KEY, () -> loadDataprocApplicationMetadata(context));
+  }
+
+  // Remove suppression after PMD is updated to >=7.0.0
+  @SuppressWarnings("PMD.SwitchStmtsShouldHaveDefault")
+  private static DataprocApplicationMetadata loadDataprocApplicationMetadata(SparkContext context) {
+    Optional<String> batchId = Optional.empty();
+    Optional<String> sessionId = Optional.empty();
+    ResourceType resource;
+    if ("yarn".equals(context.getConf().get(SPARK_MASTER, ""))) {
+      resource = ResourceType.CLUSTER;
+    } else {
+      batchId = getDataprocBatchID(context);
+      if (batchId.isPresent()) {
+        resource = ResourceType.BATCH;
+      } else {
+        sessionId = getDataprocSessionID(context);
+        resource = sessionId.isPresent() ? ResourceType.INTERACTIVE : ResourceType.UNKNOWN;
+      }
+    }
+
+    Optional<String> projectId = getGCPProjectId(context);
+    Optional<String> region = getDataprocRegion(context);
     Map<String, Object> dataprocProperties = new HashMap<>();
-    ResourceType resource = identifyResource(context);
 
     switch (resource) {
       case CLUSTER:
@@ -99,12 +133,12 @@ public class GCPUtils {
         dataprocProperties.put("jobType", "dataproc_job");
         break;
       case BATCH:
-        getDataprocBatchID(context).ifPresent(p -> dataprocProperties.put("batchId", p));
+        batchId.ifPresent(p -> dataprocProperties.put("batchId", p));
         getDataprocBatchUUID(context).ifPresent(p -> dataprocProperties.put("batchUuid", p));
         dataprocProperties.put("jobType", "batch");
         break;
       case INTERACTIVE:
-        getDataprocSessionID(context).ifPresent(p -> dataprocProperties.put("sessionId", p));
+        sessionId.ifPresent(p -> dataprocProperties.put("sessionId", p));
         getDataprocSessionUUID(context).ifPresent(p -> dataprocProperties.put("sessionUuid", p));
         dataprocProperties.put("jobType", "session");
         break;
@@ -112,14 +146,35 @@ public class GCPUtils {
         // do nothing
         break;
     }
-    getGCPProjectId(context).ifPresent(p -> dataprocProperties.put("projectId", p));
+    projectId.ifPresent(p -> dataprocProperties.put("projectId", p));
     getSparkAppId(context).ifPresent(p -> dataprocProperties.put("appId", p));
     getSparkAppName(context).ifPresent(p -> dataprocProperties.put("appName", p));
-    return dataprocProperties;
-  }
 
-  public static Map<String, Object> getOriginFacetMap(SparkContext sparkContext) {
-    return createDataprocOriginMap(sparkContext);
+    Map<String, Object> originProperties = new HashMap<>();
+    String nameFormat = "";
+    String resourceId = "";
+    switch (resource) {
+      case CLUSTER:
+        nameFormat = "projects/%s/regions/%s/clusters/%s";
+        resourceId = getClusterName(context).orElse("");
+        break;
+      case BATCH:
+        nameFormat = "projects/%s/locations/%s/batches/%s";
+        resourceId = batchId.orElse("");
+        break;
+      case INTERACTIVE:
+        nameFormat = "projects/%s/locations/%s/sessions/%s";
+        resourceId = sessionId.orElse("");
+        break;
+      case UNKNOWN:
+        nameFormat = "projects/%s/regions/%s/unknown/%s";
+        break;
+    }
+    originProperties.put(
+        "name", String.format(nameFormat, projectId.orElse(""), region.orElse(""), resourceId));
+    originProperties.put("sourceType", "DATAPROC");
+
+    return new DataprocApplicationMetadata(dataprocProperties, originProperties);
   }
 
   public static Optional<String> getSparkQueryExecutionNodeName(OpenLineageContext context) {
@@ -128,14 +183,6 @@ public class GCPUtils {
     SparkPlan node = context.getQueryExecution().get().executedPlan();
     if (node instanceof WholeStageCodegenExec) node = ((WholeStageCodegenExec) node).child();
     return Optional.of(NameNormalizer.normalize(node.nodeName()));
-  }
-
-  private static ResourceType identifyResource(SparkContext context) {
-    if ("yarn".equals(context.getConf().get(SPARK_MASTER, ""))) return ResourceType.CLUSTER;
-    if (getDataprocBatchID(context).isPresent()) return ResourceType.BATCH;
-    if (getDataprocSessionID(context).isPresent()) return ResourceType.INTERACTIVE;
-
-    return ResourceType.UNKNOWN;
   }
 
   private static Optional<String> getDriverHost(SparkContext context) {
@@ -195,38 +242,6 @@ public class GCPUtils {
     return fetchGCPMetadata(CLUSTER_UUID_ENDPOINT, context);
   }
 
-  // Remove suppression after PMD is updated to >=7.0.0
-  @SuppressWarnings("PMD.SwitchStmtsShouldHaveDefault")
-  private static Map<String, Object> createDataprocOriginMap(SparkContext context) {
-    Map<String, Object> originProperties = new HashMap<>();
-    String nameFormat = "";
-    String resourceID = "";
-    String regionName = getDataprocRegion(context).orElse("");
-    String projectID = getGCPProjectId(context).orElse("");
-
-    switch (identifyResource(context)) {
-      case CLUSTER:
-        nameFormat = "projects/%s/regions/%s/clusters/%s";
-        resourceID = getClusterName(context).orElse("");
-        break;
-      case BATCH:
-        nameFormat = "projects/%s/locations/%s/batches/%s";
-        resourceID = getDataprocBatchID(context).orElse("");
-        break;
-      case INTERACTIVE:
-        nameFormat = "projects/%s/locations/%s/sessions/%s";
-        resourceID = getDataprocSessionID(context).orElse("");
-        break;
-      case UNKNOWN:
-        nameFormat = "projects/%s/regions/%s/unknown/%s";
-        break;
-    }
-    String dataprocResource = String.format(nameFormat, projectID, regionName, resourceID);
-    originProperties.put("name", dataprocResource);
-    originProperties.put("sourceType", "DATAPROC");
-    return originProperties;
-  }
-
   private static Optional<String> getPropertyFromYarnTag(SparkContext context, String tagPrefix) {
     String yarnTag = context.getConf().get(SPARK_YARN_TAGS, null);
     if (yarnTag == null) {
@@ -275,5 +290,24 @@ public class GCPUtils {
             "code: %d, response: %s",
             statusCode, EntityUtils.toString(response.getEntity(), UTF_8));
     throw new IOException(message);
+  }
+
+  private static final class DataprocApplicationMetadata {
+    private final Map<String, Object> runFacetProperties;
+    private final Map<String, Object> originProperties;
+
+    private DataprocApplicationMetadata(
+        Map<String, Object> runFacetProperties, Map<String, Object> originProperties) {
+      this.runFacetProperties = Collections.unmodifiableMap(new HashMap<>(runFacetProperties));
+      this.originProperties = Collections.unmodifiableMap(new HashMap<>(originProperties));
+    }
+
+    private Map<String, Object> getRunFacetProperties() {
+      return runFacetProperties;
+    }
+
+    private Map<String, Object> getOriginProperties() {
+      return originProperties;
+    }
   }
 }

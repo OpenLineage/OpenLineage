@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.junit.jupiter.api.Test;
 import scala.PartialFunction;
@@ -158,5 +161,43 @@ class CatalogUtilsTest {
                 mock(Identifier.class),
                 new HashMap<>(),
                 Arrays.asList(catalogHandler)));
+  }
+
+  @Test
+  void testEventCacheResolvesHandlerAndLoadsTableOncePerEvent() throws Exception {
+    CatalogHandler handler = mock(CatalogHandler.class);
+    when(handler.hasClasses()).thenReturn(true);
+    when(handler.isClass(any())).thenReturn(true);
+    OpenLineageContext context = contextWithHandlers(handler);
+    TableCatalog catalog = mock(TableCatalog.class);
+    Identifier identifier = Identifier.of(new String[] {"namespace"}, "table");
+    Table table = mock(Table.class);
+    when(catalog.loadTable(identifier)).thenReturn(table);
+
+    CatalogUtils.EventCache firstEvent = CatalogUtils.newEventCache();
+    firstEvent.call(
+        () -> {
+          assertEquals(handler, CatalogUtils.getCatalogHandler(context, catalog).get());
+          assertEquals(handler, CatalogUtils.getCatalogHandler(context, catalog).get());
+          assertEquals(table, CatalogUtils.loadTable(catalog, identifier));
+          assertEquals(table, CatalogUtils.loadTable(catalog, identifier));
+          return null;
+        });
+
+    verify(handler, times(1)).hasClasses();
+    verify(handler, times(1)).isClass(catalog);
+    verify(catalog, times(1)).loadTable(identifier);
+
+    CatalogUtils.newEventCache()
+        .call(
+            () -> {
+              assertEquals(handler, CatalogUtils.getCatalogHandler(context, catalog).get());
+              assertEquals(table, CatalogUtils.loadTable(catalog, identifier));
+              return null;
+            });
+
+    verify(handler, times(2)).hasClasses();
+    verify(handler, times(2)).isClass(catalog);
+    verify(catalog, times(2)).loadTable(identifier);
   }
 }

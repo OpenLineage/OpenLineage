@@ -81,7 +81,7 @@ public class PathUtils {
     Configuration hadoopConf = sparkContext.hadoopConfiguration();
 
     Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
-    Optional<String> glueArn = AwsUtils.getGlueArn(sparkConf, hadoopConf);
+    Optional<String> glueArn = AwsUtils.getGlueArn(sparkContext);
     if (glueArn.isPresent()) {
       // Even if glue catalog is used, it will have a hive metastore URI
       // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'

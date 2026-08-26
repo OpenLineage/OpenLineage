@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.utils;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -69,7 +70,7 @@ public final class UnityCatalogTableDatasetUtils {
     TableCatalog tableCatalog = (TableCatalog) catalogPlugin.get();
     Identifier v2Identifier = Identifier.of(new String[] {schema}, table);
     try {
-      Table loadedTable = tableCatalog.loadTable(v2Identifier);
+      Table loadedTable = CatalogUtils.loadTable(tableCatalog, v2Identifier);
       Map<String, String> properties = loadedTable.properties();
       Optional<DatasetIdentifier> datasetIdentifier =
           datasetIdentifier(context, tableCatalog, v2Identifier, properties);

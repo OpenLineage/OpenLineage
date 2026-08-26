@@ -48,8 +48,7 @@ class GlueCatalogTypeHandler extends BaseCatalogTypeHandler {
   Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
       SparkSession session, Map<String, String> catalogConf, String table) {
     SparkContext sparkContext = session.sparkContext();
-    Optional<String> arn =
-        AwsUtils.getGlueArn(sparkContext.getConf(), sparkContext.hadoopConfiguration());
+    Optional<String> arn = AwsUtils.getGlueArn(sparkContext);
     if (!arn.isPresent()) {
       log.warn("Glue catalog ARN is unavailable; omitting Glue table symlink for table {}.", table);
     }

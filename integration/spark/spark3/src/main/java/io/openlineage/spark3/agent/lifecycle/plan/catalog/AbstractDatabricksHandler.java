@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -91,7 +92,7 @@ public abstract class AbstractDatabricksHandler implements CatalogHandler {
     if (!location.isPresent()) {
       try {
         location =
-            Optional.ofNullable(tableCatalog.loadTable(identifier))
+            Optional.ofNullable(CatalogUtils.loadTable(tableCatalog, identifier))
                 .map(t -> t.properties())
                 .filter(p -> p.containsKey("location"))
                 .map(p -> p.get("location"));

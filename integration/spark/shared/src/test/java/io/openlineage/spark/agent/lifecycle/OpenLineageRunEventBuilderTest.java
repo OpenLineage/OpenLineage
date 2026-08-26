@@ -9,17 +9,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.client.circuitBreaker.TimeoutCircuitBreakerConfig;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -32,6 +36,9 @@ import java.util.UUID;
 import lombok.SneakyThrows;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.Table;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -141,5 +148,53 @@ class OpenLineageRunEventBuilderTest {
 
     // test that the debug facet contains the timeout message
     assertThat(facet.getLogs().get(0)).startsWith("Incomplete lineage:");
+  }
+
+  @Test
+  void testCatalogLoadsAreSharedWithinEachEventAndRefreshedBetweenEvents() throws Exception {
+    TableCatalog catalog = mock(TableCatalog.class);
+    Identifier identifier = Identifier.of(new String[] {"namespace"}, "table");
+    Table table = mock(Table.class);
+    when(catalog.loadTable(identifier)).thenReturn(table);
+
+    PartialFunction<Object, List<InputDataset>> inputBuilder =
+        new PartialFunction<Object, List<InputDataset>>() {
+          @Override
+          @SneakyThrows
+          public List<InputDataset> apply(Object ignored) {
+            CatalogUtils.loadTable(catalog, identifier);
+            return Collections.emptyList();
+          }
+
+          @Override
+          public boolean isDefinedAt(Object ignored) {
+            return true;
+          }
+        };
+    PartialFunction<Object, List<OutputDataset>> outputBuilder =
+        new PartialFunction<Object, List<OutputDataset>>() {
+          @Override
+          @SneakyThrows
+          public List<OutputDataset> apply(Object ignored) {
+            CatalogUtils.loadTable(catalog, identifier);
+            return Collections.emptyList();
+          }
+
+          @Override
+          public boolean isDefinedAt(Object ignored) {
+            return true;
+          }
+        };
+    when(openLineageEventHandlerFactory.createInputDatasetBuilder(openLineageContext))
+        .thenReturn(Collections.singletonList(inputBuilder));
+    when(openLineageEventHandlerFactory.createOutputDatasetBuilder(openLineageContext))
+        .thenReturn(Collections.singletonList(outputBuilder));
+
+    OpenLineageRunEventBuilder builder =
+        new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory);
+    builder.buildRun(runEventContext);
+    builder.buildRun(runEventContext);
+
+    verify(catalog, times(2)).loadTable(identifier);
   }
 }
