@@ -253,7 +253,7 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
 
 #### Behavior
 
-Events are serialized to JSON, and then are sent as HTTP POST request with `Content-Type: application/json`. Events are sent immediately and the call blocks until completion. Uses httpx with built-in retry support and raises exceptions on failure.
+Events are serialized to JSON, and then are sent as HTTP POST request with `Content-Type: application/json`. Events are sent immediately and the call blocks until completion. Uses httpx2 with built-in retry support and raises exceptions on failure.
 
 #### Examples
 

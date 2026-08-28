@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import attr
-import httpx
+import httpx2
 from openlineage.client.event_v2 import RunEvent as RunEventV2
 from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 Async HTTP Transport for OpenLineage Events
 
 This module provides asynchronous HTTP transport mechanisms for sending
-OpenLineage events to remote endpoints using httpx. The AsyncHttpTransport implements a sophisticated
+OpenLineage events to remote endpoints using httpx2. The AsyncHttpTransport implements a sophisticated
 event ordering and delivery system with race-condition-free task management.
 
 ## Transport Architecture
@@ -193,7 +193,7 @@ class AsyncHttpTransport(Transport):
             config,
         )
         try:
-            parsed = httpx.URL(url)
+            parsed = httpx2.URL(url)
             if not (parsed.scheme and parsed.host):
                 msg = f"Need valid url for OpenLineageClient, passed {url}"
                 raise ValueError(msg)
@@ -260,11 +260,11 @@ class AsyncHttpTransport(Transport):
         released_requests: deque[Request] = deque()
 
         # Httpx client for the worker
-        limits = httpx.Limits(
+        limits = httpx2.Limits(
             max_connections=self.max_concurrent, max_keepalive_connections=self.max_concurrent // 2
         )
 
-        transport = httpx.AsyncHTTPTransport(limits=limits, retries=self.config.retry["total"])
+        transport = httpx2.AsyncHTTPTransport(limits=limits, retries=self.config.retry["total"])
 
         def _should_exit() -> bool:
             return self.should_exit.is_set() or (
@@ -274,8 +274,8 @@ class AsyncHttpTransport(Transport):
                 and self.may_exit.is_set()
             )
 
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(timeout=self.config.timeout),
+        async with httpx2.AsyncClient(
+            timeout=httpx2.Timeout(timeout=self.config.timeout),
             verify=self.config.verify,
             follow_redirects=True,
             transport=transport,
@@ -357,7 +357,7 @@ class AsyncHttpTransport(Transport):
 
     async def _process_event(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         semaphore: asyncio.Semaphore,
         request: Request,
         from_main_queue: bool = True,
@@ -369,7 +369,7 @@ class AsyncHttpTransport(Transport):
         log.debug("Processing event %s", request.event_id)
 
         def handle_failure(
-            response: httpx.Response | None = None, exception: Exception | None = None
+            response: httpx2.Response | None = None, exception: Exception | None = None
         ) -> None:
             nonlocal pending_events
             pending_events = self._mark_failed(request)
