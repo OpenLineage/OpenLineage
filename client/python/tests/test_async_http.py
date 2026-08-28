@@ -140,7 +140,7 @@ class TestAsyncHttpTransport:
         with pytest.raises(ValueError, match="Need valid url"):
             AsyncHttpTransport(AsyncHttpConfig(url=""))
 
-        # Test URL that causes httpx.URL to raise an exception
+        # Test URL that causes httpx2.URL to raise an exception
         with pytest.raises(ValueError, match="Need valid url"):
             AsyncHttpTransport(AsyncHttpConfig(url="://invalid"))
 
@@ -403,7 +403,7 @@ class TestAsyncHttpTransport:
             assert transport.may_exit.is_set()
             mock_wait.assert_called_once_with(1.0)
 
-    @patch("httpx.AsyncClient")
+    @patch("httpx2.AsyncClient")
     def test_async_http_transport_with_gzip_compression(self, mock_client_class):
         """Test AsyncHttpTransport with gzip compression"""
         config = AsyncHttpConfig(url="http://example.com", compression=HttpCompression.GZIP)
