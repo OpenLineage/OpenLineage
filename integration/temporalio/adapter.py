@@ -1,11 +1,17 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+# Warning: this integration is experimental and in active development.
+
 import datetime
+import logging
 import os
 
 from openlineage.client import OpenLineageClient
-from openlineage.client.facet import ( JobTypeJobFacet )
+from openlineage.client.event_v2 import Dataset
+from openlineage.client.facet import (
+    JobTypeJobFacet
+)
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_static_uuid
 
@@ -15,9 +21,13 @@ PRODUCER: str = (
 
 NAMESPACE = os.environ.get("TEMPORAL_OPENLINEAGE_NAMESPACE", "default")
 
+logger: logging.Logger = logging.getLogger(__name__)
+
 class TemporalOpenLineageAdapter:
     def __init__(self, client: OpenLineageClient | None = None):
         self.client = client or OpenLineageClient()
+        self.namespace = NAMESPACE
+        self.producer = PRODUCER
 
     def build_run_id(
         self, execution_time: datetime, run_name: str
@@ -27,7 +37,7 @@ class TemporalOpenLineageAdapter:
         return str(
             generate_static_uuid(
                 instant=execution_time,
-                data=f"{NAMESPACE}.{run_name}".encode("utf-8"),
+                data=f"{self.namespace}.{run_name}".encode("utf-8"),
             )
         )
 
@@ -36,7 +46,9 @@ class TemporalOpenLineageAdapter:
         runId: str,
         eventType: str,
         eventTime: datetime,
-        taskName: str
+        taskName: str,
+        input_datasets: list = [],
+        output_datasets: list = []
     ) -> RunEvent:
         """Create and emit an OpenLineage task event."""
 
@@ -46,11 +58,31 @@ class TemporalOpenLineageAdapter:
             )
         }
 
-        run_event = RunEvent(
-            eventType=eventType,
-            eventTime=eventTime.isoformat(),
-            run=Run(runId),
-            job=Job(NAMESPACE, taskName, job_facets),
-            producer=PRODUCER,
-        )
+        kwargs = {
+            "eventType": eventType,
+            "eventTime": eventTime.isoformat(),
+            "run": Run(runId),
+            "job": Job(self.namespace, taskName, job_facets),
+            "producer": self.producer,
+        }
+
+        try:
+            inputs = [
+                Dataset(namespace=dataset["uri"], name=dataset["table"])
+                for dataset in input_datasets
+            ]
+            kwargs["inputs"] = inputs
+        except:
+            logger.info(f"No input datasets will be included in {taskname} event.")
+
+        try:
+            outputs = [
+                Dataset(namespace=dataset["uri"], name=dataset["table"])
+                for dataset in output_datasets
+            ]
+            kwargs["outputs"] = outputs
+        except:
+            logger.info(f"No output datasets will be included in {taskname} event.")
+
+        run_event = RunEvent(**kwargs)
         self.client.emit(run_event)
