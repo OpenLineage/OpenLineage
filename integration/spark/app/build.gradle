@@ -32,13 +32,13 @@ ext {
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.13'
     testcontainersVersion = '1.21.4'
-    awssdkVersion = '2.51.3'
+    awssdkVersion = '2.54.2'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
             testDir      : project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.17.0'
+    micrometerVersion = '1.17.1'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
