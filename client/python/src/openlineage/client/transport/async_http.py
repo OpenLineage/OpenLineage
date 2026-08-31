@@ -494,18 +494,18 @@ class AsyncHttpTransport(Transport):
                 return released
         return []
 
-    def _add_pending_completion_event(self, request: Request) -> None:
+    def _add_pending_completion_event(self, request: Request) -> bool:
         if not request.run_id:
-            return
+            return False
         with self.event_lock:
-            if request.run_id not in self.pending_completion_events:
-                self.pending_completion_events[request.run_id] = []
-            self.pending_completion_events[request.run_id].append(request)
+            start_event_id = f"{request.run_id}-START"
+            if start_event_id not in self.events:
+                return False
 
-    def _is_start_in_progress(self, run_id: str) -> bool:
-        with self.event_lock:
-            start_event_id = f"{run_id}-START"
-            return start_event_id in self.events
+            self.event_stats["pending"] += 1
+            self.events[request.event_id] = "pending"
+            self.pending_completion_events.setdefault(request.run_id, []).append(request)
+            return True
 
     def _all_processed(self) -> bool:
         with self.event_lock:
@@ -522,29 +522,23 @@ class AsyncHttpTransport(Transport):
             event_id = event.run.runId + "-" + event_type
             run_id = event.run.runId
 
-            # We don't want to emit terminal events until we have a successful START event
-            # Only queue as pending if START has been scheduled but not yet successful
-            # If START was never scheduled, process COMPLETE normally (fall through)
-            if event_type != "START":
-                if self._is_start_in_progress(run_id):
-                    body, headers = self._prepare_request(event_str)
-                    request = Request(
-                        event_id=event_id, run_id=run_id, event_type=event_type, body=body, headers=headers
-                    )
-                    self._add_event(request)
-                    self._add_pending_completion_event(request)
-
-                    log.debug(
-                        "Queued completion event %s for run %s, waiting for START event",
-                        event_type,
-                        run_id,
-                    )
-                    return
         else:
             event_id = hashlib.md5(event_str.encode("utf-8")).hexdigest()
 
         body, headers = self._prepare_request(event_str)
         request = Request(event_id=event_id, run_id=run_id, event_type=event_type, body=body, headers=headers)
+
+        # We don't want to emit terminal events until we have a successful START event.
+        # Checking for START and tracking the terminal event must be atomic so the worker
+        # cannot finish START between those operations and strand the terminal event.
+        if run_id and event_type != "START" and self._add_pending_completion_event(request):
+            log.debug(
+                "Queued completion event %s for run %s, waiting for START event",
+                event_type,
+                run_id,
+            )
+            return
+
         self._add_event(request)
 
         # Wait for space in the regular capacity portion of the queue
