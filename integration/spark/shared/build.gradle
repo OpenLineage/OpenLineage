@@ -36,13 +36,13 @@ ext {
     databricksVersion = "0.1.5"
     junit5Version = "5.14.4"
     kafkaClientsVersion = "4.1.1"
-    micrometerVersion = '1.17.0'
+    micrometerVersion = '1.17.1'
     mockitoVersion = "4.11.0"
     mockserverVersion = "5.14.0"
     postgresqlVersion = "42.7.13"
     sqlLiteVersion = "3.53.2.1"
     testcontainersVersion = "1.19.3"
-    awsSdkVersion = '2.51.3'
+    awsSdkVersion = '2.54.2'
 
     sparkVersion = project.findProperty("shared.spark.version")
     sparkSeries = sparkVersion.substring(0, 3)

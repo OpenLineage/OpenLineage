@@ -32,7 +32,7 @@ ext {
     jacksonVersion = "2.18.9"
     junit5Version = "5.14.4"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.17.0"
+    micrometerVersion = "1.17.1"
 
     sparkVersion = project.findProperty("spark32.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
