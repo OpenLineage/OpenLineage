@@ -16,6 +16,11 @@ spark.createDataFrame([{"a": 1, "b": 2}, {"a": 3, "b": 4}]).repartition(1).write
     "overwrite"
 ).saveAsTable("default.temp_{}".format(runtime_version))
 
+# Isolate CTAS from the setup operations so unexpected internal events cannot be ignored.
+time.sleep(3)
+with open("/tmp/events.log", "w", encoding="utf-8"):
+    pass
+
 spark.sql(
     "CREATE TABLE default.ctas_{} AS SELECT a, b FROM default.temp_{}".format(
         runtime_version, runtime_version
