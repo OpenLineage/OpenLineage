@@ -7,12 +7,12 @@ package io.openlineage.spark.agent.filters;
 
 import static io.openlineage.spark.agent.filters.EventFilterUtils.isDeltaPlan;
 
+import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.sql.execution.QueryExecution;
 
-/** Removes adaptive-plan events that duplicate terminal events produced by Delta writes. */
+/** Removes child SQL executions that duplicate their user-visible root execution. */
 @Slf4j
 public class AdaptivePlanEventFilter implements EventFilter {
 
@@ -22,20 +22,14 @@ public class AdaptivePlanEventFilter implements EventFilter {
     this.context = context;
   }
 
-  /**
-   * In case of Join queries spark plan may get optimized within Adaptive Query Execution engine,
-   * which leads into multiple query plans and duplicated START/COMPLETE events.
-   */
+  /** Removes a correlated child while retaining the root execution that owns its lineage. */
   @Override
   public boolean isDisabled(SparkListenerEvent event) {
-    if (!isDeltaPlan() || !EventFilterUtils.isDeltaWritePlan(context)) {
+    if (!context.isCommandChildExecution()
+        || (!isDeltaPlan(context) && !DatabricksUtils.isRunOnDatabricksPlatform(context))) {
       return false;
     }
 
-    return context
-        .getQueryExecution()
-        .map(QueryExecution::executedPlan)
-        .filter(sparkPlan -> sparkPlan.nodeName().contains("AdaptiveSparkPlan"))
-        .isPresent();
+    return context.getQueryExecution().isPresent();
   }
 }

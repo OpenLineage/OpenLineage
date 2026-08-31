@@ -11,9 +11,7 @@ target_table = "default.rtas_target_{}".format(runtime_version)
 spark.sql("DROP TABLE IF EXISTS {}".format(source_table))
 spark.sql("DROP TABLE IF EXISTS {}".format(target_table))
 
-spark.createDataFrame([{"a": 1, "b": 2}, {"a": 3, "b": 4}]).write.format(
-    "delta"
-).saveAsTable(source_table)
+spark.createDataFrame([{"a": 1, "b": 2}, {"a": 3, "b": 4}]).write.format("delta").saveAsTable(source_table)
 spark.sql("CREATE TABLE {} USING delta AS SELECT * FROM {}".format(target_table, source_table))
 
 # Isolate the historical overwrite operation from setup events.

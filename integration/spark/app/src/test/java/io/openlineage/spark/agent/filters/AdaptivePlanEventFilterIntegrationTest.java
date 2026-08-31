@@ -11,11 +11,10 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
+import io.openlineage.spark.agent.util.SparkSqlExecutionNestingTracker;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,7 +35,9 @@ import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.plans.logical.Command;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.SQLExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.sql.types.LongType$;
@@ -49,7 +50,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import scala.Option;
 
 @Tag("integration-test")
 @Tag("delta")
@@ -179,12 +179,28 @@ class AdaptivePlanEventFilterIntegrationTest {
               .anyMatch(execution -> execution.adaptive);
           softly
               .assertThat(operation.executions)
-              .filteredOn(execution -> execution.adaptive && !execution.deltaEventFilterDisabled)
+              .filteredOn(
+                  execution ->
+                      execution.commandChildExecution && !execution.deltaEventFilterDisabled)
               .as(
-                  "%s adaptive children not handled by DeltaEventFilter must be handled by "
+                  "%s child executions not handled by DeltaEventFilter must be handled by "
                       + "AdaptivePlanEventFilter: %s",
                   operation.name, operation.summary())
               .allMatch(execution -> execution.adaptiveFilterDisabled);
+          softly
+              .assertThat(operation.executions)
+              .filteredOn(execution -> execution.adaptive)
+              .as(
+                  "%s adaptive children must be correlated as nested: %s",
+                  operation.name, operation.summary())
+              .allMatch(execution -> execution.nestedExecution);
+          softly
+              .assertThat(operation.executions)
+              .filteredOn(execution -> execution.adaptive)
+              .as(
+                  "%s adaptive children must be tied to a command root: %s",
+                  operation.name, operation.summary())
+              .allMatch(execution -> execution.commandChildExecution);
 
           if (operation.hasRootExecutionIds()) {
             softly
@@ -231,7 +247,7 @@ class AdaptivePlanEventFilterIntegrationTest {
   }
 
   @Test
-  void testNonDeltaCtasIsNotClassifiedUnderDeltaCatalog() {
+  void testNonDeltaCtasKeepsTopLevelOuterExecutionUnderDeltaCatalog() {
     clearTables(
         "classifier_parquet_source",
         "classifier_parquet_ctas",
@@ -256,8 +272,8 @@ class AdaptivePlanEventFilterIntegrationTest {
                         + "SELECT * FROM classifier_orc_source"));
 
     SoftAssertions softly = new SoftAssertions();
-    assertCtasIsNotDeltaWrite(softly, parquet);
-    assertCtasIsNotDeltaWrite(softly, orc);
+    assertCtasKeepsOuterExecution(softly, parquet);
+    assertCtasKeepsOuterExecution(softly, orc);
     softly.assertAll();
   }
 
@@ -306,7 +322,7 @@ class AdaptivePlanEventFilterIntegrationTest {
                 .isFalse());
   }
 
-  private static void assertCtasIsNotDeltaWrite(
+  private static void assertCtasKeepsOuterExecution(
       SoftAssertions softly, OperationExecutions operation) {
     java.util.Optional<ObservedExecution> ctas =
         operation.executionWithOptimizedRootContaining("TableAsSelect");
@@ -315,11 +331,30 @@ class AdaptivePlanEventFilterIntegrationTest {
         .as("Expected a real non-Delta CTAS root: %s", operation.summary())
         .isPresent();
     ctas.ifPresent(
-        execution ->
-            softly
-                .assertThat(execution.deltaWriteRoot)
-                .as("A non-Delta CTAS must not be classified as a Delta write: %s", operation.name)
-                .isFalse());
+        execution -> {
+          softly
+              .assertThat(execution.nestedExecution)
+              .as("A non-Delta CTAS outer execution must remain top-level: %s", operation.name)
+              .isFalse();
+          softly
+              .assertThat(execution.adaptiveFilterDisabled)
+              .as("A non-Delta CTAS outer execution must not be filtered: %s", operation.name)
+              .isFalse();
+          softly
+              .assertThat(execution.commandRoot)
+              .as("A non-Delta CTAS outer execution is still a root command")
+              .isTrue();
+        });
+    softly
+        .assertThat(operation.executions)
+        .filteredOn(execution -> execution.nestedExecution)
+        .as("Nested non-Delta CTAS work must be deduplicated: %s", operation.summary())
+        .isNotEmpty()
+        .allSatisfy(
+            execution -> {
+              softly.assertThat(execution.commandChildExecution).isTrue();
+              softly.assertThat(execution.adaptiveFilterDisabled).isTrue();
+            });
   }
 
   private static void assertNonAdaptiveOuterWithAdaptiveInner(
@@ -331,11 +366,16 @@ class AdaptivePlanEventFilterIntegrationTest {
         .as("Expected a real %s root: %s", optimizedRoot, operation.summary())
         .isPresent();
     execution.ifPresent(
-        value ->
-            softly
-                .assertThat(value.adaptive)
-                .as("The real %s outer execution must not itself be adaptive", optimizedRoot)
-                .isFalse());
+        value -> {
+          softly
+              .assertThat(value.adaptive)
+              .as("The real %s outer execution must not itself be adaptive", optimizedRoot)
+              .isFalse();
+          softly
+              .assertThat(value.commandRoot)
+              .as("The real %s outer execution must be classified as a command", optimizedRoot)
+              .isTrue();
+        });
     softly
         .assertThat(operation.executions)
         .as("The real %s operation must launch an adaptive inner execution", optimizedRoot)
@@ -363,6 +403,7 @@ class AdaptivePlanEventFilterIntegrationTest {
             .sparkContext(spark.sparkContext())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(execution.queryExecution)
+            .commandChildExecution(execution.commandChildExecution)
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
@@ -373,7 +414,9 @@ class AdaptivePlanEventFilterIntegrationTest {
         execution.rootExecutionId,
         execution.queryExecution.optimizedPlan().getClass().getSimpleName(),
         execution.queryExecution.executedPlan().nodeName(),
-        EventFilterUtils.isDeltaWritePlan(context),
+        execution.nestedExecution,
+        execution.commandChildExecution,
+        execution.queryExecution.optimizedPlan() instanceof Command,
         execution.queryExecution.executedPlan().nodeName().contains("AdaptiveSparkPlan"),
         new AdaptivePlanEventFilter(context).isDisabled(execution.endEvent),
         new DeltaEventFilter(context).isDisabled(execution.endEvent));
@@ -437,7 +480,9 @@ class AdaptivePlanEventFilterIntegrationTest {
     private final OptionalLong rootExecutionId;
     private final String optimizedRoot;
     private final String executedRoot;
-    private final boolean deltaWriteRoot;
+    private final boolean nestedExecution;
+    private final boolean commandChildExecution;
+    private final boolean commandRoot;
     private final boolean adaptive;
     private final boolean adaptiveFilterDisabled;
     private final boolean deltaEventFilterDisabled;
@@ -445,13 +490,16 @@ class AdaptivePlanEventFilterIntegrationTest {
     @Override
     public String toString() {
       return String.format(
-          "executionId=%d rootExecutionId=%s optimized=%s executed=%s deltaWrite=%s "
-              + "adaptive=%s adaptiveFiltered=%s deltaFiltered=%s",
+          "executionId=%d rootExecutionId=%s optimized=%s executed=%s nested=%s "
+              + "commandChild=%s commandRoot=%s adaptive=%s adaptiveFiltered=%s "
+              + "deltaFiltered=%s",
           executionId,
           rootExecutionId.isPresent() ? Long.toString(rootExecutionId.getAsLong()) : "absent",
           optimizedRoot,
           executedRoot,
-          deltaWriteRoot,
+          nestedExecution,
+          commandChildExecution,
+          commandRoot,
           adaptive,
           adaptiveFilterDisabled,
           deltaEventFilterDisabled);
@@ -464,52 +512,58 @@ class AdaptivePlanEventFilterIntegrationTest {
     private final OptionalLong rootExecutionId;
     private final QueryExecution queryExecution;
     private final SparkListenerSQLExecutionEnd endEvent;
+    private final boolean nestedExecution;
+    private final boolean commandChildExecution;
   }
 
   private static class QueryExecutionCaptureListener extends SparkListener {
     private final Map<Long, OptionalLong> rootExecutionIds = new ConcurrentHashMap<>();
+    private final Map<Long, Boolean> nestedExecutions = new ConcurrentHashMap<>();
+    private final Map<Long, Boolean> commandChildExecutions = new ConcurrentHashMap<>();
     private final List<CapturedExecution> executions = new CopyOnWriteArrayList<>();
+    private final SparkSqlExecutionNestingTracker nestingTracker =
+        new SparkSqlExecutionNestingTracker();
 
     @Override
     public void onOtherEvent(SparkListenerEvent event) {
       if (event instanceof SparkListenerSQLExecutionStart) {
         SparkListenerSQLExecutionStart start = (SparkListenerSQLExecutionStart) event;
-        rootExecutionIds.put(start.executionId(), readRootExecutionId(start));
+        rootExecutionIds.put(
+            start.executionId(), SparkSqlExecutionNestingTracker.rootExecutionId(start));
+        nestedExecutions.put(
+            start.executionId(),
+            nestingTracker.register(start, SQLExecution.getQueryExecution(start.executionId())));
+        commandChildExecutions.put(
+            start.executionId(), nestingTracker.isCommandChild(start.executionId()));
       } else if (event instanceof SparkListenerSQLExecutionEnd) {
         SparkListenerSQLExecutionEnd end = (SparkListenerSQLExecutionEnd) event;
-        if (end.qe() != null) {
-          executions.add(
-              new CapturedExecution(
-                  end.executionId(),
-                  rootExecutionIds.getOrDefault(end.executionId(), OptionalLong.empty()),
-                  end.qe(),
-                  end));
+        try {
+          if (end.qe() != null) {
+            executions.add(
+                new CapturedExecution(
+                    end.executionId(),
+                    rootExecutionIds.getOrDefault(end.executionId(), OptionalLong.empty()),
+                    end.qe(),
+                    end,
+                    nestedExecutions.getOrDefault(end.executionId(), false),
+                    commandChildExecutions.getOrDefault(end.executionId(), false)));
+          }
+        } finally {
+          nestingTracker.end(end.executionId());
         }
       }
     }
 
     private void clear() {
       rootExecutionIds.clear();
+      nestedExecutions.clear();
+      commandChildExecutions.clear();
       executions.clear();
+      nestingTracker.clear();
     }
 
     private List<CapturedExecution> snapshot() {
       return Collections.unmodifiableList(new ArrayList<>(executions));
-    }
-
-    private static OptionalLong readRootExecutionId(SparkListenerSQLExecutionStart event) {
-      try {
-        Method method = event.getClass().getMethod("rootExecutionId");
-        Object value = method.invoke(event);
-        if (value instanceof Option && ((Option<?>) value).isDefined()) {
-          return OptionalLong.of(((Number) ((Option<?>) value).get()).longValue());
-        }
-      } catch (NoSuchMethodException e) {
-        return OptionalLong.empty();
-      } catch (IllegalAccessException | InvocationTargetException | ClassCastException e) {
-        throw new IllegalStateException("Unable to read Spark SQL root execution ID", e);
-      }
-      return OptionalLong.empty();
     }
   }
 }

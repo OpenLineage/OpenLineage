@@ -11,87 +11,83 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.execution.QueryExecution;
-import org.apache.spark.sql.execution.SparkPlan;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 class AdaptivePlanEventFilterTest {
 
-  private static final String ADAPTIVE_SPARK_PLAN = "AdaptiveSparkPlan";
-
   private final OpenLineageContext context = mock(OpenLineageContext.class);
   private final AdaptivePlanEventFilter filter = new AdaptivePlanEventFilter(context);
   private final SparkListenerEvent sparkListenerEvent = mock(SparkListenerEvent.class);
   private final QueryExecution queryExecution = mock(QueryExecution.class);
-  private final SparkPlan sparkPlan = mock(SparkPlan.class);
 
   @BeforeEach
   public void setup() {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
-    when(queryExecution.executedPlan()).thenReturn(sparkPlan);
+    when(context.isCommandChildExecution()).thenReturn(true);
   }
 
   @Test
-  void testAdaptivePlanIsFiltered() {
-    try (MockedStatic<EventFilterUtils> mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
-      when(EventFilterUtils.isDeltaWritePlan(context)).thenReturn(true);
-      when(sparkPlan.nodeName()).thenReturn(ADAPTIVE_SPARK_PLAN);
+  void testNestedExecutionIsFiltered() {
+    try (MockedStatic<EventFilterUtils> filters = mockStatic(EventFilterUtils.class)) {
+      filters.when(() -> EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
       assertTrue(filter.isDisabled(sparkListenerEvent));
     }
   }
 
   @Test
-  void testAdaptiveNonDeltaWritePlanIsNotFiltered() {
-    try (MockedStatic<EventFilterUtils> mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
-      when(EventFilterUtils.isDeltaWritePlan(context)).thenReturn(false);
-      when(sparkPlan.nodeName()).thenReturn(ADAPTIVE_SPARK_PLAN);
-      assertFalse(filter.isDisabled(sparkListenerEvent));
-    }
+  void testTopLevelExecutionIsNotFiltered() {
+    when(context.isCommandChildExecution()).thenReturn(false);
+    assertFalse(filter.isDisabled(sparkListenerEvent));
   }
 
   @Test
   void testWhenQueryExecutionIsNull() {
-    try (MockedStatic<EventFilterUtils> mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
-      when(EventFilterUtils.isDeltaWritePlan(context)).thenReturn(true);
-      when(context.getQueryExecution()).thenReturn(Optional.ofNullable(null));
+    try (MockedStatic<EventFilterUtils> filters = mockStatic(EventFilterUtils.class)) {
+      filters.when(() -> EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
+      when(context.getQueryExecution()).thenReturn(Optional.empty());
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }
   }
 
   @Test
-  void testWhenSparkPlanIsNull() {
-    try (MockedStatic<EventFilterUtils> mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
-      when(EventFilterUtils.isDeltaWritePlan(context)).thenReturn(true);
+  void testNestedExecutionDoesNotRequireAnAdaptivePlan() {
+    try (MockedStatic<EventFilterUtils> filters = mockStatic(EventFilterUtils.class)) {
+      filters.when(() -> EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
       when(queryExecution.executedPlan()).thenReturn(null);
+      assertTrue(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testChildOfNonCommandRootIsNotFiltered() {
+    when(context.isCommandChildExecution()).thenReturn(false);
+    assertFalse(filter.isDisabled(sparkListenerEvent));
+  }
+
+  @Test
+  void testCommandChildOutsideDeltaEnvironmentIsNotFiltered() {
+    try (MockedStatic<EventFilterUtils> filters = mockStatic(EventFilterUtils.class);
+        MockedStatic<DatabricksUtils> databricks = mockStatic(DatabricksUtils.class)) {
+      filters.when(() -> EventFilterUtils.isDeltaPlan(context)).thenReturn(false);
+      databricks.when(() -> DatabricksUtils.isRunOnDatabricksPlatform(context)).thenReturn(false);
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }
   }
 
   @Test
-  void testOtherSparkPlan() {
-    try (MockedStatic<EventFilterUtils> mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
-      when(EventFilterUtils.isDeltaWritePlan(context)).thenReturn(true);
-      when(sparkPlan.nodeName()).thenReturn("OtherSparkPlan");
-      assertFalse(filter.isDisabled(sparkListenerEvent));
-    }
-  }
-
-  @Test
-  void testNonDeltaPlan() {
-    try (MockedStatic<EventFilterUtils> mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(false);
-      when(sparkPlan.nodeName()).thenReturn(ADAPTIVE_SPARK_PLAN);
-      assertFalse(filter.isDisabled(sparkListenerEvent));
+  void testNestedDatabricksCommandIsFiltered() {
+    try (MockedStatic<EventFilterUtils> filters = mockStatic(EventFilterUtils.class);
+        MockedStatic<DatabricksUtils> databricks = mockStatic(DatabricksUtils.class)) {
+      filters.when(() -> EventFilterUtils.isDeltaPlan(context)).thenReturn(false);
+      databricks.when(() -> DatabricksUtils.isRunOnDatabricksPlatform(context)).thenReturn(true);
+      assertTrue(filter.isDisabled(sparkListenerEvent));
     }
   }
 }

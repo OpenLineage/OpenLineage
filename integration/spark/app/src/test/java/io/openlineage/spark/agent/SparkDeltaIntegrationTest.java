@@ -484,8 +484,8 @@ class SparkDeltaIntegrationTest {
     List<RunEvent> events =
         assertSingleTerminalPair(
             event ->
-                event.getOutputs().stream()
-                    .anyMatch(output -> "/tmp/delta/overwrite_target".equals(output.getName())));
+                event.getJob().getName().contains("replace_table_as_select")
+                    && event.getJob().getName().endsWith("default_overwrite_target"));
 
     assertThat(events.get(1).getOutputs())
         .extracting(OutputDataset::getName)

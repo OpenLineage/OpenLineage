@@ -50,6 +50,8 @@ public interface ExecutionContext {
 
   default void setActiveJobId(Integer activeJobId) {}
 
+  default void setCommandChildExecution(boolean commandChildExecution) {}
+
   /** Release scheduler objects retained for a completed Spark job. */
   default void evictJob(int jobId) {}
 

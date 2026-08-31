@@ -132,6 +132,9 @@ public class OpenLineageContext {
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
   private final QueryExecution queryExecution;
 
+  /** Whether this SQL execution was started inside a root command execution. */
+  @Getter @Setter private boolean commandChildExecution;
+
   /**
    * @deprecated Use the direct methods like {@link #getLogicalPlan()}, {@link #getAnalyzedPlan()},
    *     {@link #getOptimizedPlan()}, or {@link #getSparkPlan()} to access the underlying plans.

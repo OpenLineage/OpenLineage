@@ -4,7 +4,7 @@ Last updated: 2026-08-31 (Asia/Tehran)
 
 ## Scope and constraints
 
-This is a read-only investigation note for
+This is an investigation and implementation follow-up for
 [OpenLineage PR #4885](https://github.com/OpenLineage/OpenLineage/pull/4885), currently titled
 `spark: keep adaptive events for non-Delta writes`. It records the review blocker, additional
 write-plan coverage gaps, compatibility risks, filter interactions, and the validation needed
@@ -13,10 +13,16 @@ before the change can safely be approved.
 No GitHub comments or replies were posted during this investigation. No OpenLineage specification
 files are in scope.
 
-The PR head inspected here is:
+The original PR head inspected here is:
 
 ```text
 7531fb7745aed3042934baec025890ac63ce46f4
+```
+
+The exact-event regression tests were first committed at:
+
+```text
+a1399a4cb3d54be66afa6c10d4f8f0d774ac1f42
 ```
 
 The PR is open with a `CHANGES_REQUESTED` review submitted by `mobuchowski` on 2026-08-31. The
@@ -51,11 +57,14 @@ Additional confirmed concerns are:
    timing/count assertions that can miss late events. The regular Spark 4.2 job excludes Delta;
    approved Databricks jobs do run, but do not assert the duplicate-count invariant.
 
-The strongest safe direction is therefore root-execution correlation, not a longer list of roots
-on the current execution. For Spark 3.4+, classify the root execution's write target and use its
-identity when deciding whether a nested adaptive event is an internal child. Store that decision so
-START and END are treated consistently. The historical Databricks Spark 3.2 reproduction still
-needs a real runtime regression test before claiming this design fully replaces the old heuristic.
+The implemented correction therefore uses root-execution correlation, not a longer list of Delta
+write roots. For Spark 3.4+, a child is suppressible only when `rootExecutionId` differs from its
+own ID and the recorded root optimized plan is a Spark `Command`. That command boundary covers
+CTAS/RTAS without depending on their separate V2 interfaces, and it also handles the nested
+non-Delta CTAS pair observed under `DeltaCatalog`. The START-time decision is retained through END.
+Spark 3.1-3.3 use a narrow, fail-open call-site fallback. The historical Databricks Spark 3.2
+reproduction still needs a real runtime regression test before claiming the fallback fully replaces
+the old heuristic there.
 
 ## Background
 
@@ -733,8 +742,8 @@ now enables AQE explicitly and covers:
 - the issue #4299 read-only `GROUP BY ... LIMIT 1000` shape; and
 - Parquet CTAS while `DeltaCatalog` is the session catalog.
 
-The tests were run against both Spark 3.2.4 + Delta 1.1.0 and Spark 4.0.0 + Delta 4.0.0. Their
-current-PR results are intentionally mixed:
+The tests were run against both Spark 3.2.4 + Delta 1.1.0 and Spark 4.0.0 + Delta 4.0.0 at
+regression-test commit `a1399a4cb`. Those deliberately pre-fix results were mixed:
 
 | Scenario | Spark 3.2.4 | Spark 4.0.0 | Observed failure on Spark 4.0.0 |
 |---|---:|---:|---|
@@ -781,9 +790,106 @@ tests compile locally but were not executed because they require a configured Da
 
 This coverage deliberately does not require CTAS/RTAS to implement `V2WriteCommand` or force the
 fix to enumerate those roots. A nesting-based implementation can satisfy it. Spark 3.5 and a live
-Databricks runtime remain unverified in this local run.
+Databricks runtime were still unverified at that pre-fix stage; post-fix evidence is recorded below.
+
+## Implemented resolution and post-fix evidence
+
+The production fix now correlates SQL executions with their root command. It does not classify the
+current nested plan as a Delta write, and it does not enumerate CTAS, RTAS, OSS Delta, Tahoe, or
+Kernel implementation classes.
+
+The listener performs these steps:
+
+1. On SQL START, read `rootExecutionId` reflectively when Spark provides it.
+2. Record whether the execution's optimized root implements Spark's common `Command` interface.
+3. Mark a child as suppressible only when its root execution is still recorded and is a command.
+4. Copy that START-time decision into every `SparkSQLExecutionContext`, including a context rebuilt
+   from SQL END after Spark has evicted the START-time `QueryExecution`.
+5. Remove the retained association on SQL END and clear all associations at listener shutdown.
+
+This boundary is intentionally different from both attempted target classifiers:
+
+- The PR's same-execution `isDeltaWritePlan && AdaptiveSparkPlan` condition is unreachable on the
+  measured standard Delta shapes.
+- A root-target classifier is also too narrow for deduplication. On Spark 4, Parquet CTAS under
+  `DeltaCatalog` produced an outer CTAS pair plus a nested
+  `InsertIntoHadoopFsRelationCommand` pair. Correctly labeling its target as non-Delta retained four
+  events. Command-root correlation retains the outer pair and removes only its owned child pair.
+
+Requiring a command root is narrower than discarding every nested SQL execution. A child of a
+non-command root is retained, an unknown root fails open, and an overlapping top-level command is
+never inferred to be a child merely because another command is active.
+
+For Spark 3.1-3.3, where `rootExecutionId` does not exist, the implementation deliberately accepts
+only a narrow fallback:
+
+- the candidate child must not itself be a command;
+- exactly one command may be active;
+- the child must have the same non-empty description/details call site as the command or contain a
+  known OSS/Databricks/Kernel Delta call-site marker; and
+- ambiguous or incompatible cases retain their events.
+
+The remaining legacy limitation is explicit: two independent top-level non-command queries issued
+from the same call site while exactly one command is active cannot be distinguished from a child on
+Spark 3.1-3.3. Multiple active command parents, command-shaped candidates, different call sites,
+completed roots, and missing roots all fail open. A live Databricks Spark 3.2 run remains necessary
+to measure this fallback against the original proprietary reproduction.
+
+Two adjacent corrections are included because they use the same evidence:
+
+- the broad `Filter`, `LocalRelation`, and `SerializeFromObject` checks in `DeltaEventFilter` now
+  apply only to a recorded command child, so top-level read-only plans survive; and
+- Delta-extension detection now reads the `SparkContext` stored in `OpenLineageContext` instead of
+  the process-global active `SparkSession`, avoiding listener-time session mismatch or teardown.
+
+`AdaptivePlanEventFilter` no longer requires the child physical root to contain
+`AdaptiveSparkPlan`. This is necessary for the real Spark 3.2 RTAS duplicate whose child root is
+`ColumnarToRow`. The class name remains for compatibility, but the predicate is now an
+execution-correlation predicate.
+
+### Final local validation
+
+The final implementation produced these results:
+
+| Validation | Spark 3.2.4 + Delta 1.1.0 | Spark 3.4.4 + Delta 2.4.0 | Spark 4.0.0 + Delta 4.0.0 |
+|---|---:|---:|---:|
+| Shared/app unit tests for correlation, filters, context retention, and cleanup | pass | not repeated | pass |
+| Real-plan filter integration tests | 4/4 pass | 4/4 pass | 4/4 pass |
+| Exact terminal-pair scenarios | 9/9 pass | 9/9 pass | 9/9 pass |
+
+The nine exact terminal-pair scenarios are path save, append, overwrite, CTAS, RTAS, MERGE, Delta
+read to Parquet write, read-only aggregation, and Parquet CTAS under `DeltaCatalog`. Every test waits
+for the listener bus to drain, inspects the complete isolated event stream, requires exactly
+`START, COMPLETE` with one run ID, and validates the expected COMPLETE inputs/outputs.
+
+The real-plan suite additionally proves:
+
+- Delta path save, append, overwrite, CTAS, RTAS, and MERGE launch command-owned child executions
+  which the production predicate rejects;
+- Delta and non-Delta CTAS/RTAS outer roots remain top-level commands;
+- nested Parquet and ORC CTAS executions under `DeltaCatalog` are deduplicated while their outer
+  terminal pair is retained;
+- top-level `Filter`, `LocalRelation`, and `SerializeFromObject` roots remain unfiltered; and
+- on Spark 3.4+, an absent/unknown root or a child of a non-command root fails open.
+
+A supplemental Spark 3.5.6 + Delta 3.3.2 run passed seven of the nine exact scenarios. The two
+workloads that did not execute were DataFrame overwrite and RTAS; Delta rejected both before filter
+assertions with `Table ... does not support truncate in batch mode`. The corresponding two
+real-plan tests stopped at the same unsupported operations. This run is not counted as a green
+filter matrix and does not provide evidence against the implementation; it records a separate
+workload/runtime compatibility limitation that would need a supported Delta/Spark combination or a
+different fixture.
+
+The Databricks CTAS and historical RTAS exact-count tests compile locally but were not executed
+because no configured Databricks runtime is available. No claim of live proprietary-runtime
+validation is made.
 
 ## Required validation matrix
+
+This section preserves the pre-fix review checklist. Items D and E were requirements only for a
+target-classification design; command-root correlation removes that production dependency. Their
+underlying Spark/Databricks variants are still covered where relevant by the exact-event tests and
+the live Databricks acceptance item.
 
 ### Minimum blocker tests
 
@@ -931,43 +1037,29 @@ event invariant requires integration evidence.
 
 ## Recommended implementation boundary
 
-Adding CTAS/RTAS to the current predicate is necessary taxonomy work but is not a sufficient fix.
-The smallest design that matches the observed execution model is:
+The implemented boundary is the smallest one that satisfies every locally executable regression:
 
-1. On SQL START in Spark 3.4+, read `rootExecutionId` using the repository's existing reflective
-   compatibility pattern.
-2. Record the current-to-root association in execution context that survives until SQL END.
-3. For a nested adaptive execution, resolve the root execution's `QueryExecution` and classify the
-   *root write target*. Do not ask the nested `Project`/`Aggregate` plan whether it is a write.
-4. Recognize root CTAS/RTAS provider metadata reflectively across Spark versions. Use provider as
-   primary evidence; do not treat `DeltaCatalog` alone as Delta.
-5. Recognize the Databricks Delta namespaces needed by the historical fixture, while preserving
-   fail-open behavior for unavailable or incompatible classes.
-6. Make START and END decisions from the same recorded association, because END has no root ID.
-7. Keep nesting and Delta semantics separate: do not discard every nested SQL execution merely
-   because a Delta extension is installed.
-8. Prove the result with real QueryExecutions, exact counts, a post-completion quiet interval, and
-   the non-Delta/concurrency controls above.
+1. Read Spark's root execution identity at SQL START.
+2. Record whether the root optimized plan is a Spark command.
+3. Suppress only children owned by that command while the Delta extension is configured or the
+   execution is on Databricks.
+4. Preserve that decision through SQL END and clear it deterministically.
+5. On Spark 3.1-3.3, use only the narrow call-site fallback described above and fail open on
+   ambiguity.
+6. Apply the same child/root distinction to the three broad `DeltaEventFilter` shapes.
+7. Read the Delta configuration from the execution context rather than a global active session.
+8. Prove the result with real QueryExecutions, exact terminal counts after listener drain,
+   non-Delta command controls, non-command-root controls, and concurrency/cleanup unit tests.
 
-There is no equally well-supported drop-in rule for Spark 3.1-3.3. The current behavior can remain
-as an explicit compatibility fallback, or the listener can introduce stronger correlation state,
-but an in-flight-execution stack is not sufficient under concurrency. The Databricks Spark 3.2
-historical reproduction is the required acceptance test for whichever fallback is chosen.
+CTAS/RTAS provider extraction, Tahoe package matching, generic row-level table unwrapping, and
+Kernel-specific class matching are no longer correctness requirements for this filter because the
+implementation does not classify a Delta target. They remain relevant to dataset extraction code,
+but adding them here would recreate the wrong abstraction.
 
-The related broad root checks in `DeltaEventFilter` should either be corrected in this PR using the
-same execution context or filed as a concrete follow-up; they can independently remove legitimate
-top-level lineage in a Delta-enabled session.
-
-The following remain reasonable later work:
-
-- generic `RowLevelOperationTable` unwrapping;
-- Kernel-backed `io.delta.spark.internal.v2` write support as it becomes production-ready;
-- making session lookup derive from the query rather than global active-session state; and
-- replacing plan heuristics with a fully specified event/execution deduplication model.
-
-The PR description should state that the current same-execution gate is not demonstrated to fire
-on standard Spark 4 Delta writes and distinguish that fact from the unverified historical
-Databricks behavior.
+The unresolved acceptance item is the live Databricks historical RTAS fixture, especially on the
+Spark 3.2-era runtime where the direct root ID is unavailable. The tests are present and compile,
+but only an approved runtime can validate that proprietary event order and call-site details match
+the legacy fallback.
 
 ## Source index
 
@@ -989,6 +1081,7 @@ Databricks behavior.
 - [Delta 4.4 V2 mode configuration](https://github.com/delta-io/delta/blob/v4.4.0/spark/src/main/scala/org/apache/spark/sql/delta/sources/DeltaSQLConf.scala)
 - [`V2CreateTablePlanUtils`](../integration/spark/spark3/src/main/java/io/openlineage/spark3/agent/utils/V2CreateTablePlanUtils.java)
 - [`OpenLineageSparkListener` root-execution compatibility code](../integration/spark/app/src/main/java/io/openlineage/spark/agent/OpenLineageSparkListener.java)
+- [`SparkSqlExecutionNestingTracker`](../integration/spark/shared/src/main/java/io/openlineage/spark/agent/util/SparkSqlExecutionNestingTracker.java)
 - [`DeltaEventFilter`](../integration/spark/shared/src/main/java/io/openlineage/spark/agent/filters/DeltaEventFilter.java)
 - [Spark integration dependency registry](../integration/spark/app/build.gradle)
 - [`SparkDeltaIntegrationTest`](../integration/spark/app/src/test/java/io/openlineage/spark/agent/SparkDeltaIntegrationTest.java)
