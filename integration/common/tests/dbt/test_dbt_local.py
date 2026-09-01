@@ -581,4 +581,3 @@ def test_dbt_local_invocation_events_opt_in():
     model_start = events.starts[1]
     assert model_start.run.facets["parent"].run.runId == invocation_start.run.runId
     assert model_start.run.facets["parent"].job.name == "dbt-run-dbt_small_test"
-
