@@ -24,7 +24,7 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
         try:
             description = await t_client.get_workflow_handle(workflow["id"]).describe()
         except RPCError:
-            print("Description not found for workflow with id %", workflow["id"])
+            logger.info("Description not found for workflow with id %", workflow["id"])
             continue
 
         start_event_name = description.id
