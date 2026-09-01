@@ -15,7 +15,7 @@ from openlineage.client.uuid import generate_static_uuid
 
 PRODUCER: str = "https://github.com/OpenLineage/openlineage/integration/temporal"
 
-NAMESPACE = os.environ.get("TEMPORAL_OPENLINEAGE_NAMESPACE", "default")
+NAMESPACE = os.environ.get("OPENLINEAGE_NAMESPACE", "default")
 
 logger: logging.Logger = logging.getLogger(__name__)
 
