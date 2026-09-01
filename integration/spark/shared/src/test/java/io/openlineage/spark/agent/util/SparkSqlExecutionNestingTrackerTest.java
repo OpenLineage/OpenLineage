@@ -20,6 +20,9 @@ import org.junit.jupiter.api.Test;
 
 class SparkSqlExecutionNestingTrackerTest {
 
+  private static final String SAVE_DESCRIPTION = "save";
+  private static final String SHARED_CALL_SITE = "shared call site";
+
   private final SparkSqlExecutionNestingTracker tracker = new SparkSqlExecutionNestingTracker();
 
   @Test
@@ -58,8 +61,8 @@ class SparkSqlExecutionNestingTrackerTest {
 
   @Test
   void testLegacyChildWithSameCallSiteIsNested() {
-    SparkListenerSQLExecutionStart root = event(1, "save", "shared call site");
-    SparkListenerSQLExecutionStart child = event(2, "save", "shared call site");
+    SparkListenerSQLExecutionStart root = event(1, SAVE_DESCRIPTION, SHARED_CALL_SITE);
+    SparkListenerSQLExecutionStart child = event(2, SAVE_DESCRIPTION, SHARED_CALL_SITE);
 
     assertFalse(tracker.register(root, commandExecution(), OptionalLong.empty()));
     assertTrue(tracker.register(child, queryExecution(), OptionalLong.empty()));
@@ -71,7 +74,8 @@ class SparkSqlExecutionNestingTrackerTest {
     QueryExecution rootExecution = commandExecution();
 
     assertFalse(
-        tracker.register(event(1, "save", "user call site"), rootExecution, OptionalLong.empty()));
+        tracker.register(
+            event(1, SAVE_DESCRIPTION, "user call site"), rootExecution, OptionalLong.empty()));
 
     assertTrue(
         tracker.register(
@@ -96,7 +100,9 @@ class SparkSqlExecutionNestingTrackerTest {
   void testLegacyConcurrentTopLevelQueryFailsOpen() {
     assertFalse(
         tracker.register(
-            event(1, "save", "writer call site"), commandExecution(), OptionalLong.empty()));
+            event(1, SAVE_DESCRIPTION, "writer call site"),
+            commandExecution(),
+            OptionalLong.empty()));
 
     assertFalse(
         tracker.register(
@@ -107,17 +113,22 @@ class SparkSqlExecutionNestingTrackerTest {
   void testLegacyConcurrentCommandFailsOpenEvenAtSameCallSite() {
     assertFalse(
         tracker.register(
-            event(1, "save", "shared call site"), commandExecution(), OptionalLong.empty()));
+            event(1, SAVE_DESCRIPTION, SHARED_CALL_SITE),
+            commandExecution(),
+            OptionalLong.empty()));
 
     assertFalse(
         tracker.register(
-            event(2, "save", "shared call site"), commandExecution(), OptionalLong.empty()));
+            event(2, SAVE_DESCRIPTION, SHARED_CALL_SITE),
+            commandExecution(),
+            OptionalLong.empty()));
   }
 
   @Test
   void testLegacyAmbiguousCommandParentsFailOpen() {
-    tracker.register(event(1, "save", "first"), commandExecution(), OptionalLong.empty());
-    tracker.register(event(2, "save", "second"), commandExecution(), OptionalLong.empty());
+    tracker.register(event(1, SAVE_DESCRIPTION, "first"), commandExecution(), OptionalLong.empty());
+    tracker.register(
+        event(2, SAVE_DESCRIPTION, "second"), commandExecution(), OptionalLong.empty());
 
     assertFalse(
         tracker.register(
@@ -129,12 +140,12 @@ class SparkSqlExecutionNestingTrackerTest {
   @Test
   void testCompletedRootIsNotUsedForLegacyCorrelation() {
     tracker.register(
-        event(1, "save", "shared call site"), commandExecution(), OptionalLong.empty());
+        event(1, SAVE_DESCRIPTION, SHARED_CALL_SITE), commandExecution(), OptionalLong.empty());
     tracker.end(1);
 
     assertFalse(
         tracker.register(
-            event(2, "save", "shared call site"), queryExecution(), OptionalLong.empty()));
+            event(2, SAVE_DESCRIPTION, SHARED_CALL_SITE), queryExecution(), OptionalLong.empty()));
   }
 
   private static SparkListenerSQLExecutionStart event(
