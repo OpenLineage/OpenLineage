@@ -48,6 +48,7 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
             ]
         except KeyError:
             logger.info("No output datasets found for workflow %", workflow["id"])
+            output_datasets = []
 
         # Start event
         adapter.create_and_emit_task_event(
