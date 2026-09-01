@@ -9,13 +9,11 @@ import os
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import Dataset
-from openlineage.client.facet import (
-    JobTypeJobFacet
-)
+from openlineage.client.facet import JobTypeJobFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_static_uuid
 from temporalio.client import Client
-from temporalio.service import ( RPCError )
+from temporalio.service import RPCError
 
 from adapter import TemporalOpenLineageAdapter
 
@@ -41,24 +39,41 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
         start_event_run_id = adapter.build_run_id(start_event_time, start_event_name)
 
         try:
-            input_datasets = [dataset for dataset in workflow["datasets"] if dataset["type"] == "input"]
-        except:
+            input_datasets = [
+                dataset
+                for dataset in workflow["datasets"]
+                if dataset["type"] == "input"
+            ]
+        except KeyError:
             logger.info(f"No input datasets found for workflow {workflow["id"]}.")
 
         try:
-            output_datasets = [dataset for dataset in workflow["datasets"] if dataset["type"] == "output"]
-        except:
+            output_datasets = [
+                dataset
+                for dataset in workflow["datasets"]
+                if dataset["type"] == "output"
+            ]
+        except KeyError:
             logger.info(f"No output datasets found for workflow {workflow["id"]}.")
 
         # Start event
-        adapter.create_and_emit_task_event(start_event_run_id, RunState.START, start_event_time, start_event_name)
+        adapter.create_and_emit_task_event(
+            start_event_run_id, RunState.START, start_event_time, start_event_name
+        )
 
         # Complete event
         if description.raw_info.status == 2:
             complete_event_name = description.id
             complete_event_time = description.close_time
 
-            adapter.create_and_emit_task_event(start_event_run_id, RunState.COMPLETE, complete_event_time, complete_event_name, input_datasets, output_datasets)
+            adapter.create_and_emit_task_event(
+                start_event_run_id,
+                RunState.COMPLETE,
+                complete_event_time,
+                complete_event_name,
+                input_datasets,
+                output_datasets,
+            )
 
         # Fail event
         elif description.raw_info.status == 3:
@@ -66,4 +81,9 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
             complete_event_name = description.id
             complete_event_time = description.close_time
 
-            adapter.create_and_emit_task_event(start_event_run_id, RunState.FAIL, complete_event_time, complete_event_name)
+            adapter.create_and_emit_task_event(
+                start_event_run_id,
+                RunState.FAIL,
+                complete_event_time,
+                complete_event_name,
+            )

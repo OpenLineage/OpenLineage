@@ -9,19 +9,16 @@ import os
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import Dataset
-from openlineage.client.facet import (
-    JobTypeJobFacet
-)
+from openlineage.client.facet import JobTypeJobFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_static_uuid
 
-PRODUCER: str = (
-    "https://github.com/OpenLineage/openlineage/integration/temporal"
-)
+PRODUCER: str = "https://github.com/OpenLineage/openlineage/integration/temporal"
 
 NAMESPACE = os.environ.get("TEMPORAL_OPENLINEAGE_NAMESPACE", "default")
 
 logger: logging.Logger = logging.getLogger(__name__)
+
 
 class TemporalOpenLineageAdapter:
     def __init__(self, client: OpenLineageClient | None = None):
@@ -29,9 +26,7 @@ class TemporalOpenLineageAdapter:
         self.namespace = NAMESPACE
         self.producer = PRODUCER
 
-    def build_run_id(
-        self, execution_time: datetime, run_name: str
-    ) -> str:
+    def build_run_id(self, execution_time: datetime, run_name: str) -> str:
         """Build a deterministic UUID for the OpenLineage run based on the execution time, run name, and namespace."""
 
         return str(
@@ -48,7 +43,7 @@ class TemporalOpenLineageAdapter:
         eventTime: datetime,
         taskName: str,
         input_datasets: list = [],
-        output_datasets: list = []
+        output_datasets: list = [],
     ) -> RunEvent:
         """Create and emit an OpenLineage task event."""
 
@@ -72,7 +67,7 @@ class TemporalOpenLineageAdapter:
                 for dataset in input_datasets
             ]
             kwargs["inputs"] = inputs
-        except:
+        except KeyError:
             logger.info(f"No input datasets will be included in {taskname} event.")
 
         try:
@@ -81,7 +76,7 @@ class TemporalOpenLineageAdapter:
                 for dataset in output_datasets
             ]
             kwargs["outputs"] = outputs
-        except:
+        except KeyError:
             logger.info(f"No output datasets will be included in {taskname} event.")
 
         run_event = RunEvent(**kwargs)
