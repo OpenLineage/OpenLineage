@@ -226,9 +226,7 @@ def test_dbt_parse_and_compare_event(path, job_name, parent_run_metadata):
         openlineage_job_name=job_name,
     )
     processor.dbt_run_metadata = parent_run_metadata
-
     dbt_events = processor.parse()
-
     events = [
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
@@ -265,7 +263,6 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata,
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
-
     events = [
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
@@ -297,7 +294,6 @@ def test_dbt_parse_singular_test_event(mock_datetime, mock_uuid, parent_run_meta
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
-
     events = [
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
@@ -333,7 +329,6 @@ def test_dbt_parse_profile_with_env_vars(mock_uuid, parent_run_metadata):
     processor.dbt_run_metadata = parent_run_metadata
 
     dbt_events = processor.parse()
-
     events = [
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
@@ -586,3 +581,4 @@ def test_dbt_local_invocation_events_opt_in():
     model_start = events.starts[1]
     assert model_start.run.facets["parent"].run.runId == invocation_start.run.runId
     assert model_start.run.facets["parent"].job.name == "dbt-run-dbt_small_test"
+
