@@ -3,35 +3,28 @@
 
 # Warning: this integration is experimental and in active development.
 
-import json
 import logging
-import os
 
-from openlineage.client import OpenLineageClient
-from openlineage.client.event_v2 import Dataset
-from openlineage.client.facet import JobTypeJobFacet
-from openlineage.client.run import Job, Run, RunEvent, RunState
-from openlineage.client.uuid import generate_static_uuid
+from adapter import TemporalOpenLineageAdapter
+from openlineage.client.run import RunState
 from temporalio.client import Client
 from temporalio.service import RPCError
 
-from adapter import TemporalOpenLineageAdapter
-
 logger: logging.Logger = logging.getLogger(__name__)
-
+COMPLETE_STATUS_VALUE = 2
+FAIL_STATUS_VALUE = 3
 
 async def get_temporal_events(event_data: list, t_client: Client) -> None:
     adapter = TemporalOpenLineageAdapter()
     input_datasets = []
     output_datasets = []
-    temporal_events = []
 
     for workflow in event_data:
 
         try:
             description = await t_client.get_workflow_handle(workflow["id"]).describe()
         except RPCError:
-            print(f"Description not found for workflow with id {workflow["id"]}")
+            print("Description not found for workflow with id %", workflow["id"])
             continue
 
         start_event_name = description.id
@@ -45,7 +38,7 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
                 if dataset["type"] == "input"
             ]
         except KeyError:
-            logger.info(f"No input datasets found for workflow {workflow["id"]}.")
+            logger.info("No input datasets found for workflow %", workflow["id"])
 
         try:
             output_datasets = [
@@ -54,7 +47,7 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
                 if dataset["type"] == "output"
             ]
         except KeyError:
-            logger.info(f"No output datasets found for workflow {workflow["id"]}.")
+            logger.info("No output datasets found for workflow %", workflow["id"])
 
         # Start event
         adapter.create_and_emit_task_event(
@@ -62,7 +55,7 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
         )
 
         # Complete event
-        if description.raw_info.status == 2:
+        if description.raw_info.status == COMPLETE_STATUS_VALUE:
             complete_event_name = description.id
             complete_event_time = description.close_time
 
@@ -76,8 +69,7 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
             )
 
         # Fail event
-        elif description.raw_info.status == 3:
-
+        elif description.raw_info.status == FAIL_STATUS_VALUE:
             complete_event_name = description.id
             complete_event_time = description.close_time
 
