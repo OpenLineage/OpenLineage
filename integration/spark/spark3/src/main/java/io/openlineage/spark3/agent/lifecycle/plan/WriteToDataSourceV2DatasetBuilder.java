@@ -8,9 +8,7 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -37,12 +35,8 @@ public class WriteToDataSourceV2DatasetBuilder
   private static final String KAFKA_STREAMING_WRITE_CLASS_NAME =
       "org.apache.spark.sql.kafka010.KafkaStreamingWrite";
 
-  private final DatasetFactory<OpenLineage.OutputDataset> factory;
-
-  public WriteToDataSourceV2DatasetBuilder(
-      OpenLineageContext context, DatasetFactory<OpenLineage.OutputDataset> factory) {
+  public WriteToDataSourceV2DatasetBuilder(OpenLineageContext context) {
     super(context, false);
-    this.factory = factory;
   }
 
   @Override
@@ -72,13 +66,9 @@ public class WriteToDataSourceV2DatasetBuilder
       return Collections.emptyList();
     }
 
-    DataSourceV2Relation target = relation.get();
-    // Run query-plan visitors first so connector extensions can attach their side effects, such as
-    // Iceberg metrics reporter injection. The relation visitor's datasets are deliberately not
-    // combined with the command result, which keeps a single output.
-    delegate(target, event);
-    return DataSourceV2RelationDatasetExtractor.extract(
-        factory, context, target, includeDatasetVersion(event));
+    // Let the relation builder preserve connector-specific outputs when an extension handles the
+    // table and fall back to generic relation extraction otherwise.
+    return delegate(relation.get(), event);
   }
 
   private String streamingWriteClassName(WriteToDataSourceV2 write) {

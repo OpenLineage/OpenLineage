@@ -97,7 +97,7 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
             .add(new SaveIntoDataSourceCommandVisitor(context))
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
-            .add(new WriteToDataSourceV2DatasetBuilder(context, datasetFactory))
+            .add(new WriteToDataSourceV2DatasetBuilder(context))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
             .add(new CopyIntoCommandOutputDatasetBuilder(context))
