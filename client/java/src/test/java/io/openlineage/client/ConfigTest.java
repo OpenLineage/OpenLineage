@@ -7,6 +7,7 @@ package io.openlineage.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -165,6 +166,16 @@ class ConfigTest {
     assertThat(OpenLineageClient.builder().build())
         .extracting("lineageCompatibility")
         .isEqualTo(LineageCompatibility.NONE);
+  }
+
+  @Test
+  void testMissingLineageConfigDefaultsToNone() {
+    OpenLineageConfig config = mock(OpenLineageConfig.class);
+    when(config.getTransportConfig()).thenReturn(new ConsoleConfig());
+
+    OpenLineageClient client = Clients.newClient(config);
+
+    assertThat(client.lineageCompatibility).isEqualTo(LineageCompatibility.NONE);
   }
 
   @Test
