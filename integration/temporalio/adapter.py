@@ -61,23 +61,17 @@ class TemporalOpenLineageAdapter:
             "producer": self.producer,
         }
 
-        try:
-            inputs = [
-                Dataset(namespace=dataset["uri"], name=dataset["table"])
-                for dataset in input_datasets
-            ]
-            kwargs["inputs"] = inputs
-        except KeyError:
-            logger.info(f"No input datasets will be included in {taskname} event.")
+        inputs = [
+            Dataset(namespace=dataset["uri"], name=dataset["table"])
+            for dataset in input_datasets
+        ]
+        kwargs["inputs"] = inputs
 
-        try:
-            outputs = [
-                Dataset(namespace=dataset["uri"], name=dataset["table"])
-                for dataset in output_datasets
-            ]
-            kwargs["outputs"] = outputs
-        except KeyError:
-            logger.info(f"No output datasets will be included in {taskname} event.")
+        outputs = [
+            Dataset(namespace=dataset["uri"], name=dataset["table"])
+            for dataset in output_datasets
+        ]
+        kwargs["outputs"] = outputs
 
         run_event = RunEvent(**kwargs)
         self.client.emit(run_event)
