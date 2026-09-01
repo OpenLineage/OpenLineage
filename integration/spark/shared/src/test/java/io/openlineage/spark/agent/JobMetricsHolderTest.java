@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.spark.agent.JobMetricsHolder.Metric;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,10 +43,11 @@ class JobMetricsHolderTest {
         .containsEntry(Metric.READ_RECORDS, 2L)
         .containsEntry(JobMetricsHolder.Metric.READ_BYTES, 110L);
 
-    // second poll event should clear the maps
+    // Polling after cleanup must not recreate an empty completed-job entry.
     underTest.cleanUp(0);
     Map<JobMetricsHolder.Metric, Number> secondPollResult = underTest.pollMetrics(0);
     assertThat(secondPollResult).isEmpty();
+    assertThat(underTest.getJobMetricsSize()).isZero();
   }
 
   @Test
@@ -80,9 +82,9 @@ class JobMetricsHolderTest {
 
     underTest.cleanUp(0);
 
-    assertThat(true).isTrue();
     assertThat(underTest.getJobStages()).isEmpty();
     assertThat(underTest.getStageMetrics()).isEmpty();
+    assertThat(underTest.getJobMetricsSize()).isZero();
   }
 
   /**
@@ -120,7 +122,7 @@ class JobMetricsHolderTest {
   }
 
   @Test
-  void testMetricsCanBePolledAfterCleanup() {
+  void testCleanupDiscardsCompletedMetrics() {
     // add some stage and metric
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
     underTest.addMetrics(1, taskMetrics(100, 10, 100, 10));
@@ -128,7 +130,7 @@ class JobMetricsHolderTest {
     underTest.cleanUp(0);
     Map<JobMetricsHolder.Metric, Number> jobMetrics = underTest.pollMetrics(0);
 
-    assertThat(jobMetrics.get(Metric.WRITE_RECORDS)).isEqualTo(10L);
+    assertThat(jobMetrics).isEmpty();
   }
 
   @Test
@@ -184,6 +186,61 @@ class JobMetricsHolderTest {
     underTest.addMetrics(1, taskMetrics(0, 0, 1, 0));
     assertThat(underTest.containsReadMetrics(0)).isFalse();
     assertThat(underTest.containsWriteMetrics(0)).isTrue();
+  }
+
+  @Test
+  void testCompleteJobKeepsOnlyCompactMetricsUntilCleanup() {
+    underTest.addJobStages(0, Collections.singleton(1));
+    underTest.addMetrics(1, taskMetrics(100, 10, 100, 10));
+
+    assertThat(underTest.completeJob(0).get(Metric.WRITE_RECORDS)).isEqualTo(10L);
+    assertThat(underTest.getJobStagesSize()).isZero();
+    assertThat(underTest.getStageMetricsSize()).isZero();
+    assertThat(underTest.getJobMetricsSize()).isOne();
+
+    underTest.cleanUp(0);
+
+    assertThat(underTest.getJobMetricsSize()).isZero();
+  }
+
+  @Test
+  void testStateGaugesMeasureRetainedEntries() {
+    SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    underTest.registerStateGauges(meterRegistry);
+    underTest.addJobStages(0, Collections.singleton(1));
+    underTest.addMetrics(1, taskMetrics(100, 10, 100, 10));
+
+    assertThat(meterRegistry.get(JobMetricsHolder.JOB_STAGES_GAUGE).gauge().value()).isEqualTo(1);
+    assertThat(meterRegistry.get(JobMetricsHolder.STAGE_METRICS_GAUGE).gauge().value())
+        .isEqualTo(1);
+
+    underTest.completeJob(0);
+
+    assertThat(meterRegistry.get(JobMetricsHolder.JOB_STAGES_GAUGE).gauge().value()).isZero();
+    assertThat(meterRegistry.get(JobMetricsHolder.STAGE_METRICS_GAUGE).gauge().value()).isZero();
+    assertThat(meterRegistry.get(JobMetricsHolder.JOB_METRICS_GAUGE).gauge().value()).isEqualTo(1);
+
+    underTest.cleanUp(0);
+    assertThat(meterRegistry.get(JobMetricsHolder.JOB_METRICS_GAUGE).gauge().value()).isZero();
+  }
+
+  @Test
+  void testTenThousandCompletedJobsKeepStateBounded() {
+    int maximumCompletedJobs = 0;
+
+    for (int jobId = 0; jobId < 10_000; jobId++) {
+      // Empty jobs still exposed the original leak because their completed-metrics entries were
+      // cached forever. The metric-bearing paths are covered by the focused tests above.
+      underTest.completeJob(jobId);
+      maximumCompletedJobs = Math.max(maximumCompletedJobs, underTest.getJobMetricsSize());
+      underTest.cleanUp(jobId);
+
+      assertThat(underTest.getJobStagesSize()).isZero();
+      assertThat(underTest.getStageMetricsSize()).isZero();
+      assertThat(underTest.getJobMetricsSize()).isZero();
+    }
+
+    assertThat(maximumCompletedJobs).isZero();
   }
 
   private TaskMetrics taskMetrics(

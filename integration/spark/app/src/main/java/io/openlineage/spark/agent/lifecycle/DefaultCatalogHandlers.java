@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.lifecycle;
 import com.google.common.collect.ImmutableList;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.ClickHouseHandler;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.DatabricksDeltaHandler;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.DatabricksUnityV2Handler;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.DeltaHandler;
@@ -24,6 +25,7 @@ final class DefaultCatalogHandlers {
     return ImmutableList.of(
         new IcebergHandler(context),
         new DeltaHandler(context),
+        new ClickHouseHandler(context),
         new DatabricksDeltaHandler(context),
         new DatabricksUnityV2Handler(context),
         new JdbcHandler(context),

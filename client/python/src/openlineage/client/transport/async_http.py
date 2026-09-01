@@ -9,11 +9,12 @@ import logging
 import queue
 import threading
 import time
+from collections import deque
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import attr
-import httpx
+import httpx2
 from openlineage.client.event_v2 import RunEvent as RunEventV2
 from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 Async HTTP Transport for OpenLineage Events
 
 This module provides asynchronous HTTP transport mechanisms for sending
-OpenLineage events to remote endpoints using httpx. The AsyncHttpTransport implements a sophisticated
+OpenLineage events to remote endpoints using httpx2. The AsyncHttpTransport implements a sophisticated
 event ordering and delivery system with race-condition-free task management.
 
 ## Transport Architecture
@@ -56,7 +57,8 @@ The AsyncHttpTransport provides:
 - **Semaphore-controlled**: Uses asyncio.Semaphore to limit concurrent operations
 - **Task-based architecture**: Each event is processed as an independent asyncio task
 - **Race-condition-free**: Immediate task removal prevents double-processing of completed tasks
-- **Reserved queue capacity**: 2x configured queue size to accommodate released completion events
+- **Non-blocking event release**: Held events remain in a worker-owned backlog until request
+  capacity is available
 
 ### 3. Event Tracking and Statistics
 - **Simplified tracking**: Uses direct counters for pending, success, and failed events
@@ -191,7 +193,7 @@ class AsyncHttpTransport(Transport):
             config,
         )
         try:
-            parsed = httpx.URL(url)
+            parsed = httpx2.URL(url)
             if not (parsed.scheme and parsed.host):
                 msg = f"Need valid url for OpenLineageClient, passed {url}"
                 raise ValueError(msg)
@@ -206,7 +208,7 @@ class AsyncHttpTransport(Transport):
         self.compression = config.compression
 
         # Initialize async emitter components directly
-        # Create a queue with 2x the configured size to reserve space for released completion events
+        # Keep 2x actual capacity behind the producer-facing soft limit
         self.configured_queue_size = config.max_queue_size
         self.event_queue: queue.Queue[Request] = queue.Queue(maxsize=self.configured_queue_size * 2)
 
@@ -255,21 +257,25 @@ class AsyncHttpTransport(Transport):
         semaphore = asyncio.Semaphore(self.max_concurrent)
         # Keep track of active tasks
         active_tasks: set[asyncio.Task[list[Request]]] = set()
+        released_requests: deque[Request] = deque()
 
         # Httpx client for the worker
-        limits = httpx.Limits(
+        limits = httpx2.Limits(
             max_connections=self.max_concurrent, max_keepalive_connections=self.max_concurrent // 2
         )
 
-        transport = httpx.AsyncHTTPTransport(limits=limits, retries=self.config.retry["total"])
+        transport = httpx2.AsyncHTTPTransport(limits=limits, retries=self.config.retry["total"])
 
         def _should_exit() -> bool:
             return self.should_exit.is_set() or (
-                self.event_queue.empty() and not len(active_tasks) and self.may_exit.is_set()
+                self.event_queue.empty()
+                and not released_requests
+                and not len(active_tasks)
+                and self.may_exit.is_set()
             )
 
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(timeout=self.config.timeout),
+        async with httpx2.AsyncClient(
+            timeout=httpx2.Timeout(timeout=self.config.timeout),
             verify=self.config.verify,
             follow_redirects=True,
             transport=transport,
@@ -279,22 +285,28 @@ class AsyncHttpTransport(Transport):
             max_idle_sleep = 1.0
             while not _should_exit():
                 processed_items = False
-                while not self.event_queue.empty() and len(active_tasks) < self.max_concurrent:
-                    try:
-                        request = self.event_queue.get_nowait()
-                        task = asyncio.create_task(
-                            self._process_event(
-                                client,
-                                semaphore,
-                                request,
-                                from_main_queue=True,
-                            ),
-                            name=request.event_id,
-                        )
-                        active_tasks.add(task)
-                        processed_items = True
-                    except queue.Empty:
-                        break
+                while len(active_tasks) < self.max_concurrent:
+                    if released_requests:
+                        request = released_requests.popleft()
+                        from_main_queue = False
+                    else:
+                        try:
+                            request = self.event_queue.get_nowait()
+                        except queue.Empty:
+                            break
+                        from_main_queue = True
+
+                    task = asyncio.create_task(
+                        self._process_event(
+                            client,
+                            semaphore,
+                            request,
+                            from_main_queue=from_main_queue,
+                        ),
+                        name=request.event_id,
+                    )
+                    active_tasks.add(task)
+                    processed_items = True
 
                 # Update last processed time if we processed items
                 if processed_items:
@@ -310,26 +322,7 @@ class AsyncHttpTransport(Transport):
                     for task in done:
                         try:
                             # Get any pending requests that can now be processed
-                            pending_requests = await task
-                            if pending_requests:
-                                # Add the released requests back to the queue - we can
-                                # process them now
-                                for request in pending_requests:
-                                    if len(active_tasks) < self.max_concurrent:
-                                        release_task = asyncio.create_task(
-                                            self._process_event(
-                                                client,
-                                                semaphore,
-                                                request,
-                                                from_main_queue=False,
-                                            ),
-                                            name=request.event_id,
-                                        )
-                                        active_tasks.add(release_task)
-                                    else:
-                                        # Put released completion events directly into the reserved queue
-                                        # space (we have 2x capacity, so these should always fit)
-                                        self.event_queue.put(request)
+                            released_requests.extend(await task)
                         except Exception:
                             log.exception("Error in event processing task")
                 # No tasks are active, didn't process any new items - sleep
@@ -364,7 +357,7 @@ class AsyncHttpTransport(Transport):
 
     async def _process_event(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         semaphore: asyncio.Semaphore,
         request: Request,
         from_main_queue: bool = True,
@@ -376,7 +369,7 @@ class AsyncHttpTransport(Transport):
         log.debug("Processing event %s", request.event_id)
 
         def handle_failure(
-            response: httpx.Response | None = None, exception: Exception | None = None
+            response: httpx2.Response | None = None, exception: Exception | None = None
         ) -> None:
             nonlocal pending_events
             pending_events = self._mark_failed(request)
@@ -501,18 +494,18 @@ class AsyncHttpTransport(Transport):
                 return released
         return []
 
-    def _add_pending_completion_event(self, request: Request) -> None:
+    def _add_pending_completion_event(self, request: Request) -> bool:
         if not request.run_id:
-            return
+            return False
         with self.event_lock:
-            if request.run_id not in self.pending_completion_events:
-                self.pending_completion_events[request.run_id] = []
-            self.pending_completion_events[request.run_id].append(request)
+            start_event_id = f"{request.run_id}-START"
+            if start_event_id not in self.events:
+                return False
 
-    def _is_start_in_progress(self, run_id: str) -> bool:
-        with self.event_lock:
-            start_event_id = f"{run_id}-START"
-            return start_event_id in self.events
+            self.event_stats["pending"] += 1
+            self.events[request.event_id] = "pending"
+            self.pending_completion_events.setdefault(request.run_id, []).append(request)
+            return True
 
     def _all_processed(self) -> bool:
         with self.event_lock:
@@ -529,29 +522,23 @@ class AsyncHttpTransport(Transport):
             event_id = event.run.runId + "-" + event_type
             run_id = event.run.runId
 
-            # We don't want to emit terminal events until we have a successful START event
-            # Only queue as pending if START has been scheduled but not yet successful
-            # If START was never scheduled, process COMPLETE normally (fall through)
-            if event_type != "START":
-                if self._is_start_in_progress(run_id):
-                    body, headers = self._prepare_request(event_str)
-                    request = Request(
-                        event_id=event_id, run_id=run_id, event_type=event_type, body=body, headers=headers
-                    )
-                    self._add_event(request)
-                    self._add_pending_completion_event(request)
-
-                    log.debug(
-                        "Queued completion event %s for run %s, waiting for START event",
-                        event_type,
-                        run_id,
-                    )
-                    return
         else:
             event_id = hashlib.md5(event_str.encode("utf-8")).hexdigest()
 
         body, headers = self._prepare_request(event_str)
         request = Request(event_id=event_id, run_id=run_id, event_type=event_type, body=body, headers=headers)
+
+        # We don't want to emit terminal events until we have a successful START event.
+        # Checking for START and tracking the terminal event must be atomic so the worker
+        # cannot finish START between those operations and strand the terminal event.
+        if run_id and event_type != "START" and self._add_pending_completion_event(request):
+            log.debug(
+                "Queued completion event %s for run %s, waiting for START event",
+                event_type,
+                run_id,
+            )
+            return
+
         self._add_event(request)
 
         # Wait for space in the regular capacity portion of the queue

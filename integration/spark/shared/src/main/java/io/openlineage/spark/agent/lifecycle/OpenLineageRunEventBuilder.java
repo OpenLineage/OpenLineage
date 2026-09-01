@@ -181,6 +181,33 @@ class OpenLineageRunEventBuilder {
    */
   void registerJob(ActiveJob job) {
     jobMap.put(job.jobId(), job);
+    registerStages(job);
+  }
+
+  void evictJob(int jobId) {
+    jobMap.remove(jobId);
+    rebuildStageMap();
+  }
+
+  void clearRetainedState() {
+    jobMap.clear();
+    stageMap.clear();
+  }
+
+  int getRetainedJobCount() {
+    return jobMap.size();
+  }
+
+  int getRetainedStageCount() {
+    return stageMap.size();
+  }
+
+  private void rebuildStageMap() {
+    stageMap.clear();
+    jobMap.values().forEach(this::registerStages);
+  }
+
+  private void registerStages(ActiveJob job) {
     stageMap.put(job.finalStage().id(), job.finalStage());
     job.finalStage()
         .parents()

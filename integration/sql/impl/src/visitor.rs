@@ -425,6 +425,9 @@ impl Visit for Function {
                 }
             }
         }
+        if let Some(filter) = &self.filter {
+            filter.visit(context)?;
+        }
         if let Some(spec) = &self.over {
             spec.visit(context)?;
         }

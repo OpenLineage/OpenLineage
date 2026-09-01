@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -32,6 +33,12 @@ import org.apache.spark.scheduler.SparkListenerTaskEnd;
  */
 @Slf4j
 public class JobMetricsHolder {
+  public static final String JOB_STAGES_GAUGE = "openlineage.spark.state.job_metrics.job_stages";
+  public static final String STAGE_METRICS_GAUGE =
+      "openlineage.spark.state.job_metrics.stage_metrics";
+  public static final String JOB_METRICS_GAUGE =
+      "openlineage.spark.state.job_metrics.completed_jobs";
+
   private final Map<Integer, Set<Integer>> jobStages = new ConcurrentHashMap<>();
   private final Map<Integer, TaskMetricsAggregate> stageMetrics = new ConcurrentHashMap<>();
 
@@ -65,16 +72,25 @@ public class JobMetricsHolder {
   }
 
   /**
-   * Can be only polled once. Polling metrics causes removing them from the map.
-   *
-   * @param jobId
-   * @return
+   * Aggregates a job's stage metrics and keeps the result available until {@link #cleanUp(int)}.
    */
   public Map<Metric, Number> pollMetrics(int jobId) {
-    if (!jobMetrics.containsKey(jobId)) {
-      jobMetrics.put(jobId, computeJobMetricsAndClearTemporaryResults(jobId));
-    }
-    return jobMetrics.get(jobId);
+    return completeJob(jobId);
+  }
+
+  /**
+   * Marks a job complete by releasing its stage state and retaining only its compact aggregate.
+   * This supports the Spark ordering where JobEnd is followed by the final SQLExecutionEnd event.
+   */
+  public Map<Metric, Number> completeJob(int jobId) {
+    Map<Metric, Number> completedMetrics =
+        jobMetrics.computeIfAbsent(
+            jobId,
+            id -> {
+              Map<Metric, Number> metrics = computeJobMetricsAndClearTemporaryResults(id);
+              return metrics.isEmpty() ? null : metrics;
+            });
+    return completedMetrics == null ? Collections.emptyMap() : completedMetrics;
   }
 
   public boolean containsWriteMetrics(int jobId) {
@@ -94,7 +110,7 @@ public class JobMetricsHolder {
   }
 
   private Map<Metric, Number> computeJobMetricsAndClearTemporaryResults(int jobId) {
-    return Optional.ofNullable(jobStages.get(jobId))
+    return Optional.ofNullable(jobStages.remove(jobId))
         .map(
             stages ->
                 stages.stream()
@@ -107,17 +123,35 @@ public class JobMetricsHolder {
   }
 
   public void cleanUp(int jobId) {
-    jobMetrics.put(jobId, computeJobMetricsAndClearTemporaryResults(jobId));
+    jobMetrics.remove(jobId);
     Set<Integer> stages = jobStages.remove(jobId);
     stages = stages == null ? Collections.emptySet() : stages;
     stages.forEach(stageMetrics::remove);
   }
 
-  @VisibleForTesting
-  void cleanUpAll() {
+  public void cleanUpAll() {
     jobMetrics.clear();
     jobStages.clear();
     stageMetrics.clear();
+  }
+
+  /** Registers low-cardinality gauges for every retained metrics map. */
+  public void registerStateGauges(MeterRegistry meterRegistry) {
+    meterRegistry.gauge(JOB_STAGES_GAUGE, jobStages, Map::size);
+    meterRegistry.gauge(STAGE_METRICS_GAUGE, stageMetrics, Map::size);
+    meterRegistry.gauge(JOB_METRICS_GAUGE, jobMetrics, Map::size);
+  }
+
+  public int getJobStagesSize() {
+    return jobStages.size();
+  }
+
+  public int getStageMetricsSize() {
+    return stageMetrics.size();
+  }
+
+  public int getJobMetricsSize() {
+    return jobMetrics.size();
   }
 
   private Map<Metric, Number> mapMetrics(List<TaskMetricsAggregate> jobMetrics) {

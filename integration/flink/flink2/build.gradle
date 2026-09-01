@@ -58,6 +58,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-table-planner_2.12:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-connector-base:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-json:$testedflinkVersion"
+    testImplementation "org.apache.flink:flink-avro:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-connector-kafka:4.0.1-2.0"
     testImplementation "org.apache.flink:flink-connector-test-utils:$testedflinkVersion"
     testImplementation "org.apache.kafka:kafka-clients:4.1.1"

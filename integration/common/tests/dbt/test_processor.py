@@ -4,6 +4,8 @@
 
 import datetime
 import os
+import sys
+import types
 import uuid
 from unittest.mock import MagicMock
 
@@ -11,7 +13,7 @@ import pytest
 from openlineage.client.facet_v2 import external_query_run, processing_engine_run
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
-from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext
+from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext, ModelNode
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 from openlineage.common.provider.dbt.utils import get_dbt_profiles_dir
 
@@ -190,6 +192,103 @@ def test_spark_namespace_separates_the_port(dbt_artifact_processor, profile, exp
     dbt_artifact_processor.extract_dataset_namespace(profile)
 
     assert dbt_artifact_processor.dataset_namespace == expected
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [
+        {
+            "region_name": "us-east-1",
+            "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena",
+        },
+    ],
+)
+def test_athena_dataset_symlink_uses_assume_role_account(dbt_artifact_processor, profile):
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    model = ModelNode(
+        type="model",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "alias": "orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(model, None)
+
+    assert facets["symlinks"].identifiers[0].namespace == "arn:aws:glue:us-east-1:123456789012"
+    assert facets["symlinks"].identifiers[0].name == "table/analytics/orders"
+    assert facets["symlinks"].identifiers[0].type == "TABLE"
+
+
+def test_athena_dataset_symlink_uses_source_name(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"region_name": "us-east-1", "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena"}
+    )
+
+    source = ModelNode(
+        type="source",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "name": "raw_orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(source, None)
+
+    assert facets["symlinks"].identifiers[0].name == "table/analytics/raw_orders"
+
+
+def test_athena_dataset_symlink_uses_effective_profile_credentials(monkeypatch, dbt_artifact_processor):
+    class FakeStsClient:
+        def get_caller_identity(self):
+            return {"Account": "123456789012"}
+
+    class FakeSession:
+        instances = []
+
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            self.instances.append(self)
+
+        def client(self, service_name):
+            assert service_name == "sts"
+            return FakeStsClient()
+
+    fake_boto3 = types.ModuleType("boto3")
+    fake_boto3.session = types.SimpleNamespace(Session=FakeSession)
+    monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
+
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"region_name": "us-east-1", "aws_profile_name": "production"}
+    )
+
+    assert dbt_artifact_processor.dataset_symlink_namespace == "arn:aws:glue:us-east-1:123456789012"
+    assert FakeSession.instances[0].kwargs["profile_name"] == "production"
+
+
+def test_athena_dataset_symlink_is_omitted_without_profile_account(monkeypatch, dbt_artifact_processor):
+    monkeypatch.setitem(sys.modules, "boto3", None)
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace({"region_name": "us-east-1"})
+
+    model = ModelNode(
+        type="model",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "alias": "orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(model, None)
+
+    assert "symlinks" not in facets
 
 
 class TestGetDbtProfilesDir:
@@ -925,7 +1024,7 @@ class TestDbtInvocationEvents:
         context = DbtRunContext(
             manifest={"nodes": {}},
             run_results={
-                "metadata": {"invocation_id": inv_id},
+                "metadata": {"invocation_id": inv_id, "dbt_version": DBT_VERSION},
                 "results": [
                     {
                         "status": "pass",
@@ -939,6 +1038,7 @@ class TestDbtInvocationEvents:
                 ],
             },
         )
+        dbt_artifact_processor.dbt_run_run_facet = MagicMock(return_value={})
         dbt_artifact_processor.run_metadata = context.run_results["metadata"]
         dbt_artifact_processor.command = "run"
         dbt_artifact_processor._dbt_run_metadata = ParentRunMetadata(
@@ -959,6 +1059,8 @@ class TestDbtInvocationEvents:
         assert res.complete.eventTime == "2026-08-01T10:01:00.000000Z"
         assert res.start.run.facets["parent"].run.runId == parent_id
         assert res.start.job.facets["jobType"].jobType == "JOB"
+        assert "dbt_version" in res.start.run.facets
+        assert "processing_engine" in res.start.run.facets
 
     def test_generate_invocation_events_failure(self, dbt_artifact_processor):
         from openlineage.client.event_v2 import RunState
@@ -983,6 +1085,7 @@ class TestDbtInvocationEvents:
                 ],
             },
         )
+        dbt_artifact_processor.dbt_run_run_facet = MagicMock(return_value={})
         dbt_artifact_processor.run_metadata = context.run_results["metadata"]
         dbt_artifact_processor.command = "run"
 
@@ -994,6 +1097,99 @@ class TestDbtInvocationEvents:
         expected_uuid = str(generate_static_uuid(dt, inv_id.encode("utf-8")))
         assert res.fail.run.runId == expected_uuid
         assert uuid.UUID(res.fail.run.runId).version == 7
+
+    def test_invocation_job_name_resolution(self, dbt_artifact_processor):
+        # 1. Custom openlineage_job_name
+        dbt_artifact_processor.openlineage_job_name = "custom_ol_job"
+        assert dbt_artifact_processor.invocation_job_name == "custom_ol_job"
+
+        # 2. Dynamic job_name property
+        dbt_artifact_processor.openlineage_job_name = None
+        dbt_artifact_processor.job_name = "dynamic_job_name"
+        assert dbt_artifact_processor.invocation_job_name == "dynamic_job_name"
+
+        # 3. Fallback with command
+        delattr(dbt_artifact_processor, "job_name")
+        dbt_artifact_processor.command = "build"
+        assert dbt_artifact_processor.invocation_job_name == "dbt-build"
+
+        # 4. Fallback without command
+        dbt_artifact_processor.command = None
+        assert dbt_artifact_processor.invocation_job_name == "dbt-invocation"
+
+    def test_extract_invocation_run_timing_empty_and_fallbacks(self, dbt_artifact_processor):
+        # Fallback to generated_at when results are empty
+        context = DbtRunContext(
+            manifest={"nodes": {}},
+            run_results={
+                "metadata": {"generated_at": "2026-08-01T12:00:00.000000Z"},
+                "results": [],
+            },
+        )
+        dbt_artifact_processor.run_metadata = context.run_results["metadata"]
+        start_time, complete_time, has_failure = dbt_artifact_processor._extract_invocation_run_timing(
+            context
+        )
+        assert start_time == "2026-08-01T12:00:00.000000Z"
+        assert complete_time == "2026-08-01T12:00:00.000000Z"
+        assert has_failure is False
+
+        # Fallback to current UTC time when generated_at is also missing
+        context_no_metadata = DbtRunContext(
+            manifest={"nodes": {}},
+            run_results={"metadata": {}, "results": []},
+        )
+        dbt_artifact_processor.run_metadata = {}
+        start_time, complete_time, has_failure = dbt_artifact_processor._extract_invocation_run_timing(
+            context_no_metadata
+        )
+        assert start_time == complete_time
+        assert has_failure is False
+
+        # Multiple results and timing with failed/fail status
+        context_multiple = DbtRunContext(
+            manifest={"nodes": {}},
+            run_results={
+                "metadata": {},
+                "results": [
+                    {
+                        "status": "failed",
+                        "timing": [
+                            {
+                                "started_at": "2026-08-01T10:00:00.000000Z",
+                                "completed_at": "2026-08-01T10:02:00.000000Z",
+                            }
+                        ],
+                    },
+                    {
+                        "status": "fail",
+                        "timing": [
+                            {
+                                "started_at": "2026-08-01T09:59:00.000000Z",
+                                "completed_at": "2026-08-01T10:05:00.000000Z",
+                            }
+                        ],
+                    },
+                ],
+            },
+        )
+        start_time, complete_time, has_failure = dbt_artifact_processor._extract_invocation_run_timing(
+            context_multiple
+        )
+        assert start_time == "2026-08-01T09:59:00.000000Z"
+        assert complete_time == "2026-08-01T10:05:00.000000Z"
+        assert has_failure is True
+
+    def test_generate_invocation_run_id_fallbacks(self, dbt_artifact_processor):
+        # Missing invocation_id generates random UUIDv7
+        dbt_artifact_processor.run_metadata = {}
+        run_id = dbt_artifact_processor._generate_invocation_run_id("2026-08-01T10:00:00.000000Z")
+        assert uuid.UUID(run_id).version == 7
+
+        # Invalid start_time string falls back to current time without error
+        dbt_artifact_processor.run_metadata = {"invocation_id": "test-invocation-id"}
+        run_id_fallback = dbt_artifact_processor._generate_invocation_run_id("invalid-datetime")
+        assert uuid.UUID(run_id_fallback).version == 7
 
     def test_child_node_gets_invocation_parent(self, dbt_artifact_processor):
         from openlineage.client.uuid import generate_static_uuid
@@ -1008,6 +1204,7 @@ class TestDbtInvocationEvents:
                 "results": [],
             },
         )
+        dbt_artifact_processor.dbt_run_run_facet = MagicMock(return_value={})
         dbt_artifact_processor.emit_dbt_invocation_event = True
         dbt_artifact_processor.run_metadata = context.run_results["metadata"]
         dbt_artifact_processor.command = "run"
@@ -1032,9 +1229,173 @@ class TestDbtInvocationEvents:
                 "results": [],
             },
         )
+        dbt_artifact_processor.dbt_run_run_facet = MagicMock(return_value={})
         dbt_artifact_processor.emit_dbt_invocation_event = False
         dbt_artifact_processor.run_metadata = context.run_results["metadata"]
         dbt_artifact_processor.command = "run"
 
         child_run = dbt_artifact_processor.get_run(run_id=child_run_id)
         assert "parent" not in child_run.facets
+
+    def test_parse_with_emit_dbt_invocation_event_success(self, dbt_artifact_processor):
+        from openlineage.client.event_v2 import RunState
+
+        manifest = {
+            "metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v7.json"},
+            "parent_map": {"model.test_package.test_model": []},
+            "nodes": {
+                "model.test_package.test_model": {
+                    "database": "test_db",
+                    "schema": "test_schema",
+                    "alias": "test_model",
+                    "unique_id": "model.test_package.test_model",
+                    "config": {"materialized": "table"},
+                    "tags": [],
+                    "meta": {},
+                    "depends_on": {"nodes": []},
+                    "columns": {},
+                    "original_file_path": "models/test_model.sql",
+                    "compiled_code": "SELECT 1 as id",
+                }
+            },
+        }
+        run_results = {
+            "metadata": {"invocation_id": "55555555-5555-5555-5555-555555555555", "dbt_version": DBT_VERSION},
+            "args": {"which": "run", "full_refresh": False},
+            "results": [
+                {
+                    "unique_id": "model.test_package.test_model",
+                    "status": "success",
+                    "timing": [
+                        {
+                            "name": "execute",
+                            "started_at": "2026-08-01T10:00:00.000000Z",
+                            "completed_at": "2026-08-01T10:01:00.000000Z",
+                        }
+                    ],
+                    "adapter_response": {},
+                }
+            ],
+        }
+        profile = {"type": "snowflake", "account": "test_account"}
+        catalog = {}
+
+        dbt_artifact_processor.emit_dbt_invocation_event = True
+        dbt_artifact_processor.get_dbt_metadata = MagicMock(
+            return_value=(manifest, run_results, profile, catalog)
+        )
+        dbt_artifact_processor.dbt_run_run_facet = MagicMock(return_value={})
+
+        events = dbt_artifact_processor.parse()
+        assert len(events.starts) == 2  # Invocation start + Model start
+        assert events.starts[0].eventType == RunState.START
+        assert events.starts[0].job.facets["jobType"].jobType == "JOB"
+        assert len(events.completes) == 2  # Model complete + Invocation complete
+        assert events.completes[-1].eventType == RunState.COMPLETE
+        assert events.completes[-1].job.facets["jobType"].jobType == "JOB"
+
+    def test_parse_with_emit_dbt_invocation_event_failure(self, dbt_artifact_processor):
+        from openlineage.client.event_v2 import RunState
+
+        manifest = {
+            "metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v7.json"},
+            "parent_map": {"model.test_package.test_model": []},
+            "nodes": {
+                "model.test_package.test_model": {
+                    "database": "test_db",
+                    "schema": "test_schema",
+                    "alias": "test_model",
+                    "unique_id": "model.test_package.test_model",
+                    "config": {"materialized": "table"},
+                    "tags": [],
+                    "meta": {},
+                    "depends_on": {"nodes": []},
+                    "columns": {},
+                    "original_file_path": "models/test_model.sql",
+                    "compiled_code": "SELECT 1 as id",
+                }
+            },
+        }
+        run_results = {
+            "metadata": {"invocation_id": "66666666-6666-6666-6666-666666666666", "dbt_version": DBT_VERSION},
+            "args": {"which": "run", "full_refresh": False},
+            "results": [
+                {
+                    "unique_id": "model.test_package.test_model",
+                    "status": "error",
+                    "timing": [
+                        {
+                            "name": "execute",
+                            "started_at": "2026-08-01T10:00:00.000000Z",
+                            "completed_at": "2026-08-01T10:01:00.000000Z",
+                        }
+                    ],
+                    "adapter_response": {},
+                }
+            ],
+        }
+        profile = {"type": "snowflake", "account": "test_account"}
+        catalog = {}
+
+        dbt_artifact_processor.emit_dbt_invocation_event = True
+        dbt_artifact_processor.get_dbt_metadata = MagicMock(
+            return_value=(manifest, run_results, profile, catalog)
+        )
+        dbt_artifact_processor.dbt_run_run_facet = MagicMock(return_value={})
+
+        events = dbt_artifact_processor.parse()
+        assert len(events.starts) == 2  # Invocation start + Model start
+        assert len(events.fails) == 2  # Model fail + Invocation fail
+        assert events.fails[-1].eventType == RunState.FAIL
+        assert events.fails[-1].job.facets["jobType"].jobType == "JOB"
+
+    def test_parse_with_emit_dbt_invocation_event_false(self, dbt_artifact_processor):
+        manifest = {
+            "metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v7.json"},
+            "parent_map": {"model.test_package.test_model": []},
+            "nodes": {
+                "model.test_package.test_model": {
+                    "database": "test_db",
+                    "schema": "test_schema",
+                    "alias": "test_model",
+                    "unique_id": "model.test_package.test_model",
+                    "config": {"materialized": "table"},
+                    "tags": [],
+                    "meta": {},
+                    "depends_on": {"nodes": []},
+                    "columns": {},
+                    "original_file_path": "models/test_model.sql",
+                    "compiled_code": "SELECT 1 as id",
+                }
+            },
+        }
+        run_results = {
+            "metadata": {"invocation_id": "77777777-7777-7777-7777-777777777777", "dbt_version": DBT_VERSION},
+            "args": {"which": "run", "full_refresh": False},
+            "results": [
+                {
+                    "unique_id": "model.test_package.test_model",
+                    "status": "success",
+                    "timing": [
+                        {
+                            "name": "execute",
+                            "started_at": "2026-08-01T10:00:00.000000Z",
+                            "completed_at": "2026-08-01T10:01:00.000000Z",
+                        }
+                    ],
+                    "adapter_response": {},
+                }
+            ],
+        }
+        profile = {"type": "snowflake", "account": "test_account"}
+        catalog = {}
+
+        dbt_artifact_processor.emit_dbt_invocation_event = False
+        dbt_artifact_processor.get_dbt_metadata = MagicMock(
+            return_value=(manifest, run_results, profile, catalog)
+        )
+        dbt_artifact_processor.dbt_run_run_facet = MagicMock(return_value={})
+
+        events = dbt_artifact_processor.parse()
+        assert len(events.starts) == 1  # Only Model start
+        assert len(events.completes) == 1  # Only Model complete

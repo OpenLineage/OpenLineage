@@ -36,7 +36,7 @@ ext {
     deltaVersion = "4.1.0"
     junit5Version = "5.14.4"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.17.0"
+    micrometerVersion = "1.17.1"
     // Open source Unity Catalog. The Spark connector at this version is built for Spark 4 / Scala
     // 2.13, which is why Unity Catalog support lives in this module. Used as a test-only dependency.
     unityCatalogVersion = "0.4.1"

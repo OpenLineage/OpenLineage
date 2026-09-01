@@ -16,7 +16,6 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.EventEmitter;
-import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -160,10 +159,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
 
-    if (eventType.equals(EventType.COMPLETE)) {
-      // clean up metrics on complete only
-      olContext.getActiveJobId().ifPresent(i -> JobMetricsHolder.getInstance().cleanUp(i));
-    }
     if (log.isDebugEnabled()) {
       log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
     }
@@ -302,59 +297,79 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    log.debug("SparkListenerJobEnd - executionId: {}", executionId);
-    olContext.setActiveJobId(jobEnd.jobId());
-    if (!finished.compareAndSet(false, true)) {
-      log.debug("Event already finished, returning");
-      return;
+    try {
+      log.debug("SparkListenerJobEnd - executionId: {}", executionId);
+      olContext.setActiveJobId(jobEnd.jobId());
+      if (!finished.compareAndSet(false, true)) {
+        log.debug("Event already finished, returning");
+        return;
+      }
+
+      if (!olContext.getQueryExecution().isPresent()) {
+        log.info(NO_EXECUTION_INFO, olContext);
+        return;
+      } else if (EventFilterUtils.isDisabled(olContext, jobEnd)) {
+        log.info(
+            "OpenLineage received Spark event that is configured to be skipped: SparkListenerJobEnd");
+        return;
+      }
+
+      // only one COMPLETE event is expected,
+      EventType eventType;
+      if (jobEnd.jobResult() instanceof JobFailed) {
+        eventType = FAIL;
+      } else if (emittedOnSqlExecutionStart && !emittedOnSqlExecutionEnd) {
+        // still waiting for sqlExecutionEnd event which will emit COMPLETE event
+        eventType = RUNNING;
+      } else {
+        eventType = COMPLETE;
+      }
+      emittedOnJobEnd = true;
+
+      RunEvent event =
+          runEventBuilder.buildRun(
+              OpenLineageRunEventContext.builder()
+                  .applicationParentRunFacet(buildApplicationParentFacet())
+                  .event(jobEnd)
+                  .runEventBuilder(
+                      olContext
+                          .getOpenLineage()
+                          .newRunEventBuilder()
+                          .eventTime(toZonedTime(jobEnd.time())))
+                  .eventType(eventType)
+                  .jobBuilder(buildJob())
+                  .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+                  .build());
+
+      if (log.isDebugEnabled()) {
+        log.debug(
+            "Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
+      }
+
+      eventEmitter.emit(event);
+    } finally {
+      runEventBuilder.evictJob(jobEnd.jobId());
     }
+  }
 
-    if (!olContext.getQueryExecution().isPresent()) {
-      log.info(NO_EXECUTION_INFO, olContext);
-      return;
-    } else if (EventFilterUtils.isDisabled(olContext, jobEnd)) {
-      log.info(
-          "OpenLineage received Spark event that is configured to be skipped: SparkListenerJobEnd");
-      return;
-    }
+  @Override
+  public void evictJob(int jobId) {
+    runEventBuilder.evictJob(jobId);
+  }
 
-    // only one COMPLETE event is expected,
-    EventType eventType;
-    if (jobEnd.jobResult() instanceof JobFailed) {
-      eventType = FAIL;
-    } else if (emittedOnSqlExecutionStart && !emittedOnSqlExecutionEnd) {
-      // still waiting for sqlExecutionEnd event which will emit COMPLETE event
-      eventType = RUNNING;
-    } else {
-      eventType = COMPLETE;
-    }
-    emittedOnJobEnd = true;
+  @Override
+  public void clearRetainedState() {
+    runEventBuilder.clearRetainedState();
+  }
 
-    RunEvent event =
-        runEventBuilder.buildRun(
-            OpenLineageRunEventContext.builder()
-                .applicationParentRunFacet(buildApplicationParentFacet())
-                .event(jobEnd)
-                .runEventBuilder(
-                    olContext
-                        .getOpenLineage()
-                        .newRunEventBuilder()
-                        .eventTime(toZonedTime(jobEnd.time())))
-                .eventType(eventType)
-                .jobBuilder(buildJob())
-                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
-                .build());
+  @Override
+  public int getRetainedJobCount() {
+    return runEventBuilder.getRetainedJobCount();
+  }
 
-    if (eventType.equals(EventType.COMPLETE)) {
-      // clean up metrics on complete only
-      JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
-    }
-
-    if (log.isDebugEnabled()) {
-      log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
-    }
-
-    eventEmitter.emit(event);
+  @Override
+  public int getRetainedStageCount() {
+    return runEventBuilder.getRetainedStageCount();
   }
 
   @Override
