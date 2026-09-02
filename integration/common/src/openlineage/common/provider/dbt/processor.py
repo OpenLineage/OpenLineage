@@ -35,7 +35,7 @@ from openlineage.client.facet_v2 import (
     tags_run,
     test_run,
 )
-from openlineage.client.uuid import generate_new_uuid
+from openlineage.client.uuid import generate_new_uuid, generate_static_uuid
 from openlineage.common.provider.dbt.facets import (
     DbtExposure,
     DbtExposuresDatasetFacet,
@@ -180,9 +180,11 @@ class DbtArtifactProcessor:
         models: Sequence[str] | None = None,
         selector: str | None = None,
         openlineage_job_name: str | None = None,
+        emit_dbt_invocation_event: bool = False,
     ):
         self.producer = producer
         self._dbt_run_metadata: ParentRunMetadata | None = None
+        self._invocation_parent_metadata: ParentRunMetadata | None = None
         self.logger = logger or logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
 
         self.openlineage_job_name = openlineage_job_name
@@ -196,6 +198,7 @@ class DbtArtifactProcessor:
         self.selector = selector
         self.manifest_version = None
         self.adapter_type: Adapter | None = None
+        self.emit_dbt_invocation_event = emit_dbt_invocation_event
         # Set for adapters that can provide a stable catalog identifier in addition to
         # the primary dataset namespace. For Athena, this is populated from the supported
         # assume-role ARN or a best-effort STS lookup; lookup failures leave it unset.
@@ -214,6 +217,97 @@ class DbtArtifactProcessor:
 
     @abstractmethod
     def get_dbt_metadata(self): ...
+
+    @property
+    def invocation_job_name(self) -> str:
+        if self.openlineage_job_name:
+            return self.openlineage_job_name
+        if hasattr(self, "job_name") and getattr(self, "job_name"):
+            return getattr(self, "job_name")
+        return f"dbt-{self.command}" if self.command else "dbt-invocation"
+
+    def _extract_invocation_run_timing(self, context: DbtRunContext) -> tuple[str, str, bool]:
+        """Extract start time, complete time, and failure status from run results."""
+        started_at_list = []
+        completed_at_list = []
+        has_failure = False
+
+        for run in context.run_results.get("results", []):
+            if run.get("status") in ("error", "fail", "failed"):
+                has_failure = True
+            for t in run.get("timing", []):
+                if t.get("started_at"):
+                    started_at_list.append(t["started_at"])
+                if t.get("completed_at"):
+                    completed_at_list.append(t["completed_at"])
+
+        fallback_time = (
+            self.run_metadata.get("generated_at") or datetime.datetime.now(datetime.timezone.utc).isoformat()
+        )
+        start_time = min(started_at_list) if started_at_list else fallback_time
+        complete_time = max(completed_at_list) if completed_at_list else fallback_time
+        return start_time, complete_time, has_failure
+
+    def _generate_invocation_run_id(self, start_time_str: str) -> str:
+        """Generate a time-sortable UUIDv7 invocation run ID."""
+        try:
+            instant = datetime.datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
+        except (ValueError, TypeError, AttributeError):
+            instant = datetime.datetime.now(datetime.timezone.utc)
+
+        raw_invocation_id = self.run_metadata.get("invocation_id")
+        if raw_invocation_id:
+            return str(generate_static_uuid(instant, raw_invocation_id.encode("utf-8")))
+        return str(generate_new_uuid(instant))
+
+    def generate_invocation_events(self, context: DbtRunContext) -> DbtRunResult | None:
+        start_time, complete_time, has_failure = self._extract_invocation_run_timing(context)
+        run_id = self._generate_invocation_run_id(start_time)
+        job_name = self.invocation_job_name
+
+        self._invocation_parent_metadata = ParentRunMetadata(
+            run_id=run_id,
+            job_name=job_name,
+            job_namespace=self.job_namespace,
+        )
+
+        run_facets: dict[str, Any] = {
+            **self.dbt_version_facet(),
+            **self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
+        }
+        if self._dbt_run_metadata:
+            run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
+
+        job_facets: dict[str, JobFacet] = {
+            "jobType": job_type_job.JobTypeJobFacet(
+                jobType="JOB",
+                integration="DBT",
+                processingType="BATCH",
+                producer=self.producer,
+            )
+        }
+
+        start_event = RunEvent(
+            eventType=RunState.START,
+            eventTime=start_time,
+            run=Run(runId=run_id, facets=run_facets),
+            job=Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
+            producer=self.producer,
+        )
+
+        end_state = RunState.FAIL if has_failure else RunState.COMPLETE
+        end_event = RunEvent(
+            eventType=end_state,
+            eventTime=complete_time,
+            run=Run(runId=run_id, facets=run_facets),
+            job=Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
+            producer=self.producer,
+        )
+
+        if end_state == RunState.FAIL:
+            return DbtRunResult(start=start_event, fail=end_event)
+        return DbtRunResult(start=start_event, complete=end_event)
 
     def parse(self) -> DbtEvents:
         """
@@ -249,10 +343,23 @@ class DbtArtifactProcessor:
             else:
                 return events
 
+        invocation_events = (
+            self.generate_invocation_events(context) if self.emit_dbt_invocation_event else None
+        )
+        if invocation_events and invocation_events.start:
+            events.starts.append(invocation_events.start)
+
         if self.command in ["run", "build", "seed", "snapshot"]:
             events += self.parse_execution(context, nodes)
         if self.command in ["test", "build"]:
             events += self.parse_test(context, nodes)
+
+        if invocation_events:
+            if invocation_events.complete:
+                events.completes.append(invocation_events.complete)
+            elif invocation_events.fail:
+                events.fails.append(invocation_events.fail)
+
         return events
 
     @classmethod
@@ -1229,8 +1336,11 @@ class DbtArtifactProcessor:
                 **self.processing_engine_facet(),
             }
         )
-        if self._dbt_run_metadata:
-            run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
+        parent_metadata = (
+            self._invocation_parent_metadata if self.emit_dbt_invocation_event else None
+        ) or self._dbt_run_metadata
+        if parent_metadata:
+            run_facets["parent"] = parent_metadata.to_openlineage()
 
         if query_id:
             run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
