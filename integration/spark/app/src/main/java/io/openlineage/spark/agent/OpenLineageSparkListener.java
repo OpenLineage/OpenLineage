@@ -22,9 +22,9 @@ import io.openlineage.client.utils.RuntimeUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.SparkSqlExecutionNestingTracker;
 import io.openlineage.spark.agent.util.SparkVersionUtils;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,6 +53,8 @@ import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerTaskEnd;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.SQLExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.Function0;
@@ -90,6 +93,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private final JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
   private final JobMetricsLifecycleManager jobMetricsLifecycle =
       new JobMetricsLifecycleManager(jobMetrics);
+  private final SparkSqlExecutionNestingTracker sqlExecutionNestingTracker =
+      new SparkSqlExecutionNestingTracker();
   private final Function1<SparkSession, SparkContext> sparkContextFromSession =
       ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
   private final Function0<Option<SparkContext>> activeSparkContext =
@@ -152,11 +157,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
   private void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
+    QueryExecution queryExecution = SQLExecution.getQueryExecution(startEvent.executionId());
+    OptionalLong rootExecutionId = SparkSqlExecutionNestingTracker.rootExecutionId(startEvent);
+    sqlExecutionNestingTracker.register(startEvent, queryExecution, rootExecutionId);
     getSparkSQLExecutionContext(startEvent.executionId())
         .ifPresent(
             context -> {
               jobMetricsLifecycle.registerExecution(
-                  startEvent.executionId(), getRootExecutionId(startEvent));
+                  startEvent.executionId(), rootExecutionId.orElse(startEvent.executionId()));
               meterRegistry.counter("openlineage.spark.event.sql.start").increment();
               circuitBreaker.run(
                   () -> {
@@ -171,9 +179,12 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
     log.debug("sparkSQLExecEnd with activeJobId {}", activeJobId);
     ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
+    boolean commandChildExecution =
+        sqlExecutionNestingTracker.isCommandChild(endEvent.executionId());
     meterRegistry.counter("openlineage.spark.event.sql.end").increment();
     try {
       if (context != null) {
+        context.setCommandChildExecution(commandChildExecution);
         circuitBreaker.run(
             () -> {
               activeJobId.ifPresent(context::setActiveJobId);
@@ -184,16 +195,19 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         contextFactory
             .createSparkSQLExecutionContext(endEvent)
             .ifPresent(
-                c ->
-                    circuitBreaker.run(
-                        () -> {
-                          activeJobId.ifPresent(c::setActiveJobId);
-                          c.end(endEvent);
-                          return null;
-                        }));
+                c -> {
+                  c.setCommandChildExecution(commandChildExecution);
+                  circuitBreaker.run(
+                      () -> {
+                        activeJobId.ifPresent(c::setActiveJobId);
+                        c.end(endEvent);
+                        return null;
+                      });
+                });
       }
     } finally {
       jobMetricsLifecycle.endExecution(endEvent.executionId());
+      sqlExecutionNestingTracker.end(endEvent.executionId());
     }
   }
 
@@ -264,21 +278,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         : fallbackProperties.flatMap(fallback -> getLongProperty(fallback, key));
   }
 
-  private long getRootExecutionId(SparkListenerSQLExecutionStart startEvent) {
-    try {
-      Object rootExecutionId =
-          startEvent.getClass().getMethod("rootExecutionId").invoke(startEvent);
-      if (rootExecutionId instanceof Option && ((Option<?>) rootExecutionId).isDefined()) {
-        return ((Number) ((Option<?>) rootExecutionId).get()).longValue();
-      }
-    } catch (NoSuchMethodException e) {
-      // Spark versions before 3.4 do not expose a root execution ID.
-    } catch (IllegalAccessException | InvocationTargetException | ClassCastException e) {
-      log.debug("Unable to read Spark SQL root execution ID", e);
-    }
-    return startEvent.executionId();
-  }
-
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
@@ -327,10 +326,16 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private Optional<ExecutionContext> getSparkSQLExecutionContext(long executionId) {
-    return Optional.ofNullable(
-        sparkSqlExecutionRegistry.computeIfAbsent(
-            executionId,
-            (e) -> contextFactory.createSparkSQLExecutionContext(executionId).orElse(null)));
+    Optional<ExecutionContext> context =
+        Optional.ofNullable(
+            sparkSqlExecutionRegistry.computeIfAbsent(
+                executionId,
+                (e) -> contextFactory.createSparkSQLExecutionContext(executionId).orElse(null)));
+    context.ifPresent(
+        executionContext ->
+            executionContext.setCommandChildExecution(
+                sqlExecutionNestingTracker.isCommandChild(executionId)));
+    return context;
   }
 
   private Optional<ExecutionContext> getExecutionContext(int jobId) {
@@ -350,6 +355,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     sparkSqlExecutionRegistry.clear();
     rddExecutionRegistry.clear();
     jobMetricsLifecycle.cleanUpAll();
+    sqlExecutionNestingTracker.clear();
   }
 
   @Override

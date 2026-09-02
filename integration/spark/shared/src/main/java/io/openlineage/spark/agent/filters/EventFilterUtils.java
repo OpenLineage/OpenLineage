@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent.filters;
 
-import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.Optional;
@@ -13,7 +12,6 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 
@@ -60,9 +58,9 @@ public class EventFilterUtils {
    * Verifies if `spark.sql.extensions` is set in Spark configuration and checks if it is a delta
    * extension.
    */
-  static boolean isDeltaPlan() {
-    return SparkSessionUtils.activeSession()
-        .map(SparkSession::sparkContext)
+  static boolean isDeltaPlan(OpenLineageContext context) {
+    return context
+        .getSparkContext()
         .map(SparkContext::conf)
         .map(conf -> conf.get("spark.sql.extensions", ""))
         .map(ext -> Arrays.asList(ext.split(",")))

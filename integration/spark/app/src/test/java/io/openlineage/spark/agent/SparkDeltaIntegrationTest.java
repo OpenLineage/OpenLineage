@@ -12,18 +12,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.matchers.MatchType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
 
@@ -93,6 +93,7 @@ class SparkDeltaIntegrationTest {
             .config("spark.driver.host", LOCAL_IP)
             .config("spark.driver.bindAddress", LOCAL_IP)
             .config("spark.ui.enabled", false)
+            .config("spark.sql.adaptive.enabled", true)
             .config("spark.sql.shuffle.partitions", 1)
             .config("spark.sql.warehouse.dir", "file:/tmp/delta/")
             .config("spark.openlineage.transport.type", "http")
@@ -369,65 +370,233 @@ class SparkDeltaIntegrationTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
-  void testNoDuplicateEventsForDelta() {
-    clearTables("t1", "t2", "t3", "t4");
+  void testAdaptiveParquetWriteFromDeltaInputEmitsTerminalPair() {
+    clearTables("aqe_parquet_source");
 
-    Dataset<Row> dataset =
-        spark
-            .createDataFrame(
-                ImmutableList.of(RowFactory.create(1L, "bat"), RowFactory.create(3L, "horse")),
-                new StructType(
-                    new StructField[] {
-                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
-                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
-                    }))
-            .repartition(1);
+    createTwoColumnDeltaTable("aqe_parquet_source");
+    clearEventsAfterListenerDrains();
 
-    dataset.write().format("delta").saveAsTable("t1");
-    dataset.write().format("delta").saveAsTable("t2");
-    dataset.write().format("delta").saveAsTable("t3");
+    spark
+        .read()
+        .table("aqe_parquet_source")
+        .repartition(1)
+        .write()
+        .mode("overwrite")
+        .parquet("/tmp/delta/aqe_parquet_target");
 
-    // wait until t3 complete event is sent
-    await()
-        .pollInterval(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(
-            () ->
-                mockServer.verify(
-                    request()
-                        .withPath("/api/v1/lineage")
-                        .withBody(
-                            json(
-                                "{\"outputs\":[{\"name\": \"/tmp/delta/t3\"}]}",
-                                MatchType.ONLY_MATCHING_FIELDS))));
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getOutputs().stream()
+                    .anyMatch(output -> "/tmp/delta/aqe_parquet_target".equals(output.getName())));
 
-    mockServer.reset();
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+    RunEvent completeEvent = events.get(1);
+    assertThat(completeEvent.getInputs())
+        .extracting(InputDataset::getName)
+        .containsExactly("/tmp/delta/aqe_parquet_source");
+    assertThat(completeEvent.getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/aqe_parquet_target");
+  }
 
-    // this operation should contain only START AND STOP JOB
+  @Test
+  void testAdaptiveReadOnlyQueryEmitsTerminalPair() {
+    clearTables("aqe_read_source");
+
+    createTwoColumnDeltaTable("aqe_read_source");
+    clearEventsAfterListenerDrains();
+
+    spark.sql("SELECT b, sum(a) FROM aqe_read_source GROUP BY b LIMIT 1000").collectAsList();
+
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getInputs().stream()
+                        .anyMatch(input -> "/tmp/delta/aqe_read_source".equals(input.getName()))
+                    && event.getOutputs().isEmpty());
+
+    RunEvent completeEvent = events.get(1);
+    assertThat(completeEvent.getInputs())
+        .extracting(InputDataset::getName)
+        .containsExactly("/tmp/delta/aqe_read_source");
+    assertThat(completeEvent.getOutputs()).isEmpty();
+  }
+
+  @Test
+  void testDeltaPathSaveEmitsSingleTerminalPair() {
+    clearEventsAfterListenerDrains();
+
+    twoColumnRows()
+        .repartition(1)
+        .write()
+        .format("delta")
+        .mode("overwrite")
+        .save("/tmp/delta/path_save_target");
+
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getOutputs().stream()
+                    .anyMatch(output -> "/tmp/delta/path_save_target".equals(output.getName())));
+
+    assertThat(events.get(1).getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/path_save_target");
+  }
+
+  @Test
+  void testDeltaAppendEmitsSingleTerminalPair() {
+    clearTables("append_target");
+    createTwoColumnDeltaTable("append_target");
+    clearEventsAfterListenerDrains();
+
+    twoColumnRows()
+        .repartition(1)
+        .write()
+        .format("delta")
+        .mode("append")
+        .saveAsTable("append_target");
+
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getOutputs().stream()
+                    .anyMatch(output -> "/tmp/delta/append_target".equals(output.getName())));
+
+    assertThat(events.get(1).getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/append_target");
+  }
+
+  @Test
+  void testDeltaOverwriteEmitsSingleTerminalPair() {
+    clearTables("overwrite_target");
+    createTwoColumnDeltaTable("overwrite_target");
+    clearEventsAfterListenerDrains();
+
+    twoColumnRows()
+        .repartition(1)
+        .write()
+        .format("delta")
+        .mode("overwrite")
+        .saveAsTable("overwrite_target");
+
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getJob().getName().contains("replace_table_as_select")
+                    && event.getJob().getName().endsWith("default_overwrite_target"));
+
+    assertThat(events.get(1).getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/overwrite_target");
+  }
+
+  @Test
+  void testDeltaMergeEmitsSingleTerminalPair() {
+    clearTables("merge_source", "merge_target");
+    createTwoColumnDeltaTable("merge_source");
+    createTwoColumnDeltaTable("merge_target");
+    clearEventsAfterListenerDrains();
+
     spark.sql(
-        "CREATE TABLE t4 USING DELTA AS "
-            + "SELECT t1.a as a1, t2.a as a2, t3.b as b1 FROM t1 "
-            + "JOIN t2 on t1.a = t2.a JOIN t3 on t2.b=t3.b");
+        "MERGE INTO merge_target t USING merge_source s ON t.a = s.a "
+            + "WHEN MATCHED THEN UPDATE SET t.b = s.b "
+            + "WHEN NOT MATCHED THEN INSERT *");
 
-    await()
-        .pollInterval(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(10))
-        .until(
-            () -> {
-              HttpRequest[] requests =
-                  mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getOutputs().stream()
+                    .anyMatch(output -> "/tmp/delta/merge_target".equals(output.getName())));
 
-              String lastRequestBody = requests[requests.length - 1].getBody().toString();
+    RunEvent completeEvent = events.get(1);
+    assertThat(completeEvent.getInputs())
+        .extracting(InputDataset::getName)
+        .contains("/tmp/delta/merge_source");
+    assertThat(completeEvent.getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/merge_target");
+  }
 
-              return lastRequestBody.contains("/tmp/delta/t4")
-                  && lastRequestBody.contains("create_table_as_select")
-                  && lastRequestBody.contains("COMPLETE")
-                  && requests.length == 2;
-            });
+  @Test
+  void testReplaceTableAsSelectDoesNotEmitDuplicateEvents() {
+    clearTables("rtas_source", "rtas_target");
+
+    createTwoColumnDeltaTable("rtas_source");
+    spark.sql("CREATE TABLE rtas_target USING delta AS SELECT * FROM rtas_source");
+    clearEventsAfterListenerDrains();
+
+    spark.sql("REPLACE TABLE rtas_target USING delta AS SELECT * FROM rtas_source");
+
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getJob().getName().contains("replace_table_as_select")
+                    && event.getJob().getName().endsWith("default_rtas_target"));
+
+    RunEvent completeEvent = events.get(1);
+    assertThat(completeEvent.getInputs())
+        .extracting(InputDataset::getName)
+        .containsExactly("/tmp/delta/rtas_source");
+    assertThat(completeEvent.getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/rtas_target");
+  }
+
+  @Test
+  void testDeltaCtasWithJoinEmitsSingleTerminalPair() {
+    clearTables("delta_ctas_left", "delta_ctas_right", "delta_ctas_target");
+
+    createTwoColumnDeltaTable("delta_ctas_left");
+    createTwoColumnDeltaTable("delta_ctas_right");
+    clearEventsAfterListenerDrains();
+
+    spark.sql(
+        "CREATE TABLE delta_ctas_target USING delta AS "
+            + "SELECT l.a, r.b FROM delta_ctas_left l "
+            + "JOIN delta_ctas_right r ON l.a = r.a");
+
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getJob().getName().contains("create_table_as_select")
+                    && event.getJob().getName().endsWith("default_delta_ctas_target"));
+
+    RunEvent completeEvent = events.get(1);
+    assertThat(completeEvent.getInputs())
+        .extracting(InputDataset::getName)
+        .containsExactlyInAnyOrder("/tmp/delta/delta_ctas_left", "/tmp/delta/delta_ctas_right");
+    assertThat(completeEvent.getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/delta_ctas_target");
+  }
+
+  @Test
+  void testParquetCtasUnderDeltaCatalogEmitsSingleTerminalPair() {
+    clearTables("parquet_ctas_source", "parquet_ctas_target");
+
+    createTwoColumnDeltaTable("parquet_ctas_source");
+    clearEventsAfterListenerDrains();
+
+    spark.sql(
+        "CREATE TABLE parquet_ctas_target USING parquet AS "
+            + "SELECT a, b FROM parquet_ctas_source");
+
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getJob().getName().contains("create")
+                    && event.getJob().getName().contains("table_as_select")
+                    && event.getJob().getName().endsWith("default_parquet_ctas_target"));
+
+    RunEvent completeEvent = events.get(1);
+    assertThat(completeEvent.getInputs())
+        .extracting(InputDataset::getName)
+        .containsExactly("/tmp/delta/parquet_ctas_source");
+    assertThat(completeEvent.getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/parquet_ctas_target");
   }
 
   @Test
@@ -601,6 +770,51 @@ class SparkDeltaIntegrationTest {
    */
   String getAvailableEnvVariable() {
     return (String) System.getenv().keySet().toArray()[0];
+  }
+
+  private void createTwoColumnDeltaTable(String table) {
+    twoColumnRows().write().format("delta").saveAsTable(table);
+  }
+
+  private Dataset<Row> twoColumnRows() {
+    return spark.createDataFrame(
+        ImmutableList.of(RowFactory.create(1L, "bat"), RowFactory.create(3L, "horse")),
+        new StructType(
+            new StructField[] {
+              new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+              new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+            }));
+  }
+
+  @SneakyThrows
+  private void clearEventsAfterListenerDrains() {
+    spark.sparkContext().listenerBus().waitUntilEmpty(10_000);
+    MockServerUtils.clearRequests(mockServer);
+  }
+
+  @SneakyThrows
+  private List<RunEvent> assertSingleTerminalPair(Predicate<RunEvent> predicate) {
+    spark.sparkContext().listenerBus().waitUntilEmpty(10_000);
+
+    List<RunEvent> recordedEvents =
+        Arrays.stream(mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(request -> OpenLineageClientUtils.runEventFromJson(request.getBodyAsString()))
+            .collect(Collectors.toList());
+    assertThat(recordedEvents)
+        .describedAs(
+            "Expected one terminal pair; recorded jobs: %s",
+            recordedEvents.stream()
+                .map(event -> event.getJob().getName())
+                .collect(Collectors.toList()))
+        .extracting(RunEvent::getEventType)
+        .containsExactly(RunEvent.EventType.START, RunEvent.EventType.COMPLETE);
+    assertThat(recordedEvents)
+        .extracting(event -> event.getRun().getRunId())
+        .containsOnly(recordedEvents.get(0).getRun().getRunId());
+    assertThat(recordedEvents)
+        .as("Both terminal events must describe the expected top-level operation")
+        .allMatch(predicate);
+    return recordedEvents;
   }
 
   private void clearTables(String... tables) {

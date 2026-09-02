@@ -247,6 +247,11 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   @Override
+  public void setCommandChildExecution(boolean commandChildExecution) {
+    olContext.setCommandChildExecution(commandChildExecution);
+  }
+
+  @Override
   public void setActiveJob(ActiveJob activeJob) {
     olContext.setActiveJobId(activeJob.jobId());
     runEventBuilder.registerJob(activeJob);

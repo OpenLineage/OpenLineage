@@ -17,6 +17,7 @@ import io.openlineage.client.OpenLineage.RunFacet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -107,10 +108,15 @@ class DatabricksIntegrationTest {
     assumeClusterRunning();
 
     List<RunEvent> runEvents = databricks.runScript("ctas.py");
-    RunEvent lastEvent = runEvents.get(runEvents.size() - 1);
+    assertSingleTerminalPair(
+        runEvents,
+        event ->
+            event.getJob().getName().contains("create_table_as_select")
+                && event.getJob().getName().endsWith("default_ctas_" + platformVersion));
 
-    OutputDataset outputDataset = lastEvent.getOutputs().get(0);
-    InputDataset inputDataset = lastEvent.getInputs().get(0);
+    RunEvent completeEvent = runEvents.get(1);
+    OutputDataset outputDataset = completeEvent.getOutputs().get(0);
+    InputDataset inputDataset = completeEvent.getInputs().get(0);
 
     assertThat(outputDataset.getNamespace()).isEqualTo("dbfs");
     assertThat(outputDataset.getName()).isEqualTo("/user/hive/warehouse/ctas_" + platformVersion);
@@ -152,6 +158,38 @@ class DatabricksIntegrationTest {
 
     assertThat(mountInfo.get("mountPoint")).startsWith("/databricks");
     assertThat(mountInfo.get("source")).startsWith("databricks");
+  }
+
+  @Test
+  @SneakyThrows
+  void testReplaceTableAsSelectDoesNotEmitDuplicateEvents() {
+    assumeClusterRunning();
+
+    List<RunEvent> runEvents = databricks.runScript("rtas.py");
+    assertSingleTerminalPair(
+        runEvents,
+        event ->
+            event.getJob().getName().contains("replace_table_as_select")
+                && event.getJob().getName().endsWith("default_rtas_target_" + platformVersion));
+
+    RunEvent completeEvent = runEvents.get(1);
+    assertThat(completeEvent.getInputs())
+        .extracting(InputDataset::getName)
+        .containsExactly("/user/hive/warehouse/rtas_source_" + platformVersion);
+    assertThat(completeEvent.getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/user/hive/warehouse/rtas_target_" + platformVersion);
+  }
+
+  private static void assertSingleTerminalPair(
+      List<RunEvent> events, Predicate<RunEvent> expectedOperation) {
+    assertThat(events)
+        .extracting(RunEvent::getEventType)
+        .containsExactly(EventType.START, EventType.COMPLETE);
+    assertThat(events)
+        .extracting(event -> event.getRun().getRunId())
+        .containsOnly(events.get(0).getRun().getRunId());
+    assertThat(events).allMatch(expectedOperation);
   }
 
   @Test

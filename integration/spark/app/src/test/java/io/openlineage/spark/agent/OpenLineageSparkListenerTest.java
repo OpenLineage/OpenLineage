@@ -14,6 +14,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.Environment;
@@ -44,8 +45,10 @@ import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation$;
+import org.apache.spark.sql.catalyst.plans.logical.Command;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.SQLExecution;
 import org.apache.spark.sql.execution.SparkPlan;
 import org.apache.spark.sql.execution.SparkPlanInfo;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
@@ -321,6 +324,50 @@ class OpenLineageSparkListenerTest {
   }
 
   @Test
+  void testNestedDecisionIsAppliedWhenContextIsCreatedFromEndEvent() {
+    SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    ContextFactory contextFactory = mock(ContextFactory.class);
+    ExecutionContext endContext = mock(ExecutionContext.class);
+    when(contextFactory.getMeterRegistry()).thenReturn(meterRegistry);
+
+    SparkListenerSQLExecutionStart root =
+        mock(
+            SparkListenerSQLExecutionStart.class,
+            withSettings().extraInterfaces(RootExecutionIdAccessor.class));
+    when(root.executionId()).thenReturn(71L);
+    when(((RootExecutionIdAccessor) root).rootExecutionId()).thenReturn(Option.apply(71L));
+    when(contextFactory.createSparkSQLExecutionContext(71L)).thenReturn(Optional.empty());
+
+    SparkListenerSQLExecutionStart child =
+        mock(
+            SparkListenerSQLExecutionStart.class,
+            withSettings().extraInterfaces(RootExecutionIdAccessor.class));
+    when(child.executionId()).thenReturn(72L);
+    when(((RootExecutionIdAccessor) child).rootExecutionId()).thenReturn(Option.apply(71L));
+    when(contextFactory.createSparkSQLExecutionContext(72L)).thenReturn(Optional.empty());
+
+    SparkListenerSQLExecutionEnd end = mock(SparkListenerSQLExecutionEnd.class);
+    when(end.executionId()).thenReturn(72L);
+    when(contextFactory.createSparkSQLExecutionContext(end)).thenReturn(Optional.of(endContext));
+    QueryExecution rootQueryExecution = mock(QueryExecution.class);
+    LogicalPlan rootCommand =
+        mock(LogicalPlan.class, withSettings().extraInterfaces(Command.class));
+    when(rootQueryExecution.optimizedPlan()).thenReturn(rootCommand);
+
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(contextFactory);
+    try (MockedStatic<SQLExecution> sqlExecutions = mockStatic(SQLExecution.class)) {
+      sqlExecutions.when(() -> SQLExecution.getQueryExecution(71L)).thenReturn(rootQueryExecution);
+      listener.onOtherEvent(root);
+      listener.onOtherEvent(child);
+      listener.onOtherEvent(end);
+    }
+
+    verify(endContext).setCommandChildExecution(true);
+    verify(endContext).end(end);
+  }
+
+  @Test
   void testDisableOpenLineageBySparkConf() {
     SparkConf sparkConf = new SparkConf();
     sparkConf.set("spark.openlineage.disabled", "true");
@@ -333,5 +380,9 @@ class OpenLineageSparkListenerTest {
     listener.onApplicationStart(event);
 
     verify(emitter, never()).emit(any());
+  }
+
+  public interface RootExecutionIdAccessor {
+    Option<Long> rootExecutionId();
   }
 }

@@ -55,6 +55,7 @@ class DeltaEventFilterTest {
   public void setup() {
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.conf()).thenReturn(sparkConf);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
   }
 
@@ -100,6 +101,7 @@ class DeltaEventFilterTest {
       when(sparkConf.get("spark.sql.extensions", ""))
           .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
       when(queryExecution.optimizedPlan()).thenReturn(localRelation);
+      when(context.isCommandChildExecution()).thenReturn(true);
 
       assertTrue(filter.isDisabled(sparkListenerEvent));
     }
@@ -112,6 +114,7 @@ class DeltaEventFilterTest {
       when(sparkConf.get("spark.sql.extensions", ""))
           .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
       when(queryExecution.optimizedPlan()).thenReturn(mock(Filter.class));
+      when(context.isCommandChildExecution()).thenReturn(true);
 
       assertTrue(filter.isDisabled(sparkListenerEvent));
     }
@@ -191,8 +194,34 @@ class DeltaEventFilterTest {
       SerializeFromObject serializeFromObject = mock(SerializeFromObject.class);
       when(serializeFromObject.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
       when(queryExecution.optimizedPlan()).thenReturn(serializeFromObject);
+      when(context.isCommandChildExecution()).thenReturn(true);
 
       assertTrue(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testTopLevelGenericPlansAreNotDisabled() {
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      when(SparkSession.active()).thenReturn(sparkSession);
+      when(sparkConf.get("spark.sql.extensions", ""))
+          .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+
+      LocalRelation localRelation = mock(LocalRelation.class);
+      when(localRelation.children()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+      when(localRelation.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+      when(queryExecution.optimizedPlan()).thenReturn(localRelation);
+      assertFalse(filter.isDisabled(sparkListenerEvent));
+
+      Filter filterPlan = mock(Filter.class);
+      when(filterPlan.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+      when(queryExecution.optimizedPlan()).thenReturn(filterPlan);
+      assertFalse(filter.isDisabled(sparkListenerEvent));
+
+      SerializeFromObject serializeFromObject = mock(SerializeFromObject.class);
+      when(serializeFromObject.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+      when(queryExecution.optimizedPlan()).thenReturn(serializeFromObject);
+      assertFalse(filter.isDisabled(sparkListenerEvent));
     }
   }
 
