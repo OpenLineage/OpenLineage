@@ -87,6 +87,11 @@ class RddExecutionContext implements ExecutionContext {
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
   private Integer activeJobId;
+  // indicates whether a START event was emitted for this run; a terminal event is
+  // only emitted when the corresponding start event was emitted, otherwise a
+  // terminal-only run would be visible in the lineage backend (e.g. when the run
+  // start was suppressed by an open circuit breaker)
+  private boolean emittedStart;
 
   public RddExecutionContext(
       OpenLineageContext olContext,
@@ -249,6 +254,7 @@ class RddExecutionContext implements ExecutionContext {
             .job(buildJob(jobStart.jobId()))
             .build();
     log.debug("Posting event for start {}: {}", jobStart, event);
+    emittedStart = true;
     eventEmitter.emit(event);
   }
 
@@ -261,13 +267,12 @@ class RddExecutionContext implements ExecutionContext {
         return;
       }
       log.debug("end SparkListenerJobEnd {}", jobEnd);
-      if (outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
-        // Oftentimes SparkListener is triggered for actions which do not contain any
-        // meaningful
-        // lineage data and are useless in the context of lineage graph. We assume this
-        // occurs
-        // for RDD operations which have no output dataset
-        log.info("Output RDDs are empty: skipping sending OpenLineage event");
+      if (!emittedStart) {
+        // Skipping a terminal event when no START event was emitted keeps the run lifecycle
+        // consistent: a terminal-only event would create a run in a lineage backend that never
+        // announced its start. This can happen when the run start was suppressed, for example
+        // by an open circuit breaker or a filtered event.
+        log.info("No START event emitted for this run: skipping sending OpenLineage event");
         return;
       }
 

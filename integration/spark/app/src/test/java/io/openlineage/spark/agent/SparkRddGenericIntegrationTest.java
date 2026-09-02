@@ -9,12 +9,17 @@ import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage.RunEvent;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -23,6 +28,7 @@ import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,6 +103,55 @@ class SparkRddGenericIntegrationTest {
   }
 
   @Test
+  void outputlessRddActionEmitsStartAndComplete() {
+    setupSparkSession();
+    JavaRDD<Integer> rdd =
+        new JavaSparkContext(spark.sparkContext()).parallelize(Arrays.asList(1, 2, 3), 1);
+    assertThat(rdd.count()).isEqualTo(3);
+    spark.stop();
+
+    // A successful RDD action without an output dataset must not leave the run open:
+    // every RDD run that emitted a START event has to be closed with a terminal event.
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        rddEvents().stream()
+                            .filter(
+                                event -> RunEvent.EventType.COMPLETE.equals(event.getEventType())))
+                    .isNotEmpty());
+
+    List<RunEvent> rddEvents = rddEvents();
+    Map<UUID, List<RunEvent>> runsByRunId =
+        rddEvents.stream().collect(Collectors.groupingBy(event -> event.getRun().getRunId()));
+
+    assertThat(runsByRunId).isNotEmpty();
+    runsByRunId.forEach(
+        (runId, runEvents) -> {
+          assertThat(runEvents)
+              .extracting(RunEvent::getEventType)
+              .containsExactlyInAnyOrder(RunEvent.EventType.START, RunEvent.EventType.COMPLETE);
+
+          RunEvent start =
+              runEvents.stream()
+                  .filter(event -> RunEvent.EventType.START.equals(event.getEventType()))
+                  .findFirst()
+                  .orElse(null);
+          RunEvent complete =
+              runEvents.stream()
+                  .filter(event -> RunEvent.EventType.COMPLETE.equals(event.getEventType()))
+                  .findFirst()
+                  .orElse(null);
+
+          assertThat(complete.getRun().getRunId()).isEqualTo(start.getRun().getRunId());
+          assertThat(complete.getJob().getName()).isEqualTo(start.getJob().getName());
+          assertThat(complete.getJob().getNamespace()).isEqualTo(start.getJob().getNamespace());
+          assertThat(complete.getOutputs()).isEmpty();
+        });
+  }
+
+  @Test
   void sparkDoesNotEmitRDDEventsWhenDisabled() {
     setupSparkSessionWithRddDisabled();
     Dataset<Row> df = createTempDataset(3);
@@ -129,6 +184,18 @@ class SparkRddGenericIntegrationTest {
                 .filter(event -> event.getJob().getName().endsWith(".test_data_final_output"))
                 .collect(Collectors.toSet()))
         .hasSize(1);
+  }
+
+  private List<RunEvent> rddEvents() {
+    return getEventsEmitted(mockServer).stream()
+        .filter(SparkRddGenericIntegrationTest::isRddJobEvent)
+        .collect(Collectors.toList());
+  }
+
+  private static boolean isRddJobEvent(RunEvent event) {
+    return event.getJob().getFacets() != null
+        && event.getJob().getFacets().getJobType() != null
+        && "RDD_JOB".equals(event.getJob().getFacets().getJobType().getJobType());
   }
 
   private static void setupSparkSession() {
