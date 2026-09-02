@@ -345,16 +345,24 @@ class AdaptivePlanEventFilterIntegrationTest {
               .as("A non-Delta CTAS outer execution is still a root command")
               .isTrue();
         });
-    softly
-        .assertThat(operation.executions)
-        .filteredOn(execution -> execution.nestedExecution)
-        .as("Nested non-Delta CTAS work must be deduplicated: %s", operation.summary())
-        .isNotEmpty()
-        .allSatisfy(
-            execution -> {
-              softly.assertThat(execution.commandChildExecution).isTrue();
-              softly.assertThat(execution.adaptiveFilterDisabled).isTrue();
-            });
+
+    List<ObservedExecution> nested =
+        operation.executions.stream()
+            .filter(execution -> execution.nestedExecution)
+            .collect(Collectors.toList());
+    // Spark 3.4+ exposes rootExecutionId, so nested CTAS work must exist and be
+    // filtered. Spark 3.2 V1 CTAS can emit sibling commands with no nesting.
+    if (!nested.isEmpty() || operation.hasRootExecutionIds()) {
+      softly
+          .assertThat(nested)
+          .as("Nested non-Delta CTAS work must be deduplicated: %s", operation.summary())
+          .isNotEmpty()
+          .allSatisfy(
+              execution -> {
+                softly.assertThat(execution.commandChildExecution).isTrue();
+                softly.assertThat(execution.adaptiveFilterDisabled).isTrue();
+              });
+    }
   }
 
   private static void assertNonAdaptiveOuterWithAdaptiveInner(
