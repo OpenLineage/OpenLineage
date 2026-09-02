@@ -150,21 +150,37 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
   }
 
-  /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
+  /**
+   * called by the SparkListener when a spark-sql (Dataset api) execution starts. When Spark already
+   * removed the execution's temporary `QueryExecution` mapping - which happens for fast queries or
+   * a backlogged listener queue - a {@link PendingSparkSQLExecutionContext} is registered that
+   * buffers the start callback until the query execution can be resolved.
+   */
   private void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
-    getSparkSQLExecutionContext(startEvent.executionId())
-        .ifPresent(
-            context -> {
-              jobMetricsLifecycle.registerExecution(
-                  startEvent.executionId(), getRootExecutionId(startEvent));
-              meterRegistry.counter("openlineage.spark.event.sql.start").increment();
-              circuitBreaker.run(
-                  () -> {
-                    activeJobId.ifPresent(context::setActiveJobId);
-                    context.start(startEvent);
-                    return null;
-                  });
-            });
+    ExecutionContext context = getOrBufferSparkSQLExecutionContext(startEvent);
+    jobMetricsLifecycle.registerExecution(startEvent.executionId(), getRootExecutionId(startEvent));
+    meterRegistry.counter("openlineage.spark.event.sql.start").increment();
+    circuitBreaker.run(
+        () -> {
+          activeJobId.ifPresent(context::setActiveJobId);
+          context.start(startEvent);
+          return null;
+        });
+  }
+
+  private ExecutionContext getOrBufferSparkSQLExecutionContext(
+      SparkListenerSQLExecutionStart startEvent) {
+    long executionId = startEvent.executionId();
+    ExecutionContext context = getSparkSQLExecutionContext(executionId).orElse(null);
+    if (context == null) {
+      context =
+          sparkSqlExecutionRegistry.computeIfAbsent(
+              executionId,
+              id ->
+                  contextFactory.createPendingSparkSQLExecutionContext(
+                      executionId, getRootExecutionId(startEvent)));
+    }
+    return context;
   }
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution ends */
