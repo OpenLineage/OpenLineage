@@ -18,10 +18,11 @@ You can make this file available to the client in three ways (the list also pres
 
 The following environment variables are available:
 
-| Name                 | Description                                                                 | Since |
-|----------------------|-----------------------------------------------------------------------------|-------|
-| OPENLINEAGE_CONFIG   | The path to the YAML configuration file. Example: `path/to/openlineage.yml` |       |
-| OPENLINEAGE_DISABLED | When `true`, OpenLineage will not emit events.                              | 0.9.0 |
+| Name                          | Description                                                                                                                                 | Since |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-------|
+| OPENLINEAGE_CONFIG            | The path to the YAML configuration file. Example: `path/to/openlineage.yml`                                                                |       |
+| OPENLINEAGE_DISABLED          | When `true`, OpenLineage will not emit events.                                                                                              | 0.9.0 |
+| OPENLINEAGE__NAME__ESCAPING   | Controls automatic dot-escaping in name segments produced by the naming helpers. Set to `false` to disable. Defaults to enabled (escaping on). See [Naming — Escaping](../../spec/naming.md#automatic-escaping-in-openlineage-clients). | |
 
 You can also configure the client with dynamic environment variables.
 

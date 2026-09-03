@@ -5,6 +5,7 @@
 
 package io.openlineage.client.dataset;
 
+import io.openlineage.client.naming.NameEscaping;
 import lombok.Builder;
 
 /**
@@ -40,7 +41,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return catalog + "." + database + "." + table;
+      return NameEscaping.escapeSegment(catalog)
+          + "."
+          + NameEscaping.escapeSegment(database)
+          + "."
+          + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -140,7 +145,7 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return schema + "." + table;
+      return NameEscaping.escapeSegment(schema) + "." + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -175,7 +180,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return String.format("%s.%s.%s", projectId, datasetName, tableName);
+      return NameEscaping.escapeSegment(projectId)
+          + "."
+          + NameEscaping.escapeSegment(datasetName)
+          + "."
+          + NameEscaping.escapeSegment(tableName);
     }
   }
 
@@ -201,7 +210,7 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return keyspace + "." + table;
+      return NameEscaping.escapeSegment(keyspace) + "." + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -266,7 +275,7 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return database + "." + table;
+      return NameEscaping.escapeSegment(database) + "." + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -294,7 +303,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return database + "." + schema + "." + table;
+      return NameEscaping.escapeSegment(database)
+          + "."
+          + NameEscaping.escapeSegment(schema)
+          + "."
+          + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -322,7 +335,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return database + "." + schema + "." + table;
+      return NameEscaping.escapeSegment(database)
+          + "."
+          + NameEscaping.escapeSegment(schema)
+          + "."
+          + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -348,7 +365,7 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return database + "." + table;
+      return NameEscaping.escapeSegment(database) + "." + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -376,7 +393,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return serviceName + "." + schema + "." + table;
+      return NameEscaping.escapeSegment(serviceName)
+          + "."
+          + NameEscaping.escapeSegment(schema)
+          + "."
+          + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -404,7 +425,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return database + "." + schema + "." + table;
+      return NameEscaping.escapeSegment(database)
+          + "."
+          + NameEscaping.escapeSegment(schema)
+          + "."
+          + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -430,7 +455,7 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return database + "." + table;
+      return NameEscaping.escapeSegment(database) + "." + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -466,7 +491,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return database + "." + schema + "." + table;
+      return NameEscaping.escapeSegment(database)
+          + "."
+          + NameEscaping.escapeSegment(schema)
+          + "."
+          + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -499,7 +528,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return database + "." + schema + "." + table;
+      return NameEscaping.escapeSegment(database)
+          + "."
+          + NameEscaping.escapeSegment(schema)
+          + "."
+          + NameEscaping.escapeSegment(table);
     }
   }
 
@@ -527,7 +560,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return catalog + "." + schema + "." + table;
+      return NameEscaping.escapeSegment(catalog)
+          + "."
+          + NameEscaping.escapeSegment(schema)
+          + "."
+          + NameEscaping.escapeSegment(table);
     }
   }
 

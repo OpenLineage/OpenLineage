@@ -186,11 +186,12 @@ transport:
 ### Meta variables
 There are few variables that do not follow the above pattern (mostly due to legacy reasons): 
 
-| Name                       | Description                                                       | Example                 | Since  |
-|----------------------------|-------------------------------------------------------------------|-------------------------|--------|
-| OPENLINEAGE_CONFIG         | The path to the YAML configuration file                           | path/to/openlineage.yml |        |
-| OPENLINEAGE_CLIENT_LOGGING | Logging level of OpenLineage client and its child modules         | DEBUG                   |        |
-| OPENLINEAGE_DISABLED       | When `true`, OpenLineage will not emit events (default: false)    | false                   | 0.9.0  |
+| Name                         | Description                                                                                                                                     | Example                 | Since  |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|--------|
+| OPENLINEAGE_CONFIG           | The path to the YAML configuration file                                                                                                         | path/to/openlineage.yml |        |
+| OPENLINEAGE_CLIENT_LOGGING   | Logging level of OpenLineage client and its child modules                                                                                       | DEBUG                   |        |
+| OPENLINEAGE_DISABLED         | When `true`, OpenLineage will not emit events (default: false)                                                                                  | false                   | 0.9.0  |
+| OPENLINEAGE__NAME__ESCAPING  | Controls automatic dot-escaping in name segments produced by the naming helpers. Set to `false` to disable. Defaults to enabled (escaping on). See [Naming — Escaping](../../spec/naming.md#automatic-escaping-in-openlineage-clients). | true | |
 
 
 ### Legacy syntax
