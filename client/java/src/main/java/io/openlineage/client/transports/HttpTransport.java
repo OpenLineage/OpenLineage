@@ -37,17 +37,23 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
+import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.protocol.RedirectStrategy;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
@@ -58,6 +64,16 @@ import org.apache.hc.core5.util.Timeout;
 @ToString
 public final class HttpTransport extends Transport {
   private static final String API_V1 = "/api/v1";
+  private static final RedirectStrategy METHOD_PRESERVING_REDIRECT_STRATEGY =
+      new DefaultRedirectStrategy() {
+        @Override
+        public boolean isRedirected(HttpRequest request, HttpResponse response, HttpContext context)
+            throws ProtocolException {
+          int statusCode = response.getCode();
+          return (statusCode == 307 || statusCode == 308)
+              && super.isRedirected(request, response, context);
+        }
+      };
 
   private final CloseableHttpClient http;
   private final URI uri;
@@ -112,6 +128,7 @@ public final class HttpTransport extends Transport {
     return HttpClientBuilder.create()
         .setDefaultRequestConfig(requestConfig)
         .setConnectionManager(connectionManagerBuilder.build())
+        .setRedirectStrategy(METHOD_PRESERVING_REDIRECT_STRATEGY)
         .setDefaultRequestConfig(requestConfig)
         .build();
   }
@@ -240,7 +257,7 @@ public final class HttpTransport extends Transport {
     HttpEntity entity = response.getEntity();
     String body = EntityUtils.toString(entity, UTF_8);
     EntityUtils.consume(entity);
-    if (code >= 400 && code < 600) { // non-2xx
+    if (code < 200 || code >= 300) {
       throw new HttpTransportResponseException(code, body);
     }
   }

@@ -31,6 +31,13 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def _raise_on_method_changing_redirect(response: Response, **_: Any) -> None:
+    if response.status_code in (301, 302, 303):
+        response.close()
+        msg = f"Refusing HTTP {response.status_code} redirect for lineage event POST"
+        raise requests.HTTPError(msg, response=response)
+
+
 class TokenProvider:
     def __init__(self, config: dict[str, str]) -> None: ...
 
@@ -395,6 +402,10 @@ class HttpTransport(Transport):
                 verify=self.verify,
             )
             resp.close()
+            if isinstance(resp.status_code, int) and not 200 <= resp.status_code < 300:
+                resp.raise_for_status()
+                msg = f"Unexpected HTTP status {resp.status_code} for lineage event POST"
+                raise requests.HTTPError(msg, response=resp)
             resp.raise_for_status()
             return resp
         finally:
@@ -426,6 +437,8 @@ class HttpTransport(Transport):
         return {}
 
     def _prepare_session(self, session: Session) -> None:
+        if _raise_on_method_changing_redirect not in session.hooks["response"]:
+            session.hooks["response"].append(_raise_on_method_changing_redirect)
         if self.config.adapter:
             session.mount(self.url, self.config.adapter)
         else:

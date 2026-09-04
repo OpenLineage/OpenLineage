@@ -136,6 +136,13 @@ transport.close(timeout=30)
 log = logging.getLogger(__name__)
 
 
+async def _raise_on_method_changing_redirect(response: httpx2.Response) -> None:
+    if response.status_code in (301, 302, 303):
+        await response.aread()
+        msg = f"Refusing HTTP {response.status_code} redirect for lineage event POST"
+        raise httpx2.HTTPStatusError(msg, request=response.request, response=response)
+
+
 @attr.define
 class Request:
     event_id: str = attr.field()  # run_id + event type for RunEvent, md5 of body for others
@@ -279,6 +286,7 @@ class AsyncHttpTransport(Transport):
             verify=self.config.verify,
             follow_redirects=True,
             transport=transport,
+            event_hooks={"response": [_raise_on_method_changing_redirect]},
         ) as client:
             last_processed_time = time.time()
             idle_sleep = 0.01
@@ -429,6 +437,9 @@ class AsyncHttpTransport(Transport):
 
                     await asyncio.sleep(self.config.retry["backoff_factor"] * (2**attempt))
 
+                except httpx2.HTTPStatusError as e:
+                    handle_failure(response=e.response)
+                    break
                 except Exception as e:
                     if attempt == self.config.retry["total"]:
                         handle_failure(response=None, exception=e)

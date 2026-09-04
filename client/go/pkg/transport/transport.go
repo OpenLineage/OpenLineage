@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -64,6 +65,14 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 	case TransportTypeHTTP:
 		retryClient := retryablehttp.NewClient()
 		retryClient.Logger = nil // suppress default debug logging
+		checkRedirect := func(req *http.Request, _ []*http.Request) error {
+			switch req.Response.StatusCode {
+			case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther:
+				return http.ErrUseLastResponse
+			}
+			return nil
+		}
+		retryClient.HTTPClient.CheckRedirect = checkRedirect
 
 		timeout := defaultTimeout
 		if config.HTTP.TimeoutInMillis > 0 {
@@ -72,6 +81,7 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 
 		httpClient := retryClient.StandardClient()
 		httpClient.Timeout = timeout
+		httpClient.CheckRedirect = checkRedirect
 
 		u, err := url.Parse(config.HTTP.URL)
 		if err != nil {
