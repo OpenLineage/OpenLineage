@@ -46,6 +46,24 @@ fn select_having_exists_subquery() {
 }
 
 #[test]
+fn select_qualify_exists_subquery() {
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT row_number() OVER (ORDER BY id)
+             FROM orders
+             QUALIFY EXISTS (SELECT 1 FROM customers);",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers", "orders"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
 fn select_aggregate_filter_subquery() {
     assert_eq!(
         test_sql(
