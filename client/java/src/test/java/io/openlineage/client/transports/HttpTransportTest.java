@@ -65,6 +65,8 @@ import org.mockito.ArgumentCaptor;
 @SuppressWarnings("unchecked")
 class HttpTransportTest {
 
+  private static final String HEADER_TERMINATOR = "\r\n\r\n";
+
   @Test
   @SuppressWarnings("PMD")
   void transportCreatedWithHttpConfig()
@@ -86,6 +88,7 @@ class HttpTransportTest {
 
   @Test
   @SneakyThrows
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   void transportCreatedWithUnixSocketUrl() {
     // A unix:// url targets a Unix Domain Socket; the request is issued against a
     // placeholder http://localhost/<endpoint> and tunneled over the socket.
@@ -102,6 +105,7 @@ class HttpTransportTest {
 
   @Test
   @SneakyThrows
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   void transportUnixSocketUsesDefaultEndpoint() {
     HttpConfig httpConfig = new HttpConfig();
     httpConfig.setUrl(new URI("unix:///var/run/some.socket"));
@@ -140,13 +144,13 @@ class HttpTransportTest {
 
                   // Read headers up to the blank line terminating them.
                   StringBuilder headers = new StringBuilder();
-                  int b;
-                  while ((b = in.read()) != -1) {
+                  int b = in.read();
+                  while (b != -1) {
                     headers.append((char) b);
-                    int len = headers.length();
-                    if (len >= 4 && "\r\n\r\n".equals(headers.substring(len - 4))) {
+                    if (headers.toString().endsWith(HEADER_TERMINATOR)) {
                       break;
                     }
+                    b = in.read();
                   }
 
                   int contentLength = 0;
