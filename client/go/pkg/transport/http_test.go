@@ -119,6 +119,56 @@ func TestHTTPTransport_Emit_ServerError(t *testing.T) {
 	}
 }
 
+func TestHTTPTransport_Emit_RedirectPolicy(t *testing.T) {
+	tests := []struct {
+		status       int
+		wantErr      bool
+		wantRequests int
+	}{
+		{http.StatusMovedPermanently, true, 1},
+		{http.StatusFound, true, 1},
+		{http.StatusSeeOther, true, 1},
+		{http.StatusTemporaryRedirect, false, 2},
+		{http.StatusPermanentRedirect, false, 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			var methods []string
+			var bodies [][]byte
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				methods = append(methods, r.Method)
+				bodies = append(bodies, body)
+				if r.URL.Path == "/api/v1/lineage" {
+					w.Header().Set("Location", "/accepted")
+					w.WriteHeader(tt.status)
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer srv.Close()
+
+			tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL})
+			_, err := tr.Emit(context.Background(), map[string]string{"event": "lineage"})
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Emit() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if len(methods) != tt.wantRequests {
+				t.Fatalf("requests = %d, want %d", len(methods), tt.wantRequests)
+			}
+			if !tt.wantErr {
+				if methods[1] != http.MethodPost {
+					t.Errorf("redirected method = %q, want POST", methods[1])
+				}
+				if !bytes.Equal(bodies[0], bodies[1]) {
+					t.Error("redirected body does not match original body")
+				}
+			}
+		})
+	}
+}
+
 // TestHTTPTransport_Emit_GzipCompression verifies that when CompressionGzip is
 // configured the request body is gzip-compressed and the Content-Encoding header
 // is set to "gzip", with the payload still decodable after decompression.
