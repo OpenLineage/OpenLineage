@@ -83,11 +83,6 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'org.apache.kafka:kafka-clients:4.3.1'
-    // Unix Domain Socket support for HttpTransport (e.g. sending lineage to a socket endpoint,
-    // such as one exposed on a Kubernetes node). Optional: only required when a unix:// url is
-    // configured, so it is compileOnly here (like kafka-clients) and must be added to the
-    // classpath by consumers that use it. Kept out of shaded downstream jars. Java 8 compatible.
-    compileOnly 'com.github.jnr:jnr-unixsocket:0.38.25'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"

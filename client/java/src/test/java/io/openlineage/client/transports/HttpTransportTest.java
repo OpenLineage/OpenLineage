@@ -32,9 +32,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.net.StandardProtocolFamily;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnixDomainSocketAddress;
 import java.nio.channels.Channels;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,9 +50,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-import jnr.unixsocket.UnixServerSocketChannel;
-import jnr.unixsocket.UnixSocketAddress;
-import jnr.unixsocket.UnixSocketChannel;
 import lombok.SneakyThrows;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -60,6 +61,8 @@ import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.mockito.ArgumentCaptor;
 
 @SuppressWarnings("unchecked")
@@ -88,6 +91,7 @@ class HttpTransportTest {
 
   @Test
   @SneakyThrows
+  @EnabledForJreRange(min = JRE.JAVA_16)
   @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   void transportCreatedWithUnixSocketUrl() {
     // A unix:// url targets a Unix Domain Socket; the request is issued against a
@@ -105,6 +109,7 @@ class HttpTransportTest {
 
   @Test
   @SneakyThrows
+  @EnabledForJreRange(min = JRE.JAVA_16)
   @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   void transportUnixSocketUsesDefaultEndpoint() {
     HttpConfig httpConfig = new HttpConfig();
@@ -118,10 +123,12 @@ class HttpTransportTest {
 
   @Test
   @SneakyThrows
+  @EnabledForJreRange(min = JRE.JAVA_16)
   void httpTransportEmitsOverUnixSocket() {
     // End-to-end check that a unix:// url really tunnels the request over a Unix
-    // Domain Socket: bind a real UDS server, emit an event through HttpTransport,
-    // and assert the bytes the server read back match the serialized event.
+    // Domain Socket: bind a real UDS server (JDK-native, JEP 380), emit an event
+    // through HttpTransport, and assert the bytes the server read back match the
+    // serialized event.
     //
     // Keep the socket path in /tmp and short — AF_UNIX paths are capped around 104
     // characters, and the default temp dir on macOS is long enough to overflow it.
@@ -130,15 +137,15 @@ class HttpTransportTest {
 
     ExecutorService executor = Executors.newSingleThreadExecutor();
     try {
-      UnixServerSocketChannel serverChannel = UnixServerSocketChannel.open();
-      serverChannel.socket().bind(new UnixSocketAddress(socketFile));
+      ServerSocketChannel serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+      serverChannel.bind(UnixDomainSocketAddress.of(socketFile.toPath()));
 
       // The server accepts one connection, reads the full HTTP request, replies 200,
       // and returns the request body it received.
       Future<String> received =
           executor.submit(
               () -> {
-                try (UnixSocketChannel channel = serverChannel.accept()) {
+                try (SocketChannel channel = serverChannel.accept()) {
                   InputStream in = Channels.newInputStream(channel);
                   OutputStream out = Channels.newOutputStream(channel);
 

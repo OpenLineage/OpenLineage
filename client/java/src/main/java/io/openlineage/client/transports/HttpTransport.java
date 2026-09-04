@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
-import jnr.unixsocket.UnixSocketChannel;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.Delegate;
@@ -69,6 +68,9 @@ import org.apache.hc.core5.util.Timeout;
 @ToString
 public final class HttpTransport extends Transport {
   private static final String API_V1 = "/api/v1";
+
+  /** Minimum Java version providing native Unix Domain Socket support (JEP 380). */
+  private static final int MIN_JAVA_VERSION_FOR_UNIX_SOCKET = 16;
 
   private final CloseableHttpClient http;
   private final URI uri;
@@ -140,18 +142,38 @@ public final class HttpTransport extends Transport {
   }
 
   /**
-   * Unix Domain Socket support relies on jnr-unixsocket, which is an optional (compileOnly)
-   * dependency. Fail with an actionable message instead of a NoClassDefFoundError when a unix://
-   * url is configured but the dependency is missing from the classpath.
+   * Unix Domain Socket support uses the JDK-native UDS APIs added in Java 16 (JEP 380). Fail fast
+   * with an actionable message on older runtimes instead of a {@link NoClassDefFoundError} that
+   * would otherwise be thrown when the isolated {@link TunnelingUnixSocket} class (which references
+   * Java 16+ types) is loaded.
    */
   private static void ensureUnixSocketSupport() {
-    try {
-      Class.forName("jnr.unixsocket.UnixSocketChannel");
-    } catch (ClassNotFoundException e) {
+    if (javaMajorVersion() < MIN_JAVA_VERSION_FOR_UNIX_SOCKET) {
       throw new OpenLineageClientException(
-          "A unix:// transport url requires the jnr-unixsocket dependency on the classpath "
-              + "(e.g. com.github.jnr:jnr-unixsocket). Add it to enable Unix Domain Socket support.",
-          e);
+          "A unix:// transport url requires Java 16 or later; it uses the JDK-native Unix Domain "
+              + "Socket support (JEP 380). Detected Java "
+              + System.getProperty("java.specification.version")
+              + ". Use an http(s):// url or run on Java 16+.");
+    }
+  }
+
+  private static int javaMajorVersion() {
+    String spec = System.getProperty("java.specification.version");
+    if (spec == null) {
+      return 0;
+    }
+    // "1.8" -> 8 (Java 8 and earlier), "11"/"16"/"17" -> as-is (Java 9+).
+    if (spec.startsWith("1.")) {
+      spec = spec.substring(2);
+    }
+    int dot = spec.indexOf('.');
+    if (dot >= 0) {
+      spec = spec.substring(0, dot);
+    }
+    try {
+      return Integer.parseInt(spec);
+    } catch (NumberFormatException e) {
+      return 0;
     }
   }
 
@@ -163,8 +185,7 @@ public final class HttpTransport extends Transport {
     // httpclient5 5.x drives socket creation through DetachedSocketFactory (the legacy
     // ConnectionSocketFactory registry is not consulted by the blocking connection operator).
     // Return a socket that ignores the placeholder TCP address and dials the UDS path instead.
-    DetachedSocketFactory socketFactory =
-        proxy -> new TunnelingUnixSocket(socketPath, UnixSocketChannel.create());
+    DetachedSocketFactory socketFactory = proxy -> new TunnelingUnixSocket(socketPath);
     // No TLS over the local socket, so an empty TLS strategy lookup is fine.
     Registry<TlsSocketStrategy> tlsStrategyRegistry =
         RegistryBuilder.<TlsSocketStrategy>create().build();

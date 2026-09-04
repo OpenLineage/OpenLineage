@@ -10,7 +10,7 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
 #### Configuration
 
 - `type` - string, must be `"http"`. Required.
-- `url` - string, base url for HTTP requests. Required. A `unix://` url (e.g. `unix:///var/run/some.socket`) sends events over a Unix Domain Socket instead of TCP — see [Unix Domain Socket](#unix-domain-socket) below.
+- `url` - string, base url for HTTP requests. Required. A `unix://` url (e.g. `unix:///var/run/some.socket`) sends events over a Unix Domain Socket instead of TCP (**requires Java 16 or later**) — see [Unix Domain Socket](#unix-domain-socket) below.
 - `endpoint` - string specifying the endpoint to which events are sent, appended to `url`. Optional, default: `/api/v1/lineage`.
 - `urlParams` - dictionary specifying query parameters send in HTTP requests. Optional.
 - `timeoutInMillis` - integer specifying timeout (in milliseconds) value used while connecting to server. Optional, default: `5000`.
@@ -28,6 +28,12 @@ Events are serialized to JSON, and then are send as HTTP POST request with `Cont
 
 #### Unix Domain Socket
 
+:::info Requires Java 16 or later
+Unix Domain Socket support uses the JDK-native UDS APIs introduced in Java 16 ([JEP 380](https://openjdk.org/jeps/380)).
+It is available only when running on **Java 16 or later**. On an older JVM, configuring a `unix://`
+url fails fast with a clear error, while `http(s)://` urls keep working on every supported Java version.
+:::
+
 When `url` uses the `unix://` scheme, the transport sends events over a Unix Domain Socket
 instead of a TCP connection. This is useful when the collector is reachable only through a
 local socket — for example a sidecar or daemon exposing an HTTP endpoint over a socket on a
@@ -39,10 +45,7 @@ and tunneled over the socket, so `endpoint`, `headers`, `auth`, `compression`, `
 `timeoutInMillis` behave exactly as they do for a regular `http(s)` url. TLS is not applied over
 the local socket.
 
-Unix Domain Socket support relies on [`jnr-unixsocket`](https://github.com/jnr/jnr-unixsocket),
-which is an optional dependency of the client. When you configure a `unix://` url, add it to your
-classpath (for example `com.github.jnr:jnr-unixsocket`); otherwise the transport fails fast with an
-error telling you the dependency is missing. It works on Java 8+.
+Because it builds on the JDK-native UDS support, this feature needs no extra dependencies.
 
 #### Examples
 
