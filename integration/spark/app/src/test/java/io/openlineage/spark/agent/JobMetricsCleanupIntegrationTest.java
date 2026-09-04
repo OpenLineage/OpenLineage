@@ -91,14 +91,19 @@ class JobMetricsCleanupIntegrationTest {
   private void assertNoRetainedMetrics(int completedJobs) throws ReflectiveOperationException {
     assertThat(retainedMetricsState())
         .as("retained metrics state after %d completed Spark jobs", completedJobs)
-        .containsOnly(entry("jobStages", 0), entry("stageMetrics", 0), entry("jobMetrics", 0));
+        .containsOnly(
+            entry("jobStages", 0),
+            entry("stageOwners", 0),
+            entry("stageMetrics", 0),
+            entry("jobMetrics", 0));
   }
 
   @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   private Map<String, Integer> retainedMetricsState() throws ReflectiveOperationException {
     Map<String, Integer> retainedState = new LinkedHashMap<>();
     JobMetricsHolder holder = JobMetricsHolder.getInstance();
-    for (String fieldName : new String[] {"jobStages", "stageMetrics", "jobMetrics"}) {
+    for (String fieldName :
+        new String[] {"jobStages", "stageOwners", "stageMetrics", "jobMetrics"}) {
       Field field = JobMetricsHolder.class.getDeclaredField(fieldName);
       field.setAccessible(true);
       retainedState.put(fieldName, ((Map<?, ?>) field.get(holder)).size());
