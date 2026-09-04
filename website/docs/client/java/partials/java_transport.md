@@ -10,7 +10,7 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
 #### Configuration
 
 - `type` - string, must be `"http"`. Required.
-- `url` - string, base url for HTTP requests. Required.
+- `url` - string, base url for HTTP requests. Required. A `unix://` url (e.g. `unix:///var/run/some.socket`) sends events over a Unix Domain Socket instead of TCP (**requires Java 16 or later**) — see [Unix Domain Socket](#unix-domain-socket) below.
 - `endpoint` - string specifying the endpoint to which events are sent, appended to `url`. Optional, default: `/api/v1/lineage`.
 - `urlParams` - dictionary specifying query parameters send in HTTP requests. Optional.
 - `timeoutInMillis` - integer specifying timeout (in milliseconds) value used while connecting to server. Optional, default: `5000`.
@@ -26,6 +26,27 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
 
 Events are serialized to JSON, and then are send as HTTP POST request with `Content-Type: application/json`.
 
+#### Unix Domain Socket
+
+:::info Requires Java 16 or later
+Unix Domain Socket support uses the JDK-native UDS APIs introduced in Java 16 ([JEP 380](https://openjdk.org/jeps/380)).
+It is available only when running on **Java 16 or later**. On an older JVM, configuring a `unix://`
+url fails fast with a clear error, while `http(s)://` urls keep working on every supported Java version.
+:::
+
+When `url` uses the `unix://` scheme, the transport sends events over a Unix Domain Socket
+instead of a TCP connection. This is useful when the collector is reachable only through a
+local socket — for example a sidecar or daemon exposing an HTTP endpoint over a socket on a
+Kubernetes node.
+
+The path component of the URL is the socket path (`unix:///var/run/some.socket` →
+`/var/run/some.socket`). The request is issued against a placeholder `http://localhost/<endpoint>`
+and tunneled over the socket, so `endpoint`, `headers`, `auth`, `compression`, `urlParams` and
+`timeoutInMillis` behave exactly as they do for a regular `http(s)` url. TLS is not applied over
+the local socket.
+
+Because it builds on the JDK-native UDS support, this feature needs no extra dependencies.
+
 #### Examples
 
 <Tabs groupId="integrations">
@@ -37,6 +58,15 @@ Anonymous connection:
 transport:
   type: http
   url: http://localhost:5000
+```
+
+Unix Domain Socket connection:
+
+```yaml
+transport:
+  type: http
+  url: unix:///var/run/some.socket
+  endpoint: /api/v1/lineage
 ```
 
 With authorization:
@@ -77,6 +107,14 @@ Anonymous connection:
 ```ini
 spark.openlineage.transport.type=http
 spark.openlineage.transport.url=http://localhost:5000
+```
+
+Unix Domain Socket connection:
+
+```ini
+spark.openlineage.transport.type=http
+spark.openlineage.transport.url=unix:///var/run/some.socket
+spark.openlineage.transport.endpoint=/api/v1/lineage
 ```
 
 With authorization:
