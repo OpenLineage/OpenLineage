@@ -139,7 +139,24 @@ public final class HttpTransport extends Transport {
     return httpConfig.getUrl() != null && "unix".equalsIgnoreCase(httpConfig.getUrl().getScheme());
   }
 
+  /**
+   * Unix Domain Socket support relies on jnr-unixsocket, which is an optional (compileOnly)
+   * dependency. Fail with an actionable message instead of a NoClassDefFoundError when a unix://
+   * url is configured but the dependency is missing from the classpath.
+   */
+  private static void ensureUnixSocketSupport() {
+    try {
+      Class.forName("jnr.unixsocket.UnixSocketChannel");
+    } catch (ClassNotFoundException e) {
+      throw new OpenLineageClientException(
+          "A unix:// transport url requires the jnr-unixsocket dependency on the classpath "
+              + "(e.g. com.github.jnr:jnr-unixsocket). Add it to enable Unix Domain Socket support.",
+          e);
+    }
+  }
+
   private static CloseableHttpClient withUnixSocket(HttpConfig httpConfig, Timeout timeout) {
+    ensureUnixSocketSupport();
     // url.getPath() of unix:///path/to/agent.socket -> /path/to/agent.socket
     File socketPath = new File(httpConfig.getUrl().getPath());
 

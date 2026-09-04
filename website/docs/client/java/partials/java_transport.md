@@ -39,7 +39,10 @@ and tunneled over the socket, so `endpoint`, `headers`, `auth`, `compression`, `
 `timeoutInMillis` behave exactly as they do for a regular `http(s)` url. TLS is not applied over
 the local socket.
 
-This relies on `jnr-unixsocket` and works on Java 8+.
+Unix Domain Socket support relies on [`jnr-unixsocket`](https://github.com/jnr/jnr-unixsocket),
+which is an optional dependency of the client. When you configure a `unix://` url, add it to your
+classpath (for example `com.github.jnr:jnr-unixsocket`); otherwise the transport fails fast with an
+error telling you the dependency is missing. It works on Java 8+.
 
 #### Examples
 
