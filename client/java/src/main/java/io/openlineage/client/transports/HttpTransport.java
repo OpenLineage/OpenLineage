@@ -29,21 +29,32 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
+import jnr.unixsocket.UnixSocketChannel;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.SystemDefaultDnsResolver;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
+import org.apache.hc.client5.http.impl.DefaultSchemePortResolver;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.DefaultHttpClientConnectionOperator;
+import org.apache.hc.client5.http.impl.io.ManagedHttpClientConnectionFactory;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.DetachedSocketFactory;
+import org.apache.hc.client5.http.io.HttpClientConnectionOperator;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.config.Registry;
+import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -80,6 +91,14 @@ public final class HttpTransport extends Transport {
     }
     Timeout timeout = Timeout.ofMilliseconds(timeoutMs);
 
+    // A unix:// URL means the target is a Unix Domain Socket endpoint (e.g. one exposed on a
+    // Kubernetes node). Apache HttpClient can't dial a UDS directly, so build a client whose
+    // connection socket factory tunnels over the socket; the request itself uses a placeholder
+    // http://localhost URL (see getUri).
+    if (isUnixSocket(httpConfig)) {
+      return withUnixSocket(httpConfig, timeout);
+    }
+
     PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder =
         PoolingHttpClientConnectionManagerBuilder.create()
             .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(timeout).build())
@@ -113,6 +132,57 @@ public final class HttpTransport extends Transport {
         .setDefaultRequestConfig(requestConfig)
         .setConnectionManager(connectionManagerBuilder.build())
         .setDefaultRequestConfig(requestConfig)
+        .build();
+  }
+
+  private static boolean isUnixSocket(HttpConfig httpConfig) {
+    return httpConfig.getUrl() != null && "unix".equalsIgnoreCase(httpConfig.getUrl().getScheme());
+  }
+
+  private static CloseableHttpClient withUnixSocket(HttpConfig httpConfig, Timeout timeout) {
+    // url.getPath() of unix:///path/to/agent.socket -> /path/to/agent.socket
+    File socketPath = new File(httpConfig.getUrl().getPath());
+
+    // httpclient5 5.x drives socket creation through DetachedSocketFactory (the legacy
+    // ConnectionSocketFactory registry is not consulted by the blocking connection operator).
+    // Return a socket that ignores the placeholder TCP address and dials the UDS path instead.
+    DetachedSocketFactory socketFactory =
+        proxy -> new TunnelingUnixSocket(socketPath, UnixSocketChannel.create());
+    // No TLS over the local socket, so an empty TLS strategy lookup is fine.
+    Registry<TlsSocketStrategy> tlsStrategyRegistry =
+        RegistryBuilder.<TlsSocketStrategy>create().build();
+    HttpClientConnectionOperator connectionOperator =
+        new DefaultHttpClientConnectionOperator(
+            socketFactory,
+            DefaultSchemePortResolver.INSTANCE,
+            SystemDefaultDnsResolver.INSTANCE,
+            tlsStrategyRegistry);
+
+    PoolingHttpClientConnectionManager connectionManager =
+        new PoolingHttpClientConnectionManager(
+            connectionOperator,
+            PoolConcurrencyPolicy.STRICT,
+            PoolReusePolicy.LIFO,
+            timeout,
+            ManagedHttpClientConnectionFactory.INSTANCE);
+    connectionManager.setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(timeout).build());
+    connectionManager.setDefaultConnectionConfig(
+        ConnectionConfig.custom()
+            .setSocketTimeout(timeout)
+            .setConnectTimeout(timeout)
+            .setTimeToLive(timeout)
+            .build());
+
+    RequestConfig requestConfig =
+        RequestConfig.custom()
+            .setConnectionRequestTimeout(timeout)
+            .setResponseTimeout(timeout)
+            .build();
+
+    log.info("Using Unix Domain Socket transport for OpenLineage at {}", socketPath);
+    return HttpClientBuilder.create()
+        .setDefaultRequestConfig(requestConfig)
+        .setConnectionManager(connectionManager)
         .build();
   }
 
@@ -159,6 +229,27 @@ public final class HttpTransport extends Transport {
     if (url == null) {
       throw new OpenLineageClientException(
           "url can't be null, try setting transport.url in config");
+    }
+    // For a unix:// URL the path is the socket file, not the HTTP path — target a placeholder
+    // http://localhost/<endpoint>; UnixDomainSocketConnectionSocketFactory tunnels it to the
+    // socket.
+    if (isUnixSocket(httpConfig)) {
+      String endpoint =
+          StringUtils.isNotBlank(httpConfig.getEndpoint())
+              ? httpConfig.getEndpoint()
+              : API_V1 + "/lineage";
+      URIBuilder socketBuilder =
+          new URIBuilder()
+              .setScheme("http")
+              .setHost("localhost")
+              .setPath(endpoint.startsWith("/") ? endpoint : "/" + endpoint);
+      if (httpConfig.getUrlParams() != null) {
+        httpConfig.getUrlParams().entrySet().stream()
+            .forEach(
+                e ->
+                    socketBuilder.addParameter(e.getKey().replace("url.param.", ""), e.getValue()));
+      }
+      return socketBuilder.build();
     }
     URIBuilder builder = new URIBuilder(url);
     if (StringUtils.isNotBlank(url.getPath())) {

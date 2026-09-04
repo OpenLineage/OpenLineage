@@ -71,6 +71,34 @@ class HttpTransportTest {
   }
 
   @Test
+  @SneakyThrows
+  void transportCreatedWithUnixSocketUrl() {
+    // A unix:// url targets a Unix Domain Socket; the request is issued against a
+    // placeholder http://localhost/<endpoint> and tunneled over the socket.
+    HttpConfig httpConfig = new HttpConfig();
+    httpConfig.setUrl(new URI("unix:///var/run/some.socket"));
+    httpConfig.setEndpoint("/api/v1/lineage");
+    httpConfig.setUrlParams(singletonMap("param", "value"));
+    HttpTransport httpTransport = new HttpTransport(httpConfig);
+    Field uri = httpTransport.getClass().getDeclaredField("uri");
+    uri.setAccessible(true);
+    String target = uri.get(httpTransport).toString();
+    assertEquals("http://localhost/api/v1/lineage?param=value", target);
+  }
+
+  @Test
+  @SneakyThrows
+  void transportUnixSocketUsesDefaultEndpoint() {
+    HttpConfig httpConfig = new HttpConfig();
+    httpConfig.setUrl(new URI("unix:///var/run/some.socket"));
+    HttpTransport httpTransport = new HttpTransport(httpConfig);
+    Field uri = httpTransport.getClass().getDeclaredField("uri");
+    uri.setAccessible(true);
+    String target = uri.get(httpTransport).toString();
+    assertEquals("http://localhost/api/v1/lineage", target);
+  }
+
+  @Test
   void clientEmitsHttpTransport() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpConfig config = new HttpConfig();
