@@ -25,6 +25,9 @@ import org.junit.jupiter.api.Test;
 import scala.PartialFunction;
 
 class DatasetDispatchTraceTest {
+  private static final String HANDLER = "handler";
+  private static final String RESULT = "result";
+
   @Test
   void recordsNestedDelegationWithItsActualParent() {
     List<String> trace = new ArrayList<>();
@@ -58,14 +61,14 @@ class DatasetDispatchTraceTest {
     List<String> trace = new ArrayList<>();
     List<String> calls = new ArrayList<>();
     PartialFunction<Object, List<String>> handler =
-        handler("handler", calls, node -> true, node -> Collections.singletonList("result"));
+        handler(HANDLER, calls, node -> true, node -> Collections.singletonList(RESULT));
     DatasetDispatchTrace.capture(
         "bounded",
         3,
         trace::add,
         () -> {
           for (int i = 0; i < 100; i++) {
-            assertThat(DatasetDispatcher.apply(handler, new Object())).containsExactly("result");
+            assertThat(DatasetDispatcher.apply(handler, new Object())).containsExactly(RESULT);
           }
           assertThat(retainedNodes()).isEmpty();
           return null;
@@ -80,7 +83,7 @@ class DatasetDispatchTraceTest {
     List<String> outer = new ArrayList<>();
     List<String> inner = new ArrayList<>();
     PartialFunction<Object, List<String>> handler =
-        handler("handler", new ArrayList<>(), node -> true, node -> Collections.emptyList());
+        handler(HANDLER, new ArrayList<>(), node -> true, node -> Collections.emptyList());
     DatasetDispatchTrace.capture(
         "outer",
         100,
@@ -184,7 +187,7 @@ class DatasetDispatchTraceTest {
             () -> {
               DatasetDispatcher.matches(
                   handler(
-                      "handler",
+                      HANDLER,
                       new ArrayList<>(),
                       ignored -> true,
                       ignored -> Collections.emptyList()),
@@ -208,12 +211,12 @@ class DatasetDispatchTraceTest {
                 () ->
                     DatasetDispatcher.apply(
                         handler(
-                            "handler",
+                            HANDLER,
                             new ArrayList<>(),
                             node -> true,
-                            node -> Collections.singletonList("result")),
+                            node -> Collections.singletonList(RESULT)),
                         new Object())))
-        .containsExactly("result");
+        .containsExactly(RESULT);
     assertThat(currentTrace()).isNull();
   }
 
@@ -227,7 +230,7 @@ class DatasetDispatchTraceTest {
         () -> {
           DatasetDispatcher.apply(
               handler(
-                  "handler",
+                  HANDLER,
                   new ArrayList<>(),
                   node -> true,
                   node -> Collections.singletonList("private-dataset")),

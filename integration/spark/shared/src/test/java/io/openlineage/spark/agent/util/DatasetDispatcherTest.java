@@ -36,12 +36,15 @@ import scala.PartialFunction;
 import scala.runtime.AbstractPartialFunction;
 
 class DatasetDispatcherTest {
+  private static final String FIRST = "first";
+  private static final String NODE = "node";
+
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
   void preservesShortCircuitChecksAndSequentialApplications(boolean traced) {
     List<String> calls = new ArrayList<>();
     PartialFunction<Object, List<String>> first =
-        handler("first", calls, node -> true, node -> Arrays.asList("a", "b"));
+        handler(FIRST, calls, node -> true, node -> Arrays.asList("a", "b"));
     PartialFunction<Object, List<String>> second =
         handler("second", calls, node -> true, node -> Collections.singletonList("c"));
     OpenLineageAbstractPartialFunction<Object, Collection<String>> merged =
@@ -49,8 +52,8 @@ class DatasetDispatcherTest {
     List<String> trace = new ArrayList<>();
     Runnable extraction =
         () -> {
-          assertThat(merged.isDefinedAt("node")).isTrue();
-          assertThat(merged.apply("node")).containsExactly("a", "b", "c");
+          assertThat(merged.isDefinedAt(NODE)).isTrue();
+          assertThat(merged.apply(NODE)).containsExactly("a", "b", "c");
           assertThat(merged.appliedName()).isEqualTo(String.class.getName());
         };
     if (traced) {
@@ -78,22 +81,22 @@ class DatasetDispatcherTest {
     List<String> calls = new ArrayList<>();
     PartialFunction<Object, List<String>> first =
         handler(
-            "first",
+            FIRST,
             calls,
             node -> true,
             node -> {
               available.set(false);
-              return Collections.singletonList("first");
+              return Collections.singletonList(FIRST);
             });
     PartialFunction<Object, List<String>> second =
         handler(
             "second", calls, node -> available.get(), node -> Collections.singletonList("second"));
     Collection<String> result =
         merged
-            ? PlanUtils.merge(Arrays.asList(first, second)).apply("node")
-            : DatasetDispatcher.collect("node", Arrays.asList(first, second))
+            ? PlanUtils.merge(Arrays.asList(first, second)).apply(NODE)
+            : DatasetDispatcher.collect(NODE, Arrays.asList(first, second))
                 .collect(Collectors.toList());
-    assertThat(result).containsExactly("first");
+    assertThat(result).containsExactly(FIRST);
     assertThat(calls).containsExactly("first.check", "first.apply", "second.check");
   }
 
@@ -116,7 +119,7 @@ class DatasetDispatcherTest {
             handler("valid", calls, node -> true, node -> Collections.singletonList("value")));
     Collection<String> results =
         DatasetDispatchTrace.capture(
-            "test", 100, trace::add, () -> PlanUtils.merge(handlers).apply("node"));
+            "test", 100, trace::add, () -> PlanUtils.merge(handlers).apply(NODE));
     assertThat(results).containsExactly("value");
     assertThat(calls).doesNotContain("unmatched.apply");
     assertThat(String.join("\n", trace))
@@ -144,16 +147,16 @@ class DatasetDispatcherTest {
             throw new IOException("failure");
           }
         };
-    assertThat(PlanUtils.safeApply(checked, "node")).isEmpty();
+    assertThat(PlanUtils.safeApply(checked, NODE)).isEmpty();
     // Merged application historically catches RuntimeException, not arbitrary checked exceptions.
-    assertThatThrownBy(() -> PlanUtils.merge(Collections.singletonList(checked)).apply("node"))
+    assertThatThrownBy(() -> PlanUtils.merge(Collections.singletonList(checked)).apply(NODE))
         .isInstanceOf(IOException.class);
     PartialFunction<Object, List<String>> returnsNull =
         handler("null", new ArrayList<>(), node -> true, node -> null);
-    assertThat(PlanUtils.safeApply(returnsNull, "node")).isNull();
+    assertThat(PlanUtils.safeApply(returnsNull, NODE)).isNull();
     assertThatThrownBy(
             () ->
-                DatasetDispatcher.collect("node", Collections.singletonList(returnsNull))
+                DatasetDispatcher.collect(NODE, Collections.singletonList(returnsNull))
                     .collect(Collectors.toList()))
         .isInstanceOf(NullPointerException.class);
   }
@@ -169,7 +172,7 @@ class DatasetDispatcherTest {
             new NoClassDefFoundError())) {
       PartialFunction<Object, List<String>> failing =
           handler("failure", calls, node -> throwUnchecked(error), node -> Collections.emptyList());
-      assertThat(PlanUtils.safeIsDefinedAt(failing, "node")).isFalse();
+      assertThat(PlanUtils.safeIsDefinedAt(failing, NODE)).isFalse();
     }
     PartialFunction<Object, List<String>> fatal =
         handler(
@@ -179,7 +182,7 @@ class DatasetDispatcherTest {
               throw new AssertionError();
             },
             node -> Collections.emptyList());
-    assertThatThrownBy(() -> PlanUtils.safeIsDefinedAt(fatal, "node"))
+    assertThatThrownBy(() -> PlanUtils.safeIsDefinedAt(fatal, NODE))
         .isInstanceOf(AssertionError.class);
   }
 
