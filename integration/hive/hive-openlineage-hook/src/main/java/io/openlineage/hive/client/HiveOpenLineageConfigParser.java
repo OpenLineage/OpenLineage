@@ -51,7 +51,8 @@ public class HiveOpenLineageConfigParser {
                 key ->
                     key.startsWith("transport")
                         || key.startsWith("facets")
-                        || key.startsWith("circuitBreaker"))
+                        || key.startsWith("circuitBreaker")
+                        || key.startsWith("lineage"))
             .collect(Collectors.toSet());
     ObjectNode objectNode = JSON.createObjectNode();
     for (String key : configKeys) {
