@@ -20,6 +20,8 @@ import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.client.circuitBreaker.TimeoutCircuitBreakerConfig;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
+import io.openlineage.spark.agent.util.DatasetDispatchTrace;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -29,7 +31,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.SneakyThrows;
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.Stage;
@@ -144,6 +151,97 @@ class OpenLineageRunEventBuilderTest {
 
     // test that the debug facet contains the timeout message
     assertThat(facet.getLogs().get(0)).startsWith("Incomplete lineage:");
+  }
+
+  @Test
+  void tracesBothDatasetPhasesInsideTimeoutWorkers() {
+    Logger logger = Logger.getLogger(DatasetDispatchTrace.class);
+    Level previousLevel = logger.getLevel();
+    List<String> messages = new CopyOnWriteArrayList<>();
+    List<String> threads = new CopyOnWriteArrayList<>();
+    AppenderSkeleton appender =
+        new AppenderSkeleton() {
+          @Override
+          protected void append(LoggingEvent event) {
+            messages.add(event.getRenderedMessage());
+            threads.add(event.getThreadName());
+          }
+
+          @Override
+          public void close() {}
+
+          @Override
+          public boolean requiresLayout() {
+            return false;
+          }
+        };
+    logger.addAppender(appender);
+    logger.setLevel(Level.TRACE);
+    try {
+      when(config.getTimeoutConfig()).thenReturn(new TimeoutConfig(100, 100));
+      when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.of(Duration.ofSeconds(5)));
+      when(runEventContext.getEvent()).thenReturn(mock(SparkListenerSQLExecutionEnd.class));
+      PartialFunction<Object, List<InputDataset>> input =
+          new scala.runtime.AbstractPartialFunction<Object, List<InputDataset>>() {
+            @Override
+            public boolean isDefinedAt(Object event) {
+              return true;
+            }
+
+            @Override
+            public List<InputDataset> apply(Object event) {
+              return Collections.emptyList();
+            }
+          };
+      PartialFunction<Object, List<InputDataset>> delegating =
+          new scala.runtime.AbstractPartialFunction<Object, List<InputDataset>>() {
+            @Override
+            public boolean isDefinedAt(Object event) {
+              return true;
+            }
+
+            @Override
+            public List<InputDataset> apply(Object event) {
+              return new java.util.ArrayList<>(
+                  PlanUtils.merge(Collections.singletonList(input)).apply(event));
+            }
+          };
+      PartialFunction<Object, List<OpenLineage.OutputDataset>> output =
+          new scala.runtime.AbstractPartialFunction<Object, List<OpenLineage.OutputDataset>>() {
+            @Override
+            public boolean isDefinedAt(Object event) {
+              return true;
+            }
+
+            @Override
+            public List<OpenLineage.OutputDataset> apply(Object event) {
+              return Collections.emptyList();
+            }
+          };
+      when(openLineageEventHandlerFactory.createInputDatasetBuilder(openLineageContext))
+          .thenReturn(Collections.singletonList(delegating));
+      when(openLineageEventHandlerFactory.createOutputDatasetBuilder(openLineageContext))
+          .thenReturn(Collections.singletonList(output));
+
+      RunEvent result =
+          new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory)
+              .buildRun(runEventContext);
+
+      assertThat(result.getInputs()).isEmpty();
+      assertThat(result.getOutputs()).isEmpty();
+      assertThat(messages)
+          .anyMatch(message -> message.contains("phase=input") && message.contains("parent=2"));
+      assertThat(messages)
+          .anyMatch(
+              message -> message.contains("phase=output") && message.contains("operation=apply"));
+      assertThat(messages)
+          .allMatch(message -> message.contains("run=" + openLineageContext.getRunUuid()));
+      assertThat(threads).doesNotContain(Thread.currentThread().getName());
+    } finally {
+      logger.removeAppender(appender);
+      logger.setLevel(previousLevel);
+      appender.close();
+    }
   }
 
   @Test

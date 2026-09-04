@@ -25,6 +25,8 @@ import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
+import io.openlineage.spark.agent.util.DatasetDispatchTrace;
+import io.openlineage.spark.agent.util.DatasetDispatcher;
 import io.openlineage.spark.agent.util.DatasetReducerUtils;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -228,10 +230,16 @@ class OpenLineageRunEventBuilder {
         timeouter.timeoutJobFacets(
             () -> buildJobFacets(nodes, jobFacetBuilders, context.getJobFacetsBuilder()));
     List<InputDataset> inputDatasets =
-        timeouter.timeoutInputDatasets(() -> buildInputDatasets(nodes));
+        timeouter.timeoutInputDatasets(
+            () ->
+                DatasetDispatchTrace.capture(
+                    runId, context.getEvent(), "input", () -> buildInputDatasets(nodes)));
     openLineageContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
     List<OutputDataset> outputDatasets =
-        timeouter.timeoutOutputDatasets(() -> buildOutputDatasets(nodes));
+        timeouter.timeoutOutputDatasets(
+            () ->
+                DatasetDispatchTrace.capture(
+                    runId, context.getEvent(), "output", () -> buildOutputDatasets(nodes)));
     openLineageContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
     RunFacets runFacets =
         timeouter.timeoutRunFacets(() -> buildRunFacets(context, nodes), openLineage);
@@ -419,13 +427,7 @@ class OpenLineageRunEventBuilder {
 
   private <T extends OpenLineage.Dataset> Stream<T> buildDatasets(
       List<Object> nodes, Collection<PartialFunction<Object, List<T>>> builders) {
-    return nodes.stream()
-        .flatMap(
-            event ->
-                builders.stream()
-                    .filter(pfn -> PlanUtils.safeIsDefinedAt(pfn, event))
-                    .map(pfn -> PlanUtils.safeApply(pfn, event))
-                    .flatMap(Collection::stream));
+    return nodes.stream().flatMap(event -> DatasetDispatcher.collect(event, builders));
   }
 
   /**
