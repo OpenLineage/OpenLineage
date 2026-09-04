@@ -5,6 +5,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static java.lang.Thread.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -235,6 +239,52 @@ class OpenLineageRunEventTimeoutExecutorTest {
 
     // timeout should be applied
     assertThat(executor.timeoutJobFacets(jobFacetsCallableWithTimeout)).isNull();
+  }
+
+  @Test
+  void testInterruptedEventHandlerCancelsJobFacetsTask() throws InterruptedException {
+    when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.of(Duration.ofSeconds(30)));
+    when(timeoutConfig.getFacetsBuildingTimePercentage()).thenReturn(100);
+    executor = new OpenLineageRunEventTimeoutExecutor(openLineageContext);
+
+    CountDownLatch facetTaskStarted = new CountDownLatch(1);
+    CountDownLatch facetTaskInterrupted = new CountDownLatch(1);
+    CountDownLatch callerReturned = new CountDownLatch(1);
+    AtomicBoolean callerInterruptRestored = new AtomicBoolean();
+    AtomicReference<RuntimeException> callerFailure = new AtomicReference<>();
+
+    Thread outerEventHandler =
+        new Thread(
+            () -> {
+              try {
+                executor.timeoutJobFacets(
+                    () -> {
+                      facetTaskStarted.countDown();
+                      try {
+                        new CountDownLatch(1).await();
+                      } catch (InterruptedException ex) {
+                        facetTaskInterrupted.countDown();
+                        throw ex;
+                      }
+                      return jobFacets;
+                    });
+              } catch (RuntimeException ex) {
+                callerFailure.set(ex);
+                callerInterruptRestored.set(Thread.currentThread().isInterrupted());
+              } finally {
+                callerReturned.countDown();
+              }
+            });
+
+    outerEventHandler.start();
+    assertThat(facetTaskStarted.await(5, SECONDS)).isTrue();
+
+    outerEventHandler.interrupt();
+
+    assertThat(callerReturned.await(5, SECONDS)).isTrue();
+    assertThat(facetTaskInterrupted.await(5, SECONDS)).isTrue();
+    assertThat(callerFailure.get()).hasCauseInstanceOf(InterruptedException.class);
+    assertThat(callerInterruptRestored).isTrue();
   }
 
   @Test

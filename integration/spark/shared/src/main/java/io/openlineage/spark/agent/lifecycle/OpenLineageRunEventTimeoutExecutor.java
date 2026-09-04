@@ -235,7 +235,11 @@ public class OpenLineageRunEventTimeoutExecutor {
         T result = callableExecutor.get(timeout, MILLISECONDS);
         timeSpent = (int) (System.currentTimeMillis() - startTime);
         return result;
-      } catch (InterruptedException | ExecutionException ex) {
+      } catch (InterruptedException ex) {
+        callableExecutor.cancel(true);
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(ex);
+      } catch (ExecutionException ex) {
         throw new RuntimeException(ex);
       } catch (TimeoutException timeoutException) {
         callableExecutor.cancel(true);
