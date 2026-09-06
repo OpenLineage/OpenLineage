@@ -169,6 +169,25 @@ func TestHTTPTransport_Emit_RedirectPolicy(t *testing.T) {
 	}
 }
 
+func TestHTTPTransport_Emit_StopsAfterTenRedirects(t *testing.T) {
+	requests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.Header().Set("Location", "/api/v1/lineage")
+		w.WriteHeader(http.StatusTemporaryRedirect)
+	}))
+	defer srv.Close()
+
+	tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL})
+	_, err := tr.Emit(context.Background(), map[string]string{"event": "lineage"})
+	if err == nil || !strings.Contains(err.Error(), "stopped after 10 redirects") {
+		t.Fatalf("Emit() error = %v, want ten-redirect limit error", err)
+	}
+	if requests != 10 {
+		t.Fatalf("requests = %d, want 10", requests)
+	}
+}
+
 // TestHTTPTransport_Emit_GzipCompression verifies that when CompressionGzip is
 // configured the request body is gzip-compressed and the Content-Encoding header
 // is set to "gzip", with the payload still decodable after decompression.

@@ -65,7 +65,10 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 	case TransportTypeHTTP:
 		retryClient := retryablehttp.NewClient()
 		retryClient.Logger = nil // suppress default debug logging
-		checkRedirect := func(req *http.Request, _ []*http.Request) error {
+		checkRedirect := func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("stopped after 10 redirects")
+			}
 			switch req.Response.StatusCode {
 			case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther:
 				return http.ErrUseLastResponse

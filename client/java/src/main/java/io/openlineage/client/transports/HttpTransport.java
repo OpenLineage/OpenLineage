@@ -11,6 +11,7 @@ import static org.apache.hc.core5.http.HttpHeaders.ACCEPT;
 import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.hc.core5.http.HttpHeaders.CONTENT_ENCODING;
 import static org.apache.hc.core5.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.hc.core5.http.HttpHeaders.LOCATION;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
@@ -26,7 +27,10 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import lombok.NonNull;
@@ -35,11 +39,11 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.SystemDefaultDnsResolver;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
 import org.apache.hc.client5.http.impl.DefaultSchemePortResolver;
-import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.DefaultHttpClientConnectionOperator;
@@ -48,22 +52,17 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.io.DetachedSocketFactory;
 import org.apache.hc.client5.http.io.HttpClientConnectionOperator;
-import org.apache.hc.client5.http.protocol.RedirectStrategy;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
+import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.HttpRequest;
-import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
-import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
-import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
@@ -74,22 +73,14 @@ import org.apache.hc.core5.util.Timeout;
 @ToString
 public final class HttpTransport extends Transport {
   private static final String API_V1 = "/api/v1";
-  private static final RedirectStrategy METHOD_PRESERVING_REDIRECT_STRATEGY =
-      new DefaultRedirectStrategy() {
-        @Override
-        public boolean isRedirected(HttpRequest request, HttpResponse response, HttpContext context)
-            throws ProtocolException {
-          int statusCode = response.getCode();
-          return (statusCode == 307 || statusCode == 308)
-              && super.isRedirected(request, response, context);
-        }
-      };
+  private static final int MAX_REDIRECTS = 50;
 
   /** Minimum Java version providing native Unix Domain Socket support (JEP 380). */
   private static final int MIN_JAVA_VERSION_FOR_UNIX_SOCKET = 16;
 
   private final CloseableHttpClient http;
   private final URI uri;
+  private final RequestConfig requestConfig;
   private @Nullable final TokenProvider tokenProvider;
 
   private final Map<String, String> headers;
@@ -100,14 +91,7 @@ public final class HttpTransport extends Transport {
   }
 
   private static CloseableHttpClient withTimeout(HttpConfig httpConfig) {
-    int timeoutMs;
-    if (httpConfig.getTimeoutInMillis() != null) {
-      timeoutMs = httpConfig.getTimeoutInMillis();
-    } else {
-      // default one
-      timeoutMs = 5000;
-    }
-    Timeout timeout = Timeout.ofMilliseconds(timeoutMs);
+    Timeout timeout = getTimeout(httpConfig);
 
     // A unix:// URL means the target is a Unix Domain Socket endpoint (e.g. one exposed on a
     // Kubernetes node). Apache HttpClient can't dial a UDS directly, so build a client whose
@@ -149,9 +133,12 @@ public final class HttpTransport extends Transport {
     return HttpClientBuilder.create()
         .setDefaultRequestConfig(requestConfig)
         .setConnectionManager(connectionManagerBuilder.build())
-        .setRedirectStrategy(METHOD_PRESERVING_REDIRECT_STRATEGY)
-        .setDefaultRequestConfig(requestConfig)
         .build();
+  }
+
+  private static Timeout getTimeout(HttpConfig httpConfig) {
+    return Timeout.ofMilliseconds(
+        httpConfig.getTimeoutInMillis() != null ? httpConfig.getTimeoutInMillis() : 5000);
   }
 
   private static boolean isUnixSocket(HttpConfig httpConfig) {
@@ -238,7 +225,6 @@ public final class HttpTransport extends Transport {
     return HttpClientBuilder.create()
         .setDefaultRequestConfig(requestConfig)
         .setConnectionManager(connectionManager)
-        .setRedirectStrategy(METHOD_PRESERVING_REDIRECT_STRATEGY)
         .build();
   }
 
@@ -270,6 +256,13 @@ public final class HttpTransport extends Transport {
   public HttpTransport(
       @NonNull final CloseableHttpClient httpClient, @NonNull final HttpConfig httpConfig) {
     this.http = httpClient;
+    Timeout timeout = getTimeout(httpConfig);
+    this.requestConfig =
+        RequestConfig.custom()
+            .setConnectionRequestTimeout(timeout)
+            .setResponseTimeout(timeout)
+            .setRedirectsEnabled(false)
+            .build();
     try {
       this.uri = getUri(httpConfig);
     } catch (URISyntaxException e) {
@@ -344,22 +337,51 @@ public final class HttpTransport extends Transport {
   private void emit(String eventAsJson) {
     log.debug("POST event on URL {}", uri);
     try {
-      ClassicRequestBuilder request = ClassicRequestBuilder.post(uri);
-      setHeaders(request);
-      setBody(request, eventAsJson);
+      URI requestUri = uri;
+      Set<URI> visited = new HashSet<>();
+      visited.add(requestUri);
+      int redirectCount = 0;
+      while (true) {
+        HttpPost request = new HttpPost(requestUri);
+        request.setConfig(requestConfig);
+        setHeaders(request);
+        setBody(request, eventAsJson);
 
-      http.execute(
-          request.build(),
-          response -> {
-            throwOnHttpError(response);
-            return null;
-          });
+        AtomicReference<String> redirect = new AtomicReference<>();
+        http.execute(
+            request,
+            response -> {
+              int statusCode = response.getCode();
+              if ((statusCode == 307 || statusCode == 308)
+                  && response.getFirstHeader(LOCATION) != null) {
+                redirect.set(response.getFirstHeader(LOCATION).getValue());
+                EntityUtils.consume(response.getEntity());
+              } else {
+                throwOnHttpError(response);
+              }
+              return null;
+            });
+        String redirectLocation = redirect.get();
+        if (redirectLocation == null) {
+          return;
+        }
+        redirectCount++;
+        if (redirectCount > MAX_REDIRECTS) {
+          throw new OpenLineageClientException("Maximum redirects (50) exceeded");
+        }
+        requestUri = requestUri.resolve(redirectLocation);
+        if (!visited.add(requestUri)) {
+          throw new OpenLineageClientException("Circular redirect to " + requestUri);
+        }
+      }
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
+    } catch (IllegalArgumentException e) {
+      throw new OpenLineageClientException("Invalid redirect location", e);
     }
   }
 
-  private void setBody(ClassicRequestBuilder request, String body) {
+  private void setBody(ClassicHttpRequest request, String body) {
     HttpEntity entity = new StringEntity(body, APPLICATION_JSON);
     if (compression == HttpConfig.Compression.GZIP) {
       entity = new GzipCompressingEntity(entity);
@@ -367,7 +389,7 @@ public final class HttpTransport extends Transport {
     request.setEntity(entity);
   }
 
-  private void setHeaders(ClassicRequestBuilder request) {
+  private void setHeaders(ClassicHttpRequest request) {
     this.headers.forEach((key, value) -> request.setHeader(key, value));
     // set headers to accept json
     request.setHeader(ACCEPT, APPLICATION_JSON.toString());

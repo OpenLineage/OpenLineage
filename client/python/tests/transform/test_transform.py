@@ -14,6 +14,7 @@ from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import BaseEvent, Job, Run, RunEvent, RunState
 from openlineage.client.facet_v2 import external_query_run
 from openlineage.client.serde import Serde
+from openlineage.client.transport.http import _raise_on_method_changing_redirect
 from openlineage.client.transport.transform import EventTransformer, TransformConfig, TransformTransport
 from openlineage.client.uuid import generate_new_uuid
 
@@ -154,6 +155,7 @@ def test_client_with_transform_transport_emits(mocker: MockerFixture) -> None:
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
+        hooks={"response": [_raise_on_method_changing_redirect]},
     )
 
 
@@ -198,6 +200,7 @@ def test_client_with_transform_transport_emits_modified_event(mock_run_tags, moc
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
+        hooks={"response": [_raise_on_method_changing_redirect]},
     )
 
     # Assert the original event is unchanged
@@ -277,6 +280,7 @@ def test_client_with_transform_transport_emits_modified_event_with_older_facets(
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
+        hooks={"response": [_raise_on_method_changing_redirect]},
     )
 
     # Assert the original event is unchanged
@@ -372,6 +376,7 @@ def test_client_with_transform_transport_emits_modified_deprecated_event(
         headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
+        hooks={"response": [_raise_on_method_changing_redirect]},
     )
 
     # Assert the original event is unchanged

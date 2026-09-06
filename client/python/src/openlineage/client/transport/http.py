@@ -393,6 +393,14 @@ class HttpTransport(Transport):
         http_client.HTTPConnection.debuglevel = 0
         try:
             body, headers = self._prepare_request(Serde.to_json(event))
+            response_hooks = [
+                _raise_on_method_changing_redirect,
+                *(
+                    hook
+                    for hook in self.session.hooks.get("response", ())
+                    if hook is not _raise_on_method_changing_redirect
+                ),
+            ]
 
             resp = self.session.post(
                 url=urljoin(self.url, self.endpoint),
@@ -400,6 +408,7 @@ class HttpTransport(Transport):
                 headers=headers,
                 timeout=self.timeout,
                 verify=self.verify,
+                hooks={"response": response_hooks},
             )
             resp.close()
             if isinstance(resp.status_code, int) and not 200 <= resp.status_code < 300:
@@ -437,8 +446,6 @@ class HttpTransport(Transport):
         return {}
 
     def _prepare_session(self, session: Session) -> None:
-        if _raise_on_method_changing_redirect not in session.hooks["response"]:
-            session.hooks["response"].append(_raise_on_method_changing_redirect)
         if self.config.adapter:
             session.mount(self.url, self.config.adapter)
         else:

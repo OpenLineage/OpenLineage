@@ -278,12 +278,30 @@ class TestHttpTransportSync:
 
         assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
         assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+        assert call_args.kwargs["hooks"] == {
+            "response": [_raise_on_method_changing_redirect],
+        }
 
-    def test_http_transport_registers_redirect_guard(self):
+    def test_http_transport_does_not_mutate_shared_session_hooks(self):
         session = requests.Session()
+        caller_hook = MagicMock()
+        session.hooks["response"].append(caller_hook)
+        hooks = {name: callbacks.copy() for name, callbacks in session.hooks.items()}
         transport = HttpTransport(HttpConfig(url="http://example.com", session=session))
 
-        assert _raise_on_method_changing_redirect in session.hooks["response"]
+        assert session.hooks == hooks
+
+        response = MagicMock(status_code=200)
+        with (
+            patch.object(session, "post", return_value=response) as post,
+            patch("openlineage.client.serde.Serde.to_json", return_value="{}"),
+        ):
+            transport.emit(MagicMock())
+
+        assert post.call_args.kwargs["hooks"] == {
+            "response": [_raise_on_method_changing_redirect, caller_hook],
+        }
+        assert session.hooks == hooks
 
         transport.close()
 
