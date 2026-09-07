@@ -22,6 +22,10 @@ The specific security and analysis methodologies that we employ include but are 
 - Use of [Ruff](https://github.com//ruff) and [Mypy](https://github.com/python/mypy) for Python code linting on pull requests and builds
 - Use of GitHub Issues for bug reporting and tracking
 
+## CRA Stewardship
+
+As an LF AI & Data project, OpenLineage is supported under the Linux Foundation CRA stewardship framework. The LF AI & Data Foundation’s CRA steward is The Linux Foundation, and its policy is available at https://www.linuxfoundation.org/security. Most of the individual LF AI projects report up to the parent LF Projects, LLC, but this can be checked on a per project basis in LFX PCC (see Operations->Project Definition->Legal Details - or ask at support@linuxfoundation.org).
+
 ## Contact
 
 For more information about our approach to quality and security, feel free to reach out to the OpenLineage development team:
