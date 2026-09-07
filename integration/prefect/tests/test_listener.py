@@ -9,14 +9,13 @@ Tests cover event processing, Prefect API interactions, and OpenLineage event cr
 
 import json
 from datetime import datetime
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from adapter import PrefectOpenLineageAdapter
 from listener import PrefectOpenLineageListener
-from test_events import FLOW_START_EVENT, TASK_START_EVENT
-
 from prefect.events.schemas.events import Event
+from test_events import FLOW_START_EVENT, TASK_START_EVENT
 
 # ========== Fixtures ==========
 
@@ -465,8 +464,8 @@ async def test_collect_and_process_flow_runs_success(
     # The function loops through related items and processes each, so it may be called multiple times
     assert mock_adapter.create_and_emit_flow_event.call_count > 0
     call_args = mock_adapter.create_and_emit_flow_event.call_args_list[0]
-    assert call_args.kwargs["eventType"] == "START"
-    assert call_args.kwargs["flowName"] == "GitHub Stars"
+    assert call_args.kwargs["event_type"] == "START"
+    assert call_args.kwargs["flow_name"] == "GitHub Stars"
 
 
 @pytest.mark.asyncio
@@ -539,8 +538,8 @@ async def test_collect_and_process_task_runs_success(
 
     mock_adapter.create_and_emit_task_event.assert_called_once()
     call_args = mock_adapter.create_and_emit_task_event.call_args
-    assert call_args.kwargs["eventType"] == "START"
-    assert call_args.kwargs["taskName"] == "fake_ingest"
+    assert call_args.kwargs["event_type"] == "START"
+    assert call_args.kwargs["task_name"] == "fake_ingest"
 
 
 @pytest.mark.asyncio
@@ -583,9 +582,9 @@ async def test_collect_and_process_task_runs_with_datasets(
         )
 
     call_args = mock_adapter.create_and_emit_task_event.call_args
-    assert len(call_args.kwargs["inputDatasets"]) == 1
-    assert len(call_args.kwargs["outputDatasets"]) == 1
-    assert call_args.kwargs["inputDatasets"][0]["uri"] == "postgres://localhost"
+    assert len(call_args.kwargs["input_datasets"]) == 1
+    assert len(call_args.kwargs["output_datasets"]) == 1
+    assert call_args.kwargs["input_datasets"][0]["uri"] == "postgres://localhost"
 
 
 @pytest.mark.asyncio
@@ -627,8 +626,8 @@ async def test_collect_and_process_task_runs_with_job_dependencies(
         )
 
     call_args = mock_adapter.create_and_emit_task_event.call_args
-    assert len(call_args.kwargs["jobDeps"]) == 1
-    assert call_args.kwargs["jobDeps"][0]["name"] == "parent_task"
+    assert len(call_args.kwargs["job_deps"]) == 1
+    assert call_args.kwargs["job_deps"][0]["name"] == "parent_task"
 
 
 # ========== Event state mapping tests ==========

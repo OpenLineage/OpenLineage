@@ -17,12 +17,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "coverage",
-    "interrogate",
-    "mkdocs",
-    "mkdocs-gen-files",
-    "mkdocs-material",
-    "mkdocstrings[python]",
     "mypy",
     "openlineage-python",
     "pillow",

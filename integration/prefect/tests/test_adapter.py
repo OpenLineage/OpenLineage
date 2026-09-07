@@ -9,11 +9,11 @@ Tests cover OpenLineage event creation and emission.
 
 import uuid
 from datetime import datetime
-import pytest
 from unittest.mock import MagicMock, patch
 
-from openlineage.client.run import RunEvent, RunState
+import pytest
 from adapter import PRODUCER, PrefectOpenLineageAdapter
+from openlineage.client.run import RunEvent, RunState
 
 # ========== Fixtures ==========
 
@@ -50,16 +50,16 @@ def sample_run_id():
 def test_create_and_emit_flow_event_start(adapter, sample_datetime, sample_run_id):
     """Test creation and emission of a flow START event."""
     adapter.create_and_emit_flow_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        flowName="test_flow",
-        flowNamespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        flow_name="test_flow",
+        flow_namespace="default",
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
     )
 
     adapter.client.emit.assert_called_once()
@@ -76,16 +76,16 @@ def test_create_and_emit_flow_event_start(adapter, sample_datetime, sample_run_i
 def test_create_and_emit_flow_event_complete(adapter, sample_datetime, sample_run_id):
     """Test creation and emission of a flow COMPLETE event."""
     adapter.create_and_emit_flow_event(
-        runId=sample_run_id,
-        eventType="COMPLETE",
-        eventTime=sample_datetime,
-        flowName="test_flow",
-        flowNamespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
+        run_id=sample_run_id,
+        event_type="COMPLETE",
+        event_time=sample_datetime,
+        flow_name="test_flow",
+        flow_namespace="default",
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -95,16 +95,16 @@ def test_create_and_emit_flow_event_complete(adapter, sample_datetime, sample_ru
 def test_create_and_emit_flow_event_failed(adapter, sample_datetime, sample_run_id):
     """Test creation and emission of a flow FAILED event."""
     adapter.create_and_emit_flow_event(
-        runId=sample_run_id,
-        eventType="FAILED",
-        eventTime=sample_datetime,
-        flowName="test_flow",
-        flowNamespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
+        run_id=sample_run_id,
+        event_type="FAILED",
+        event_time=sample_datetime,
+        flow_name="test_flow",
+        flow_namespace="default",
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -116,16 +116,16 @@ def test_create_and_emit_flow_event_has_processing_engine_facet(
 ):
     """Test that flow event includes processingEngine facet."""
     adapter.create_and_emit_flow_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        flowName="test_flow",
-        flowNamespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        flow_name="test_flow",
+        flow_namespace="default",
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -140,16 +140,16 @@ def test_create_and_emit_flow_event_has_deployment_facet(
 ):
     """Test that flow event includes prefectDeployment facet."""
     adapter.create_and_emit_flow_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        flowName="test_flow",
-        flowNamespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        flow_name="test_flow",
+        flow_namespace="default",
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -164,16 +164,16 @@ def test_create_and_emit_flow_event_has_job_type_facet(
 ):
     """Test that flow event includes jobType facet."""
     adapter.create_and_emit_flow_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        flowName="test_flow",
-        flowNamespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        flow_name="test_flow",
+        flow_namespace="default",
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -192,16 +192,16 @@ def test_create_and_emit_flow_event_handles_emission_error(
 
     with patch("adapter.logger") as mock_logger:
         adapter.create_and_emit_flow_event(
-            runId=sample_run_id,
-            eventType="START",
-            eventTime=sample_datetime,
-            flowName="test_flow",
-            flowNamespace="default",
-            prefectVersion="3.7.6",
-            deploymentId="dep-123",
-            deploymentCreated="2026-07-05T08:05:01.001Z",
-            deploymentUpdated="2026-07-05T08:06:02.100Z",
-            deploymentName="test_deploy",
+            run_id=sample_run_id,
+            event_type="START",
+            event_time=sample_datetime,
+            flow_name="test_flow",
+            flow_namespace="default",
+            prefect_version="3.7.6",
+            deployment_id="dep-123",
+            deployment_created="2026-07-05T08:05:01.001Z",
+            deployment_updated="2026-07-05T08:06:02.100Z",
+            deployment_name="test_deploy",
         )
 
         mock_logger.exception.assert_called_once()
@@ -213,22 +213,22 @@ def test_create_and_emit_flow_event_handles_emission_error(
 def test_create_and_emit_task_event_start(adapter, sample_datetime, sample_run_id):
     """Test creation and emission of a task START event."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        jobDeps=[],
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        job_deps=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     adapter.client.emit.assert_called_once()
@@ -243,21 +243,21 @@ def test_create_and_emit_task_event_start(adapter, sample_datetime, sample_run_i
 def test_create_and_emit_task_event_complete(adapter, sample_datetime, sample_run_id):
     """Test creation and emission of a task COMPLETE event."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="COMPLETE",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="COMPLETE",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -267,21 +267,21 @@ def test_create_and_emit_task_event_complete(adapter, sample_datetime, sample_ru
 def test_create_and_emit_task_event_failed(adapter, sample_datetime, sample_run_id):
     """Test creation and emission of a task FAILED event."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="FAILED",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="FAILED",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -293,21 +293,21 @@ def test_create_and_emit_task_event_has_nominal_time_facet(
 ):
     """Test that task event includes nominalTime facet."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -321,27 +321,27 @@ def test_create_and_emit_task_event_has_parent_run_facet(
 ):
     """Test that task event includes parentRun facet."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
 
     assert "parentRun" in event.run.facets
-    assert event.run.facets["parentRun"].run["runId"] == "flow-run-456"
+    assert event.run.facets["parentRun"].run["run_id"] == "flow-run-456"
     assert event.run.facets["parentRun"].job["name"] == "test_flow"
 
 
@@ -355,22 +355,22 @@ def test_create_and_emit_task_event_has_job_dependencies(
     ]
 
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        jobDeps=job_deps,
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        job_deps=job_deps,
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -384,22 +384,22 @@ def test_create_and_emit_task_event_no_job_dependencies(
 ):
     """Test that jobDependencies facet is not included when no dependencies exist."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        jobDeps=[],
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        job_deps=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -417,21 +417,21 @@ def test_create_and_emit_task_event_has_input_datasets(
     ]
 
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=input_datasets,
-        outputDatasets=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=input_datasets,
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -448,21 +448,21 @@ def test_create_and_emit_task_event_has_output_datasets(
     output_datasets = [{"uri": "postgres://localhost", "table": "results"}]
 
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=output_datasets,
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=output_datasets,
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -477,21 +477,21 @@ def test_create_and_emit_task_event_has_deployment_facet(
 ):
     """Test that task event includes prefectDeployment facet."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -506,21 +506,21 @@ def test_create_and_emit_task_event_has_processing_engine_facet(
 ):
     """Test that task event includes processingEngine facet."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -535,21 +535,21 @@ def test_create_and_emit_task_event_has_job_type_facet(
 ):
     """Test that task event includes jobType facet."""
     adapter.create_and_emit_task_event(
-        runId=sample_run_id,
-        eventType="START",
-        eventTime=sample_datetime,
-        expectedEventTime=sample_datetime,
-        flowRunId="flow-run-456",
-        flowName="test_flow",
-        taskName="test_task",
+        run_id=sample_run_id,
+        event_type="START",
+        event_time=sample_datetime,
+        expectedevent_time=sample_datetime,
+        flow_run_id="flow-run-456",
+        flow_name="test_flow",
+        task_name="test_task",
         namespace="default",
-        prefectVersion="3.7.6",
-        deploymentId="dep-123",
-        deploymentCreated="2026-07-05T08:05:01.001Z",
-        deploymentUpdated="2026-07-05T08:06:02.100Z",
-        deploymentName="test_deploy",
-        inputDatasets=[],
-        outputDatasets=[],
+        prefect_version="3.7.6",
+        deployment_id="dep-123",
+        deployment_created="2026-07-05T08:05:01.001Z",
+        deployment_updated="2026-07-05T08:06:02.100Z",
+        deployment_name="test_deploy",
+        input_datasets=[],
+        output_datasets=[],
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -568,21 +568,21 @@ def test_create_and_emit_task_event_handles_emission_error(
 
     with patch("adapter.logger") as mock_logger:
         adapter.create_and_emit_task_event(
-            runId=sample_run_id,
-            eventType="START",
-            eventTime=sample_datetime,
-            expectedEventTime=sample_datetime,
-            flowRunId="flow-run-456",
-            flowName="test_flow",
-            taskName="test_task",
+            run_id=sample_run_id,
+            event_type="START",
+            event_time=sample_datetime,
+            expectedevent_time=sample_datetime,
+            flow_run_id="flow-run-456",
+            flow_name="test_flow",
+            task_name="test_task",
             namespace="default",
-            prefectVersion="3.7.6",
-            deploymentId="dep-123",
-            deploymentCreated="2026-07-05T08:05:01.001Z",
-            deploymentUpdated="2026-07-05T08:06:02.100Z",
-            deploymentName="test_deploy",
-            inputDatasets=[],
-            outputDatasets=[],
+            prefect_version="3.7.6",
+            deployment_id="dep-123",
+            deployment_created="2026-07-05T08:05:01.001Z",
+            deployment_updated="2026-07-05T08:06:02.100Z",
+            deployment_name="test_deploy",
+            input_datasets=[],
+            output_datasets=[],
         )
 
         mock_logger.exception.assert_called_once()
