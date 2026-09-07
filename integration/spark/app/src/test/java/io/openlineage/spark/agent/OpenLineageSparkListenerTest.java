@@ -8,6 +8,7 @@ package io.openlineage.spark.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.MockedStatic;
 import scala.Option;
 
@@ -252,6 +254,34 @@ class OpenLineageSparkListenerTest {
     assertThat(holder.getJobStagesSize()).isZero();
     assertThat(holder.getStageMetricsSize()).isZero();
     assertThat(holder.getJobMetricsSize()).isZero();
+  }
+
+  @Test
+  void testSqlStartIsReplayedWhenContextIsOnlyAvailableAtEnd() {
+    SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    ContextFactory contextFactory = mock(ContextFactory.class);
+    ExecutionContext executionContext = mock(ExecutionContext.class);
+    when(contextFactory.getMeterRegistry()).thenReturn(meterRegistry);
+    when(contextFactory.createSparkSQLExecutionContext(62L)).thenReturn(Optional.empty());
+
+    SparkListenerSQLExecutionEnd sqlEnd = mock(SparkListenerSQLExecutionEnd.class);
+    when(sqlEnd.executionId()).thenReturn(62L);
+    when(contextFactory.createSparkSQLExecutionContext(sqlEnd))
+        .thenReturn(Optional.of(executionContext));
+
+    SparkListenerSQLExecutionStart sqlStart = mock(SparkListenerSQLExecutionStart.class);
+    when(sqlStart.executionId()).thenReturn(62L);
+
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(contextFactory);
+    listener.onOtherEvent(sqlStart);
+    listener.onOtherEvent(sqlEnd);
+
+    InOrder callbacks = inOrder(executionContext);
+    callbacks.verify(executionContext).start(sqlStart);
+    callbacks.verify(executionContext).end(sqlEnd);
+    assertThat(meterRegistry.counter("openlineage.spark.event.sql.start").count()).isEqualTo(1);
+    assertThat(meterRegistry.counter("openlineage.spark.event.sql.end").count()).isEqualTo(1);
   }
 
   @Test
