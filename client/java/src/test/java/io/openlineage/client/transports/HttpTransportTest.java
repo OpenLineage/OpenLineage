@@ -22,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.net.StandardProtocolFamily;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -48,12 +50,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import lombok.SneakyThrows;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
@@ -221,6 +226,104 @@ class HttpTransportTest {
     client.emit(runEvent());
 
     verify(http, times(1)).execute(any(), any(HttpClientResponseHandler.class));
+  }
+
+  @Test
+  void httpTransportOnlyFollowsMethodPreservingRedirects() throws IOException {
+    AtomicInteger redirectStatus = new AtomicInteger(302);
+    AtomicInteger acceptedRequests = new AtomicInteger();
+    AtomicReference<String> acceptedMethod = new AtomicReference<>();
+    AtomicReference<String> acceptedBody = new AtomicReference<>();
+    HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          exchange.getRequestBody().readAllBytes();
+          exchange.getResponseHeaders().add("Location", "/accepted");
+          exchange.sendResponseHeaders(redirectStatus.get(), -1);
+          exchange.close();
+        });
+    server.createContext(
+        "/accepted",
+        exchange -> {
+          acceptedRequests.incrementAndGet();
+          acceptedMethod.set(exchange.getRequestMethod());
+          acceptedBody.set(
+              new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+          exchange.sendResponseHeaders(200, -1);
+          exchange.close();
+        });
+    server.start();
+
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      try (HttpTransport transport = new HttpTransport(config)) {
+        OpenLineageClient client = new OpenLineageClient(transport);
+
+        HttpTransportResponseException exception =
+            assertThrows(HttpTransportResponseException.class, () -> client.emit(runEvent()));
+        assertThat(exception.getStatusCode()).isEqualTo(302);
+        assertThat(acceptedRequests).hasValue(0);
+
+        redirectStatus.set(307);
+        client.emit(runEvent());
+        assertThat(acceptedRequests).hasValue(1);
+        assertThat(acceptedMethod).hasValue("POST");
+        assertThat(acceptedBody.get()).isNotEmpty();
+      }
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void injectedDefaultClientOnlyFollowsMethodPreservingRedirects() throws IOException {
+    AtomicInteger redirectStatus = new AtomicInteger(302);
+    AtomicInteger acceptedRequests = new AtomicInteger();
+    AtomicReference<String> acceptedMethod = new AtomicReference<>();
+    AtomicReference<String> acceptedBody = new AtomicReference<>();
+    HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          exchange.getRequestBody().readAllBytes();
+          exchange.getResponseHeaders().add("Location", "/accepted");
+          exchange.sendResponseHeaders(redirectStatus.get(), -1);
+          exchange.close();
+        });
+    server.createContext(
+        "/accepted",
+        exchange -> {
+          acceptedRequests.incrementAndGet();
+          acceptedMethod.set(exchange.getRequestMethod());
+          acceptedBody.set(
+              new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+          exchange.sendResponseHeaders(200, -1);
+          exchange.close();
+        });
+    server.start();
+
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      try (HttpTransport transport = new HttpTransport(HttpClients.createDefault(), config)) {
+        OpenLineageClient client = new OpenLineageClient(transport);
+
+        HttpTransportResponseException exception =
+            assertThrows(HttpTransportResponseException.class, () -> client.emit(runEvent()));
+        assertThat(exception.getStatusCode()).isEqualTo(302);
+        assertThat(acceptedRequests).hasValue(0);
+
+        redirectStatus.set(307);
+        client.emit(runEvent());
+        assertThat(acceptedRequests).hasValue(1);
+        assertThat(acceptedMethod).hasValue("POST");
+        assertThat(acceptedBody.get()).isNotEmpty();
+      }
+    } finally {
+      server.stop(0);
+    }
   }
 
   @Test
