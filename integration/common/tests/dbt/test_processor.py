@@ -151,6 +151,49 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     assert generated_query_id is None
 
 
+def test_fabricspark_lakehouse_namespace(dbt_artifact_processor):
+    """A lakehouse is addressed by workspace and lakehouse id, not by host.
+
+    Every Fabric tenant reaches the same `api.fabric.microsoft.com` endpoint,
+    so a namespace derived from the profile's `endpoint` would be identical for
+    two different workspaces.
+    """
+    dbt_artifact_processor.adapter_type = Adapter.FABRICSPARK
+    dbt_artifact_processor.extract_dataset_namespace(
+        {
+            "type": "fabricspark",
+            "method": "livy",
+            "endpoint": "https://api.fabric.microsoft.com/v1",
+            "workspaceid": "11111111-2222-3333-4444-555555555555",
+            "lakehouseid": "66666666-7777-8888-9999-000000000000",
+            "lakehouse": "lake",
+        }
+    )
+
+    assert dbt_artifact_processor.dataset_namespace == (
+        "fabric-lakehouse://11111111-2222-3333-4444-555555555555/66666666-7777-8888-9999-000000000000"
+    )
+
+
+def test_fabricspark_namespace_requires_the_ids_it_is_built_from(dbt_artifact_processor):
+    # Failing by name beats emitting a namespace that silently collides with
+    # every other workspace's.
+    dbt_artifact_processor.adapter_type = Adapter.FABRICSPARK
+
+    with pytest.raises(NotImplementedError, match="workspaceid"):
+        dbt_artifact_processor.extract_dataset_namespace(
+            {"type": "fabricspark", "endpoint": "https://api.fabric.microsoft.com/v1"}
+        )
+
+
+def test_fabricspark_dialect_is_its_own(dbt_artifact_processor):
+    # The SQL facet's dialect comes from the adapter name; fabricspark is Spark
+    # SQL through Livy, not the warehouse's T-SQL.
+    dbt_artifact_processor.adapter_type = Adapter.FABRICSPARK
+
+    assert dbt_artifact_processor.extract_dialect() == "fabricspark"
+
+
 def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
     dbt_artifact_processor.adapter_type = Adapter.FABRIC
     dbt_artifact_processor.extract_dataset_namespace(
