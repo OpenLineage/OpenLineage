@@ -255,6 +255,29 @@ class OpenLineageSparkListenerTest {
   }
 
   @Test
+  void testTaskEndAfterJobEndDoesNotRecreateStageMetrics() {
+    ContextFactory contextFactory = mock(ContextFactory.class);
+    when(contextFactory.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(contextFactory);
+    SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(64);
+    SparkListenerTaskEnd taskEnd = mock(SparkListenerTaskEnd.class);
+    when(taskEnd.stageId()).thenReturn(640);
+    when(taskEnd.taskMetrics()).thenReturn(new TaskMetrics());
+    JobMetricsHolder holder = JobMetricsHolder.getInstance();
+    holder.addJobStages(64, Collections.singleton(640));
+
+    listener.onJobEnd(jobEnd);
+    listener.onTaskEnd(taskEnd);
+
+    assertThat(holder.getJobStagesSize()).isZero();
+    assertThat(holder.getStageOwners()).isEmpty();
+    assertThat(holder.getStageMetricsSize()).isZero();
+    assertThat(holder.getJobMetricsSize()).isZero();
+  }
+
+  @Test
   @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testRetainedStateGaugesTrackContextsAndMetrics() {
     SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
