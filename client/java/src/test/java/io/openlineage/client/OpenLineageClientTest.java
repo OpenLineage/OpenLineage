@@ -22,8 +22,13 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.circuitBreaker.CircuitBreakerState;
 import io.openlineage.client.transports.Transport;
+import java.net.URI;
+import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.UUID;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class OpenLineageClientTest {
 
@@ -47,6 +52,33 @@ class OpenLineageClientTest {
     OpenLineage.JobEvent jobEvent = mock(JobEvent.class);
     client.emit(jobEvent);
     verify(transport, times(1)).emit(jobEvent);
+  }
+
+  @Test
+  void testTranslatesBeforeEmittingWithoutMutatingOriginal() {
+    OpenLineage openLineage = new OpenLineage(URI.create("https://producer.example"));
+    OpenLineage.Job job =
+        openLineage.newJob("jobs", "example", openLineage.newJobFacetsBuilder().build());
+    OpenLineage.RunEvent event =
+        openLineage.newRunEvent(
+            ZonedDateTime.parse("2026-08-18T10:00:00Z"),
+            RunEvent.EventType.COMPLETE,
+            openLineage.newRun(UUID.randomUUID(), null),
+            job,
+            Collections.emptyList(),
+            Collections.singletonList(openLineage.newOutputDataset("out", "orders", null, null)));
+    OpenLineageClient translatingClient =
+        OpenLineageClient.builder()
+            .transport(transport)
+            .lineageCompatibility(LineageCompatibility.MODERN)
+            .build();
+    ArgumentCaptor<RunEvent> emitted = ArgumentCaptor.forClass(RunEvent.class);
+
+    translatingClient.emit(event);
+
+    verify(transport).emit(emitted.capture());
+    assertThat(event.getJob().getFacets().getLineage()).isNull();
+    assertThat(emitted.getValue().getJob().getFacets().getLineage()).isNotNull();
   }
 
   @SneakyThrows

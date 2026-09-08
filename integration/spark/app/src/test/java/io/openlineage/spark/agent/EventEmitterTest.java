@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.LineageCompatibility;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import lombok.SneakyThrows;
 import org.apache.spark.SparkConf;
@@ -42,5 +43,20 @@ class EventEmitterTest {
     eventEmitter.setApplicationJobName(resolvedName);
 
     assertThat(eventEmitter.getApplicationJobName()).isEqualTo(resolvedName);
+  }
+
+  @SneakyThrows
+  @Test
+  void testLineageCompatibilityFromSparkConfigIsPassedToClient() {
+    SparkConf sparkConf = new SparkConf().set("spark.openlineage.lineage.compatibility", "legacy");
+
+    SparkOpenLineageConfig olConfig = ArgumentParser.parse(sparkConf);
+    EventEmitter eventEmitter = new EventEmitter(olConfig, "test-app");
+
+    assertThat(olConfig.getLineageConfig().getCompatibility())
+        .isEqualTo(LineageCompatibility.LEGACY);
+    assertThat(eventEmitter.getClient())
+        .extracting("lineageCompatibility")
+        .isEqualTo(LineageCompatibility.LEGACY);
   }
 }

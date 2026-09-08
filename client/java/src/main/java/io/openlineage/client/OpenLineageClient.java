@@ -29,6 +29,7 @@ public final class OpenLineageClient implements AutoCloseable {
   final Optional<CircuitBreaker> circuitBreaker;
   final MeterRegistry meterRegistry;
   final String[] disabledFacets;
+  final LineageCompatibility lineageCompatibility;
 
   Counter emitStart;
   Counter emitComplete;
@@ -53,8 +54,19 @@ public final class OpenLineageClient implements AutoCloseable {
       CircuitBreaker circuitBreaker,
       MeterRegistry meterRegistry,
       String... disabledFacets) {
+    this(transport, circuitBreaker, meterRegistry, disabledFacets, LineageCompatibility.NONE);
+  }
+
+  private OpenLineageClient(
+      @NonNull final Transport transport,
+      CircuitBreaker circuitBreaker,
+      MeterRegistry meterRegistry,
+      String[] disabledFacets,
+      LineageCompatibility lineageCompatibility) {
     this.transport = transport;
     this.disabledFacets = Arrays.copyOf(disabledFacets, disabledFacets.length);
+    this.lineageCompatibility =
+        lineageCompatibility == null ? LineageCompatibility.NONE : lineageCompatibility;
     this.circuitBreaker = Optional.ofNullable(circuitBreaker);
     if (meterRegistry == null) {
       this.meterRegistry = MicrometerProvider.getMeterRegistry();
@@ -73,7 +85,9 @@ public final class OpenLineageClient implements AutoCloseable {
    * @param runEvent The run event to emit.
    */
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    emitRunEvent(runEvent, () -> transport.emit(runEvent));
+    OpenLineage.RunEvent translated =
+        LineageCompatibilityConverter.convert(runEvent, lineageCompatibility);
+    emitRunEvent(translated, () -> transport.emit(translated));
   }
 
   /**
@@ -86,7 +100,9 @@ public final class OpenLineageClient implements AutoCloseable {
    * @param timeout Maximum time to wait for transports that support bounded delivery.
    */
   public void emit(@NonNull OpenLineage.RunEvent runEvent, @NonNull Duration timeout) {
-    emitRunEvent(runEvent, () -> transport.emit(runEvent, timeout));
+    OpenLineage.RunEvent translated =
+        LineageCompatibilityConverter.convert(runEvent, lineageCompatibility);
+    emitRunEvent(translated, () -> transport.emit(translated, timeout));
   }
 
   private void emitRunEvent(@NonNull OpenLineage.RunEvent runEvent, Runnable emit) {
@@ -137,9 +153,12 @@ public final class OpenLineageClient implements AutoCloseable {
    * @param jobEvent The job event to emit.
    */
   public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+    OpenLineage.JobEvent translated =
+        LineageCompatibilityConverter.convert(jobEvent, lineageCompatibility);
     if (log.isDebugEnabled()) {
       log.debug(
-          "OpenLineageClient will emit lineage event: {}", OpenLineageClientUtils.toJson(jobEvent));
+          "OpenLineageClient will emit lineage event: {}",
+          OpenLineageClientUtils.toJson(translated));
     }
     if (circuitBreaker.isPresent() && circuitBreaker.get().currentState().isClosed()) {
       engagedCircuitBreaker.set(1);
@@ -149,7 +168,7 @@ public final class OpenLineageClient implements AutoCloseable {
       engagedCircuitBreaker.set(0);
     }
     emitStart.increment();
-    emitTime.record(() -> transport.emit(jobEvent));
+    emitTime.record(() -> transport.emit(translated));
     emitComplete.increment();
   }
 
@@ -210,10 +229,12 @@ public final class OpenLineageClient implements AutoCloseable {
     private String[] disabledFacets;
     private CircuitBreaker circuitBreaker;
     private MeterRegistry meterRegistry;
+    private LineageCompatibility lineageCompatibility;
 
     private Builder() {
       this.transport = DEFAULT_TRANSPORT;
       disabledFacets = new String[] {};
+      lineageCompatibility = LineageCompatibility.NONE;
     }
 
     public Builder transport(@NonNull Transport transport) {
@@ -236,12 +257,18 @@ public final class OpenLineageClient implements AutoCloseable {
       return this;
     }
 
+    public Builder lineageCompatibility(@NonNull LineageCompatibility lineageCompatibility) {
+      this.lineageCompatibility = lineageCompatibility;
+      return this;
+    }
+
     /**
      * @return an {@link OpenLineageClient} object with the properties of this {@link
      *     OpenLineageClient.Builder}.
      */
     public OpenLineageClient build() {
-      return new OpenLineageClient(transport, circuitBreaker, meterRegistry, disabledFacets);
+      return new OpenLineageClient(
+          transport, circuitBreaker, meterRegistry, disabledFacets, lineageCompatibility);
     }
   }
 }
