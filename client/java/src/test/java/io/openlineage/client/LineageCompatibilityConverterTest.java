@@ -137,9 +137,8 @@ class LineageCompatibilityConverterTest {
     assertThat(lineage.get("entries")).hasSize(2);
     assertThat(lineage.at("/entries/0/name").asText()).isEqualTo("orders");
     assertThat(lineage.at("/entries/1/name").asText()).isEqualTo("report");
-    assertThat(lineage.at("/entries/0/inputs")).hasSize(3);
-    assertThat(lineage.at("/entries/0/inputs/0/field").isMissingNode()).isTrue();
-    assertThat(lineage.at("/entries/0/inputs/2/field").asText()).isEqualTo("filter_id");
+    assertThat(lineage.at("/entries/0/inputs")).hasSize(1);
+    assertThat(lineage.at("/entries/0/inputs/0/field").asText()).isEqualTo("filter_id");
     assertThat(lineage.at("/entries/0/fields/id/inputs")).hasSize(2);
     assertThat(lineage.at("/entries/0/fields/id/inputs/0/field").asText()).isEqualTo("source_id");
     assertThat(lineage.at("/entries/0/fields/id/inputs/1/field").asText()).isEqualTo("lookup_id");
@@ -152,6 +151,34 @@ class LineageCompatibilityConverterTest {
         LineageCompatibilityConverter.convert(converted, LineageCompatibility.BOTH);
     JsonNode convertedAgainJson = MAPPER.valueToTree(convertedAgain);
     assertThat(convertedAgainJson).isEqualTo(convertedJson);
+  }
+
+  @Test
+  @SneakyThrows
+  void modernModeDoesNotAddCartesianInputsToOutputsWithColumnLineage() {
+    RunEvent event =
+        runEvent(
+            "{}",
+            "[{\"namespace\":\"in\",\"name\":\"a\"}," + "{\"namespace\":\"in\",\"name\":\"b\"}]",
+            "[{\"namespace\":\"out\",\"name\":\"c\",\"facets\":{"
+                + "\"columnLineage\":{\"fields\":{\"id\":{\"inputFields\":["
+                + legacyInputField("in", "a", "id")
+                + "]}}}}},"
+                + "{\"namespace\":\"out\",\"name\":\"d\",\"facets\":{"
+                + "\"columnLineage\":{\"fields\":{\"id\":{\"inputFields\":["
+                + legacyInputField("in", "b", "id")
+                + "]}}}}},"
+                + "{\"namespace\":\"out\",\"name\":\"c\"}]");
+
+    JsonNode lineage =
+        MAPPER
+            .valueToTree(LineageCompatibilityConverter.convert(event, LineageCompatibility.MODERN))
+            .at("/job/facets/lineage");
+
+    assertThat(lineage.at("/entries/0/inputs")).isEqualTo(MAPPER.createArrayNode());
+    assertThat(lineage.at("/entries/0/fields/id/inputs/0/name").asText()).isEqualTo("a");
+    assertThat(lineage.at("/entries/1/inputs")).isEqualTo(MAPPER.createArrayNode());
+    assertThat(lineage.at("/entries/1/fields/id/inputs/0/name").asText()).isEqualTo("b");
   }
 
   @Test

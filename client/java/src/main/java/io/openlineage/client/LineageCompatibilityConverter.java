@@ -13,11 +13,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.openlineage.client.OpenLineage.JobEvent;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /** Translates between explicit lineage facets and legacy inputs, outputs and column lineage. */
 final class LineageCompatibilityConverter {
@@ -240,6 +242,16 @@ final class LineageCompatibilityConverter {
       }
     }
 
+    Set<DatasetIdentifier> targetsWithColumnLineage = new HashSet<>();
+    for (JsonNode outputNode : outputsNode) {
+      if (outputNode.isObject() && getColumnLineage((ObjectNode) outputNode) != null) {
+        DatasetIdentifier target = DatasetIdentifier.from(outputNode);
+        if (target != null) {
+          targetsWithColumnLineage.add(target);
+        }
+      }
+    }
+
     Map<DatasetIdentifier, ObjectNode> entriesByTarget = new LinkedHashMap<>();
     for (JsonNode outputNode : outputsNode) {
       if (!outputNode.isObject()) {
@@ -251,9 +263,12 @@ final class LineageCompatibilityConverter {
         continue;
       }
       ObjectNode entry = entriesByTarget.computeIfAbsent(target, unused -> newLineageEntry(output));
-      ArrayNode entryInputs = array(entry, "inputs");
-      appendUnique(entryInputs, commonInputs);
-      addModernColumnLineage(entry, getColumnLineage(output));
+      JsonNode columnLineage = getColumnLineage(output);
+      if (!targetsWithColumnLineage.contains(target)) {
+        ArrayNode entryInputs = array(entry, "inputs");
+        appendUnique(entryInputs, commonInputs);
+      }
+      addModernColumnLineage(entry, columnLineage);
     }
 
     if (entriesByTarget.isEmpty()) {
