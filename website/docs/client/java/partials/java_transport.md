@@ -15,10 +15,11 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
 - `urlParams` - dictionary specifying query parameters send in HTTP requests. Optional.
 - `timeoutInMillis` - integer specifying timeout (in milliseconds) value used while connecting to server. Optional, default: `5000`.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
-  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`apiKey` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2_client_credentials`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication: 
      - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
   - Configuration options for `jwt` authentication are documented in the [JWT Token Provider](#jwt-token-provider) section.
+  - Configuration options for `oauth2_client_credentials` authentication are documented in the [OAuth2 Client Credentials Token Provider](#oauth2-client-credentials-token-provider) section.
 - `headers` - dictionary specifying HTTP request headers. Optional.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 
@@ -464,6 +465,76 @@ httpConfig.setAuth(jwtTokenProvider);
 OpenLineageClient client = OpenLineageClient.builder()
   .transport(new HttpTransport(httpConfig))
   .build();
+```
+
+</TabItem>
+</Tabs>
+
+#### OAuth2 Client Credentials Token Provider
+
+The `OAuth2ClientCredentialsTokenProvider` obtains an access token with the OAuth 2.0 client credentials grant ([RFC 6749, section 4.4](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4)). Use it when the OpenLineage backend is protected by an OAuth 2.0 authorization server that issues short-lived access tokens to a client ID and client secret.
+
+##### Configuration
+
+When using OAuth2 client credentials authentication with HTTP transport, configure the `auth` section as follows:
+
+- `type` - string, must be `"oauth2_client_credentials"`. Required.
+- `clientId` - string, the OAuth 2.0 client ID. Required.
+- `clientSecret` - string, the OAuth 2.0 client secret. Required.
+- `tokenEndpoint` - string, the URL of the token endpoint. Required.
+- `scope` - string, space separated scopes to request. Optional.
+- `clientAuthMethod` - string, how the client credentials are sent to the token endpoint: `"client_secret_basic"` (HTTP Basic `Authorization` header) or `"client_secret_post"` (request body). Optional, default: `"client_secret_basic"`.
+- `tokenFields` - array of strings, JSON field names to search for the token in the response. Optional, default: `["access_token"]`.
+- `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
+- `tokenRefreshBuffer` - integer, number of seconds before token expiry to trigger a refresh. Optional, default: `120`.
+
+##### Behavior
+
+- The provider sends a POST request with URL-encoded form data containing `grant_type=client_credentials` and, if configured, `scope`.
+- Tokens are cached and automatically refreshed before expiration (default: 120 seconds before expiry, configurable via `tokenRefreshBuffer`). The client credentials grant does not issue refresh tokens, so every refresh is a new token request.
+- If no expiration is provided in the response, the provider attempts to extract it from the JWT payload's `exp` claim.
+
+##### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: http
+  url: https://api.example.com
+  auth:
+    type: oauth2_client_credentials
+    clientId: your-client-id
+    clientSecret: your-client-secret
+    tokenEndpoint: https://auth.example.com/token
+```
+
+With the client credentials sent in the request body and a scope:
+
+```yaml
+transport:
+  type: http
+  url: https://api.example.com
+  auth:
+    type: oauth2_client_credentials
+    clientId: your-client-id
+    clientSecret: your-client-secret
+    tokenEndpoint: https://auth.example.com/token
+    clientAuthMethod: client_secret_post
+    scope: openid
+```
+
+</TabItem>
+<TabItem value="spark" label="Spark Config">
+
+```ini
+spark.openlineage.transport.type=http
+spark.openlineage.transport.url=https://api.example.com
+spark.openlineage.transport.auth.type=oauth2_client_credentials
+spark.openlineage.transport.auth.clientId=your-client-id
+spark.openlineage.transport.auth.clientSecret=your-client-secret
+spark.openlineage.transport.auth.tokenEndpoint=https://auth.example.com/token
 ```
 
 </TabItem>
