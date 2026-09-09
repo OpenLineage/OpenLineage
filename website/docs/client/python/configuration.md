@@ -476,7 +476,7 @@ When using OAuth2 client credentials authentication with HTTP transport, configu
 - `clientSecret` - string, the OAuth 2.0 client secret. Required.
 - `tokenEndpoint` - string, the URL of the token endpoint. Required.
 - `scope` - string, space separated scopes to request. Optional.
-- `clientAuthMethod` - string, how the client credentials are sent to the token endpoint: `"client_secret_basic"` (HTTP Basic `Authorization` header) or `"client_secret_post"` (request body). Optional, default: `"client_secret_basic"`.
+- `clientAuthMethod` - string, how the client credentials are sent to the token endpoint: `"client_secret_basic"` (HTTP Basic `Authorization` header, with the credentials form-urlencoded as required by [RFC 6749, section 2.3.1](https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1)) or `"client_secret_post"` (request body). Optional, default: `"client_secret_basic"`.
 - `tokenFields` - list of strings, JSON field names to search for the token in the response. Optional, default: `["access_token"]`.
 - `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
 - `tokenRefreshBuffer` - integer, number of seconds before token expiry to trigger a refresh. Optional, default: `120`.
@@ -486,6 +486,9 @@ When using OAuth2 client credentials authentication with HTTP transport, configu
 - The provider sends a POST request with URL-encoded form data containing `grant_type=client_credentials` and, if configured, `scope`.
 - Tokens are cached and automatically refreshed before expiration (default: 120 seconds before expiry, configurable via `tokenRefreshBuffer`). The client credentials grant does not issue refresh tokens, so every refresh is a new token request.
 - If no expiration is provided in the response, the provider attempts to extract it from the JWT payload's `exp` claim.
+- The provider supports multiple JSON field names for the token, trying each in order until a match is found.
+- Field matching is case-insensitive and handles both snake_case and camelCase variations (e.g., `expires_in` matches `expiresIn`).
+- If the response contains neither an expiry field nor a JWT `exp` claim, the token cannot be cached and a new one is requested for every event. A warning is logged when this happens.
 
 ##### Examples
 
@@ -531,7 +534,31 @@ transport:
 ```
 
 </TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.http import (
+    HttpConfig,
+    HttpTransport,
+    OAuth2ClientCredentialsTokenProvider,
+)
+
+http_config = HttpConfig(
+    url="https://backend:5000",
+    auth=OAuth2ClientCredentialsTokenProvider({
+        "clientId": "your-client-id",
+        "clientSecret": "your-client-secret",
+        "tokenEndpoint": "https://auth.example.com/token"
+    })
+)
+
+client = OpenLineageClient(transport=HttpTransport(http_config))
+```
+
+</TabItem>
 </Tabs>
+
 
 ### Async HTTP Transport
 

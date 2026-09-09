@@ -12,7 +12,7 @@ import threading
 import time
 from enum import Enum
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urljoin
+from urllib.parse import quote_plus, urljoin
 
 import attr
 import requests
@@ -62,8 +62,8 @@ class TokenEndpointTokenProvider(TokenProvider):
     """Base class for TokenProviders that obtain a short-lived bearer token from a token endpoint.
 
     The token is cached and fetched again ``tokenRefreshBuffer`` seconds before it expires. Subclasses
-    provide the token request form data via ``_get_token_request_data`` and, optionally, HTTP basic auth
-    credentials via ``_get_token_request_auth``.
+    provide the token request form data via ``_get_token_request_data`` and, optionally, an Authorization
+    header via ``_get_token_request_authorization``.
 
     Common configuration options:
         {
@@ -114,8 +114,8 @@ class TokenEndpointTokenProvider(TokenProvider):
         """Return URL-encoded form data sent to the token endpoint."""
         raise NotImplementedError
 
-    def _get_token_request_auth(self) -> tuple[str, str] | None:
-        """Return HTTP basic auth credentials sent to the token endpoint, if any."""
+    def _get_token_request_authorization(self) -> str | None:
+        """Return the Authorization header sent to the token endpoint, if any."""
         return None
 
     def get_bearer(self) -> str | None:
@@ -145,11 +145,15 @@ class TokenEndpointTokenProvider(TokenProvider):
     def _fetch_token(self) -> None:
         """Fetch a new token from the token endpoint."""
         try:
+            headers = {"Content-Type": "application/x-www-form-urlencoded"}
+            authorization = self._get_token_request_authorization()
+            if authorization:
+                headers["Authorization"] = authorization
+
             response = requests.post(
                 self.token_endpoint,
                 data=self._get_token_request_data(),
-                auth=self._get_token_request_auth(),
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                headers=headers,
                 timeout=10,
             )
             response.raise_for_status()
@@ -172,6 +176,13 @@ class TokenEndpointTokenProvider(TokenProvider):
             else:
                 # Try to extract expiration from JWT payload
                 self._token_expiry = self._extract_expiry_from_jwt(token)
+                if not self._token_expiry:
+                    log.warning(
+                        "%s endpoint returned no expiry information, so the token cannot be cached "
+                        "and a new one is requested for every event. Set expiresInField if the "
+                        "response names it differently.",
+                        self.TOKEN_NAME,
+                    )
 
             log.debug("Successfully fetched %s, expires at: %s", self.TOKEN_NAME, self._token_expiry)
 
@@ -275,7 +286,7 @@ class JwtTokenProvider(TokenEndpointTokenProvider):
     TOKEN_NAME = "JWT token"
     DEFAULT_TOKEN_FIELDS = ("token", "access_token")
 
-    def __init__(self, config: dict[str, str]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
         if not api_key:
             msg = "apiKey is required for JWT token provider."
@@ -352,10 +363,12 @@ class OAuth2ClientCredentialsTokenProvider(TokenEndpointTokenProvider):
             data["client_secret"] = self.client_secret
         return data
 
-    def _get_token_request_auth(self) -> tuple[str, str] | None:
+    def _get_token_request_authorization(self) -> str | None:
         if self.client_auth_method == "client_secret_post":
             return None
-        return (self.client_id, self.client_secret)
+        # Client credentials are form-urlencoded before being encoded, as required by RFC 6749, 2.3.1
+        credentials = f"{quote_plus(self.client_id)}:{quote_plus(self.client_secret)}"
+        return "Basic " + base64.b64encode(credentials.encode("utf-8")).decode("ascii")
 
 
 def create_token_provider(auth: dict[str, str]) -> TokenProvider:

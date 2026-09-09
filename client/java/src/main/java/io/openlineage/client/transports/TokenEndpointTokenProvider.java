@@ -29,6 +29,8 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for TokenProviders that obtain a short-lived bearer token from a token endpoint.
@@ -37,9 +39,11 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
  * Subclasses provide the URL-encoded form parameters of the token request and, optionally, the
  * {@code Authorization} header sent to the token endpoint.
  */
-@Slf4j
-@ToString(exclude = {"cachedToken"})
+@ToString(exclude = {"log", "cachedToken"})
 public abstract class TokenEndpointTokenProvider implements TokenProvider {
+
+  // Instance logger so each concrete provider keeps its own log category
+  private final Logger log = LoggerFactory.getLogger(getClass());
 
   // Default: Refresh 120s before expiry
   private static final int DEFAULT_TOKEN_REFRESH_BUFFER_SECONDS = 120;
@@ -179,7 +183,10 @@ public abstract class TokenEndpointTokenProvider implements TokenProvider {
       long expiresIn = tokenExpiryEpochSeconds - getCurrentTimeSeconds();
       log.debug("{} cached, expires in {} seconds", getTokenName(), expiresIn);
     } else {
-      log.debug("{} cached, no expiry information available", getTokenName());
+      log.warn(
+          "{} endpoint returned no expiry information, so the token cannot be cached and a new one "
+              + "is requested for every event. Set expiresInField if the response names it differently.",
+          getTokenName());
     }
   }
 
@@ -191,6 +198,7 @@ public abstract class TokenEndpointTokenProvider implements TokenProvider {
    * Helper class to parse a token response. Parses the JSON response and extracts token value and
    * expiry with case-insensitive field matching.
    */
+  @Slf4j
   private static class TokenResponse {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
