@@ -5,6 +5,7 @@
 
 package io.openlineage.client.job;
 
+import io.openlineage.client.naming.NameEscaping;
 import javax.annotation.Nullable;
 import lombok.Builder;
 
@@ -64,7 +65,9 @@ public class Naming {
      */
     @Override
     public String getName() {
-      return appName + (command != null ? "." + command : "") + (table != null ? "." + table : "");
+      return NameEscaping.escapeSegment(appName)
+          + (command != null ? "." + NameEscaping.escapeSegment(command) : "")
+          + (table != null ? "." + NameEscaping.escapeSegment(table) : "");
     }
   }
 }

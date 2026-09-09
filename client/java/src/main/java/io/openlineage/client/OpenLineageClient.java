@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.metrics.MicrometerProvider;
+import io.openlineage.client.naming.NameConfig;
 import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.Transport;
 import java.time.Duration;
@@ -29,6 +30,7 @@ public final class OpenLineageClient implements AutoCloseable {
   final Optional<CircuitBreaker> circuitBreaker;
   final MeterRegistry meterRegistry;
   final String[] disabledFacets;
+  final NameConfig nameConfig;
 
   Counter emitStart;
   Counter emitComplete;
@@ -53,9 +55,19 @@ public final class OpenLineageClient implements AutoCloseable {
       CircuitBreaker circuitBreaker,
       MeterRegistry meterRegistry,
       String... disabledFacets) {
+    this(transport, circuitBreaker, meterRegistry, null, disabledFacets);
+  }
+
+  public OpenLineageClient(
+      @NonNull final Transport transport,
+      CircuitBreaker circuitBreaker,
+      MeterRegistry meterRegistry,
+      NameConfig nameConfig,
+      String... disabledFacets) {
     this.transport = transport;
     this.disabledFacets = Arrays.copyOf(disabledFacets, disabledFacets.length);
     this.circuitBreaker = Optional.ofNullable(circuitBreaker);
+    this.nameConfig = nameConfig;
     if (meterRegistry == null) {
       this.meterRegistry = MicrometerProvider.getMeterRegistry();
     } else {
@@ -210,6 +222,7 @@ public final class OpenLineageClient implements AutoCloseable {
     private String[] disabledFacets;
     private CircuitBreaker circuitBreaker;
     private MeterRegistry meterRegistry;
+    private NameConfig nameConfig;
 
     private Builder() {
       this.transport = DEFAULT_TRANSPORT;
@@ -236,12 +249,18 @@ public final class OpenLineageClient implements AutoCloseable {
       return this;
     }
 
+    public Builder nameConfig(NameConfig nameConfig) {
+      this.nameConfig = nameConfig;
+      return this;
+    }
+
     /**
      * @return an {@link OpenLineageClient} object with the properties of this {@link
      *     OpenLineageClient.Builder}.
      */
     public OpenLineageClient build() {
-      return new OpenLineageClient(transport, circuitBreaker, meterRegistry, disabledFacets);
+      return new OpenLineageClient(
+          transport, circuitBreaker, meterRegistry, nameConfig, disabledFacets);
     }
   }
 }

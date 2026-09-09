@@ -15,6 +15,7 @@ from enum import Enum
 from typing import Protocol
 
 import attr
+from openlineage.client.naming.escape import escape
 
 
 def _check_not_empty(instance: object, attribute: attr.Attribute[str], value: str) -> str:  # noqa: ARG001
@@ -71,7 +72,7 @@ class Athena(DatasetNaming):
         return f"awsathena://athena.{self.region_name}.amazonaws.com"
 
     def get_name(self) -> str:
-        return f"{self.catalog}.{self.database}.{self.table}"
+        return f"{escape(self.catalog)}.{escape(self.database)}.{escape(self.table)}"
 
 
 @attr.define
@@ -117,6 +118,7 @@ class AzureDataExplorer(DatasetNaming):
         return f"azurekusto://{self.host}.kusto.windows.net"
 
     def get_name(self) -> str:
+        # AzureDataExplorer uses `/` as separator, not `.`, so no dot-escaping needed here
         return f"{self.database}/{self.table}"
 
 
@@ -133,7 +135,7 @@ class AzureSynapse(DatasetNaming):
         return f"sqlserver://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.schema}.{self.table}"
+        return f"{escape(self.schema)}.{escape(self.table)}"
 
 
 @attr.define
@@ -152,7 +154,7 @@ class BigQuery(DatasetNaming):
         return "bigquery"
 
     def get_name(self) -> str:
-        return f"{self.project_id}.{self.dataset_name}.{self.table_name}"
+        return f"{escape(self.project_id)}.{escape(self.dataset_name)}.{escape(self.table_name)}"
 
 
 @attr.define
@@ -168,7 +170,7 @@ class Cassandra(DatasetNaming):
         return f"cassandra://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.keyspace}.{self.table}"
+        return f"{escape(self.keyspace)}.{escape(self.table)}"
 
 
 @attr.define
@@ -184,7 +186,7 @@ class MySQL(DatasetNaming):
         return f"mysql://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.table)}"
 
 
 @attr.define
@@ -201,7 +203,7 @@ class CrateDB(DatasetNaming):
         return f"crate://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.schema}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.schema)}.{escape(self.table)}"
 
 
 @attr.define
@@ -218,7 +220,7 @@ class DB2(DatasetNaming):
         return f"db2://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.schema}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.schema)}.{escape(self.table)}"
 
 
 @attr.define
@@ -234,7 +236,7 @@ class OceanBase(DatasetNaming):
         return f"oceanbase://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.table)}"
 
 
 @attr.define
@@ -251,7 +253,7 @@ class Oracle(DatasetNaming):
         return f"oracle://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.service_name}.{self.schema}.{self.table}"
+        return f"{escape(self.service_name)}.{escape(self.schema)}.{escape(self.table)}"
 
 
 @attr.define
@@ -268,7 +270,7 @@ class Postgres(DatasetNaming):
         return f"postgres://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.schema}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.schema)}.{escape(self.table)}"
 
 
 @attr.define
@@ -284,7 +286,7 @@ class Teradata(DatasetNaming):
         return f"teradata://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.table)}"
 
 
 @attr.define
@@ -302,7 +304,7 @@ class Redshift(DatasetNaming):
         return f"redshift://{self.cluster_identifier}.{self.region}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.schema}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.schema)}.{escape(self.table)}"
 
 
 @attr.define
@@ -319,7 +321,7 @@ class Snowflake(DatasetNaming):
         return f"snowflake://{self.organization_name}-{self.account_name}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.schema}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.schema)}.{escape(self.table)}"
 
 
 @attr.define
@@ -336,7 +338,7 @@ class Trino(DatasetNaming):
         return f"trino://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.catalog}.{self.schema}.{self.table}"
+        return f"{escape(self.catalog)}.{escape(self.schema)}.{escape(self.table)}"
 
 
 @attr.define
@@ -410,7 +412,7 @@ class Hive(DatasetNaming):
         return f"hive://{self.host}:{self.port}"
 
     def get_name(self) -> str:
-        return f"{self.database}.{self.table}"
+        return f"{escape(self.database)}.{escape(self.table)}"
 
 
 @attr.define

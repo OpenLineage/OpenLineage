@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.naming.NameConfig;
 import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
@@ -62,7 +63,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       Integer trackingIntervalInSeconds,
       Integer detachedStartEventEmitTimeoutInSeconds,
       Boolean enableDetachedJobTracking,
-      Boolean disableCheckpointTracking) {
+      Boolean disableCheckpointTracking,
+      NameConfig nameConfig) {
     super(
         transportConfig,
         facetsConfig,
@@ -70,7 +72,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         circuitBreaker,
         metricsConfig,
         runConfig,
-        jobConfig);
+        jobConfig,
+        nameConfig);
     this.datasetConfig = datasetConfig;
     this.trackingIntervalInSeconds = trackingIntervalInSeconds;
     this.detachedStartEventEmitTimeoutInSeconds = detachedStartEventEmitTimeoutInSeconds;
@@ -92,7 +95,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(
             detachedStartEventEmitTimeoutInSeconds, other.detachedStartEventEmitTimeoutInSeconds),
         mergePropertyWith(enableDetachedJobTracking, other.enableDetachedJobTracking),
-        mergePropertyWith(disableCheckpointTracking, other.disableCheckpointTracking));
+        mergePropertyWith(disableCheckpointTracking, other.disableCheckpointTracking),
+        mergePropertyWith(nameConfig, other.nameConfig));
   }
 
   public Integer getTrackingIntervalInSeconds() {

@@ -8,6 +8,7 @@ import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.naming.NameConfig;
 import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
@@ -35,7 +36,8 @@ public class HiveOpenLineageConfig extends OpenLineageConfig<HiveOpenLineageConf
       CircuitBreakerConfig circuitBreaker,
       Map metricsConfig,
       RunConfig runConfig,
-      JobConfig jobConfig) {
+      JobConfig jobConfig,
+      NameConfig nameConfig) {
     super(
         transportConfig,
         facetsConfig,
@@ -43,7 +45,8 @@ public class HiveOpenLineageConfig extends OpenLineageConfig<HiveOpenLineageConf
         circuitBreaker,
         metricsConfig,
         runConfig,
-        jobConfig);
+        jobConfig,
+        nameConfig);
   }
 
   @Override
@@ -58,6 +61,7 @@ public class HiveOpenLineageConfig extends OpenLineageConfig<HiveOpenLineageConf
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(runConfig, other.runConfig),
-        mergePropertyWith(jobConfig, other.jobConfig));
+        mergePropertyWith(jobConfig, other.jobConfig),
+        mergePropertyWith(nameConfig, other.nameConfig));
   }
 }

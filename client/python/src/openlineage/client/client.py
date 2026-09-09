@@ -29,6 +29,7 @@ from openlineage.client.git import (
     get_git_tag,
     get_git_version,
 )
+from openlineage.client.naming.escape import configure as configure_escaping
 from openlineage.client.serde import Serde
 from openlineage.client.tags import TagsConfig
 from openlineage.client.transport import (
@@ -63,11 +64,25 @@ class OpenLineageClientOptions:
 
 
 @attr.define
+class NameConfig:
+    """Configuration for OpenLineage name-related behaviour.
+
+    Corresponds to the ``name`` key in the top-level OpenLineage configuration::
+
+        name:
+          escaping: true   # enable automatic dot-escaping of name segments (off by default)
+    """
+
+    escaping: bool | None = attr.field(default=None)
+
+
+@attr.define
 class OpenLineageConfig:
     transport: dict[str, Any] | None = attr.field(factory=dict)
     facets: FacetsConfig = attr.field(factory=FacetsConfig)
     filters: list[FilterConfig] = attr.field(factory=list)
     tags: TagsConfig = attr.field(factory=TagsConfig)
+    name: NameConfig = attr.field(factory=NameConfig)
     dataset: DatasetConfig = attr.field(factory=DatasetConfig)
 
     @classmethod
@@ -91,6 +106,8 @@ class OpenLineageConfig:
                 job=params["tags"].get("job", {}),
                 run=params["tags"].get("run", {}),
             )
+        if "name" in params:
+            config.name = NameConfig(escaping=params["name"].get("escaping"))
         if "dataset" in params:
             ds = dict(params["dataset"])
             ds["disabled_trimmers"] = split_into_list(ds.get("disabled_trimmers", []))
@@ -142,6 +159,10 @@ class OpenLineageClient:
             url=url, options=options, session=session, transport=transport, factory=factory
         )
         log.info("OpenLineageClient will use `%s` transport", self.transport.kind)
+
+        # Apply the name config so that `name.escaping: true` in YAML is honoured.
+        # self.config is already populated at this point (accessed inside _resolve_transport).
+        configure_escaping(self.config.name.escaping)
 
         self._filters: list[Filter] = []
         for conf in self.config.filters:
