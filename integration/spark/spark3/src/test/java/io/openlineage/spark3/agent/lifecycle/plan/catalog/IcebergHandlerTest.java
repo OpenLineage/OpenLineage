@@ -28,9 +28,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.iceberg.Table;
-import org.apache.iceberg.catalog.Catalog;
-import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
@@ -146,6 +143,45 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("namespace", "hive://metastore-host:10001")
         .hasFieldOrPropertyWithValue("name", "database.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForHiveWhenMetastoreUriUnresolvable() {
+    // Regression: if the catalog has no `.uri` property and no metastore URI can be found in
+    // SparkConf or the Hadoop configuration either, resolving the identifier must still succeed
+    // -- the Hive symlink is supplementary, and a failure to build it must not discard the
+    // already-correctly-computed dataset identifier (which previously happened because the
+    // MissingDatasetIdentifierCatalogException thrown while building the symlink propagated out
+    // of the whole method instead of just skipping the symlink).
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hive",
+                "spark.sql.catalog.test.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+    assertThat(datasetIdentifier.getSymlinks()).isEmpty();
   }
 
   @Test
@@ -279,12 +315,10 @@ class IcebergHandlerTest {
                 warehouseLocation));
 
     SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
-    Catalog icebergCatalog = mock(Catalog.class);
-    Table table = mock(Table.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
     when(sparkCatalog.name()).thenReturn(catalogName);
-    when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
-    when(icebergCatalog.loadTable(TableIdentifier.parse(identifier.toString()))).thenReturn(table);
-    when(table.location()).thenReturn("gs://bucket/path/from/table/location");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("gs://bucket/path/from/table/location");
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
@@ -527,15 +561,10 @@ class IcebergHandlerTest {
     SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
-    Catalog icebergCatalog = mock(Catalog.class);
-    when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
-
-    TableIdentifier tableIdentifier = TableIdentifier.of("database", "table");
-    Table icebergTable = mock(Table.class, RETURNS_DEEP_STUBS);
-    when(icebergCatalog.loadTable(tableIdentifier)).thenReturn(icebergTable);
-    when(icebergTable.location()).thenReturn("file:/tmp/warehouse/database/table");
-
     Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
             sparkSession, sparkCatalog, identifier, new HashMap<>());
@@ -549,6 +578,48 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
         .hasFieldOrPropertyWithValue("name", "database.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForIcebergTableWithSparkSessionCatalogBranchIdentifier() {
+    // Regression for a branch-qualified write (e.g. MERGE INTO catalog.db.table.branch_x) against
+    // a hive-type catalog, where spark_catalog resolves to SparkSessionCatalog rather than
+    // SparkCatalog. Previously this went through TableIdentifier.parse(identifier.toString())
+    // and Iceberg's raw Catalog.loadTable(TableIdentifier), which has no notion of Spark's
+    // branch-qualified identifiers and always failed to find the table -- silently producing a
+    // fabricated location (branch suffix baked in as a literal path segment) instead of the real
+    // one. The fix routes SparkSessionCatalog through the same Spark V2 loadTable(Identifier)
+    // used for SparkCatalog, which understands the branch suffix and resolves it to the real
+    // underlying table.
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.test",
+                "org.apache.iceberg.spark.SparkSessionCatalog",
+                "spark.sql.catalog.test.type",
+                "hive",
+                "spark.sql.catalog.test.warehouse",
+                "file:/tmp/warehouse"));
+
+    SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
+    when(sparkCatalog.name()).thenReturn("test");
+
+    Identifier identifier =
+        Identifier.of(new String[] {"database"}, "table.branch_cloverleaf_audit");
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    // The identifier resolves to the real underlying table location -- not a fabricated one.
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
   }
 
   @ParameterizedTest
@@ -570,12 +641,7 @@ class IcebergHandlerTest {
     SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
-    Catalog icebergCatalog = mock(Catalog.class);
-    when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
-
-    TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
-    when(icebergCatalog.loadTable(tableIdentifier))
-        .thenThrow(new org.apache.iceberg.exceptions.NoSuchTableException(identifier.toString()));
+    when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
@@ -749,13 +815,8 @@ class IcebergHandlerTest {
     SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
-    Catalog icebergCatalog = mock(Catalog.class);
-    when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
-
     Identifier identifier = Identifier.of(new String[] {"database"}, "table");
-    TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
-    when(icebergCatalog.loadTable(tableIdentifier))
-        .thenThrow(new org.apache.iceberg.exceptions.NoSuchTableException(identifier.toString()));
+    when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
