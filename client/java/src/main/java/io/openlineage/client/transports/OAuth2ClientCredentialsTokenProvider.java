@@ -8,7 +8,9 @@ package io.openlineage.client.transports;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.common.util.StringUtils;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -130,8 +132,17 @@ public class OAuth2ClientCredentialsTokenProvider extends TokenEndpointTokenProv
     if (CLIENT_SECRET_POST.equals(clientAuthMethod)) {
       return null;
     }
-    String credentials = clientId + ":" + clientSecret;
+    String credentials = formUrlEncode(clientId) + ":" + formUrlEncode(clientSecret);
     return "Basic "
         + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+  }
+
+  /** Encodes a client credential as required by RFC 6749, section 2.3.1. */
+  private static String formUrlEncode(String value) {
+    try {
+      return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("UTF-8 is always supported", e);
+    }
   }
 }

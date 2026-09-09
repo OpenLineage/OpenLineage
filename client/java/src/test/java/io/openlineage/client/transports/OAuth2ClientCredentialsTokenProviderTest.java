@@ -21,10 +21,14 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.OpenLineageConfig;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.ClassicHttpResponse;
@@ -170,7 +174,9 @@ class OAuth2ClientCredentialsTokenProviderTest {
 
     assertThatThrownBy(() -> provider.getToken())
         .isInstanceOf(OpenLineageClientException.class)
-        .hasMessageContaining("Failed to fetch OAuth2 access token");
+        .hasMessageContaining("Failed to fetch OAuth2 access token")
+        .hasRootCauseMessage(
+            "OAuth2 access token endpoint returned status 401: {\"error\": \"invalid_client\"}");
   }
 
   @Test
@@ -179,7 +185,9 @@ class OAuth2ClientCredentialsTokenProviderTest {
 
     assertThatThrownBy(() -> provider.getToken())
         .isInstanceOf(OpenLineageClientException.class)
-        .hasMessageContaining("Failed to fetch OAuth2 access token");
+        .hasMessageContaining("Failed to fetch OAuth2 access token")
+        .hasRootCauseMessage(
+            "OAuth2 access token field '[access_token]' not found or invalid in response");
   }
 
   @Test
@@ -243,5 +251,113 @@ class OAuth2ClientCredentialsTokenProviderTest {
     assertThat(auth.getScope()).isEqualTo("openid");
     assertThat(auth.getTokenRefreshBuffer()).isEqualTo(180);
     assertThat(auth.getTokenFields()).containsExactly("access_token");
+  }
+
+  @Test
+  void testUrlEncodesClientCredentialsInAuthorizationHeader() throws Exception {
+    TestableOAuth2ClientCredentialsTokenProvider specialProvider =
+        new TestableOAuth2ClientCredentialsTokenProvider(
+            "id+with/special", "secret=with&special?chars", TOKEN_ENDPOINT, mockHttpClient);
+    mockTokenEndpoint(200, TOKEN_RESPONSE);
+
+    specialProvider.getToken();
+
+    String expectedCredentials =
+        Base64.getEncoder()
+            .encodeToString(
+                "id%2Bwith%2Fspecial:secret%3Dwith%26special%3Fchars"
+                    .getBytes(StandardCharsets.UTF_8));
+    assertThat(capturedTokenRequest().getHeader("Authorization").getValue())
+        .isEqualTo("Basic " + expectedCredentials);
+  }
+
+  @Test
+  void testLoadOAuth2ClientCredentialsAuthFromEnvironmentVariables() throws Exception {
+    Map<String, String> envVars = new HashMap<>();
+    envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "http");
+    envVars.put("OPENLINEAGE__TRANSPORT__URL", "http://backend:5000");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TYPE", "oauth2_client_credentials");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENT_ID", "env-client-id");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENT_SECRET", "env-client-secret");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT", TOKEN_ENDPOINT.toString());
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENT_AUTH_METHOD", "client_secret_post");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__SCOPE", "openid");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TOKEN_REFRESH_BUFFER", "180");
+
+    setEnvironmentVariables(envVars);
+
+    try {
+      OpenLineageConfig config =
+          OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+              new TypeReference<OpenLineageConfig>() {});
+
+      assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
+      HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
+      assertThat(httpConfig.getAuth()).isInstanceOf(OAuth2ClientCredentialsTokenProvider.class);
+      OAuth2ClientCredentialsTokenProvider auth =
+          (OAuth2ClientCredentialsTokenProvider) httpConfig.getAuth();
+
+      assertThat(auth.getClientId()).isEqualTo("env-client-id");
+      assertThat(auth.getClientSecret()).isEqualTo("env-client-secret");
+      assertThat(auth.getTokenEndpoint()).isEqualTo(TOKEN_ENDPOINT);
+      assertThat(auth.getClientAuthMethod())
+          .isEqualTo(OAuth2ClientCredentialsTokenProvider.CLIENT_SECRET_POST);
+      assertThat(auth.getScope()).isEqualTo("openid");
+      assertThat(auth.getTokenRefreshBuffer()).isEqualTo(180);
+    } finally {
+      clearEnvironmentVariables(envVars.keySet());
+    }
+  }
+
+  @Test
+  void testLoadOAuth2ClientCredentialsAuthFromInvalidEnvironmentVariablesFails() throws Exception {
+    Map<String, String> envVars = new HashMap<>();
+    envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "http");
+    envVars.put("OPENLINEAGE__TRANSPORT__URL", "http://backend:5000");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TYPE", "oauth2_client_credentials");
+    // Without underscores the keys stay lowercase and do not map onto the provider properties
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENTID", "env-client-id");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENTSECRET", "env-client-secret");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TOKENENDPOINT", TOKEN_ENDPOINT.toString());
+
+    setEnvironmentVariables(envVars);
+
+    try {
+      assertThatThrownBy(
+              () ->
+                  OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+                      new TypeReference<OpenLineageConfig>() {}))
+          .isInstanceOf(OpenLineageClientException.class)
+          .rootCause()
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("clientId must not be null or empty");
+    } finally {
+      clearEnvironmentVariables(envVars.keySet());
+    }
+  }
+
+  /**
+   * Helper method to set environment variables using reflection. This is a workaround for the
+   * immutable System.getenv() Map.
+   */
+  @SuppressWarnings({"unchecked", "PMD"})
+  private void setEnvironmentVariables(Map<String, String> newEnv) throws Exception {
+    Class<?> classOfMap = System.getenv().getClass();
+    Field field = classOfMap.getDeclaredField("m");
+    field.setAccessible(true);
+    Map<String, String> writeableEnvironmentVariables =
+        (Map<String, String>) field.get(System.getenv());
+    writeableEnvironmentVariables.putAll(newEnv);
+  }
+
+  /** Helper method to clear environment variables using reflection. */
+  @SuppressWarnings({"unchecked", "PMD"})
+  private void clearEnvironmentVariables(Set<String> keys) throws Exception {
+    Class<?> classOfMap = System.getenv().getClass();
+    Field field = classOfMap.getDeclaredField("m");
+    field.setAccessible(true);
+    Map<String, String> writeableEnvironmentVariables =
+        (Map<String, String>) field.get(System.getenv());
+    keys.forEach(writeableEnvironmentVariables::remove);
   }
 }

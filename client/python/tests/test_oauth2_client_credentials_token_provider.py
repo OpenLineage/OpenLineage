@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-import time
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import Mock, patch
 
@@ -78,10 +78,13 @@ class TestOAuth2ClientCredentialsTokenProvider:
         assert provider.get_bearer() == "Bearer access-token-value"
 
         call_args = mock_post.call_args
+        expected_credentials = base64.b64encode(b"test-client-id:test-client-secret").decode()
         assert call_args.args[0] == TOKEN_ENDPOINT
         assert call_args.kwargs["data"] == {"grant_type": "client_credentials"}
-        assert call_args.kwargs["auth"] == ("test-client-id", "test-client-secret")
-        assert call_args.kwargs["headers"] == {"Content-Type": "application/x-www-form-urlencoded"}
+        assert call_args.kwargs["headers"] == {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": f"Basic {expected_credentials}",
+        }
         assert call_args.kwargs["timeout"] == 10
 
     @patch("requests.post")
@@ -101,7 +104,7 @@ class TestOAuth2ClientCredentialsTokenProvider:
             "client_id": "test-client-id",
             "client_secret": "test-client-secret",
         }
-        assert call_args.kwargs["auth"] is None
+        assert "Authorization" not in call_args.kwargs["headers"]
 
     @patch("requests.post")
     def test_get_bearer_caches_token(self, mock_post):
@@ -158,7 +161,7 @@ class TestOAuth2ClientCredentialsTokenProvider:
         mock_post.return_value = mock_response
         provider = OAuth2ClientCredentialsTokenProvider(CONFIG)
 
-        with pytest.raises(RuntimeError, match="Failed to fetch OAuth2 access token"):
+        with pytest.raises(RuntimeError, match="Failed to fetch OAuth2 access token .*: Unauthorized"):
             provider.get_bearer()
 
     @patch("requests.post")
@@ -167,25 +170,45 @@ class TestOAuth2ClientCredentialsTokenProvider:
         mock_post.return_value = _token_response(token_type="Bearer")
         provider = OAuth2ClientCredentialsTokenProvider(CONFIG)
 
-        with pytest.raises(RuntimeError, match="Failed to fetch OAuth2 access token"):
+        with pytest.raises(
+            RuntimeError, match=r"Token not found in response. Tried fields: \['access_token'\]"
+        ):
             provider.get_bearer()
 
     @patch("requests.post")
     def test_get_bearer_fetches_token_once_for_concurrent_calls(self, mock_post):
         """Test that concurrent callers share a single token request"""
+        release = threading.Event()
 
-        def slow_post(*args, **kwargs):
-            time.sleep(0.05)
+        def blocked_post(*args, **kwargs):
+            release.wait(timeout=10)
             return _token_response()
 
-        mock_post.side_effect = slow_post
+        mock_post.side_effect = blocked_post
         provider = OAuth2ClientCredentialsTokenProvider(CONFIG)
 
         with ThreadPoolExecutor(max_workers=8) as executor:
-            bearers = list(executor.map(lambda _: provider.get_bearer(), range(8)))
+            futures = [executor.submit(provider.get_bearer) for _ in range(8)]
+            release.set()
+            bearers = [future.result(timeout=10) for future in futures]
 
         assert bearers == ["Bearer access-token-value"] * 8
         assert mock_post.call_count == 1
+
+    @patch("requests.post")
+    def test_get_bearer_url_encodes_client_credentials(self, mock_post):
+        """Test that client credentials are form-urlencoded before being encoded (RFC 6749, 2.3.1)"""
+        mock_post.return_value = _token_response()
+        provider = OAuth2ClientCredentialsTokenProvider(
+            {**CONFIG, "clientId": "id+with/special", "clientSecret": "secret=with&special?chars"}
+        )
+
+        provider.get_bearer()
+
+        expected_credentials = base64.b64encode(
+            b"id%2Bwith%2Fspecial:secret%3Dwith%26special%3Fchars"
+        ).decode()
+        assert mock_post.call_args.kwargs["headers"]["Authorization"] == f"Basic {expected_credentials}"
 
 
 class TestHttpConfigWithOAuth2ClientCredentialsAuth:
