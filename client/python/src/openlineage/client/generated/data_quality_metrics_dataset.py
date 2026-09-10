@@ -45,12 +45,33 @@ class DataQualityMetricsDatasetFacet(DatasetFacet):
     lastUpdated: str | None = attr.field(default=None)  # noqa: N815
     """The last time the dataset was changed"""
 
+    captureDate: str | None = attr.field(default=None)  # noqa: N815
+    """
+    An ISO-8601 timestamp representing the point in time at which these metrics were captured. All
+    metrics in this facet (e.g. rowCount, columnMetrics) reflect the dataset state as of this time,
+    which lets consumers compare metrics captured at exactly the same moment (e.g. for data-diff).
+
+    Example: 2020-12-17T03:00:00.000Z
+    """
+
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json#/$defs/DataQualityMetricsDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-0-1/DataQualityMetricsDatasetFacet.json#/$defs/DataQualityMetricsDatasetFacet"
 
     @lastUpdated.validator
     def lastupdated_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        from dateutil import parser
+
+        parser.isoparse(value)
+        if "t" not in value.lower():
+            # make sure date-time contains time
+            msg = f"Parsed date-time has to contain time: {value}"
+            raise ValueError(msg)
+
+    @captureDate.validator
+    def capturedate_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
         if value is None:
             return
         from dateutil import parser

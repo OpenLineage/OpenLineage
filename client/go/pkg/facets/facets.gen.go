@@ -60,6 +60,8 @@ type DataQualityMetricsDatasetFacet struct {
 	Deleted *bool `json:"_deleted,omitempty"`
 	// The size in bytes
 	Bytes *int64 `json:"bytes,omitempty"`
+	// An ISO-8601 timestamp representing the point in time at which these metrics were captured. All metrics in this facet (e.g. rowCount, columnMetrics) reflect the dataset state as of this time, which lets consumers compare metrics captured at exactly the same moment (e.g. for data-diff).
+	CaptureDate *time.Time `json:"captureDate,omitempty"`
 	// The property key is the column name
 	ColumnMetrics map[string]DataQualityMetricsDatasetFacetColumnMetricsValue `json:"columnMetrics"`
 	// The number of files evaluated
