@@ -188,7 +188,7 @@ func NewDataQualityMetricsDatasetFacet(
 ) *DataQualityMetricsDatasetFacet {
 	return &DataQualityMetricsDatasetFacet{
 		Producer:      producer,
-		SchemaURL:     "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json",
+		SchemaURL:     "https://openlineage.io/spec/facets/1-0-1/DataQualityMetricsDatasetFacet.json",
 		ColumnMetrics: columnMetrics,
 	}
 }
@@ -203,6 +203,13 @@ func (f *DataQualityMetricsDatasetFacet) WithDeleted(deleted bool) *DataQualityM
 // WithBytes sets the Bytes field on this DataQualityMetricsDatasetFacet.
 func (f *DataQualityMetricsDatasetFacet) WithBytes(bytes int64) *DataQualityMetricsDatasetFacet {
 	f.Bytes = &bytes
+
+	return f
+}
+
+// WithCaptureDate sets the CaptureDate field on this DataQualityMetricsDatasetFacet.
+func (f *DataQualityMetricsDatasetFacet) WithCaptureDate(captureDate *time.Time) *DataQualityMetricsDatasetFacet {
+	f.CaptureDate = captureDate
 
 	return f
 }
