@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.53.0...HEAD)
 
+### Fixed
+
+* **SQL: Expand wildcards over derived tables, and respect wildcard modifiers** [`#4941`](https://github.com/OpenLineage/OpenLineage/pull/4941) [@lhadhazy](https://github.com/lhadhazy) with [@simonjobs](https://github.com/simonjobs)
+  *Emits column lineage for `SELECT * FROM (SELECT ...)`, and stops reporting columns that `EXCLUDE`, `EXCEPT` or `RENAME` removed or renamed from the output.*
+
 ## [1.53.0](https://github.com/OpenLineage/OpenLineage/compare/1.52.0...1.53.0)
 
 ### Added
