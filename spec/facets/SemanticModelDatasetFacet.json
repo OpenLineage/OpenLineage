@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/SemanticModelDatasetFacet.json",
+  "$defs": {
+    "SemanticModelDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "spec": {
+              "description": "Identifier of the semantic specification this model conforms to.",
+              "type": "string",
+              "example": "osi"
+            },
+            "specVersion": {
+              "description": "Version of the semantic specification the model conforms to.",
+              "type": "string",
+              "example": "0.1.0"
+            },
+            "modelUri": {
+              "description": "Reference to the source semantic model document. Full-fidelity definitions (including multi-dialect expressions) live here; the inline fields below are lightweight hints for consumers that do not resolve the model.",
+              "type": "string",
+              "example": "https://github.com/apache/ossie/blob/main/examples/tpcds/tpcds.osi.yaml"
+            },
+            "entity": {
+              "description": "Name of the logical entity/dataset in the semantic model that this physical dataset backs.",
+              "type": "string",
+              "example": "store_sales"
+            },
+            "metrics": {
+              "description": "Metrics defined on this entity. A lightweight projection of the semantic model for inline display; see modelUri for authoritative, dialect-aware definitions.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "total_sales"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "expression": {
+                    "description": "Display-only expression. Not dialect-qualified; resolve modelUri for the full expression set.",
+                    "type": "string",
+                    "example": "SUM(ss_sales_price)"
+                  }
+                },
+                "required": ["name"]
+              }
+            },
+            "dimensions": {
+              "description": "Dimensions defined on this entity. A lightweight projection of the semantic model for inline display; see modelUri for authoritative, dialect-aware definitions.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "sold_date"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "isTime": {
+                    "description": "Whether this dimension is a time dimension.",
+                    "type": "boolean"
+                  },
+                  "expression": {
+                    "description": "Display-only expression. Not dialect-qualified; resolve modelUri for the full expression set.",
+                    "type": "string"
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          },
+          "required": ["spec", "entity"]
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "semanticModel": {
+      "$ref": "#/$defs/SemanticModelDatasetFacet"
+    }
+  }
+}
