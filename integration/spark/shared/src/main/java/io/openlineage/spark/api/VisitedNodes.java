@@ -4,6 +4,7 @@
 */
 package io.openlineage.spark.api;
 
+import io.openlineage.spark.agent.util.DatasetDispatchTrace;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -39,6 +40,7 @@ public class VisitedNodes {
     nodesByEvent
         .computeIfAbsent(eventName, k -> Collections.newSetFromMap(new IdentityHashMap<>()))
         .add(plan);
+    DatasetDispatchTrace.visited(plan, eventName, true);
   }
 
   /**
@@ -54,11 +56,16 @@ public class VisitedNodes {
     }
     String eventName = event.getClass().getSimpleName();
     Set<LogicalPlan> nodes = nodesByEvent.get(eventName);
-    return nodes != null && nodes.contains(plan);
+    boolean visited = nodes != null && nodes.contains(plan);
+    if (visited) {
+      DatasetDispatchTrace.visited(plan, eventName, false);
+    }
+    return visited;
   }
 
   /** Clears all stored information about visited nodes. */
   public void clearVisitedNodes() {
     nodesByEvent.clear();
+    DatasetDispatchTrace.clearVisited();
   }
 }
