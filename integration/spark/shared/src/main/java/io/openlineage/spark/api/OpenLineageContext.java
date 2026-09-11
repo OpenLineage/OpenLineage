@@ -220,7 +220,9 @@ public class OpenLineageContext {
    * @return An Optional containing the analyzed logical plan, or an empty Optional if not present.
    */
   public Optional<LogicalPlan> getAnalyzedPlanOptional() {
-    return Optional.ofNullable(queryExecution.analyzed());
+    return queryExecution == null
+        ? Optional.empty()
+        : Optional.ofNullable(queryExecution.analyzed());
   }
 
   /**
@@ -229,7 +231,9 @@ public class OpenLineageContext {
    * @return An Optional containing the optimized logical plan, or an empty Optional if not present.
    */
   public Optional<LogicalPlan> getOptimizedPlanOptional() {
-    return Optional.ofNullable(queryExecution.optimizedPlan());
+    return queryExecution == null
+        ? Optional.empty()
+        : Optional.ofNullable(queryExecution.optimizedPlan());
   }
 
   /**
