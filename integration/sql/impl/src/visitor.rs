@@ -6,11 +6,12 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
-    Function, FunctionArg, FunctionArgExpr, FunctionArguments, Ident, Join, JoinConstraint,
-    JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select, SelectItem,
-    SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, ExcludeSelectItem,
+    Expr, FromTable, Function, FunctionArg, FunctionArgExpr, FunctionArguments, Ident, Join,
+    JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameSelectItem,
+    RenameTableNameKind, Select, SelectItem, SelectItemQualifiedWildcardKind, SetExpr, Statement,
+    Subscript, Table, TableFactor, TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value,
+    ValueWithSpan, WildcardAdditionalOptions, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
@@ -36,6 +37,9 @@ impl Visit for With {
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
+                let col_names: Vec<String> =
+                    f.column_ancestry.keys().map(|cm| cm.name.clone()).collect();
+                context.register_cte_columns(table.qualified_name(), col_names);
                 context.collect_with_table(f, table);
             }
 
@@ -114,6 +118,16 @@ impl Visit for TableFactor {
                 subquery.visit(context)?;
                 let frame = context.pop_frame().unwrap();
 
+                // Register the subquery's output columns so a wildcard over
+                // this table can be expanded, the same way a CTE's are. The
+                // FROM clause is visited before the projection, so the entry
+                // is in place by the time the wildcard is reached.
+                let col_names: Vec<String> = frame
+                    .column_ancestry
+                    .keys()
+                    .map(|cm| cm.name.clone())
+                    .collect();
+
                 if let Some(alias) = alias {
                     let table = DbTableMeta::new(
                         vec![alias.clone().name],
@@ -121,8 +135,13 @@ impl Visit for TableFactor {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
+                    context.register_cte_columns(table.qualified_name(), col_names);
                     context.collect_with_table(frame, table);
                 } else {
+                    // No alias means no name to key on, so the subquery's own
+                    // text stands in. It is stable within one statement, which
+                    // is all the lookup needs.
+                    context.register_cte_columns(anonymous_derived_key(subquery), col_names);
                     context.collect(frame);
                 }
 
@@ -584,6 +603,39 @@ impl Visit for Select {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
                     expr.visit(context)?;
                 }
+                SelectItem::Wildcard(options) => {
+                    let filter = WildcardFilter::from_options(options);
+                    for table_with_joins in &self.from {
+                        expand_wildcard_for_table_factor(
+                            &table_with_joins.relation,
+                            &filter,
+                            context,
+                        );
+                        for join in &table_with_joins.joins {
+                            expand_wildcard_for_table_factor(&join.relation, &filter, context);
+                        }
+                    }
+                }
+                SelectItem::QualifiedWildcard(
+                    SelectItemQualifiedWildcardKind::ObjectName(name),
+                    options,
+                ) => {
+                    let table = DbTableMeta::new(
+                        convert_to_idents(name),
+                        context.dialect(),
+                        context.default_schema().clone(),
+                        context.default_database().clone(),
+                    );
+                    expand_wildcard_for_known_table(
+                        &table,
+                        &WildcardFilter::from_options(options),
+                        context,
+                    );
+                }
+                // Deliberately not exhaustive. sqlparser adds SelectItem
+                // variants between releases — ExprWithAliases arrived in one —
+                // and a bare match here turns an upstream bump into a compile
+                // error in this file rather than a missing case to fill in.
                 _ => {}
             }
         }
@@ -1043,6 +1095,187 @@ fn convert_to_idents(object_name: &ObjectName) -> Vec<Ident> {
             ObjectNamePart::Function(f) => f.name.clone(),
         })
         .collect()
+}
+
+/// The modifiers a wildcard can carry, reduced to what expansion needs.
+///
+/// `SELECT *` is rarely bare in practice. Dropping these silently is worse
+/// than reporting no lineage at all: `EXCLUDE (secret)` would otherwise emit
+/// an ordinary-looking edge for a column that is not in the output, and
+/// `RENAME (x AS y)` would report the input name rather than the one a
+/// consumer sees.
+#[derive(Default)]
+struct WildcardFilter {
+    excluded: Vec<String>,
+    renamed: Vec<(String, String)>,
+}
+
+/// The column an `ObjectName` refers to, which is its last part — `secret` in
+/// both `secret` and `t.secret`.
+fn column_name_of(name: &ObjectName) -> Option<String> {
+    convert_to_idents(name).last().map(|i| i.value.clone())
+}
+
+impl WildcardFilter {
+    fn from_options(options: &WildcardAdditionalOptions) -> Self {
+        let mut filter = Self::default();
+
+        if let Some(exclude) = &options.opt_exclude {
+            // These are ObjectNames rather than bare idents, so a qualified
+            // form like EXCLUDE (t.secret) is possible; the column is the
+            // final part either way.
+            match exclude {
+                ExcludeSelectItem::Single(name) => {
+                    filter.excluded.extend(column_name_of(name));
+                }
+                ExcludeSelectItem::Multiple(names) => {
+                    filter
+                        .excluded
+                        .extend(names.iter().filter_map(column_name_of));
+                }
+            }
+        }
+
+        // EXCEPT is the same idea; Snowflake spells it EXCLUDE and BigQuery
+        // and DuckDB spell it EXCEPT.
+        if let Some(except) = &options.opt_except {
+            filter.excluded.push(except.first_element.value.clone());
+            filter
+                .excluded
+                .extend(except.additional_elements.iter().map(|i| i.value.clone()));
+        }
+
+        if let Some(rename) = &options.opt_rename {
+            let pairs = match rename {
+                RenameSelectItem::Single(item) => std::slice::from_ref(item),
+                RenameSelectItem::Multiple(items) => items.as_slice(),
+            };
+            filter.renamed.extend(
+                pairs
+                    .iter()
+                    .map(|p| (p.ident.value.clone(), p.alias.value.clone())),
+            );
+        }
+
+        filter
+    }
+
+    /// The name this column appears under in the output, or `None` if it does
+    /// not appear at all.
+    fn apply(&self, column: &str) -> Option<String> {
+        if self.excluded.iter().any(|e| e == column) {
+            return None;
+        }
+        Some(
+            self.renamed
+                .iter()
+                .find(|(from, _)| from == column)
+                .map(|(_, to)| to.clone())
+                .unwrap_or_else(|| column.to_string()),
+        )
+    }
+}
+
+fn expand_wildcard_for_table_factor(
+    relation: &TableFactor,
+    filter: &WildcardFilter,
+    context: &mut Context,
+) {
+    match relation {
+        TableFactor::Table { name, .. } => {
+            let table = DbTableMeta::new(
+                convert_to_idents(name),
+                context.dialect(),
+                context.default_schema().clone(),
+                context.default_database().clone(),
+            );
+            expand_wildcard_for_known_table(&table, filter, context);
+        }
+        // An inline derived table. Its projection is known inside the query
+        // exactly as a CTE's is, so the same uplift applies. An aliased one is
+        // registered under its alias; an unaliased one has no name to key on,
+        // so it is registered under the subquery text instead.
+        TableFactor::Derived {
+            subquery, alias, ..
+        } => {
+            let table = match alias {
+                Some(alias) => DbTableMeta::new(
+                    vec![alias.name.clone()],
+                    context.dialect(),
+                    context.default_schema().clone(),
+                    context.default_database().clone(),
+                ),
+                None => {
+                    expand_wildcard_for_anonymous_derived(subquery, filter, context);
+                    return;
+                }
+            };
+            expand_wildcard_for_known_table(&table, filter, context);
+        }
+        _ => {}
+    }
+}
+
+/// Expand a wildcard over a derived table that has no alias. The columns were
+/// registered under the subquery's own text, which is the only stable handle
+/// available in both places.
+fn expand_wildcard_for_anonymous_derived(
+    subquery: &Query,
+    filter: &WildcardFilter,
+    context: &mut Context,
+) {
+    let key = anonymous_derived_key(subquery);
+    let Some(columns) = context.cte_columns(&key).cloned() else {
+        return;
+    };
+    for column in columns {
+        let Some(output_name) = filter.apply(&column) else {
+            continue;
+        };
+        // No table to attribute to, so the ancestor keeps the subquery's own
+        // resolution, which the frame already carries.
+        context.set_column_context(Some(ColumnMeta::new(output_name.clone(), None)));
+        context.add_column_ancestors(
+            ColumnMeta::new(output_name, None),
+            vec![ColumnMeta::new(column, None)],
+        );
+    }
+}
+
+pub(crate) fn anonymous_derived_key(subquery: &Query) -> String {
+    format!("<derived>{subquery}")
+}
+
+/// Expand a wildcard over a table whose columns are already registered — a
+/// CTE, or a derived table with an alias.
+fn expand_wildcard_for_known_table(
+    table: &DbTableMeta,
+    filter: &WildcardFilter,
+    context: &mut Context,
+) {
+    let qn = table.qualified_name();
+    let resolved_qn = context.resolve_table_qualified_name(table);
+
+    let columns = context
+        .cte_columns(&resolved_qn)
+        .or_else(|| context.cte_columns(&qn))
+        .cloned();
+
+    let columns = match columns {
+        Some(cols) => cols,
+        None => return,
+    };
+
+    for col_name in columns {
+        let Some(output_name) = filter.apply(&col_name) else {
+            continue;
+        };
+        context.set_column_context(Some(ColumnMeta::new(output_name.clone(), None)));
+        context.add_column_ancestors(
+            ColumnMeta::new(output_name, None),
+            vec![ColumnMeta::new(col_name, Some(table.clone()))],
+        );
+    }
 }
 
 pub fn extract_up_to_two_ident_values(
