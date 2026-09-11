@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import datetime
 import json
 import logging
+import uuid
 from enum import Enum
 from typing import Any, cast
 
@@ -17,6 +19,12 @@ class Serde:
     def remove_nulls_and_enums(cls, obj: Any) -> Any:
         if isinstance(obj, Enum):
             return obj.value
+        # datetime, date and uuid have canonical string forms,
+        # serialize them instead of the non-serializable placeholder
+        if isinstance(obj, datetime.date):  # datetime.datetime subclasses date
+            return obj.isoformat()
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
         if isinstance(obj, dict):
             return dict(
                 filter(
