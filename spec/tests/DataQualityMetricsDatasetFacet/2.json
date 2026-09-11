@@ -1,0 +1,17 @@
+{
+  "dataQualityMetrics": {
+    "columnMetrics": {
+      "amount": {
+        "count": 14,
+        "max": 1800,
+        "min": 100,
+        "sum": 9100
+      }
+    },
+    "rowCount": 14,
+    "captureDate": "2023-05-30T11:00:00Z",
+    "lastUpdated": "2023-05-30T11:00:00Z",
+    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DataQualityMetricsDatasetFacet.json"
+  }
+}
