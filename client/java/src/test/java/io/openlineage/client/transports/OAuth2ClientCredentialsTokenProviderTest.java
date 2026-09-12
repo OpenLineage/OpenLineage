@@ -224,7 +224,7 @@ class OAuth2ClientCredentialsTokenProviderTest {
             "  type: http",
             "  url: http://backend:5000",
             "  auth:",
-            "    type: oauth2_client_credentials",
+            "    type: oauth2",
             "    clientId: yaml-client-id",
             "    clientSecret: yaml-client-secret",
             "    tokenEndpoint: https://auth.example.com/token",
@@ -276,7 +276,7 @@ class OAuth2ClientCredentialsTokenProviderTest {
     Map<String, String> envVars = new HashMap<>();
     envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "http");
     envVars.put("OPENLINEAGE__TRANSPORT__URL", "http://backend:5000");
-    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TYPE", "oauth2_client_credentials");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TYPE", "oauth2");
     envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENT_ID", "env-client-id");
     envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENT_SECRET", "env-client-secret");
     envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT", TOKEN_ENDPOINT.toString());
@@ -314,7 +314,7 @@ class OAuth2ClientCredentialsTokenProviderTest {
     Map<String, String> envVars = new HashMap<>();
     envVars.put("OPENLINEAGE__TRANSPORT__TYPE", "http");
     envVars.put("OPENLINEAGE__TRANSPORT__URL", "http://backend:5000");
-    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TYPE", "oauth2_client_credentials");
+    envVars.put("OPENLINEAGE__TRANSPORT__AUTH__TYPE", "oauth2");
     // Without underscores the keys stay lowercase and do not map onto the provider properties
     envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENTID", "env-client-id");
     envVars.put("OPENLINEAGE__TRANSPORT__AUTH__CLIENTSECRET", "env-client-secret");

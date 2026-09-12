@@ -43,7 +43,7 @@ public class TokenProviderTypeIdResolver extends TypeIdResolverBase {
     if (Objects.equals(id, "jwt")) {
       return context.constructSpecializedType(superType, JwtTokenProvider.class);
     }
-    if (Objects.equals(id, "oauth2_client_credentials")) {
+    if (Objects.equals(id, "oauth2")) {
       return context.constructSpecializedType(
           superType, OAuth2ClientCredentialsTokenProvider.class);
     }

@@ -214,13 +214,13 @@ class TestOAuth2ClientCredentialsTokenProvider:
 class TestHttpConfigWithOAuth2ClientCredentialsAuth:
     """Test HttpConfig integration with OAuth2ClientCredentialsTokenProvider"""
 
-    def test_http_config_loads_oauth2_client_credentials_auth(self):
-        """Test that HttpConfig can load oauth2_client_credentials auth configuration"""
+    def test_http_config_loads_oauth2_auth(self):
+        """Test that HttpConfig can load oauth2 auth configuration"""
         config = HttpConfig.from_dict(
             {
                 "type": "http",
                 "url": "http://backend:5000",
-                "auth": {"type": "oauth2_client_credentials", **CONFIG},
+                "auth": {"type": "oauth2", **CONFIG},
             }
         )
 
@@ -234,7 +234,7 @@ class TestHttpConfigWithOAuth2ClientCredentialsAuth:
         {
             "OPENLINEAGE__TRANSPORT__TYPE": "http",
             "OPENLINEAGE__TRANSPORT__URL": "http://backend:5000",
-            "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "oauth2_client_credentials",
+            "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "oauth2",
             "OPENLINEAGE__TRANSPORT__AUTH__CLIENT_ID": "env-client-id",
             "OPENLINEAGE__TRANSPORT__AUTH__CLIENT_SECRET": "env-client-secret",
             "OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT": TOKEN_ENDPOINT,
@@ -244,7 +244,7 @@ class TestHttpConfigWithOAuth2ClientCredentialsAuth:
         },
         clear=True,
     )
-    def test_load_oauth2_client_credentials_auth_from_environment_variables(self):
+    def test_load_oauth2_auth_from_environment_variables(self):
         client = OpenLineageClient()
         auth = client.transport.config.auth
 
@@ -261,13 +261,13 @@ class TestHttpConfigWithOAuth2ClientCredentialsAuth:
         {
             "OPENLINEAGE__TRANSPORT__TYPE": "http",
             "OPENLINEAGE__TRANSPORT__URL": "http://backend:5000",
-            "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "oauth2_client_credentials",
+            "OPENLINEAGE__TRANSPORT__AUTH__TYPE": "oauth2",
             "OPENLINEAGE__TRANSPORT__AUTH__CLIENTID": "env-client-id",
             "OPENLINEAGE__TRANSPORT__AUTH__CLIENTSECRET": "env-client-secret",
             "OPENLINEAGE__TRANSPORT__AUTH__TOKENENDPOINT": TOKEN_ENDPOINT,
         },
         clear=True,
     )
-    def test_load_oauth2_client_credentials_auth_from_invalid_environment_variables_fails(self):
+    def test_load_oauth2_auth_from_invalid_environment_variables_fails(self):
         with pytest.raises(KeyError, match="clientId is required"):
             OpenLineageClient()
