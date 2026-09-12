@@ -319,7 +319,7 @@ class OAuth2ClientCredentialsTokenProvider(TokenEndpointTokenProvider):
 
     Configuration example:
         {
-            "type": "oauth2_client_credentials",
+            "type": "oauth2",
             "clientId": "your-client-id",
             "clientSecret": "your-client-secret",
             "tokenEndpoint": "https://auth.example.com/token",
@@ -384,7 +384,7 @@ def create_token_provider(auth: dict[str, str]) -> TokenProvider:
         log.debug("Using JwtTokenProvider")
         return JwtTokenProvider(auth)
 
-    if auth["type"] == "oauth2_client_credentials":
+    if auth["type"] == "oauth2":
         log.debug("Using OAuth2ClientCredentialsTokenProvider")
         return OAuth2ClientCredentialsTokenProvider(auth)
 

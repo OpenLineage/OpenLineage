@@ -38,7 +38,7 @@ import org.apache.hc.core5.http.message.BasicNameValuePair;
  *   type: http
  *   url: https://api.example.com
  *   auth:
- *     type: oauth2_client_credentials
+ *     type: oauth2
  *     clientId: your-client-id
  *     clientSecret: your-client-secret
  *     tokenEndpoint: https://auth.example.com/token

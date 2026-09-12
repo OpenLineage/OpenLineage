@@ -238,11 +238,11 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
 - `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
 - `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
-  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2_client_credentials`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication:
     - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
   - Configuration options for `jwt` authentication are documented in the [JWT Token Provider](#jwt-token-provider) section.
-  - Configuration options for `oauth2_client_credentials` authentication are documented in the [OAuth2 Client Credentials Token Provider](#oauth2-client-credentials-token-provider) section.
+  - Configuration options for `oauth2` authentication are documented in the [OAuth2 Token Provider](#oauth2-token-provider) section.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 - `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
@@ -463,7 +463,7 @@ client = OpenLineageClient(transport=HttpTransport(http_config))
 </TabItem>
 </Tabs>
 
-#### OAuth2 Client Credentials Token Provider
+#### OAuth2 Token Provider
 
 The `OAuth2ClientCredentialsTokenProvider` obtains an access token with the OAuth 2.0 client credentials grant ([RFC 6749, section 4.4](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4)). Use it when the OpenLineage backend is protected by an OAuth 2.0 authorization server that issues short-lived access tokens to a client ID and client secret.
 
@@ -471,7 +471,7 @@ The `OAuth2ClientCredentialsTokenProvider` obtains an access token with the OAut
 
 When using OAuth2 client credentials authentication with HTTP transport, configure the `auth` section as follows:
 
-- `type` - string, must be `"oauth2_client_credentials"`. Required.
+- `type` - string, must be `"oauth2"`. Required.
 - `clientId` - string, the OAuth 2.0 client ID. Required.
 - `clientSecret` - string, the OAuth 2.0 client secret. Required.
 - `tokenEndpoint` - string, the URL of the token endpoint. Required.
@@ -498,7 +498,7 @@ When using OAuth2 client credentials authentication with HTTP transport, configu
 ```sh
 OPENLINEAGE__TRANSPORT__TYPE=http
 OPENLINEAGE__TRANSPORT__URL=https://backend:5000
-OPENLINEAGE__TRANSPORT__AUTH__TYPE=oauth2_client_credentials
+OPENLINEAGE__TRANSPORT__AUTH__TYPE=oauth2
 OPENLINEAGE__TRANSPORT__AUTH__CLIENT_ID=your-client-id
 OPENLINEAGE__TRANSPORT__AUTH__CLIENT_SECRET=your-client-secret
 OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT=https://auth.example.com/token
@@ -512,7 +512,7 @@ transport:
   type: http
   url: https://backend:5000
   auth:
-    type: oauth2_client_credentials
+    type: oauth2
     clientId: your-client-id
     clientSecret: your-client-secret
     tokenEndpoint: https://auth.example.com/token
@@ -525,7 +525,7 @@ transport:
   type: http
   url: https://backend:5000
   auth:
-    type: oauth2_client_credentials
+    type: oauth2
     clientId: your-client-id
     clientSecret: your-client-secret
     tokenEndpoint: https://auth.example.com/token
@@ -574,11 +574,11 @@ Async transport API is experimental, and can change over the next few releases.
 - `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
 - `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
-  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2_client_credentials`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication:
     - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
   - Configuration options for `jwt` authentication are documented in the [JWT Token Provider](#jwt-token-provider) section.
-  - Configuration options for `oauth2_client_credentials` authentication are documented in the [OAuth2 Client Credentials Token Provider](#oauth2-client-credentials-token-provider) section.
+  - Configuration options for `oauth2` authentication are documented in the [OAuth2 Token Provider](#oauth2-token-provider) section.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 - `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `10000`.
