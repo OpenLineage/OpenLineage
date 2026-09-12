@@ -86,7 +86,7 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 		u = u.JoinPath(ep)
 
 		var tokenSource oauth2.TokenSource
-		if config.HTTP.Auth != nil && config.HTTP.Auth.Type == AuthTypeOAuth2ClientCredentials {
+		if config.HTTP.Auth != nil && config.HTTP.Auth.Type == AuthTypeOAuth2 {
 			tokenSource, err = newClientCredentialsTokenSource(ctx, config.HTTP.Auth)
 			if err != nil {
 				return nil, err

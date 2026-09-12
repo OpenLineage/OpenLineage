@@ -282,7 +282,7 @@ requested on the first event, cached, and refreshed before it expires:
 HTTP: transport.HTTPConfig{
     URL: "https://backend:5000",
     Auth: &transport.HTTPAuthConfig{
-        Type:          transport.AuthTypeOAuth2ClientCredentials,
+        Type:          transport.AuthTypeOAuth2,
         ClientID:      "your-client-id",
         ClientSecret:  "your-client-secret",
         TokenEndpoint: "https://auth.example.com/token",

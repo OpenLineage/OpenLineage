@@ -384,7 +384,7 @@ func TestHTTPTransport_Emit_OAuth2ClientCredentialsAuth(t *testing.T) {
 	tr := newHTTPTransport(t, HTTPConfig{
 		URL: srv.URL,
 		Auth: &HTTPAuthConfig{
-			Type:          AuthTypeOAuth2ClientCredentials,
+			Type:          AuthTypeOAuth2,
 			ClientID:      "my-client-id",
 			ClientSecret:  "my-client-secret",
 			TokenEndpoint: tokenSrv.URL,
@@ -426,7 +426,7 @@ func TestHTTPTransport_Emit_OAuth2ClientSecretPost(t *testing.T) {
 	tr := newHTTPTransport(t, HTTPConfig{
 		URL: srv.URL,
 		Auth: &HTTPAuthConfig{
-			Type:             AuthTypeOAuth2ClientCredentials,
+			Type:             AuthTypeOAuth2,
 			ClientID:         "my-client-id",
 			ClientSecret:     "my-client-secret",
 			TokenEndpoint:    tokenSrv.URL,
@@ -465,7 +465,7 @@ func TestHTTPTransport_Emit_OAuth2TokenIsReused(t *testing.T) {
 	tr := newHTTPTransport(t, HTTPConfig{
 		URL: srv.URL,
 		Auth: &HTTPAuthConfig{
-			Type:          AuthTypeOAuth2ClientCredentials,
+			Type:          AuthTypeOAuth2,
 			ClientID:      "my-client-id",
 			ClientSecret:  "my-client-secret",
 			TokenEndpoint: tokenSrv.URL,
@@ -499,7 +499,7 @@ func TestHTTPTransport_Emit_OAuth2TokenEndpointError(t *testing.T) {
 	tr := newHTTPTransport(t, HTTPConfig{
 		URL: srv.URL,
 		Auth: &HTTPAuthConfig{
-			Type:          AuthTypeOAuth2ClientCredentials,
+			Type:          AuthTypeOAuth2,
 			ClientID:      "my-client-id",
 			ClientSecret:  "my-client-secret",
 			TokenEndpoint: tokenSrv.URL,
@@ -524,7 +524,7 @@ func TestNew_OAuth2ClientCredentialsValidation(t *testing.T) {
 	t.Parallel()
 
 	complete := HTTPAuthConfig{
-		Type:          AuthTypeOAuth2ClientCredentials,
+		Type:          AuthTypeOAuth2,
 		ClientID:      "my-client-id",
 		ClientSecret:  "my-client-secret",
 		TokenEndpoint: "https://auth.example.com/token",
@@ -577,7 +577,7 @@ func TestNew_OAuth2ClientCredentialsRefreshBuffer(t *testing.T) {
 			HTTP: HTTPConfig{
 				URL: "http://localhost:5000",
 				Auth: &HTTPAuthConfig{
-					Type:               AuthTypeOAuth2ClientCredentials,
+					Type:               AuthTypeOAuth2,
 					ClientID:           "my-client-id",
 					ClientSecret:       "my-client-secret",
 					TokenEndpoint:      "https://auth.example.com/token",

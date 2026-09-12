@@ -34,9 +34,9 @@ const (
 	AuthTypeAPIKey = "apiKey"
 	// AuthTypeJWT sends a static JWT as the bearer token.
 	AuthTypeJWT = "jwt"
-	// AuthTypeOAuth2ClientCredentials obtains an access token with the OAuth 2.0
-	// client credentials grant (RFC 6749, section 4.4).
-	AuthTypeOAuth2ClientCredentials = "oauth2_client_credentials"
+	// AuthTypeOAuth2 obtains an access token with the OAuth 2.0 client credentials
+	// grant (RFC 6749, section 4.4).
+	AuthTypeOAuth2 = "oauth2"
 
 	// ClientAuthMethodBasic sends the client credentials in the Authorization header.
 	ClientAuthMethodBasic = "client_secret_basic"
@@ -52,7 +52,7 @@ const (
 
 // HTTPAuthConfig holds authentication configuration for the HTTP transport.
 type HTTPAuthConfig struct {
-	// Type is the authentication method: "apiKey", "jwt" or "oauth2_client_credentials".
+	// Type is the authentication method: "apiKey", "jwt" or "oauth2".
 	Type string
 
 	// APIKey is the bearer token used when Type is "apiKey".
@@ -62,15 +62,15 @@ type HTTPAuthConfig struct {
 	Token string
 
 	// ClientID is the OAuth 2.0 client ID. Required when Type is
-	// "oauth2_client_credentials".
+	// "oauth2".
 	ClientID string
 
 	// ClientSecret is the OAuth 2.0 client secret. Required when Type is
-	// "oauth2_client_credentials".
+	// "oauth2".
 	ClientSecret string
 
 	// TokenEndpoint is the URL of the OAuth 2.0 token endpoint. Required when Type
-	// is "oauth2_client_credentials".
+	// is "oauth2".
 	TokenEndpoint string
 
 	// Scopes are the OAuth 2.0 scopes to request. Optional.
@@ -133,7 +133,7 @@ func (f tokenSourceFunc) Token() (*oauth2.Token, error) { return f() }
 // credentials grant. Tokens are cached and refreshed TokenRefreshBuffer before expiry.
 func newClientCredentialsTokenSource(ctx context.Context, auth *HTTPAuthConfig) (oauth2.TokenSource, error) {
 	if auth.ClientID == "" || auth.ClientSecret == "" || auth.TokenEndpoint == "" {
-		return nil, errors.New("auth type " + AuthTypeOAuth2ClientCredentials +
+		return nil, errors.New("auth type " + AuthTypeOAuth2 +
 			" requires ClientID, ClientSecret and TokenEndpoint")
 	}
 
@@ -227,7 +227,7 @@ func (h *httpTransport) Emit(ctx context.Context, event any) (map[string]string,
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", h.auth.APIKey))
 		case AuthTypeJWT:
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", h.auth.Token))
-		case AuthTypeOAuth2ClientCredentials:
+		case AuthTypeOAuth2:
 			token, err := h.tokenSource.Token()
 			if err != nil {
 				return nil, fmt.Errorf("obtain OAuth2 access token: %w", err)
