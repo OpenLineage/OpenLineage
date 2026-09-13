@@ -54,6 +54,18 @@ report metrics to it.
 In case of any issues, a spark config flag:
 `spark.openlineage.vendors.iceberg.metricsReporterDisabled=true`  can be used to disable this feature.
 
+### Maintenance operations
+
+Iceberg maintenance procedures can use `SparkCachedTableCatalog` for internal rewrites. Automatic
+catalog reporter injection does not support that catalog. Some ordinary scans expose their reports
+directly through the scan object, independently of catalog injection.
+
+For the tested `rewrite_data_files` path, the cached append reads preplanned tasks and stages new
+files. The enclosing procedure owns the planning report and the final snapshot commit. Do not infer
+those metrics from the internal append's lineage event: OpenLineage does not yet attach the
+procedure's reports to its CALL event. This gap is tracked in
+[#4951](https://github.com/OpenLineage/OpenLineage/issues/4951).
+
 ```json
 "icebergScanReport": {
    "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0-SNAPSHOT/integration/spark",

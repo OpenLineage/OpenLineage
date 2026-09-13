@@ -28,6 +28,9 @@ import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,17 +41,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.execution.SQLExecution;
 import org.apache.spark.sql.functions;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.Trigger;
@@ -767,6 +776,7 @@ class SparkIcebergIntegrationTest {
   }
 
   @Test
+  @SneakyThrows
   @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testRewriteDataFilesReportsCompactedTable() {
     // the job name of a plain write to the table, going through its own catalog - as opposed to the
@@ -787,17 +797,56 @@ class SparkIcebergIntegrationTest {
     getEventsEmittedWithJobName(mockServer, plainWriteJobName);
     MockServerUtils.clearRequests(mockServer);
 
-    Row rewriteResult =
-        spark
-            .sql(
-                "CALL spark_catalog.system.rewrite_data_files("
-                    + "table => 'default.compaction_target', "
-                    + "options => map('min-input-files','2'))")
-            .head();
+    Row rewriteResult;
+    List<RecordedIcebergReport> reports;
+    long originalSnapshotId;
+    long committedSnapshotId;
+    // Observe the table's existing reporter before the CALL plans any files. Catalog injection
+    // after table creation cannot change the reporter already retained by this table.
+    try (IcebergReportRecorder recorder = new IcebergReportRecorder("compaction_target")) {
+      originalSnapshotId = recorder.snapshotId();
+      rewriteResult =
+          spark
+              .sql(
+                  "CALL spark_catalog.system.rewrite_data_files("
+                      + "table => 'default.compaction_target', "
+                      + "options => map('min-input-files','2'))")
+              .head();
+      reports = new ArrayList<>(recorder.reports);
+      committedSnapshotId = recorder.snapshotId();
+    }
 
     // guard the premise of this test: the compaction really did rewrite the files
     assertThat(rewriteResult.getInt(0)).as("rewritten data files").isGreaterThanOrEqualTo(2);
     assertThat(rewriteResult.getInt(1)).as("added data files").isGreaterThanOrEqualTo(1);
+
+    // The planning scan and final replace commit belong to the enclosing CALL. The cached
+    // append only stages the rewritten files; it does not produce its own snapshot commit.
+    Class<?> scanReportClass = Class.forName("org.apache.iceberg.metrics.ScanReport");
+    Class<?> commitReportClass = Class.forName("org.apache.iceberg.metrics.CommitReport");
+    assertThat(reports)
+        .hasSize(2)
+        .allSatisfy(report -> assertThat(report.planName).isEqualTo("Call"));
+    assertThat(reports.stream().filter(report -> scanReportClass.isInstance(report.report)))
+        .hasSize(1);
+    assertThat(reports.stream().filter(report -> commitReportClass.isInstance(report.report)))
+        .hasSize(1);
+    RecordedIcebergReport scan =
+        reports.stream()
+            .filter(report -> scanReportClass.isInstance(report.report))
+            .findFirst()
+            .get();
+    RecordedIcebergReport commit =
+        reports.stream()
+            .filter(report -> commitReportClass.isInstance(report.report))
+            .findFirst()
+            .get();
+    assertThat(scan.executionId).isNotNull().isEqualTo(commit.executionId);
+    assertThat(MethodUtils.invokeMethod(commit.report, "operation")).isEqualTo("replace");
+    assertThat(MethodUtils.invokeMethod(scan.report, "snapshotId")).isEqualTo(originalSnapshotId);
+    assertThat(MethodUtils.invokeMethod(commit.report, "snapshotId"))
+        .isEqualTo(committedSnapshotId);
+    assertThat(committedSnapshotId).isNotEqualTo(originalSnapshotId);
 
     // a plain write after the compaction, so waiting for its event means the compaction has
     // finished reporting too - the assertions below then see whatever it did emit, empty or not
@@ -823,6 +872,16 @@ class SparkIcebergIntegrationTest {
         .isNotEmpty()
         .allSatisfy(e -> assertThat(e.getOutputs()).isNotEmpty());
 
+    assertThat(
+            compactionEvents.stream()
+                .flatMap(event -> event.getOutputs().stream())
+                .map(OutputDataset::getOutputFacets)
+                .filter(Objects::nonNull)
+                .map(OutputDatasetOutputFacets::getIcebergCommitReport)
+                .filter(Objects::nonNull))
+        .as("the enclosing CALL's commit must not be attributed to a staged append")
+        .isEmpty();
+
     // and the reported dataset must be the real table, not the cache catalog's UUID key
     assertThat(
             compactionEvents.stream()
@@ -831,6 +890,72 @@ class SparkIcebergIntegrationTest {
                 .collect(Collectors.toList()))
         .isNotEmpty()
         .allSatisfy(name -> assertThat(name).endsWith("/default/compaction_target"));
+  }
+
+  /** Test-only observation of the existing reporter; no production injection is changed. */
+  private static class IcebergReportRecorder implements AutoCloseable {
+    private final Object table;
+    private final Field reporterField;
+    private final Object delegate;
+    private final List<RecordedIcebergReport> reports = new CopyOnWriteArrayList<>();
+
+    @SneakyThrows
+    private IcebergReportRecorder(String tableName) {
+      TableCatalog catalog =
+          (TableCatalog) spark.sessionState().catalogManager().catalog("spark_catalog");
+      Object sparkTable = catalog.loadTable(Identifier.of(new String[] {"default"}, tableName));
+      table = MethodUtils.invokeMethod(sparkTable, "table");
+      reporterField = FieldUtils.getField(table.getClass(), "reporter", true);
+      delegate = reporterField.get(table);
+      Class<?> reporterClass = Class.forName("org.apache.iceberg.metrics.MetricsReporter");
+      Object recorder =
+          Proxy.newProxyInstance(
+              reporterClass.getClassLoader(),
+              new Class<?>[] {reporterClass},
+              (proxy, method, args) -> {
+                if ("report".equals(method.getName())) {
+                  String executionId =
+                      spark.sparkContext().getLocalProperty("spark.sql.execution.id");
+                  String planName =
+                      executionId == null
+                          ? null
+                          : SQLExecution.getQueryExecution(Long.parseLong(executionId))
+                              .logical()
+                              .nodeName();
+                  reports.add(new RecordedIcebergReport(args[0], executionId, planName));
+                }
+                try {
+                  return method.invoke(delegate, args);
+                } catch (InvocationTargetException e) {
+                  throw e.getCause();
+                }
+              });
+      reporterField.set(table, recorder);
+    }
+
+    @Override
+    @SneakyThrows
+    public void close() {
+      reporterField.set(table, delegate);
+    }
+
+    @SneakyThrows
+    private long snapshotId() {
+      Object snapshot = MethodUtils.invokeMethod(table, "currentSnapshot");
+      return (long) MethodUtils.invokeMethod(snapshot, "snapshotId");
+    }
+  }
+
+  private static class RecordedIcebergReport {
+    private final Object report;
+    private final String executionId;
+    private final String planName;
+
+    private RecordedIcebergReport(Object report, String executionId, String planName) {
+      this.report = report;
+      this.executionId = executionId;
+      this.planName = planName;
+    }
   }
 
   @Test
