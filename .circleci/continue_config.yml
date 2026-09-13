@@ -29,6 +29,40 @@ install_python_client: &install_python_client
   run: (cd ~/openlineage/client/python && pip install . --user)
 
 commands:
+  upload_test_results_to_datadog:
+    description: Upload JUnit reports to Datadog Test Optimization
+    parameters:
+      service:
+        type: string
+        description: Datadog service associated with the test suite
+      paths:
+        type: string
+        description: Space-separated paths containing JUnit XML reports
+    steps:
+      - run:
+          name: Upload test results to Datadog
+          when: always
+          command: |
+            if [ -z "${DD_API_KEY:-}" ]; then
+              echo "DD_API_KEY is not available; skipping Datadog Test Optimization upload."
+              exit 0
+            fi
+
+            reports=()
+            for path in << parameters.paths >>; do
+              if [ -e "$path" ]; then
+                reports+=("$path")
+              fi
+            done
+
+            if [ "${#reports[@]}" -eq 0 ]; then
+              echo "No JUnit reports found; skipping Datadog Test Optimization upload."
+              exit 0
+            fi
+
+            DD_SITE="${DD_SITE:-us5.datadoghq.com}" npx --yes @datadog/datadog-ci \
+              junit upload --service "<< parameters.service >>" "${reports[@]}"
+
   publish_shadow_jar_local:
     description: "Build shadow JAR and publish to maven local repo"
     steps:
@@ -321,6 +355,9 @@ jobs:
           command: |
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --notest
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
+      - upload_test_results_to_datadog:
+          service: openlineage-python
+          paths: .tox/junit.<< parameters.tox_env >>.xml
 
   unit-tests-client-python:
     working_directory: ~/openlineage/client/python
@@ -447,6 +484,16 @@ jobs:
             - v1-client-java-{{ checksum "/tmp/checksum.txt" }}
       - set_java_version
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check jacocoTestReport
+      - upload_test_results_to_datadog:
+          service: openlineage-java
+          paths: >-
+            build/test-results/test
+            generator/build/test-results/test
+            transports-gcplineage/build/test-results/test
+            transports-gcs/build/test-results/test
+            transports-kinesis/build/test-results/test
+            transports-s3/build/test-results/test
+            transports-datazone/build/test-results/test
       - run: bash <(curl -s https://codecov.io/bash)
       - publish_shadow_jar_local
       - persist_to_workspace:
