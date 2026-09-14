@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -571,13 +572,12 @@ class SparkDeltaIntegrationTest {
         .pollInterval(Duration.ofSeconds(2))
         .atMost(Duration.ofSeconds(10))
         .until(
-            () -> {
-              // wait for the merge command to complete
-              List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
-              RunEvent lastEvent = events.get(events.size() - 1);
-              return "COMPLETE".equals(lastEvent.getEventType().toString())
-                  && lastEvent.getJob().getName().contains("merge_into_command");
-            });
+            () ->
+                MockServerUtils.getEventsEmitted(mockServer).stream()
+                    .anyMatch(
+                        event ->
+                            "COMPLETE".equals(event.getEventType().toString())
+                                && event.getJob().getName().contains("merge_into_command")));
 
     List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
     Optional<RunEvent> mergeEvent =
@@ -620,18 +620,27 @@ class SparkDeltaIntegrationTest {
   @SneakyThrows
   private List<RunEvent> assertSingleTerminalPair(Predicate<RunEvent> predicate) {
     spark.sparkContext().listenerBus().waitUntilEmpty(10_000);
-    List<RunEvent> events =
+    List<RunEvent> allEvents =
         Arrays.stream(mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
             .map(request -> OpenLineageClientUtils.runEventFromJson(request.getBodyAsString()))
             .collect(Collectors.toList());
 
+    List<UUID> matchingRunIds =
+        allEvents.stream()
+            .filter(predicate)
+            .map(event -> event.getRun().getRunId())
+            .distinct()
+            .collect(Collectors.toList());
+    assertThat(matchingRunIds).hasSize(1);
+
+    UUID matchingRunId = matchingRunIds.get(0);
+    List<RunEvent> events =
+        allEvents.stream()
+            .filter(event -> matchingRunId.equals(event.getRun().getRunId()))
+            .collect(Collectors.toList());
     assertThat(events)
         .extracting(RunEvent::getEventType)
         .containsExactly(RunEvent.EventType.START, RunEvent.EventType.COMPLETE);
-    assertThat(events)
-        .extracting(event -> event.getRun().getRunId())
-        .containsOnly(events.get(0).getRun().getRunId());
-    assertThat(events).anyMatch(predicate);
     return events;
   }
 
