@@ -22,7 +22,7 @@ The following environment variables are available:
 |-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-------|
 | OPENLINEAGE_CONFIG            | The path to the YAML configuration file. Example: `path/to/openlineage.yml`                                                                |       |
 | OPENLINEAGE_DISABLED          | When `true`, OpenLineage will not emit events.                                                                                              | 0.9.0 |
-| OPENLINEAGE__NAME__ESCAPING   | Controls automatic dot-escaping in name segments produced by the naming helpers. Set to `false` to disable. Defaults to enabled (escaping on). See [Naming — Escaping](../../spec/naming.md#automatic-escaping-in-openlineage-clients). | |
+| OPENLINEAGE__NAME__ESCAPING   | Controls automatic dot-escaping in name segments produced by the naming helpers. Set to `true` to enable. Defaults to disabled (escaping off). See [Naming — Escaping](../../spec/naming.md#automatic-escaping-in-openlineage-clients). | |
 
 You can also configure the client with dynamic environment variables.
 

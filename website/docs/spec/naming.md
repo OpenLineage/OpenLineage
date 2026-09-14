@@ -113,12 +113,10 @@ The escaped OpenLineage name of the dataset should be `mydb\\.example\\.com.mySc
 
 Without the escaping mechanims in place, consumers would have no way how to correctly segment the OpenLineage name based on the pattern defined in the naming conventions.
 
-The Java, Python, and Go OpenLineage clients **automatically escape dots** in all name segments produced by their built-in naming helpers (e.g. `Naming.Oracle`, `Oracle(...)`, etc.). Escaping is **enabled by default**.
-
-To disable automatic escaping, set the following environment variable before the process starts:
+The Java, Python, and Go OpenLineage clients can automatically escape dots if escaping is enabled. To enable the escaping, set the following environment variable before the process starts:
 
 ```sh
-OPENLINEAGE__NAME__ESCAPING=false
+OPENLINEAGE__NAME__ESCAPING=true
 ```
 
 | Value | Behaviour |

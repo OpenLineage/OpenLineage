@@ -51,6 +51,18 @@ class TestEscape:
         assert escape(".leading") == r"\.leading"
         assert escape("trailing.") == r"trailing\."
 
+    def test_backslash_escaped_before_dot(self, monkeypatch):
+        # A literal backslash in the segment must be doubled before dots are
+        # escaped, otherwise consumers cannot distinguish an escaped dot from a
+        # literal backslash-dot sequence.
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
+        # "foo\.bar"  (backslash + dot)  →  "foo\\.bar"  (each \ → \\, then . → \.)
+        assert escape("foo\\.bar") == "foo\\\\\\.bar"
+        # "foo\bar"  (backslash, no dot)  →  "foo\\bar"
+        assert escape("foo\\bar") == "foo\\\\bar"
+        # plain backslash at end
+        assert escape("foo\\") == "foo\\\\"
+
 
 class TestEscapingIntegrationWithNaming:
     """Verify that escaping flows through the Naming helpers end-to-end."""

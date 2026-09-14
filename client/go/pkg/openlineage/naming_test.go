@@ -24,6 +24,13 @@ func TestEscapeNameSegment_EscapingEnabled(t *testing.T) {
 		{"no_dots_here", "no_dots_here"},
 		{"leading.", `leading\.`},
 		{".leading", `\.leading`},
+		// Backslash present: must be doubled before dots are escaped so that
+		// consumers can unambiguously distinguish literal backslash-dots from
+		// escaped structural dots.
+		// input "foo\.bar" (8 chars) → step1: "foo\\.bar" → step2: "foo\\\.bar" (10 chars)
+		{"foo\\.bar", "foo\\\\\\.bar"},  // backslash+dot → \\\.
+		{"foo\\bar", "foo\\\\bar"},      // backslash, no dot → \\
+		{"foo\\", "foo\\\\"},            // trailing backslash → \\
 	}
 
 	for _, tc := range cases {

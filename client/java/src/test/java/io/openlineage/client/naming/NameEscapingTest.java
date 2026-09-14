@@ -146,6 +146,27 @@ class NameEscapingTest {
   }
 
   @Test
+  void escapeSegmentEscapesBackslashBeforeDot() throws Exception {
+    // A segment containing a literal backslash followed by a dot must have the
+    // backslash doubled first, so the output is unambiguous to consumers.
+    // "foo\.bar"  →  "foo\\\\.bar"  (in Java source: "foo\\\\\\.bar")
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "true");
+    setEnvironmentVariables(env);
+
+    try {
+      // single backslash + dot: "foo\.bar" → "foo\\.bar" (each \ → \\, then . → \.)
+      assertThat(NameEscaping.escapeSegment("foo\\.bar")).isEqualTo("foo\\\\\\.bar");
+      // plain backslash with no dot: "foo\bar" → "foo\\bar"
+      assertThat(NameEscaping.escapeSegment("foo\\bar")).isEqualTo("foo\\\\bar");
+      // standalone backslash at end: "foo\" → "foo\\"
+      assertThat(NameEscaping.escapeSegment("foo\\")).isEqualTo("foo\\\\");
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
+  }
+
+  @Test
   void escapeSegmentLeavesNonDotCharsUnchanged() throws Exception {
     clearEnvironmentVariables(Set.of(ENV_VAR));
 

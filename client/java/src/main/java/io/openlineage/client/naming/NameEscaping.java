@@ -81,23 +81,35 @@ public final class NameEscaping {
    * @return the segment with literal dots escaped, or unchanged when escaping is disabled
    */
   public static String escapeSegment(String segment) {
-    return isEscapingEnabled() ? segment.replace(".", "\\.") : segment;
+    return isEscapingEnabled() ? doEscape(segment) : segment;
   }
 
   /**
    * Escapes dots in a single name segment when escaping is enabled.
    *
-   * <p>A literal {@code .} is replaced with {@code \\.} so that consumers can tell structural dots
-   * (separating segments) from literal dots that are part of a segment value.
+   * <p>The transformation is applied in two steps so that backslashes already present in the
+   * segment are not misinterpreted as escape sequences by consumers:
+   *
+   * <ol>
+   *   <li>A literal {@code \} is replaced with {@code \\}.
+   *   <li>A literal {@code .} is replaced with {@code \.}.
+   * </ol>
+   *
+   * <p>This ensures that a segment such as {@code foo\.bar} (backslash followed by a dot) is
+   * encoded as {@code foo\\\\.bar}, which a consumer can unambiguously decode back to the original.
    *
    * <p>The transformation is applied only when {@link #isEscapingEnabled(NameConfig)} returns
    * {@code true}; otherwise the segment is returned unchanged.
    *
    * @param segment a single name component (e.g. database, schema, table)
    * @param nameConfig the parsed name configuration, may be {@code null}
-   * @return the segment with literal dots escaped, or unchanged when escaping is disabled
+   * @return the segment with backslashes and dots escaped, or unchanged when escaping is disabled
    */
   public static String escapeSegment(String segment, NameConfig nameConfig) {
-    return isEscapingEnabled(nameConfig) ? segment.replace(".", "\\.") : segment;
+    return isEscapingEnabled(nameConfig) ? doEscape(segment) : segment;
+  }
+
+  private static String doEscape(String segment) {
+    return segment.replace("\\", "\\\\").replace(".", "\\.");
   }
 }

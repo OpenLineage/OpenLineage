@@ -78,11 +78,18 @@ def is_escaping_enabled() -> bool:
 
 
 def escape(segment: str) -> str:
-    """Escape dots in a single name segment when escaping is enabled.
+    """Escape backslashes and dots in a single name segment when escaping is enabled.
 
-    A literal ``.`` is replaced with ``\\.`` so that consumers can tell
-    structural dots (separating segments) from literal dots that are part
-    of a segment value.
+    The transformation is applied in two steps so that backslashes already
+    present in the segment are not misinterpreted as escape sequences by
+    consumers:
+
+    1. A literal ``\\`` is replaced with ``\\\\``.
+    2. A literal ``.`` is replaced with ``\\.``.
+
+    This ensures that a segment such as ``foo\\.bar`` (backslash followed by a
+    dot) is encoded as ``foo\\\\\\.bar``, which a consumer can unambiguously
+    decode back to the original.
 
     The transformation is **only** applied when :func:`is_escaping_enabled`
     returns ``True``; otherwise the segment is returned unchanged.
@@ -91,9 +98,9 @@ def escape(segment: str) -> str:
         segment: A single name component (e.g. database, schema, table).
 
     Returns:
-        The segment with literal dots escaped (or unchanged if escaping is
-        disabled).
+        The segment with backslashes and dots escaped (or unchanged if escaping
+        is disabled).
     """
     if not is_escaping_enabled():
         return segment
-    return segment.replace(".", "\\.")
+    return segment.replace("\\", "\\\\").replace(".", "\\.")
