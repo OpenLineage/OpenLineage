@@ -5,6 +5,7 @@
 
 package io.openlineage.client.dataset;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
@@ -327,5 +328,24 @@ class NamingTest {
     assertThrowsExactly(
         IllegalArgumentException.class,
         () -> Naming.Athena.builder().catalog("some-catalog").build());
+  }
+
+  // -----------------------------------------------------------------------
+  // Escaping tests via Naming helpers (env-var default: escaping enabled)
+  // Full env-var toggle tests live in NameEscapingTest.
+  // -----------------------------------------------------------------------
+
+  @Test
+  void oracleNamingWithPlainSegmentsProducesExpectedName() {
+    Naming.Oracle naming =
+        Naming.Oracle.builder()
+            .host("localhost")
+            .port("1521")
+            .serviceName("ORCLCDB")
+            .schema("myschema")
+            .table("my_table")
+            .build();
+    // No dots in any segment — output is the same regardless of escaping.
+    assertThat(naming.getName()).isEqualTo("ORCLCDB.myschema.my_table");
   }
 }
