@@ -253,10 +253,52 @@ transport.Config{
     HTTP: transport.HTTPConfig{
         URL:      "http://localhost:5000",
         Endpoint: "api/v1/lineage", // optional, default
-        APIKey:   "your-api-key",   // optional
     },
 }
 ```
+
+#### Authentication
+
+Set `HTTP.Auth` to send an `Authorization` header with every request. It is optional; when
+it is nil no header is sent.
+
+A static API key or JWT:
+
+```go
+HTTP: transport.HTTPConfig{
+    URL: "http://localhost:5000",
+    Auth: &transport.HTTPAuthConfig{
+        Type:   transport.AuthTypeAPIKey, // or transport.AuthTypeJWT with Token
+        APIKey: "your-api-key",
+    },
+}
+```
+
+The OAuth 2.0 client credentials grant ([RFC 6749, section 4.4](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4)),
+for backends that issue short-lived access tokens to a client ID and secret. The token is
+requested on the first event, cached, and refreshed before it expires:
+
+```go
+HTTP: transport.HTTPConfig{
+    URL: "https://backend:5000",
+    Auth: &transport.HTTPAuthConfig{
+        Type:          transport.AuthTypeOAuth2,
+        ClientID:      "your-client-id",
+        ClientSecret:  "your-client-secret",
+        TokenEndpoint: "https://auth.example.com/token",
+
+        // optional
+        Scopes:             []string{"openid"},
+        ClientAuthMethod:   transport.ClientAuthMethodBasic, // or ClientAuthMethodPost
+        TokenRefreshBuffer: 120 * time.Second,
+    },
+}
+```
+
+- `ClientID`, `ClientSecret` and `TokenEndpoint` are required; the transport fails to build without them.
+- `ClientAuthMethod` selects how the credentials reach the token endpoint: `client_secret_basic`
+  (the default, an HTTP basic `Authorization` header) or `client_secret_post` (the request body).
+- `TokenRefreshBuffer` is how long before expiry a new token is requested. Optional, default 120s.
 
 ### GCP Lineage Transport
 
