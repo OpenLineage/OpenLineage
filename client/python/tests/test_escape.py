@@ -7,6 +7,33 @@ import pytest
 from openlineage.client.naming.escape import configure, escape, is_escaping_enabled
 
 
+def _split_escaped(name: str) -> list[str]:
+    """Split a dot-separated OL name back into segments, honouring the escape grammar.
+
+    ``\\.`` is a literal dot, ``\\\\`` is a literal backslash, and an unescaped
+    ``.`` is a structural separator.  Used only in round-trip tests.
+    """
+    segments: list[str] = []
+    current: list[str] = []
+    i = 0
+    while i < len(name):
+        ch = name[i]
+        if ch == "\\" and i + 1 < len(name):
+            # escape sequence: consume backslash and emit next char literally
+            current.append(name[i + 1])
+            i += 2
+        elif ch == ".":
+            # structural separator
+            segments.append("".join(current))
+            current = []
+            i += 1
+        else:
+            current.append(ch)
+            i += 1
+    segments.append("".join(current))
+    return segments
+
+
 class TestIsEscapingEnabled:
     def test_disabled_by_default(self, monkeypatch):
         monkeypatch.delenv("OPENLINEAGE__NAME__ESCAPING", raising=False)
@@ -62,6 +89,49 @@ class TestEscape:
         assert escape("foo\\bar") == "foo\\\\bar"
         # plain backslash at end
         assert escape("foo\\") == "foo\\\\"
+
+    def test_special_combinations(self, monkeypatch):
+        # Round-trip test: for each input name (list of segments), escape every
+        # segment, join with '.', parse back using the same grammar, and verify
+        # the recovered segments match the originals.
+        #
+        # This validates the encoder is unambiguous — no special-character
+        # combination in a segment value can be confused with a structural dot
+        # or a misinterpreted escape sequence by the consumer.
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
+
+        cases = [
+            # ── single-segment names (no structural dot at all) ──────────────
+            [""],  # empty segment
+            ["plain"],
+            ["my_schema-1"],
+            ["tëst"],  # non-ASCII passthrough
+            ["a/b:c"],  # other punctuation
+            ["."],  # segment is just a dot
+            ["..."],  # segment is only dots
+            [".a."],  # dot-wrapped word
+            ["\\"],  # single backslash
+            ["\\\\"],  # two backslashes
+            ["\\\\\\"],  # three backslashes
+            ["\\."],  # backslash immediately before dot
+            ["a\\.b"],  # backslash+dot mid-segment
+            ["\\\\."],  # two backslashes then dot
+            [".\\"],  # dot then backslash
+            ["\\.\\"],  # backslash dot backslash
+            ["a.b\\c"],  # mid-dot and trailing backslash
+            ["\\a.b"],  # leading backslash then mid-dot
+            # ── multi-segment names (structural dots present) ────────────────
+            ["mydb.example.com", "mySchema", "myTable"],
+            ["a.b.c", "d.e"],  # dots in both segments
+            [".", ".", "."],  # every segment is a bare dot
+            ["\\.\\", "plain"],  # complex + plain
+            ["foo", "bar\\.baz", "qux"],  # backslash+dot in middle segment
+        ]
+
+        for segments in cases:
+            encoded = ".".join(escape(s) for s in segments)
+            recovered = _split_escaped(encoded)
+            assert recovered == segments, f"round-trip failed for {segments!r} (encoded: {encoded!r})"
 
 
 class TestEscapingIntegrationWithNaming:

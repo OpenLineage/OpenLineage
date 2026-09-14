@@ -12,7 +12,10 @@ import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.OpenLineageConfig;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.Test;
 class NameEscapingTest {
 
   private static final String ENV_VAR = "OPENLINEAGE__NAME__ESCAPING";
+  private static final char DOT = '.'; // to make PMD happy
 
   // -----------------------------------------------------------------------
   // Helpers — identical pattern to JwtTokenProviderTest
@@ -164,6 +168,102 @@ class NameEscapingTest {
     } finally {
       clearEnvironmentVariables(env.keySet());
     }
+  }
+
+  @Test
+  @SuppressWarnings("PMD")
+  void escapeSegmentSpecialCombinations() throws Exception {
+    // Round-trip test: for each input name (list of segments), escape every
+    // segment, join with '.', parse back using the same grammar, and verify
+    // the recovered segments match the originals.
+    //
+    // This validates the encoder is unambiguous — no special-character
+    // combination in a segment value can be confused with a structural dot
+    // or a misinterpreted escape sequence by the consumer.
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "true");
+    setEnvironmentVariables(env);
+
+    try {
+      List<List<String>> cases =
+          Arrays.asList(
+              // ── single-segment names (no structural dot at all) ──────────
+              Arrays.asList(""), // empty segment
+              Arrays.asList("plain"),
+              Arrays.asList("my_schema-1"),
+              Arrays.asList("tëst"), // non-ASCII passthrough
+              Arrays.asList("a/b:c"), // other punctuation
+              Arrays.asList("."), // segment is just a dot
+              Arrays.asList("..."), // segment is only dots
+              Arrays.asList(".a."), // dot-wrapped word
+              Arrays.asList("\\"), // single backslash
+              Arrays.asList("\\\\"), // two backslashes
+              Arrays.asList("\\\\\\"), // three backslashes
+              Arrays.asList("\\."), // backslash immediately before dot
+              Arrays.asList("a\\.b"), // backslash+dot mid-segment
+              Arrays.asList("\\\\."), // two backslashes then dot
+              Arrays.asList(".\\"), // dot then backslash
+              Arrays.asList("\\.\\"), // backslash dot backslash
+              Arrays.asList("a.b\\c"), // mid-dot and trailing backslash
+              Arrays.asList("\\a.b"), // leading backslash then mid-dot
+              // ── multi-segment names (structural dots present) ────────────
+              Arrays.asList("mydb.example.com", "mySchema", "myTable"),
+              Arrays.asList("a.b.c", "d.e"), // dots in both segments
+              Arrays.asList(".", ".", "."), // every segment is a bare dot
+              Arrays.asList("\\.\\", "plain"), // complex + plain
+              Arrays.asList("foo", "bar\\.baz", "qux"), // backslash+dot in middle segment
+              Arrays.asList("fo\\\\.o", "bar\\.baz", "qux") // complex case
+              );
+
+      for (List<String> segments : cases) {
+        // Build the combined name: escape each segment and join with '.'
+        StringBuilder name = new StringBuilder();
+        for (int i = 0; i < segments.size(); i++) {
+          if (i > 0) name.append('.');
+          name.append(NameEscaping.escapeSegment(segments.get(i)));
+        }
+
+        // Parse the combined name back into segments
+        List<String> recovered = splitEscaped(name.toString());
+
+        assertThat(recovered)
+            .as("round-trip failed for segments %s (encoded: %s)", segments, name)
+            .isEqualTo(segments);
+      }
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
+  }
+
+  /**
+   * Splits a dot-separated OpenLineage name into its constituent segments, interpreting the escape
+   * grammar: {@code \.} is a literal dot, {@code \\} is a literal backslash, and an unescaped
+   * {@code .} is a structural separator.
+   */
+  private static List<String> splitEscaped(String name) {
+    List<String> result = new ArrayList<>();
+    StringBuilder current = new StringBuilder();
+    int i = 0;
+    while (i < name.length()) {
+      char c = name.charAt(i);
+      if (c == '\\' && i + 1 < name.length()) {
+        char next = name.charAt(i + 1);
+        if (next == '\\' || next == '.') {
+          current.append(next);
+          i += 2;
+          continue;
+        }
+      }
+      if (c == DOT) {
+        result.add(current.toString());
+        current.setLength(0);
+      } else {
+        current.append(c);
+      }
+      i++;
+    }
+    result.add(current.toString());
+    return result;
   }
 
   @Test
