@@ -112,6 +112,17 @@ jobs:
             pip install pyyaml==6.0.1
             python dev/filter_matrix.py 
           fi
+      - run:
+          name: Prepare continuation parameters
+          command: |
+            datadog_enabled=false
+            if [ -n "${DD_API_KEY:-}" ]; then
+              datadog_enabled=true
+            fi
+            for context in pr release; do
+              printf '{"build-context":"%s","datadog-enabled":%s}\n' "$context" "$datadog_enabled" \
+                > "datadog-${context}-parameters.json"
+            done
       - when:
           condition:
             or:
@@ -120,7 +131,7 @@ jobs:
           steps:
             - continuation/continue:
                 configuration_path: complete_config.yml
-                parameters: '{ "build-context": "release" }'
+                parameters: datadog-release-parameters.json
       - when:
           condition:
             not:
@@ -130,7 +141,7 @@ jobs:
           steps:
             - continuation/continue:
                 configuration_path: complete_config.yml
-                parameters: '{ "build-context": "pr" }'
+                parameters: datadog-pr-parameters.json
 
 workflows:
   schedule_workflow:
