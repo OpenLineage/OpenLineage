@@ -81,6 +81,9 @@ pub struct Context<'a> {
     dialect: &'a dyn CanonicalDialect,
     // Used to generate unique names for unaliased columns created from compound expressions
     column_id: u32,
+    // Registry of known column names for CTE tables, keyed by qualified_name().
+    // Populated during With::visit(), consumed during wildcard expansion in Select::visit().
+    cte_column_registry: HashMap<String, Vec<String>>,
 }
 
 impl<'a> Context<'a> {
@@ -94,6 +97,7 @@ impl<'a> Context<'a> {
             default_database: None,
             dialect: &SnowflakeDialect,
             column_id: 0,
+            cte_column_registry: HashMap::new(),
         }
     }
 
@@ -110,6 +114,7 @@ impl<'a> Context<'a> {
             default_database,
             dialect,
             column_id: 0,
+            cte_column_registry: HashMap::new(),
         }
     }
 
@@ -578,6 +583,25 @@ impl<'a> Context<'a> {
             for (alias, t) in old.aliases.tables() {
                 frame.aliases.add_table_alias(t.clone(), alias.clone());
             }
+        }
+    }
+
+    // --- CTE Column Registry ---
+
+    pub fn register_cte_columns(&mut self, table_qualified_name: String, columns: Vec<String>) {
+        self.cte_column_registry
+            .insert(table_qualified_name, columns);
+    }
+
+    pub fn cte_columns(&self, table_qualified_name: &str) -> Option<&Vec<String>> {
+        self.cte_column_registry.get(table_qualified_name)
+    }
+
+    pub fn resolve_table_qualified_name(&self, table: &DbTableMeta) -> String {
+        if let Some(frame) = self.frames.last() {
+            frame.aliases.resolve_table(table).qualified_name()
+        } else {
+            table.qualified_name()
         }
     }
 
