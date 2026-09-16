@@ -148,6 +148,34 @@ impl Visit for TableFactor {
                 }
                 Ok(())
             }
+            TableFactor::UNNEST { .. } => {
+                // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator
+                // BigQuery's `UNNEST(...)` (e.g. UNNEST(GENERATE_ARRAY(1, 1000)) AS n) is a
+                // row generator over an array expression, not a real table. Same treatment as
+                // TableFunction/Function above: skip it rather than fail the whole query.
+                Ok(())
+            }
+            TableFactor::Unpivot { table, alias, .. } => {
+                // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unpivot_operator
+                // Same bug class as UNNEST above and #1358: this variant had no arm and fell
+                // through to the catch-all Err. Mirrors the Pivot arm above - the real table
+                // lineage lives in the wrapped `table`.
+                table.visit(context)?;
+                if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
+                    if let Some(unpivot_alias) = alias {
+                        context.add_table_alias(
+                            DbTableMeta::new(
+                                ident.clone(),
+                                context.dialect(),
+                                context.default_schema().clone(),
+                                context.default_database().clone(),
+                            ),
+                            vec![unpivot_alias.clone().name],
+                        );
+                    }
+                }
+                Ok(())
+            }
             _ => Err(anyhow!(
                 "TableFactor other than table or subquery not implemented: {self}"
             )),
