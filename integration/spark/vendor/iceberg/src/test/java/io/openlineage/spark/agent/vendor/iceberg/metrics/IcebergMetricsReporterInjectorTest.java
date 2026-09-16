@@ -7,12 +7,16 @@ package io.openlineage.spark.agent.vendor.iceberg.metrics;
 
 import static io.openlineage.spark.agent.vendor.iceberg.metrics.CatalogMetricsReporterHolder.VENDOR_CONTEXT_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.VendorsContext;
@@ -38,9 +42,11 @@ import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import scala.Option;
 
 public class IcebergMetricsReporterInjectorTest {
 
@@ -103,6 +109,45 @@ public class IcebergMetricsReporterInjectorTest {
     assertThat(injector.isDefinedAt(v2Relation)).isTrue();
   }
 
+  @Test
+  @SneakyThrows
+  void testCachedTableCatalogIsSkipped() {
+    String catalogClass = "org.apache.iceberg.spark.SparkCachedTableCatalog";
+    // Older Iceberg dependencies may not provide the cached catalog.
+    assumeTrue(ReflectionUtils.hasClass(catalogClass));
+    CatalogPlugin catalog =
+        (CatalogPlugin) Class.forName(catalogClass).getDeclaredConstructor().newInstance();
+    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
+    when(relation.catalog()).thenReturn(Option.apply(catalog));
+
+    assertThat(injector.apply(relation)).isEmpty();
+    assertThat(injector.isDefinedAt(relation)).isFalse();
+    assertThat(vendorsContext.fromVendorsContext(VENDOR_CONTEXT_KEY)).isEmpty();
+  }
+
+  @Test
+  void testAbsentCatalogIsSkipped() {
+    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
+    when(relation.catalog()).thenReturn(Option.empty());
+
+    assertThat(injector.isDefinedAt(relation)).isFalse();
+    assertThat(injector.apply(relation)).isEmpty();
+    assertThat(injector.apply(mock(LogicalPlan.class))).isEmpty();
+    assertThat(vendorsContext.fromVendorsContext(VENDOR_CONTEXT_KEY)).isEmpty();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideCatalogs")
+  void testNullUnderlyingCatalogIsSkipped(CatalogPlugin catalog) {
+    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
+    when(relation.catalog()).thenReturn(Option.apply(catalog));
+
+    assertThat(injector.isDefinedAt(relation)).isTrue();
+    verify((HasIcebergCatalog) catalog, never()).icebergCatalog();
+    assertThat(injector.apply(relation)).isEmpty();
+    assertThat(vendorsContext.fromVendorsContext(VENDOR_CONTEXT_KEY)).isEmpty();
+  }
+
   @ParameterizedTest
   @MethodSource("provideCatalogs")
   void testIsDefinedWhenMetricsReporterDisabled(CatalogPlugin catalog) {
@@ -156,8 +201,15 @@ public class IcebergMetricsReporterInjectorTest {
 
   private static Stream<Arguments> provideCatalogs() {
     return Stream.of(
-        arguments(mock(SparkCatalog.class)), arguments(mock(SparkSessionCatalog.class)));
+        arguments(mock(SparkCatalog.class)),
+        arguments(mock(SparkSessionCatalog.class)),
+        arguments(mock(TestingSparkCatalog.class)),
+        arguments(mock(TestingSparkSessionCatalog.class)));
   }
+
+  private static class TestingSparkCatalog extends SparkCatalog {}
+
+  private static class TestingSparkSessionCatalog extends SparkSessionCatalog {}
 
   @SneakyThrows
   private MetricsReporter getMetricsReporter(BaseMetastoreCatalog catalog) {
