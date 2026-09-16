@@ -50,17 +50,18 @@ public class DeltaEventFilter implements EventFilter {
 
   @Override
   public boolean isDisabled(SparkListenerEvent event) {
-    if (!isDeltaPlan()) {
+    if (!isDeltaPlan(context)) {
       return false;
     }
 
-    return isFilterRoot()
-        || isLocalRelationOnly()
+    // These broad plan shapes also occur in user queries; restrict them when Spark knows the root.
+    boolean commandChildOrLegacy = context.getCommandChildExecution().orElse(true);
+    return isOnJobStartOrEnd(event)
+        || (commandChildOrLegacy
+            && (isFilterRoot() || isLocalRelationOnly() || isSerializeFromObject()))
         || isLogicalRDDWithInternalDataColumns()
         || isStagedDeltaTable(event)
-        || isDeltaLogProjection()
-        || isSerializeFromObject()
-        || isOnJobStartOrEnd(event);
+        || isDeltaLogProjection();
   }
 
   /**
