@@ -166,6 +166,11 @@ description = run the unit tests with pytest under {basepython}
 package = wheel
 wheel_build_env = .pkg
 extras = kafka,msk-iam,test,generator,fsspec
+pass_env =
+    DD_*
+    CIRCLE*
+    CI
+    PYTEST_ADDOPTS
 set_env =
     COVERAGE_FILE = {toxworkdir}/.coverage.{envname}
     COVERAGE_PROCESS_START = {toxinidir}/pyproject.toml
