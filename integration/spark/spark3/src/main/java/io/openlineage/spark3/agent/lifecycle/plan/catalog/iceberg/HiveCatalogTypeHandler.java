@@ -89,12 +89,19 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
                           identifierToString(identifier), tableCatalog.name())));
     }
 
-    return super.getPrimaryIdentifier(session, catalogConf, identifier, tableCatalog)
-        .withSymlink(
-            new DatasetIdentifier.Symlink(
-                identifier.toString(),
-                PathUtils.prepareHiveUri(getUri(session, catalogConf)).toString(),
-                DatasetIdentifier.SymlinkType.TABLE));
+    DatasetIdentifier base = super.getPrimaryIdentifier(session, catalogConf, identifier, tableCatalog);
+    try {
+      return base.withSymlink(
+          new DatasetIdentifier.Symlink(
+              identifier.toString(),
+              PathUtils.prepareHiveUri(getUri(session, catalogConf)).toString(),
+              DatasetIdentifier.SymlinkType.TABLE));
+    } catch (Exception e) {
+      // The Hive symlink is supplementary; a metastore URI we can't resolve shouldn't take down
+      // the whole dataset identifier that was already successfully computed above.
+      log.debug("Couldn't resolve Hive metastore URI for symlink on {}, skipping", identifier, e);
+      return base;
+    }
   }
 
   private static URI getUri(SparkSession session, Map<String, String> catalogConf)
