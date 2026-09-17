@@ -1,0 +1,31 @@
+# Cloud Foundry manifest -- SCHEDULED mode (SAP Job Scheduling Service + CF task).
+#
+# Preferred for periodic work: instead of keeping a process alive to wait, push the app staged but
+# NOT running, then let SAP Job Scheduling Service (or `cf run-task`) launch a one-shot task that
+# reuses this app's droplet, env, and service bindings.
+#
+# Deploy (app staged, nothing running):
+#   cf push -f manifest-task.yml --no-start
+#
+# Run once on demand:
+#   cf run-task sap-ds-openlineage --command "exec python -m app.run_task odata_to_ol" --name ds-ol-scan
+#
+# Then create a recurring job in SAP Job Scheduling Service that launches that CF task on a cron
+# schedule (interpret the cron in UTC to match the container timezone).
+---
+applications:
+  - name: sap-ds-openlineage
+    memory: 256M
+    instances: 1
+    no-route: true
+    health-check-type: process
+    buildpacks:
+      - python_buildpack
+    # Not used while --no-start; tasks are launched via cf run-task / Job Scheduling Service.
+    command: exec python -m app.run_task odata_to_ol
+    env:
+      DS_OL_CONFIG: config/config.yaml
+      TZ: UTC
+    services:
+      - datasphere-oauth
+      - openlineage

@@ -70,6 +70,7 @@ else
     check_change client/python/ true openlineage-python.yml
     check_change integration/common/ true openlineage-python.yml
     check_change integration/dbt/ true openlineage-python.yml
+    check_change integration/sap-datasphere/ true openlineage-sap-datasphere.yml
     check_change proxy/fluentd/ true openlineage-proxy-fluentd.yml
     check_change website false openlineage-website.yml
     check_change integration/hive true openlineage-java.yml openlineage-hive.yml

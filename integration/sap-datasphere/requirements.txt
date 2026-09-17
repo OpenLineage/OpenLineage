@@ -1,0 +1,10 @@
+# Core runtime dependencies
+openlineage-python>=1.53.0
+httpx>=0.27.0
+croniter>=2.0.0
+pydantic>=2.6.0
+PyYAML>=6.0
+python-dateutil>=2.9.0
+
+# Cloud Foundry service-binding discovery (VCAP_SERVICES). Harmless locally.
+cfenv>=0.5.3
