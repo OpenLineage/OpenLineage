@@ -11,12 +11,20 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 )
+
+// stdoutMu serialises captureStdout, which swaps the process-wide os.Stdout and
+// would otherwise race with any other test capturing it in parallel.
+var stdoutMu sync.Mutex
 
 // captureStdout temporarily redirects os.Stdout and returns what was written.
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
+
+	stdoutMu.Lock()
+	defer stdoutMu.Unlock()
 
 	orig := os.Stdout
 	r, w, err := os.Pipe()

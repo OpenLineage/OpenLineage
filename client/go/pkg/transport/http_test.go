@@ -10,12 +10,15 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // capturedRequest holds the raw body and headers of an HTTP request.
@@ -362,4 +365,480 @@ func TestHTTPTransport_ImplementsTransport(t *testing.T) {
 	t.Parallel()
 
 	var _ Transport = (*httpTransport)(nil)
+}
+
+// tokenServer creates an httptest.Server that serves OAuth 2.0 access tokens and
+// collects the token requests it received.
+func tokenServer(t *testing.T, statusCode int) (*httptest.Server, *[]capturedRequest) {
+	t.Helper()
+
+	var mu sync.Mutex
+	var reqs []capturedRequest
+	issued := 0
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "read body", http.StatusInternalServerError)
+			return
+		}
+		mu.Lock()
+		reqs = append(reqs, capturedRequest{Body: body, Headers: r.Header.Clone()})
+		issued++
+		token := fmt.Sprintf("access-token-%d", issued)
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		if statusCode == http.StatusOK {
+			fmt.Fprintf(w, `{"access_token":%q,"token_type":"Bearer","expires_in":3600}`, token)
+		}
+	}))
+
+	t.Cleanup(srv.Close)
+
+	return srv, &reqs
+}
+
+// TestHTTPTransport_Emit_OAuth2ClientCredentialsAuth verifies that the client
+// credentials grant obtains an access token and sends it as a bearer token, with the
+// credentials presented to the token endpoint as HTTP basic auth by default.
+func TestHTTPTransport_Emit_OAuth2ClientCredentialsAuth(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv, tokenReqs := tokenServer(t, http.StatusOK)
+	srv, reqs := testServer(t, http.StatusOK)
+
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL: srv.URL,
+		Auth: &HTTPAuthConfig{
+			Type:          AuthTypeOAuth2,
+			ClientID:      "my-client-id",
+			ClientSecret:  "my-client-secret",
+			TokenEndpoint: tokenSrv.URL,
+		},
+	})
+
+	if _, err := tr.Emit(context.Background(), map[string]string{"eventType": "START"}); err != nil {
+		t.Fatalf("Emit() error: %v", err)
+	}
+
+	if got, want := (*reqs)[0].Headers.Get("Authorization"), "Bearer access-token-1"; got != want {
+		t.Errorf("Authorization = %q, want %q", got, want)
+	}
+
+	if len(*tokenReqs) != 1 {
+		t.Fatalf("expected 1 token request, got %d", len(*tokenReqs))
+	}
+	clientID, clientSecret, ok := basicAuthOf(t, (*tokenReqs)[0])
+	if !ok {
+		t.Fatal("token request has no basic auth credentials")
+	}
+	if clientID != "my-client-id" || clientSecret != "my-client-secret" {
+		t.Errorf("basic auth = %q/%q, want my-client-id/my-client-secret", clientID, clientSecret)
+	}
+	if grant := formValueOf(t, (*tokenReqs)[0], "grant_type"); grant != "client_credentials" {
+		t.Errorf("grant_type = %q, want client_credentials", grant)
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2ClientSecretPost verifies that client_secret_post
+// sends the credentials in the token request body instead of the Authorization header,
+// and that configured scopes are forwarded.
+func TestHTTPTransport_Emit_OAuth2ClientSecretPost(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv, tokenReqs := tokenServer(t, http.StatusOK)
+	srv, _ := testServer(t, http.StatusOK)
+
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL: srv.URL,
+		Auth: &HTTPAuthConfig{
+			Type:             AuthTypeOAuth2,
+			ClientID:         "my-client-id",
+			ClientSecret:     "my-client-secret",
+			TokenEndpoint:    tokenSrv.URL,
+			ClientAuthMethod: ClientAuthMethodPost,
+			Scopes:           []string{"openid", "lineage"},
+		},
+	})
+
+	if _, err := tr.Emit(context.Background(), map[string]string{"eventType": "START"}); err != nil {
+		t.Fatalf("Emit() error: %v", err)
+	}
+
+	req := (*tokenReqs)[0]
+	if _, _, ok := basicAuthOf(t, req); ok {
+		t.Error("token request should not use basic auth for client_secret_post")
+	}
+	if got := formValueOf(t, req, "client_id"); got != "my-client-id" {
+		t.Errorf("client_id = %q, want my-client-id", got)
+	}
+	if got := formValueOf(t, req, "client_secret"); got != "my-client-secret" {
+		t.Errorf("client_secret = %q, want my-client-secret", got)
+	}
+	if got := formValueOf(t, req, "scope"); got != "openid lineage" {
+		t.Errorf("scope = %q, want \"openid lineage\"", got)
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2TokenIsReused verifies that a cached access token is
+// reused across events rather than fetched for every emit.
+func TestHTTPTransport_Emit_OAuth2TokenIsReused(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv, tokenReqs := tokenServer(t, http.StatusOK)
+	srv, reqs := testServer(t, http.StatusOK)
+
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL: srv.URL,
+		Auth: &HTTPAuthConfig{
+			Type:          AuthTypeOAuth2,
+			ClientID:      "my-client-id",
+			ClientSecret:  "my-client-secret",
+			TokenEndpoint: tokenSrv.URL,
+		},
+	})
+
+	for range 3 {
+		if _, err := tr.Emit(context.Background(), map[string]string{"eventType": "START"}); err != nil {
+			t.Fatalf("Emit() error: %v", err)
+		}
+	}
+
+	if len(*tokenReqs) != 1 {
+		t.Errorf("token requests = %d, want 1", len(*tokenReqs))
+	}
+	for i, req := range *reqs {
+		if got, want := req.Headers.Get("Authorization"), "Bearer access-token-1"; got != want {
+			t.Errorf("request %d Authorization = %q, want %q", i, got, want)
+		}
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2TokenEndpointError verifies that a failing token
+// endpoint surfaces as an Emit error rather than an unauthenticated request.
+func TestHTTPTransport_Emit_OAuth2TokenEndpointError(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv, _ := tokenServer(t, http.StatusUnauthorized)
+	srv, reqs := testServer(t, http.StatusOK)
+
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL: srv.URL,
+		Auth: &HTTPAuthConfig{
+			Type:          AuthTypeOAuth2,
+			ClientID:      "my-client-id",
+			ClientSecret:  "my-client-secret",
+			TokenEndpoint: tokenSrv.URL,
+		},
+	})
+
+	_, err := tr.Emit(context.Background(), map[string]string{"eventType": "START"})
+	if err == nil {
+		t.Fatal("Emit() error = nil, want an error")
+	}
+	if !strings.Contains(err.Error(), "obtain OAuth2 access token") {
+		t.Errorf("Emit() error = %v, want it to mention obtaining the access token", err)
+	}
+	if len(*reqs) != 0 {
+		t.Errorf("lineage requests = %d, want 0 when no token could be obtained", len(*reqs))
+	}
+}
+
+// TestNew_OAuth2ClientCredentialsValidation verifies that an incomplete or invalid
+// client credentials configuration is rejected when the transport is created.
+func TestNew_OAuth2ClientCredentialsValidation(t *testing.T) {
+	t.Parallel()
+
+	complete := HTTPAuthConfig{
+		Type:          AuthTypeOAuth2,
+		ClientID:      "my-client-id",
+		ClientSecret:  "my-client-secret",
+		TokenEndpoint: "https://auth.example.com/token",
+	}
+
+	tests := []struct {
+		name    string
+		mutate  func(*HTTPAuthConfig)
+		wantErr string
+	}{
+		{"missing client id", func(a *HTTPAuthConfig) { a.ClientID = "" }, "requires ClientID"},
+		{"missing client secret", func(a *HTTPAuthConfig) { a.ClientSecret = "" }, "requires ClientID"},
+		{"missing token endpoint", func(a *HTTPAuthConfig) { a.TokenEndpoint = "" }, "requires ClientID"},
+		{
+			"unsupported client auth method",
+			func(a *HTTPAuthConfig) { a.ClientAuthMethod = "private_key_jwt" },
+			"unsupported ClientAuthMethod",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			auth := complete
+			tt.mutate(&auth)
+
+			_, err := New(&Config{
+				Type: TransportTypeHTTP,
+				HTTP: HTTPConfig{URL: "http://localhost:5000", Auth: &auth},
+			})
+			if err == nil {
+				t.Fatal("New() error = nil, want an error")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("New() error = %v, want it to mention %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// TestNew_OAuth2ClientCredentialsRefreshBuffer verifies that a custom refresh buffer
+// is accepted and that the default is applied when it is not set.
+func TestNew_OAuth2ClientCredentialsRefreshBuffer(t *testing.T) {
+	t.Parallel()
+
+	for _, buffer := range []time.Duration{0, 30 * time.Second} {
+		_, err := New(&Config{
+			Type: TransportTypeHTTP,
+			HTTP: HTTPConfig{
+				URL: "http://localhost:5000",
+				Auth: &HTTPAuthConfig{
+					Type:               AuthTypeOAuth2,
+					ClientID:           "my-client-id",
+					ClientSecret:       "my-client-secret",
+					TokenEndpoint:      "https://auth.example.com/token",
+					TokenRefreshBuffer: buffer,
+				},
+			},
+		})
+		if err != nil {
+			t.Errorf("New() with refresh buffer %v: %v", buffer, err)
+		}
+	}
+}
+
+// basicAuthOf returns the basic auth credentials of a captured request.
+func basicAuthOf(t *testing.T, req capturedRequest) (string, string, bool) {
+	t.Helper()
+	r := &http.Request{Header: req.Headers}
+	return r.BasicAuth()
+}
+
+// formValueOf returns a single form value from a captured request body.
+func formValueOf(t *testing.T, req capturedRequest, key string) string {
+	t.Helper()
+	values, err := url.ParseQuery(string(req.Body))
+	if err != nil {
+		t.Fatalf("parse form body: %v", err)
+	}
+	return values.Get(key)
+}
+
+// blockingTokenServer creates a token endpoint that never answers until the test ends.
+func blockingTokenServer(t *testing.T) *httptest.Server {
+	t.Helper()
+
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+
+	t.Cleanup(func() {
+		close(release)
+		srv.Close()
+	})
+
+	return srv
+}
+
+// TestHTTPTransport_Emit_OAuth2RespectsEmitContextCancellation verifies that cancelling
+// the context passed to Emit also cancels an in-flight token request, so that a stalled
+// token endpoint cannot block Emit indefinitely.
+func TestHTTPTransport_Emit_OAuth2RespectsEmitContextCancellation(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv := blockingTokenServer(t)
+	srv, _ := testServer(t, http.StatusOK)
+
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL: srv.URL,
+		Auth: &HTTPAuthConfig{
+			Type:          AuthTypeOAuth2,
+			ClientID:      "my-client-id",
+			ClientSecret:  "my-client-secret",
+			TokenEndpoint: tokenSrv.URL,
+		},
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		_, err := tr.Emit(ctx, map[string]string{"eventType": "START"})
+		done <- err
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("Emit() error = nil, want the cancelled context to surface")
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("Emit() did not return after its context was cancelled")
+	}
+}
+
+// TestOAuth2TokenSource_UsesProvidedHTTPClient verifies that the token request is made
+// with the HTTP client it is handed, so that the transport's timeout applies to it.
+func TestOAuth2TokenSource_UsesProvidedHTTPClient(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv := blockingTokenServer(t)
+
+	source, err := newClientCredentialsTokenSource(&HTTPAuthConfig{
+		Type:          AuthTypeOAuth2,
+		ClientID:      "my-client-id",
+		ClientSecret:  "my-client-secret",
+		TokenEndpoint: tokenSrv.URL,
+	})
+	if err != nil {
+		t.Fatalf("newClientCredentialsTokenSource: %v", err)
+	}
+
+	start := time.Now()
+	if _, err := source.Token(context.Background(), &http.Client{Timeout: 200 * time.Millisecond}); err == nil {
+		t.Fatal("Token() error = nil, want the client timeout to surface")
+	}
+
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
+		t.Errorf("Token() took %v, want it to fail with the client timeout", elapsed)
+	}
+}
+
+// TestNew_OAuth2SurvivesCancelledConstructionContext verifies that tokens are fetched
+// with the Emit context rather than the one the transport was built with, so cancelling
+// the latter does not break later events.
+func TestNew_OAuth2SurvivesCancelledConstructionContext(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv, _ := tokenServer(t, http.StatusOK)
+	srv, reqs := testServer(t, http.StatusOK)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	tr, err := NewWithContext(ctx, &Config{
+		Type: TransportTypeHTTP,
+		HTTP: HTTPConfig{
+			URL: srv.URL,
+			Auth: &HTTPAuthConfig{
+				Type:          AuthTypeOAuth2,
+				ClientID:      "my-client-id",
+				ClientSecret:  "my-client-secret",
+				TokenEndpoint: tokenSrv.URL,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("NewWithContext: %v", err)
+	}
+	cancel()
+
+	if _, err := tr.Emit(context.Background(), map[string]string{"eventType": "START"}); err != nil {
+		t.Fatalf("Emit() after the construction context was cancelled: %v", err)
+	}
+
+	if got, want := (*reqs)[0].Headers.Get("Authorization"), "Bearer access-token-1"; got != want {
+		t.Errorf("Authorization = %q, want %q", got, want)
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2ConcurrentCallerHonoursOwnContext verifies that an event
+// waiting on a token request started by another event still honours its own context.
+func TestHTTPTransport_Emit_OAuth2ConcurrentCallerHonoursOwnContext(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv := blockingTokenServer(t)
+	srv, _ := testServer(t, http.StatusOK)
+
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL:             srv.URL,
+		TimeoutInMillis: 120000,
+		Auth: &HTTPAuthConfig{
+			Type:          AuthTypeOAuth2,
+			ClientID:      "my-client-id",
+			ClientSecret:  "my-client-secret",
+			TokenEndpoint: tokenSrv.URL,
+		},
+	})
+
+	// the first event occupies the token request and never completes
+	go func() { _, _ = tr.Emit(context.Background(), map[string]string{"eventType": "START"}) }()
+	time.Sleep(200 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := tr.Emit(ctx, map[string]string{"eventType": "START"})
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("Emit() error = nil, want the deadline to surface")
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("Emit() blocked past its own deadline waiting for another event's token request")
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2RefreshBufferCappedAtTokenLifetime verifies that a refresh
+// buffer at least as long as the token lifetime does not cause a token request per event.
+func TestHTTPTransport_Emit_OAuth2RefreshBufferCappedAtTokenLifetime(t *testing.T) {
+	t.Parallel()
+
+	var mu sync.Mutex
+	tokenRequests := 0
+	tokenSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		mu.Lock()
+		tokenRequests++
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"access_token":"access-token-value","token_type":"Bearer","expires_in":60}`)
+	}))
+	t.Cleanup(tokenSrv.Close)
+
+	srv, _ := testServer(t, http.StatusOK)
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL: srv.URL,
+		Auth: &HTTPAuthConfig{
+			Type:               AuthTypeOAuth2,
+			ClientID:           "my-client-id",
+			ClientSecret:       "my-client-secret",
+			TokenEndpoint:      tokenSrv.URL,
+			TokenRefreshBuffer: 120 * time.Second,
+		},
+	})
+
+	for range 3 {
+		if _, err := tr.Emit(context.Background(), map[string]string{"eventType": "START"}); err != nil {
+			t.Fatalf("Emit() error: %v", err)
+		}
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	if tokenRequests != 1 {
+		t.Errorf("token requests = %d, want 1", tokenRequests)
+	}
 }
