@@ -118,20 +118,61 @@ type httpTransport struct {
 	uri         string
 	urlParams   map[string]string
 	auth        *HTTPAuthConfig
-	tokenSource oauth2.TokenSource
+	tokenSource *oauth2TokenSource
 	headers     map[string]string
 	compression CompressionType
 }
 
-// tokenSourceFunc adapts a function to the oauth2.TokenSource interface.
-type tokenSourceFunc func() (*oauth2.Token, error)
+// oauth2TokenSource fetches and caches an OAuth 2.0 access token, fetching a new one
+// once the cached token is within TokenRefreshBuffer of expiring.
+type oauth2TokenSource struct {
+	config        clientcredentials.Config
+	refreshBuffer time.Duration
 
-// Token implements oauth2.TokenSource.
-func (f tokenSourceFunc) Token() (*oauth2.Token, error) { return f() }
+	// lock guards the fields below. It is a channel rather than a sync.Mutex so that a
+	// caller waiting on an in-flight token request still honours its own context.
+	lock      chan struct{}
+	token     *oauth2.Token
+	refreshAt time.Time
+}
+
+// Token returns a cached access token, fetching a new one when none is cached or the
+// cached one is about to expire. The token request is made with the caller's context and
+// HTTP client, so that the transport's timeout, retries and cancellation apply to it.
+func (s *oauth2TokenSource) Token(ctx context.Context, httpClient *http.Client) (*oauth2.Token, error) {
+	select {
+	case s.lock <- struct{}{}:
+		defer func() { <-s.lock }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
+	if s.token != nil && s.token.AccessToken != "" &&
+		(s.token.Expiry.IsZero() || time.Now().Before(s.refreshAt)) {
+		return s.token, nil
+	}
+
+	token, err := s.config.Token(context.WithValue(ctx, oauth2.HTTPClient, httpClient))
+	if err != nil {
+		return nil, err
+	}
+	s.token = token
+
+	if !token.Expiry.IsZero() {
+		// Refresh early, but never so early that every event triggers a token request.
+		buffer := s.refreshBuffer
+		if lifetime := time.Until(token.Expiry); buffer > lifetime/2 {
+			buffer = lifetime / 2
+		}
+		s.refreshAt = token.Expiry.Add(-buffer)
+	}
+
+	return token, nil
+}
 
 // newClientCredentialsTokenSource builds a token source for the OAuth 2.0 client
-// credentials grant. Tokens are cached and refreshed TokenRefreshBuffer before expiry.
-func newClientCredentialsTokenSource(ctx context.Context, auth *HTTPAuthConfig) (oauth2.TokenSource, error) {
+// credentials grant.
+func newClientCredentialsTokenSource(auth *HTTPAuthConfig) (*oauth2TokenSource, error) {
 	if auth.ClientID == "" || auth.ClientSecret == "" || auth.TokenEndpoint == "" {
 		return nil, errors.New("auth type " + AuthTypeOAuth2 +
 			" requires ClientID, ClientSecret and TokenEndpoint")
@@ -148,21 +189,22 @@ func newClientCredentialsTokenSource(ctx context.Context, auth *HTTPAuthConfig) 
 			auth.ClientAuthMethod, ClientAuthMethodBasic, ClientAuthMethodPost)
 	}
 
-	config := &clientcredentials.Config{
-		ClientID:     auth.ClientID,
-		ClientSecret: auth.ClientSecret,
-		TokenURL:     auth.TokenEndpoint,
-		Scopes:       auth.Scopes,
-		AuthStyle:    authStyle,
-	}
-
 	refreshBuffer := auth.TokenRefreshBuffer
 	if refreshBuffer <= 0 {
 		refreshBuffer = defaultTokenRefreshBuffer
 	}
 
-	source := tokenSourceFunc(func() (*oauth2.Token, error) { return config.Token(ctx) })
-	return oauth2.ReuseTokenSourceWithExpiry(nil, source, refreshBuffer), nil
+	return &oauth2TokenSource{
+		lock: make(chan struct{}, 1),
+		config: clientcredentials.Config{
+			ClientID:     auth.ClientID,
+			ClientSecret: auth.ClientSecret,
+			TokenURL:     auth.TokenEndpoint,
+			Scopes:       auth.Scopes,
+			AuthStyle:    authStyle,
+		},
+		refreshBuffer: refreshBuffer,
+	}, nil
 }
 
 // Close is a no-op for the HTTP transport; connections are managed by the http.Client.
@@ -228,7 +270,7 @@ func (h *httpTransport) Emit(ctx context.Context, event any) (map[string]string,
 		case AuthTypeJWT:
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", h.auth.Token))
 		case AuthTypeOAuth2:
-			token, err := h.tokenSource.Token()
+			token, err := h.tokenSource.Token(ctx, h.httpClient)
 			if err != nil {
 				return nil, fmt.Errorf("obtain OAuth2 access token: %w", err)
 			}

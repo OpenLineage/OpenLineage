@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
-	"golang.org/x/oauth2"
 )
 
 const (
@@ -85,9 +84,9 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 		}
 		u = u.JoinPath(ep)
 
-		var tokenSource oauth2.TokenSource
+		var tokenSource *oauth2TokenSource
 		if config.HTTP.Auth != nil && config.HTTP.Auth.Type == AuthTypeOAuth2 {
-			tokenSource, err = newClientCredentialsTokenSource(ctx, config.HTTP.Auth)
+			tokenSource, err = newClientCredentialsTokenSource(config.HTTP.Auth)
 			if err != nil {
 				return nil, err
 			}

@@ -607,3 +607,210 @@ func formValueOf(t *testing.T, req capturedRequest, key string) string {
 	}
 	return values.Get(key)
 }
+
+// blockingTokenServer creates a token endpoint that never answers until the test ends.
+func blockingTokenServer(t *testing.T) *httptest.Server {
+	t.Helper()
+
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+
+	t.Cleanup(func() {
+		close(release)
+		srv.Close()
+	})
+
+	return srv
+}
+
+// TestHTTPTransport_Emit_OAuth2RespectsEmitContextCancellation verifies that cancelling
+// the context passed to Emit also cancels an in-flight token request, so that a stalled
+// token endpoint cannot block Emit indefinitely.
+func TestHTTPTransport_Emit_OAuth2RespectsEmitContextCancellation(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv := blockingTokenServer(t)
+	srv, _ := testServer(t, http.StatusOK)
+
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL: srv.URL,
+		Auth: &HTTPAuthConfig{
+			Type:          AuthTypeOAuth2,
+			ClientID:      "my-client-id",
+			ClientSecret:  "my-client-secret",
+			TokenEndpoint: tokenSrv.URL,
+		},
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		_, err := tr.Emit(ctx, map[string]string{"eventType": "START"})
+		done <- err
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("Emit() error = nil, want the cancelled context to surface")
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("Emit() did not return after its context was cancelled")
+	}
+}
+
+// TestOAuth2TokenSource_UsesProvidedHTTPClient verifies that the token request is made
+// with the HTTP client it is handed, so that the transport's timeout applies to it.
+func TestOAuth2TokenSource_UsesProvidedHTTPClient(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv := blockingTokenServer(t)
+
+	source, err := newClientCredentialsTokenSource(&HTTPAuthConfig{
+		Type:          AuthTypeOAuth2,
+		ClientID:      "my-client-id",
+		ClientSecret:  "my-client-secret",
+		TokenEndpoint: tokenSrv.URL,
+	})
+	if err != nil {
+		t.Fatalf("newClientCredentialsTokenSource: %v", err)
+	}
+
+	start := time.Now()
+	if _, err := source.Token(context.Background(), &http.Client{Timeout: 200 * time.Millisecond}); err == nil {
+		t.Fatal("Token() error = nil, want the client timeout to surface")
+	}
+
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
+		t.Errorf("Token() took %v, want it to fail with the client timeout", elapsed)
+	}
+}
+
+// TestNew_OAuth2SurvivesCancelledConstructionContext verifies that tokens are fetched
+// with the Emit context rather than the one the transport was built with, so cancelling
+// the latter does not break later events.
+func TestNew_OAuth2SurvivesCancelledConstructionContext(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv, _ := tokenServer(t, http.StatusOK)
+	srv, reqs := testServer(t, http.StatusOK)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	tr, err := NewWithContext(ctx, &Config{
+		Type: TransportTypeHTTP,
+		HTTP: HTTPConfig{
+			URL: srv.URL,
+			Auth: &HTTPAuthConfig{
+				Type:          AuthTypeOAuth2,
+				ClientID:      "my-client-id",
+				ClientSecret:  "my-client-secret",
+				TokenEndpoint: tokenSrv.URL,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("NewWithContext: %v", err)
+	}
+	cancel()
+
+	if _, err := tr.Emit(context.Background(), map[string]string{"eventType": "START"}); err != nil {
+		t.Fatalf("Emit() after the construction context was cancelled: %v", err)
+	}
+
+	if got, want := (*reqs)[0].Headers.Get("Authorization"), "Bearer access-token-1"; got != want {
+		t.Errorf("Authorization = %q, want %q", got, want)
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2ConcurrentCallerHonoursOwnContext verifies that an event
+// waiting on a token request started by another event still honours its own context.
+func TestHTTPTransport_Emit_OAuth2ConcurrentCallerHonoursOwnContext(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv := blockingTokenServer(t)
+	srv, _ := testServer(t, http.StatusOK)
+
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL:             srv.URL,
+		TimeoutInMillis: 120000,
+		Auth: &HTTPAuthConfig{
+			Type:          AuthTypeOAuth2,
+			ClientID:      "my-client-id",
+			ClientSecret:  "my-client-secret",
+			TokenEndpoint: tokenSrv.URL,
+		},
+	})
+
+	// the first event occupies the token request and never completes
+	go func() { _, _ = tr.Emit(context.Background(), map[string]string{"eventType": "START"}) }()
+	time.Sleep(200 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := tr.Emit(ctx, map[string]string{"eventType": "START"})
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("Emit() error = nil, want the deadline to surface")
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("Emit() blocked past its own deadline waiting for another event's token request")
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2RefreshBufferCappedAtTokenLifetime verifies that a refresh
+// buffer at least as long as the token lifetime does not cause a token request per event.
+func TestHTTPTransport_Emit_OAuth2RefreshBufferCappedAtTokenLifetime(t *testing.T) {
+	t.Parallel()
+
+	var mu sync.Mutex
+	tokenRequests := 0
+	tokenSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		mu.Lock()
+		tokenRequests++
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"access_token":"access-token-value","token_type":"Bearer","expires_in":60}`)
+	}))
+	t.Cleanup(tokenSrv.Close)
+
+	srv, _ := testServer(t, http.StatusOK)
+	tr := newHTTPTransport(t, HTTPConfig{
+		URL: srv.URL,
+		Auth: &HTTPAuthConfig{
+			Type:               AuthTypeOAuth2,
+			ClientID:           "my-client-id",
+			ClientSecret:       "my-client-secret",
+			TokenEndpoint:      tokenSrv.URL,
+			TokenRefreshBuffer: 120 * time.Second,
+		},
+	})
+
+	for range 3 {
+		if _, err := tr.Emit(context.Background(), map[string]string{"eventType": "START"}); err != nil {
+			t.Fatalf("Emit() error: %v", err)
+		}
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	if tokenRequests != 1 {
+		t.Errorf("token requests = %d, want 1", tokenRequests)
+	}
+}

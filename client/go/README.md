@@ -298,7 +298,8 @@ HTTP: transport.HTTPConfig{
 - `ClientID`, `ClientSecret` and `TokenEndpoint` are required; the transport fails to build without them.
 - `ClientAuthMethod` selects how the credentials reach the token endpoint: `client_secret_basic`
   (the default, an HTTP basic `Authorization` header) or `client_secret_post` (the request body).
-- `TokenRefreshBuffer` is how long before expiry a new token is requested. Optional, default 120s.
+- `TokenRefreshBuffer` is how long before expiry a new token is requested. Optional, default 120s,
+  capped at half of the token lifetime so that a short-lived token is not re-requested for every event.
 
 ### GCP Lineage Transport
 
