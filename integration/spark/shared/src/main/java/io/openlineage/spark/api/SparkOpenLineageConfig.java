@@ -186,31 +186,34 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
 
   @Override
   public SparkOpenLineageConfig mergeWithNonNull(SparkOpenLineageConfig other) {
-    return new SparkOpenLineageConfig(
-        mergeWithDefaultValue(namespace, other.namespace, DEFAULT_NAMESPACE),
-        mergePropertyWith(parentJobName, other.parentJobName),
-        mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
-        mergePropertyWith(parentRunId, other.parentRunId),
-        mergePropertyWith(rootParentJobName, other.rootParentJobName),
-        mergePropertyWith(rootParentJobNamespace, other.rootParentJobNamespace),
-        mergePropertyWith(rootParentRunId, other.rootParentRunId),
-        mergePropertyWith(parentJobFacets, other.parentJobFacets),
-        mergePropertyWith(parentRunFacets, other.parentRunFacets),
-        mergePropertyWith(rootParentJobFacets, other.rootParentJobFacets),
-        mergePropertyWith(rootParentRunFacets, other.rootParentRunFacets),
-        mergePropertyWith(overriddenAppName, other.overriddenAppName),
-        mergePropertyWith(overriddenApplicationRunId, other.overriddenApplicationRunId),
-        mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
-        mergePropertyWith(jobName, other.jobName),
-        mergePropertyWith(jobConfig, other.jobConfig),
-        mergePropertyWith(transportConfig, other.transportConfig),
-        mergePropertyWith(facetsConfig, other.facetsConfig),
-        mergePropertyWith(datasetConfig, other.datasetConfig),
-        mergePropertyWith(circuitBreaker, other.circuitBreaker),
-        mergePropertyWith(metricsConfig, other.metricsConfig),
-        mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
-        mergePropertyWith(vendors, other.vendors),
-        mergePropertyWith(filterConfig, other.filterConfig),
-        mergePropertyWith(runConfig, other.runConfig));
+    SparkOpenLineageConfig merged =
+        new SparkOpenLineageConfig(
+            mergeWithDefaultValue(namespace, other.namespace, DEFAULT_NAMESPACE),
+            mergePropertyWith(parentJobName, other.parentJobName),
+            mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
+            mergePropertyWith(parentRunId, other.parentRunId),
+            mergePropertyWith(rootParentJobName, other.rootParentJobName),
+            mergePropertyWith(rootParentJobNamespace, other.rootParentJobNamespace),
+            mergePropertyWith(rootParentRunId, other.rootParentRunId),
+            mergePropertyWith(parentJobFacets, other.parentJobFacets),
+            mergePropertyWith(parentRunFacets, other.parentRunFacets),
+            mergePropertyWith(rootParentJobFacets, other.rootParentJobFacets),
+            mergePropertyWith(rootParentRunFacets, other.rootParentRunFacets),
+            mergePropertyWith(overriddenAppName, other.overriddenAppName),
+            mergePropertyWith(overriddenApplicationRunId, other.overriddenApplicationRunId),
+            mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
+            mergePropertyWith(jobName, other.jobName),
+            mergePropertyWith(jobConfig, other.jobConfig),
+            mergePropertyWith(transportConfig, other.transportConfig),
+            mergePropertyWith(facetsConfig, other.facetsConfig),
+            mergePropertyWith(datasetConfig, other.datasetConfig),
+            mergePropertyWith(circuitBreaker, other.circuitBreaker),
+            mergePropertyWith(metricsConfig, other.metricsConfig),
+            mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
+            mergePropertyWith(vendors, other.vendors),
+            mergePropertyWith(filterConfig, other.filterConfig),
+            mergePropertyWith(runConfig, other.runConfig));
+    merged.setLineageConfig(mergePropertyWith(lineageConfig, other.lineageConfig));
+    return merged;
   }
 }

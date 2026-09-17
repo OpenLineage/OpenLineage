@@ -1,3 +1,5 @@
 transport:
   type: http
   url: http://localhost:5000
+lineage:
+  compatibility: none
