@@ -18,13 +18,14 @@ For more details about OpenLineage transport options and how to configure them, 
 
 ## Execution
 
-Import the `openlineage_prefect` package and execute `collect_and_process_runs()` in its own process.
+Import the `openlineage_prefect` package and execute `collect_and_process_runs()` asynchronously in its own process.
 
 For example:
 
 ```py
+import asyncio
 import openlineage_prefect
-from openlineage_prefect.listener import PrefectOpenlineageListener
+from openlineage_prefect.prefect_adapter.listener import PrefectOpenLineageListener
 
 async def main():
     await PrefectOpenLineageListener().collect_and_process_runs()

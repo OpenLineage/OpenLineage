@@ -7,7 +7,7 @@ import logging
 import os
 from datetime import datetime
 
-from adapter import PrefectOpenLineageAdapter
+from .adapter import PrefectOpenLineageAdapter
 from openlineage.client.uuid import generate_static_uuid
 
 from prefect import client

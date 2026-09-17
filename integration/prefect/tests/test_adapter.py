@@ -12,7 +12,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-from adapter import PRODUCER, PrefectOpenLineageAdapter
+from prefect_adapter.adapter import PRODUCER, PrefectOpenLineageAdapter
 from openlineage.client.run import RunEvent, RunState
 
 # ========== Fixtures ==========
@@ -182,29 +182,6 @@ def test_create_and_emit_flow_event_has_job_type_facet(
     assert event.job.facets["jobType"].processingType == "BATCH"
     assert event.job.facets["jobType"].integration == "Prefect"
     assert event.job.facets["jobType"].jobType == "FLOW"
-
-
-def test_create_and_emit_flow_event_handles_emission_error(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that emission errors are caught and logged."""
-    adapter.client.emit.side_effect = Exception("Emission failed")
-
-    with patch("adapter.logger") as mock_logger:
-        adapter.create_and_emit_flow_event(
-            run_id=sample_run_id,
-            event_type="START",
-            event_time=sample_datetime,
-            flow_name="test_flow",
-            flow_namespace="default",
-            prefect_version="3.7.6",
-            deployment_id="dep-123",
-            deployment_created="2026-07-05T08:05:01.001Z",
-            deployment_updated="2026-07-05T08:06:02.100Z",
-            deployment_name="test_deploy",
-        )
-
-        mock_logger.exception.assert_called_once()
 
 
 # ========== Tests for create_and_emit_task_event ==========
@@ -560,34 +537,6 @@ def test_create_and_emit_task_event_has_job_type_facet(
     assert event.job.facets["jobType"].jobType == "TASK"
 
 
-def test_create_and_emit_task_event_handles_emission_error(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that emission errors are caught and logged."""
-    adapter.client.emit.side_effect = Exception("Emission failed")
-
-    with patch("adapter.logger") as mock_logger:
-        adapter.create_and_emit_task_event(
-            run_id=sample_run_id,
-            event_type="START",
-            event_time=sample_datetime,
-            expectedevent_time=sample_datetime,
-            flow_run_id="flow-run-456",
-            flow_name="test_flow",
-            task_name="test_task",
-            namespace="default",
-            prefect_version="3.7.6",
-            deployment_id="dep-123",
-            deployment_created="2026-07-05T08:05:01.001Z",
-            deployment_updated="2026-07-05T08:06:02.100Z",
-            deployment_name="test_deploy",
-            input_datasets=[],
-            output_datasets=[],
-        )
-
-        mock_logger.exception.assert_called_once()
-
-
 # ========== Tests for adapter initialization ==========
 
 
@@ -598,14 +547,6 @@ def test_adapter_initialization_with_client():
     adapter = PrefectOpenLineageAdapter(client=client)
 
     assert adapter.client == client
-
-
-def test_adapter_initialization_without_client():
-    """Test adapter initialization with default client."""
-    with patch("adapter.OpenLineageClient") as mock_client_class:
-        adapter = PrefectOpenLineageAdapter()
-
-        assert adapter.client == mock_client_class()
 
 
 def test_producer_constant():

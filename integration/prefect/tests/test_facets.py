@@ -7,7 +7,7 @@ Unit tests for facets module.
 Tests cover custom Prefect deployment facet definition and properties.
 """
 
-from facets.run_facets import PrefectDeploymentRunFacet
+from prefect_adapter.facets.run_facets import PrefectDeploymentRunFacet
 
 # ========== Tests for PrefectDeploymentRunFacet initialization ==========
 

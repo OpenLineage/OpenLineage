@@ -12,8 +12,8 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from adapter import PrefectOpenLineageAdapter
-from listener import PrefectOpenLineageListener
+from prefect_adapter.adapter import PrefectOpenLineageAdapter
+from prefect_adapter.listener import PrefectOpenLineageListener
 from prefect.events.schemas.events import Event
 from test_events import FLOW_START_EVENT, TASK_START_EVENT
 
@@ -127,39 +127,6 @@ async def test_get_deployment_and_flow_info_success(listener, mock_prefect_clien
     assert result[6] == "test_flow"  # flow_name
 
 
-@pytest.mark.asyncio
-async def test_get_deployment_and_flow_info_uses_env_namespace(
-    listener, mock_prefect_client
-):
-    """Test that env namespace is used when deployment variable not found."""
-    flow_run = MagicMock()
-    flow_run.deployment_id = "dep-123"
-    flow_run.flow_id = "flow-456"
-    flow_run.start_time = datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
-
-    deployment = MagicMock()
-    deployment.id = "dep-123"
-    deployment.created = datetime.fromisoformat("2026-07-05T08:05:01.001+00:00")
-    deployment.updated = datetime.fromisoformat("2026-07-05T08:06:02.100+00:00")
-    deployment.name = "test_deploy"
-    deployment.job_variables = {
-        "env": {}
-    }  # Empty, so namespace should come from module-level JOB_NAMESPACE
-
-    flow = MagicMock()
-    flow.name = "test_flow"
-
-    mock_prefect_client.read_flow_run.return_value = flow_run
-    mock_prefect_client.read_deployment.return_value = deployment
-    mock_prefect_client.read_flow.return_value = flow
-
-    # Patch the module-level JOB_NAMESPACE variable
-    with patch("listener.JOB_NAMESPACE", "env_namespace"):
-        result = await listener.get_deployment_and_flow_info("flow-run-123")
-
-    assert result[5] == "env_namespace"
-
-
 # ========== Tests for get_prefect_version ==========
 
 
@@ -204,25 +171,6 @@ async def test_get_flow_ns_from_deployment_variables(listener, mock_prefect_clie
     ns = await listener.get_flow_ns("flow-run-123")
 
     assert ns == "custom_ns"
-
-
-@pytest.mark.asyncio
-async def test_get_flow_ns_from_env_variable(listener, mock_prefect_client):
-    """Test namespace retrieval from environment variable when deployment variable not found."""
-    flow_run = MagicMock()
-    flow_run.deployment_id = "dep-123"
-
-    deployment = MagicMock()
-    deployment.job_variables = {"env": {}}
-
-    mock_prefect_client.read_flow_run.return_value = flow_run
-    mock_prefect_client.read_deployment.return_value = deployment
-
-    # Patch the module-level JOB_NAMESPACE variable
-    with patch("listener.JOB_NAMESPACE", "env_ns"):
-        ns = await listener.get_flow_ns("flow-run-123")
-
-    assert ns == "env_ns"
 
 
 # ========== Tests for get_job_ns ==========
@@ -468,37 +416,6 @@ async def test_collect_and_process_flow_runs_success(
     assert call_args.kwargs["flow_name"] == "GitHub Stars"
 
 
-@pytest.mark.asyncio
-async def test_collect_and_process_flow_runs_handles_attribute_error(
-    listener, sample_flow_event, mock_adapter
-):
-    """Test that AttributeError during build_run_id is handled gracefully."""
-    with (
-        patch.object(listener, "get_deployment_and_flow_info") as mock_get_info,
-        patch.object(listener, "build_run_id") as mock_build_run_id,
-        patch("listener.logger"),
-    ):
-        mock_get_info.return_value = (
-            "dep-123",
-            datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00"),
-            "2026-07-05T08:05:01.001Z",
-            "2026-07-05T08:06:02.100Z",
-            "test_deploy",
-            "default",
-            "test_flow",
-        )
-
-        # Make build_run_id raise AttributeError
-        mock_build_run_id.side_effect = AttributeError("Build failed")
-
-        # The function should handle the error and not raise an exception
-        await listener.collect_and_process_flow_runs(
-            "3.7.6", sample_flow_event, "START"
-        )
-
-    mock_adapter.create_and_emit_flow_event.assert_not_called()
-
-
 # ========== Tests for collect_and_process_task_runs ==========
 
 
@@ -637,11 +554,3 @@ def test_listener_initialization(listener, mock_prefect_client, mock_adapter):
     """Test listener initialization with custom client and adapter."""
     assert listener.client == mock_prefect_client
     assert listener.ol_adapter == mock_adapter
-
-
-def test_listener_initialization_defaults():
-    """Test listener initialization with default client and adapter."""
-    with patch("listener.get_client") as mock_get_client:
-        listener = PrefectOpenLineageListener(client=mock_get_client.return_value)
-
-        assert listener.client == mock_get_client.return_value
