@@ -319,6 +319,24 @@ fn select_bigquery_unnest_with_offset() {
 }
 
 #[test]
+fn select_bigquery_unnest_array_subquery() {
+    // UNNEST's own array expression can reference a real table (e.g. a subquery
+    // wrapped in ARRAY(...)) - that shouldn't be silently discarded.
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT n FROM UNNEST(ARRAY(SELECT id FROM source_table)) AS n",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["source_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
 fn select_bigquery_unpivot() {
     // Regression test for the same TableFactor::Unpivot gap as UNNEST above -
     // this variant had no arm and fell through to the catch-all `Err`.

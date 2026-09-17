@@ -148,11 +148,16 @@ impl Visit for TableFactor {
                 }
                 Ok(())
             }
-            TableFactor::UNNEST { .. } => {
+            TableFactor::UNNEST { array_exprs, .. } => {
                 // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator
                 // BigQuery's `UNNEST(...)` (e.g. UNNEST(GENERATE_ARRAY(1, 1000)) AS n) is a
-                // row generator over an array expression, not a real table. Same treatment as
-                // TableFunction/Function above: skip it rather than fail the whole query.
+                // row generator over an array expression, not a real table - so UNNEST itself
+                // contributes no input. But the array expression can still reference real
+                // tables (e.g. UNNEST(ARRAY(SELECT id FROM source_table))), so visit each one
+                // rather than discarding them outright.
+                for array_expr in array_exprs {
+                    array_expr.visit(context)?;
+                }
                 Ok(())
             }
             TableFactor::Unpivot { table, alias, .. } => {
