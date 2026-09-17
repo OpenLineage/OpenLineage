@@ -9,6 +9,7 @@ import os
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
+import requests
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
@@ -18,6 +19,7 @@ from openlineage.client.transport.http import (
     HttpConfig,
     HttpTransport,
     TokenProvider,
+    _raise_on_method_changing_redirect,
 )
 from openlineage.client.uuid import generate_new_uuid
 
@@ -276,6 +278,48 @@ class TestHttpTransportSync:
 
         assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
         assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+        assert call_args.kwargs["hooks"] == {
+            "response": [_raise_on_method_changing_redirect],
+        }
+
+    def test_http_transport_does_not_mutate_shared_session_hooks(self):
+        session = requests.Session()
+        caller_hook = MagicMock()
+        session.hooks["response"].append(caller_hook)
+        hooks = {name: callbacks.copy() for name, callbacks in session.hooks.items()}
+        transport = HttpTransport(HttpConfig(url="http://example.com", session=session))
+
+        assert session.hooks == hooks
+
+        response = MagicMock(status_code=200)
+        with (
+            patch.object(session, "post", return_value=response) as post,
+            patch("openlineage.client.serde.Serde.to_json", return_value="{}"),
+        ):
+            transport.emit(MagicMock())
+
+        assert post.call_args.kwargs["hooks"] == {
+            "response": [_raise_on_method_changing_redirect, caller_hook],
+        }
+        assert session.hooks == hooks
+
+        transport.close()
+
+    @pytest.mark.parametrize("status_code", [301, 302, 303])
+    def test_http_transport_rejects_method_changing_redirects(self, status_code):
+        response = MagicMock(status_code=status_code)
+
+        with pytest.raises(requests.HTTPError, match=f"HTTP {status_code} redirect"):
+            _raise_on_method_changing_redirect(response)
+
+        response.close.assert_called_once()
+
+    @pytest.mark.parametrize("status_code", [307, 308])
+    def test_http_transport_allows_method_preserving_redirects(self, status_code):
+        response = requests.Response()
+        response.status_code = status_code
+
+        _raise_on_method_changing_redirect(response)
 
     def test_http_transport_with_gzip_compression(self, mock_http_session_class):
         mock_session_class, mock_client, mock_response = mock_http_session_class
