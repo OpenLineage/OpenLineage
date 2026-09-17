@@ -992,41 +992,67 @@ Events sent via this transport will appear in Google Cloud Data Catalog and can 
 
 Install `openlineage-python[gcplineage]` in the Cloud Composer environment and grant the environment's service account the Data Lineage Events Producer role (`roles/datalineage.producer`) in the target project. The GCP transport uses Application Default Credentials, so a service account key file is not needed in Composer.
 
-Use a composite transport with both continuation options enabled so that each event is sent to both destinations even if one destination fails:
+Configure these Cloud Composer environment variables:
 
-```yaml
-transport:
-  type: composite
-  continue_on_failure: true
-  continue_on_success: true
-  transports:
-    dataplex:
-      type: gcplineage
-      project_id: my-gcp-project
-      location: us-central1
-      mode: sync
-      timeout: 10
-      retry:
-        initial: 1
-        maximum: 30
-        multiplier: 2
-        timeout: 120
-    datadog:
-      type: datadog
-      site: datadoghq.com
+- `AIRFLOW__OPENLINEAGE__TRANSPORT` - the composite transport as a JSON object:
+
+```json
+{"type":"composite","continue_on_failure":true,"continue_on_success":true,"transports":{"dataplex":{"type":"gcplineage","project_id":"my-gcp-project","location":"us-central1","mode":"sync","timeout":10,"retry":{"initial":1,"maximum":30,"multiplier":2,"timeout":120}},"datadog":{"type":"datadog","site":"datadoghq.com"}}}
 ```
 
-Set `DD_API_KEY` in the Composer environment. Upload this configuration as, for example, `openlineage.yml` in the environment bucket's `data/` directory, then set:
+- `DD_API_KEY` - the Datadog API key.
 
-```bash
-AIRFLOW__OPENLINEAGE__CONFIG_PATH=/home/airflow/gcs/data/openlineage.yml
+For example, the relevant part of a Terraform-managed Composer environment is:
+
+```hcl
+variable "datadog_api_key" {
+  type      = string
+  sensitive = true
+}
+
+resource "google_composer_environment" "example" {
+  name   = "example-environment"
+  region = "us-central1"
+
+  config {
+    software_config {
+      pypi_packages = {
+        "openlineage-python" = "[gcplineage]"
+      }
+
+      env_variables = {
+        AIRFLOW__OPENLINEAGE__TRANSPORT = jsonencode({
+          type                = "composite"
+          continue_on_failure = true
+          continue_on_success = true
+          transports = {
+            dataplex = {
+              type       = "gcplineage"
+              project_id = "my-gcp-project"
+              location   = "us-central1"
+              mode       = "sync"
+              timeout    = 10
+              retry = {
+                initial    = 1
+                maximum    = 30
+                multiplier = 2
+                timeout    = 120
+              }
+            }
+            datadog = {
+              type = "datadog"
+              site = "datadoghq.com"
+            }
+          }
+        })
+        DD_API_KEY = var.datadog_api_key
+      }
+    }
+  }
+}
 ```
 
-Alternatively, configure the same transport directly through `AIRFLOW__OPENLINEAGE__TRANSPORT` as JSON:
-
-```bash
-AIRFLOW__OPENLINEAGE__TRANSPORT='{"type":"composite","continue_on_failure":true,"continue_on_success":true,"transports":{"dataplex":{"type":"gcplineage","project_id":"my-gcp-project","location":"us-central1","mode":"sync","timeout":10},"datadog":{"type":"datadog","site":"datadoghq.com"}}}'
-```
+Both continuation options are enabled so that each event is sent to both destinations even if one destination fails. You can also place the YAML client configuration in the environment bucket and point `AIRFLOW__OPENLINEAGE__CONFIG_PATH` to it.
 
 ### Console
 
@@ -2291,4 +2317,3 @@ Custom trimmers must respect two constraints:
   For example, a trimmer that toggles a name between `/data/table/a` and `/data/table/b`
   on successive calls would never converge.
   If convergence is not reached, the reducer falls back to the original name.
-
