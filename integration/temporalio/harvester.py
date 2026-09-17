@@ -39,6 +39,7 @@ async def get_temporal_events(event_data: list, t_client: Client) -> None:
             ]
         except KeyError:
             logger.info("No input datasets found for workflow %", workflow["id"])
+            input_datasets = []
 
         try:
             output_datasets = [
