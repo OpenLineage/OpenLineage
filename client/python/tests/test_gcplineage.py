@@ -8,6 +8,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from openlineage.client.facet import JobTypeJobFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.transport.composite import CompositeConfig, CompositeTransport
+from openlineage.client.transport.datadog import DatadogTransport
 from openlineage.client.transport.gcplineage import GCPLineageConfig, GCPLineageTransport
 from openlineage.client.uuid import generate_new_uuid
 
@@ -15,11 +17,14 @@ from openlineage.client.uuid import generate_new_uuid
 @pytest.fixture(autouse=True)
 def mock_gcp_modules():
     """Fixture to mock Google Cloud modules for tests that need GCP transport."""
+    mock_retry_module = MagicMock()
     with (
         patch.dict(
             "sys.modules",
             {
                 "google": MagicMock(),
+                "google.api_core": MagicMock(),
+                "google.api_core.retry": mock_retry_module,
                 "google.cloud": MagicMock(),
                 "google.cloud.datacatalog_lineage_v1": MagicMock(),
                 "google.oauth2": MagicMock(),
@@ -34,6 +39,7 @@ def mock_gcp_modules():
             "client": mock_client,
             "async_client": mock_async_client,
             "credentials": mock_credentials,
+            "retry": mock_retry_module,
         }
 
 
@@ -56,6 +62,10 @@ class TestGCPLineageConfig:
                 "project_id": "test-project",
                 "location": "us-west1",
                 "credentials_path": "/path/to/credentials.json",
+                "endpoint": "us-datalineage.googleapis.com:443",
+                "mode": "SYNC",
+                "timeout": 10.0,
+                "retry": {"initial": 0.5, "maximum": 10.0, "timeout": 30.0},
                 "async_transport_rules": {
                     "spark": {"*": True},
                     "airflow": {"dag": True},
@@ -66,6 +76,10 @@ class TestGCPLineageConfig:
         assert config.project_id == "test-project"
         assert config.location == "us-west1"
         assert config.credentials_path == "/path/to/credentials.json"
+        assert config.endpoint == "us-datalineage.googleapis.com:443"
+        assert config.mode == "sync"
+        assert config.timeout == 10.0
+        assert config.retry == {"initial": 0.5, "maximum": 10.0, "timeout": 30.0}
         assert config.async_transport_rules == {
             "spark": {"*": True},
             "airflow": {"dag": True},
@@ -75,6 +89,10 @@ class TestGCPLineageConfig:
         """Test that missing project_id raises ValueError."""
         with pytest.raises(ValueError, match="project_id is required"):
             GCPLineageConfig.from_dict({})
+
+    def test_gcplineage_config_invalid_mode(self):
+        with pytest.raises(ValueError, match="mode must be either 'sync' or 'async'"):
+            GCPLineageConfig.from_dict({"project_id": "test-project", "mode": "invalid"})
 
     def test_gcplineage_config_custom_async_rules(self):
         """Test custom async transport rules."""
@@ -150,6 +168,20 @@ class TestGCPLineageTransportInitialization:
 
             assert transport.parent == expected_parent
 
+    def test_gcplineage_transport_endpoint(self, mock_gcp_modules):
+        config = GCPLineageConfig.from_dict(
+            {
+                "project_id": "test-project",
+                "endpoint": "us-datalineage.googleapis.com:443",
+            }
+        )
+
+        GCPLineageTransport(config).client
+
+        mock_gcp_modules["client"].assert_called_once_with(
+            client_options={"api_endpoint": "us-datalineage.googleapis.com:443"}
+        )
+
 
 class TestGCPLineageTransportRouting:
     """Test event routing logic based on async transport rules."""
@@ -203,6 +235,26 @@ class TestGCPLineageTransportRouting:
             # Verify sync transport was used
             mock_emit_sync.assert_called_once_with(event)
             mock_emit_async.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("mode", "expected_method"),
+        [("sync", "_emit_sync"), ("async", "_emit_async")],
+    )
+    def test_explicit_mode_overrides_routing_rules(self, mode, expected_method):
+        config = GCPLineageConfig.from_dict({"project_id": "test-project", "mode": mode})
+        transport = GCPLineageTransport(config)
+        event = self._create_event("spark", "job")
+
+        with (
+            patch.object(transport, "_emit_async", return_value=None) as mock_emit_async,
+            patch.object(transport, "_emit_sync", return_value=None) as mock_emit_sync,
+        ):
+            transport.emit(event)
+
+        expected = mock_emit_sync if expected_method == "_emit_sync" else mock_emit_async
+        unexpected = mock_emit_async if expected_method == "_emit_sync" else mock_emit_sync
+        expected.assert_called_once_with(event)
+        unexpected.assert_not_called()
 
     def test_routing_event_without_facets_to_sync(self):
         """Test that events without facets use sync transport."""
@@ -328,6 +380,28 @@ class TestGCPLineageTransportMethods:
 
         with pytest.raises(Exception, match="GCP API error"):
             transport._emit_sync(event)
+
+    def test_emit_sync_with_timeout_and_retry(self, mock_gcp_modules):
+        config = GCPLineageConfig.from_dict(
+            {
+                "project_id": "test-project",
+                "timeout": 10.0,
+                "retry": {"initial": 0.5, "maximum": 10.0, "timeout": 30.0},
+            }
+        )
+        transport = GCPLineageTransport(config)
+        event = self._create_event("spark", "job")
+
+        retry = mock_gcp_modules["retry"].Retry.return_value
+        transport._emit_sync(event)
+
+        mock_gcp_modules["retry"].Retry.assert_called_once_with(initial=0.5, maximum=10.0, timeout=30.0)
+        transport.client.process_open_lineage_run_event.assert_called_once_with(
+            parent="projects/test-project/locations/us-central1",
+            open_lineage=transport.client.process_open_lineage_run_event.call_args.kwargs["open_lineage"],
+            timeout=10.0,
+            retry=retry,
+        )
 
     def test_emit_async_error(self):
         """Test async emit error handling."""
@@ -478,6 +552,33 @@ class TestGCPLineageTransportIntegration:
         assert transport.kind == "gcplineage"
         assert transport.config.project_id == "test-project"
         assert transport.config.location == "us-west1"
+
+    def test_gcplineage_and_datadog_composite_configuration(self):
+        config = CompositeConfig.from_dict(
+            {
+                "transports": {
+                    "dataplex": {
+                        "type": "gcplineage",
+                        "project_id": "test-project",
+                        "location": "us-central1",
+                        "mode": "sync",
+                    },
+                    "datadog": {
+                        "type": "datadog",
+                        "apiKey": "test-key",
+                        "site": "datadoghq.com",
+                    },
+                }
+            }
+        )
+
+        transport = CompositeTransport(config)
+
+        assert [type(child) for child in transport.transports] == [
+            GCPLineageTransport,
+            DatadogTransport,
+        ]
+        assert [child.name for child in transport.transports] == ["dataplex", "datadog"]
 
     @patch.dict(
         os.environ,

@@ -874,6 +874,10 @@ The GCP Data Catalog Lineage transport sends OpenLineage events to Google Cloud 
 - `project_id` - string, GCP project ID where the lineage data will be stored. Required.
 - `location` - string, GCP location (region) for the lineage service. Optional, default: `"us-central1"`.
 - `credentials_path` - string, path to service account JSON credentials file. Optional, uses default credentials if not provided.
+- `endpoint` - string, overrides the Data Lineage API endpoint. Optional, uses the client library default if not provided.
+- `mode` - string, `"sync"` or `"async"`. Optional. When set, all events use that client. When omitted, `async_transport_rules` determines the client.
+- `timeout` - number, per-request timeout in seconds. Optional, uses the client library default if not provided.
+- `retry` - dictionary of retry options accepted by `google.api_core.retry.Retry` and `AsyncRetry`, such as `initial`, `maximum`, `multiplier`, and `timeout`. Optional, uses the client library default if not provided.
 - `async_transport_rules` - dictionary mapping integration and job types to transport selection. Optional, default: `{"dbt": {"*": True}}`.
 
 #### Authentication
@@ -983,6 +987,46 @@ pip install google-cloud-datacatalog-lineage
 #### Integration with Google Dataplex
 
 Events sent via this transport will appear in Google Cloud Data Catalog and can be viewed through Google Dataplex for lineage visualization and metadata management.
+
+#### Cloud Composer: send to Dataplex and Datadog
+
+Install `openlineage-python[gcplineage]` in the Cloud Composer environment and grant the environment's service account the Data Lineage Events Producer role (`roles/datalineage.producer`) in the target project. The GCP transport uses Application Default Credentials, so a service account key file is not needed in Composer.
+
+Use a composite transport with both continuation options enabled so that each event is sent to both destinations even if one destination fails:
+
+```yaml
+transport:
+  type: composite
+  continue_on_failure: true
+  continue_on_success: true
+  transports:
+    dataplex:
+      type: gcplineage
+      project_id: my-gcp-project
+      location: us-central1
+      mode: sync
+      timeout: 10
+      retry:
+        initial: 1
+        maximum: 30
+        multiplier: 2
+        timeout: 120
+    datadog:
+      type: datadog
+      site: datadoghq.com
+```
+
+Set `DD_API_KEY` in the Composer environment. Upload this configuration as, for example, `openlineage.yml` in the environment bucket's `data/` directory, then set:
+
+```bash
+AIRFLOW__OPENLINEAGE__CONFIG_PATH=/home/airflow/gcs/data/openlineage.yml
+```
+
+Alternatively, configure the same transport directly through `AIRFLOW__OPENLINEAGE__TRANSPORT` as JSON:
+
+```bash
+AIRFLOW__OPENLINEAGE__TRANSPORT='{"type":"composite","continue_on_failure":true,"continue_on_success":true,"transports":{"dataplex":{"type":"gcplineage","project_id":"my-gcp-project","location":"us-central1","mode":"sync","timeout":10},"datadog":{"type":"datadog","site":"datadoghq.com"}}}'
+```
 
 ### Console
 
@@ -2247,5 +2291,4 @@ Custom trimmers must respect two constraints:
   For example, a trimmer that toggles a name between `/data/table/a` and `/data/table/b`
   on successive calls would never converge.
   If convergence is not reached, the reducer falls back to the original name.
-
 
