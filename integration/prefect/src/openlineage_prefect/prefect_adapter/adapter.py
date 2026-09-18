@@ -165,11 +165,11 @@ class PrefectOpenLineageAdapter:
 
         inputs = [
             Dataset(namespace=dataset["uri"], name=dataset["table"])
-            for dataset in input_datasets
+            for dataset in input_datasets or []
         ]
         outputs = [
             Dataset(namespace=dataset["uri"], name=dataset["table"])
-            for dataset in output_datasets
+            for dataset in output_datasets or []
         ]
 
         run_event = RunEvent(
