@@ -67,6 +67,7 @@ class Adapter(Enum):
     ATHENA = "athena"
     DUCKDB = "duckdb"
     TRINO = "trino"
+    PRESTO = "presto"
     GLUE = "glue"
     CLICKHOUSE = "clickhouse"
     FABRIC = "fabric"
@@ -1167,6 +1168,8 @@ class DbtArtifactProcessor:
             return f"clickhouse://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.TRINO:
             return f"trino://{profile['host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.PRESTO:
+            return f"presto://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.DATABRICKS:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:
