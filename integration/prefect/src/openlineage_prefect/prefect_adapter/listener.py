@@ -156,8 +156,8 @@ class PrefectOpenLineageListener:
                 if artifact["description"] and "ol-dataset" in artifact["description"]:
                     dataset_type = artifact["description"].split("_")[-1].lower()
                     data_list = ast.literal_eval(artifact["data"])
-                    uri = data_list[0]["database_uri"].lower()
-                    table = data_list[0]["table"].lower()
+                    uri = data_list[0]["database_uri"]
+                    table = data_list[0]["table"]
                     dataset_info.append(
                         {"uri": uri, "table": table, "dataset_type": dataset_type}
                     )
