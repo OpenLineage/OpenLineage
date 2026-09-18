@@ -19,6 +19,7 @@ import io.openlineage.flink.config.FlinkConfigParser;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import io.openlineage.flink.converter.LineageGraphConverter;
 import io.openlineage.flink.facets.FlinkJobDetailsFacet;
+import io.openlineage.flink.tracker.FlinkRestApiUrlResolver;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.util.JobStatusUtil;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
@@ -28,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.core.execution.DefaultJobExecutionStatusEvent;
 import org.apache.flink.core.execution.JobStatusChangedEvent;
 import org.apache.flink.core.execution.JobStatusChangedListener;
@@ -51,12 +51,7 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
     log.info(
         "Creating OpenLineageJobStatusChangedListener with OpenLineageContext: {}", this.context);
 
-    String jobsApiUrl =
-        String.format(
-            "http://%s:%s/jobs",
-            Optional.ofNullable(context.getConfiguration().get(RestOptions.ADDRESS))
-                .orElse("localhost"),
-            context.getConfiguration().get(RestOptions.PORT));
+    String jobsApiUrl = FlinkRestApiUrlResolver.resolveJobsApiUrl(context.getConfiguration());
     tracker =
         new OpenLineageContinousJobTracker(
             Duration.ofSeconds(this.context.getConfig().getTrackingIntervalInSeconds()),
