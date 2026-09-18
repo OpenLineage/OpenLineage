@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openlineage-connector-for-sap-datasphere"
+version = "0.1.0"
+description = "OpenLineage Connector for SAP Datasphere: an independent integration, compatible with the SAP Datasphere solution, that scans metadata and emits DatasetEvents (schema, rowCount, lastUpdated) to any OpenLineage transport. Not affiliated with or endorsed by SAP SE."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.5.0",
+]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+# CI/dev resolve openlineage-python from the in-repo client so changes there are tested
+# against this integration. requirements.txt keeps the PyPI pin for Cloud Foundry deployment
+# (the buildpack reads requirements.txt directly and ignores [tool.uv.sources]).
+[tool.uv.sources]
+openlineage-python = { path = "../../client/python", editable = true }
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
