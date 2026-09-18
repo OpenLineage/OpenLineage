@@ -122,7 +122,7 @@ class PrefectOpenLineageAdapter:
                     version=prefect_version, name="Prefect"
                 ),
                 "parentRun": ParentRunFacet(
-                    run={"run_id": flow_run_id},
+                    run={"runId": flow_run_id},
                     job={"namespace": namespace, "name": flow_name},
                 ),
                 "prefectDeployment": PrefectDeploymentRunFacet(
