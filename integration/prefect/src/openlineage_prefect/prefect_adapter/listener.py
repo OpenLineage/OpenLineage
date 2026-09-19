@@ -7,7 +7,7 @@ import logging
 import os
 from datetime import datetime
 
-from .adapter import PrefectOpenLineageAdapter
+from adapter import PrefectOpenLineageAdapter
 from openlineage.client.uuid import generate_static_uuid
 
 from prefect import client
@@ -246,10 +246,10 @@ class PrefectOpenLineageListener:
     ) -> None:
         """Retrieve the task runs for a given event and emit OpenLineage events."""
 
-        task_name = event.resource.name[0:-4]
         event_time = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
         expected_start_time = event.payload["task_run"]["expected_start_time"]
         prefect_task_run_id = event.resource.id.split(".")[-1]
+        task_name = event.resource.name[0:-4]
         try:
             task_run = await self.client.read_task_run(prefect_task_run_id)
             namespace = await self.get_job_ns(prefect_task_run_id)
@@ -281,6 +281,9 @@ class PrefectOpenLineageListener:
             parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
 
             # Get flow run info for ParentRunFacet
+            flow_name = ''
+            flow_start_time = ''
+            ol_flow_run_id = ''
             for res in event.related:
                 if res["prefect.resource.role"] == "flow-run":
                     flow_run_id = res["prefect.resource.id"].split(".")[-1]
