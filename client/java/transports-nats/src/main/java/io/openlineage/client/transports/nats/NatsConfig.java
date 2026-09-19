@@ -50,6 +50,9 @@ public final class NatsConfig implements TransportConfig, MergeConfig<NatsConfig
   @ToString.Exclude
   private String token;
 
+  /** Path to a file holding an NKey user seed. */
+  private String nkeysSeed;
+
   /** Path to a .creds file holding a user JWT and NKey seed. */
   private String credsFile;
 
@@ -65,7 +68,7 @@ public final class NatsConfig implements TransportConfig, MergeConfig<NatsConfig
   @ToString.Exclude
   private String tlsTruststorePassword;
 
-  /** Raw jnats options (io.nats.client.*), applied before the settings above. */
+  /** Raw jnats options (io.nats.client.*); the settings above take precedence when set. */
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @ToString.Exclude
   private Properties properties = new Properties();
@@ -73,7 +76,12 @@ public final class NatsConfig implements TransportConfig, MergeConfig<NatsConfig
   @Override
   public NatsConfig mergeWithNonNull(NatsConfig other) {
     Properties mergedProperties = new Properties();
-    mergedProperties.putAll(mergePropertyWith(properties, other.properties));
+    if (properties != null) {
+      mergedProperties.putAll(properties);
+    }
+    if (other.properties != null) {
+      mergedProperties.putAll(other.properties);
+    }
 
     return new NatsConfig(
         mergePropertyWith(url, other.url),
@@ -86,6 +94,7 @@ public final class NatsConfig implements TransportConfig, MergeConfig<NatsConfig
         mergePropertyWith(user, other.user),
         mergePropertyWith(password, other.password),
         mergePropertyWith(token, other.token),
+        mergePropertyWith(nkeysSeed, other.nkeysSeed),
         mergePropertyWith(credsFile, other.credsFile),
         mergePropertyWith(tlsKeystorePath, other.tlsKeystorePath),
         mergePropertyWith(tlsKeystorePassword, other.tlsKeystorePassword),

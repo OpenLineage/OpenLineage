@@ -35,6 +35,39 @@ shadowJar {
     relocate "org.bouncycastle", "io.openlineage.client.transports.nats.shaded.org.bouncycastle"
     // BouncyCastle ships a signed jar; its signatures do not match once the classes are relocated
     exclude "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA"
+    // relocated BouncyCastle cannot load its native libraries; it falls back to pure Java
+    exclude "native/**"
 }
 
 apply from: '../transports.build.gradle'
+
+// Runs against the published shadow jar in place of the module's classes, so relocation is tested
+sourceSets {
+    shadowTest {
+        compileClasspath += sourceSets.test.output + sourceSets.test.compileClasspath
+        runtimeClasspath = output + sourceSets.test.output + configurations.testRuntimeClasspath +
+                files(tasks.named('shadowJar').flatMap { it.archiveFile })
+    }
+}
+
+configurations {
+    shadowTestImplementation.extendsFrom testImplementation
+}
+
+// jar and shadowJar write the same file (the shadow jar has no classifier); the shaded one must win
+tasks.named('shadowJar') {
+    mustRunAfter tasks.named('jar')
+}
+
+tasks.register('shadowJarTest', Test) {
+    description = 'Runs the smoke test against the shadow jar.'
+    group = 'verification'
+    testClassesDirs = sourceSets.shadowTest.output.classesDirs
+    classpath = sourceSets.shadowTest.runtimeClasspath
+    dependsOn tasks.named('jar'), tasks.named('shadowJar')
+    useJUnitPlatform()
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('shadowJarTest')
+}

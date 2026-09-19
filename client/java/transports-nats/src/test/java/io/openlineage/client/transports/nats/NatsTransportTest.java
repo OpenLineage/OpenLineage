@@ -23,7 +23,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -92,10 +91,10 @@ class NatsTransportTest {
         .isEqualTo(OpenLineageClientUtils.toJson(event));
     assertThat(messages.get(0).getHeaders().getFirst("Nats-Msg-Id"))
         .isEqualTo(
-            "run:"
-                + event.getRun().getRunId()
+            event.getRun().getRunId()
                 + ":START:"
-                + DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(event.getEventTime()));
+                + NatsTransport.digest(
+                    OpenLineageClientUtils.toJson(event).getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test
@@ -195,9 +194,9 @@ class NatsTransportTest {
 
     List<MessageInfo> messages = streamMessages();
     assertThat(messages).hasSize(2);
-    assertThat(messages.get(0).getHeaders().getFirst("Nats-Msg-Id")).startsWith("job:ns/job:");
+    assertThat(messages.get(0).getHeaders().getFirst("Nats-Msg-Id")).matches("job:[0-9a-f]{32}");
     assertThat(messages.get(1).getHeaders().getFirst("Nats-Msg-Id"))
-        .startsWith("dataset:ns/table:");
+        .matches("dataset:[0-9a-f]{32}");
   }
 
   @Test
@@ -236,7 +235,11 @@ class NatsTransportTest {
 
   @Test
   void authenticatesWithUserAndPassword() throws Exception {
-    try (NatsTestServer authServer = NatsTestServer.start("--user", "ol", "--pass", "secret")) {
+    try (NatsTestServer authServer =
+        NatsTestServer.local()
+            .withoutJetStream()
+            .args("--user", "ol", "--pass", "secret")
+            .start()) {
       NatsConfig config = config("openlineage.auth");
       config.setUrl(authServer.getUrl());
       config.setJetstream(false);

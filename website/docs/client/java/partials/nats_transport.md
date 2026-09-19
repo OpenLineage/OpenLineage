@@ -31,23 +31,29 @@ to be emitted correctly.
 - `messageTtl` - integer, per-message TTL in seconds. Requires `jetstream: true`, NATS Server 2.11+ and a stream created with per-message TTL allowed. Optional.
 - `user` and `password` - strings, username/password authentication. Optional.
 - `token` - string, token authentication. Optional.
+- `nkeysSeed` - string, path to an NKey seed file. Optional.
 - `credsFile` - string, path to a `.creds` file with a user JWT and NKey seed. Optional.
 - `tlsKeystorePath`, `tlsKeystorePassword` - strings, keystore with the client certificate for TLS. Optional.
 - `tlsTruststorePath`, `tlsTruststorePassword` - strings, truststore used to verify the server certificate. Optional.
-- `properties` - a dictionary of [jnats options](https://github.com/nats-io/nats.java) (`io.nats.client.*`), applied before the settings above. Optional.
+- `properties` - a dictionary of [jnats options](https://github.com/nats-io/nats.java) (`io.nats.client.*`). The settings above take precedence when they are set. Optional.
 
-At most one authentication method can be configured.
+At most one authentication method can be configured, and `user` needs `password`.
+User/password and token credentials are sent to the server as they are, so use them over TLS (`tls://` or TLS settings) outside of a trusted network. NKey seeds and `.creds` files sign a server nonce instead of sending the secret.
 
 #### Behavior
 
 - Events are serialized to JSON and published to `subject`.
 - With `jetstream: true`, `emit` blocks until the stream acknowledges the event and throws `OpenLineageClientException` if no stream captures the subject, or if the acknowledgement does not arrive within `publishTimeout`.
 - With `jetstream: false`, events are published over core NATS. They are delivered only to subscribers connected at that moment and are lost otherwise.
-- The `Nats-Msg-Id` header has the form:
-  - `run:{runId}:{eventType}:{eventTime}` - for RunEvent
-  - `job:{job.namespace}/{job.name}:{eventTime}` - for JobEvent
-  - `dataset:{dataset.namespace}/{dataset.name}:{eventTime}` - for DatasetEvent
-- The connection is opened on the first emitted event, and reopened if it was closed.
+- The `Nats-Msg-Id` header is built from a SHA-256 digest of the serialized event, so a retried publish of the same event repeats it and any two different events differ:
+  - `{runId}:{eventType}:{digest}` - for RunEvent
+  - `job:{digest}` - for JobEvent
+  - `dataset:{digest}` - for DatasetEvent
+- NATS rejects messages larger than the server's `max_payload` (1 MB by default). Very large events, such as wide schemas or column lineage, may need a higher limit on the server.
+- The connection is opened on the first emitted event, and reopened if it was closed. After a failed connection attempt, events fail immediately for `connectTimeout` instead of each waiting for a new attempt.
+- Failures are reported as `OpenLineageClientException`.
+- With TLS, the server certificate must match the host name in `url`, in addition to chaining to a trusted CA.
+- The transport's threads are daemon threads, so an unclosed transport does not keep the JVM running.
 
 #### Stream setup
 

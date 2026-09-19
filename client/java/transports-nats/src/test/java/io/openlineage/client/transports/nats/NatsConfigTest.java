@@ -83,6 +83,37 @@ class NatsConfigTest {
         .hasMessageContaining("jetstream");
   }
 
+  @Test
+  void rejectsTimeoutsThatCannotWork() {
+    for (double timeout : new double[] {0.0, -1.0, 0.0001, Double.NaN, Double.POSITIVE_INFINITY}) {
+      NatsConfig publish = config(subject);
+      publish.setPublishTimeout(timeout);
+      NatsConfig connect = config(subject);
+      connect.setConnectTimeout(timeout);
+
+      assertThatThrownBy(() -> new NatsTransport(publish)).hasMessageContaining("publishTimeout");
+      assertThatThrownBy(() -> new NatsTransport(connect)).hasMessageContaining("connectTimeout");
+    }
+  }
+
+  @Test
+  void rejectsMessageTtlBelowOneSecond() {
+    NatsConfig config = config(subject);
+    config.setMessageTtl(0);
+
+    assertThatThrownBy(() -> new NatsTransport(config)).hasMessageContaining("messageTtl");
+  }
+
+  @Test
+  void mergeToleratesMissingProperties() {
+    NatsConfig base = config(subject);
+    base.setProperties(null);
+    NatsConfig override = new NatsConfig();
+    override.setProperties(null);
+
+    assertThat(base.mergeWith(override).getProperties()).isEmpty();
+  }
+
   private static NatsConfig config(String subject) {
     NatsConfig config = new NatsConfig();
     config.setUrl("nats://localhost:4222");
