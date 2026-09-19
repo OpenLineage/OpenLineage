@@ -167,9 +167,10 @@ final class NatsTestServer implements AutoCloseable {
           return;
         }
       } catch (IOException e) {
-        if (System.nanoTime() > deadline) {
-          throw new IllegalStateException("NATS server did not start at " + url, e);
-        }
+        // not listening yet
+      }
+      if (System.nanoTime() > deadline) {
+        throw new IllegalStateException("NATS server did not start at " + url);
       }
       Thread.sleep(100);
     }

@@ -105,6 +105,9 @@ def nats_server(
     server = NatsServer(url=f"nats://127.0.0.1:{port}", port=port, process=process)
     try:
         wait_until_listening(port)
+        if jetstream:
+            # the greeting comes before JetStream has finished enabling or recovering its store
+            wait_for_jetstream(server.url)
         yield server
     finally:
         server.stop()

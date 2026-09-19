@@ -38,7 +38,7 @@ to be emitted correctly.
 - `properties` - a dictionary of [jnats options](https://github.com/nats-io/nats.java) (`io.nats.client.*`). The settings above take precedence when they are set. Optional.
 
 At most one authentication method can be configured, and `user` needs `password`.
-User/password and token credentials are sent to the server as they are, so use them over TLS (`tls://` or TLS settings) outside of a trusted network. NKey seeds and `.creds` files sign a server nonce instead of sending the secret.
+User/password and token credentials are sent to the server as they are, so use them over TLS (`tls://` or TLS settings) outside of a trusted network. With an NKey seed or a `.creds` file the seed never leaves the client, which only signs a server nonce, but a `.creds` file's user JWT is sent to the server, so TLS is still needed where authentication metadata or event data must stay confidential.
 
 #### Behavior
 
