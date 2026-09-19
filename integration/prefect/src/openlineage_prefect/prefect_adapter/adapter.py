@@ -47,7 +47,7 @@ class PrefectOpenLineageAdapter:
             case "FAILED":
                 event_type = RunState.FAIL
 
-        if deployment_id:
+        if all([deployment_id, deployment_created, deployment_updated, deployment_name]):
             run_facets = {
                 "prefectDeployment": PrefectDeploymentRunFacet(
                     deploymentId=deployment_id,
