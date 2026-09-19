@@ -15,6 +15,7 @@ from collections.abc import Generator
 from typing import Any
 from unittest import mock
 
+import attr
 import pytest
 from openlineage.client import OpenLineageClient, event_v2
 from openlineage.client.run import Dataset, DatasetEvent, Job, JobEvent, Run, RunEvent, RunState
@@ -289,6 +290,23 @@ def test_jetstream_drops_duplicate_publishes(nats_url: str, stream: tuple[str, s
     transport.close()
 
     assert len(_stream_messages(nats_url, stream_name)) == 1
+
+
+def test_jetstream_keeps_each_event_type_of_a_run(
+    nats_url: str, stream: tuple[str, str], event: RunEvent
+) -> None:
+    # Same run and eventTime: only eventType tells START, RUNNING, COMPLETE and FAIL apart
+    stream_name, subject = stream
+    transport = _transport(nats_url, subject)
+
+    for state in (RunState.START, RunState.RUNNING, RunState.COMPLETE, RunState.FAIL):
+        transport.emit(attr.evolve(event, eventType=state))
+    transport.close()
+
+    event_types = [
+        json.loads(message.data)["eventType"] for message in _stream_messages(nats_url, stream_name)
+    ]
+    assert event_types == ["START", "RUNNING", "COMPLETE", "FAIL"]
 
 
 def test_jetstream_keeps_duplicates_without_msg_id_header(

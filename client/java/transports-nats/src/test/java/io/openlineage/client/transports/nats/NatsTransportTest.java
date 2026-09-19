@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -107,6 +108,33 @@ class NatsTransportTest {
     }
 
     assertThat(streamMessages()).hasSize(1);
+  }
+
+  @Test
+  void jetStreamKeepsEachEventTypeOfARun() throws Exception {
+    // Same run and eventTime: only eventType tells START, RUNNING, COMPLETE and FAIL apart
+    UUID runId = UUID.randomUUID();
+    ZonedDateTime eventTime = ZonedDateTime.now();
+    List<OpenLineage.RunEvent.EventType> eventTypes =
+        Arrays.asList(
+            OpenLineage.RunEvent.EventType.START,
+            OpenLineage.RunEvent.EventType.RUNNING,
+            OpenLineage.RunEvent.EventType.COMPLETE,
+            OpenLineage.RunEvent.EventType.FAIL);
+
+    try (NatsTransport transport = new NatsTransport(config(subject))) {
+      for (OpenLineage.RunEvent.EventType eventType : eventTypes) {
+        transport.emit(runEvent(runId, eventType, eventTime));
+      }
+    }
+
+    assertThat(streamMessages())
+        .extracting(
+            message ->
+                OpenLineageClientUtils.runEventFromJson(
+                        new String(message.getData(), StandardCharsets.UTF_8))
+                    .getEventType())
+        .containsExactlyElementsOf(eventTypes);
   }
 
   @Test
@@ -236,10 +264,15 @@ class NatsTransportTest {
   }
 
   private static OpenLineage.RunEvent runEvent() {
+    return runEvent(UUID.randomUUID(), OpenLineage.RunEvent.EventType.START, ZonedDateTime.now());
+  }
+
+  private static OpenLineage.RunEvent runEvent(
+      UUID runId, OpenLineage.RunEvent.EventType eventType, ZonedDateTime eventTime) {
     return OL.newRunEventBuilder()
-        .eventType(OpenLineage.RunEvent.EventType.START)
-        .eventTime(ZonedDateTime.now())
-        .run(OL.newRunBuilder().runId(UUID.randomUUID()).build())
+        .eventType(eventType)
+        .eventTime(eventTime)
+        .run(OL.newRunBuilder().runId(runId).build())
         .job(OL.newJobBuilder().namespace("nats").name("test").build())
         .build();
   }
