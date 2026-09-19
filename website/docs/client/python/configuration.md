@@ -1157,17 +1157,21 @@ It can be installed also by specifying the nats client extension: `pip install o
 - `tlsCaFile`, `tlsCertFile`, `tlsKeyFile` - strings, paths to the CA certificate and client certificate/key used for TLS. Optional.
 
 At most one authentication method can be configured.
+User/password and token credentials are sent to the server as they are, so use them over TLS (`tls://` or TLS settings) outside of a trusted network. NKey seeds and `.creds` files sign a server nonce instead of sending the secret.
 
 #### Behavior
 
 - Events are serialized to JSON and published to `subject`.
 - With `jetstream: true`, `emit` blocks until the stream acknowledges the event and raises if no stream captures the subject, or if the acknowledgement does not arrive within `publishTimeout`.
 - With `jetstream: false`, events are published over core NATS. They are delivered only to subscribers connected at that moment and are lost otherwise.
-- The `Nats-Msg-Id` header has the form:
-  - `run:{runId}:{eventType}:{eventTime}` - for RunEvent
-  - `job:{job.namespace}/{job.name}:{eventTime}` - for JobEvent
-  - `dataset:{dataset.namespace}/{dataset.name}:{eventTime}` - for DatasetEvent
-- The connection is opened on the first emitted event and runs on a background thread, which is recreated after the process forks.
+- The `Nats-Msg-Id` header is built from a SHA-256 digest of the serialized event, so a retried publish of the same event repeats it and any two different events differ:
+  - `{runId}:{eventType}:{digest}` - for RunEvent
+  - `job:{digest}` - for JobEvent
+  - `dataset:{digest}` - for DatasetEvent
+- NATS rejects messages larger than the server's `max_payload` (1 MB by default). Very large events, such as wide schemas or column lineage, may need a higher limit on the server.
+- The connection is opened on the first emitted event and runs on a background thread, which is recreated after the process forks. A lost connection is not retried in the background; the next emitted event opens a new one.
+- An event that times out is cancelled, so it is never published after `emit` has raised.
+- `messageTtl` must be a whole number of seconds, at least 1.
 
 #### Stream setup
 

@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
+import hashlib
 import logging
 import math
 import os
 import re
 import ssl
 import threading
-from collections.abc import Coroutine
+import weakref
+from collections.abc import Callable, Coroutine
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import attr
@@ -37,13 +40,18 @@ def _split_urls(value: str | list[str]) -> list[str]:
     return [url.strip() for url in urls if url.strip()]
 
 
+def _optional_str(value: object) -> str | None:
+    # The client JSON-decodes environment variable values, so PASSWORD=12345 arrives as an int
+    return None if value is None else str(value)
+
+
 @attr.define
 class NatsConfig(Config):
     # NATS server URL(s): a list, or a comma-separated string such as "nats://a:4222,nats://b:4222"
     url: list[str] = attr.field(converter=_split_urls)
 
     # Subject on which events are published
-    subject: str
+    subject: str = attr.field(converter=str)
 
     # Publish through JetStream and wait for the stream's acknowledgement. When false, events are
     # published over core NATS, which drops them if no subscriber is listening at that moment.
@@ -56,15 +64,15 @@ class NatsConfig(Config):
     # Sets the Nats-Msg-Id header so JetStream's duplicate window drops retried publishes
     msgIdHeader: bool = True  # noqa: N815
 
-    # Per-message TTL in seconds. JetStream only; the stream must be created with per-message TTL enabled.
+    # Per-message TTL in whole seconds. JetStream only; the stream must allow per-message TTL.
     messageTtl: float | None = None  # noqa: N815
 
     # Authentication: use at most one of user/password, token, nkeysSeed or credsFile
-    user: str | None = None
-    password: str | None = None
-    token: str | None = None
-    nkeysSeed: str | None = None  # noqa: N815
-    credsFile: str | None = None  # noqa: N815
+    user: str | None = attr.field(default=None, converter=_optional_str)
+    password: str | None = attr.field(default=None, converter=_optional_str, repr=False)
+    token: str | None = attr.field(default=None, converter=_optional_str, repr=False)
+    nkeysSeed: str | None = attr.field(default=None, converter=_optional_str)  # noqa: N815
+    credsFile: str | None = attr.field(default=None, converter=_optional_str)  # noqa: N815
 
     tlsCaFile: str | None = None  # noqa: N815
     tlsCertFile: str | None = None  # noqa: N815
@@ -80,14 +88,14 @@ class NatsConfig(Config):
                 value = params.pop(snake)
                 params.setdefault(field.name, value)
         for required in ("url", "subject"):
-            if not params.get(required):
+            if params.get(required) in (None, "", []):
                 msg = f"nats `{required}` not passed to NatsConfig"
                 raise RuntimeError(msg)
         config = cls(**get_only_specified_fields(cls, params))
-        config._validate_auth()
+        config._validate()
         return config
 
-    def _validate_auth(self) -> None:
+    def _validate(self) -> None:
         methods = [
             name
             for name, is_set in (
@@ -104,21 +112,70 @@ class NatsConfig(Config):
         if self.tlsKeyFile and not self.tlsCertFile:
             msg = "NatsConfig `tlsKeyFile` requires `tlsCertFile`"
             raise RuntimeError(msg)
-        if self.messageTtl is not None and not self.jetstream:
-            msg = "NatsConfig `messageTtl` requires `jetstream: true`"
-            raise RuntimeError(msg)
+        match self.messageTtl:
+            case None:
+                pass
+            case _ if not self.jetstream:
+                msg = "NatsConfig `messageTtl` requires `jetstream: true`"
+                raise RuntimeError(msg)
+            # the server takes whole seconds; nats-py would silently truncate 1.9 to 1 and 0.5 to 0
+            case int() | float() as ttl if ttl >= 1 and float(ttl).is_integer():
+                pass
+            case _:
+                msg = (
+                    f"NatsConfig `messageTtl` must be a whole number of seconds >= 1, got {self.messageTtl!r}"
+                )
+                raise RuntimeError(msg)
 
 
-def message_id(event: Event) -> str | None:
-    """Deterministic id for JetStream de-duplication: identical retries of one event share it."""
-    if isinstance(event, (RunEvent, event_v2.RunEvent)):
-        event_type = getattr(event.eventType, "value", event.eventType)
-        return f"run:{event.run.runId}:{event_type}:{event.eventTime}"
-    if isinstance(event, (JobEvent, event_v2.JobEvent)):
-        return f"job:{event.job.namespace}/{event.job.name}:{event.eventTime}"
-    if isinstance(event, (DatasetEvent, event_v2.DatasetEvent)):
-        return f"dataset:{event.dataset.namespace}/{event.dataset.name}:{event.eventTime}"
-    return None
+def message_id(event: Event, payload: bytes) -> str | None:
+    """
+    Nats-Msg-Id for JetStream de-duplication.
+
+    Built from a digest of the serialized event, so a retried publish of the same event repeats the
+    id while any two different events, including START/RUNNING/COMPLETE of one run at the same
+    eventTime, get different ids. Names are left out: they can contain characters that are not
+    allowed in NATS headers.
+    """
+    digest = hashlib.sha256(payload).hexdigest()[:32]
+    match event:
+        case RunEvent() | event_v2.RunEvent():
+            event_type = getattr(event.eventType, "value", event.eventType)
+            return f"{event.run.runId}:{event_type}:{digest}"
+        case JobEvent() | event_v2.JobEvent():
+            return f"job:{digest}"
+        case DatasetEvent() | event_v2.DatasetEvent():
+            return f"dataset:{digest}"
+        case _:
+            return None
+
+
+def _import_nats() -> Any:
+    try:
+        import nats
+    except ModuleNotFoundError:
+        log.exception(
+            "OpenLineage client did not find nats-py module. "
+            "Installing it is required for NatsTransport to work. "
+            "You can also get it via `pip install openlineage-python[nats]`",
+        )
+        raise
+    return nats
+
+
+async def _log_nats_error(error: Exception) -> None:
+    # nats-py's default callback logs every connection error as ERROR with a traceback; emit
+    # already raises, so keep these at debug
+    log.debug("NATS client error: %s", error)
+
+
+def _after_fork_callback(transport: weakref.ref[NatsTransport]) -> Callable[[], None]:
+    # A weak reference, so registering the callback does not keep the transport alive
+    def reset_in_child() -> None:
+        if (instance := transport()) is not None:
+            instance._after_fork()
+
+    return reset_in_child
 
 
 class NatsTransport(Transport):
@@ -129,6 +186,10 @@ class NatsTransport(Transport):
         self.config = config
         self._lock = threading.Lock()
         self._reset()
+        if hasattr(os, "register_at_fork"):
+            # A forked worker (e.g. an Airflow task) inherits the loop object but not its thread,
+            # and may inherit the lock while another thread holds it
+            os.register_at_fork(after_in_child=_after_fork_callback(weakref.ref(self)))
         log.debug(
             "Constructing OpenLineage transport that will send events to NATS subject `%s` (jetstream=%s)",
             config.subject,
@@ -137,15 +198,18 @@ class NatsTransport(Transport):
 
     def _reset(self) -> None:
         self._loop: asyncio.AbstractEventLoop | None = None
-        self._thread: threading.Thread | None = None
         self._nc: NatsClient | None = None
         self._js: JetStreamContext | None = None
-        self._pid = os.getpid()
+        self._connecting = asyncio.Lock()
+
+    def _after_fork(self) -> None:
+        self._lock = threading.Lock()
+        self._reset()
 
     def emit(self, event: Event) -> None:
         payload = Serde.to_json(event).encode("utf-8")
         headers: dict[str, str] | None = None
-        if self.config.jetstream and self.config.msgIdHeader and (msg_id := message_id(event)):
+        if self.config.jetstream and self.config.msgIdHeader and (msg_id := message_id(event, payload)):
             headers = {"Nats-Msg-Id": msg_id}
         self._run(
             self._publish(payload, headers),
@@ -154,38 +218,38 @@ class NatsTransport(Transport):
 
     def close(self, timeout: float = -1) -> bool:
         with self._lock:
-            loop, thread = self._loop, self._thread
-            if loop is None or thread is None or self._pid != os.getpid():
-                self._reset()
-                return True
-            drained = True
-            try:
-                future = asyncio.run_coroutine_threadsafe(self._drain(), loop)
-                future.result(timeout=None if timeout < 0 else timeout)
-            except Exception:
-                log.warning("Failed to drain NATS connection", exc_info=True)
-                drained = False
-            loop.call_soon_threadsafe(loop.stop)
-            thread.join(timeout=None if timeout < 0 else timeout)
+            loop, nc = self._loop, self._nc
             self._reset()
-            return drained
+        if loop is None:
+            return True
+        future = asyncio.run_coroutine_threadsafe(self._shutdown(nc), loop)
+        # Stop the loop once shutdown has finished, even if this caller stops waiting earlier
+        future.add_done_callback(lambda _: loop.call_soon_threadsafe(loop.stop))
+        try:
+            future.result(timeout=None if timeout < 0 else timeout)
+        except Exception:
+            log.warning("NATS connection did not close cleanly", exc_info=True)
+            return False
+        return True
 
     def _run(self, coro: Coroutine[Any, Any, _R], timeout: float) -> _R:
-        loop = self._ensure_loop()
-        return asyncio.run_coroutine_threadsafe(coro, loop).result(timeout=timeout)
+        future = asyncio.run_coroutine_threadsafe(coro, self._ensure_loop())
+        try:
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            # Cancel, or the publish could still complete after emit reported failure
+            future.cancel()
+            msg = f"Publishing to NATS subject {self.config.subject!r} did not complete within {timeout}s"
+            raise TimeoutError(msg) from None
 
     def _ensure_loop(self) -> asyncio.AbstractEventLoop:
         with self._lock:
-            # A forked worker (e.g. Airflow task) inherits the loop object but not its thread.
-            if self._pid != os.getpid():
-                self._reset()
             if self._loop is None:
                 loop = asyncio.new_event_loop()
-                thread = threading.Thread(
+                threading.Thread(
                     target=self._run_loop, args=(loop,), name="openlineage-nats", daemon=True
-                )
-                thread.start()
-                self._loop, self._thread = loop, thread
+                ).start()
+                self._loop = loop
             return self._loop
 
     @staticmethod
@@ -197,15 +261,11 @@ class NatsTransport(Transport):
             loop.close()
 
     async def _publish(self, payload: bytes, headers: dict[str, str] | None) -> None:
-        nc = await self._connection()
-        if self.config.jetstream:
-            assert self._js is not None
-            ack = await self._js.publish(
-                self.config.subject,
-                payload,
-                timeout=self.config.publishTimeout,
-                headers=headers,
-                msg_ttl=self.config.messageTtl,
+        nc, js = await self._connection()
+        if js is not None:
+            ttl = None if self.config.messageTtl is None else int(self.config.messageTtl)
+            ack = await js.publish(
+                self.config.subject, payload, timeout=self.config.publishTimeout, headers=headers, msg_ttl=ttl
             )
             log.debug(
                 "Published event to stream %s, seq %s, duplicate=%s", ack.stream, ack.seq, ack.duplicate
@@ -214,27 +274,26 @@ class NatsTransport(Transport):
             await nc.publish(self.config.subject, payload)
             await nc.flush(timeout=math.ceil(self.config.publishTimeout))
 
-    async def _connection(self) -> NatsClient:
-        if self._nc is not None and not self._nc.is_closed:
-            return self._nc
-        try:
-            import nats
-        except ModuleNotFoundError:
-            log.exception(
-                "OpenLineage client did not find nats-py module. "
-                "Installing it is required for NatsTransport to work. "
-                "You can also get it via `pip install openlineage-python[nats]`",
-            )
-            raise
-        self._nc = await nats.connect(servers=self.config.url, **self._connect_options())
-        self._js = self._nc.jetstream() if self.config.jetstream else None
-        return self._nc
+    async def _connection(self) -> tuple[NatsClient, JetStreamContext | None]:
+        # One connection per transport even when several threads emit at once
+        async with self._connecting:
+            if self._nc is None or not self._nc.is_connected:
+                if self._nc is not None and not self._nc.is_closed:
+                    await self._nc.close()
+                nats = _import_nats()
+                # No background reconnects: a lost connection is replaced on the next emit, so a
+                # failed emit never keeps retrying and publishing behind the caller's back
+                self._nc = await nats.connect(servers=self.config.url, **self._connect_options())
+                self._js = self._nc.jetstream() if self.config.jetstream else None
+            return self._nc, self._js
 
     def _connect_options(self) -> dict[str, Any]:
         c = self.config
         options: dict[str, Any] = {
             "name": "openlineage-python",
             "connect_timeout": c.connectTimeout,
+            "allow_reconnect": False,
+            "error_cb": _log_nats_error,
             "user": c.user,
             "password": c.password,
             "token": c.token,
@@ -248,6 +307,12 @@ class NatsTransport(Transport):
             options["tls"] = context
         return {key: value for key, value in options.items() if value is not None}
 
-    async def _drain(self) -> None:
-        if self._nc is not None and not self._nc.is_closed:
-            await self._nc.drain()
+    @staticmethod
+    async def _shutdown(nc: NatsClient | None) -> None:
+        if nc is None or nc.is_closed:
+            return
+        try:
+            await nc.drain()
+        except Exception:
+            log.debug("Draining the NATS connection failed; closing it", exc_info=True)
+            await nc.close()
