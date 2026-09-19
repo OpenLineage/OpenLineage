@@ -1,0 +1,40 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+plugins {
+    id 'eclipse'
+    id 'jacoco'
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id "com.adarshr.test-logger" version "4.0.0"
+    id 'com.diffplug.spotless' version '7.0.2'
+    id "com.gradleup.shadow" version "9.6.1"
+    id "pmd"
+    id "io.freefair.lombok" version "9.5.0"
+}
+
+ext {
+    projectDescription = "NATS OpenLineage transport library"
+    jnatsVersion = "2.26.3"
+    testcontainersVersion = "2.0.5"
+}
+
+dependencies {
+    implementation("io.nats:jnats:${jnatsVersion}")
+
+    testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
+    testImplementation("org.testcontainers:testcontainers")
+}
+
+shadowJar {
+    relocate "io.nats", "io.openlineage.client.transports.nats.shaded.io.nats"
+    relocate "org.bouncycastle", "io.openlineage.client.transports.nats.shaded.org.bouncycastle"
+    // BouncyCastle ships a signed jar; its signatures do not match once the classes are relocated
+    exclude "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA"
+}
+
+apply from: '../transports.build.gradle'
