@@ -123,3 +123,81 @@ fn test_wildcard_rename_uses_the_new_name() {
         vec![edge("id", "t", "id"), edge("y", "t", "x")]
     );
 }
+
+#[test]
+fn test_cte_column_aliases_rename_the_output() {
+    // `WITH d(x, y)` publishes x and y, whatever the inner query called them,
+    // so the wildcard expands to the exposed names and the lineage reaches
+    // back to the source columns.
+    let output = test_sql("WITH d(x, y) AS (SELECT a, b FROM t) SELECT * FROM d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("x", "t", "a"), edge("y", "t", "b")]
+    );
+}
+
+#[test]
+fn test_derived_table_column_aliases_rename_the_output() {
+    // The same rule for the inline form.
+    let output = test_sql("SELECT * FROM (SELECT a, b FROM t) AS d(x, y)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("x", "t", "a"), edge("y", "t", "b")]
+    );
+}
+
+#[test]
+fn test_partial_column_aliases_leave_the_rest_alone() {
+    // Aliases bind positionally and may run out before the columns do: `x`
+    // takes the place of `a`, and `b` keeps its own name. The output is sorted
+    // by descendant, so `b` comes first here.
+    let output = test_sql("WITH d(x) AS (SELECT a, b FROM t) SELECT * FROM d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("b", "t", "b"), edge("x", "t", "a")]
+    );
+}
+
+#[test]
+fn test_inner_cte_does_not_leak_into_the_outer_query() {
+    // Two CTEs named `d` in different scopes, with the nested one in the FROM
+    // clause so that it is visited before the outer wildcard expands. The
+    // outer `*` must expand to the outer `d`, which is the one in scope where
+    // it is written; a registry shared across scopes answers with the inner
+    // one instead.
+    let output = test_sql(
+        "WITH d AS (SELECT a, b FROM t) \
+         SELECT d.* FROM d, (WITH d AS (SELECT c FROM u) SELECT c FROM d) AS nested",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("a", "t", "a"), edge("b", "t", "b")]
+    );
+}
+
+#[test]
+fn test_exclude_matches_an_unquoted_column_whatever_its_case() {
+    // Snowflake resolves an unquoted identifier without regard to case, so
+    // EXCLUDE (SECRET) removes `secret`. Byte equality reported an edge for a
+    // column that is not in the output.
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT id, secret FROM t) SELECT * EXCLUDE (SECRET) FROM d",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![edge("id", "t", "id")]);
+}
+
+#[test]
+fn test_rename_matches_an_unquoted_column_whatever_its_case() {
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT id, x FROM t) SELECT * RENAME (X AS y) FROM d",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("id", "t", "id"), edge("y", "t", "x")]
+    );
+}
