@@ -258,25 +258,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^6.9.2":
-  version: 6.9.2
-  resolution: "@argos-ci/cli@npm:6.9.2"
+"@argos-ci/cli@npm:^6.9.3":
+  version: 6.9.3
+  resolution: "@argos-ci/cli@npm:6.9.3"
   dependencies:
     "@argos-ci/api-client": "npm:0.31.0"
-    "@argos-ci/core": "npm:6.8.3"
+    "@argos-ci/core": "npm:6.8.4"
     "@vercel/detect-agent": "npm:^1.2.5"
     commander: "npm:^15.0.0"
     open: "npm:^11.0.0"
     ora: "npm:^9.4.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/878e0d666e51d687406b198bd5ece7a327e9763e3c7abb9eff7aa5115f1dfc6c90fa9a20e7091906966aedcecbfc7bc50e3615406937764c0031180603443046
+  checksum: 10c0/d4d47b49cbaccfbfc5592ac33c9dba6d6e822f5d7c5577ea239884b1e4a595c254e1968e891b023c0bec868c0866d445cb4c2173c097ff5011ff6c997551da5c
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:6.8.3":
-  version: 6.8.3
-  resolution: "@argos-ci/core@npm:6.8.3"
+"@argos-ci/core@npm:6.8.4":
+  version: 6.8.4
+  resolution: "@argos-ci/core@npm:6.8.4"
   dependencies:
     "@argos-ci/api-client": "npm:0.31.0"
     "@argos-ci/util": "npm:4.2.0"
@@ -287,20 +287,20 @@ __metadata:
     p-retry: "npm:^8.0.0"
     sharp: "npm:^0.35.3"
     tmp: "npm:^0.2.7"
-  checksum: 10c0/8da7399540541c9e9dbbb5e50c852a8ac242d9fcf809389920985544f119f390852ba097611bc36838e31706cb47572bdccfac43b6ed9689c81b58bb9cb0464e
+  checksum: 10c0/fe81788c74f19258539befe959cdc8b4183149b3a6634dd39c502f815b07c57f5af4f39bec83f802377c6968b61379a1f9d1d60160c1e9d96c663a7af24ed019
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^7.5.0":
-  version: 7.5.0
-  resolution: "@argos-ci/playwright@npm:7.5.0"
+"@argos-ci/playwright@npm:^7.5.1":
+  version: 7.5.1
+  resolution: "@argos-ci/playwright@npm:7.5.1"
   dependencies:
     "@argos-ci/browser": "npm:6.4.5"
-    "@argos-ci/core": "npm:6.8.3"
+    "@argos-ci/core": "npm:6.8.4"
     "@argos-ci/util": "npm:4.2.0"
     chalk: "npm:^6.0.0"
     debug: "npm:^4.4.3"
-  checksum: 10c0/70d2403912f66a31e01cfd3890b2c9d2d65910ac53b57d98ba2d315fed1be4a36f2c364964981961e340dcd5ff17a44f7f8a69729459505ff85d0355964c987b
+  checksum: 10c0/db125e2e818b0fe6651d17b626d538da3d78a417e94e6f46d3cdde7c347839756e61f68519d11e2704868ea9641deb0c64a38c8b6adc0a12c42ea35916a2939d
   languageName: node
   linkType: hard
 
@@ -1706,10 +1706,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^8.0.0":
-  version: 8.0.0
-  resolution: "@babel/runtime@npm:8.0.0"
-  checksum: 10c0/450857cf52b3a3935d4aad505277201361c86185dad3bdd2ae083d78b76c6265c7fc7610e170c80de1b825d5bfdcfb50697f0853fff922b2661c91cff1fbbd81
+"@babel/runtime@npm:^8.0.5":
+  version: 8.0.5
+  resolution: "@babel/runtime@npm:8.0.5"
+  checksum: 10c0/f4a310b6d2839a5350d6282805702040024b490b8456ca58de2abf5b329dba9ef19ece1d89304c39b1538177f311290512f88d7be4cc7925e4a9c9c00adab5b9
   languageName: node
   linkType: hard
 
@@ -5319,8 +5319,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^6.9.2"
-    "@argos-ci/playwright": "npm:^7.5.0"
+    "@argos-ci/cli": "npm:^6.9.3"
+    "@argos-ci/playwright": "npm:^7.5.1"
     "@playwright/test": "npm:^1.63.0"
     cheerio: "npm:^1.2.0"
   languageName: unknown
@@ -5407,9 +5407,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"autoprefixer@npm:^10.5.5":
-  version: 10.5.5
-  resolution: "autoprefixer@npm:10.5.5"
+"autoprefixer@npm:^10.6.0":
+  version: 10.6.0
+  resolution: "autoprefixer@npm:10.6.0"
   dependencies:
     browserslist: "npm:^4.28.9"
     caniuse-lite: "npm:^1.0.30001810"
@@ -5420,7 +5420,7 @@ __metadata:
     postcss: ^8.1.0
   bin:
     autoprefixer: bin/autoprefixer
-  checksum: 10c0/269ba905d0dbdb4f9014744b779e6f42ae15ccdda54acea15e4d5802d043f15979f7871a279bbb4fc5fc5a5f4a2889bafd5a972904f156ad6bf816ab4d4c69ce
+  checksum: 10c0/ac00a5c40093e31204e45dcd1e48a941db3f7aa036cc5d4ca046296bbd87b9ec5e47093e0d2ab420ae4468e962dba26802d2ca3c17b5c234efb27e17ec7663c0
   languageName: node
   linkType: hard
 
@@ -6988,7 +6988,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "docs@workspace:."
   dependencies:
-    "@babel/runtime": "npm:^8.0.0"
+    "@babel/runtime": "npm:^8.0.5"
     "@docusaurus/core": "npm:^3.10.2"
     "@docusaurus/module-type-aliases": "npm:^3.10.2"
     "@docusaurus/plugin-client-redirects": "npm:^3.10.2"
@@ -7005,7 +7005,7 @@ __metadata:
     "@mui/material": "npm:^5.14.18"
     "@tsconfig/docusaurus": "npm:^2.0.8"
     "@types/react": "npm:^18.3.12"
-    autoprefixer: "npm:^10.5.5"
+    autoprefixer: "npm:^10.6.0"
     classnames: "npm:^2.5.1"
     docusaurus-lunr-search: "npm:^3.5.0"
     lodash: "npm:^4.18.1"
