@@ -147,7 +147,8 @@ def message_id(event: Event, payload: bytes) -> str | None:
         case DatasetEvent() | event_v2.DatasetEvent():
             return f"dataset:{digest}"
         case _:
-            return None
+            # Anything else the client can serialize, such as an already-built event dict
+            return f"event:{digest}"
 
 
 def _import_nats() -> Any:

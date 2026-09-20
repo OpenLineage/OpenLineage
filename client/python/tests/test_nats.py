@@ -165,6 +165,17 @@ def test_message_id_for_job_and_dataset_events_does_not_depend_on_name_splitting
     assert "\n" not in dataset_id
 
 
+def test_message_id_falls_back_to_a_digest_for_other_payloads() -> None:
+    # Producers that already hold OpenLineage JSON emit it as a dict; it still de-duplicates
+    payload = b'{"eventType": "START"}'
+
+    assert message_id({"eventType": "START"}, payload).startswith("event:")
+    assert message_id({"eventType": "START"}, payload) == message_id({"eventType": "START"}, payload)
+    assert message_id({"eventType": "START"}, payload) != message_id(
+        {"eventType": "OTHER"}, b'{"eventType": "OTHER"}'
+    )
+
+
 def test_connect_options_map_credentials() -> None:
     transport = NatsTransport(
         NatsConfig.from_dict({"url": "nats://a:4222", "subject": "ol", "user": "u", "password": "p"})
