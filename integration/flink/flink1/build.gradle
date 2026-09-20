@@ -23,7 +23,7 @@ ext {
     testedFlinkVersion = project.getProperty('flink.version')
     assertjVersion = '3.27.7'
     junit5Version = '5.14.4'
-    lombokVersion = '1.18.46'
+    lombokVersion = '1.18.48'
     jacksonVersion = "2.18.9"
     mockitoVersion = '5.2.0'
     testcontainersVersion = '1.21.4'
@@ -67,8 +67,8 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
-    testImplementation("org.slf4j:slf4j-api:2.0.18")
-    testImplementation("org.slf4j:slf4j-simple:2.0.18")
+    testImplementation("org.slf4j:slf4j-api:2.0.19")
+    testImplementation("org.slf4j:slf4j-simple:2.0.19")
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
