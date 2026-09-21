@@ -163,6 +163,13 @@ def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
     )
 
 
+def test_presto_namespace(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.PRESTO
+    dbt_artifact_processor.extract_dataset_namespace({"host": "presto.example.com", "port": 8443})
+
+    assert dbt_artifact_processor.dataset_namespace == "presto://presto.example.com:8443"
+
+
 @pytest.mark.parametrize(
     "profile, expected",
     [
