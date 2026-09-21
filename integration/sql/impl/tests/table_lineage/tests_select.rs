@@ -261,6 +261,124 @@ fn select_with_table_generator() {
 }
 
 #[test]
+fn select_bigquery_unnest_generate_array() {
+    // Regression test for the panic reported at
+    // https://github.com/OpenLineage/OpenLineage/issues/1358 for Snowflake's
+    // TABLE(GENERATOR(...)), applied to BigQuery's UNNEST(GENERATE_ARRAY(...))
+    // table factor, which was still unhandled: `TableFactor::UNNEST` fell
+    // through to the catch-all `Err` arm in `Visit for TableFactor`.
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT test_table.col0, n
+            FROM test_schema.test_table
+            CROSS JOIN UNNEST(GENERATE_ARRAY(1, 1000)) AS n
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_literal_array() {
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM UNNEST([1, 2, 3]) AS n", "bigquery")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![],
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_with_offset() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT test_table.col0, n, offset
+            FROM test_schema.test_table
+            CROSS JOIN UNNEST(GENERATE_ARRAY(1, 1000)) AS n WITH OFFSET AS offset
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_array_subquery() {
+    // UNNEST's own array expression can reference a real table (e.g. a subquery
+    // wrapped in ARRAY(...)) - that shouldn't be silently discarded.
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT n FROM UNNEST(ARRAY(SELECT id FROM source_table)) AS n",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["source_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unpivot() {
+    // Regression test for the same TableFactor::Unpivot gap as UNNEST above -
+    // this variant had no arm and fell through to the catch-all `Err`.
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT *
+            FROM test_schema.test_table
+            UNPIVOT(sales FOR quarter IN (q1_sales, q2_sales, q3_sales))
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unpivot_with_alias() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT unpivoted.quarter, unpivoted.sales
+            FROM test_schema.test_table
+            UNPIVOT(sales FOR quarter IN (q1_sales AS 'Q1', q2_sales AS 'Q2')) AS unpivoted
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
 fn select_window_function() {
     assert_eq!(
         test_sql(
