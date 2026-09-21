@@ -33,7 +33,8 @@ log = logging.getLogger(__name__)
 
 def _raise_on_method_changing_redirect(response: Response, **_: Any) -> None:
     if response.status_code in (301, 302, 303):
-        response.close()
+        # Consume the body so it remains available on the raised exception.
+        len(response.content)
         msg = f"Refusing HTTP {response.status_code} redirect for lineage event POST"
         raise requests.HTTPError(msg, response=response)
 
@@ -411,11 +412,10 @@ class HttpTransport(Transport):
                 hooks={"response": response_hooks},
             )
             resp.close()
-            if isinstance(resp.status_code, int) and not 200 <= resp.status_code < 300:
+            if not 200 <= resp.status_code < 300:
                 resp.raise_for_status()
                 msg = f"Unexpected HTTP status {resp.status_code} for lineage event POST"
                 raise requests.HTTPError(msg, response=resp)
-            resp.raise_for_status()
             return resp
         finally:
             http_client.HTTPConnection.debuglevel = prev_debuglevel

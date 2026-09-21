@@ -26,6 +26,8 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
 
 Events are serialized to JSON, and then are send as HTTP POST request with `Content-Type: application/json`.
 
+The transport rejects `301`, `302`, and `303` redirects because they can change the POST to a GET and discard the event body. Configure proxies in front of the lineage endpoint to return `307` or `308`, which preserve the method and body. A terminal non-2xx response fails emission.
+
 #### Unix Domain Socket
 
 :::info Requires Java 16 or later

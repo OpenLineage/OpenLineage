@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.SystemDefaultDnsResolver;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.Configurable;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
@@ -256,13 +257,18 @@ public final class HttpTransport extends Transport {
   public HttpTransport(
       @NonNull final CloseableHttpClient httpClient, @NonNull final HttpConfig httpConfig) {
     this.http = httpClient;
-    Timeout timeout = getTimeout(httpConfig);
-    this.requestConfig =
-        RequestConfig.custom()
-            .setConnectionRequestTimeout(timeout)
-            .setResponseTimeout(timeout)
-            .setRedirectsEnabled(false)
-            .build();
+    RequestConfig baseConfig;
+    if (httpClient instanceof Configurable) {
+      baseConfig = ((Configurable) httpClient).getConfig();
+    } else {
+      Timeout timeout = getTimeout(httpConfig);
+      baseConfig =
+          RequestConfig.custom()
+              .setConnectionRequestTimeout(timeout)
+              .setResponseTimeout(timeout)
+              .build();
+    }
+    this.requestConfig = RequestConfig.copy(baseConfig).setRedirectsEnabled(false).build();
     try {
       this.uri = getUri(httpConfig);
     } catch (URISyntaxException e) {
@@ -365,20 +371,46 @@ public final class HttpTransport extends Transport {
         if (redirectLocation == null) {
           return;
         }
+        URI redirectUri = requestUri.resolve(redirectLocation);
+        if (!sameOrigin(requestUri, redirectUri)) {
+          throw new OpenLineageClientException(
+              "Refusing cross-origin redirect from " + requestUri + " to " + redirectUri);
+        }
+        if (!visited.add(redirectUri)) {
+          throw new OpenLineageClientException("Circular redirect to " + redirectUri);
+        }
+        // The visited set catches cycles; this separately bounds long chains of distinct URLs.
         redirectCount++;
-        if (redirectCount > MAX_REDIRECTS) {
-          throw new OpenLineageClientException("Maximum redirects (50) exceeded");
+        if (redirectCount >= MAX_REDIRECTS) {
+          throw new OpenLineageClientException(
+              "Maximum redirects (" + MAX_REDIRECTS + ") exceeded");
         }
-        requestUri = requestUri.resolve(redirectLocation);
-        if (!visited.add(requestUri)) {
-          throw new OpenLineageClientException("Circular redirect to " + requestUri);
-        }
+        requestUri = redirectUri;
       }
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     } catch (IllegalArgumentException e) {
       throw new OpenLineageClientException("Invalid redirect location", e);
     }
+  }
+
+  private static boolean sameOrigin(URI first, URI second) {
+    return first.getScheme() != null
+        && second.getScheme() != null
+        && first.getScheme().equalsIgnoreCase(second.getScheme())
+        && first.getHost() != null
+        && second.getHost() != null
+        && first.getHost().equalsIgnoreCase(second.getHost())
+        && effectivePort(first) == effectivePort(second);
+  }
+
+  private static int effectivePort(URI uri) {
+    if (uri.getPort() != -1) {
+      return uri.getPort();
+    }
+    return "http".equalsIgnoreCase(uri.getScheme())
+        ? 80
+        : "https".equalsIgnoreCase(uri.getScheme()) ? 443 : -1;
   }
 
   private void setBody(ClassicHttpRequest request, String body) {

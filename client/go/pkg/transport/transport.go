@@ -19,6 +19,8 @@ import (
 )
 
 const (
+	maxRedirects = 10
+
 	// TransportTypeHTTP is the HTTP transport type.
 	TransportTypeHTTP TransportType = "http"
 	// TransportTypeConsole is the console transport type.
@@ -66,8 +68,9 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 		retryClient := retryablehttp.NewClient()
 		retryClient.Logger = nil // suppress default debug logging
 		checkRedirect := func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 10 {
-				return errors.New("stopped after 10 redirects")
+			if len(via) >= maxRedirects {
+				// retryablehttp recognizes this exact shape and does not retry the redirect loop.
+				return fmt.Errorf("stopped after %d redirects", maxRedirects)
 			}
 			switch req.Response.StatusCode {
 			case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther:

@@ -307,12 +307,14 @@ class TestHttpTransportSync:
 
     @pytest.mark.parametrize("status_code", [301, 302, 303])
     def test_http_transport_rejects_method_changing_redirects(self, status_code):
-        response = MagicMock(status_code=status_code)
+        response = requests.Response()
+        response.status_code = status_code
+        response._content = b"redirect response"
 
-        with pytest.raises(requests.HTTPError, match=f"HTTP {status_code} redirect"):
+        with pytest.raises(requests.HTTPError, match=f"HTTP {status_code} redirect") as error:
             _raise_on_method_changing_redirect(response)
 
-        response.close.assert_called_once()
+        assert error.value.response.text == "redirect response"
 
     @pytest.mark.parametrize("status_code", [307, 308])
     def test_http_transport_allows_method_preserving_redirects(self, status_code):
@@ -369,6 +371,7 @@ class TestHttpTransportSync:
 
     def test_http_transport_restores_debuglevel_after_failed_emit(self, mock_http_session_class):
         mock_session_class, mock_client, mock_response = mock_http_session_class
+        mock_response.status_code = 500
         mock_response.raise_for_status.side_effect = RuntimeError("request failed")
 
         config = HttpConfig(url="http://example.com")

@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 
@@ -461,6 +461,18 @@ app = FastAPI(
 async def receive_event(request: Request) -> dict[str, Any]:
     """Receive OpenLineage events - main endpoint."""
     return await test_server.receive_lineage_event(request)
+
+
+@app.post("/redirect/{status_code}")
+async def redirect_event(status_code: int) -> Response:
+    """Redirect lineage events to the main endpoint for transport policy tests."""
+    if status_code not in (301, 302, 303, 307, 308):
+        raise HTTPException(status_code=400, detail="Unsupported redirect status")
+    return Response(
+        content="redirect response",
+        status_code=status_code,
+        headers={"Location": "/api/v1/lineage"},
+    )
 
 
 @app.get("/events")

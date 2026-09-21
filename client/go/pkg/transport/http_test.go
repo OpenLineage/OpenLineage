@@ -119,6 +119,8 @@ func TestHTTPTransport_Emit_ServerError(t *testing.T) {
 	}
 }
 
+// TestHTTPTransport_Emit_RedirectPolicy verifies that only method-preserving redirects are
+// followed and that they retain the POST body.
 func TestHTTPTransport_Emit_RedirectPolicy(t *testing.T) {
 	tests := []struct {
 		status       int
@@ -134,12 +136,15 @@ func TestHTTPTransport_Emit_RedirectPolicy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			var mu sync.Mutex
 			var methods []string
 			var bodies [][]byte
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, _ := io.ReadAll(r.Body)
+				mu.Lock()
 				methods = append(methods, r.Method)
 				bodies = append(bodies, body)
+				mu.Unlock()
 				if r.URL.Path == "/api/v1/lineage" {
 					w.Header().Set("Location", "/accepted")
 					w.WriteHeader(tt.status)
@@ -154,14 +159,18 @@ func TestHTTPTransport_Emit_RedirectPolicy(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Emit() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if len(methods) != tt.wantRequests {
-				t.Fatalf("requests = %d, want %d", len(methods), tt.wantRequests)
+			mu.Lock()
+			gotMethods := append([]string(nil), methods...)
+			gotBodies := append([][]byte(nil), bodies...)
+			mu.Unlock()
+			if len(gotMethods) != tt.wantRequests {
+				t.Fatalf("requests = %d, want %d", len(gotMethods), tt.wantRequests)
 			}
 			if !tt.wantErr {
-				if methods[1] != http.MethodPost {
-					t.Errorf("redirected method = %q, want POST", methods[1])
+				if gotMethods[1] != http.MethodPost {
+					t.Errorf("redirected method = %q, want POST", gotMethods[1])
 				}
-				if !bytes.Equal(bodies[0], bodies[1]) {
+				if !bytes.Equal(gotBodies[0], gotBodies[1]) {
 					t.Error("redirected body does not match original body")
 				}
 			}
@@ -169,10 +178,15 @@ func TestHTTPTransport_Emit_RedirectPolicy(t *testing.T) {
 	}
 }
 
+// TestHTTPTransport_Emit_StopsAfterTenRedirects verifies that redirect loops stop at the standard
+// library's ten-request limit without retrying the full loop.
 func TestHTTPTransport_Emit_StopsAfterTenRedirects(t *testing.T) {
+	var mu sync.Mutex
 	requests := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		mu.Lock()
 		requests++
+		mu.Unlock()
 		w.Header().Set("Location", "/api/v1/lineage")
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}))
@@ -183,8 +197,11 @@ func TestHTTPTransport_Emit_StopsAfterTenRedirects(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "stopped after 10 redirects") {
 		t.Fatalf("Emit() error = %v, want ten-redirect limit error", err)
 	}
-	if requests != 10 {
-		t.Fatalf("requests = %d, want 10", requests)
+	mu.Lock()
+	gotRequests := requests
+	mu.Unlock()
+	if gotRequests != maxRedirects {
+		t.Fatalf("requests = %d, want %d", gotRequests, maxRedirects)
 	}
 }
 
