@@ -17,7 +17,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@babel/runtime": "^8.0.0",
+    "@babel/runtime": "^8.0.5",
     "@docusaurus/core": "^3.10.2",
     "@docusaurus/plugin-client-redirects": "^3.10.2",
     "@docusaurus/plugin-content-blog": "^3.10.2",
@@ -31,7 +31,7 @@
     "@mdx-js/react": "^3.1.0",
     "@mui/icons-material": "^5.14.19",
     "@mui/material": "^5.14.18",
-    "autoprefixer": "^10.5.5",
+    "autoprefixer": "^10.6.0",
     "classnames": "^2.5.1",
     "docusaurus-lunr-search": "^3.5.0",
     "lodash": "^4.18.1",
