@@ -1,8 +1,9 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import warnings
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Dict, List, Optional
 
 import attr
 from openlineage.client.constants import DEFAULT_PRODUCER
@@ -409,3 +410,39 @@ class ExtractionErrorRunFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/ExtractionErrorRunFacet"
+
+
+@dataclass
+class PolicyEvaluationResult:
+    policyName: str
+    engine: str
+    passed: bool
+    severity: Optional[str] = None
+    details: Optional[str] = None
+    evaluatedAt: Optional[str] = None
+    ruleResults: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class DataMeshGovernanceDatasetFacet:
+    domain: str
+    owner: str
+    dataClassification: Optional[str] = None
+    piiColumns: Optional[List[str]] = None
+    governancePolicyUri: Optional[str] = None
+    meshTags: Optional[Dict[str, Any]] = None
+    complianceFrameworks: Optional[List[str]] = None
+    policyChecks: Optional[List[PolicyEvaluationResult]] = None
+    _schemaURL: str = field(
+        default="https://openlineage.io/spec/facets/1-0-0/DataMeshGovernanceDatasetFacet.json",
+        init=False,
+    )
+
+    def is_compliant(self) -> bool:
+        if not self.policyChecks:
+            return True
+        return all(p.passed for p in self.policyChecks)
+
+    @classmethod
+    def _get_schema(cls) -> str:
+        return "https://openlineage.io/spec/facets/1-0-0/DataMeshGovernanceDatasetFacet.json"

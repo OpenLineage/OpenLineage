@@ -1,6 +1,10 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import json
 from dataclasses import asdict
-from openlineage.client.facet.governance_facet import (
+
+from openlineage.client.facet import (
     DataMeshGovernanceDatasetFacet,
     PolicyEvaluationResult,
 )
@@ -28,9 +32,7 @@ def test_governance_facet_policy_compliance_fail():
         severity="ERROR",
         details="Retention period must be >= 7 years",
     )
-    facet = DataMeshGovernanceDatasetFacet(
-        domain="risk", owner="risk-team", policyChecks=[fail_check]
-    )
+    facet = DataMeshGovernanceDatasetFacet(domain="risk", owner="risk-team", policyChecks=[fail_check])
     assert facet.is_compliant() is False
 
 
