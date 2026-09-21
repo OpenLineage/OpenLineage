@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
 import io.openlineage.client.OpenLineage.IcebergCommitReportOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.IcebergScanReportInputDatasetFacet;
@@ -27,6 +28,7 @@ import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -47,11 +50,14 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
+import org.apache.spark.sql.streaming.StreamingQuery;
+import org.apache.spark.sql.streaming.Trigger;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,6 +146,82 @@ class SparkIcebergIntegrationTest {
     spark.sql("INSERT INTO table VALUES (1, 2)");
 
     verifyEvents(mockServer, "pysparkWriteIcebergTableVersionEnd.json");
+  }
+
+  @Test
+  @SneakyThrows
+  void testStreamingWriteProducesOneCatalogAwareOutput() {
+    String table = "streaming_output";
+    String targetSuffix = "/default/" + table;
+    File streamingDirectory = new File("/tmp/iceberg/streaming-" + UUID.randomUUID().toString());
+    File inputDirectory = new File(streamingDirectory, "input");
+    File checkpointDirectory = new File(streamingDirectory, "checkpoint");
+
+    clearTables(table);
+    spark.sql("CREATE TABLE " + table + " (id bigint) USING iceberg");
+    Dataset<Row> input = spark.range(1).toDF();
+    StructType inputSchema = input.schema();
+    input.write().parquet(inputDirectory.getAbsolutePath());
+    MockServerUtils.clearRequests(mockServer);
+
+    StreamingQuery query =
+        spark
+            .readStream()
+            .schema(inputSchema)
+            .parquet(inputDirectory.getAbsolutePath())
+            .writeStream()
+            .format("iceberg")
+            .outputMode("append")
+            .queryName("iceberg_streaming_output")
+            .option("checkpointLocation", checkpointDirectory.getAbsolutePath())
+            .trigger(Trigger.Once())
+            .toTable(table);
+
+    try {
+      assertThat(query.awaitTermination(Duration.ofSeconds(30).toMillis())).isTrue();
+
+      List<RunEvent> outputEvents =
+          Awaitility.await()
+              .atMost(Duration.ofSeconds(30))
+              .until(
+                  () ->
+                      Arrays.stream(
+                              mockServer.retrieveRecordedRequests(
+                                  request().withPath("/api/v1/lineage")))
+                          .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+                          .filter(e -> RunEvent.EventType.COMPLETE.equals(e.getEventType()))
+                          .filter(
+                              e ->
+                                  e.getOutputs().stream()
+                                      .anyMatch(output -> output.getName().endsWith(targetSuffix)))
+                          .collect(Collectors.toList()),
+                  events -> !events.isEmpty());
+
+      assertThat(outputEvents)
+          .allSatisfy(
+              event -> {
+                List<OutputDataset> targetOutputs =
+                    event.getOutputs().stream()
+                        .filter(output -> output.getName().endsWith(targetSuffix))
+                        .collect(Collectors.toList());
+
+                assertThat(targetOutputs).hasSize(1);
+                OutputDataset target = targetOutputs.get(0);
+                assertThat(target.getFacets().getCatalog().getFramework()).isEqualTo("iceberg");
+                assertThat(target.getFacets().getSchema().getFields())
+                    .extracting(OpenLineage.SchemaDatasetFacetFields::getName)
+                    .containsExactly("id");
+                assertThat(target.getFacets().getSymlinks().getIdentifiers())
+                    .anySatisfy(
+                        identifier ->
+                            assertThat(identifier.getName()).isEqualTo("default." + table));
+              });
+    } finally {
+      if (query.isActive()) {
+        query.stop();
+      }
+      FileUtils.deleteDirectory(streamingDirectory);
+    }
   }
 
   @Test

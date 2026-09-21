@@ -168,6 +168,53 @@ class JobMetricsHolderTest {
   }
 
   @Test
+  void testCancelledJobsRejectTaskMetricsArrivingAfterJobCompletion() {
+    for (int jobId = 0; jobId < 1_000; jobId++) {
+      int stageId = jobId;
+      underTest.addJobStages(jobId, Collections.singleton(stageId));
+
+      // A cancelled Spark job can emit JobEnd before TaskEnd.
+      underTest.completeJob(jobId);
+      underTest.addMetrics(stageId, taskMetrics(100, 10, 100, 10));
+
+      assertThat(underTest.getJobStagesSize()).isZero();
+      assertThat(underTest.getStageOwners()).isEmpty();
+      assertThat(underTest.getStageMetricsSize()).isZero();
+      assertThat(underTest.getJobMetricsSize()).isZero();
+    }
+  }
+
+  @Test
+  void testLateSpeculativeTaskDoesNotRecreateCompletedStageMetrics() {
+    underTest.addJobStages(1, Collections.singleton(100));
+    underTest.addMetrics(100, taskMetrics(100, 10, 100, 10));
+
+    Map<Metric, Number> completedMetrics = underTest.completeJob(1);
+    underTest.addMetrics(100, taskMetrics(100, 10, 100, 10));
+
+    assertThat(completedMetrics.get(Metric.WRITE_RECORDS)).isEqualTo(10L);
+    assertThat(underTest.getStageOwners()).isEmpty();
+    assertThat(underTest.getStageMetrics()).isEmpty();
+    assertThat(underTest.completeJob(1).get(Metric.WRITE_RECORDS)).isEqualTo(10L);
+  }
+
+  @Test
+  void testSharedStageAcceptsMetricsUntilItsLastJobCompletes() {
+    underTest.addJobStages(1, Collections.singleton(100));
+    underTest.addJobStages(2, Collections.singleton(100));
+    underTest.addMetrics(100, taskMetrics(100, 10, 100, 10));
+
+    Map<Metric, Number> firstJobMetrics = underTest.completeJob(1);
+    underTest.addMetrics(100, taskMetrics(10, 1, 10, 1));
+    Map<Metric, Number> secondJobMetrics = underTest.completeJob(2);
+
+    assertThat(firstJobMetrics.get(Metric.WRITE_RECORDS)).isEqualTo(10L);
+    assertThat(secondJobMetrics.get(Metric.WRITE_RECORDS)).isEqualTo(11L);
+    assertThat(underTest.getStageOwners()).isEmpty();
+    assertThat(underTest.getStageMetrics()).isEmpty();
+  }
+
+  @Test
   void testContainsMetrics() {
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
     underTest.addMetrics(1, taskMetrics(0, 0, 0, 0));
