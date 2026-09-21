@@ -79,8 +79,11 @@ class {{ class_name }}:
     {#- attrs requires field() for validators -#}
     {%- if 'True' == validators.validator_needed(field.type_hint) %} = attr.field() {%- endif -%}
     {%- if not (field.required or (field.represented_default == 'None' and field.strip_default_none)) -%}
-        {#- use factories for list and dict types -#}
-        {%- if 'list' in type_hint -%}
+        {#- preserve absent-vs-empty semantics for explicitly configured collection fields -#}
+        {%- if field.name in (none_default_fields | default([])) -%}
+            {%- set default_value = 'default=None' -%}
+        {#- use factories for other list and dict types -#}
+        {%- elif 'list' in type_hint -%}
             {%- set default_value = 'factory=list' -%}
         {%- elif 'dict' in type_hint -%}
             {%- set default_value = 'factory=dict' -%}
@@ -163,23 +166,15 @@ class {{ class_name }}:
 {%- if additionalProperties == True %}
     def with_additional_properties(self, **kwargs: Any) -> "{{ class_name }}":
         """Add additional properties to updated class instance."""
-        current_attrs = [a.name for a in attr.fields(self.__class__)]
+        return cast({{ class_name }}, add_additional_properties(self, **kwargs))
 
-        new_class = attr.make_class(
-                self.__class__.__name__,
-                {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
-                bases=(self.__class__,),
-            )
-        new_class.__module__ = self.__class__.__module__
-        attrs = attr.fields(self.__class__)
-        for a in attrs:
-            if not a.init:
-                continue
-            attr_name = a.name  # To deal with private attributes.
-            init_name = a.alias
-            if init_name not in kwargs:
-                kwargs[init_name] = getattr(self, attr_name)
-        return cast({{ class_name }}, new_class(**kwargs))
+    def __reduce__(self) -> tuple[Any, ...]:
+        """Support pickling instances created via `with_additional_properties`.
+
+        `with_additional_properties` builds a new class at runtime, which the default pickling
+        mechanism can't resolve back to by name; see `reduce_with_additional_properties`.
+        """
+        return reduce_with_additional_properties(self)
 {%- endif -%}
 {#- staticmethod serves as placeholder for static fields in child classes -#}
 {%- if _schemaURL %}
@@ -202,5 +197,18 @@ class {{ class_name }}:
 {#- add validator methods -#}
 {%- for field in fields -%}
     {{ validators.validator(field.name, field.type_hint, field.required) }}
+{%- endfor -%}
+{#- add object-level dependentRequired validators -#}
+{%- for property, dependencies in (dependent_required | default({}) | dictsort) %}
+    @{{ property }}.validator
+    def {{ property | lower }}_dependent_required_check(
+        self, attribute: Any, value: Any
+    ) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        missing = [name for name in {{ dependencies }} if getattr(self, name) is None]
+        if missing:
+            msg = f"{', '.join(missing)} required when {{ property }} is set"
+            raise ValueError(msg)
 {%- endfor -%}
 {%- endif -%}

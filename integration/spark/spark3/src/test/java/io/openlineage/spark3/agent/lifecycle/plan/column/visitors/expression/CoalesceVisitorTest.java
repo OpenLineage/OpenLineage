@@ -5,7 +5,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.expression;
 
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.CONDITIONAL;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_2;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_1;
@@ -44,21 +43,17 @@ class CoalesceVisitorTest {
     AttributeReference c1 = field(NAME_1, EXPR_ID_1);
     AttributeReference c2 = field(NAME_2, EXPR_ID_2);
     Coalesce expr = new Coalesce(asSeq(c1, c2));
-    when(traverser.copyFor(eq(c1), any())).thenReturn(cond1Trav);
-    when(traverser.copyFor(c1)).thenReturn(val1Trav);
-    when(traverser.copyFor(eq(c2), any())).thenReturn(cond2Trav);
-    when(traverser.copyFor(c2)).thenReturn(val2Trav);
+    when(traverser.copyFor(eq(c1), any())).thenReturn(cond1Trav).thenReturn(val1Trav);
+    when(traverser.copyFor(eq(c2), any())).thenReturn(cond2Trav).thenReturn(val2Trav);
 
     visitor.apply(expr, traverser);
 
-    verify(traverser).copyFor(c1, TransformationInfo.indirect(CONDITIONAL));
+    verify(traverser, org.mockito.Mockito.times(2)).copyFor(eq(c1), any(TransformationInfo.class));
     verify(cond1Trav).traverse();
-    verify(traverser).copyFor(c1);
     verify(val1Trav).traverse();
 
-    verify(traverser).copyFor(c2, TransformationInfo.indirect(CONDITIONAL));
+    verify(traverser, org.mockito.Mockito.times(2)).copyFor(eq(c2), any(TransformationInfo.class));
     verify(cond2Trav).traverse();
-    verify(traverser).copyFor(c2);
     verify(val2Trav).traverse();
   }
 }

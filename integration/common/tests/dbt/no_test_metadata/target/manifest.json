@@ -807,7 +807,7 @@
 			"test_metadata": {
 				"name": "unique",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "customer_id"
 				},
 				"namespace": null
 			}
@@ -888,7 +888,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "customer_id"
 				},
 				"namespace": null
 			}
@@ -969,7 +969,7 @@
 			"test_metadata": {
 				"name": "unique",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "order_id"
 				},
 				"namespace": null
 			}
@@ -1050,7 +1050,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "order_id"
 				},
 				"namespace": null
 			}
@@ -1131,7 +1131,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "customer_id"
 				},
 				"namespace": null
 			}
@@ -1216,7 +1216,7 @@
 			"column_name": "customer_id",
 			"test_metadata": {
 				"name": "relationships",
-				"kwargs": {},
+				"kwargs": {"column_name": "customer_id"},
 				"namespace": null
 			}
 		},
@@ -1298,7 +1298,7 @@
 			"column_name": "status",
 			"test_metadata": {
 				"name": "accepted_values",
-				"kwargs": {},
+				"kwargs": {"column_name": "status"},
 				"namespace": null
 			}
 		},
@@ -1459,7 +1459,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "amount"
+					"column_name": "credit_card_amount"
 				},
 				"namespace": null
 			}
@@ -1540,7 +1540,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "amount"
+					"column_name": "coupon_amount"
 				},
 				"namespace": null
 			}
@@ -1621,7 +1621,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "amount"
+					"column_name": "bank_transfer_amount"
 				},
 				"namespace": null
 			}
@@ -1702,7 +1702,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "amount"
+					"column_name": "gift_card_amount"
 				},
 				"namespace": null
 			}
@@ -1783,7 +1783,7 @@
 			"test_metadata": {
 				"name": "unique",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "customer_id"
 				},
 				"namespace": null
 			}
@@ -1864,7 +1864,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "customer_id"
 				},
 				"namespace": null
 			}
@@ -1945,7 +1945,7 @@
 			"test_metadata": {
 				"name": "unique",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "order_id"
 				},
 				"namespace": null
 			}
@@ -2026,7 +2026,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "order_id"
 				},
 				"namespace": null
 			}
@@ -2109,7 +2109,7 @@
 			"column_name": "status",
 			"test_metadata": {
 				"name": "accepted_values",
-				"kwargs": {},
+				"kwargs": {"column_name": "status"},
 				"namespace": null
 			}
 		},
@@ -2189,7 +2189,7 @@
 			"test_metadata": {
 				"name": "unique",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "payment_id"
 				},
 				"namespace": null
 			}
@@ -2270,7 +2270,7 @@
 			"test_metadata": {
 				"name": "not_null",
 				"kwargs": {
-					"column_name": "id"
+					"column_name": "payment_id"
 				},
 				"namespace": null
 			}
@@ -2353,7 +2353,7 @@
 			"column_name": "payment_method",
 			"test_metadata": {
 				"name": "accepted_values",
-				"kwargs": {},
+				"kwargs": {"column_name": "payment_method"},
 				"namespace": null
 			}
 		}

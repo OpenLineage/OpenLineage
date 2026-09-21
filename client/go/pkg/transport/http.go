@@ -157,7 +157,7 @@ func (h *httpTransport) Emit(ctx context.Context, event any) (map[string]string,
 		_ = resp.Body.Close()
 	}()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("server responded with status %v: %s", resp.StatusCode, respBody)
 	}

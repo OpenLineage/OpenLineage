@@ -37,6 +37,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
@@ -53,6 +55,7 @@ import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeVariableName;
 
 import io.openlineage.client.TypeResolver.ArrayResolvedType;
+import io.openlineage.client.TypeResolver.DiscriminatedUnionResolvedType;
 import io.openlineage.client.TypeResolver.ObjectResolvedType;
 import io.openlineage.client.TypeResolver.PrimitiveResolvedType;
 import io.openlineage.client.TypeResolver.ResolvedField;
@@ -296,7 +299,29 @@ public class JavaPoetGenerator {
     if (type.hasAdditionalProperties()) {
       constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>()", "additionalProperties", LinkedHashMap.class).build());
     }
+    addDependentRequiredValidation(type, constructor);
     return constructor.build();
+  }
+
+  private void addDependentRequiredValidation(
+      ObjectResolvedType type, MethodSpec.Builder constructor) {
+    type.getDependentRequired()
+        .forEach(
+            (property, dependencies) ->
+                dependencies.forEach(
+                    dependency ->
+                        constructor
+                            .beginControlFlow(
+                                "if (this.$N != null && this.$N == null)", property, dependency)
+                            .addStatement(
+                                "throw new $T($S)",
+                                IllegalArgumentException.class,
+                                "property \""
+                                    + dependency
+                                    + "\" is required when \""
+                                    + property
+                                    + "\" is set")
+                            .endControlFlow()));
   }
 
   private TypeSpec modelClass(ObjectResolvedType type) {
@@ -309,7 +334,8 @@ public class JavaPoetGenerator {
           .build());
     }
     for (ObjectResolvedType parent : type.getParents()) {
-      modelClassBuilder.addSuperinterface(ClassName.get(containerPackage, parent.getContainer(), parent.getName()));
+      modelClassBuilder.addSuperinterface(
+          ClassName.get(containerPackage, containerClassName, parent.getName()));
     }
     //adds possibility to extend CustomFacet
     if (!type.getName().equals("CustomFacet")) {
@@ -350,7 +376,8 @@ public class JavaPoetGenerator {
           .returns(additionalPropertiesType)
           .addModifiers(PUBLIC)
           .addCode("return $N;", fieldName)
-          .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build());
+          .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
+          .addAnnotation(AnnotationSpec.builder(JsonIgnore.class).build());
       type
           .getParents()
           .stream()
@@ -364,6 +391,13 @@ public class JavaPoetGenerator {
         .build());
       modelClassBuilder.addField(
           FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
+              // JsonIgnore keeps this field out of Jackson's regular bean-property resolution.
+              // Without it, an incoming JSON property literally named "additionalProperties"
+              // (e.g. a column named "additionalProperties" in ColumnLineageDatasetFacetFields)
+              // collides with this field's own name and gets deserialized as if it were the
+              // whole map, instead of being routed through @JsonAnySetter as one entry.
+              // See https://github.com/OpenLineage/OpenLineage/issues/4086
+              .addAnnotation(JsonIgnore.class)
               .addAnnotation(JsonAnySetter.class)
               .build());
     }
@@ -554,6 +588,10 @@ public class JavaPoetGenerator {
         .addModifiers(STATIC, PUBLIC)
         .addJavadoc("Interface for $N\n", type.getName());
 
+    if (type instanceof DiscriminatedUnionResolvedType) {
+      addDiscriminatorAnnotations(interfaceBuilder, (DiscriminatedUnionResolvedType) type);
+    }
+
     generateDefaultImplementation(containerTypeBuilder, type, interfaceBuilder);
 
     for (ResolvedField f : type.getProperties()) {
@@ -595,6 +633,38 @@ public class JavaPoetGenerator {
     TypeSpec intrfc = interfaceBuilder.build();
 
     containerTypeBuilder.addType(intrfc);
+  }
+
+  private void addDiscriminatorAnnotations(
+      TypeSpec.Builder interfaceBuilder, DiscriminatedUnionResolvedType type) {
+    interfaceBuilder.addAnnotation(
+        AnnotationSpec.builder(JsonTypeInfo.class)
+            .addMember("use", "$T.$L", JsonTypeInfo.Id.class, JsonTypeInfo.Id.NAME)
+            .addMember(
+                "include",
+                "$T.$L",
+                JsonTypeInfo.As.class,
+                JsonTypeInfo.As.EXISTING_PROPERTY)
+            .addMember("property", "$S", type.getDiscriminatorField())
+            .addMember("visible", "$L", true)
+            .build());
+
+    AnnotationSpec.Builder subTypes = AnnotationSpec.builder(JsonSubTypes.class);
+    type
+        .getVariants()
+        .forEach(
+            (discriminatorValue, variant) ->
+                subTypes.addMember(
+                    "value",
+                    "$L",
+                    AnnotationSpec.builder(JsonSubTypes.Type.class)
+                        .addMember(
+                            "value",
+                            "$T.class",
+                            ClassName.get(containerClass, variant.getName()))
+                        .addMember("name", "$S", discriminatorValue)
+                        .build()));
+    interfaceBuilder.addAnnotation(subTypes.build());
   }
 
   private void generateDefaultImplementation(
@@ -659,6 +729,7 @@ public class JavaPoetGenerator {
       if (type.hasAdditionalProperties()) {
         addAdditionalProperties(type, classBuilder, constructor);
       }
+      addDependentRequiredValidation(type, constructor);
       classBuilder.addMethod(constructor.build());
       containerTypeBuilder.addType(classBuilder.build());
 
@@ -747,10 +818,15 @@ public class JavaPoetGenerator {
         .addModifiers(PUBLIC)
         .addCode("return $N;", fieldName)
         .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
+        .addAnnotation(AnnotationSpec.builder(JsonIgnore.class).build())
         .addAnnotation(Override.class)
         .build());
     classBuilder.addField(
         FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
+        // See the matching field in modelClass() for why JsonIgnore is required here:
+        // it prevents a JSON property literally named "additionalProperties" from colliding
+        // with this field's own name during deserialization (issue #4086).
+        .addAnnotation(JsonIgnore.class)
         .addAnnotation(JsonAnySetter.class)
         .build());
 
@@ -820,7 +896,8 @@ public class JavaPoetGenerator {
 
       @Override
       public TypeName visit(TypeResolver.EnumResolvedType enumType) {
-        return ClassName.get(containerClass, enumType.getParentName() + "." + enumType.getName());
+        return ClassName.get(
+            containerPackage, containerClassName, enumType.getParentName(), enumType.getName());
       }
 
       @Override

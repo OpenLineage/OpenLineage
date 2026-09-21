@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
@@ -19,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
-import org.apache.spark.sql.connector.catalog.CatalogManager;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import scala.Option;
@@ -72,9 +72,8 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       return;
     }
 
-    CatalogManager catalogManager = context.getSparkSession().get().sessionState().catalogManager();
-    Optional.of(catalogManager.catalog(catalogName))
-        .filter(catalogPlugin -> catalogPlugin instanceof TableCatalog)
+    SparkSessionUtils.catalog(context.getSparkSession().get(), catalogName)
+        .filter(plugin -> plugin instanceof TableCatalog)
         .map(TableCatalog.class::cast)
         .ifPresent(
             tableCatalog ->

@@ -9,19 +9,18 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
-import java.lang.reflect.InvocationTargetException;
+import io.openlineage.spark3.agent.utils.V2CreateTablePlanUtils;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.reflect.MethodUtils;
+import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTable;
@@ -38,6 +37,10 @@ import org.apache.spark.sql.types.StructType;
  * {@link LogicalPlan} visitor that matches an {@link CreateTableAsSelect} and extracts the output
  * {@link OpenLineage.Dataset} being written. Although the builder is within spark35 package, it's
  * added as a dataset builder for Spark 3.4 on Databricks runtime.
+ *
+ * <p>Plan members are read through {@link V2CreateTablePlanUtils} because Databricks runtimes
+ * change the signatures of these nodes, and a {@link NoSuchMethodError} here would leave the event
+ * without any output dataset.
  */
 @Slf4j
 public class CreateReplaceOutputDatasetBuilder
@@ -62,88 +65,28 @@ public class CreateReplaceOutputDatasetBuilder
 
   @Override
   protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, LogicalPlan plan) {
-    if (plan instanceof CreateTableAsSelect) {
-      return apply(event, (CreateTableAsSelect) plan);
-    } else if (plan instanceof ReplaceTableAsSelect) {
-      return apply(event, (ReplaceTableAsSelect) plan);
-    } else if (plan instanceof CreateTable) {
-      return apply(event, (CreateTable) plan);
-    } else {
-      return apply(event, (ReplaceTable) plan);
+    Optional<TableCatalog> catalog = V2CreateTablePlanUtils.catalog(plan);
+    Optional<Identifier> identifier = V2CreateTablePlanUtils.identifier(plan);
+
+    if (!catalog.isPresent() || !identifier.isPresent()) {
+      log.warn(
+          "Could not obtain catalog and identifier from {}", plan.getClass().getCanonicalName());
+      return Collections.emptyList();
     }
+
+    return apply(
+        event,
+        catalog.get(),
+        V2CreateTablePlanUtils.properties(plan),
+        identifier.get(),
+        V2CreateTablePlanUtils.schema(plan),
+        lifecycleStateChange(plan));
   }
 
-  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, CreateTable plan) {
-    return callCatalogMethod(plan.name())
-        .map(
-            catalogPlugin ->
-                apply(
-                    event,
-                    catalogPlugin,
-                    ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()),
-                    plan.tableName(),
-                    plan.tableSchema(),
-                    LifecycleStateChange.CREATE))
-        .orElse(Collections.emptyList());
-  }
-
-  protected List<OpenLineage.OutputDataset> apply(
-      SparkListenerEvent event, CreateTableAsSelect plan) {
-    Map<String, String> tableProperties =
-        new HashMap(ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()));
-    tableProperties.putAll(ScalaConversionUtils.<String, String>fromMap(plan.writeOptions()));
-    return callCatalogMethod(plan.name())
-        .map(
-            catalogPlugin ->
-                apply(
-                    event,
-                    catalogPlugin,
-                    tableProperties,
-                    plan.tableName(),
-                    plan.tableSchema(),
-                    LifecycleStateChange.CREATE))
-        .orElse(Collections.emptyList());
-  }
-
-  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, ReplaceTable plan) {
-    return callCatalogMethod(plan.name())
-        .map(
-            catalogPlugin ->
-                apply(
-                    event,
-                    catalogPlugin,
-                    ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()),
-                    plan.tableName(),
-                    plan.tableSchema(),
-                    LifecycleStateChange.OVERWRITE))
-        .orElse(Collections.emptyList());
-  }
-
-  protected List<OpenLineage.OutputDataset> apply(
-      SparkListenerEvent event, ReplaceTableAsSelect plan) {
-    Map<String, String> tableProperties =
-        new HashMap(ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()));
-    tableProperties.putAll(ScalaConversionUtils.<String, String>fromMap(plan.writeOptions()));
-    return callCatalogMethod(plan.name())
-        .map(
-            catalogPlugin ->
-                apply(
-                    event,
-                    catalogPlugin,
-                    tableProperties,
-                    plan.tableName(),
-                    plan.tableSchema(),
-                    LifecycleStateChange.OVERWRITE))
-        .orElse(Collections.emptyList());
-  }
-
-  private Optional<TableCatalog> callCatalogMethod(LogicalPlan plan) {
-    try {
-      return Optional.of((TableCatalog) MethodUtils.invokeMethod(plan, "catalog", (Object[]) null));
-    } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-      log.error("Could not obtain catalog plugin", e);
-      return Optional.empty();
-    }
+  private static LifecycleStateChange lifecycleStateChange(LogicalPlan plan) {
+    return (plan instanceof ReplaceTable || plan instanceof ReplaceTableAsSelect)
+        ? LifecycleStateChange.OVERWRITE
+        : LifecycleStateChange.CREATE;
   }
 
   private List<OpenLineage.OutputDataset> apply(
@@ -154,8 +97,7 @@ public class CreateReplaceOutputDatasetBuilder
       StructType schema,
       LifecycleStateChange lifecycleStateChange) {
 
-    Optional<DatasetIdentifier> di =
-        PlanUtils3.getDatasetIdentifier(context, catalog, identifier, tableProperties);
+    Optional<DatasetIdentifier> di = datasetIdentifier(catalog, identifier, tableProperties);
 
     if (!di.isPresent()) {
       return Collections.emptyList();
@@ -168,14 +110,70 @@ public class CreateReplaceOutputDatasetBuilder
             .schema(schema)
             .lifecycleStateChange(lifecycleStateChange);
 
-    if (includeDatasetVersion(event)) {
-      CatalogUtils.getDatasetVersion(context, catalog, identifier, tableProperties)
-          .ifPresent(sparkBuilder::version);
+    // A catalog that cannot describe the table must not cost the output dataset itself
+    try {
+      if (includeDatasetVersion(event)) {
+        CatalogUtils.getDatasetVersion(context, catalog, identifier, tableProperties)
+            .ifPresent(sparkBuilder::version);
+      }
+      CatalogUtils.addStorageAndCatalogFacets(
+          context, catalog, tableProperties, sparkBuilder.getInner());
+    } catch (Exception | NoSuchMethodError | NoClassDefFoundError e) {
+      log.warn("Could not add catalog facets of table {}", identifier, e);
     }
 
-    CatalogUtils.addStorageAndCatalogFacets(
-        context, catalog, tableProperties, sparkBuilder.getInner());
     return Collections.singletonList(sparkBuilder.build());
+  }
+
+  private Optional<DatasetIdentifier> datasetIdentifier(
+      TableCatalog catalog, Identifier identifier, Map<String, String> tableProperties) {
+    Optional<DatasetIdentifier> di;
+    try {
+      di = PlanUtils3.getDatasetIdentifier(context, catalog, identifier, tableProperties);
+    } catch (Exception | NoSuchMethodError | NoClassDefFoundError e) {
+      log.warn("Could not resolve dataset identifier of table {}", identifier, e);
+      di = Optional.empty();
+    }
+
+    if (di.isPresent()) {
+      return di;
+    }
+
+    Optional<DatasetIdentifier> fallback = unityCatalogIdentifier(catalog, identifier);
+    if (!fallback.isPresent()) {
+      log.warn(
+          "No dataset identifier resolved for table {} of catalog {}",
+          identifier,
+          catalog.getClass().getCanonicalName());
+    }
+    return fallback;
+  }
+
+  /**
+   * Unity Catalog managed tables have no location available at the time the create command is
+   * built, and the session catalog cannot resolve a default path for a Unity Catalog namespace. In
+   * that case the table is identified by its {@code catalog.schema.table} name, which is the same
+   * name attached as a symlink when the location is known, so both forms refer to the same table.
+   */
+  private Optional<DatasetIdentifier> unityCatalogIdentifier(
+      TableCatalog catalog, Identifier identifier) {
+    boolean unityCatalogEnabled =
+        context
+            .getSparkContext()
+            .map(SparkContext::getConf)
+            .map(DatabricksUtils::isDatabricksUnityCatalogEnabled)
+            .orElse(false);
+
+    if (!unityCatalogEnabled) {
+      return Optional.empty();
+    }
+
+    String name = DatabricksUtils.qualifiedUnityCatalogTableName(catalog, identifier);
+    log.warn(
+        "Could not resolve the location of Unity Catalog table {}, falling back to its qualified name",
+        name);
+    return Optional.of(
+        new DatasetIdentifier(name, DatabricksUtils.UNITY_CATALOG_SYMLINK_NAMESPACE));
   }
 
   @Override
@@ -184,17 +182,6 @@ public class CreateReplaceOutputDatasetBuilder
       return Optional.empty();
     }
 
-    Identifier identifier = null;
-    if (plan instanceof CreateTableAsSelect) {
-      identifier = ((CreateTableAsSelect) plan).tableName();
-    } else if (plan instanceof ReplaceTable) {
-      identifier = ((ReplaceTable) plan).tableName();
-    } else if (plan instanceof ReplaceTableAsSelect) {
-      identifier = ((ReplaceTableAsSelect) plan).tableName();
-    } else if (plan instanceof CreateTable) {
-      identifier = ((CreateTable) plan).tableName();
-    }
-
-    return Optional.of(identToSuffix(identifier));
+    return V2CreateTablePlanUtils.identifier(plan).map(this::identToSuffix);
   }
 }

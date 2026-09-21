@@ -37,6 +37,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -128,7 +132,7 @@ class SparkReadWriteIntegTest {
 
   @Test
   void testReadFromFileWriteToJdbc(@TempDir Path writeDir, SparkSession spark)
-      throws InterruptedException, TimeoutException, IOException {
+      throws InterruptedException, TimeoutException, IOException, SQLException {
     Path testFile = writeTestDataToFile(writeDir);
 
     Dataset<Row> df = spark.read().json(FILE_URI_PREFIX + testFile.toAbsolutePath().toString());
@@ -136,12 +140,16 @@ class SparkReadWriteIntegTest {
     Path sqliteFile = writeDir.resolve("sqlite/database");
     sqliteFile.getParent().toFile().mkdir();
     String tableName = "data_table";
-    df.filter("age > 100")
-        .write()
-        .jdbc(
-            "jdbc:sqlite:" + sqliteFile.toAbsolutePath().toUri().toString(),
-            tableName,
-            new Properties());
+    String jdbcUrl = "jdbc:sqlite:" + sqliteFile.toAbsolutePath().toUri();
+
+    // Spark 4.2 expects JDBC dialects to identify missing-table SQL exceptions. SQLite uses the
+    // generic dialect, so create the target explicitly instead of relying on that detection.
+    try (Connection connection = DriverManager.getConnection(jdbcUrl);
+        Statement statement = connection.createStatement()) {
+      statement.execute("CREATE TABLE " + tableName + " (age INTEGER, name TEXT)");
+    }
+
+    df.filter("age > 100").write().mode(SaveMode.Append).jdbc(jdbcUrl, tableName, new Properties());
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
 

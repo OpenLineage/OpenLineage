@@ -30,6 +30,7 @@ public final class WriteToDataSourceV2Visitor
     extends QueryPlanVisitor<WriteToDataSourceV2, OutputDataset> {
   private static final String KAFKA_STREAMING_WRITE_CLASS_NAME =
       "org.apache.spark.sql.kafka010.KafkaStreamingWrite";
+  private static final boolean RELATION_ACCESSOR_AVAILABLE = hasRelationAccessor();
 
   public WriteToDataSourceV2Visitor(@NonNull OpenLineageContext context) {
     super(context);
@@ -60,6 +61,10 @@ public final class WriteToDataSourceV2Visitor
       String streamingWriteClassName = streamingWriteClass.getCanonicalName();
       if (KAFKA_STREAMING_WRITE_CLASS_NAME.equals(streamingWriteClassName)) {
         result = handleKafkaStreamingWrite(streamingWrite);
+      } else if (RELATION_ACCESSOR_AVAILABLE) {
+        log.debug(
+            "Deferring streaming write class '{}' to the relation-backed output dataset builder",
+            streamingWriteClass);
       } else {
         log.warn(
             "The streaming write class '{}' for '{}' is not supported",
@@ -71,6 +76,15 @@ public final class WriteToDataSourceV2Visitor
     }
 
     return result;
+  }
+
+  private static boolean hasRelationAccessor() {
+    try {
+      WriteToDataSourceV2.class.getMethod("relation");
+      return true;
+    } catch (NoSuchMethodException | SecurityException | LinkageError e) {
+      return false;
+    }
   }
 
   private @NotNull List<OutputDataset> handleKafkaStreamingWrite(StreamingWrite streamingWrite) {

@@ -47,19 +47,9 @@ A configurable backend allows the user to choose what protocol to send the event
 ## Spec
 The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows extension through custom facets.
 
-## Integration matrix
+## Integrations
 
-OpenLineage supports integrations with several systems.
-
-| Name| Table-level lineage| Column-level lineage |
-| ----| ------------------ | -------------------- |
-|[Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)| :white_check_mark: | :white_check_mark:<sup>1</sup> |
-|[Apache Airflow](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/index.html)| :white_check_mark: | :white_check_mark:<sup>2</sup> |
-|[dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt) |:white_check_mark: | :white_check_mark: |
-|[Flink](https://github.com/OpenLineage/OpenLineage/tree/main/integration/flink)|:white_check_mark: | :x: |
-
-1. Does not support `SELECT *` queries with JDBC.
-2. Supports selected SQL-based operators (see [all supported operators](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/supported_classes.html)).
+OpenLineage supports integrations with Spark, Airflow, dbt, Flink, and more. For the most up-to-date and complete list of supported integrations, their capabilities, and matrices, please refer to the official [OpenLineage Integrations Documentation](https://openlineage.io/docs/integrations/).
 
 ## Related projects
 - [Marquez](https://marquezproject.ai/): Marquez is an [LF AI & DATA](https://lfaidata.foundation/) project to collect, aggregate, and visualize a data ecosystem's metadata. It is the reference implementation of the OpenLineage API.

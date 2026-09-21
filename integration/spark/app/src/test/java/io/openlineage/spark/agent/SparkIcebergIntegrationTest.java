@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
 import io.openlineage.client.OpenLineage.IcebergCommitReportOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.IcebergScanReportInputDatasetFacet;
@@ -25,7 +26,9 @@ import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -46,11 +50,14 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
+import org.apache.spark.sql.streaming.StreamingQuery;
+import org.apache.spark.sql.streaming.Trigger;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,6 +146,82 @@ class SparkIcebergIntegrationTest {
     spark.sql("INSERT INTO table VALUES (1, 2)");
 
     verifyEvents(mockServer, "pysparkWriteIcebergTableVersionEnd.json");
+  }
+
+  @Test
+  @SneakyThrows
+  void testStreamingWriteProducesOneCatalogAwareOutput() {
+    String table = "streaming_output";
+    String targetSuffix = "/default/" + table;
+    File streamingDirectory = new File("/tmp/iceberg/streaming-" + UUID.randomUUID().toString());
+    File inputDirectory = new File(streamingDirectory, "input");
+    File checkpointDirectory = new File(streamingDirectory, "checkpoint");
+
+    clearTables(table);
+    spark.sql("CREATE TABLE " + table + " (id bigint) USING iceberg");
+    Dataset<Row> input = spark.range(1).toDF();
+    StructType inputSchema = input.schema();
+    input.write().parquet(inputDirectory.getAbsolutePath());
+    MockServerUtils.clearRequests(mockServer);
+
+    StreamingQuery query =
+        spark
+            .readStream()
+            .schema(inputSchema)
+            .parquet(inputDirectory.getAbsolutePath())
+            .writeStream()
+            .format("iceberg")
+            .outputMode("append")
+            .queryName("iceberg_streaming_output")
+            .option("checkpointLocation", checkpointDirectory.getAbsolutePath())
+            .trigger(Trigger.Once())
+            .toTable(table);
+
+    try {
+      assertThat(query.awaitTermination(Duration.ofSeconds(30).toMillis())).isTrue();
+
+      List<RunEvent> outputEvents =
+          Awaitility.await()
+              .atMost(Duration.ofSeconds(30))
+              .until(
+                  () ->
+                      Arrays.stream(
+                              mockServer.retrieveRecordedRequests(
+                                  request().withPath("/api/v1/lineage")))
+                          .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+                          .filter(e -> RunEvent.EventType.COMPLETE.equals(e.getEventType()))
+                          .filter(
+                              e ->
+                                  e.getOutputs().stream()
+                                      .anyMatch(output -> output.getName().endsWith(targetSuffix)))
+                          .collect(Collectors.toList()),
+                  events -> !events.isEmpty());
+
+      assertThat(outputEvents)
+          .allSatisfy(
+              event -> {
+                List<OutputDataset> targetOutputs =
+                    event.getOutputs().stream()
+                        .filter(output -> output.getName().endsWith(targetSuffix))
+                        .collect(Collectors.toList());
+
+                assertThat(targetOutputs).hasSize(1);
+                OutputDataset target = targetOutputs.get(0);
+                assertThat(target.getFacets().getCatalog().getFramework()).isEqualTo("iceberg");
+                assertThat(target.getFacets().getSchema().getFields())
+                    .extracting(OpenLineage.SchemaDatasetFacetFields::getName)
+                    .containsExactly("id");
+                assertThat(target.getFacets().getSymlinks().getIdentifiers())
+                    .anySatisfy(
+                        identifier ->
+                            assertThat(identifier.getName()).isEqualTo("default." + table));
+              });
+    } finally {
+      if (query.isActive()) {
+        query.stop();
+      }
+      FileUtils.deleteDirectory(streamingDirectory);
+    }
   }
 
   @Test
@@ -684,6 +767,73 @@ class SparkIcebergIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+  void testRewriteDataFilesReportsCompactedTable() {
+    // the job name of a plain write to the table, going through its own catalog - as opposed to the
+    // compaction's append, which goes through SparkCachedTableCatalog and so is named after it
+    String plainWriteJobName =
+        "iceberg_integration_test.append_data.spark_catalog_default_compaction_target";
+    // the catalog Iceberg registers for its table cache, which the compaction writes through
+    String cacheCatalogName = "default_cache_iceberg";
+
+    clearTables("compaction_target", "compaction_marker");
+
+    spark.sql("CREATE TABLE compaction_target (a long, b long) USING iceberg");
+    // separate inserts so each one commits its own data file and there is something to compact
+    spark.sql("INSERT INTO compaction_target VALUES (1, 2)");
+    spark.sql("INSERT INTO compaction_target VALUES (3, 4)");
+    spark.sql("INSERT INTO compaction_target VALUES (5, 6)");
+
+    getEventsEmittedWithJobName(mockServer, plainWriteJobName);
+    MockServerUtils.clearRequests(mockServer);
+
+    Row rewriteResult =
+        spark
+            .sql(
+                "CALL spark_catalog.system.rewrite_data_files("
+                    + "table => 'default.compaction_target', "
+                    + "options => map('min-input-files','2'))")
+            .head();
+
+    // guard the premise of this test: the compaction really did rewrite the files
+    assertThat(rewriteResult.getInt(0)).as("rewritten data files").isGreaterThanOrEqualTo(2);
+    assertThat(rewriteResult.getInt(1)).as("added data files").isGreaterThanOrEqualTo(1);
+
+    // a plain write after the compaction, so waiting for its event means the compaction has
+    // finished reporting too - the assertions below then see whatever it did emit, empty or not
+    spark.sql("CREATE TABLE compaction_marker USING iceberg AS SELECT * FROM compaction_target");
+    getEventsEmittedWithJobName(mockServer, "compaction_marker");
+    List<RunEvent> events = getEventsEmitted(mockServer);
+
+    // The append that writes the compacted files is the one going through
+    // SparkCachedTableCatalog, so it is named after that catalog rather than the table's own.
+    // Selecting on the cache catalog's name is what makes this test specific: every other write
+    // here - the inserts, whose events routinely land asynchronously after clearRequests, and the
+    // marker table's own append - also emits append_data, and any of those would otherwise
+    // satisfy the assertions below on their own.
+    List<RunEvent> compactionEvents =
+        events.stream()
+            .filter(e -> e.getJob().getName().contains("append_data"))
+            .filter(e -> e.getJob().getName().contains(cacheCatalogName))
+            .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+            .collect(Collectors.toList());
+
+    assertThat(compactionEvents)
+        .as("compaction must report the table it rewrote")
+        .isNotEmpty()
+        .allSatisfy(e -> assertThat(e.getOutputs()).isNotEmpty());
+
+    // and the reported dataset must be the real table, not the cache catalog's UUID key
+    assertThat(
+            compactionEvents.stream()
+                .flatMap(e -> e.getOutputs().stream())
+                .map(OutputDataset::getName)
+                .collect(Collectors.toList()))
+        .isNotEmpty()
+        .allSatisfy(name -> assertThat(name).endsWith("/default/compaction_target"));
+  }
+
+  @Test
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testScanReportFacet() {
     if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {
@@ -728,6 +878,33 @@ class SparkIcebergIntegrationTest {
 
     assertThat(icebergScanReport.get().getMetadata().getAdditionalProperties())
         .containsEntry("engine-name", "spark");
+  }
+
+  @Test
+  @SneakyThrows
+  void testLocalCheckpointReadDoesNotEmitOutput() {
+    clearTables("checkpoint_source");
+    spark.sql("CREATE TABLE checkpoint_source USING iceberg AS SELECT 1 AS id");
+
+    getEventsEmittedWithJobName(mockServer, "checkpoint_source");
+    StaticExecutionContextFactory.waitForExecutionEnd();
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.table("checkpoint_source").localCheckpoint(false).count();
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    List<RunEvent> readEvents =
+        getEventsEmitted(mockServer).stream()
+            .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+            .filter(
+                e ->
+                    e.getInputs().stream()
+                        .anyMatch(input -> input.getName().endsWith("checkpoint_source")))
+            .collect(Collectors.toList());
+
+    assertThat(readEvents)
+        .isNotEmpty()
+        .allSatisfy(event -> assertThat(event.getOutputs()).isEmpty());
   }
 
   @Test

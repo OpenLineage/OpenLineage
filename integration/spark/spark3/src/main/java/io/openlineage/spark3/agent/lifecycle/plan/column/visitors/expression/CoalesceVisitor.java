@@ -37,7 +37,7 @@ public class CoalesceVisitor implements ExpressionVisitor {
         .forEach(
             e -> {
               traverser.copyFor(e, TransformationInfo.indirect(CONDITIONAL)).traverse();
-              traverser.copyFor(e).traverse();
+              traverser.copyFor(e, TransformationInfo.transformation()).traverse();
             });
   }
 }

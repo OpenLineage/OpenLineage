@@ -150,7 +150,7 @@ states the two edges:
     "facets": {
       "lineage": {
         "_producer": "https://example.com/etl",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "postgresql://warehouse:5432", "name": "table_c", "type": "DATASET",
             "inputs": [{ "namespace": "postgresql://warehouse:5432", "name": "table_a", "type": "DATASET" }] },
@@ -188,7 +188,7 @@ new model. The `total` column of `output` aggregates `amount` from `input`:
   "facets": {
     "lineage": {
       "_producer": "...",
-      "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+      "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
       "entries": [
         { "namespace": "postgresql://analytics:5432", "name": "output", "type": "DATASET",
           "fields": {
@@ -273,7 +273,7 @@ A view derives from base tables with no job in the picture. Use
     "facets": {
       "lineage": {
         "_producer": "https://example.com/catalog",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageDatasetFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageDatasetFacet",
         "inputs": [
           { "namespace": "postgresql://warehouse:5432", "name": "public.customers", "type": "DATASET" },
           { "namespace": "postgresql://warehouse:5432", "name": "public.orders", "type": "DATASET" }
@@ -301,7 +301,7 @@ A catalog states what a job is designed to do, without running it. Use
     "facets": {
       "lineage": {
         "_producer": "https://example.com/catalog",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "postgresql://warehouse:5432", "name": "output_table", "type": "DATASET",
             "inputs": [
@@ -374,7 +374,7 @@ stays `[]`, because there is still no tracked upstream dataset:
     "facets": {
       "lineage": {
         "_producer": "https://example.com/extract",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "postgres://prod", "name": "extracted_data", "type": "DATASET",
             "inputs": [],
@@ -419,7 +419,7 @@ JobEvent it is the declared chain, with `runId` omitted:
     "facets": {
       "lineage": {
         "_producer": "https://example.com/catalog",
-        "_schemaURL": "https://openlineage.io/spec/facets/LineageJobFacet.json",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
         "entries": [
           { "namespace": "airflow://prod", "name": "dag_b.task_1", "type": "JOB",
             "inputs": [

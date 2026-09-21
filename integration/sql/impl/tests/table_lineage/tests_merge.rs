@@ -39,6 +39,24 @@ fn merge_subquery_when_not_matched() {
 }
 
 #[test]
+fn merge_on_subquery() {
+    assert_eq!(
+        test_sql(
+            "MERGE INTO target
+             USING source
+             ON target.id IN (SELECT id FROM lookup)
+             WHEN MATCHED THEN UPDATE SET value = source.value"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["lookup", "source"]),
+            out_tables: tables(vec!["target"]),
+        }
+    );
+}
+
+#[test]
 fn merge_identifier_function() {
     let test_cases = vec![
         (

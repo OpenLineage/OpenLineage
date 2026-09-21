@@ -1,0 +1,22 @@
+{
+  "lineage": {
+    "_producer": "https://example.com/orchestrator",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
+    "entries": [
+      {
+        "namespace": "airflow://production",
+        "name": "daily.load",
+        "type": "JOB",
+        "runId": "605f451b-c768-4c77-9ff4-8501f6324513",
+        "inputs": [
+          {
+            "namespace": "airflow://production",
+            "name": "daily.transform",
+            "type": "JOB",
+            "runId": "b7dce052-51a6-4d66-98b9-5fd8b78a79c7"
+          }
+        ]
+      }
+    ]
+  }
+}

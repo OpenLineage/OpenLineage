@@ -30,7 +30,7 @@ type Facet struct {
 	Name         string
 	Type         FacetType
 	Schema       *schemas.Type
-	SchemaURL    string // $id of the JSON schema file (e.g. https://…/1-1-0/CatalogDatasetFacet.json)
+	SchemaURL    string // $id of the schema, with a definition fragment for multi-facet files
 	ContainerKey string // JSON key used in the facets container struct (e.g. "columnLineage")
 }
 
@@ -63,8 +63,9 @@ func isBaseFacetRef(ref, baseName string) bool {
 }
 
 // containerKeys returns a map from definition name → its top-level container JSON key.
-// Each facet schema file has top-level "properties" that register the facet under
-// a specific key (e.g. "properties": {"columnLineage": {"$ref": "#/$defs/ColumnLineageDatasetFacet"}}).
+// Each facet schema file has top-level "properties" that register facets under
+// a specific key. A property may reference one facet directly or use oneOf/anyOf
+// when multiple base facet types share a key.
 func containerKeys(schema *schemas.Schema) map[string]string {
 	out := map[string]string{}
 	if schema.ObjectAsType == nil {
@@ -76,15 +77,29 @@ func containerKeys(schema *schemas.Schema) map[string]string {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		prop := schema.Properties[key]
-		if prop.Ref != "" {
-			name := extractDefName(prop.Ref)
-			if name != "" {
-				out[name] = key
-			}
+		for _, name := range referencedDefinitions(schema.Properties[key]) {
+			out[name] = key
 		}
 	}
 	return out
+}
+
+func referencedDefinitions(t *schemas.Type) []string {
+	if t == nil {
+		return nil
+	}
+
+	var names []string
+	if name := extractDefName(t.Ref); name != "" {
+		names = append(names, name)
+	}
+	for _, child := range t.OneOf {
+		names = append(names, referencedDefinitions(child)...)
+	}
+	for _, child := range t.AnyOf {
+		names = append(names, referencedDefinitions(child)...)
+	}
+	return names
 }
 
 func extractDefName(ref string) string {
@@ -96,12 +111,15 @@ func extractDefName(ref string) string {
 	return ref[i+len(suffix):]
 }
 
-
 // FindAllFacets returns all facet types (job, dataset, run, input, output) without
 // any exclusion filter. Used for OL client code generation.
 func FindAllFacets(schema *schemas.Schema) []Facet {
 	keys := containerKeys(schema)
-	var out []Facet
+	type candidate struct {
+		name      string
+		facetType FacetType
+	}
+	var candidates []candidate
 
 	names := make([]string, 0, len(schema.Definitions))
 	for n := range schema.Definitions {
@@ -115,14 +133,23 @@ func FindAllFacets(schema *schemas.Schema) []Facet {
 		if !ok {
 			continue
 		}
+		candidates = append(candidates, candidate{name: name, facetType: ft})
+	}
+
+	var out []Facet
+	for _, candidate := range candidates {
+		def := schema.Definitions[candidate.name]
+		schemaURL := schema.ID
+		if len(candidates) > 1 {
+			schemaURL += "#/$defs/" + candidate.name
+		}
 		out = append(out, Facet{
-			Name:         name,
-			Type:         ft,
+			Name:         candidate.name,
+			Type:         candidate.facetType,
 			Schema:       def,
-			SchemaURL:    schema.ID,
-			ContainerKey: keys[name],
+			SchemaURL:    schemaURL,
+			ContainerKey: keys[candidate.name],
 		})
 	}
 	return out
 }
-

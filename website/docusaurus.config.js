@@ -149,6 +149,23 @@ const config = {
       },
     ],
     [
+      "@docusaurus/plugin-client-redirects",
+      {
+        // Link the integrations and Flink category URLs with their about.md, in whichever direction
+        // exists: docs with the `slug` front matter redirect .../about to the category URL, older
+        // versioned snapshots without it redirect the category URL to .../about.
+        /** @param {string} existingPath */
+        createRedirects(existingPath) {
+          const category = existingPath.match(/^(.*\/integrations(?:\/flink)?)\/?$/);
+          if (category) {
+            return [`${category[1]}/about`];
+          }
+          const about = existingPath.match(/^(.*\/integrations(?:\/flink)?)\/about\/?$/);
+          return about ? [about[1]] : undefined;
+        },
+      },
+    ],
+    [
       "docusaurus-lunr-search",
       {
         disableVersioning: false,

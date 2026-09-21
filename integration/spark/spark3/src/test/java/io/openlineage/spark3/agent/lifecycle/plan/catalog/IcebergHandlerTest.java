@@ -150,7 +150,7 @@ class IcebergHandlerTest {
 
   @Test
   @SneakyThrows
-  void testGetDatasetIdentifierForRest() {
+  void testGetDatasetIdentifierForRestCatalog() {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
@@ -158,9 +158,9 @@ class IcebergHandlerTest {
                 "spark.sql.catalog.test.type",
                 "rest",
                 "spark.sql.catalog.test.uri",
-                "http://lakehouse-host:8080",
+                "http://rest-host:8080",
                 "spark.sql.catalog.test.warehouse",
-                "s3a://lakehouse/warehouse"));
+                "s3a://warehouse-bucket/warehouse"));
 
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
@@ -168,7 +168,8 @@ class IcebergHandlerTest {
 
     when(sparkCatalog.name()).thenReturn("test");
     when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
-    when(sparkTable.table().location()).thenReturn("s3a://lakehouse/warehouse/database/table");
+    when(sparkTable.table().location())
+        .thenReturn("s3a://warehouse-bucket/warehouse/database/table");
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
@@ -178,12 +179,12 @@ class IcebergHandlerTest {
             new HashMap<>());
 
     assertThat(datasetIdentifier)
-        .hasFieldOrPropertyWithValue("namespace", "s3://lakehouse")
+        .hasFieldOrPropertyWithValue("namespace", "s3://warehouse-bucket")
         .hasFieldOrPropertyWithValue("name", "warehouse/database/table");
 
     assertThat(datasetIdentifier.getSymlinks())
         .singleElement()
-        .hasFieldOrPropertyWithValue("namespace", "http://lakehouse-host:8080")
+        .hasFieldOrPropertyWithValue("namespace", "http://rest-host:8080")
         .hasFieldOrPropertyWithValue("name", "database.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
@@ -200,7 +201,7 @@ class IcebergHandlerTest {
                 "spark.sql.catalog.rest.catalog-impl",
                 "org.apache.iceberg.rest.RESTCatalog",
                 "spark.sql.catalog.rest.uri",
-                "http://lakehouse-host:8080"));
+                "http://rest-host:8080"));
 
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     Identifier identifier = Identifier.of(new String[] {"database"}, "table");
@@ -216,6 +217,126 @@ class IcebergHandlerTest {
                 sparkCatalog,
                 Identifier.of(new String[] {"database"}, "table"),
                 new HashMap<>()));
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForLakehouseRestWithNBucketNoTableLocation() {
+    String catalogName = "biglake";
+    String catalogUri = "https://biglake.googleapis.com/iceberg/v1beta/restcatalog";
+    String warehouseLocation = "bl://projects/project-id/locations/us/catalogs/lakehouse";
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog." + catalogName + ".type",
+                "rest",
+                "spark.sql.catalog." + catalogName + ".uri",
+                catalogUri,
+                "spark.sql.catalog." + catalogName + ".warehouse",
+                warehouseLocation));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(sparkCatalog.name()).thenReturn(catalogName);
+    when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
+    when(sparkCatalog.loadNamespaceMetadata(identifier.namespace()))
+        .thenReturn(Collections.singletonMap("location", "gs://bucket/path/to/database"));
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
+        .hasFieldOrPropertyWithValue("name", "path/to/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", catalogUri)
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForLakehouseRestWithNBucketAndTableLocation() {
+    String catalogName = "biglake";
+    String catalogUri = "https://biglake.googleapis.com/iceberg/v1beta/restcatalog";
+    String warehouseLocation = "bl://projects/project-id/locations/us/catalogs/lakehouse";
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog." + catalogName + ".type",
+                "rest",
+                "spark.sql.catalog." + catalogName + ".uri",
+                catalogUri,
+                "spark.sql.catalog." + catalogName + ".warehouse",
+                warehouseLocation));
+
+    SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
+    Catalog icebergCatalog = mock(Catalog.class);
+    Table table = mock(Table.class);
+    when(sparkCatalog.name()).thenReturn(catalogName);
+    when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
+    when(icebergCatalog.loadTable(TableIdentifier.parse(identifier.toString()))).thenReturn(table);
+    when(table.location()).thenReturn("gs://bucket/path/from/table/location");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
+        .hasFieldOrPropertyWithValue("name", "path/from/table/location");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", catalogUri)
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForLakehouseRestWithSingleBucket() {
+    String catalogName = "biglake";
+    String catalogUri = "https://biglake.googleapis.com/iceberg/v1beta/restcatalog";
+    String warehouseLocation = "gs://bucket/path/to/warehouse";
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog." + catalogName + ".type",
+                "rest",
+                "spark.sql.catalog." + catalogName + ".uri",
+                catalogUri,
+                "spark.sql.catalog." + catalogName + ".warehouse",
+                warehouseLocation));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(sparkCatalog.name()).thenReturn(catalogName);
+    when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
+        .hasFieldOrPropertyWithValue("name", "path/to/warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", catalogUri)
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
   @Test

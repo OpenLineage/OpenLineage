@@ -12,9 +12,9 @@ import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J2_PR
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_RESOURCES_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
-import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
+import static io.openlineage.spark.agent.SparkContainerUtils.oneShotStartupCheckStrategy;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
@@ -22,6 +22,7 @@ import static org.mockserver.model.HttpRequest.request;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,7 +38,6 @@ import org.mockserver.client.MockServerClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -103,7 +103,7 @@ class AwsDynamicFrameIntegrationTest {
             .withNetwork(network)
             .withNetworkAliases("spark")
             .withLogConsumer(SparkContainerUtils::consumeOutput)
-            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
+            .withStartupCheckStrategy(oneShotStartupCheckStrategy(Duration.ofMinutes(10)))
             .dependsOn(mockServerContainer)
             .withCommand(command.toString());
 

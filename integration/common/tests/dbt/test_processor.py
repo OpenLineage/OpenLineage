@@ -3,13 +3,15 @@
 
 
 import os
+import sys
+import types
 from unittest.mock import MagicMock
 
 import pytest
 from openlineage.client.facet_v2 import external_query_run, processing_engine_run
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
-from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext
+from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext, ModelNode
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 from openlineage.common.provider.dbt.utils import get_dbt_profiles_dir
 
@@ -161,6 +163,13 @@ def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
     )
 
 
+def test_presto_namespace(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.PRESTO
+    dbt_artifact_processor.extract_dataset_namespace({"host": "presto.example.com", "port": 8443})
+
+    assert dbt_artifact_processor.dataset_namespace == "presto://presto.example.com:8443"
+
+
 @pytest.mark.parametrize(
     "profile, expected",
     [
@@ -188,6 +197,103 @@ def test_spark_namespace_separates_the_port(dbt_artifact_processor, profile, exp
     dbt_artifact_processor.extract_dataset_namespace(profile)
 
     assert dbt_artifact_processor.dataset_namespace == expected
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [
+        {
+            "region_name": "us-east-1",
+            "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena",
+        },
+    ],
+)
+def test_athena_dataset_symlink_uses_assume_role_account(dbt_artifact_processor, profile):
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    model = ModelNode(
+        type="model",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "alias": "orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(model, None)
+
+    assert facets["symlinks"].identifiers[0].namespace == "arn:aws:glue:us-east-1:123456789012"
+    assert facets["symlinks"].identifiers[0].name == "table/analytics/orders"
+    assert facets["symlinks"].identifiers[0].type == "TABLE"
+
+
+def test_athena_dataset_symlink_uses_source_name(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"region_name": "us-east-1", "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena"}
+    )
+
+    source = ModelNode(
+        type="source",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "name": "raw_orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(source, None)
+
+    assert facets["symlinks"].identifiers[0].name == "table/analytics/raw_orders"
+
+
+def test_athena_dataset_symlink_uses_effective_profile_credentials(monkeypatch, dbt_artifact_processor):
+    class FakeStsClient:
+        def get_caller_identity(self):
+            return {"Account": "123456789012"}
+
+    class FakeSession:
+        instances = []
+
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            self.instances.append(self)
+
+        def client(self, service_name):
+            assert service_name == "sts"
+            return FakeStsClient()
+
+    fake_boto3 = types.ModuleType("boto3")
+    fake_boto3.session = types.SimpleNamespace(Session=FakeSession)
+    monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
+
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"region_name": "us-east-1", "aws_profile_name": "production"}
+    )
+
+    assert dbt_artifact_processor.dataset_symlink_namespace == "arn:aws:glue:us-east-1:123456789012"
+    assert FakeSession.instances[0].kwargs["profile_name"] == "production"
+
+
+def test_athena_dataset_symlink_is_omitted_without_profile_account(monkeypatch, dbt_artifact_processor):
+    monkeypatch.setitem(sys.modules, "boto3", None)
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace({"region_name": "us-east-1"})
+
+    model = ModelNode(
+        type="model",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "alias": "orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(model, None)
+
+    assert "symlinks" not in facets
 
 
 class TestGetDbtProfilesDir:
@@ -382,11 +488,11 @@ class TestParseSingularTests:
             producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
             job_namespace="test-namespace",
         )
-        processor.manifest_version = 11  # Use version < 12 for test_metadata path
+        processor.manifest_version = 11  # pre-v12; the buggy branch used to skip test_metadata here
         return processor
 
     def test_singular_test_no_test_metadata(self, processor):
-        """Singular tests (manifest v<12) have no test_metadata; name comes from node name."""
+        """Singular tests (manifest v<12 and v12+) have no test_metadata; name comes from node name."""
         nodes = {
             "test.project.assert_no_future_dates": {
                 "name": "assert_no_future_dates",
@@ -442,7 +548,7 @@ class TestParseFailures:
             producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
             job_namespace="test-namespace",
         )
-        processor.manifest_version = 11  # Use version < 12 for test_metadata path
+        processor.manifest_version = 11  # pre-v12; version no longer gates parse_assertions
         return processor
 
     def test_warning_test_with_nine_failures(self, processor):
@@ -533,6 +639,70 @@ class TestParseFailures:
 
         assert assertion.actual is None
         assert assertion.expected is None
+
+
+class TestParseAssertionNames:
+    """Regression for the manifest_version >= 12 bug in parse_assertions.
+
+    The bug: a version guard used test_node["name"] (verbose full node name, e.g.
+    "unique_customers_customer_id") instead of test_metadata["name"] (short test type, e.g.
+    "unique") for all v12 nodes, and lost column association because test_node has no
+    top-level "kwargs" key.
+
+    The fix: test_metadata presence (not manifest version) is the canonical dbt discriminator.
+    GenericTestNode always has test_metadata; SingularTestNode never does — in every version.
+    """
+
+    @pytest.fixture
+    def processor(self):
+        return DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="test-namespace",
+        )
+
+    def _make_context(self, node_key, node):
+        return DbtRunContext(
+            manifest={"parent_map": {node_key: ["model.jaffle_shop.customers"]}},
+            run_results={"results": [{"unique_id": node_key, "status": "fail", "failures": 1}]},
+        )
+
+    def test_generic_test_v12_uses_short_name_from_test_metadata(self, processor):
+        """Generic test on manifest v12: assertion name comes from test_metadata, not node name."""
+        processor.manifest_version = 12
+        node_key = "test.jaffle_shop.unique_customers_customer_id.d48e126d80"
+        node = {
+            "name": "unique_customers_customer_id",  # verbose — must NOT be used
+            "test_metadata": {
+                "name": "unique",  # short type — must be used
+                "kwargs": {"column_name": "id"},
+                "namespace": None,
+            },
+        }
+        assertion = processor.parse_assertions(self._make_context(node_key, node), {node_key: node})[
+            "model.jaffle_shop.customers"
+        ][0]
+
+        assert assertion.assertion == "unique"
+        assert assertion.column == "id"
+
+    def test_generic_test_v12_without_model_kwarg_resolves_column(self, processor):
+        """v12 manifests omit the model kwarg from kwargs; column_name must still resolve."""
+        processor.manifest_version = 12
+        node_key = "test.jaffle_shop.not_null_customers_customer_id.923d2d910a"
+        node = {
+            "name": "not_null_customers_customer_id",
+            "test_metadata": {
+                "name": "not_null",
+                "kwargs": {"column_name": "customer_id"},  # no "model" kwarg — v12 style
+                "namespace": None,
+            },
+        }
+        assertion = processor.parse_assertions(self._make_context(node_key, node), {node_key: node})[
+            "model.jaffle_shop.customers"
+        ][0]
+
+        assert assertion.assertion == "not_null"
+        assert assertion.column == "customer_id"
 
 
 class TestAggregateTestEventStatus:

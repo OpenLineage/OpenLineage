@@ -34,10 +34,13 @@ class HadoopCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   @SneakyThrows
-  Optional<DatasetIdentifier> getIdentifier(
+  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
       SparkSession session, Map<String, String> catalogConf, String table) {
     String warehouseLocation = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
+    DatasetIdentifier di =
+        FilesystemDatasetUtils.fromLocationAndName(new Path(warehouseLocation).toUri(), table);
     return Optional.of(
-        FilesystemDatasetUtils.fromLocationAndName(new Path(warehouseLocation).toUri(), table));
+        new DatasetIdentifier.Symlink(
+            di.getName(), di.getNamespace(), DatasetIdentifier.SymlinkType.TABLE));
   }
 }

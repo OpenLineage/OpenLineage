@@ -7,8 +7,14 @@
 
 set -e
 
+# The facet schemas $ref the root schema by its absolute openlineage.io URL, which
+# jv would otherwise fetch over the network. Map that prefix onto the in-repo
+# published mirror so the hook is hermetic and validates the refs against the
+# working tree rather than against the last release.
+SPEC_MIRROR="https://openlineage.io/spec/=website/static/spec/"
+
 while [ "$1" ]; do
   echo "Checking $1 schema"
-  jv "$1"
+  jv --map "$SPEC_MIRROR" "$1"
   shift
 done

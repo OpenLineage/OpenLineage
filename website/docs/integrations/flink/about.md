@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: About
+slug: /integrations/flink
 ---
 
 **Apache Flink** is one of the most popular stream processing frameworks. Apache Flink jobs run on clusters,

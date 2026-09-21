@@ -5,6 +5,7 @@
 
 package io.openlineage.client.transports.gcs;
 
+import com.google.api.gax.retrying.RetrySettings;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Function;
 import lombok.NonNull;
@@ -43,23 +45,33 @@ public class GcsTransport extends Transport {
   }
 
   @Override
-  public void emit(OpenLineage.@NonNull RunEvent runEvent) {
+  public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     emitEvent(runEvent);
   }
 
   @Override
-  public void emit(OpenLineage.@NonNull DatasetEvent datasetEvent) {
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
     emitEvent(datasetEvent);
   }
 
   @Override
-  public void emit(OpenLineage.@NonNull JobEvent jobEvent) {
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
     emitEvent(jobEvent);
   }
 
   private static Storage buildStorage(GcsTransportConfig config) throws IOException {
     StorageOptions.Builder builder = StorageOptions.newBuilder();
     builder.setProjectId(config.getProjectId());
+    RetrySettings retrySettings = StorageOptions.getDefaultInstance().getRetrySettings();
+    int maxRetries = config.getMaxRetries() != null ? config.getMaxRetries() : 1;
+    long retryIntervalMillis =
+        config.getRetryIntervalMillis() != null ? config.getRetryIntervalMillis() : 1000L;
+    builder.setRetrySettings(
+        retrySettings.toBuilder()
+            .setMaxAttempts(maxRetries)
+            .setInitialRetryDelayDuration(Duration.ofMillis(retryIntervalMillis))
+            .setMaxRetryDelayDuration(Duration.ofMillis(retryIntervalMillis))
+            .build());
     if (config.getCredentialsFile() != null) {
       File file = new File(config.getCredentialsFile());
       try (InputStream credentialsStream = Files.newInputStream(file.toPath())) {
@@ -71,6 +83,7 @@ public class GcsTransport extends Transport {
     return builder.build().getService();
   }
 
+  @SuppressWarnings("PMD.UnusedPrivateMethod")
   private <T extends OpenLineage.BaseEvent> void emitEvent(T event) {
     Long timestamp = event.getEventTime().toInstant().toEpochMilli();
     String fileName = fileNamePrefix.map(getFileName(timestamp)).orElse(timestamp + ".json");
@@ -101,5 +114,9 @@ public class GcsTransport extends Transport {
   @Override
   public void close() throws Exception {
     storage.close();
+  }
+
+  Storage getStorage() {
+    return storage;
   }
 }

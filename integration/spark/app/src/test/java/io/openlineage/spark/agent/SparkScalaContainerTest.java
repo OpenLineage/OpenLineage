@@ -15,10 +15,10 @@ import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_SCALA_FIXTURES_JAR_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.SCALA_BINARY_VERSION;
 import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
-import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
 import static io.openlineage.spark.agent.SparkContainerUtils.addSparkConfig;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
+import static io.openlineage.spark.agent.SparkContainerUtils.oneShotStartupCheckStrategy;
 import static io.openlineage.spark.agent.SparkTestUtils.mapToSchemaRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -133,8 +132,7 @@ class SparkScalaContainerTest {
             .withNetwork(network)
             .withNetworkAliases("spark")
             .withLogConsumer(SparkContainerUtils::consumeOutput)
-            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
-            .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
+            .withStartupCheckStrategy(oneShotStartupCheckStrategy(Duration.ofMinutes(2)))
             .dependsOn(openLineageClientMockContainer)
             .withCommand(command);
 
@@ -265,7 +263,7 @@ class SparkScalaContainerTest {
     GenericContainer spark =
         new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
             .dependsOn(kafkaContainer)
-            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
+            .withStartupCheckStrategy(oneShotStartupCheckStrategy(Duration.ofMinutes(2)))
             .withNetwork(network)
             .withLogConsumer(SparkContainerUtils::consumeOutput)
             .withStartupTimeout(Duration.ofMinutes(2));
@@ -402,7 +400,7 @@ class SparkScalaContainerTest {
     GenericContainer spark =
         new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
             .dependsOn(localStack)
-            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
+            .withStartupCheckStrategy(oneShotStartupCheckStrategy(Duration.ofMinutes(2)))
             .withNetwork(localstackNetwork)
             .withLogConsumer(SparkContainerUtils::consumeOutput)
             .withEnv("AWS_ACCESS_KEY_ID", "test")
@@ -498,7 +496,7 @@ class SparkScalaContainerTest {
     GenericContainer spark =
         new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
             .dependsOn(mongo1, mongo2, mongo3)
-            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
+            .withStartupCheckStrategy(oneShotStartupCheckStrategy(Duration.ofMinutes(2)))
             .withNetwork(containersNetwork)
             .withStartupTimeout(Duration.ofMinutes(2));
 

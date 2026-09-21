@@ -34,3 +34,7 @@ Dataset Facets are generally consisted of common facet that is used both in `inp
 ```
 
 In the above Example, Notice that there is a distinction of facets that are common for both input and output dataset, and input or output specific datasets. As for the common datasets, they all reside under the `facets` property. However, input or output specific facets are located either in `inputFacets` or `outputFacets` property.
+
+Use the [Lineage Dataset Facet](lineage.md) on a DatasetEvent to describe the
+exact datasets, jobs, and fields from which that dataset derives when no event
+job is the natural owner of the relationship.

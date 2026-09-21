@@ -10,6 +10,7 @@ import io.openlineage.flink.config.FlinkConfigParser;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import io.openlineage.flink.visitor.facet.ConfigFacetVisitor;
 import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
+import io.openlineage.flink.visitor.facet.KinesisTypeDatasetFacetVisitor;
 import io.openlineage.flink.visitor.facet.SchemaFacetVisitor;
 import io.openlineage.flink.visitor.facet.TableLineageFacetVisitor;
 import io.openlineage.flink.visitor.facet.TypeDatasetFacetVisitor;
@@ -18,6 +19,7 @@ import io.openlineage.flink.visitor.identifier.JdbcTableLineageDatasetIdentifier
 import io.openlineage.flink.visitor.identifier.KafkaTableLineageDatasetIdentifierVisitor;
 import io.openlineage.flink.visitor.identifier.KafkaTopicListDatasetIdentifierVisitor;
 import io.openlineage.flink.visitor.identifier.KafkaTopicPatternDatasetIdentifierVisitor;
+import io.openlineage.flink.visitor.identifier.KinesisTableLineageDatasetIdentifierVisitor;
 import java.util.Arrays;
 import java.util.Collection;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +46,7 @@ public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChan
       public Collection<DatasetFacetVisitor> loadDatasetFacetVisitors(OpenLineageContext context) {
         return Arrays.asList(
             new TypeDatasetFacetVisitor(context),
+            new KinesisTypeDatasetFacetVisitor(context),
             new TableLineageFacetVisitor(context),
             new ConfigFacetVisitor(context),
             new SchemaFacetVisitor(context));
@@ -56,7 +59,8 @@ public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChan
             new KafkaTopicPatternDatasetIdentifierVisitor(context),
             new KafkaTopicListDatasetIdentifierVisitor(),
             new JdbcTableLineageDatasetIdentifierVisitor(),
-            new KafkaTableLineageDatasetIdentifierVisitor());
+            new KafkaTableLineageDatasetIdentifierVisitor(),
+            new KinesisTableLineageDatasetIdentifierVisitor());
       }
     };
   }

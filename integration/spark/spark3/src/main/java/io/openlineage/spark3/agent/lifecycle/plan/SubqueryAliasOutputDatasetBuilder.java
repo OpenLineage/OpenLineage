@@ -28,7 +28,9 @@ public class SubqueryAliasOutputDatasetBuilder
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    return x instanceof SubqueryAlias;
+    // Top-level aliases represent reads. Write builders still delegate aliases around their target
+    // relations to this builder.
+    return x instanceof SubqueryAlias && !isQueryPlanRoot(x);
   }
 
   @Override

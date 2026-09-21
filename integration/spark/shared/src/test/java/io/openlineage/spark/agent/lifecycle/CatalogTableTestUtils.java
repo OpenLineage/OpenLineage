@@ -27,8 +27,6 @@ import scala.collection.immutable.HashMap;
 
 public class CatalogTableTestUtils {
 
-  private static final int PARAMETERS_COUNT = 19;
-
   @SneakyThrows
   public static CatalogTable getCatalogTable(TableIdentifier tableIdentifier) {
     Method applyMethod =
@@ -39,14 +37,7 @@ public class CatalogTableTestUtils {
     List<Object> params = new ArrayList<>();
     params.add(tableIdentifier);
     params.add(CatalogTableType.MANAGED());
-    params.add(
-        CatalogStorageFormat.apply(
-            Option.apply(new URI("/some/location")),
-            Option.empty(),
-            Option.empty(),
-            Option.empty(),
-            false,
-            null));
+    params.add(getCatalogStorageFormat());
     params.add(
         new StructType(
             new StructField[] {
@@ -63,13 +54,38 @@ public class CatalogTableTestUtils {
     params.add(Option.empty());
     params.add(Option.empty());
     params.add(Option.empty());
+    if (Option.class.equals(applyMethod.getParameterTypes()[params.size()])) {
+      params.add(Option.empty());
+    }
     params.add(ScalaConversionUtils.asScalaSeqEmpty());
     params.add(false);
     params.add(false);
     params.add(new HashMap<>());
-    if (applyMethod.getParameterCount() > PARAMETERS_COUNT) {
+    while (applyMethod.getParameterCount() > params.size()) {
       params.add(Option.empty());
     }
     return (CatalogTable) applyMethod.invoke(null, params.toArray());
+  }
+
+  private static CatalogStorageFormat getCatalogStorageFormat() throws Exception {
+    Method applyMethod =
+        Arrays.stream(CatalogStorageFormat.class.getDeclaredMethods())
+            .filter(m -> "apply".equals(m.getName()))
+            .filter(m -> CatalogStorageFormat.class.equals(m.getReturnType()))
+            .findFirst()
+            .get();
+    List<Object> params =
+        new ArrayList<>(
+            Arrays.asList(
+                Option.apply(new URI("/some/location")),
+                Option.empty(),
+                Option.empty(),
+                Option.empty(),
+                false,
+                new HashMap<>()));
+    if (applyMethod.getParameterCount() > params.size()) {
+      params.add(Option.empty());
+    }
+    return (CatalogStorageFormat) applyMethod.invoke(null, params.toArray());
   }
 }

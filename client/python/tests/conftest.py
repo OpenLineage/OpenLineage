@@ -8,7 +8,7 @@ from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import httpx
+import httpx2
 import pytest
 from openlineage.client import event_v2, set_producer
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
@@ -122,11 +122,11 @@ def test_server(docker_compose_file: str, test_server_url: str) -> Generator[str
 
     for attempt in range(max_retries):
         try:
-            response = httpx.get(f"{test_server_url}/health", timeout=5.0)
+            response = httpx2.get(f"{test_server_url}/health", timeout=5.0)
             if response.status_code == 200:
                 print(f"Test server is ready after {attempt + 1} attempts")
                 break
-        except (httpx.RequestError, httpx.TimeoutException):
+        except (httpx2.RequestError, httpx2.TimeoutException):
             if attempt == max_retries - 1:
                 # Cleanup on failure
                 print("Test server failed to start, cleaning up...")
@@ -166,7 +166,7 @@ def reset_test_server(request):
 
     # Reset before test
     try:
-        response = httpx.post(f"{test_server_url}/reset", timeout=5.0)
+        response = httpx2.post(f"{test_server_url}/reset", timeout=5.0)
         response.raise_for_status()
         print(f"✓ Reset test server before {request.node.name}")
 
@@ -176,7 +176,7 @@ def reset_test_server(request):
         time.sleep(0.1)
 
         # Verify reset worked
-        stats_response = httpx.get(f"{test_server_url}/stats", timeout=5.0)
+        stats_response = httpx2.get(f"{test_server_url}/stats", timeout=5.0)
         stats_response.raise_for_status()
         stats = stats_response.json()
         if stats["total_events"] > 0:
@@ -188,7 +188,7 @@ def reset_test_server(request):
 
     # Reset after test (for parameterized tests, this runs after each parameter)
     try:
-        response = httpx.post(f"{test_server_url}/reset", timeout=5.0)
+        response = httpx2.post(f"{test_server_url}/reset", timeout=5.0)
         response.raise_for_status()
         print(f"✓ Reset test server after {request.node.name}")
     except Exception as e:
@@ -253,16 +253,16 @@ def async_transport_custom(test_server: str):
 
 
 @pytest.fixture
-def test_server_client(test_server: str) -> httpx.Client:
+def test_server_client(test_server: str) -> httpx2.Client:
     """HTTP client for interacting with test server endpoints."""
-    with httpx.Client(base_url=test_server, timeout=10.0) as client:
+    with httpx2.Client(base_url=test_server, timeout=10.0) as client:
         yield client
 
 
 class TestServerHelper:
     """Helper class for interacting with the test server."""
 
-    def __init__(self, client: httpx.Client):
+    def __init__(self, client: httpx2.Client):
         self.client = client
 
     def get_events(self, **filters) -> list:
@@ -332,7 +332,7 @@ class TestServerHelper:
 
 
 @pytest.fixture
-def server_helper(test_server_client: httpx.Client) -> TestServerHelper:
+def server_helper(test_server_client: httpx2.Client) -> TestServerHelper:
     """Helper for interacting with test server."""
     return TestServerHelper(test_server_client)
 
@@ -368,7 +368,7 @@ def mock_async_http_client_class(mock_http_session):
     """Fixture providing a mock AsyncClient class that returns the mock client."""
     mock_client, mock_response = mock_http_session
 
-    with patch("httpx.AsyncClient") as mock_client_class:
+    with patch("httpx2.AsyncClient") as mock_client_class:
         # Configure the async context manager
         mock_client_class.return_value = mock_client
         yield mock_client_class, mock_client, mock_response

@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
 
 /**
  * Handles S3 Tables catalogs configured as native {@code S3TablesCatalog}, REST catalogs pointing
@@ -38,16 +39,16 @@ class S3TablesCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
-  Optional<DatasetIdentifier> getPrimaryIdentifier(
+  DatasetIdentifier getPrimaryIdentifier(
       SparkSession session,
       Map<String, String> catalogConf,
       Identifier identifier,
-      String catalogName) {
+      TableCatalog tableCatalog) {
     // S3 Tables data lives in AWS-managed physical buckets such as s3://...--table-s3.
     // That path is an implementation detail; lineage should use the user-facing S3 Tables
     // ARN plus the logical Spark catalog/namespace/table name.
     String[] namespace = identifier.namespace();
-    StringBuilder nameBuilder = new StringBuilder(catalogName);
+    StringBuilder nameBuilder = new StringBuilder(tableCatalog.name());
     for (String ns : namespace) {
       nameBuilder.append('.').append(ns);
     }
@@ -57,18 +58,22 @@ class S3TablesCatalogTypeHandler extends BaseCatalogTypeHandler {
     String ns =
         S3TablesUtils.buildS3TablesArnFromCatalogConf(
             ctx.getConf(), ctx.hadoopConfiguration(), catalogConf);
-    return Optional.of(new DatasetIdentifier(nameBuilder.toString(), ns));
+    DatasetIdentifier di = new DatasetIdentifier(nameBuilder.toString(), ns);
+    getTableLocation(identifier, tableCatalog)
+        .ifPresent(
+            loc -> {
+              String authority = loc.toUri().getAuthority();
+              if (authority != null) {
+                di.withSymlink("/", "s3://" + authority, DatasetIdentifier.SymlinkType.LOCATION);
+              }
+            });
+
+    return di;
   }
 
   @Override
-  Optional<DatasetIdentifier> getIdentifier(
+  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
       SparkSession session, Map<String, String> catalogConf, String table) {
-    // Kept for back-compat with the existing symlink dispatch in IcebergHandler;
-    // not normally reached because getPrimaryIdentifier short-circuits the path.
-    SparkContext ctx = session.sparkContext();
-    String namespace =
-        S3TablesUtils.buildS3TablesArnFromCatalogConf(
-            ctx.getConf(), ctx.hadoopConfiguration(), catalogConf);
-    return Optional.of(new DatasetIdentifier(table, namespace));
+    return Optional.empty();
   }
 }

@@ -9,10 +9,8 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptiona
 
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.delta.files.TahoeLogFileIndex;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
@@ -30,20 +28,48 @@ public final class DatasetVersionDatasetFacetUtils {
    */
   public static Optional<String> extractVersionFromDataSourceV2Relation(
       OpenLineageContext context, DataSourceV2Relation table) {
-    if (table.identifier().isEmpty()) {
-      log.warn("Couldn't find identifier for dataset in plan {}", table);
+    if (table.identifier() != null
+        && table.identifier().isDefined()
+        && table.catalog() != null
+        && table.catalog().isDefined()
+        && table.catalog().get() instanceof TableCatalog) {
+      TableCatalog tableCatalog = (TableCatalog) table.catalog().get();
+      Optional<String> version =
+          CatalogUtils.getDatasetVersion(
+              context, tableCatalog, table.identifier().get(), table.table().properties());
+      if (version.isPresent()) {
+        return version;
+      }
+
+      // A supported catalog that reports no version has genuinely none to report - the table has no
+      // snapshot yet, which is the normal state on a START event. The owning catalog recovered from
+      // the table name is that same catalog, so falling back would only repeat the table load.
+      if (CatalogUtils.getCatalogHandler(context, tableCatalog).isPresent()) {
+        return Optional.empty();
+      }
+    }
+
+    // No CatalogHandler supports the relation's catalog - Iceberg's rewrite actions write through
+    // SparkCachedTableCatalog - so the version above came back empty. Fall back to the catalog that
+    // owns the table, the same one the dataset identifier is resolved through.
+    return owningCatalogVersion(context, table);
+  }
+
+  private static Optional<String> owningCatalogVersion(
+      OpenLineageContext context, DataSourceV2Relation table) {
+    try {
+      return CatalogUtils.getOwningCatalogFromRelation(context, table)
+          .flatMap(
+              owner ->
+                  CatalogUtils.getDatasetVersion(
+                      context,
+                      owner.getCatalog(),
+                      owner.getIdentifier(),
+                      table.table().properties()));
+    } catch (Exception | LinkageError e) {
+      log.warn("Couldn't extract dataset version of relation {}", table, e);
       return Optional.empty();
     }
-    Identifier identifier = table.identifier().get();
-
-    if (table.catalog().isEmpty() || !(table.catalog().get() instanceof TableCatalog)) {
-      log.warn("Couldn't find catalog for dataset in plan {}", table);
-      return Optional.empty();
-    }
-    TableCatalog tableCatalog = (TableCatalog) table.catalog().get();
-
-    Map<String, String> tableProperties = table.table().properties();
-    return CatalogUtils.getDatasetVersion(context, tableCatalog, identifier, tableProperties);
   }
 
   /**

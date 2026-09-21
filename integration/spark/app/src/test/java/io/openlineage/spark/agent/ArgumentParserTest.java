@@ -107,6 +107,146 @@ class ArgumentParserTest {
   }
 
   @Test
+  void testLoadingSparkConfigFromContext() {
+    String context =
+        "{\"parent\":{"
+            + "\"run\":{\"runId\":\""
+            + RUN_ID
+            + "\"},"
+            + "\"job\":{\"namespace\":\""
+            + JOB_NAMESPACE
+            + "\",\"name\":\""
+            + JOB_NAME
+            + "\"},"
+            + "\"root\":{"
+            + "\"run\":{\"runId\":\""
+            + ROOT_PARENT_RUN_ID
+            + "\"},"
+            + "\"job\":{\"namespace\":\""
+            + ROOT_PARENT_JOB_NAMESPACE
+            + "\",\"name\":\""
+            + ROOT_PARENT_JOB_NAME
+            + "\"}}}}";
+
+    SparkConf sparkConf = new SparkConf().set(ArgumentParser.SPARK_CONF_CONTEXT, context);
+
+    config = ArgumentParser.parse(sparkConf);
+    assertEquals(JOB_NAMESPACE, config.getParentJobNamespace());
+    assertEquals(JOB_NAME, config.getParentJobName());
+    assertEquals(RUN_ID, config.getParentRunId());
+    assertEquals(ROOT_PARENT_JOB_NAME, config.getRootParentJobName());
+    assertEquals(ROOT_PARENT_JOB_NAMESPACE, config.getRootParentJobNamespace());
+    assertEquals(ROOT_PARENT_RUN_ID, config.getRootParentRunId());
+  }
+
+  @Test
+  void testContextTakesPrecedenceOverLegacyKeys() {
+    String contextJobNamespace = "context-namespace";
+    String contextJobName = "context-job";
+    String context =
+        "{\"parent\":{"
+            + "\"run\":{\"runId\":\""
+            + RUN_ID
+            + "\"},"
+            + "\"job\":{\"namespace\":\""
+            + contextJobNamespace
+            + "\",\"name\":\""
+            + contextJobName
+            + "\"}}}";
+
+    SparkConf sparkConf =
+        new SparkConf()
+            .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAMESPACE, JOB_NAMESPACE)
+            .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, JOB_NAME)
+            .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
+            .set(ArgumentParser.SPARK_CONF_CONTEXT, context);
+
+    config = ArgumentParser.parse(sparkConf);
+    assertEquals(contextJobNamespace, config.getParentJobNamespace());
+    assertEquals(contextJobName, config.getParentJobName());
+  }
+
+  @Test
+  void testMalformedContextFallsBackToLegacyKeys() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAMESPACE, JOB_NAMESPACE)
+            .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, JOB_NAME)
+            .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
+            .set(ArgumentParser.SPARK_CONF_CONTEXT, "not valid json");
+
+    config = ArgumentParser.parse(sparkConf);
+    assertEquals(JOB_NAMESPACE, config.getParentJobNamespace());
+    assertEquals(JOB_NAME, config.getParentJobName());
+    assertEquals(RUN_ID, config.getParentRunId());
+  }
+
+  @Test
+  void testContextWithoutRoot() {
+    String context =
+        "{\"parent\":{"
+            + "\"run\":{\"runId\":\""
+            + RUN_ID
+            + "\"},"
+            + "\"job\":{\"namespace\":\""
+            + JOB_NAMESPACE
+            + "\",\"name\":\""
+            + JOB_NAME
+            + "\"}}}";
+
+    SparkConf sparkConf = new SparkConf().set(ArgumentParser.SPARK_CONF_CONTEXT, context);
+
+    config = ArgumentParser.parse(sparkConf);
+    assertEquals(JOB_NAMESPACE, config.getParentJobNamespace());
+    assertEquals(JOB_NAME, config.getParentJobName());
+    assertEquals(RUN_ID, config.getParentRunId());
+    assertThat(config.getRootParentJobName()).isNull();
+    assertThat(config.getRootParentJobNamespace()).isNull();
+    assertThat(config.getRootParentRunId()).isNull();
+  }
+
+  @Test
+  void testContextWithFacets() {
+    String context =
+        "{\"parent\":{"
+            + "\"run\":{\"runId\":\""
+            + RUN_ID
+            + "\",\"facets\":{\"processing_engine\":{\"version\":\"2.10.0\"}}},"
+            + "\"job\":{\"namespace\":\""
+            + JOB_NAMESPACE
+            + "\",\"name\":\""
+            + JOB_NAME
+            + "\",\"facets\":{\"jobType\":{\"processingType\":\"BATCH\",\"integration\":\"AIRFLOW\"}}}}}";
+
+    SparkConf sparkConf = new SparkConf().set(ArgumentParser.SPARK_CONF_CONTEXT, context);
+
+    config = ArgumentParser.parse(sparkConf);
+    assertThat(config.getParentRunFacets().getAdditionalProperties())
+        .containsKey("processing_engine");
+    assertThat(config.getParentJobFacets().getAdditionalProperties()).containsKey("jobType");
+  }
+
+  @Test
+  void testContextWithUnknownTopLevelKeysTolerated() {
+    String context =
+        "{\"someFutureField\":{\"anything\":\"goes\"},\"parent\":{"
+            + "\"run\":{\"runId\":\""
+            + RUN_ID
+            + "\"},"
+            + "\"job\":{\"namespace\":\""
+            + JOB_NAMESPACE
+            + "\",\"name\":\""
+            + JOB_NAME
+            + "\"}}}";
+
+    SparkConf sparkConf = new SparkConf().set(ArgumentParser.SPARK_CONF_CONTEXT, context);
+
+    config = ArgumentParser.parse(sparkConf);
+    assertEquals(JOB_NAMESPACE, config.getParentJobNamespace());
+    assertEquals(JOB_NAME, config.getParentJobName());
+  }
+
+  @Test
   @SuppressWarnings("ConstantConditions")
   void testConfToHttpConfig() {
     SparkConf sparkConf =

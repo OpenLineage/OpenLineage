@@ -49,4 +49,21 @@ public interface ExecutionContext {
   }
 
   default void setActiveJobId(Integer activeJobId) {}
+
+  /** Called only when Spark provides enough information to classify the SQL execution. */
+  default void setCommandChildExecution(boolean commandChildExecution) {}
+
+  /** Release scheduler objects retained for a completed Spark job. */
+  default void evictJob(int jobId) {}
+
+  /** Release any remaining scheduler objects retained by this context. */
+  default void clearRetainedState() {}
+
+  default int getRetainedJobCount() {
+    return 0;
+  }
+
+  default int getRetainedStageCount() {
+    return 0;
+  }
 }

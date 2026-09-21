@@ -29,6 +29,7 @@ import io.openlineage.spark.agent.util.DatasetReducerUtils;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.RemovePathPatternUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.StreamingContextUtils;
 import io.openlineage.spark.agent.vendor.gcp.facets.builder.GcpJobFacetBuilder;
@@ -253,55 +254,76 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    if (isDisabled()) {
-      log.info(
-          "OpenLineage received Spark event that is configured to be skipped: RDD SparkListenerJobEnd");
-      return;
-    }
-    log.debug("end SparkListenerJobEnd {}", jobEnd);
-    if (outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
-      // Oftentimes SparkListener is triggered for actions which do not contain any
-      // meaningful
-      // lineage data and are useless in the context of lineage graph. We assume this
-      // occurs
-      // for RDD operations which have no output dataset
-      log.info("Output RDDs are empty: skipping sending OpenLineage event");
-      return;
-    }
+    try {
+      if (isDisabled()) {
+        log.info(
+            "OpenLineage received Spark event that is configured to be skipped: RDD SparkListenerJobEnd");
+        return;
+      }
+      log.debug("end SparkListenerJobEnd {}", jobEnd);
+      if (outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
+        // Oftentimes SparkListener is triggered for actions which do not contain any
+        // meaningful
+        // lineage data and are useless in the context of lineage graph. We assume this
+        // occurs
+        // for RDD operations which have no output dataset
+        log.info("Output RDDs are empty: skipping sending OpenLineage event");
+        return;
+      }
 
-    List<InputDataset> inputDatasets = buildInputs(inputs, true);
-    List<OutputDataset> outputDatasets = buildOutputs(outputs, true);
-    RunFacetsBuilder runFacetsBuilder =
-        buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd);
+      List<InputDataset> inputDatasets = buildInputs(inputs, true);
+      List<OutputDataset> outputDatasets = buildOutputs(outputs, true);
+      RunFacetsBuilder runFacetsBuilder =
+          buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd);
 
-    olContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
-    olContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
-    FacetUtils.attachSmartDebugFacet(olContext, runFacetsBuilder);
+      olContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
+      olContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
+      FacetUtils.attachSmartDebugFacet(olContext, runFacetsBuilder);
 
-    EventType eventType = getEventType(jobEnd.jobResult());
-    OpenLineage.RunEvent event =
-        olContext
-            .getOpenLineage()
-            .newRunEventBuilder()
-            .eventTime(toZonedTime(jobEnd.time()))
-            .eventType(eventType)
-            .inputs(inputDatasets)
-            .outputs(outputDatasets)
-            .run(
-                olContext
-                    .getOpenLineage()
-                    .newRunBuilder()
-                    .runId(runId)
-                    .facets(runFacetsBuilder.build())
-                    .build())
-            .job(buildJob(jobEnd.jobId()))
-            .build();
-    if (eventType.equals(EventType.COMPLETE)) {
-      // clean up metrics on complete only
-      JobMetricsHolder.getInstance().cleanUp(jobEnd.jobId());
+      EventType eventType = getEventType(jobEnd.jobResult());
+      OpenLineage.RunEvent event =
+          olContext
+              .getOpenLineage()
+              .newRunEventBuilder()
+              .eventTime(toZonedTime(jobEnd.time()))
+              .eventType(eventType)
+              .inputs(inputDatasets)
+              .outputs(outputDatasets)
+              .run(
+                  olContext
+                      .getOpenLineage()
+                      .newRunBuilder()
+                      .runId(runId)
+                      .facets(runFacetsBuilder.build())
+                      .build())
+              .job(buildJob(jobEnd.jobId()))
+              .build();
+      log.debug("Posting event for end {}: {}", jobEnd, event);
+      eventEmitter.emit(event);
+    } finally {
+      evictJob(jobEnd.jobId());
     }
-    log.debug("Posting event for end {}: {}", jobEnd, event);
-    eventEmitter.emit(event);
+  }
+
+  @Override
+  public void evictJob(int jobId) {
+    JobMetricsHolder.getInstance().cleanUp(jobId);
+    runEventBuilder.evictJob(jobId);
+  }
+
+  @Override
+  public void clearRetainedState() {
+    runEventBuilder.clearRetainedState();
+  }
+
+  @Override
+  public int getRetainedJobCount() {
+    return runEventBuilder.getRetainedJobCount();
+  }
+
+  @Override
+  public int getRetainedStageCount() {
+    return runEventBuilder.getRetainedStageCount();
   }
 
   protected OpenLineage.RunFacetsBuilder buildRunFacets(
@@ -360,6 +382,8 @@ class RddExecutionContext implements ExecutionContext {
         eventEmitter.getApplicationRunId(),
         eventEmitter.getApplicationJobName(),
         eventEmitter.getJobNamespace(),
+        null,
+        null,
         eventEmitter
             .getRootParentRunId()
             .orElse(eventEmitter.getParentRunId().orElse(eventEmitter.getApplicationRunId())),
@@ -368,7 +392,9 @@ class RddExecutionContext implements ExecutionContext {
             .orElse(eventEmitter.getParentJobName().orElse(eventEmitter.getApplicationJobName())),
         eventEmitter
             .getRootParentJobNamespace()
-            .orElse(eventEmitter.getParentJobNamespace().orElse(eventEmitter.getJobNamespace())));
+            .orElse(eventEmitter.getParentJobNamespace().orElse(eventEmitter.getJobNamespace())),
+        eventEmitter.getRootParentRunFacets().orElse(null),
+        eventEmitter.getRootParentJobFacets().orElse(null));
   }
 
   protected OpenLineage.JobFacets buildJobFacets(SparkListenerEvent sparkListenerEvent) {
@@ -425,16 +451,18 @@ class RddExecutionContext implements ExecutionContext {
 
   protected List<OpenLineage.OutputDataset> buildOutputs(
       List<URI> outputs, boolean withOutputStatistics) {
-    return DatasetReducerUtils.outputs(
+    return RemovePathPatternUtils.removeOutputsPathPattern(
         olContext,
-        outputs.stream()
-            .map(
-                d ->
-                    buildOutputDataset(
-                        d,
-                        withOutputStatistics
-                            && outputs.size() == 1)) // output statistics only for single output
-            .collect(Collectors.toList()));
+        DatasetReducerUtils.outputs(
+            olContext,
+            outputs.stream()
+                .map(
+                    d ->
+                        buildOutputDataset(
+                            d,
+                            withOutputStatistics
+                                && outputs.size() == 1)) // output statistics only for single output
+                .collect(Collectors.toList())));
   }
 
   protected OpenLineage.InputDataset buildInputDataset(
@@ -535,11 +563,13 @@ class RddExecutionContext implements ExecutionContext {
 
   protected List<OpenLineage.InputDataset> buildInputs(
       List<DatasetIdentifier> inputs, boolean withInputStatistics) {
-    return DatasetReducerUtils.inputs(
+    return RemovePathPatternUtils.removeInputsPathPattern(
         olContext,
-        inputs.stream()
-            .map(d -> buildInputDataset(d, withInputStatistics && inputs.size() == 1))
-            .collect(Collectors.toList()));
+        DatasetReducerUtils.inputs(
+            olContext,
+            inputs.stream()
+                .map(d -> buildInputDataset(d, withInputStatistics && inputs.size() == 1))
+                .collect(Collectors.toList())));
   }
 
   protected List<URI> findOutputs(RDD<?> rdd, JobConf jobConf) {

@@ -105,6 +105,34 @@ func TestHTTPTransport_Emit_CreatedStatusAccepted(t *testing.T) {
 	}
 }
 
+// TestHTTPTransport_Emit_AcceptedStatusAccepted verifies that a 202 Accepted
+// response is treated as success, as consumers that queue events answer with it.
+func TestHTTPTransport_Emit_AcceptedStatusAccepted(t *testing.T) {
+	t.Parallel()
+
+	srv, _ := testServer(t, http.StatusAccepted)
+	tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL})
+
+	_, err := tr.Emit(context.Background(), map[string]string{"k": "v"})
+	if err != nil {
+		t.Errorf("Emit() with 202 Accepted should not return error, got: %v", err)
+	}
+}
+
+// TestHTTPTransport_Emit_ClientErrorStatus verifies that a 4xx response is still
+// reported as an error.
+func TestHTTPTransport_Emit_ClientErrorStatus(t *testing.T) {
+	t.Parallel()
+
+	srv, _ := testServer(t, http.StatusUnauthorized)
+	tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL})
+
+	_, err := tr.Emit(context.Background(), map[string]string{"k": "v"})
+	if err == nil {
+		t.Error("Emit() with 401 Unauthorized should return an error")
+	}
+}
+
 // TestHTTPTransport_Emit_ServerError verifies that a 5xx response from the server
 // is surfaced as an error from Emit.
 func TestHTTPTransport_Emit_ServerError(t *testing.T) {

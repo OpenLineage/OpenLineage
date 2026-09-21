@@ -132,6 +132,10 @@ public class OpenLineageContext {
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
   private final QueryExecution queryExecution;
 
+  /** Whether this execution is nested under a root command; empty on pre-Spark 3.4 runtimes. */
+  @Default @NonNull @Getter @Setter
+  private Optional<Boolean> commandChildExecution = Optional.empty();
+
   /**
    * @deprecated Use the direct methods like {@link #getLogicalPlan()}, {@link #getAnalyzedPlan()},
    *     {@link #getOptimizedPlan()}, or {@link #getSparkPlan()} to access the underlying plans.
@@ -220,7 +224,9 @@ public class OpenLineageContext {
    * @return An Optional containing the analyzed logical plan, or an empty Optional if not present.
    */
   public Optional<LogicalPlan> getAnalyzedPlanOptional() {
-    return Optional.ofNullable(queryExecution.analyzed());
+    return queryExecution == null
+        ? Optional.empty()
+        : Optional.ofNullable(queryExecution.analyzed());
   }
 
   /**
@@ -229,7 +235,9 @@ public class OpenLineageContext {
    * @return An Optional containing the optimized logical plan, or an empty Optional if not present.
    */
   public Optional<LogicalPlan> getOptimizedPlanOptional() {
-    return Optional.ofNullable(queryExecution.optimizedPlan());
+    return queryExecution == null
+        ? Optional.empty()
+        : Optional.ofNullable(queryExecution.optimizedPlan());
   }
 
   /**

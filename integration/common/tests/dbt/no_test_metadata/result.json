@@ -56,16 +56,18 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_customers_customer_id",
+                                "assertion": "unique",
                                 "success": false,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "unique_customers_customer_id"
                             },
                             {
-                                "assertion": "not_null_customers_customer_id",
+                                "assertion": "not_null",
                                 "success": false,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_customers_customer_id"
                             }
                         ]
                     }
@@ -76,20 +78,22 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_customers_customer_id",
+                                "assertion": "unique",
                                 "success": false,
-                                "column": null,
+                                "column": "customer_id",
                                 "severity": "error",
                                 "actual": "1",
-                                "expected": "0"
+                                "expected": "0",
+                                "name": "unique_customers_customer_id"
                             },
                             {
-                                "assertion": "not_null_customers_customer_id",
+                                "assertion": "not_null",
                                 "success": false,
-                                "column": null,
+                                "column": "customer_id",
                                 "severity": "error",
                                 "actual": "Test failure",
-                                "expected": "0"
+                                "expected": "0",
+                                "name": "not_null_customers_customer_id"
                             }
                         ]
                     }
@@ -155,64 +159,74 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_orders_order_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "unique_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_orders_order_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "not_null_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_orders_customer_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_orders_customer_id"
                             },
                             {
-                                "assertion": "relationships_orders_customer_id__customer_id__ref_customers_",
+                                "assertion": "relationships",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "relationships_orders_customer_id__customer_id__ref_customers_"
                             },
                             {
-                                "assertion": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "status",
+                                "severity": "error",
+                                "name": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"
                             },
                             {
-                                "assertion": "not_null_orders_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "amount",
+                                "severity": "error",
+                                "name": "not_null_orders_amount"
                             },
                             {
-                                "assertion": "not_null_orders_credit_card_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "credit_card_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_credit_card_amount"
                             },
                             {
-                                "assertion": "not_null_orders_coupon_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "coupon_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_coupon_amount"
                             },
                             {
-                                "assertion": "not_null_orders_bank_transfer_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "bank_transfer_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_bank_transfer_amount"
                             },
                             {
-                                "assertion": "not_null_orders_gift_card_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "gift_card_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_gift_card_amount"
                             }
                         ]
                     }
@@ -223,64 +237,74 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_orders_order_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "unique_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_orders_order_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "not_null_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_orders_customer_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_orders_customer_id"
                             },
                             {
-                                "assertion": "relationships_orders_customer_id__customer_id__ref_customers_",
+                                "assertion": "relationships",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "relationships_orders_customer_id__customer_id__ref_customers_"
                             },
                             {
-                                "assertion": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "status",
+                                "severity": "error",
+                                "name": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"
                             },
                             {
-                                "assertion": "not_null_orders_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "amount",
+                                "severity": "error",
+                                "name": "not_null_orders_amount"
                             },
                             {
-                                "assertion": "not_null_orders_credit_card_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "credit_card_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_credit_card_amount"
                             },
                             {
-                                "assertion": "not_null_orders_coupon_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "coupon_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_coupon_amount"
                             },
                             {
-                                "assertion": "not_null_orders_bank_transfer_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "bank_transfer_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_bank_transfer_amount"
                             },
                             {
-                                "assertion": "not_null_orders_gift_card_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "gift_card_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_gift_card_amount"
                             }
                         ]
                     }
@@ -346,16 +370,18 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_customers_customer_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "unique_stg_customers_customer_id"
                             },
                             {
-                                "assertion": "not_null_stg_customers_customer_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_stg_customers_customer_id"
                             }
                         ]
                     }
@@ -366,16 +392,18 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_customers_customer_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "unique_stg_customers_customer_id"
                             },
                             {
-                                "assertion": "not_null_stg_customers_customer_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_stg_customers_customer_id"
                             }
                         ]
                     }
@@ -441,22 +469,25 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_payments_payment_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_id",
+                                "severity": "error",
+                                "name": "unique_stg_payments_payment_id"
                             },
                             {
-                                "assertion": "not_null_stg_payments_payment_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_id",
+                                "severity": "error",
+                                "name": "not_null_stg_payments_payment_id"
                             },
                             {
-                                "assertion": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_method",
+                                "severity": "error",
+                                "name": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"
                             }
                         ]
                     }
@@ -467,22 +498,25 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_payments_payment_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_id",
+                                "severity": "error",
+                                "name": "unique_stg_payments_payment_id"
                             },
                             {
-                                "assertion": "not_null_stg_payments_payment_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_id",
+                                "severity": "error",
+                                "name": "not_null_stg_payments_payment_id"
                             },
                             {
-                                "assertion": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_method",
+                                "severity": "error",
+                                "name": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"
                             }
                         ]
                     }
@@ -548,22 +582,25 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_orders_order_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "unique_stg_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_stg_orders_order_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "not_null_stg_orders_order_id"
                             },
                             {
-                                "assertion": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "status",
+                                "severity": "error",
+                                "name": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"
                             }
                         ]
                     }
@@ -574,22 +611,25 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_orders_order_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "unique_stg_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_stg_orders_order_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "not_null_stg_orders_order_id"
                             },
                             {
-                                "assertion": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "status",
+                                "severity": "error",
+                                "name": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"
                             }
                         ]
                     }
@@ -655,64 +695,74 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_orders_order_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "unique_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_orders_order_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "not_null_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_orders_customer_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_orders_customer_id"
                             },
                             {
-                                "assertion": "relationships_orders_customer_id__customer_id__ref_customers_",
+                                "assertion": "relationships",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "relationships_orders_customer_id__customer_id__ref_customers_"
                             },
                             {
-                                "assertion": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "status",
+                                "severity": "error",
+                                "name": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"
                             },
                             {
-                                "assertion": "not_null_orders_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "amount",
+                                "severity": "error",
+                                "name": "not_null_orders_amount"
                             },
                             {
-                                "assertion": "not_null_orders_credit_card_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "credit_card_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_credit_card_amount"
                             },
                             {
-                                "assertion": "not_null_orders_coupon_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "coupon_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_coupon_amount"
                             },
                             {
-                                "assertion": "not_null_orders_bank_transfer_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "bank_transfer_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_bank_transfer_amount"
                             },
                             {
-                                "assertion": "not_null_orders_gift_card_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "gift_card_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_gift_card_amount"
                             }
                         ]
                     }
@@ -723,64 +773,74 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_orders_order_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "unique_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_orders_order_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "not_null_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_orders_customer_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_orders_customer_id"
                             },
                             {
-                                "assertion": "relationships_orders_customer_id__customer_id__ref_customers_",
+                                "assertion": "relationships",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "relationships_orders_customer_id__customer_id__ref_customers_"
                             },
                             {
-                                "assertion": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "status",
+                                "severity": "error",
+                                "name": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"
                             },
                             {
-                                "assertion": "not_null_orders_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "amount",
+                                "severity": "error",
+                                "name": "not_null_orders_amount"
                             },
                             {
-                                "assertion": "not_null_orders_credit_card_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "credit_card_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_credit_card_amount"
                             },
                             {
-                                "assertion": "not_null_orders_coupon_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "coupon_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_coupon_amount"
                             },
                             {
-                                "assertion": "not_null_orders_bank_transfer_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "bank_transfer_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_bank_transfer_amount"
                             },
                             {
-                                "assertion": "not_null_orders_gift_card_amount",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "gift_card_amount",
+                                "severity": "error",
+                                "name": "not_null_orders_gift_card_amount"
                             }
                         ]
                     }
@@ -846,16 +906,18 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_customers_customer_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "unique_stg_customers_customer_id"
                             },
                             {
-                                "assertion": "not_null_stg_customers_customer_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_stg_customers_customer_id"
                             }
                         ]
                     }
@@ -866,16 +928,18 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_customers_customer_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "unique_stg_customers_customer_id"
                             },
                             {
-                                "assertion": "not_null_stg_customers_customer_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_stg_customers_customer_id"
                             }
                         ]
                     }
@@ -941,22 +1005,25 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_payments_payment_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_id",
+                                "severity": "error",
+                                "name": "unique_stg_payments_payment_id"
                             },
                             {
-                                "assertion": "not_null_stg_payments_payment_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_id",
+                                "severity": "error",
+                                "name": "not_null_stg_payments_payment_id"
                             },
                             {
-                                "assertion": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_method",
+                                "severity": "error",
+                                "name": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"
                             }
                         ]
                     }
@@ -967,22 +1034,25 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_payments_payment_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_id",
+                                "severity": "error",
+                                "name": "unique_stg_payments_payment_id"
                             },
                             {
-                                "assertion": "not_null_stg_payments_payment_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_id",
+                                "severity": "error",
+                                "name": "not_null_stg_payments_payment_id"
                             },
                             {
-                                "assertion": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "payment_method",
+                                "severity": "error",
+                                "name": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"
                             }
                         ]
                     }
@@ -1048,22 +1118,25 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_orders_order_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "unique_stg_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_stg_orders_order_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "not_null_stg_orders_order_id"
                             },
                             {
-                                "assertion": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "status",
+                                "severity": "error",
+                                "name": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"
                             }
                         ]
                     }
@@ -1074,22 +1147,25 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_stg_orders_order_id",
+                                "assertion": "unique",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "unique_stg_orders_order_id"
                             },
                             {
-                                "assertion": "not_null_stg_orders_order_id",
+                                "assertion": "not_null",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "order_id",
+                                "severity": "error",
+                                "name": "not_null_stg_orders_order_id"
                             },
                             {
-                                "assertion": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned",
+                                "assertion": "accepted_values",
                                 "success": true,
-                                "column": null,
-                                "severity": "error"
+                                "column": "status",
+                                "severity": "error",
+                                "name": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"
                             }
                         ]
                     }
@@ -1155,16 +1231,18 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_customers_customer_id",
+                                "assertion": "unique",
                                 "success": false,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "unique_customers_customer_id"
                             },
                             {
-                                "assertion": "not_null_customers_customer_id",
+                                "assertion": "not_null",
                                 "success": false,
-                                "column": null,
-                                "severity": "error"
+                                "column": "customer_id",
+                                "severity": "error",
+                                "name": "not_null_customers_customer_id"
                             }
                         ]
                     }
@@ -1175,20 +1253,22 @@
                         "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
-                                "assertion": "unique_customers_customer_id",
+                                "assertion": "unique",
                                 "success": false,
-                                "column": null,
+                                "column": "customer_id",
                                 "severity": "error",
                                 "actual": "1",
-                                "expected": "0"
+                                "expected": "0",
+                                "name": "unique_customers_customer_id"
                             },
                             {
-                                "assertion": "not_null_customers_customer_id",
+                                "assertion": "not_null",
                                 "success": false,
-                                "column": null,
+                                "column": "customer_id",
                                 "severity": "error",
                                 "actual": "Test failure",
-                                "expected": "0"
+                                "expected": "0",
+                                "name": "not_null_customers_customer_id"
                             }
                         ]
                     }

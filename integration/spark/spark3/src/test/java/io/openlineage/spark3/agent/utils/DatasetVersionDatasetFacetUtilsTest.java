@@ -8,10 +8,14 @@ package io.openlineage.spark3.agent.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactory;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.RelationHandler;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +62,10 @@ class DatasetVersionDatasetFacetUtilsTest {
     when(fsRelation.location()).thenReturn(tahoeLogFileIndex);
     when(tahoeLogFileIndex.getSnapshot()).thenReturn(snapshot);
     when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
+    // The owning-catalog fallback asks the factory for relation handlers, so it has to be a real
+    // factory rather than an unstubbed mock returning null - otherwise the fallback returns empty
+    // via its exception handler instead of via "no handler matched".
+    when(openLineageContext.getDatasetBuilderFactory()).thenReturn(DatasetBuilderFactory.EMPTY);
   }
 
   @Test
@@ -102,6 +110,93 @@ class DatasetVersionDatasetFacetUtilsTest {
           .thenReturn(Optional.of("some-version"));
       assertEquals(
           Optional.of("some-version"),
+          DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
+    }
+  }
+
+  /**
+   * A supported catalog reporting no version has none to report - an Iceberg table with no snapshot
+   * yet, which is the normal state on a START event. The owning catalog recovered from the table
+   * name is that same catalog, so falling back would only repeat the table load.
+   */
+  @Test
+  void testExtractVersionDoesNotFallBackWhenCatalogIsSupported() {
+    when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
+    when(v2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
+    when(v2Relation.table()).thenReturn(table);
+    when(table.properties()).thenReturn(tableProperties);
+
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenReturn(Optional.empty());
+      when(CatalogUtils.getCatalogHandler(openLineageContext, tableCatalog))
+          .thenReturn(Optional.of(mock(CatalogHandler.class)));
+
+      assertEquals(
+          Optional.empty(),
+          DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
+
+      mocked.verify(
+          () -> CatalogUtils.getOwningCatalogFromRelation(openLineageContext, v2Relation), never());
+    }
+  }
+
+  /**
+   * The cached-catalog case: no handler supports the relation's own catalog, so the version comes
+   * from the catalog that owns the table, resolved through a relation handler.
+   */
+  @Test
+  void testExtractVersionFallsBackToOwningCatalogWhenCatalogUnsupported() {
+    when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
+    when(v2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
+    when(v2Relation.table()).thenReturn(table);
+    when(table.properties()).thenReturn(tableProperties);
+
+    TableCatalog owningCatalog = mock(TableCatalog.class);
+    Identifier owningIdentifier = mock(Identifier.class);
+
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenReturn(Optional.empty());
+      when(CatalogUtils.getCatalogHandler(openLineageContext, tableCatalog))
+          .thenReturn(Optional.empty());
+      when(CatalogUtils.getOwningCatalogFromRelation(openLineageContext, v2Relation))
+          .thenReturn(
+              Optional.of(RelationHandler.OwningCatalog.of(owningCatalog, owningIdentifier)));
+      when(CatalogUtils.getDatasetVersion(
+              openLineageContext, owningCatalog, owningIdentifier, tableProperties))
+          .thenReturn(Optional.of("owning-version"));
+
+      assertEquals(
+          Optional.of("owning-version"),
+          DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
+    }
+  }
+
+  /** A linkage error from the relation handler must not escape as a version lookup failure. */
+  @Test
+  void testExtractVersionSwallowsFailureOfOwningCatalogLookup() {
+    when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
+    when(v2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
+    when(v2Relation.table()).thenReturn(table);
+    when(table.properties()).thenReturn(tableProperties);
+
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenReturn(Optional.empty());
+      when(CatalogUtils.getCatalogHandler(openLineageContext, tableCatalog))
+          .thenReturn(Optional.empty());
+      when(CatalogUtils.getOwningCatalogFromRelation(openLineageContext, v2Relation))
+          .thenThrow(new NoSuchMethodError("SparkTable.table()"));
+
+      assertEquals(
+          Optional.empty(),
           DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
               openLineageContext, v2Relation));
     }

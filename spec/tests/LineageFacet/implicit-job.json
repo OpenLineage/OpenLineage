@@ -1,0 +1,24 @@
+{
+  "lineage": {
+    "_producer": "https://example.com/validation",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
+    "entries": [
+      {
+        "type": "JOB",
+        "inputs": [
+          {
+            "namespace": "postgresql://production:5432",
+            "name": "public.transactions",
+            "type": "DATASET",
+            "transformations": [
+              {
+                "type": "INDIRECT",
+                "subtype": "FILTER"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

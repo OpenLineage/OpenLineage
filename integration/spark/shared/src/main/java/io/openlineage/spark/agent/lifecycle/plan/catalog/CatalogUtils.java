@@ -13,14 +13,29 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 public class CatalogUtils {
 
-  private static List<RelationHandler> relationHandlers = getRelationHandlers();
+  /**
+   * {@code hasClasses()} probes the classloader, and a miss costs a thrown {@link
+   * ClassNotFoundException} with its stack trace. The answer cannot change within a JVM, so it is
+   * memoized per handler class - the handler instances themselves are rebuilt per call, since they
+   * capture the context.
+   */
+  private static final Map<Class<?>, Boolean> HAS_CLASSES = new ConcurrentHashMap<>();
+
+  /** Declared after {@code HAS_CLASSES}, which its initializer filters through. */
+  private static final List<RelationHandler> SHARED_RELATION_HANDLERS = getSharedRelationHandlers();
+
+  private static boolean hasClasses(RelationHandler handler) {
+    return HAS_CLASSES.computeIfAbsent(handler.getClass(), k -> handler.hasClasses());
+  }
 
   private static List<CatalogHandler> getHandlers(OpenLineageContext context) {
     return context.getDatasetBuilderFactory().getCatalogHandlers(context).stream()
@@ -28,9 +43,17 @@ public class CatalogUtils {
         .collect(Collectors.toList());
   }
 
-  private static List<RelationHandler> getRelationHandlers() {
+  private static List<RelationHandler> getSharedRelationHandlers() {
     List<RelationHandler> handlers = Arrays.asList(new CosmosHandler());
-    return handlers.stream().filter(RelationHandler::hasClasses).collect(Collectors.toList());
+    return handlers.stream().filter(CatalogUtils::hasClasses).collect(Collectors.toList());
+  }
+
+  private static List<RelationHandler> getRelationHandlers(OpenLineageContext context) {
+    return Stream.concat(
+            SHARED_RELATION_HANDLERS.stream(),
+            context.getDatasetBuilderFactory().getRelationHandlers(context).stream()
+                .filter(CatalogUtils::hasClasses))
+        .collect(Collectors.toList());
   }
 
   public static DatasetIdentifier getDatasetIdentifier(
@@ -69,8 +92,31 @@ public class CatalogUtils {
     return getHandlers(context).stream().filter(handler -> handler.isClass(catalog)).findAny();
   }
 
+  /**
+   * @deprecated Resolves the relation against the version-independent handlers only. Use {@link
+   *     #getDatasetIdentifierFromRelation(OpenLineageContext, DataSourceV2Relation)}, which also
+   *     consults the handlers contributed by the running Spark version.
+   */
+  @Deprecated
   public static DatasetIdentifier getDatasetIdentifierFromRelation(DataSourceV2Relation relation) {
-    return getDatasetIdentifierFromRelation(relation, relationHandlers);
+    return getDatasetIdentifierFromRelation(relation, SHARED_RELATION_HANDLERS);
+  }
+
+  public static DatasetIdentifier getDatasetIdentifierFromRelation(
+      OpenLineageContext context, DataSourceV2Relation relation) {
+    return getDatasetIdentifierFromRelation(relation, getRelationHandlers(context));
+  }
+
+  /**
+   * The catalog that owns the relation's table, according to the first {@link RelationHandler} that
+   * recognises the relation. Empty when no handler matches or none can recover a catalog.
+   */
+  public static Optional<RelationHandler.OwningCatalog> getOwningCatalogFromRelation(
+      OpenLineageContext context, DataSourceV2Relation relation) {
+    return getRelationHandlers(context).stream()
+        .filter(handler -> handler.isClass(relation))
+        .findAny()
+        .flatMap(handler -> handler.getOwningCatalog(relation));
   }
 
   public static DatasetIdentifier getDatasetIdentifierFromRelation(

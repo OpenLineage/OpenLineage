@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.openlineage.client.TypeResolver.DefaultResolvedTypeVisitor;
 import io.openlineage.client.TypeResolver.ObjectResolvedType;
+import io.openlineage.client.TypeResolver.RefResolvedType;
 import io.openlineage.client.TypeResolver.ResolvedField;
 
 public class Generator {
@@ -164,26 +166,69 @@ public class Generator {
 
   private static void enrichFacetContainersWithFacets(
       TypeResolver typeResolver, Map<String, ObjectResolvedType> facetContainers) {
+    Set<String> explicitlyAttachedFacets = new HashSet<>();
     for (ObjectResolvedType objectResolvedType : typeResolver.getTypes()) {
       if (objectResolvedType.getContainer().equals(CONTAINER_CLASS_NAME)) {
         continue;
       }
       List<ResolvedField> properties = objectResolvedType.getProperties();
       for (ResolvedField property : properties) {
-        property.getType().accept(new DefaultResolvedTypeVisitor<Void>() {
-          @Override
-          public Void visit(ObjectResolvedType objectType) {
-            Set<ObjectResolvedType> parents = objectType.getParents();
-            for (ObjectResolvedType parent : parents) {
-              if (facetContainers.containsKey(parent.getName())) {
-                facetContainers.get(parent.getName()).getProperties().add(property);
-              }
+        Optional<ObjectResolvedType> propertyType =
+            typeResolver.resolveObjectType(property.getType());
+        if (propertyType.isPresent()) {
+          for (ObjectResolvedType parent : propertyType.get().getParents()) {
+            if (facetContainers.containsKey(parent.getName())) {
+              facetContainers.get(parent.getName()).getProperties().add(property);
+              explicitlyAttachedFacets.add(typeKey(propertyType.get()));
             }
-            return null;
           }
-        });
+        }
       }
     }
+
+    for (ObjectResolvedType objectResolvedType : typeResolver.getTypes()) {
+      if (objectResolvedType.getContainer().equals(CONTAINER_CLASS_NAME)
+          || explicitlyAttachedFacets.contains(typeKey(objectResolvedType))) {
+        continue;
+      }
+      for (ObjectResolvedType parent : objectResolvedType.getParents()) {
+        ObjectResolvedType facetContainer = facetContainers.get(parent.getName());
+        if (facetContainer == null) {
+          continue;
+        }
+
+        String facetName = inferFacetName(objectResolvedType.getName(), parent.getName());
+        if (facetName == null
+            || facetContainer.getProperties().stream()
+                .anyMatch(property -> property.getName().equals(facetName))) {
+          continue;
+        }
+        facetContainer
+            .getProperties()
+            .add(
+                new ResolvedField(
+                    new SchemaParser.Field(
+                        facetName,
+                        new SchemaParser.RefType("#/$defs/" + objectResolvedType.getName()),
+                        null),
+                    new RefResolvedType(
+                        objectResolvedType.getContainer(), objectResolvedType.getName())));
+      }
+    }
+  }
+
+  private static String typeKey(ObjectResolvedType type) {
+    return type.getContainer() + "." + type.getName();
+  }
+
+  private static String inferFacetName(String facetTypeName, String baseFacetTypeName) {
+    if (!facetTypeName.endsWith(baseFacetTypeName)
+        || facetTypeName.length() == baseFacetTypeName.length()) {
+      return null;
+    }
+    String prefix =
+        facetTypeName.substring(0, facetTypeName.length() - baseFacetTypeName.length());
+    return Character.toLowerCase(prefix.charAt(0)) + prefix.substring(1);
   }
 
   private static Map<String, ObjectResolvedType> indexFacetContainersByType(

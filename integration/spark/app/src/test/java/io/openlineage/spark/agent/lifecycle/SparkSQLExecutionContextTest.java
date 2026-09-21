@@ -181,6 +181,7 @@ class SparkSQLExecutionContextTest {
   void testFailIsSent(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
+    when(jobEnd.jobId()).thenReturn(41);
     when(jobEnd.jobResult()).thenReturn(mock(JobFailed.class));
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);

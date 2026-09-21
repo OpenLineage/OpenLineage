@@ -14,6 +14,72 @@ fn select_simple() {
         }
     )
 }
+
+#[test]
+fn select_where_exists_subquery() {
+    assert_eq!(
+        test_sql("SELECT 1 WHERE EXISTS (SELECT 1 FROM customers);")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_having_exists_subquery() {
+    assert_eq!(
+        test_sql(
+            "SELECT count(*)
+             FROM orders
+             HAVING EXISTS (SELECT 1 FROM customers);"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers", "orders"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_qualify_exists_subquery() {
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT row_number() OVER (ORDER BY id)
+             FROM orders
+             QUALIFY EXISTS (SELECT 1 FROM customers);",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers", "orders"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_aggregate_filter_subquery() {
+    assert_eq!(
+        test_sql(
+            "SELECT count(*) FILTER (
+                 WHERE EXISTS (SELECT 1 FROM customers)
+             ) FROM orders;"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers", "orders"]),
+            out_tables: vec![]
+        }
+    )
+}
+
 #[test]
 fn select_from_schema_table() {
     assert_eq!(
@@ -40,6 +106,39 @@ fn select_join() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["table0", "table1"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_parenthesized_join() {
+    for sql in [
+        "SELECT * FROM (foo JOIN bar ON foo.id = bar.id)",
+        "SELECT * FROM (foo JOIN bar ON foo.id = bar.id) AS joined",
+    ] {
+        assert_eq!(
+            test_sql(sql).unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["bar", "foo"]),
+                out_tables: vec![]
+            }
+        )
+    }
+}
+
+#[test]
+fn select_join_condition_subquery() {
+    assert_eq!(
+        test_sql(
+            "SELECT a.id
+             FROM a
+             JOIN b ON b.id IN (SELECT c.id FROM c)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b", "c"]),
             out_tables: vec![]
         }
     )
@@ -197,6 +296,19 @@ fn select_bq_array_function() {
             .table_lineage,
         TableLineage {
             in_tables: vec![table("my_bq_dataset.my_table_2")],
+            out_tables: vec![],
+        }
+    )
+}
+
+#[test]
+fn select_bq_array_subquery() {
+    assert_eq!(
+        test_sql_dialect("SELECT ARRAY(SELECT id FROM source_table)", "bigquery")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("source_table")],
             out_tables: vec![],
         }
     )

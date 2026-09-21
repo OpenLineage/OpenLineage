@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import MagicMock
 
-import httpx
+import httpx2
 
 
 def create_mock_response(
@@ -14,8 +14,8 @@ def create_mock_response(
     content: str = "",
     json_data: dict[str, Any] | None = None,
 ) -> MagicMock:
-    """Create a mock httpx.Response object."""
-    mock_response = MagicMock(spec=httpx.Response)
+    """Create a mock httpx2.Response object."""
+    mock_response = MagicMock(spec=httpx2.Response)
     mock_response.status_code = status_code
     mock_response.headers = headers or {}
     mock_response.text = content
@@ -26,7 +26,7 @@ def create_mock_response(
     if 200 <= status_code < 300:
         mock_response.raise_for_status.return_value = None
     else:
-        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        mock_response.raise_for_status.side_effect = httpx2.HTTPStatusError(
             message=f"HTTP {status_code}", request=MagicMock(), response=mock_response
         )
 
@@ -50,17 +50,17 @@ def create_client_error_response(status_code: int = 400) -> MagicMock:
 
 def create_timeout_exception() -> Exception:
     """Create a timeout exception."""
-    return httpx.TimeoutException("Request timed out")
+    return httpx2.TimeoutException("Request timed out")
 
 
 def create_connection_error() -> Exception:
     """Create a connection error exception."""
-    return httpx.ConnectError("Connection failed")
+    return httpx2.ConnectError("Connection failed")
 
 
 def create_mock_async_client():
-    """Create a mock httpx.AsyncClient."""
-    mock_client = MagicMock(spec=httpx.AsyncClient)
+    """Create a mock httpx2.AsyncClient."""
+    mock_client = MagicMock(spec=httpx2.AsyncClient)
 
     # Set up context manager behavior
     mock_client.__aenter__ = MagicMock(return_value=mock_client)
@@ -70,8 +70,8 @@ def create_mock_async_client():
 
 
 def create_mock_sync_client():
-    """Create a mock httpx.Client."""
-    mock_client = MagicMock(spec=httpx.Client)
+    """Create a mock httpx2.Client."""
+    mock_client = MagicMock(spec=httpx2.Client)
 
     # Set up context manager behavior
     mock_client.__enter__ = MagicMock(return_value=mock_client)

@@ -20,20 +20,26 @@ class ParentRunMetadata:
     root_parent_job_name: str | None = attr.field(default=None)
     root_parent_job_namespace: str | None = attr.field(default=None)
     root_parent_run_id: str | None = attr.field(default=None)
+    job_facets: dict | None = attr.field(default=None)
+    run_facets: dict | None = attr.field(default=None)
+    root_job_facets: dict | None = attr.field(default=None)
+    root_run_facets: dict | None = attr.field(default=None)
 
     def to_openlineage(self) -> parent_run.ParentRunFacet:
         root = None
         if self.root_parent_run_id and self.root_parent_job_namespace and self.root_parent_job_name:
             root = parent_run.Root(
-                run=parent_run.RootRun(runId=self.root_parent_run_id),
+                run=parent_run.RootRun(runId=self.root_parent_run_id, facets=self.root_run_facets),
                 job=parent_run.RootJob(
-                    namespace=self.root_parent_job_namespace, name=self.root_parent_job_name
+                    namespace=self.root_parent_job_namespace,
+                    name=self.root_parent_job_name,
+                    facets=self.root_job_facets,
                 ),
             )
 
         return parent_run.ParentRunFacet(
-            run=parent_run.Run(runId=self.run_id),
-            job=parent_run.Job(namespace=self.job_namespace, name=self.job_name),
+            run=parent_run.Run(runId=self.run_id, facets=self.run_facets),
+            job=parent_run.Job(namespace=self.job_namespace, name=self.job_name, facets=self.job_facets),
             root=root,
         )
 
@@ -168,6 +174,36 @@ class DbtModelDatasetFacet(DatasetFacet):
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "dbt-model-dataset-facet.json"
+
+
+@attr.define
+class DbtExposure:
+    """A single dbt exposure that depends on a dbt model.
+
+    Exposures are declared in dbt ``.yml`` files and describe downstream consumers of dbt
+    models (dashboards, notebooks, ML applications, ...). See
+    https://docs.getdbt.com/docs/build/exposures.
+    """
+
+    unique_id: str
+    name: str
+    type: str | None = attr.field(default=None)
+    url: str | None = attr.field(default=None)
+
+
+@attr.define
+class DbtExposuresDatasetFacet(DatasetFacet):
+    """Dataset facet listing the exposures that consume a dbt model's output dataset.
+
+    Attached to a model's output dataset when the model builds successfully, so consumers
+    can build TABLE -> EXPOSURE lineage without needing access to the manifest.
+    """
+
+    exposures: list[DbtExposure] = attr.field(factory=list)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return GITHUB_LOCATION + "dbt-exposures-dataset-facet.json"
 
 
 @attr.define

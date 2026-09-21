@@ -18,10 +18,11 @@ type Facet struct {
 
 // ObjectDef represents an object type in the IR.
 type ObjectDef struct {
-	TypeName    string // Go struct name (from $defs or derived from context)
-	Description string
-	Fields      []Field
-	Required    map[string]bool
+	TypeName          string // Go struct name (from $defs or derived from context)
+	Description       string
+	Fields            []Field
+	Required          map[string]bool
+	DependentRequired map[string][]string
 }
 
 // UnionDef represents a oneOf discriminated union.

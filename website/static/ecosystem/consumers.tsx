@@ -181,6 +181,15 @@ export const Consumers: Array<Partner> = [
     org_url: "https://www.selectstar.com/",
   },
   {
+    image: "Solidatus_logo.svg",
+    org: "Solidatus",
+    full_name: "Solidatus",
+    description:
+      "Solidatus stitches OpenLineage events from tools such as Spark, Airflow, and dbt into a governed, version-controlled, column-level lineage knowledge graph — adding business context, audit history, and impact analysis, with coverage beyond OpenLineage, for data and AI workflows.",
+    docs_url: "https://www.solidatus.com/product/openlineage/",
+    org_url: "https://www.solidatus.com/",
+  },
+  {
     image: "Collibra_logo_RGB.svg",
     org: "Collibra",
     full_name: "Collibra",
@@ -215,5 +224,14 @@ export const Consumers: Array<Partner> = [
     docs_url:
       "https://www.precisely.com/blog/engineering/openlineage-integration-bridging-open-standards-with-the-precisely-data-integrity-suite/",
     org_url: "https://www.precisely.com/",
+  },
+  {
+    image: "foundational_logo.svg",
+    org: "Foundational",
+    full_name: "Foundational",
+    description:
+      "Foundational ingests runtime OpenLineage events from pipelines that already emit them, combining that metadata with the column-level lineage it derives from static analysis of pipeline code.",
+    docs_url: "https://docs.foundational.io/en/articles/10304496-openlineage-support-in-foundational",
+    org_url: "https://www.foundational.io/",
   },
 ];

@@ -194,6 +194,10 @@ shadowJar {
     relocate "org.apache.commons.beanutils", "io.openlineage.spark.shaded.org.apache.commons.beanutils"
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     relocate "com.fasterxml.jackson", "io.openlineage.spark.shaded.com.fasterxml.jackson"
+    // jackson-core 2.18+ ships FastDoubleParser as Java 21/22 multi-release classes that the
+    // shadow plugin's ASM cannot relocate; the Java 8 base classes remain and are fully functional.
+    exclude 'META-INF/versions/21/**'
+    exclude 'META-INF/versions/22/**'
     relocate "org.LatencyUtils", "io.openlineage.spark.shaded.org.latencyutils"
     relocate "org.HdrHistogram", "io.openlineage.spark.shaded.org.hdrhistogram"
 

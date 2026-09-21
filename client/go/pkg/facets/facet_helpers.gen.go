@@ -35,6 +35,7 @@ type DatasetFacets struct {
 	DocumentationDatasetFacet        *DocumentationDatasetFacet        `json:"documentation,omitempty"`
 	HierarchyDatasetFacet            *HierarchyDatasetFacet            `json:"hierarchy,omitempty"`
 	LifecycleStateChangeDatasetFacet *LifecycleStateChangeDatasetFacet `json:"lifecycleStateChange,omitempty"`
+	LineageDatasetFacet              *LineageDatasetFacet              `json:"lineage,omitempty"`
 	OwnershipDatasetFacet            *OwnershipDatasetFacet            `json:"ownership,omitempty"`
 	SchemaDatasetFacet               *SchemaDatasetFacet               `json:"schema,omitempty"`
 	StorageDatasetFacet              *StorageDatasetFacet              `json:"storage,omitempty"`
@@ -48,6 +49,7 @@ type JobFacets struct {
 	GcpComposerJobFacet        *GcpComposerJobFacet        `json:"gcp_composer_job,omitempty"`
 	GcpLineageJobFacet         *GcpLineageJobFacet         `json:"gcp_lineage,omitempty"`
 	JobTypeJobFacet            *JobTypeJobFacet            `json:"jobType,omitempty"`
+	LineageJobFacet            *LineageJobFacet            `json:"lineage,omitempty"`
 	OwnershipJobFacet          *OwnershipJobFacet          `json:"ownership,omitempty"`
 	SQLJobFacet                *SQLJobFacet                `json:"sql,omitempty"`
 	SourceCodeJobFacet         *SourceCodeJobFacet         `json:"sourceCode,omitempty"`
@@ -186,7 +188,7 @@ func NewDataQualityMetricsDatasetFacet(
 ) *DataQualityMetricsDatasetFacet {
 	return &DataQualityMetricsDatasetFacet{
 		Producer:      producer,
-		SchemaURL:     "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json",
+		SchemaURL:     "https://openlineage.io/spec/facets/1-0-1/DataQualityMetricsDatasetFacet.json",
 		ColumnMetrics: columnMetrics,
 	}
 }
@@ -201,6 +203,13 @@ func (f *DataQualityMetricsDatasetFacet) WithDeleted(deleted bool) *DataQualityM
 // WithBytes sets the Bytes field on this DataQualityMetricsDatasetFacet.
 func (f *DataQualityMetricsDatasetFacet) WithBytes(bytes int64) *DataQualityMetricsDatasetFacet {
 	f.Bytes = &bytes
+
+	return f
+}
+
+// WithCaptureDate sets the CaptureDate field on this DataQualityMetricsDatasetFacet.
+func (f *DataQualityMetricsDatasetFacet) WithCaptureDate(captureDate *time.Time) *DataQualityMetricsDatasetFacet {
+	f.CaptureDate = captureDate
 
 	return f
 }
@@ -429,6 +438,47 @@ func (f *LifecycleStateChangeDatasetFacet) WithDeleted(deleted bool) *LifecycleS
 // WithPreviousIdentifier sets the PreviousIdentifier field on this LifecycleStateChangeDatasetFacet.
 func (f *LifecycleStateChangeDatasetFacet) WithPreviousIdentifier(previousIdentifier *LifecycleStateChangeDatasetFacetPreviousIdentifier) *LifecycleStateChangeDatasetFacet {
 	f.PreviousIdentifier = previousIdentifier
+
+	return f
+}
+
+var _ DatasetFacet = (*LineageDatasetFacet)(nil)
+
+// Apply sets this LineageDatasetFacet facet in the DatasetFacets container.
+func (f *LineageDatasetFacet) Apply(facets **DatasetFacets) {
+	if *facets == nil {
+		*facets = &DatasetFacets{}
+	}
+	(*facets).LineageDatasetFacet = f
+}
+
+// NewLineageDatasetFacet creates a new LineageDatasetFacet facet.
+func NewLineageDatasetFacet(
+	producer string,
+) *LineageDatasetFacet {
+	return &LineageDatasetFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageDatasetFacet",
+	}
+}
+
+// WithDeleted sets the Deleted field on this LineageDatasetFacet.
+func (f *LineageDatasetFacet) WithDeleted(deleted bool) *LineageDatasetFacet {
+	f.Deleted = &deleted
+
+	return f
+}
+
+// WithFields sets the Fields field on this LineageDatasetFacet.
+func (f *LineageDatasetFacet) WithFields(fields map[string]LineageFieldEntry) *LineageDatasetFacet {
+	f.Fields = fields
+
+	return f
+}
+
+// WithInputs sets the Inputs field on this LineageDatasetFacet.
+func (f *LineageDatasetFacet) WithInputs(inputs []RawLineageInput) *LineageDatasetFacet {
+	f.Inputs = inputs
 
 	return f
 }
@@ -797,7 +847,7 @@ func NewInputSubsetInputDatasetFacet(
 ) *InputSubsetInputDatasetFacet {
 	return &InputSubsetInputDatasetFacet{
 		Producer:       producer,
-		SchemaURL:      "https://openlineage.io/spec/facets/1-0-0/BaseSubsetDatasetFacet.json",
+		SchemaURL:      "https://openlineage.io/spec/facets/1-0-0/BaseSubsetDatasetFacet.json#/$defs/InputSubsetInputDatasetFacet",
 		InputCondition: inputCondition,
 	}
 }
@@ -969,6 +1019,35 @@ func (f *JobTypeJobFacet) WithEmissionPattern(emissionPattern *JobTypeJobFacetEm
 // WithJobType sets the JobType field on this JobTypeJobFacet.
 func (f *JobTypeJobFacet) WithJobType(jobType string) *JobTypeJobFacet {
 	f.JobType = &jobType
+
+	return f
+}
+
+var _ JobFacet = (*LineageJobFacet)(nil)
+
+// Apply sets this LineageJobFacet facet in the JobFacets container.
+func (f *LineageJobFacet) Apply(facets **JobFacets) {
+	if *facets == nil {
+		*facets = &JobFacets{}
+	}
+	(*facets).LineageJobFacet = f
+}
+
+// NewLineageJobFacet creates a new LineageJobFacet facet.
+func NewLineageJobFacet(
+	producer string,
+	entries []RawLineageEntry,
+) *LineageJobFacet {
+	return &LineageJobFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/LineageFacet.json#/$defs/LineageJobFacet",
+		Entries:   entries,
+	}
+}
+
+// WithDeleted sets the Deleted field on this LineageJobFacet.
+func (f *LineageJobFacet) WithDeleted(deleted bool) *LineageJobFacet {
+	f.Deleted = &deleted
 
 	return f
 }
@@ -1294,7 +1373,7 @@ func NewOutputSubsetOutputDatasetFacet(
 ) *OutputSubsetOutputDatasetFacet {
 	return &OutputSubsetOutputDatasetFacet{
 		Producer:        producer,
-		SchemaURL:       "https://openlineage.io/spec/facets/1-0-0/BaseSubsetDatasetFacet.json",
+		SchemaURL:       "https://openlineage.io/spec/facets/1-0-0/BaseSubsetDatasetFacet.json#/$defs/OutputSubsetOutputDatasetFacet",
 		OutputCondition: outputCondition,
 	}
 }
@@ -1798,5 +1877,43 @@ func NewLiteralCompareExpression(
 	return LiteralCompareExpression{
 		Type:  "literal",
 		Value: value,
+	}
+}
+
+// NewLineageDatasetEntry creates a LineageDatasetEntry with the discriminator pre-set to "DATASET".
+func NewLineageDatasetEntry(
+	name string,
+	namespace string,
+) LineageDatasetEntry {
+	return LineageDatasetEntry{
+		Type:      "DATASET",
+		Name:      name,
+		Namespace: namespace,
+	}
+}
+
+// NewLineageJobEntry creates a LineageJobEntry with the discriminator pre-set to "JOB".
+func NewLineageJobEntry() LineageJobEntry {
+	return LineageJobEntry{
+		Type: "JOB",
+	}
+}
+
+// NewLineageDatasetInput creates a LineageDatasetInput with the discriminator pre-set to "DATASET".
+func NewLineageDatasetInput(
+	name string,
+	namespace string,
+) LineageDatasetInput {
+	return LineageDatasetInput{
+		Type:      "DATASET",
+		Name:      name,
+		Namespace: namespace,
+	}
+}
+
+// NewLineageJobInput creates a LineageJobInput with the discriminator pre-set to "JOB".
+func NewLineageJobInput() LineageJobInput {
+	return LineageJobInput{
+		Type: "JOB",
 	}
 }
