@@ -76,7 +76,7 @@ class PrefectOpenLineageListener:
                 flow_name,
             )
 
-        except AttributeError:
+        except (AttributeError, TypeError) as error:
             logger.info("Deployment not found for flow run: %s", flow_run_id)
             ns = JOB_NAMESPACE
             logger.info(
@@ -121,7 +121,7 @@ class PrefectOpenLineageListener:
                         "OPENLINEAGE_NAMESPACE env variable not found. Namespace will be 'default.'"
                     )
             return ns
-        except AttributeError:
+        except (AttributeError, TypeError) as error:
             logger.info("Deployment not found for flow run: %s", flow_run_id)
             logger.info(
                 "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
