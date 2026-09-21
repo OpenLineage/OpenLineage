@@ -4,7 +4,7 @@
 import logging
 from datetime import datetime
 
-from .facets.run_facets import PrefectDeploymentRunFacet
+from facets.run_facets import PrefectDeploymentRunFacet
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import Dataset
 from openlineage.client.facet import (

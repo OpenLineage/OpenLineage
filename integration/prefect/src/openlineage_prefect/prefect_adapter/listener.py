@@ -5,6 +5,7 @@ import ast
 import asyncio
 import logging
 import os
+import re
 from datetime import datetime
 
 from adapter import PrefectOpenLineageAdapter
@@ -35,7 +36,7 @@ class PrefectOpenLineageListener:
         self, execution_time: datetime, run_name: str, namespace: str
     ) -> str:
         """
-        Build a deterministic UUID for the OpenLineage run based on the execution
+        Builds a deterministic UUID for the OpenLineage run based on the execution
         time, run name, and namespace.
         """
 
@@ -45,6 +46,20 @@ class PrefectOpenLineageListener:
                 data=f"{namespace}.{run_name}".encode(),
             )
         )
+
+    def get_base_name(self, run_name: str) -> str:
+        """
+        Removes auto-generated coolname slugs, mapped numbers, 
+        and short unique suffixes from a Prefect task run name.
+        """
+        # Strip mapped task indices or hex hashes at the very end (e.g., -0, -a1b2)
+        clean_name = re.sub(r'-[a-f0-9]+$', '', run_name)
+        
+        # Strip default two-word coolname slugs (e.g., -mottled-crab)
+        # This looks for a trailing structure of two lowercase words separated by a dash
+        clean_name = re.sub(r'-[a-z]+-[a-z]+$', '', clean_name)
+        
+        return clean_name
 
     async def get_deployment_and_flow_info(self, flow_run_id: str) -> tuple:
         flow_run = await self.client.read_flow_run(flow_run_id)
@@ -140,7 +155,7 @@ class PrefectOpenLineageListener:
         return await self.get_flow_ns(task_run.flow_run_id)
 
     async def get_flow_run_start_time(self, flow_run_id: str) -> datetime:
-        """Retrieve the start time of a flow run."""
+        """Retrieves the start time of a flow run."""
 
         flow_run = await self.client.read_flow_run(flow_run_id)
         return flow_run.start_time
@@ -168,7 +183,7 @@ class PrefectOpenLineageListener:
     async def get_parent_runs(
         self, payload: dict, prefect_task_run_id: str
     ) -> list[dict]:
-        """Retrieve the parent runs for a given task run."""
+        """Retrieves the parent runs for a given task run."""
 
         try:
             parent_runs = []
@@ -180,7 +195,7 @@ class PrefectOpenLineageListener:
                 if task_run_id:
                     parent_namespace: dict = await self.get_job_ns(task_run_id)
                     parent_run = await self.client.read_task_run(task_run_id)
-                    parent_name = parent_run.name[0:-4]
+                    parent_name = self.get_base_name(parent_run.name)
                     parent_run_id = self.build_run_id(
                         parent_run.start_time, parent_name, parent_namespace
                     )
@@ -244,12 +259,12 @@ class PrefectOpenLineageListener:
     async def collect_and_process_task_runs(
         self, prefect_version: str, event: Event, event_state: str
     ) -> None:
-        """Retrieve the task runs for a given event and emit OpenLineage events."""
+        """Retrieves the task runs for a given event and emit OpenLineage events."""
 
         event_time = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
         expected_start_time = event.payload["task_run"]["expected_start_time"]
         prefect_task_run_id = event.resource.id.split(".")[-1]
-        task_name = event.resource.name[0:-4]
+        task_name = self.get_base_name(event.resource.name)
         try:
             task_run = await self.client.read_task_run(prefect_task_run_id)
             namespace = await self.get_job_ns(prefect_task_run_id)
@@ -332,7 +347,7 @@ class PrefectOpenLineageListener:
             )
 
     async def collect_and_process_runs(self) -> None:
-        """Collect and process Prefect events."""
+        """Collects and processes Prefect events."""
 
         try:
             os.environ.get("PREFECT_API_URL")
