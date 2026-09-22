@@ -60,6 +60,10 @@ public final class Clients {
     // ...
     OpenLineageClient.Builder builder = OpenLineageClient.builder();
 
+    Optional.ofNullable(openLineageConfig.getLineageConfig())
+        .map(LineageConfig::getCompatibility)
+        .ifPresent(builder::lineageCompatibility);
+
     if (openLineageConfig.getFacetsConfig() != null) {
       builder.disableFacets(openLineageConfig.getFacetsConfig().getEffectiveDisabledFacets());
     }
