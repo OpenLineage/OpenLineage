@@ -26,7 +26,8 @@ public final class RunTagsFacetBuilder {
         runConfig.getTags().stream()
             .map(tag -> toTagsRunFacetFields(context.getOpenLineage(), tag))
             .collect(Collectors.toList());
-    return builder.put("tags", context.getOpenLineage().newTagsRunFacetBuilder().tags(tags).build());
+    return builder.put(
+        "tags", context.getOpenLineage().newTagsRunFacetBuilder().tags(tags).build());
   }
 
   private static OpenLineage.TagsRunFacetFields toTagsRunFacetFields(

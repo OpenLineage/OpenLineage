@@ -15,10 +15,10 @@ import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.JobTypeJobFacet;
-import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.job.JobConfig;
 import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
@@ -132,8 +132,7 @@ class LineageGraphConverterTest {
 
     assertThat(tagsFacet.getTags())
         .extracting("key", "value", "source")
-        .containsExactly(
-            tuple("label", "true", "CONFIG"), tuple("key", "value", "SOURCE"));
+        .containsExactly(tuple("label", "true", "CONFIG"), tuple("key", "value", "SOURCE"));
   }
 
   @Test

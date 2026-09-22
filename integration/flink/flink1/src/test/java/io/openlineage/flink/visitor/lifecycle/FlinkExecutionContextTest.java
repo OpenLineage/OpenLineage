@@ -13,9 +13,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
-import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.ConsoleConfig;
@@ -112,7 +112,8 @@ public class FlinkExecutionContextTest {
     context.onJobCompleted(mock(JobExecutionResult.class));
     context.onJobFailed(new RuntimeException("failure"));
 
-    org.mockito.ArgumentCaptor<RunEvent> events = org.mockito.ArgumentCaptor.forClass(RunEvent.class);
+    org.mockito.ArgumentCaptor<RunEvent> events =
+        org.mockito.ArgumentCaptor.forClass(RunEvent.class);
     verify(eventEmitter, times(4)).emit(events.capture());
     assertThat(events.getAllValues())
         .allSatisfy(

@@ -119,12 +119,12 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
                     .runId(context.getRunUuid())
                     .facets(
                         RunTagsFacetBuilder.addTags(
-                            context,
-                        openLineage
-                            .newRunFacetsBuilder()
-                            .processing_engine(buildProcessingEngineFacet(openLineage))
-                            .put("checkpoints", checkpointFacet)
-                            .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet()) )
+                                context,
+                                openLineage
+                                    .newRunFacetsBuilder()
+                                    .processing_engine(buildProcessingEngineFacet(openLineage))
+                                    .put("checkpoints", checkpointFacet)
+                                    .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet()))
                             .build())
                     .build())
             .build();
@@ -153,11 +153,11 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
                     .runId(context.getRunUuid())
                     .facets(
                         RunTagsFacetBuilder.addTags(
-                            context,
-                        openLineage
-                            .newRunFacetsBuilder()
-                            .processing_engine(buildProcessingEngineFacet(openLineage))
-                            .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet()) )
+                                context,
+                                openLineage
+                                    .newRunFacetsBuilder()
+                                    .processing_engine(buildProcessingEngineFacet(openLineage))
+                                    .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet()))
                             .build())
                     .build())
             .build();

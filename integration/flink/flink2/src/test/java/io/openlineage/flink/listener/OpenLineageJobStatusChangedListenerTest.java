@@ -15,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -262,7 +262,9 @@ class OpenLineageJobStatusChangedListenerTest {
   }
 
   @ParameterizedTest
-  @EnumSource(value = JobStatus.class, names = {"FINISHED", "FAILED", "CANCELED"})
+  @EnumSource(
+      value = JobStatus.class,
+      names = {"FINISHED", "FAILED", "CANCELED"})
   @SneakyThrows
   void testEventsContainRunTags(JobStatus status) {
     Configuration configuration =
@@ -287,8 +289,10 @@ class OpenLineageJobStatusChangedListenerTest {
         new DefaultJobExecutionStatusEvent(
             new JobID(1, 2), "event-job-name", JobStatus.RUNNING, status, null));
 
-    assertThat(Files.readAllLines(Path.of(eventFileLocation)).stream()
-        .map(OpenLineageClientUtils::runEventFromJson).collect(Collectors.toList()))
+    assertThat(
+            Files.readAllLines(Path.of(eventFileLocation)).stream()
+                .map(OpenLineageClientUtils::runEventFromJson)
+                .collect(Collectors.toList()))
         .hasSize(3)
         .allSatisfy(
             event -> {

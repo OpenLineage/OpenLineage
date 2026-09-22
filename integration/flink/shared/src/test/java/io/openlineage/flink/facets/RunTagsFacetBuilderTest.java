@@ -29,7 +29,8 @@ class RunTagsFacetBuilderTest {
     RunConfig runConfig = new RunConfig();
     runConfig.setTags(Arrays.asList(new TagField("label"), new TagField("key", "value", "SOURCE")));
     config.setRunConfig(runConfig);
-    OpenLineageContext context = OpenLineageContext.builder().openLineage(openLineage).config(config).build();
+    OpenLineageContext context =
+        OpenLineageContext.builder().openLineage(openLineage).config(config).build();
 
     TagsRunFacet tagsFacet =
         (TagsRunFacet)
@@ -40,8 +41,7 @@ class RunTagsFacetBuilderTest {
 
     assertThat(tagsFacet.getTags())
         .extracting("key", "value", "source")
-        .containsExactly(
-            tuple("label", "true", "CONFIG"), tuple("key", "value", "SOURCE"));
+        .containsExactly(tuple("label", "true", "CONFIG"), tuple("key", "value", "SOURCE"));
   }
 
   static Stream<RunConfig> emptyRunConfigs() {
@@ -57,10 +57,7 @@ class RunTagsFacetBuilderTest {
     FlinkOpenLineageConfig config = new FlinkOpenLineageConfig();
     config.setRunConfig(runConfig);
     OpenLineageContext context =
-        OpenLineageContext.builder()
-            .openLineage(openLineage)
-            .config(config)
-            .build();
+        OpenLineageContext.builder().openLineage(openLineage).config(config).build();
 
     assertThat(
             RunTagsFacetBuilder.addTags(context, openLineage.newRunFacetsBuilder())
