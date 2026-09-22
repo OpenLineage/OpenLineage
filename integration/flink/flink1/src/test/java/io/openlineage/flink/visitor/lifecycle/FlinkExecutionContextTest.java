@@ -101,6 +101,7 @@ public class FlinkExecutionContextTest {
     RunConfig runConfig = new RunConfig();
     runConfig.setTags(List.of(new TagField("label"), new TagField("key", "value", "SOURCE")));
     config.setRunConfig(runConfig);
+    config.setTransportConfig(new ConsoleConfig());
     config.setMetricsConfig(Map.of("type", "simple"));
     EventEmitter eventEmitter = mock(EventEmitter.class);
     FlinkExecutionContext context =
@@ -118,8 +119,7 @@ public class FlinkExecutionContextTest {
     assertThat(events.getAllValues())
         .allSatisfy(
             event -> {
-              TagsRunFacet tagsFacet =
-                  (TagsRunFacet) event.getRun().getFacets().getAdditionalProperties().get("tags");
+              TagsRunFacet tagsFacet = event.getRun().getFacets().getTags();
               assertThat(tagsFacet.getTags())
                   .extracting("key", "value", "source")
                   .containsExactly(

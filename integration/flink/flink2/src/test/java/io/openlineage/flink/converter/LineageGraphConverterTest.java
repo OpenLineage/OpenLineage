@@ -122,13 +122,7 @@ class LineageGraphConverterTest {
     when(config.getRunConfig()).thenReturn(runConfig);
 
     TagsRunFacet tagsFacet =
-        (TagsRunFacet)
-            converter
-                .convert(graph, EventType.START)
-                .getRun()
-                .getFacets()
-                .getAdditionalProperties()
-                .get("tags");
+        converter.convert(graph, EventType.START).getRun().getFacets().getTags();
 
     assertThat(tagsFacet.getTags())
         .extracting("key", "value", "source")

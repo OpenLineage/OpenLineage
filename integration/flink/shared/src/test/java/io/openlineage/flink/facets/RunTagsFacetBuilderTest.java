@@ -33,11 +33,7 @@ class RunTagsFacetBuilderTest {
         OpenLineageContext.builder().openLineage(openLineage).config(config).build();
 
     TagsRunFacet tagsFacet =
-        (TagsRunFacet)
-            RunTagsFacetBuilder.addTags(context, openLineage.newRunFacetsBuilder())
-                .build()
-                .getAdditionalProperties()
-                .get("tags");
+        RunTagsFacetBuilder.addTags(context, openLineage.newRunFacetsBuilder()).build().getTags();
 
     assertThat(tagsFacet.getTags())
         .extracting("key", "value", "source")
@@ -62,7 +58,7 @@ class RunTagsFacetBuilderTest {
     assertThat(
             RunTagsFacetBuilder.addTags(context, openLineage.newRunFacetsBuilder())
                 .build()
-                .getAdditionalProperties())
-        .doesNotContainKey("tags");
+                .getTags())
+        .isNull();
   }
 }

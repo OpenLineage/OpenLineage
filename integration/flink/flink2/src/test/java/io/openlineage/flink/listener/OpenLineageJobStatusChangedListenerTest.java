@@ -296,8 +296,7 @@ class OpenLineageJobStatusChangedListenerTest {
         .hasSize(3)
         .allSatisfy(
             event -> {
-              TagsRunFacet tagsFacet =
-                  (TagsRunFacet) event.getRun().getFacets().getAdditionalProperties().get("tags");
+              TagsRunFacet tagsFacet = event.getRun().getFacets().getTags();
               assertThat(tagsFacet.getTags())
                   .extracting("key", "value", "source")
                   .containsExactly(

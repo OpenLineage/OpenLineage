@@ -1204,7 +1204,7 @@ jobs:
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
-          command: cat build/test-results/test/TEST-*.xml
+          command: find . -path '*/build/test-results/test/TEST-*.xml' -type f -exec cat {} +
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - run: ./gradlew --console=plain javadoc
       - store_submodule_tests:
