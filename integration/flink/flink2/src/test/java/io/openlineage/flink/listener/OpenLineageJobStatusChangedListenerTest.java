@@ -6,6 +6,7 @@
 package io.openlineage.flink.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -14,10 +15,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,6 +40,8 @@ import org.apache.flink.streaming.runtime.execution.JobCreatedEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class OpenLineageJobStatusChangedListenerTest {
   Context context = mock(Context.class, RETURNS_DEEP_STUBS);
@@ -254,6 +259,46 @@ class OpenLineageJobStatusChangedListenerTest {
     assertThat(eventsEmitted).hasSize(2);
     assertThat(eventsEmitted.get(0).getEventType()).isEqualTo(EventType.START);
     assertThat(eventsEmitted.get(1).getEventType()).isEqualTo(EventType.ABORT);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = JobStatus.class, names = {"FINISHED", "FAILED", "CANCELED"})
+  @SneakyThrows
+  void testEventsContainRunTags(JobStatus status) {
+    Configuration configuration =
+        Configuration.fromMap(
+            Map.of(
+                "openlineage.transport.type",
+                "file",
+                "openlineage.transport.location",
+                eventFileLocation,
+                "openlineage.flink.disableCheckpointTracking",
+                "true",
+                "openlineage.run.tags",
+                "label;key:value:SOURCE"));
+    when(context.getConfiguration()).thenReturn(configuration);
+    listener = new OpenLineageJobStatusChangedListener(context, factory);
+
+    JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
+    when(createdEvent.jobName()).thenReturn("event-job-name");
+    listener.onEvent(createdEvent);
+    listener.onJobCheckpoint(new CheckpointFacet(1, 2, 3, 4, 5));
+    listener.onEvent(
+        new DefaultJobExecutionStatusEvent(
+            new JobID(1, 2), "event-job-name", JobStatus.RUNNING, status, null));
+
+    assertThat(Files.readAllLines(Path.of(eventFileLocation)).stream()
+        .map(OpenLineageClientUtils::runEventFromJson).collect(Collectors.toList()))
+        .hasSize(3)
+        .allSatisfy(
+            event -> {
+              TagsRunFacet tagsFacet =
+                  (TagsRunFacet) event.getRun().getFacets().getAdditionalProperties().get("tags");
+              assertThat(tagsFacet.getTags())
+                  .extracting("key", "value", "source")
+                  .containsExactly(
+                      tuple("label", "true", "CONFIG"), tuple("key", "value", "SOURCE"));
+            });
   }
 
   @Test

@@ -19,6 +19,7 @@ import io.openlineage.flink.config.FlinkConfigParser;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import io.openlineage.flink.converter.LineageGraphConverter;
 import io.openlineage.flink.facets.FlinkJobDetailsFacet;
+import io.openlineage.flink.facets.RunTagsFacetBuilder;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.util.JobStatusUtil;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
@@ -105,7 +106,8 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
     }
   }
 
-  private void onJobCheckpoint(CheckpointFacet checkpointFacet) {
+  @VisibleForTesting
+  void onJobCheckpoint(CheckpointFacet checkpointFacet) {
     log.info("Emitting checkpoint event: {}", checkpointFacet);
     OpenLineage openLineage = context.getOpenLineage();
     RunEvent runEvent =
@@ -116,11 +118,13 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
                     .newRunBuilder()
                     .runId(context.getRunUuid())
                     .facets(
+                        RunTagsFacetBuilder.addTags(
+                            context,
                         openLineage
                             .newRunFacetsBuilder()
                             .processing_engine(buildProcessingEngineFacet(openLineage))
                             .put("checkpoints", checkpointFacet)
-                            .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet())
+                            .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet()) )
                             .build())
                     .build())
             .build();
@@ -148,10 +152,12 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
                     .newRunBuilder()
                     .runId(context.getRunUuid())
                     .facets(
+                        RunTagsFacetBuilder.addTags(
+                            context,
                         openLineage
                             .newRunFacetsBuilder()
                             .processing_engine(buildProcessingEngineFacet(openLineage))
-                            .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet())
+                            .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet()) )
                             .build())
                     .build())
             .build();

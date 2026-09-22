@@ -6,14 +6,20 @@
 package io.openlineage.flink.visitor.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
+import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.metrics.MicrometerProvider;
+import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.ConsoleConfig;
+import io.openlineage.client.utils.TagField;
 import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.client.EventEmitter;
@@ -87,6 +93,37 @@ public class FlinkExecutionContextTest {
                 .getFacets()
                 .getOwnership())
         .isNull();
+  }
+
+  @Test
+  void testEmittedEventsContainRunTags() {
+    FlinkOpenLineageConfig config = new FlinkOpenLineageConfig();
+    RunConfig runConfig = new RunConfig();
+    runConfig.setTags(List.of(new TagField("label"), new TagField("key", "value", "SOURCE")));
+    config.setRunConfig(runConfig);
+    config.setMetricsConfig(Map.of("type", "simple"));
+    EventEmitter eventEmitter = mock(EventEmitter.class);
+    FlinkExecutionContext context =
+        FlinkExecutionContextFactory.getContext(
+            config, jobId, "streaming", eventEmitter, Collections.emptyList());
+
+    context.onJobSubmitted();
+    context.onJobCheckpoint(new CheckpointFacet(1, 2, 3, 4, 5));
+    context.onJobCompleted(mock(JobExecutionResult.class));
+    context.onJobFailed(new RuntimeException("failure"));
+
+    org.mockito.ArgumentCaptor<RunEvent> events = org.mockito.ArgumentCaptor.forClass(RunEvent.class);
+    verify(eventEmitter, times(4)).emit(events.capture());
+    assertThat(events.getAllValues())
+        .allSatisfy(
+            event -> {
+              TagsRunFacet tagsFacet =
+                  (TagsRunFacet) event.getRun().getFacets().getAdditionalProperties().get("tags");
+              assertThat(tagsFacet.getTags())
+                  .extracting("key", "value", "source")
+                  .containsExactly(
+                      tuple("label", "true", "CONFIG"), tuple("key", "value", "SOURCE"));
+            });
   }
 
   @Test

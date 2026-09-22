@@ -6,6 +6,7 @@
 package io.openlineage.flink.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -14,13 +15,16 @@ import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.JobTypeJobFacet;
+import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
+import io.openlineage.client.utils.TagField;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.client.Versions;
@@ -109,6 +113,27 @@ class LineageGraphConverterTest {
                 .getJobType()
                 .getProcessingType())
         .isEqualTo("BATCH");
+  }
+
+  @Test
+  void testRunTags() {
+    RunConfig runConfig = new RunConfig();
+    runConfig.setTags(List.of(new TagField("label"), new TagField("key", "value", "SOURCE")));
+    when(config.getRunConfig()).thenReturn(runConfig);
+
+    TagsRunFacet tagsFacet =
+        (TagsRunFacet)
+            converter
+                .convert(graph, EventType.START)
+                .getRun()
+                .getFacets()
+                .getAdditionalProperties()
+                .get("tags");
+
+    assertThat(tagsFacet.getTags())
+        .extracting("key", "value", "source")
+        .containsExactly(
+            tuple("label", "true", "CONFIG"), tuple("key", "value", "SOURCE"));
   }
 
   @Test
