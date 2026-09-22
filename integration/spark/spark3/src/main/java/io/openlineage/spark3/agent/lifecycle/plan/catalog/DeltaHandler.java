@@ -12,12 +12,14 @@ import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
@@ -30,6 +32,7 @@ import scala.Option;
 @Slf4j
 public class DeltaHandler implements CatalogHandler {
   private static final String DELTA = "delta";
+  private static final String PATH_PROPERTY = "path";
   private final OpenLineageContext context;
 
   public DeltaHandler(OpenLineageContext context) {
@@ -56,11 +59,116 @@ public class DeltaHandler implements CatalogHandler {
   }
 
   @Override
+  @SneakyThrows
   public DatasetIdentifier getDatasetIdentifier(
       SparkSession session,
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
+    boolean setActiveSession = !SparkSession.getActiveSession().isDefined();
+    if (setActiveSession) {
+      // Delta catalog loading resolves the global active session, which may be absent on listener
+      // threads, most visibly while the final events are processed during application teardown.
+      SparkSession.setActiveSession(session);
+    }
+
+    try {
+      return getDatasetIdentifierFromCatalog(session, tableCatalog, identifier);
+    } catch (Exception e) {
+      if (!isMissingActiveSessionError(e)) {
+        throw e;
+      }
+      // The session is no longer usable (e.g. SparkContext already stopped during application
+      // teardown; Spark 4 rejects stopped sessions even when set as active), so the table cannot
+      // be loaded from the Delta catalog anymore. Derive a best-effort location-based identifier
+      // instead of dropping the dataset.
+      log.warn(
+          "Delta catalog lookup failed because no usable Spark session is available; "
+              + "falling back to a location-based dataset identifier",
+          e);
+      return fallbackDatasetIdentifier(session, identifier, properties, e);
+    } finally {
+      if (setActiveSession) {
+        SparkSession.clearActiveSession();
+      }
+    }
+  }
+
+  private static boolean isMissingActiveSessionError(Throwable e) {
+    for (Throwable t = e; t != null; t = t.getCause()) {
+      String message = t.getMessage();
+      if (message != null && message.contains("No active or default Spark session found")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Builds a dataset identifier without touching the Delta catalog, used when the catalog cannot be
+   * queried anymore (no usable Spark session). Falls back to the table location from the plan
+   * properties, or the default warehouse location; rethrows the original failure when neither is
+   * available.
+   */
+  @SneakyThrows
+  private DatasetIdentifier fallbackDatasetIdentifier(
+      SparkSession session,
+      Identifier identifier,
+      Map<String, String> properties,
+      Exception cause) {
+    // Path identifier (e.g. delta.`/some/path`): the identifier name is the location itself.
+    if (new Path(identifier.name()).isAbsolute()) {
+      return PathUtils.fromPath(new Path(identifier.name()));
+    }
+
+    Optional<String> location = location(properties);
+    if (location.isPresent()) {
+      return PathUtils.fromTableIdentifier(
+          toTableIdentifier(identifier), session.sparkContext(), new Path(location.get()).toUri());
+    }
+
+    Optional<URI> warehouseLocation =
+        PathUtils.getWarehouseLocation(
+            session.sparkContext().getConf(), session.sparkContext().hadoopConfiguration());
+    if (warehouseLocation.isPresent()) {
+      Path defaultLocation =
+          PathUtils.reconstructDefaultLocation(
+              warehouseLocation.get().toString(), identifier.namespace(), identifier.name());
+      return PathUtils.fromTableIdentifier(
+          toTableIdentifier(identifier), session.sparkContext(), defaultLocation.toUri());
+    }
+
+    throw cause;
+  }
+
+  private static Optional<String> location(Map<String, String> properties) {
+    Optional<String> tableLocation = property(properties, TableCatalog.PROP_LOCATION);
+    return tableLocation.isPresent() ? tableLocation : property(properties, PATH_PROPERTY);
+  }
+
+  private static Optional<String> property(Map<String, String> properties, String name) {
+    return properties.entrySet().stream()
+        .filter(entry -> name.equalsIgnoreCase(entry.getKey()))
+        .map(Map.Entry::getValue)
+        .filter(value -> value != null && !value.isEmpty())
+        .findFirst();
+  }
+
+  private static TableIdentifier toTableIdentifier(Identifier identifier) {
+    String[] namespace = identifier.namespace();
+    String database = null;
+    if (namespace.length == 1) {
+      // {"database"}
+      database = namespace[0];
+    } else if (namespace.length > 1) {
+      // {"spark_catalog", "database"}
+      database = namespace[1];
+    }
+    return new TableIdentifier(identifier.name(), Option.apply(database));
+  }
+
+  private DatasetIdentifier getDatasetIdentifierFromCatalog(
+      SparkSession session, TableCatalog tableCatalog, Identifier identifier) {
     DeltaCatalog catalog = (DeltaCatalog) tableCatalog;
 
     Table table = catalog.loadTable(identifier);
@@ -126,8 +234,18 @@ public class DeltaHandler implements CatalogHandler {
   @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
-    DeltaCatalog deltaCatalog = (DeltaCatalog) tableCatalog;
-    return DeltaVersionUtils.getDatasetVersion(deltaCatalog.loadTable(identifier));
+    try {
+      DeltaCatalog deltaCatalog = (DeltaCatalog) tableCatalog;
+      return DeltaVersionUtils.getDatasetVersion(deltaCatalog.loadTable(identifier));
+    } catch (Exception e) {
+      if (isMissingActiveSessionError(e)) {
+        log.warn(
+            "Unable to resolve Delta dataset version without a usable Spark session; "
+                + "omitting the version");
+        return Optional.empty();
+      }
+      throw e;
+    }
   }
 
   @Override

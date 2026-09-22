@@ -63,14 +63,19 @@ public class V2CreateTablePlanUtils {
    */
   public static Map<String, String> properties(LogicalPlan plan) {
     Map<String, String> properties = new LinkedHashMap<>();
-    Optional<Object> specProperties =
-        invoke(plan, "tableSpec").flatMap(spec -> invoke(spec, "properties"));
+    Optional<Object> tableSpec = invoke(plan, "tableSpec");
+    Optional<Object> specProperties = tableSpec.flatMap(spec -> invoke(spec, "properties"));
 
     if (specProperties.isPresent()) {
       properties.putAll(toJavaMap(specProperties.get()));
     } else {
       invoke(plan, "properties").ifPresent(p -> properties.putAll(toJavaMap(p)));
     }
+
+    tableSpec
+        .flatMap(spec -> invoke(spec, "location"))
+        .flatMap(V2CreateTablePlanUtils::stringValue)
+        .ifPresent(location -> properties.put(TableCatalog.PROP_LOCATION, location));
 
     invoke(plan, "writeOptions").ifPresent(options -> properties.putAll(toJavaMap(options)));
     return properties;
@@ -104,6 +109,22 @@ public class V2CreateTablePlanUtils {
 
   private static <T> Optional<T> cast(Optional<Object> value, Class<T> type) {
     return value.filter(type::isInstance).map(type::cast);
+  }
+
+  private static Optional<String> stringValue(Object value) {
+    if (value instanceof String) {
+      return Optional.of((String) value);
+    }
+    if (value instanceof scala.Option) {
+      scala.Option<?> option = (scala.Option<?>) value;
+      return option.isDefined() && option.get() instanceof String
+          ? Optional.of((String) option.get())
+          : Optional.empty();
+    }
+    if (value instanceof Optional) {
+      return ((Optional<?>) value).filter(String.class::isInstance).map(String.class::cast);
+    }
+    return Optional.empty();
   }
 
   @SafeVarargs

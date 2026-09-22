@@ -151,6 +151,32 @@ class CreateReplaceDatasetBuilderTest {
   }
 
   @Test
+  void testApplyIncludesTableSpecLocationInCatalogProperties() {
+    String location = "/some/custom/location";
+    CreateTable logicalPlan = mock(CreateTable.class);
+    when(logicalPlan.name()).thenReturn(namePlan);
+    when(logicalPlan.tableName()).thenReturn(tableName);
+    when(logicalPlan.tableSpec()).thenReturn(tableSpec);
+    when(tableSpec.location()).thenReturn(Option.apply(location));
+    when(logicalPlan.tableSchema()).thenReturn(schema);
+
+    DatasetIdentifier di = new DatasetIdentifier(location, "file");
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      when(PlanUtils3.getDatasetIdentifier(
+              openLineageContext,
+              catalog,
+              tableName,
+              Collections.singletonMap(TableCatalog.PROP_LOCATION, location)))
+          .thenReturn(Optional.of(di));
+
+      List<OpenLineage.OutputDataset> outputDatasets =
+          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L, Option.empty()), logicalPlan);
+
+      assertThat(outputDatasets).singleElement().hasFieldOrPropertyWithValue("name", location);
+    }
+  }
+
+  @Test
   void testApplyDatasetVersionIncluded() {
     ReplaceTable logicalPlan = mock(ReplaceTable.class);
     when(logicalPlan.name()).thenReturn(namePlan);
