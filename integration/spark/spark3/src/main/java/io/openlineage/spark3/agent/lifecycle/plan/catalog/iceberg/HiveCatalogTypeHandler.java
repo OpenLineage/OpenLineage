@@ -8,12 +8,15 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler.TYPE;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.GoogleCloudPlatformUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
@@ -123,5 +126,26 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
     String[] namespace = identifier.namespace();
     String ns = namespace.length > 1 ? Arrays.toString(namespace) : namespace[0];
     return String.format("%s(namespace=%s; name=%s)", cls.getSimpleName(), ns, identifier.name());
+  }
+
+  @Override
+  Map<String, String> catalogProperties(
+      Map<String, String> catalogConf, OpenLineageContext context) {
+    // add Dataproc Metastore (DPMS) properties if catalog uses DPMS uri
+    // assume that:
+    // 1. if the uri config is empty, catalog defaults to hive metastore uris
+    // 2. if DPMS properties are set, hive metastore uris contain the DPMS uri
+    return context
+        .getSparkContext()
+        .flatMap(
+            spark ->
+                SparkConfUtils.getMetastoreUris(spark)
+                    .filter(
+                        uri -> uri.contains(catalogConf.getOrDefault(CatalogProperties.URI, uri)))
+                    .flatMap(
+                        uri ->
+                            GoogleCloudPlatformUtils.getDataprocMetastoreProperties(
+                                spark.getConf())))
+        .orElseGet(Collections::emptyMap);
   }
 }
