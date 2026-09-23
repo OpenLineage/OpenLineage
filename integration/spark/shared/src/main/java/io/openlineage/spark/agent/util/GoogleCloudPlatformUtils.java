@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.spark.SparkConf;
@@ -24,5 +26,18 @@ public class GoogleCloudPlatformUtils {
     } catch (IllegalArgumentException e) {
       return false;
     }
+  }
+
+  public static Optional<Map<String, String>> getDataprocMetastoreProperties(SparkConf conf) {
+    if (conf.contains("spark.dataproc.metastore.service.short.name")
+        && conf.contains("spark.dataproc.metastore.project-id")
+        && conf.contains("spark.dataproc.metastore.location")) {
+      return Optional.of(
+          Map.of(
+              "gcp_project_id", conf.get("spark.dataproc.metastore.project-id"),
+              "gcp_location", conf.get("spark.dataproc.metastore.location"),
+              "gcp_instance_id", conf.get("spark.dataproc.metastore.service.short.name")));
+    }
+    return Optional.empty();
   }
 }
