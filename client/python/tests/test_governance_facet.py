@@ -13,12 +13,10 @@ from openlineage.client.facet import (
 def test_governance_facet_initialization():
     facet = DataMeshGovernanceDatasetFacet(
         domain="core_banking",
-        owner="data-finops-team",
         dataClassification="CONFIDENTIAL",
         piiColumns=["ssn", "account_number"],
     )
     assert facet.domain == "core_banking"
-    assert facet.owner == "data-finops-team"
     assert facet.dataClassification == "CONFIDENTIAL"
     assert "ssn" in facet.piiColumns
     assert facet.is_compliant() is True
@@ -32,7 +30,7 @@ def test_governance_facet_policy_compliance_fail():
         severity="ERROR",
         details="Retention period must be >= 7 years",
     )
-    facet = DataMeshGovernanceDatasetFacet(domain="risk", owner="risk-team", policyChecks=[fail_check])
+    facet = DataMeshGovernanceDatasetFacet(domain="risk", policyChecks=[fail_check])
     assert facet.is_compliant() is False
 
 
@@ -45,7 +43,6 @@ def test_governance_facet_serialization():
     )
     facet = DataMeshGovernanceDatasetFacet(
         domain="payments",
-        owner="treasury",
         dataClassification="RESTRICTED",
         piiColumns=["routing_number"],
         policyChecks=[check],
