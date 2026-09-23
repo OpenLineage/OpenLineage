@@ -9,6 +9,7 @@ import re
 from datetime import datetime
 
 from adapter import PrefectOpenLineageAdapter
+from openlineage.client.run import RunState
 from openlineage.client.uuid import generate_static_uuid
 
 from prefect import client
@@ -218,7 +219,7 @@ class PrefectOpenLineageListener:
             return []
 
     async def collect_and_process_flow_runs(
-        self, prefect_version: str, event: Event, event_state: str
+        self, prefect_version: str, event: Event, event_state: RunState
     ) -> None:
         """Retrieve the flow runs for a given event and emit OpenLineage events."""
 
@@ -263,7 +264,7 @@ class PrefectOpenLineageListener:
                 )
 
     async def collect_and_process_task_runs(
-        self, prefect_version: str, event: Event, event_state: str
+        self, prefect_version: str, event: Event, event_state: RunState
     ) -> None:
         """Retrieves the task runs for a given event and emit OpenLineage events."""
 
@@ -302,19 +303,19 @@ class PrefectOpenLineageListener:
             parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
 
             # Get flow run info for ParentRunFacet
-            flow_run_id = ''
-            flow_name = ''
-            flow_start_time = ''
-            ol_flow_run_id = ''
-            deployment_id = ''
-            deployment_created = ''
-            deployment_updated = ''
-            deployment_name = ''
+            flow_run_id = ""
+            flow_name = ""
+            flow_start_time = ""
+            ol_flow_run_id = ""
+            deployment_id = ""
+            deployment_created = ""
+            deployment_updated = ""
+            deployment_name = ""
             for res in event.related:
                 if res["prefect.resource.role"] == "flow-run":
                     try:
                         flow_run_id = res["prefect.resource.id"].split(".")[-1]
-                    except:
+                    except KeyError:
                         logger.info(
                             "No Prefect flow run id found for task %s. ParentRunFacet will not be included.",
                             task_run_id,
@@ -395,11 +396,11 @@ class PrefectOpenLineageListener:
                 if prefect_state in ["Running", "Completed", "Failed"]:
                     match prefect_state:
                         case "Running":
-                            event_state = "START"
+                            event_state = RunState.START
                         case "Completed":
-                            event_state = "COMPLETE"
+                            event_state = RunState.COMPLETE
                         case "Failed":
-                            event_state = "FAILED"
+                            event_state = RunState.FAIL
 
                     if entity_type == "flow-run":
                         await self.collect_and_process_flow_runs(

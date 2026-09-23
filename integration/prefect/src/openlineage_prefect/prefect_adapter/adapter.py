@@ -27,7 +27,7 @@ class PrefectOpenLineageAdapter:
     def create_and_emit_flow_event(
         self,
         run_id: str,
-        event_type: str,
+        event_type: RunState,
         event_time: datetime,
         flow_name: str,
         flow_namespace: str,
@@ -38,14 +38,6 @@ class PrefectOpenLineageAdapter:
         deployment_name: str | None = None,
     ) -> RunEvent:
         """Create and emit a flow-level OpenLineage event."""
-
-        match event_type:
-            case "START":
-                event_type = RunState.START
-            case "COMPLETE":
-                event_type = RunState.COMPLETE
-            case "FAILED":
-                event_type = RunState.FAIL
 
         if all([deployment_id, deployment_created, deployment_updated, deployment_name]):
             run_facets = {
@@ -89,7 +81,7 @@ class PrefectOpenLineageAdapter:
     def create_and_emit_task_event(
         self,
         run_id: str,
-        event_type: str,
+        event_type: RunState,
         event_time: datetime,
         expectedevent_time: datetime | None = None,
         flow_run_id: str | None = None,
@@ -106,14 +98,6 @@ class PrefectOpenLineageAdapter:
         output_datasets: list | None = None,
     ) -> RunEvent:
         """Create and emit a task-level OpenLineage event."""
-
-        match event_type:
-            case "START":
-                event_type = RunState.START
-            case "COMPLETE":
-                event_type = RunState.COMPLETE
-            case "FAILED":
-                event_type = RunState.FAIL
 
         if deployment_id:
             run_facets = {
