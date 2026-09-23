@@ -12,6 +12,13 @@ from openlineage.client.transport.datadog import DatadogConfig, DatadogTransport
 from openlineage.client.uuid import generate_new_uuid
 
 
+@pytest.fixture(autouse=True)
+def isolated_datadog_environment(monkeypatch):
+    """Keep transport defaults independent of the test tracer's CI credentials."""
+    monkeypatch.delenv("DD_API_KEY", raising=False)
+    monkeypatch.delenv("DD_SITE", raising=False)
+
+
 class TestDatadogConfig:
     """Test DatadogConfig validation and creation."""
 
