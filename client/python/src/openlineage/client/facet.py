@@ -426,11 +426,9 @@ class PolicyEvaluationResult:
 @dataclass
 class DataMeshGovernanceDatasetFacet:
     domain: str
-    owner: str
     dataClassification: Optional[str] = None
     piiColumns: Optional[List[str]] = None
     governancePolicyUri: Optional[str] = None
-    meshTags: Optional[Dict[str, Any]] = None
     complianceFrameworks: Optional[List[str]] = None
     policyChecks: Optional[List[PolicyEvaluationResult]] = None
     _schemaURL: str = field(
