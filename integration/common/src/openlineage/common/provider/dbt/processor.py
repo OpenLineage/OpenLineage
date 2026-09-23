@@ -67,6 +67,8 @@ class Adapter(Enum):
     ATHENA = "athena"
     DUCKDB = "duckdb"
     TRINO = "trino"
+    PRESTO = "presto"
+    WATSONX_PRESTO = "watsonx_presto"
     GLUE = "glue"
     CLICKHOUSE = "clickhouse"
     FABRIC = "fabric"
@@ -1167,6 +1169,9 @@ class DbtArtifactProcessor:
             return f"clickhouse://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.TRINO:
             return f"trino://{profile['host']}:{profile['port']}"
+        elif self.adapter_type in (Adapter.PRESTO, Adapter.WATSONX_PRESTO):
+            # watsonx_presto is IBM's fork of dbt-presto: same prestodb client, same namespace
+            return f"presto://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.DATABRICKS:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:
