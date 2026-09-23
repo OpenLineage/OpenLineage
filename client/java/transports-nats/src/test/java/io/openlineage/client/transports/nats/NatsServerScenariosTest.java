@@ -102,8 +102,7 @@ class NatsServerScenariosTest {
     NatsSecurityFixtures.Certificates certs = NatsSecurityFixtures.certificates(tmp);
 
     try (NatsTestServer server = tlsServer(certs.dnsOnlyCert, certs.dnsOnlyKey)) {
-      String byName =
-          server.getUrl().replace("nats://", "tls://").replace("127.0.0.1", "localhost");
+      String byName = "tls://localhost:" + URI.create(server.getUrl()).getPort();
       NatsConfig config = coreConfig(byName);
       trust(config, certs);
       try (NatsTransport transport = new NatsTransport(config)) {

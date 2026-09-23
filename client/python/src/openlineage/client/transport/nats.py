@@ -43,14 +43,12 @@ def _split_urls(value: str | list[str]) -> list[str]:
     return [str(url).strip() for url in urls if str(url).strip()]
 
 
-def _required_str(field: str) -> Callable[[object], str]:
-    def convert(value: object) -> str:
-        if value is None or not str(value).strip():
-            msg = f"nats `{field}` not passed to NatsConfig"
-            raise RuntimeError(msg)
-        return str(value)
-
-    return convert
+def _required_subject(value: object) -> str:
+    # a named function, not a factory: mypy's attrs plugin only supports named converters
+    if value is None or not str(value).strip():
+        msg = "nats `subject` not passed to NatsConfig"
+        raise RuntimeError(msg)
+    return str(value)
 
 
 def _optional_str(value: object) -> str | None:
@@ -64,7 +62,7 @@ class NatsConfig(Config):
     url: list[str] = attr.field(converter=_split_urls)
 
     # Subject on which events are published
-    subject: str = attr.field(converter=_required_str("subject"))
+    subject: str = attr.field(converter=_required_subject)
 
     # Publish through JetStream and wait for the stream's acknowledgement. When false, events are
     # published over core NATS, which drops them if no subscriber is listening at that moment.
