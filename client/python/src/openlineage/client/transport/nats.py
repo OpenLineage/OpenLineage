@@ -33,11 +33,24 @@ _T = TypeVar("_T", bound="NatsConfig")
 _R = TypeVar("_R")
 
 _CAMEL_BOUNDARY = re.compile(r"(?<!^)(?=[A-Z])")
+# NATS header values are a single line of printable ASCII
+_HEADER_UNSAFE = re.compile(r"[^\x21-\x7e]")
 
 
 def _split_urls(value: str | list[str]) -> list[str]:
     urls = value.split(",") if isinstance(value, str) else value
-    return [url.strip() for url in urls if url.strip()]
+    # str(): a JSON list from an environment variable can hold non-strings
+    return [str(url).strip() for url in urls if str(url).strip()]
+
+
+def _required_str(field: str) -> Callable[[object], str]:
+    def convert(value: object) -> str:
+        if value is None or not str(value).strip():
+            msg = f"nats `{field}` not passed to NatsConfig"
+            raise RuntimeError(msg)
+        return str(value)
+
+    return convert
 
 
 def _optional_str(value: object) -> str | None:
@@ -51,7 +64,7 @@ class NatsConfig(Config):
     url: list[str] = attr.field(converter=_split_urls)
 
     # Subject on which events are published
-    subject: str = attr.field(converter=str)
+    subject: str = attr.field(converter=_required_str("subject"))
 
     # Publish through JetStream and wait for the stream's acknowledgement. When false, events are
     # published over core NATS, which drops them if no subscriber is listening at that moment.
@@ -71,7 +84,7 @@ class NatsConfig(Config):
     user: str | None = attr.field(default=None, converter=_optional_str)
     password: str | None = attr.field(default=None, converter=_optional_str, repr=False)
     token: str | None = attr.field(default=None, converter=_optional_str, repr=False)
-    nkeysSeed: str | None = attr.field(default=None, converter=_optional_str)  # noqa: N815
+    nkeysSeed: str | None = attr.field(default=None, converter=_optional_str, repr=False)  # noqa: N815
     credsFile: str | None = attr.field(default=None, converter=_optional_str)  # noqa: N815
 
     tlsCaFile: str | None = None  # noqa: N815
@@ -91,11 +104,16 @@ class NatsConfig(Config):
             if params.get(required) in (None, "", []):
                 msg = f"nats `{required}` not passed to NatsConfig"
                 raise RuntimeError(msg)
-        config = cls(**get_only_specified_fields(cls, params))
-        config._validate()
-        return config
+        return cls(**get_only_specified_fields(cls, params))
+
+    def __attrs_post_init__(self) -> None:
+        # from_dict is not the only entry point: the docs show NatsConfig(...) directly
+        self._validate()
 
     def _validate(self) -> None:
+        if not self.url:
+            msg = "nats `url` not passed to NatsConfig"
+            raise RuntimeError(msg)
         methods = [
             name
             for name, is_set in (
@@ -119,7 +137,7 @@ class NatsConfig(Config):
                 msg = "NatsConfig `messageTtl` requires `jetstream: true`"
                 raise RuntimeError(msg)
             # the server takes whole seconds; nats-py would silently truncate 1.9 to 1 and 0.5 to 0
-            case int() | float() as ttl if ttl >= 1 and float(ttl).is_integer():
+            case int() | float() as ttl if not isinstance(ttl, bool) and ttl >= 1 and float(ttl).is_integer():
                 pass
             case _:
                 msg = (
@@ -128,20 +146,21 @@ class NatsConfig(Config):
                 raise RuntimeError(msg)
 
 
-def message_id(event: Event, payload: bytes) -> str | None:
+def message_id(event: Event, payload: bytes) -> str:
     """
     Nats-Msg-Id for JetStream de-duplication.
 
     Built from a digest of the serialized event, so a retried publish of the same event repeats the
     id while any two different events, including START/RUNNING/COMPLETE of one run at the same
     eventTime, get different ids. Names are left out: they can contain characters that are not
-    allowed in NATS headers.
+    allowed in NATS headers, and eventType is sanitized because it carries no validator on
+    event_v2.RunEvent - a CR/LF there would otherwise split the header block.
     """
     digest = hashlib.sha256(payload).hexdigest()[:32]
     match event:
         case RunEvent() | event_v2.RunEvent():
             event_type = getattr(event.eventType, "value", event.eventType)
-            return f"{event.run.runId}:{event_type}:{digest}"
+            return f"{event.run.runId}:{_HEADER_UNSAFE.sub('_', str(event_type))}:{digest}"
         case JobEvent() | event_v2.JobEvent():
             return f"job:{digest}"
         case DatasetEvent() | event_v2.DatasetEvent():
@@ -164,19 +183,28 @@ def _import_nats() -> Any:
     return nats
 
 
-async def _log_nats_error(error: Exception) -> None:
-    # nats-py's default callback logs every connection error as ERROR with a traceback; emit
-    # already raises, so keep these at debug
-    log.debug("NATS client error: %s", error)
+# os.register_at_fork has no unregister, so a per-instance handler would accumulate for the life
+# of the process. One module-level handler over a weak set keeps the cost flat and lets dead
+# transports be collected.
+_LIVE_TRANSPORTS: weakref.WeakSet[NatsTransport] = weakref.WeakSet()
+_FORK_HANDLER_LOCK = threading.Lock()
+_fork_handler_registered = False
 
 
-def _after_fork_callback(transport: weakref.ref[NatsTransport]) -> Callable[[], None]:
-    # A weak reference, so registering the callback does not keep the transport alive
-    def reset_in_child() -> None:
-        if (instance := transport()) is not None:
-            instance._after_fork()
+def _reset_transports_after_fork() -> None:
+    for transport in list(_LIVE_TRANSPORTS):
+        transport._after_fork()
 
-    return reset_in_child
+
+def _track_for_fork(transport: NatsTransport) -> None:
+    global _fork_handler_registered
+    _LIVE_TRANSPORTS.add(transport)
+    if not hasattr(os, "register_at_fork"):
+        return
+    with _FORK_HANDLER_LOCK:
+        if not _fork_handler_registered:
+            os.register_at_fork(after_in_child=_reset_transports_after_fork)
+            _fork_handler_registered = True
 
 
 class NatsTransport(Transport):
@@ -187,10 +215,9 @@ class NatsTransport(Transport):
         self.config = config
         self._lock = threading.Lock()
         self._reset()
-        if hasattr(os, "register_at_fork"):
-            # A forked worker (e.g. an Airflow task) inherits the loop object but not its thread,
-            # and may inherit the lock while another thread holds it
-            os.register_at_fork(after_in_child=_after_fork_callback(weakref.ref(self)))
+        # A forked worker (e.g. an Airflow task) inherits the loop object but not its thread, and
+        # may inherit the lock while another thread holds it
+        _track_for_fork(self)
         log.debug(
             "Constructing OpenLineage transport that will send events to NATS subject `%s` (jetstream=%s)",
             config.subject,
@@ -198,6 +225,8 @@ class NatsTransport(Transport):
         )
 
     def _reset(self) -> None:
+        # the last error nats-py reported, so a timed-out emit can name the real cause
+        self._last_error: BaseException | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._nc: NatsClient | None = None
         self._js: JetStreamContext | None = None
@@ -210,8 +239,8 @@ class NatsTransport(Transport):
     def emit(self, event: Event) -> None:
         payload = Serde.to_json(event).encode("utf-8")
         headers: dict[str, str] | None = None
-        if self.config.jetstream and self.config.msgIdHeader and (msg_id := message_id(event, payload)):
-            headers = {"Nats-Msg-Id": msg_id}
+        if self.config.jetstream and self.config.msgIdHeader:
+            headers = {"Nats-Msg-Id": message_id(event, payload)}
         self._run(
             self._publish(payload, headers),
             timeout=self.config.connectTimeout + self.config.publishTimeout + 1,
@@ -233,6 +262,12 @@ class NatsTransport(Transport):
             return False
         return True
 
+    async def _on_nats_error(self, error: Exception) -> None:
+        # A connect that cannot reach the broker retries inside nats-py until our own timeout
+        # fires, so without this the caller only ever sees "did not complete within Ns"
+        self._last_error = error
+        log.warning("NATS client error: %s", error)
+
     def _run(self, coro: Coroutine[Any, Any, _R], timeout: float) -> _R:
         future = asyncio.run_coroutine_threadsafe(coro, self._ensure_loop())
         try:
@@ -241,7 +276,9 @@ class NatsTransport(Transport):
             # Cancel, or the publish could still complete after emit reported failure
             future.cancel()
             msg = f"Publishing to NATS subject {self.config.subject!r} did not complete within {timeout}s"
-            raise TimeoutError(msg) from None
+            if self._last_error is not None:
+                msg = f"{msg} (last NATS error: {self._last_error})"
+            raise TimeoutError(msg) from self._last_error
 
     def _ensure_loop(self) -> asyncio.AbstractEventLoop:
         with self._lock:
@@ -294,7 +331,7 @@ class NatsTransport(Transport):
             "name": "openlineage-python",
             "connect_timeout": c.connectTimeout,
             "allow_reconnect": False,
-            "error_cb": _log_nats_error,
+            "error_cb": self._on_nats_error,
             "user": c.user,
             "password": c.password,
             "token": c.token,

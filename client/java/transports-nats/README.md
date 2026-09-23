@@ -19,7 +19,7 @@ To use this transport in your project, you need to include the following depende
 </dependency>
 ```
 
-The published jar relocates its `jnats` and BouncyCastle dependencies, so it does not conflict with other versions on the classpath.
+The shadow jar relocates its `jnats` and BouncyCastle classes. Note that the published POM still declares them as runtime dependencies, as the other transports' do, so a Maven or Gradle consumer also gets the unrelocated artifacts transitively.
 
 #### Configuration
 

@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -271,6 +272,10 @@ public class NatsTransport extends Transport {
     SSLContext sslContext = sslContext(servers);
     if (sslContext != null) {
       builder.sslContext(HostnameVerifyingSslContext.wrap(sslContext));
+      // jnats resolves each URL's host to an IP and reconnects to the literal address, which
+      // would make JSSE check the certificate against the IP and reject every certificate that
+      // only carries a DNS SAN. HappyEyeballs keeps the configured host name on the socket.
+      builder.hostnameResolveMode(Options.HostnameResolveMode.HappyEyeballs);
     }
     return builder.build();
   }
@@ -284,13 +289,25 @@ public class NatsTransport extends Transport {
             config.getTlsTruststorePath(),
             chars(config.getTlsTruststorePassword()));
       }
-      if (servers.stream().anyMatch(server -> server.startsWith("tls://"))) {
+      if (servers.stream().anyMatch(NatsTransport::isSecureUrl)) {
         return SSLContext.getDefault();
       }
       return null;
     } catch (Exception e) {
       throw new IllegalArgumentException("NATS transport could not set up TLS: " + e, e);
     }
+  }
+
+  /**
+   * jnats treats tls, opentls and wss as secure schemes. Matching only a lower-case "tls://" would
+   * leave a wss:// or TLS:// connection with jnats' default context, which performs no host name
+   * verification at all.
+   */
+  private static boolean isSecureUrl(String server) {
+    String scheme = server.toLowerCase(Locale.ROOT);
+    return scheme.startsWith("tls://")
+        || scheme.startsWith("opentls://")
+        || scheme.startsWith("wss://");
   }
 
   private static Properties jnatsProperties(Properties configured) {
@@ -325,6 +342,15 @@ public class NatsTransport extends Transport {
     }
     if (isBlank(config.getSubject())) {
       throw new IllegalArgumentException("NATS transport requires `subject`");
+    }
+    // A publish subject is a literal. `ol.*` is accepted by the server and published verbatim,
+    // so a typo'd wildcard would silently reach no subscriber at all.
+    if (config.getSubject().indexOf('*') >= 0
+        || config.getSubject().indexOf('>') >= 0
+        || config.getSubject().indexOf(' ') >= 0) {
+      throw new IllegalArgumentException(
+          "NATS transport `subject` must be a literal subject, without wildcards or spaces: "
+              + config.getSubject());
     }
     List<String> authMethods = new ArrayList<>();
     if (config.getUser() != null || config.getPassword() != null) {

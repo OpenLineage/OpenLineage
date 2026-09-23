@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import datetime
 import json
 import os
@@ -128,6 +129,34 @@ def test_message_id_for_run_events_keeps_run_id_and_event_type(event: RunEvent) 
 
     assert message_id(event, _payload(event)).startswith(f"{event.run.runId}:START:")
     assert message_id(v2_event, _payload(v2_event)).startswith(f"{event.run.runId}:COMPLETE:")
+
+
+def test_message_id_never_carries_bytes_a_header_cannot_hold(event: RunEvent) -> None:
+    """
+    eventType reaches the header value and event_v2.RunEvent declares no validator for it.
+
+    Asserted on message_id directly rather than on a published message: nats-py sanitizes
+    header values from 2.16, so a round-trip through a server cannot tell the two apart, while
+    the declared floor (2.13) writes the value through verbatim.
+    """
+    injected = copy.deepcopy(event)
+    object.__setattr__(injected, "eventType", "START\r\nNats-Rollup: all")
+
+    msg_id = message_id(injected, _payload(injected))
+
+    assert "\r" not in msg_id
+    assert "\n" not in msg_id
+    assert msg_id.startswith(f"{event.run.runId}:START__Nats-Rollup:_all:")
+
+
+def test_config_rejects_an_invalid_constructor_call() -> None:
+    """from_dict is not the only entry point; the docs show NatsConfig(...) directly."""
+    with pytest.raises(RuntimeError, match="subject"):
+        NatsConfig(url="nats://localhost:4222", subject=None)  # type: ignore[arg-type]
+    with pytest.raises(RuntimeError, match="one authentication method"):
+        NatsConfig(url="nats://localhost:4222", subject="ol", token="t", credsFile="/c")
+    with pytest.raises(RuntimeError, match="whole number of seconds"):
+        NatsConfig(url="nats://localhost:4222", subject="ol", messageTtl=0.5)
 
 
 def test_message_id_is_stable_for_retries_and_distinct_for_different_payloads(event: RunEvent) -> None:
@@ -602,22 +631,30 @@ def test_composite_transport_continues_when_nats_fails(nats_url: str, event: Run
     nats_transport.close(5)
 
 
-def test_msg_id_header_cannot_inject_headers(nats_url: str, stream: tuple[str, str]) -> None:
+def test_msg_id_header_round_trips_without_extra_headers(
+    nats_url: str, stream: tuple[str, str], event: RunEvent
+) -> None:
+    """
+    End-to-end cover for the sanitized message id.
+
+    The unit test above is the one that can fail: from nats-py 2.16 the library sanitizes header
+    values itself, so this asserts the stored message rather than the defence.
+    """
     stream_name, subject = stream
-    job_event = JobEvent(
-        eventTime="2026-01-01T00:00:00Z",
-        job=Job(namespace="ns", name="job\r\nX-Injected: yes"),
-        producer="p",
-        schemaURL="s",
-    )
+    # attrs validates eventType on __init__ only, so a later assignment slips any string through
+    injected = copy.deepcopy(event)
+    object.__setattr__(injected, "eventType", "START\r\nNats-Rollup: all")
     transport = _nats_transport(nats_url, subject)
 
-    transport.emit(job_event)
+    transport.emit(injected)
     transport.close(5)
 
     [message] = _stream_messages(nats_url, stream_name)
-    assert "X-Injected" not in (message.headers or {})
-    assert json.loads(message.data)["job"]["name"] == "job\r\nX-Injected: yes"
+    headers = message.headers or {}
+    assert "Nats-Rollup" not in headers
+    msg_id = headers["Nats-Msg-Id"]
+    assert "\r" not in msg_id
+    assert "\n" not in msg_id
 
 
 @pytest.mark.skipif(not hasattr(os, "fork"), reason="needs os.fork")
@@ -689,11 +726,21 @@ def test_concurrent_first_emits_share_one_connection(tmp_path: Path, event: RunE
     monitor_port = nats_server.free_port()
     with nats_server.nats_server(tmp_path, "-m", str(monitor_port), jetstream=False) as server:
         transport = _nats_transport(server.url, "ol.concurrent", jetstream=False)
-        threads = [threading.Thread(target=transport.emit, args=(event,)) for _ in range(8)]
+        failures: list[BaseException] = []
+
+        def emit_once() -> None:
+            try:
+                transport.emit(event)
+            except BaseException as error:  # noqa: BLE001 - recorded so the test can fail on it
+                failures.append(error)
+
+        threads = [threading.Thread(target=emit_once) for _ in range(8)]
         for thread in threads:
             thread.start()
         for thread in threads:
             thread.join()
+        # without this, seven failed emits and one success still leave num_connections == 1
+        assert failures == []
 
         with urllib.request.urlopen(f"http://127.0.0.1:{monitor_port}/connz") as response:
             connections = json.load(response)["num_connections"]

@@ -95,6 +95,24 @@ class NatsServerScenariosTest {
   }
 
   @Test
+  void tlsAcceptsACertificateWithOnlyADnsNameWhenConnectingByName() throws Exception {
+    // What an operator's certificate actually looks like: a DNS SAN and no IP SAN, reached by
+    // name. jnats rewrites the URL host to the resolved IP before connecting, so verification
+    // has to be done against the configured host, not the socket's peer.
+    NatsSecurityFixtures.Certificates certs = NatsSecurityFixtures.certificates(tmp);
+
+    try (NatsTestServer server = tlsServer(certs.dnsOnlyCert, certs.dnsOnlyKey)) {
+      String byName =
+          server.getUrl().replace("nats://", "tls://").replace("127.0.0.1", "localhost");
+      NatsConfig config = coreConfig(byName);
+      trust(config, certs);
+      try (NatsTransport transport = new NatsTransport(config)) {
+        assertThatCode(() -> transport.emit(runEvent("job"))).doesNotThrowAnyException();
+      }
+    }
+  }
+
+  @Test
   void tlsRejectsCertificateIssuedForAnotherHost() throws Exception {
     NatsSecurityFixtures.Certificates certs = NatsSecurityFixtures.certificates(tmp);
 

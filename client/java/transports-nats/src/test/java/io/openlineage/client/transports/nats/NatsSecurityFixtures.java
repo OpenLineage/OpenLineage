@@ -116,6 +116,8 @@ final class NatsSecurityFixtures {
     final Path serverKey;
     final Path wrongHostCert;
     final Path wrongHostKey;
+    final Path dnsOnlyCert;
+    final Path dnsOnlyKey;
     final Path ca;
     final Path truststore;
     final Path clientKeystore;
@@ -125,6 +127,8 @@ final class NatsSecurityFixtures {
       this.serverKey = dir.resolve("server.key");
       this.wrongHostCert = dir.resolve("wronghost.pem");
       this.wrongHostKey = dir.resolve("wronghost.key");
+      this.dnsOnlyCert = dir.resolve("dnsonly.pem");
+      this.dnsOnlyKey = dir.resolve("dnsonly.key");
       this.ca = dir.resolve("ca.pem");
       this.truststore = dir.resolve("truststore.p12");
       this.clientKeystore = dir.resolve("client.p12");
@@ -158,10 +162,13 @@ final class NatsSecurityFixtures {
         dir.resolve("server.ext"),
         leaf + "extendedKeyUsage=serverAuth\nsubjectAltName=IP:127.0.0.1,DNS:localhost\n");
     write(
+        dir.resolve("dnsonly.ext"),
+        leaf + "extendedKeyUsage=serverAuth\nsubjectAltName=DNS:localhost\n");
+    write(
         dir.resolve("wronghost.ext"),
         leaf + "extendedKeyUsage=serverAuth\nsubjectAltName=DNS:not-this-host.example\n");
     write(dir.resolve("client.ext"), leaf + "extendedKeyUsage=clientAuth\n");
-    for (String name : Arrays.asList("server", "wronghost", "client")) {
+    for (String name : Arrays.asList("server", "wronghost", "dnsonly", "client")) {
       run(
           dir,
           "openssl",

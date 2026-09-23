@@ -120,4 +120,17 @@ class NatsConfigTest {
     config.setSubject(subject);
     return config;
   }
+
+  @Test
+  void wildcardSubjectIsRejected() {
+    // ol.* is a valid *subscribe* subject but a literal publish target: nothing would receive it
+    for (String subject : new String[] {"ol.*", "ol.>", "ol bad"}) {
+      NatsConfig config = new NatsConfig();
+      config.setUrl("nats://localhost:4222");
+      config.setSubject(subject);
+      assertThatThrownBy(() -> new NatsTransport(config))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("literal subject");
+    }
+  }
 }
