@@ -1317,3 +1317,7 @@ OpenLineageClient client = OpenLineageClient.builder()
 import S3Transport from './s3_transport.md';
 
 <S3Transport/>
+
+import NatsTransport from './nats_transport.md';
+
+<NatsTransport/>

@@ -5,7 +5,7 @@ tasks:
   setup:
     desc: Install dependencies into the local venv (uv sync with all extras)
     cmds:
-      - uv sync --extra test --extra dev --extra generator --extra kafka --extra msk-iam --extra datazone --extra fsspec --active
+      - uv sync --extra test --extra dev --extra generator --extra kafka --extra msk-iam --extra nats --extra datazone --extra fsspec --active
 
   test:
     desc: Run unit tests

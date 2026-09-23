@@ -40,6 +40,9 @@ optional-dependencies.msk-iam = [
   "aws-msk-iam-sasl-signer-python>=1.0.1",
   "confluent-kafka>=2.1.1",
 ]
+optional-dependencies.nats = [
+  "nats-py[nkeys]>=2.13.0",
+]
 optional-dependencies.datazone = [
   "boto3>=1.34.134"
 ]
@@ -105,6 +108,7 @@ show_error_codes = true
 overrides = [
   { ignore_missing_imports = true, module = [
   "confluent_kafka.*",
+  "nats.*",
   "google.cloud.*",
   "google.oauth2.*",
 ] } ]
@@ -165,7 +169,7 @@ skip_missing_interpreters = true
 description = run the unit tests with pytest under {basepython}
 package = wheel
 wheel_build_env = .pkg
-extras = kafka,msk-iam,test,generator,fsspec
+extras = kafka,msk-iam,nats,test,generator,fsspec
 set_env =
     COVERAGE_FILE = {toxworkdir}/.coverage.{envname}
     COVERAGE_PROCESS_START = {toxinidir}/pyproject.toml
@@ -181,7 +185,7 @@ commands =
 [testenv:dev]
 description = generate a DEV environment
 package = editable
-extras = kafka,msk-iam,test
+extras = kafka,msk-iam,nats,test
 commands =
     python -m pip list --format=columns
     python -c 'import sys; print(sys.executable)'

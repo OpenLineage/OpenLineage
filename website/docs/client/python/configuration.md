@@ -1135,6 +1135,113 @@ client = OpenLineageClient(transport=KafkaTransport(kafka_config))
 
 </Tabs>
 
+### NATS
+
+NATS transport requires the `nats-py` package to be additionally installed.
+It can be installed also by specifying the nats client extension: `pip install openlineage-python[nats]`
+
+#### Configuration
+
+- `type` - string, must be `"nats"`. Required.
+- `url` - string or list of strings, NATS server URL(s). A string may contain several comma-separated URLs, e.g. `nats://a:4222,nats://b:4222`. Required.
+- `subject` - string, subject on which events are published. Required.
+- `jetstream` - boolean, publish through JetStream and wait for the stream's acknowledgement. Optional, default: `true`.
+- `publishTimeout` - float, seconds to wait for the JetStream acknowledgement (or for the flush, with `jetstream: false`). Optional, default: `5.0`.
+- `connectTimeout` - integer, seconds to wait when connecting to the server. Optional, default: `5`.
+- `msgIdHeader` - boolean, set the `Nats-Msg-Id` header so that JetStream drops duplicate publishes within the stream's duplicate window. Optional, default: `true`.
+- `messageTtl` - float, per-message TTL in seconds. Requires `jetstream: true`, NATS Server 2.11+ and a stream created with per-message TTL allowed. Optional.
+- `user` and `password` - strings, username/password authentication. Optional.
+- `token` - string, token authentication. Optional.
+- `nkeysSeed` - string, path to an NKey seed file. Optional.
+- `credsFile` - string, path to a `.creds` file with a user JWT and NKey seed. Optional.
+- `tlsCaFile`, `tlsCertFile`, `tlsKeyFile` - strings, paths to the CA certificate and client certificate/key used for TLS. Optional.
+
+At most one authentication method can be configured.
+User/password and token credentials are sent to the server as they are, so use them over TLS (`tls://` or TLS settings) outside of a trusted network. With an NKey seed or a `.creds` file the seed never leaves the client, which only signs a server nonce, but a `.creds` file's user JWT is sent to the server, so TLS is still needed where authentication metadata or event data must stay confidential.
+
+#### Behavior
+
+- Events are serialized to JSON and published to `subject`.
+- With `jetstream: true`, `emit` blocks until the stream acknowledges the event and raises if no stream captures the subject, or if the acknowledgement does not arrive within `publishTimeout`.
+- With `jetstream: false`, events are published over core NATS. They are delivered only to subscribers connected at that moment and are lost otherwise.
+- The `Nats-Msg-Id` header is built from a SHA-256 digest of the serialized event, so a retried publish of the same event repeats it and any two different events differ:
+  - `{runId}:{eventType}:{digest}` - for RunEvent
+  - `job:{digest}` - for JobEvent
+  - `dataset:{digest}` - for DatasetEvent
+- NATS rejects messages larger than the server's `max_payload` (1 MB by default). Very large events, such as wide schemas or column lineage, may need a higher limit on the server.
+- The connection is opened on the first emitted event and runs on a background thread, which is recreated after the process forks. A lost connection is not retried in the background; the next emitted event opens a new one.
+- An event that times out is cancelled, so it is never published after `emit` has raised.
+- `messageTtl` must be a whole number of seconds, at least 1.
+
+#### Stream setup
+
+The transport does not create streams. With `jetstream: true`, a stream capturing the subject must exist before events are emitted.
+Its retention settings decide how long unconsumed events are kept, for example:
+
+```sh
+nats stream add OPENLINEAGE \
+  --subjects 'openlineage.>' \
+  --storage file --replicas 3 \
+  --retention limits \
+  --max-age 7d --max-bytes 10GB --discard old \
+  --dupe-window 2m
+```
+
+`--max-age` removes events that no consumer read in time, so it should be longer than the longest expected consumer downtime.
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="env-vars" label="Environment Variables">
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=nats
+OPENLINEAGE__TRANSPORT__URL=nats://localhost:4222
+OPENLINEAGE__TRANSPORT__SUBJECT=openlineage.events
+OPENLINEAGE__TRANSPORT__PUBLISH_TIMEOUT=5
+OPENLINEAGE__TRANSPORT__CREDS_FILE=/etc/nats/openlineage.creds
+```
+
+</TabItem>
+<TabItem value="env-var-single" label="Single Environment Variable">
+
+```sh
+OPENLINEAGE__TRANSPORT='{"type": "nats", "url": "nats://localhost:4222", "subject": "openlineage.events", "publishTimeout": 5, "credsFile": "/etc/nats/openlineage.creds"}'
+```
+
+</TabItem>
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: nats
+  url: nats://nats-1:4222,nats://nats-2:4222
+  subject: openlineage.events
+  publishTimeout: 5
+  credsFile: /etc/nats/openlineage.creds
+  tlsCaFile: /etc/nats/ca.pem
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.nats import NatsConfig, NatsTransport
+
+nats_config = NatsConfig(
+  url=["nats://localhost:4222"],
+  subject="openlineage.events",
+  publishTimeout=5,
+  credsFile="/etc/nats/openlineage.creds",
+)
+
+client = OpenLineageClient(transport=NatsTransport(nats_config))
+```
+</TabItem>
+
+</Tabs>
+
 ### File
 
 Designed mainly for integration testing, the `FileTransport` emits OpenLineage events to a given file(s). Supports both local and remote filesystems through optional fsspec integration.
