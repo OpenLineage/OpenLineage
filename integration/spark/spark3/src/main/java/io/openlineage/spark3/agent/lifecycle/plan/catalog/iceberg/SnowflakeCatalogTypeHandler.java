@@ -10,6 +10,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.SnowflakeUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -71,7 +72,8 @@ class SnowflakeCatalogTypeHandler extends BaseCatalogTypeHandler {
   }
 
   @Override
-  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+  Map<String, String> catalogProperties(
+      Map<String, String> catalogConf, OpenLineageContext context) {
     String accountIdentifier =
         SnowflakeUtils.parseAccountIdentifier(catalogConf.get(CatalogProperties.URI));
     return Collections.singletonMap("account_identifier", accountIdentifier);

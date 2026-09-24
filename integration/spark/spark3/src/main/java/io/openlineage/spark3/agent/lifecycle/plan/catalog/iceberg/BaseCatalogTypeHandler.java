@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -75,7 +76,8 @@ abstract class BaseCatalogTypeHandler {
     return new Path(warehouseLocation, String.join(Path.SEPARATOR, pathComponents));
   }
 
-  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+  Map<String, String> catalogProperties(
+      Map<String, String> catalogConf, OpenLineageContext context) {
     return Collections.emptyMap();
   }
 
