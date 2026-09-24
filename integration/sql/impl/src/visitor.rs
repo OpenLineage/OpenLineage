@@ -1,7 +1,7 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::{Context, ContextFrame};
+use crate::context::{ColumnAncestors, Context, ContextFrame};
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
@@ -1247,16 +1247,34 @@ fn output_column_names(
     frame: &mut ContextFrame,
     alias_columns: &[TableAliasColumnDef],
 ) -> Vec<String> {
-    for (position, alias) in alias_columns.iter().enumerate() {
-        let Some(current) = frame.projection_order.get(position).cloned() else {
-            break;
-        };
-        if current.name == alias.name.value {
-            continue;
-        }
+    // Work out the whole set of renames before applying any of it. An alias
+    // can take the name another projected column currently holds — `d(y, x)`
+    // over `SELECT x, y` swaps the two — and inserting the first rename would
+    // then overwrite the entry the second one still has to read.
+    let renames: Vec<(usize, ColumnMeta)> = alias_columns
+        .iter()
+        .enumerate()
+        .map_while(|(position, alias)| {
+            let current = frame.projection_order.get(position)?;
+            let renamed = ColumnMeta::new(alias.name.value.clone(), current.origin.clone());
+            Some((position, renamed))
+        })
+        .filter(|(position, renamed)| frame.projection_order[*position].name != renamed.name)
+        .collect();
 
-        let renamed = ColumnMeta::new(alias.name.value.clone(), current.origin.clone());
-        if let Some(ancestors) = frame.column_ancestry.remove(&current) {
+    // Out of the map first, so no insert lands on a key another rename needs.
+    let moved: Vec<(usize, ColumnMeta, Option<ColumnAncestors>)> = renames
+        .into_iter()
+        .map(|(position, renamed)| {
+            let current = &frame.projection_order[position];
+            let ancestors = frame.column_ancestry.remove(current);
+            (position, renamed, ancestors)
+        })
+        .collect();
+
+    // Then back in, under the names the table publishes.
+    for (position, renamed, ancestors) in moved {
+        if let Some(ancestors) = ancestors {
             frame.column_ancestry.insert(renamed.clone(), ancestors);
         }
         frame.projection_order[position] = renamed;
