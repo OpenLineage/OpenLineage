@@ -141,7 +141,9 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
             spark ->
                 SparkConfUtils.getMetastoreUris(spark)
                     .filter(
-                        uri -> uri.contains(catalogConf.getOrDefault(CatalogProperties.URI, uri)))
+                        uri ->
+                            Arrays.asList(uri.split(","))
+                                .contains(catalogConf.getOrDefault(CatalogProperties.URI, uri)))
                     .flatMap(
                         uri ->
                             GoogleCloudPlatformUtils.getDataprocMetastoreProperties(
