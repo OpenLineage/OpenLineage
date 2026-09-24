@@ -117,14 +117,15 @@ class IcebergHandlerTest {
   @Test
   @SneakyThrows
   void testGetDatasetIdentifierForDataprocMetastore() {
-      // test that adding the properties for the Dataproc Metastore does not affect DatasetIdentifier generation
+    // test that adding the properties for the Dataproc Metastore does not affect DatasetIdentifier
+    // generation
 
-      sparkConf.set("spark.sql.hive.metastore.uris", "thrift://metastore-host:10001");
-      sparkConf.set("spark.dataproc.metastore.project-id", "my-gcp-project");
-      sparkConf.set("spark.dataproc.metastore.location", "eu");
-      sparkConf.set("spark.dataproc.metastore.service.short.name", "my-dpms");
-      when(sparkContext.getConf()).thenReturn(sparkConf);
-      when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    sparkConf.set("spark.sql.hive.metastore.uris", "thrift://metastore-host:10001");
+    sparkConf.set("spark.dataproc.metastore.project-id", "my-gcp-project");
+    sparkConf.set("spark.dataproc.metastore.location", "eu");
+    sparkConf.set("spark.dataproc.metastore.service.short.name", "my-dpms");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
 
     assertDatasetIdentifierForHive();
   }
@@ -934,7 +935,6 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("gcp_location", "eu")
         .hasFieldOrPropertyWithValue("gcp_project_id", "my-gcp-project");
   }
-
 
   @Test
   void testGetHiveCatalogDataWithoutDataprocMetastoreProperties() {
