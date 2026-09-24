@@ -205,6 +205,20 @@ impl<'a> Context<'a> {
 
     // --- Column Lineage ---
 
+    /// Record the output column a projection is about to produce, so that its
+    /// position is known even when the expression has no ancestry at all. A
+    /// constant contributes no lineage, but it still occupies a position, and
+    /// positional column aliases bind to positions rather than to sources.
+    pub fn record_projection_column(&mut self) {
+        if let Some(frame) = self.frames.last_mut() {
+            if let Some(column) = frame.column.clone() {
+                if !frame.projection_order.contains(&column) {
+                    frame.projection_order.push(column);
+                }
+            }
+        }
+    }
+
     pub fn add_column_ancestors(&mut self, column: ColumnMeta, mut ancestors: Vec<ColumnMeta>) {
         if self.frames.last().is_none() {
             return;
