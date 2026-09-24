@@ -213,3 +213,39 @@ fn test_column_aliases_may_permute_existing_names() {
         vec![edge("x", "t", "y"), edge("y", "t", "x")]
     );
 }
+
+#[test]
+fn test_joined_derived_table_wildcard_expands() {
+    // A derived table on the right of a join registers its columns in the
+    // join's own frame, which is popped before the projection is reached.
+    let output = test_sql("SELECT d.* FROM t JOIN (SELECT a, b FROM t2) d ON t.id = d.a").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("a", "t2", "a"), edge("b", "t2", "b")]
+    );
+}
+
+#[test]
+fn test_ilike_suppresses_expansion() {
+    // ILIKE keeps the columns whose names match the pattern. Which ones those
+    // are is not decided here, so reporting all of them would name columns the
+    // output does not contain.
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT id, secret FROM t) SELECT * ILIKE '%id%' FROM d",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_replace_omits_the_replaced_column() {
+    // REPLACE keeps `x` in the output but fills it from an expression, so the
+    // passthrough edge would name the wrong source. The other columns expand.
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT id, x FROM t) SELECT * REPLACE (x * 2 AS x) FROM d",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![edge("id", "t", "id")]);
+}
