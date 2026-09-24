@@ -201,3 +201,15 @@ fn test_rename_matches_an_unquoted_column_whatever_its_case() {
         vec![edge("id", "t", "id"), edge("y", "t", "x")]
     );
 }
+
+#[test]
+fn test_column_aliases_may_permute_existing_names() {
+    // The aliases are the projected names in the other order, so each rename
+    // targets a name the other column currently holds. Renaming one at a time
+    // would overwrite the second entry before it is read.
+    let output = test_sql("WITH d(y, x) AS (SELECT x, y FROM t) SELECT * FROM d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("x", "t", "y"), edge("y", "t", "x")]
+    );
+}

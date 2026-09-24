@@ -11,7 +11,7 @@ use alias_table::AliasTable;
 use sqlparser::ast::Ident;
 use sqlparser::dialect::SnowflakeDialect;
 
-type ColumnAncestors = HashSet<ColumnMeta>;
+pub type ColumnAncestors = HashSet<ColumnMeta>;
 
 #[derive(Debug)]
 pub struct ContextFrame {
