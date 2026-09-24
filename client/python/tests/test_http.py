@@ -16,6 +16,7 @@ from openlineage.client.transport.http import (
     ApiKeyTokenProvider,
     HttpCompression,
     HttpConfig,
+    HttpSslContextConfig,
     HttpTransport,
     TokenProvider,
 )
@@ -652,3 +653,212 @@ class TestHttpMock:
 
         assert headers["custom_header"] == "FIRST"
         assert headers["another_header"] == "second"
+
+
+class TestHttpSslContextConfig:
+    def test_from_dict_camel_case_keys(self):
+        config = HttpSslContextConfig.from_dict(
+            {
+                "caCertPath": "/etc/ssl/ca-bundle.pem",
+                "clientCertPath": "/etc/ssl/client.crt",
+                "clientKeyPath": "/etc/ssl/client.key",
+            }
+        )
+        assert config.ca_cert_path == "/etc/ssl/ca-bundle.pem"
+        assert config.client_cert_path == "/etc/ssl/client.crt"
+        assert config.client_key_path == "/etc/ssl/client.key"
+
+    def test_from_dict_snake_case_keys(self):
+        config = HttpSslContextConfig.from_dict(
+            {
+                "ca_cert_path": "/etc/ssl/ca-bundle.pem",
+                "client_cert_path": "/etc/ssl/client.crt",
+                "client_key_path": "/etc/ssl/client.key",
+            }
+        )
+        assert config.ca_cert_path == "/etc/ssl/ca-bundle.pem"
+        assert config.client_cert_path == "/etc/ssl/client.crt"
+        assert config.client_key_path == "/etc/ssl/client.key"
+
+    def test_from_dict_lowercase_keys(self):
+        # The environment-variable loader lowercases keys, e.g. `cacertpath`.
+        config = HttpSslContextConfig.from_dict(
+            {
+                "cacertpath": "/etc/ssl/ca-bundle.pem",
+                "clientcertpath": "/etc/ssl/client.crt",
+                "clientkeypath": "/etc/ssl/client.key",
+            }
+        )
+        assert config.ca_cert_path == "/etc/ssl/ca-bundle.pem"
+        assert config.client_cert_path == "/etc/ssl/client.crt"
+        assert config.client_key_path == "/etc/ssl/client.key"
+
+    def test_from_dict_defaults_to_none(self):
+        config = HttpSslContextConfig.from_dict({})
+        assert config.ca_cert_path is None
+        assert config.client_cert_path is None
+        assert config.client_key_path is None
+
+    def test_from_dict_rejects_key_without_cert(self):
+        with pytest.raises(ValueError, match="`clientKeyPath` requires `clientCertPath`"):
+            HttpSslContextConfig.from_dict({"clientKeyPath": "/etc/ssl/client.key"})
+
+    def test_direct_construction_rejects_key_without_cert(self):
+        with pytest.raises(ValueError, match="`clientKeyPath` requires `clientCertPath`"):
+            HttpSslContextConfig(client_key_path="/etc/ssl/client.key")
+
+    def test_as_requests_cert_with_cert_and_key(self):
+        config = HttpSslContextConfig(
+            client_cert_path="/etc/ssl/client.crt", client_key_path="/etc/ssl/client.key"
+        )
+        assert config.as_requests_cert() == ("/etc/ssl/client.crt", "/etc/ssl/client.key")
+
+    def test_as_requests_cert_with_combined_file(self):
+        config = HttpSslContextConfig(client_cert_path="/etc/ssl/client.pem")
+        assert config.as_requests_cert() == "/etc/ssl/client.pem"
+
+    def test_as_requests_cert_without_client_cert(self):
+        config = HttpSslContextConfig(ca_cert_path="/etc/ssl/ca-bundle.pem")
+        assert config.as_requests_cert() is None
+
+    def test_http_config_parses_ssl_context_section(self):
+        config = HttpConfig.from_dict(
+            {
+                "type": "http",
+                "url": "https://backend:5000",
+                "sslContext": {
+                    "caCertPath": "/etc/ssl/ca-bundle.pem",
+                    "clientCertPath": "/etc/ssl/client.crt",
+                    "clientKeyPath": "/etc/ssl/client.key",
+                },
+            }
+        )
+        assert isinstance(config.ssl_context, HttpSslContextConfig)
+        assert config.ssl_context.ca_cert_path == "/etc/ssl/ca-bundle.pem"
+        assert config.ssl_context.client_cert_path == "/etc/ssl/client.crt"
+        assert config.ssl_context.client_key_path == "/etc/ssl/client.key"
+
+    def test_http_config_rejects_non_mapping_ssl_context(self):
+        with pytest.raises(ValueError, match="`sslContext` must be a mapping"):
+            HttpConfig.from_dict(
+                {
+                    "type": "http",
+                    "url": "https://backend:5000",
+                    "sslContext": "/etc/ssl/client.pem",
+                }
+            )
+
+    def test_http_config_parses_lowercase_ssl_context_section(self):
+        # The environment-variable loader lowercases keys, e.g. `sslcontext`.
+        config = HttpConfig.from_dict(
+            {
+                "type": "http",
+                "url": "https://backend:5000",
+                "sslcontext": {
+                    "cacertpath": "/etc/ssl/ca-bundle.pem",
+                },
+            }
+        )
+        assert isinstance(config.ssl_context, HttpSslContextConfig)
+        assert config.ssl_context.ca_cert_path == "/etc/ssl/ca-bundle.pem"
+
+    def test_http_config_ssl_context_defaults_to_none(self):
+        config = HttpConfig.from_dict({"type": "http", "url": "http://backend:5000"})
+        assert config.ssl_context is None
+
+    def test_transport_uses_ca_bundle_as_verify(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
+        config = HttpConfig.from_dict(
+            {
+                "type": "http",
+                "url": "https://backend:5000",
+                "sslContext": {"caCertPath": "/etc/ssl/ca-bundle.pem"},
+            }
+        )
+        transport = HttpTransport(config)
+        assert transport.verify == "/etc/ssl/ca-bundle.pem"
+
+        mock_event = MagicMock()
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+            transport.emit(mock_event)
+
+        mock_client.post.assert_called_once()
+        assert mock_client.post.call_args.kwargs["verify"] == "/etc/ssl/ca-bundle.pem"
+
+    def test_transport_passes_client_cert_and_key(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
+        config = HttpConfig.from_dict(
+            {
+                "type": "http",
+                "url": "https://backend:5000",
+                "sslContext": {
+                    "clientCertPath": "/etc/ssl/client.crt",
+                    "clientKeyPath": "/etc/ssl/client.key",
+                },
+            }
+        )
+        transport = HttpTransport(config)
+        assert transport.cert == ("/etc/ssl/client.crt", "/etc/ssl/client.key")
+
+        mock_event = MagicMock()
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+            transport.emit(mock_event)
+
+        mock_client.post.assert_called_once()
+        assert mock_client.post.call_args.kwargs["cert"] == (
+            "/etc/ssl/client.crt",
+            "/etc/ssl/client.key",
+        )
+
+    def test_transport_refuses_redirect_with_client_cert(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
+        config = HttpConfig.from_dict(
+            {
+                "type": "http",
+                "url": "https://backend:5000",
+                "sslContext": {
+                    "clientCertPath": "/etc/ssl/client.crt",
+                    "clientKeyPath": "/etc/ssl/client.key",
+                },
+            }
+        )
+        transport = HttpTransport(config)
+
+        redirect = MagicMock()
+        redirect.is_redirect = True
+        mock_client.post.return_value = redirect
+
+        mock_event = MagicMock()
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+            with pytest.raises(RuntimeError, match="Refusing to follow redirect"):
+                transport.emit(mock_event)
+
+        mock_client.post.assert_called_once()
+        assert mock_client.post.call_args.kwargs["allow_redirects"] is False
+
+    def test_transport_without_client_cert_keeps_default_redirect_behavior(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
+        config = HttpConfig(url="http://example.com")
+        transport = HttpTransport(config)
+
+        mock_event = MagicMock()
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+            transport.emit(mock_event)
+
+        mock_client.post.assert_called_once()
+        assert "allow_redirects" not in mock_client.post.call_args.kwargs
+
+    def test_transport_without_ssl_context_is_unchanged(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
+        config = HttpConfig(url="http://example.com")
+        transport = HttpTransport(config)
+        assert transport.verify is True
+        assert transport.cert is None
+
+        mock_event = MagicMock()
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+            transport.emit(mock_event)
+
+        mock_client.post.assert_called_once()
+        assert mock_client.post.call_args.kwargs["verify"] is True
+        assert "cert" not in mock_client.post.call_args.kwargs
