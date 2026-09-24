@@ -615,6 +615,9 @@ impl Visit for Select {
                 join.visit(context)?;
                 let frame = context.pop_frame().unwrap();
                 context.collect_aliases(&frame);
+                // A joined derived table registers in this frame, exactly as
+                // one in the FROM item above does.
+                context.inherit_cte_columns(&frame);
                 context.collect(frame);
             }
         }
@@ -1149,6 +1152,10 @@ fn convert_to_idents(object_name: &ObjectName) -> Vec<Ident> {
 struct WildcardFilter {
     excluded: Vec<Ident>,
     renamed: Vec<(Ident, String)>,
+    /// `SELECT * ILIKE '...'` keeps the columns whose names match a pattern.
+    /// Which ones those are is not decided here, so the whole expansion is
+    /// dropped rather than reporting columns the output may not contain.
+    suppressed: bool,
 }
 
 /// The column an `ObjectName` refers to, which is its last part — `secret` in
@@ -1200,6 +1207,18 @@ impl WildcardFilter {
                 .extend(except.additional_elements.iter().cloned());
         }
 
+        // `SELECT * REPLACE (expr AS c)` keeps column `c` in the output but
+        // fills it from an expression, whose inputs this pass does not walk.
+        // The passthrough edge would name the wrong source, so `c` is left out
+        // and the columns beside it still expand.
+        if let Some(replace) = &options.opt_replace {
+            filter
+                .excluded
+                .extend(replace.items.iter().map(|item| item.column_name.clone()));
+        }
+
+        filter.suppressed = options.opt_ilike.is_some();
+
         if let Some(rename) = &options.opt_rename {
             let pairs = match rename {
                 RenameSelectItem::Single(item) => std::slice::from_ref(item),
@@ -1218,6 +1237,9 @@ impl WildcardFilter {
     /// The name this column appears under in the output, or `None` if it does
     /// not appear at all.
     fn apply(&self, column: &str) -> Option<String> {
+        if self.suppressed {
+            return None;
+        }
         if self
             .excluded
             .iter()
