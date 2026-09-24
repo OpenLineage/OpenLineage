@@ -640,10 +640,12 @@ impl Visit for Select {
                         )),
                         _ => context.set_unnamed_column_context(),
                     };
+                    context.record_projection_column();
                     expr.visit(context)?;
                 }
                 SelectItem::ExprWithAlias { expr, alias } => {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
+                    context.record_projection_column();
                     expr.visit(context)?;
                 }
                 SelectItem::Wildcard(options) => {
@@ -1302,9 +1304,14 @@ fn output_column_names(
         frame.projection_order[position] = renamed;
     }
 
+    // A projection with no ancestry — a constant, say — holds a position so
+    // that the aliases after it bind correctly, but it has nothing upstream to
+    // report. Publishing it here would make a wildcard over this table emit an
+    // edge sourced from the table itself.
     frame
         .projection_order
         .iter()
+        .filter(|column| frame.column_ancestry.contains_key(*column))
         .map(|column| column.name.clone())
         .collect()
 }
@@ -1389,10 +1396,21 @@ fn expand_wildcard_for_known_table(
     let qn = table.qualified_name();
     let resolved_qn = context.resolve_table_qualified_name(table);
 
-    let columns = context
-        .cte_columns(&resolved_qn)
-        .or_else(|| context.cte_columns(&qn))
-        .cloned();
+    // `WITH d AS (...) SELECT d.* FROM physical AS d` resolves the alias to
+    // `physical`, whose columns are not known here. Falling back to the name as
+    // written would find the CTE that happens to share it and report its
+    // columns as the physical table's, so the fallback applies only where
+    // resolution had nothing of its own to offer.
+    let resolved_elsewhere = resolved_qn != qn && !resolved_qn.is_empty();
+
+    let columns = if resolved_elsewhere {
+        context.cte_columns(&resolved_qn).cloned()
+    } else {
+        context
+            .cte_columns(&resolved_qn)
+            .or_else(|| context.cte_columns(&qn))
+            .cloned()
+    };
 
     let columns = match columns {
         Some(cols) => cols,

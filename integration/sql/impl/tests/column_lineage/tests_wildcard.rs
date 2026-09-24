@@ -249,3 +249,28 @@ fn test_replace_omits_the_replaced_column() {
     .unwrap();
     assert_eq!(output.column_lineage, vec![edge("id", "t", "id")]);
 }
+
+#[test]
+fn test_column_aliases_bind_to_positions_not_to_sources() {
+    // The first projection is a constant, which has no lineage but does hold a
+    // position: `x` names it, and `y` is the column sourced from `t.a`.
+    let output =
+        test_sql("WITH d(x, y) AS (SELECT 1 AS constant, a FROM t) SELECT * FROM d").unwrap();
+    assert_eq!(output.column_lineage, vec![edge("y", "t", "a")]);
+}
+
+#[test]
+fn test_constant_columns_report_no_lineage() {
+    // A constant has nothing upstream, so a wildcard over the table must not
+    // invent an edge sourced from the table itself.
+    let output = test_sql("WITH d AS (SELECT 1 AS c, a FROM t) SELECT * FROM d").unwrap();
+    assert_eq!(output.column_lineage, vec![edge("a", "t", "a")]);
+}
+
+#[test]
+fn test_physical_table_alias_does_not_borrow_a_cte_of_the_same_name() {
+    // `d` here is an alias of `physical`, whose columns are unknown to the
+    // parser. The CTE that shares the name describes something else entirely.
+    let output = test_sql("WITH d AS (SELECT a FROM src) SELECT d.* FROM physical AS d").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
