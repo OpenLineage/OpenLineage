@@ -11,7 +11,7 @@ use alias_table::AliasTable;
 use sqlparser::ast::Ident;
 use sqlparser::dialect::SnowflakeDialect;
 
-type ColumnAncestors = HashSet<ColumnMeta>;
+pub type ColumnAncestors = HashSet<ColumnMeta>;
 
 #[derive(Debug)]
 pub struct ContextFrame {
@@ -25,6 +25,16 @@ pub struct ContextFrame {
     // symbol. Only those symbols are meaningful outside of the processed query.
     aliases: AliasTable,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
+    // The order in which columns were first seen, which is the order the
+    // projection writes them. `column_ancestry` is a HashMap, so its iteration
+    // order is arbitrary and cannot stand in for this: wildcard expansion and
+    // positional column aliases both depend on the real order.
+    pub projection_order: Vec<ColumnMeta>,
+    // Column names of CTEs and derived tables declared in this frame, keyed by
+    // qualified_name(). Held per frame so that a CTE declared inside a nested
+    // query shadows an outer one of the same name and goes out of scope with
+    // the frame, rather than outliving it.
+    cte_column_registry: HashMap<String, Vec<String>>,
     pub dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
     pub is_main_body: bool,
@@ -43,6 +53,8 @@ impl ContextFrame {
             column: None,
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
+            projection_order: Vec::new(),
+            cte_column_registry: HashMap::new(),
             dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
             is_main_body: true,
@@ -193,6 +205,20 @@ impl<'a> Context<'a> {
 
     // --- Column Lineage ---
 
+    /// Record the output column a projection is about to produce, so that its
+    /// position is known even when the expression has no ancestry at all. A
+    /// constant contributes no lineage, but it still occupies a position, and
+    /// positional column aliases bind to positions rather than to sources.
+    pub fn record_projection_column(&mut self) {
+        if let Some(frame) = self.frames.last_mut() {
+            if let Some(column) = frame.column.clone() {
+                if !frame.projection_order.contains(&column) {
+                    frame.projection_order.push(column);
+                }
+            }
+        }
+    }
+
     pub fn add_column_ancestors(&mut self, column: ColumnMeta, mut ancestors: Vec<ColumnMeta>) {
         if self.frames.last().is_none() {
             return;
@@ -204,6 +230,10 @@ impl<'a> Context<'a> {
             if let Some(table) = &mut ancestor.origin {
                 *table = frame.aliases.resolve_table(table).clone();
             }
+        }
+
+        if !frame.column_ancestry.contains_key(&column) {
+            frame.projection_order.push(column.clone());
         }
 
         let entry = frame.column_ancestry.entry(column);
@@ -422,8 +452,24 @@ impl<'a> Context<'a> {
     pub fn collect(&mut self, mut old: ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
             frame.column_ancestry.extend(old.column_ancestry.drain());
+            Context::extend_projection_order(frame, old.projection_order.drain(..));
             frame.dependencies.extend(old.dependencies);
             frame.is_main_body = old.is_main_body;
+        }
+    }
+
+    /// Append a collected frame's columns in the order it produced them,
+    /// ignoring any this frame already has. The two frames can name the same
+    /// column when a subquery and its parent both project it, and the first
+    /// position is the one the projection writes.
+    fn extend_projection_order(
+        frame: &mut ContextFrame,
+        columns: impl IntoIterator<Item = ColumnMeta>,
+    ) {
+        for column in columns {
+            if !frame.projection_order.contains(&column) {
+                frame.projection_order.push(column);
+            }
         }
     }
 
@@ -451,6 +497,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn collect_with_table(&mut self, mut old: ContextFrame, from_table: DbTableMeta) {
+        let from_table_for_order = from_table.clone();
         if let Some(frame) = self.frames.last_mut() {
             let old_ancestry = old
                 .column_ancestry
@@ -465,6 +512,11 @@ impl<'a> Context<'a> {
                 Context::remove_circular_deps(&old_ancestry, frame, from_table);
 
             if !removed_circular_deps.is_empty() {
+                let order = old.projection_order.drain(..).map(|mut col| {
+                    col.origin = col.origin.or_else(|| Some(from_table_for_order.clone()));
+                    col
+                });
+                Context::extend_projection_order(frame, order);
                 frame.column_ancestry.extend(old_ancestry);
             }
 
@@ -578,6 +630,48 @@ impl<'a> Context<'a> {
             for (alias, t) in old.aliases.tables() {
                 frame.aliases.add_table_alias(t.clone(), alias.clone());
             }
+        }
+    }
+
+    // --- CTE Column Registry ---
+
+    pub fn register_cte_columns(&mut self, table_qualified_name: String, columns: Vec<String>) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame
+                .cte_column_registry
+                .insert(table_qualified_name, columns);
+        }
+    }
+
+    /// Copy a WITH frame's registrations into the current frame, which is the
+    /// query body they are visible in. Without this they would be discarded
+    /// with the frame the WITH clause was visited in.
+    pub fn inherit_cte_columns(&mut self, from: &ContextFrame) {
+        let inherited: Vec<(String, Vec<String>)> = from
+            .cte_column_registry
+            .iter()
+            .map(|(name, columns)| (name.clone(), columns.clone()))
+            .collect();
+
+        if let Some(frame) = self.frames.last_mut() {
+            frame.cte_column_registry.extend(inherited);
+        }
+    }
+
+    pub fn cte_columns(&self, table_qualified_name: &str) -> Option<&Vec<String>> {
+        // Innermost frame first, so a CTE declared in a nested query shadows an
+        // outer one of the same name for as long as that frame is on the stack.
+        self.frames
+            .iter()
+            .rev()
+            .find_map(|frame| frame.cte_column_registry.get(table_qualified_name))
+    }
+
+    pub fn resolve_table_qualified_name(&self, table: &DbTableMeta) -> String {
+        if let Some(frame) = self.frames.last() {
+            frame.aliases.resolve_table(table).qualified_name()
+        } else {
+            table.qualified_name()
         }
     }
 
