@@ -1,0 +1,29 @@
+# Cloud Foundry manifest -- long-running WORKER (embedded cron scheduler).
+#
+# Route-less process supervised by Diego (do not self-daemonize). `exec` makes Python PID 1 so it
+# receives SIGTERM directly for graceful shutdown. Keep instances at 1: the embedded scheduler would
+# otherwise fire on every instance and emit duplicate events (add a distributed lock before scaling).
+#
+# Deploy:  cf push
+#
+# Credentials come from bound user-provided services (read via app/secrets.py -> cfenv). Create them
+# once, e.g.:
+#   cf cups datasphere-oauth -p '{"DATASPHERE_TOKEN_URL":"...","DATASPHERE_CLIENT_ID":"...","DATASPHERE_CLIENT_SECRET":"..."}'
+#   cf cups openlineage      -p '{"OPENLINEAGE_API_KEY":"..."}'
+# and set datasphere.auth.type: oauth2_client_credentials in config/config.yaml.
+---
+applications:
+  - name: sap-ds-openlineage-worker
+    memory: 256M
+    instances: 1
+    no-route: true
+    health-check-type: process
+    buildpacks:
+      - python_buildpack
+    command: exec python -m app.worker
+    env:
+      DS_OL_CONFIG: config/config.yaml
+      TZ: UTC
+    services:
+      - datasphere-oauth
+      - openlineage
