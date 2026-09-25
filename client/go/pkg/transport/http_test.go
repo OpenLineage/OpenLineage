@@ -13,8 +13,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -230,6 +232,56 @@ func TestHTTPTransport_Emit_StopsAfterTenRedirects(t *testing.T) {
 	mu.Unlock()
 	if gotRequests != maxRedirects {
 		t.Fatalf("requests = %d, want %d", gotRequests, maxRedirects)
+	}
+}
+
+func TestHTTPTransport_Emit_RefusesCrossOriginRedirect(t *testing.T) {
+	for _, status := range []int{http.StatusTemporaryRedirect, http.StatusPermanentRedirect} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			var targetRequests atomic.Int32
+			target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				targetRequests.Add(1)
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer target.Close()
+
+			redirect := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Location", target.URL+"/accepted")
+				w.WriteHeader(status)
+			}))
+			defer redirect.Close()
+
+			tr := newHTTPTransport(t, HTTPConfig{
+				URL:     redirect.URL,
+				Headers: map[string]string{"X-Secret": "secret"},
+			})
+			if _, err := tr.Emit(context.Background(), map[string]string{"event": "lineage"}); err == nil {
+				t.Fatal("Emit() followed a cross-origin redirect")
+			}
+			if got := targetRequests.Load(); got != 0 {
+				t.Fatalf("cross-origin target received %d requests, want zero", got)
+			}
+		})
+	}
+}
+
+func TestSameOrigin(t *testing.T) {
+	for _, tt := range []struct {
+		first, second string
+		want          bool
+	}{
+		{"http://example.com/path", "http://EXAMPLE.com:80/accepted", true},
+		{"https://example.com/path", "https://example.com:443/accepted", true},
+		{"http://example.com/path", "http://other.example/accepted", false},
+		{"http://example.com/path", "http://example.com:8080/accepted", false},
+		{"http://example.com/path", "https://example.com/accepted", false},
+		{"https://example.com/path", "http://example.com/accepted", false},
+	} {
+		first, _ := url.Parse(tt.first)
+		second, _ := url.Parse(tt.second)
+		if got := sameOrigin(first, second); got != tt.want {
+			t.Errorf("sameOrigin(%q, %q) = %v, want %v", tt.first, tt.second, got, tt.want)
+		}
 	}
 }
 

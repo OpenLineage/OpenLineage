@@ -19,7 +19,7 @@ from openlineage.client.event_v2 import RunEvent as RunEventV2
 from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http import HttpCompression, TokenProvider, create_token_provider
-from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
+from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG, same_origin
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
 
@@ -141,6 +141,11 @@ async def _raise_on_method_changing_redirect(response: httpx2.Response) -> None:
         await response.aread()
         msg = f"Refusing HTTP {response.status_code} redirect for lineage event POST"
         raise httpx2.HTTPStatusError(msg, request=response.request, response=response)
+    if response.status_code in (307, 308) and (location := response.headers.get("Location")):
+        if not same_origin(str(response.request.url), location):
+            await response.aread()
+            msg = f"Refusing cross-origin redirect for lineage event POST: {location}"
+            raise httpx2.HTTPStatusError(msg, request=response.request, response=response)
 
 
 @attr.define

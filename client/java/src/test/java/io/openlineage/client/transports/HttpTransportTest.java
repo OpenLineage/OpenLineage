@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import lombok.SneakyThrows;
+import org.apache.hc.client5.http.config.Configurable;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -63,9 +64,12 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.util.Timeout;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
@@ -360,6 +364,119 @@ class HttpTransportTest {
       }
     } finally {
       server.stop(0);
+    }
+  }
+
+  @Test
+  void opaqueInjectedClientCanPreserveItsRequestConfig() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("http://localhost:1500"));
+    config.setTimeoutInMillis(2000);
+    RequestConfig clientConfig =
+        RequestConfig.custom().setResponseTimeout(Timeout.ofMilliseconds(100)).build();
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    when(response.getCode()).thenReturn(200);
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenReturn(response);
+
+    try (HttpTransport transport = new HttpTransport(http, config, clientConfig);
+        HttpTransport built =
+            HttpTransport.builder().uri("http://localhost:1500").http(http, clientConfig).build();
+        HttpTransport reset =
+            HttpTransport.builder()
+                .uri("http://localhost:1500")
+                .http(http, clientConfig)
+                .http(http)
+                .build()) {
+      new OpenLineageClient(transport).emit(runEvent());
+      new OpenLineageClient(built).emit(runEvent());
+      new OpenLineageClient(reset).emit(runEvent());
+    }
+
+    ArgumentCaptor<ClassicHttpRequest> captor = ArgumentCaptor.forClass(ClassicHttpRequest.class);
+    verify(http, times(3)).execute(captor.capture(), any(HttpClientResponseHandler.class));
+    for (ClassicHttpRequest request : captor.getAllValues().subList(0, 2)) {
+      RequestConfig actual = ((Configurable) request).getConfig();
+      assertThat(actual.getResponseTimeout()).isEqualTo(Timeout.ofMilliseconds(100));
+      assertThat(actual.isRedirectsEnabled()).isFalse();
+    }
+    RequestConfig reset = ((Configurable) captor.getAllValues().get(2)).getConfig();
+    assertThat(reset.getResponseTimeout()).isEqualTo(Timeout.ofSeconds(5));
+    assertThat(reset.isRedirectsEnabled()).isFalse();
+  }
+
+  @Test
+  void wrappedInjectedClientKeepsItsResponseTimeout() throws IOException {
+    HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          try {
+            Thread.sleep(500);
+            exchange.sendResponseHeaders(200, -1);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          } finally {
+            exchange.close();
+          }
+        });
+    server.start();
+
+    RequestConfig clientConfig =
+        RequestConfig.custom().setResponseTimeout(Timeout.ofMilliseconds(100)).build();
+    CloseableHttpClient delegate =
+        HttpClients.custom().setDefaultRequestConfig(clientConfig).build();
+    CloseableHttpClient wrapped =
+        new CloseableHttpClient() {
+          @Override
+          protected CloseableHttpResponse doExecute(
+              HttpHost target, ClassicHttpRequest request, HttpContext context) throws IOException {
+            return delegate.execute(target, request, context);
+          }
+
+          @Override
+          public void close() throws IOException {
+            delegate.close();
+          }
+
+          @Override
+          public void close(CloseMode mode) {
+            delegate.close(mode);
+          }
+        };
+
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      config.setTimeoutInMillis(2000);
+      try (HttpTransport transport = new HttpTransport(wrapped, config, clientConfig)) {
+        assertThrows(
+            OpenLineageClientException.class,
+            () -> new OpenLineageClient(transport).emit(runEvent()));
+      }
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void unrelatedIllegalArgumentExceptionKeepsItsCause() {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("http://localhost:1500"));
+    TokenProvider provider = mock(TokenProvider.class);
+    when(provider.getToken()).thenThrow(new IllegalArgumentException("invalid token"));
+    config.setAuth(provider);
+
+    try (HttpTransport transport = new HttpTransport(http, config)) {
+      IllegalArgumentException error =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> new OpenLineageClient(transport).emit(runEvent()));
+      assertThat(error).hasMessage("invalid token");
+    } catch (IOException e) {
+      throw new AssertionError(e);
     }
   }
 

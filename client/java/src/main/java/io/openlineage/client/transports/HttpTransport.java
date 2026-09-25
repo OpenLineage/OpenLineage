@@ -256,19 +256,31 @@ public final class HttpTransport extends Transport {
 
   public HttpTransport(
       @NonNull final CloseableHttpClient httpClient, @NonNull final HttpConfig httpConfig) {
-    this.http = httpClient;
-    RequestConfig baseConfig;
+    this(httpClient, httpConfig, clientRequestConfig(httpClient, httpConfig));
+  }
+
+  private static RequestConfig clientRequestConfig(
+      CloseableHttpClient httpClient, HttpConfig httpConfig) {
     if (httpClient instanceof Configurable) {
-      baseConfig = ((Configurable) httpClient).getConfig();
-    } else {
-      Timeout timeout = getTimeout(httpConfig);
-      baseConfig =
-          RequestConfig.custom()
-              .setConnectionRequestTimeout(timeout)
-              .setResponseTimeout(timeout)
-              .build();
+      return ((Configurable) httpClient).getConfig();
     }
-    this.requestConfig = RequestConfig.copy(baseConfig).setRedirectsEnabled(false).build();
+    Timeout timeout = getTimeout(httpConfig);
+    return RequestConfig.custom()
+        .setConnectionRequestTimeout(timeout)
+        .setResponseTimeout(timeout)
+        .build();
+  }
+
+  /**
+   * Use this overload when an injected client wraps another client and does not expose its default
+   * {@link RequestConfig}. Pass the wrapped client's config to preserve its request settings.
+   */
+  public HttpTransport(
+      @NonNull final CloseableHttpClient httpClient,
+      @NonNull final HttpConfig httpConfig,
+      @NonNull final RequestConfig clientRequestConfig) {
+    this.http = httpClient;
+    this.requestConfig = RequestConfig.copy(clientRequestConfig).setRedirectsEnabled(false).build();
     try {
       this.uri = getUri(httpConfig);
     } catch (URISyntaxException e) {
@@ -371,7 +383,12 @@ public final class HttpTransport extends Transport {
         if (redirectLocation == null) {
           return;
         }
-        URI redirectUri = requestUri.resolve(redirectLocation);
+        URI redirectUri;
+        try {
+          redirectUri = requestUri.resolve(redirectLocation);
+        } catch (IllegalArgumentException e) {
+          throw new OpenLineageClientException("Invalid redirect location", e);
+        }
         if (!sameOrigin(requestUri, redirectUri)) {
           throw new OpenLineageClientException(
               "Refusing cross-origin redirect from " + requestUri + " to " + redirectUri);
@@ -389,8 +406,6 @@ public final class HttpTransport extends Transport {
       }
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
-    } catch (IllegalArgumentException e) {
-      throw new OpenLineageClientException("Invalid redirect location", e);
     }
   }
 
@@ -477,6 +492,8 @@ public final class HttpTransport extends Transport {
         OpenLineageClientUtils.toUri("http://localhost:8080");
 
     private @Nullable CloseableHttpClient httpClient;
+    private @Nullable RequestConfig clientRequestConfig;
+    private boolean useClientRequestConfig;
 
     @Delegate private final HttpConfig httpConfig = new HttpConfig();
 
@@ -509,6 +526,15 @@ public final class HttpTransport extends Transport {
 
     public Builder http(@NonNull CloseableHttpClient httpClient) {
       this.httpClient = httpClient;
+      this.useClientRequestConfig = false;
+      return this;
+    }
+
+    public Builder http(
+        @NonNull CloseableHttpClient httpClient, @NonNull RequestConfig requestConfig) {
+      this.httpClient = httpClient;
+      this.clientRequestConfig = requestConfig;
+      this.useClientRequestConfig = true;
       return this;
     }
 
@@ -529,7 +555,9 @@ public final class HttpTransport extends Transport {
      */
     public HttpTransport build() {
       if (httpClient != null) {
-        return new HttpTransport(httpClient, httpConfig);
+        return useClientRequestConfig
+            ? new HttpTransport(httpClient, httpConfig, clientRequestConfig)
+            : new HttpTransport(httpClient, httpConfig);
       }
       return new HttpTransport(httpConfig);
     }
