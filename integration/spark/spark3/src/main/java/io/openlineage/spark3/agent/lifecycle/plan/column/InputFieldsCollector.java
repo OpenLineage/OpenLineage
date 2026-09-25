@@ -35,6 +35,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LeafNode;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.OneRowRelation;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryNode;
 import org.apache.spark.sql.execution.ExternalRDD;
 import org.apache.spark.sql.execution.LogicalRDD;
@@ -61,6 +62,9 @@ public class InputFieldsCollector {
     } else if (plan instanceof CreateTableAsSelect
         && (plan.children() == null || plan.children().isEmpty())) {
       collect(context, ((CreateTableAsSelect) plan).query());
+    } else if (plan instanceof ReplaceTableAsSelect
+        && (plan.children() == null || plan.children().isEmpty())) {
+      collect(context, ((ReplaceTableAsSelect) plan).query());
     } else if (plan.children() != null) {
       ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
           .forEach(child -> collect(context, child));
