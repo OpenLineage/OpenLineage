@@ -8,8 +8,10 @@ package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.AliasBuilder.alias;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_2;
+import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.EXPR_ID_3;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_1;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_2;
+import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.NAME_3;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.asSeq;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelFixtures.field;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,6 +48,24 @@ class CreateTableAsSelectVisitorTest {
 
     visitor.apply(createTableAsSelect, builder);
 
+    verify(builder)
+        .addDependency(
+            EXPR_ID_2, EXPR_ID_1, "name2", TransformationInfo.identity("name1 AS name2"));
+  }
+
+  @Test
+  void testApplyVisitsOperatorsBelowQueryRoot() {
+    Project innerProject = getProject();
+    Project outerProject =
+        new Project(asSeq(alias(field(NAME_2, EXPR_ID_2)).as(NAME_3, EXPR_ID_3)), innerProject);
+    CreateTableAsSelect createTableAsSelect =
+        new CreateTableAsSelect(null, null, null, outerProject, null, null, false);
+
+    visitor.apply(createTableAsSelect, builder);
+
+    verify(builder)
+        .addDependency(
+            EXPR_ID_3, EXPR_ID_2, "name3", TransformationInfo.identity("name2 AS name3"));
     verify(builder)
         .addDependency(
             EXPR_ID_2, EXPR_ID_1, "name2", TransformationInfo.identity("name1 AS name2"));

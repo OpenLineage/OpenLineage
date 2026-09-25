@@ -11,7 +11,10 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilde
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 
-/** Extracts expression dependencies from ReplaceTableAsSelect operator in {@link LogicalPlan}. */
+/**
+ * Extracts expression dependencies from the query of a ReplaceTableAsSelect operator in {@link
+ * LogicalPlan} that does not expose the query as a child.
+ */
 public class ReplaceTableAsSelectVisitor implements OperatorVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan operator) {
@@ -21,6 +24,14 @@ public class ReplaceTableAsSelectVisitor implements OperatorVisitor {
 
   @Override
   public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
-    collectFromOperator(builder, ((ReplaceTableAsSelect) operator).query());
+    // The query is not a child of this node, so the regular plan traversal never reaches it.
+    // Visit every operator of the query, not only its root.
+    ((ReplaceTableAsSelect) operator)
+        .query()
+        .foreach(
+            node -> {
+              collectFromOperator(builder, node);
+              return scala.runtime.BoxedUnit.UNIT;
+            });
   }
 }
