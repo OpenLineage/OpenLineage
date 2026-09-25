@@ -16,10 +16,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,7 +32,6 @@ import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
-import scala.PartialFunction$;
 
 /**
  * Utility functions for traversing a {@link
@@ -43,9 +40,9 @@ import scala.PartialFunction$;
 @Slf4j
 public class PlanUtils {
   /**
-   * Given a list of {@link PartialFunction}s merge to produce a single function that will test the
-   * input against each function one by one until a match is found or {@link
-   * PartialFunction$#empty()} is returned.
+   * Combines partial functions in collection order. Applicability stops at the first match, but
+   * application checks and invokes every matching function sequentially. An earlier application can
+   * change later eligibility (for example, through visited-node state).
    *
    * @param fns
    * @param <T>
@@ -54,53 +51,7 @@ public class PlanUtils {
    */
   public static <T, D> OpenLineageAbstractPartialFunction<T, Collection<D>> merge(
       Collection<? extends PartialFunction<T, ? extends Collection<D>>> fns) {
-    return new OpenLineageAbstractPartialFunction<T, Collection<D>>() {
-      String appliedClassName;
-
-      @Override
-      public boolean isDefinedAt(T x) {
-        return fns.stream()
-            .filter(pfn -> PlanUtils.safeIsDefinedAt(pfn, x))
-            .findFirst()
-            .isPresent();
-      }
-
-      private boolean isDefinedAt(T x, PartialFunction<T, ? extends Collection<D>> pfn) {
-        return PlanUtils.safeIsDefinedAt(pfn, x);
-      }
-
-      @Override
-      public Collection<D> apply(T x) {
-        return fns.stream()
-            .filter(pfn -> PlanUtils.safeIsDefinedAt(pfn, x))
-            .map(
-                pfn -> {
-                  try {
-                    Collection<D> collection = pfn.apply(x);
-                    if (log.isDebugEnabled()) {
-                      log.debug(
-                          "Visitor {} visited {}, returned {}",
-                          pfn.getClass().getCanonicalName(),
-                          x.getClass().getCanonicalName(),
-                          collection);
-                    }
-                    appliedClassName = x.getClass().getName();
-                    return collection;
-                  } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
-                    log.error("Apply failed:", e);
-                    return null;
-                  }
-                })
-            .filter(Objects::nonNull)
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
-      }
-
-      @Override
-      String appliedName() {
-        return appliedClassName;
-      }
-    };
+    return DatasetDispatcher.merge(fns);
   }
 
   /**
@@ -379,23 +330,7 @@ public class PlanUtils {
    * @return
    */
   public static boolean safeIsDefinedAt(PartialFunction pfn, Object x) {
-    try {
-      return pfn.isDefinedAt(x);
-    } catch (ClassCastException e) {
-      // do nothing
-      return false;
-    } catch (TypeNotPresentException e) {
-      log.info("isDefinedAt method failed due to missing type: {}", e.getMessage());
-      return false;
-    } catch (Exception e) {
-      if (e != null) {
-        log.info("isDefinedAt method failed on {}", e);
-      }
-      return false;
-    } catch (NoClassDefFoundError e) {
-      log.info("isDefinedAt method failed on {}", e.getMessage());
-      return false;
-    }
+    return DatasetDispatcher.matches(pfn, x);
   }
 
   /**
@@ -406,11 +341,6 @@ public class PlanUtils {
    * @return
    */
   public static <T, D> List<T> safeApply(PartialFunction<D, List<T>> pfn, D x) {
-    try {
-      return pfn.apply(x);
-    } catch (Exception | NoClassDefFoundError | NoSuchMethodError e) {
-      log.info("apply method failed with", e);
-      return Collections.emptyList();
-    }
+    return DatasetDispatcher.apply(pfn, x);
   }
 }
