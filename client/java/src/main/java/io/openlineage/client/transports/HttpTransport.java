@@ -11,6 +11,7 @@ import static org.apache.hc.core5.http.HttpHeaders.ACCEPT;
 import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
 import static org.apache.hc.core5.http.HttpHeaders.CONTENT_ENCODING;
 import static org.apache.hc.core5.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.hc.core5.http.HttpHeaders.LOCATION;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
@@ -26,7 +27,10 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import lombok.NonNull;
@@ -35,6 +39,8 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.SystemDefaultDnsResolver;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.Configurable;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
@@ -49,6 +55,7 @@ import org.apache.hc.client5.http.io.DetachedSocketFactory;
 import org.apache.hc.client5.http.io.HttpClientConnectionOperator;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
+import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
@@ -57,7 +64,6 @@ import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
@@ -68,12 +74,14 @@ import org.apache.hc.core5.util.Timeout;
 @ToString
 public final class HttpTransport extends Transport {
   private static final String API_V1 = "/api/v1";
+  private static final int MAX_REDIRECTS = 50;
 
   /** Minimum Java version providing native Unix Domain Socket support (JEP 380). */
   private static final int MIN_JAVA_VERSION_FOR_UNIX_SOCKET = 16;
 
   private final CloseableHttpClient http;
   private final URI uri;
+  private final RequestConfig requestConfig;
   private @Nullable final TokenProvider tokenProvider;
 
   private final Map<String, String> headers;
@@ -84,14 +92,7 @@ public final class HttpTransport extends Transport {
   }
 
   private static CloseableHttpClient withTimeout(HttpConfig httpConfig) {
-    int timeoutMs;
-    if (httpConfig.getTimeoutInMillis() != null) {
-      timeoutMs = httpConfig.getTimeoutInMillis();
-    } else {
-      // default one
-      timeoutMs = 5000;
-    }
-    Timeout timeout = Timeout.ofMilliseconds(timeoutMs);
+    Timeout timeout = getTimeout(httpConfig);
 
     // A unix:// URL means the target is a Unix Domain Socket endpoint (e.g. one exposed on a
     // Kubernetes node). Apache HttpClient can't dial a UDS directly, so build a client whose
@@ -133,8 +134,12 @@ public final class HttpTransport extends Transport {
     return HttpClientBuilder.create()
         .setDefaultRequestConfig(requestConfig)
         .setConnectionManager(connectionManagerBuilder.build())
-        .setDefaultRequestConfig(requestConfig)
         .build();
+  }
+
+  private static Timeout getTimeout(HttpConfig httpConfig) {
+    return Timeout.ofMilliseconds(
+        httpConfig.getTimeoutInMillis() != null ? httpConfig.getTimeoutInMillis() : 5000);
   }
 
   private static boolean isUnixSocket(HttpConfig httpConfig) {
@@ -251,7 +256,31 @@ public final class HttpTransport extends Transport {
 
   public HttpTransport(
       @NonNull final CloseableHttpClient httpClient, @NonNull final HttpConfig httpConfig) {
+    this(httpClient, httpConfig, clientRequestConfig(httpClient, httpConfig));
+  }
+
+  private static RequestConfig clientRequestConfig(
+      CloseableHttpClient httpClient, HttpConfig httpConfig) {
+    if (httpClient instanceof Configurable) {
+      return ((Configurable) httpClient).getConfig();
+    }
+    Timeout timeout = getTimeout(httpConfig);
+    return RequestConfig.custom()
+        .setConnectionRequestTimeout(timeout)
+        .setResponseTimeout(timeout)
+        .build();
+  }
+
+  /**
+   * Use this overload when an injected client wraps another client and does not expose its default
+   * {@link RequestConfig}. Pass the wrapped client's config to preserve its request settings.
+   */
+  public HttpTransport(
+      @NonNull final CloseableHttpClient httpClient,
+      @NonNull final HttpConfig httpConfig,
+      @NonNull final RequestConfig clientRequestConfig) {
     this.http = httpClient;
+    this.requestConfig = RequestConfig.copy(clientRequestConfig).setRedirectsEnabled(false).build();
     try {
       this.uri = getUri(httpConfig);
     } catch (URISyntaxException e) {
@@ -326,22 +355,80 @@ public final class HttpTransport extends Transport {
   private void emit(String eventAsJson) {
     log.debug("POST event on URL {}", uri);
     try {
-      ClassicRequestBuilder request = ClassicRequestBuilder.post(uri);
-      setHeaders(request);
-      setBody(request, eventAsJson);
+      URI requestUri = uri;
+      Set<URI> visited = new HashSet<>();
+      visited.add(requestUri);
+      int redirectCount = 0;
+      while (true) {
+        HttpPost request = new HttpPost(requestUri);
+        request.setConfig(requestConfig);
+        setHeaders(request);
+        setBody(request, eventAsJson);
 
-      http.execute(
-          request.build(),
-          response -> {
-            throwOnHttpError(response);
-            return null;
-          });
+        AtomicReference<String> redirect = new AtomicReference<>();
+        http.execute(
+            request,
+            response -> {
+              int statusCode = response.getCode();
+              if ((statusCode == 307 || statusCode == 308)
+                  && response.getFirstHeader(LOCATION) != null) {
+                redirect.set(response.getFirstHeader(LOCATION).getValue());
+                EntityUtils.consume(response.getEntity());
+              } else {
+                throwOnHttpError(response);
+              }
+              return null;
+            });
+        String redirectLocation = redirect.get();
+        if (redirectLocation == null) {
+          return;
+        }
+        URI redirectUri;
+        try {
+          redirectUri = requestUri.resolve(redirectLocation);
+        } catch (IllegalArgumentException e) {
+          throw new OpenLineageClientException("Invalid redirect location", e);
+        }
+        if (!sameOrigin(requestUri, redirectUri)) {
+          throw new OpenLineageClientException(
+              "Refusing cross-origin redirect from " + requestUri + " to " + redirectUri);
+        }
+        if (!visited.add(redirectUri)) {
+          throw new OpenLineageClientException("Circular redirect to " + redirectUri);
+        }
+        // The visited set catches cycles; this separately bounds long chains of distinct URLs.
+        redirectCount++;
+        if (redirectCount >= MAX_REDIRECTS) {
+          throw new OpenLineageClientException(
+              "Maximum redirects (" + MAX_REDIRECTS + ") exceeded");
+        }
+        requestUri = redirectUri;
+      }
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
   }
 
-  private void setBody(ClassicRequestBuilder request, String body) {
+  private static boolean sameOrigin(URI first, URI second) {
+    return first.getScheme() != null
+        && second.getScheme() != null
+        && first.getScheme().equalsIgnoreCase(second.getScheme())
+        && first.getHost() != null
+        && second.getHost() != null
+        && first.getHost().equalsIgnoreCase(second.getHost())
+        && effectivePort(first) == effectivePort(second);
+  }
+
+  private static int effectivePort(URI uri) {
+    if (uri.getPort() != -1) {
+      return uri.getPort();
+    }
+    return "http".equalsIgnoreCase(uri.getScheme())
+        ? 80
+        : "https".equalsIgnoreCase(uri.getScheme()) ? 443 : -1;
+  }
+
+  private void setBody(ClassicHttpRequest request, String body) {
     HttpEntity entity = new StringEntity(body, APPLICATION_JSON);
     if (compression == HttpConfig.Compression.GZIP) {
       entity = new GzipCompressingEntity(entity);
@@ -349,7 +436,7 @@ public final class HttpTransport extends Transport {
     request.setEntity(entity);
   }
 
-  private void setHeaders(ClassicRequestBuilder request) {
+  private void setHeaders(ClassicHttpRequest request) {
     this.headers.forEach((key, value) -> request.setHeader(key, value));
     // set headers to accept json
     request.setHeader(ACCEPT, APPLICATION_JSON.toString());
@@ -369,7 +456,7 @@ public final class HttpTransport extends Transport {
     HttpEntity entity = response.getEntity();
     String body = EntityUtils.toString(entity, UTF_8);
     EntityUtils.consume(entity);
-    if (code >= 400 && code < 600) { // non-2xx
+    if (code < 200 || code >= 300) {
       throw new HttpTransportResponseException(code, body);
     }
   }
@@ -405,6 +492,8 @@ public final class HttpTransport extends Transport {
         OpenLineageClientUtils.toUri("http://localhost:8080");
 
     private @Nullable CloseableHttpClient httpClient;
+    private @Nullable RequestConfig clientRequestConfig;
+    private boolean useClientRequestConfig;
 
     @Delegate private final HttpConfig httpConfig = new HttpConfig();
 
@@ -437,6 +526,15 @@ public final class HttpTransport extends Transport {
 
     public Builder http(@NonNull CloseableHttpClient httpClient) {
       this.httpClient = httpClient;
+      this.useClientRequestConfig = false;
+      return this;
+    }
+
+    public Builder http(
+        @NonNull CloseableHttpClient httpClient, @NonNull RequestConfig requestConfig) {
+      this.httpClient = httpClient;
+      this.clientRequestConfig = requestConfig;
+      this.useClientRequestConfig = true;
       return this;
     }
 
@@ -457,7 +555,9 @@ public final class HttpTransport extends Transport {
      */
     public HttpTransport build() {
       if (httpClient != null) {
-        return new HttpTransport(httpClient, httpConfig);
+        return useClientRequestConfig
+            ? new HttpTransport(httpClient, httpConfig, clientRequestConfig)
+            : new HttpTransport(httpClient, httpConfig);
       }
       return new HttpTransport(httpConfig);
     }

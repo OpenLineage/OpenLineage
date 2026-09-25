@@ -13,8 +13,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -144,6 +146,142 @@ func TestHTTPTransport_Emit_ServerError(t *testing.T) {
 	_, err := tr.Emit(context.Background(), map[string]string{"k": "v"})
 	if err == nil {
 		t.Error("Emit() with 500 response should return error, got nil")
+	}
+}
+
+// TestHTTPTransport_Emit_RedirectPolicy verifies that only method-preserving redirects are
+// followed and that they retain the POST body.
+func TestHTTPTransport_Emit_RedirectPolicy(t *testing.T) {
+	tests := []struct {
+		status       int
+		wantErr      bool
+		wantRequests int
+	}{
+		{http.StatusMovedPermanently, true, 1},
+		{http.StatusFound, true, 1},
+		{http.StatusSeeOther, true, 1},
+		{http.StatusTemporaryRedirect, false, 2},
+		{http.StatusPermanentRedirect, false, 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			var mu sync.Mutex
+			var methods []string
+			var bodies [][]byte
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				mu.Lock()
+				methods = append(methods, r.Method)
+				bodies = append(bodies, body)
+				mu.Unlock()
+				if r.URL.Path == "/api/v1/lineage" {
+					w.Header().Set("Location", "/accepted")
+					w.WriteHeader(tt.status)
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer srv.Close()
+
+			tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL})
+			_, err := tr.Emit(context.Background(), map[string]string{"event": "lineage"})
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Emit() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			mu.Lock()
+			gotMethods := append([]string(nil), methods...)
+			gotBodies := append([][]byte(nil), bodies...)
+			mu.Unlock()
+			if len(gotMethods) != tt.wantRequests {
+				t.Fatalf("requests = %d, want %d", len(gotMethods), tt.wantRequests)
+			}
+			if !tt.wantErr {
+				if gotMethods[1] != http.MethodPost {
+					t.Errorf("redirected method = %q, want POST", gotMethods[1])
+				}
+				if !bytes.Equal(gotBodies[0], gotBodies[1]) {
+					t.Error("redirected body does not match original body")
+				}
+			}
+		})
+	}
+}
+
+// TestHTTPTransport_Emit_StopsAfterTenRedirects verifies that redirect loops stop at the standard
+// library's ten-request limit without retrying the full loop.
+func TestHTTPTransport_Emit_StopsAfterTenRedirects(t *testing.T) {
+	var mu sync.Mutex
+	requests := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		mu.Lock()
+		requests++
+		mu.Unlock()
+		w.Header().Set("Location", "/api/v1/lineage")
+		w.WriteHeader(http.StatusTemporaryRedirect)
+	}))
+	defer srv.Close()
+
+	tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL})
+	_, err := tr.Emit(context.Background(), map[string]string{"event": "lineage"})
+	if err == nil || !strings.Contains(err.Error(), "stopped after 10 redirects") {
+		t.Fatalf("Emit() error = %v, want ten-redirect limit error", err)
+	}
+	mu.Lock()
+	gotRequests := requests
+	mu.Unlock()
+	if gotRequests != maxRedirects {
+		t.Fatalf("requests = %d, want %d", gotRequests, maxRedirects)
+	}
+}
+
+func TestHTTPTransport_Emit_RefusesCrossOriginRedirect(t *testing.T) {
+	for _, status := range []int{http.StatusTemporaryRedirect, http.StatusPermanentRedirect} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			var targetRequests atomic.Int32
+			target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				targetRequests.Add(1)
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer target.Close()
+
+			redirect := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Location", target.URL+"/accepted")
+				w.WriteHeader(status)
+			}))
+			defer redirect.Close()
+
+			tr := newHTTPTransport(t, HTTPConfig{
+				URL:     redirect.URL,
+				Headers: map[string]string{"X-Secret": "secret"},
+			})
+			if _, err := tr.Emit(context.Background(), map[string]string{"event": "lineage"}); err == nil {
+				t.Fatal("Emit() followed a cross-origin redirect")
+			}
+			if got := targetRequests.Load(); got != 0 {
+				t.Fatalf("cross-origin target received %d requests, want zero", got)
+			}
+		})
+	}
+}
+
+func TestSameOrigin(t *testing.T) {
+	for _, tt := range []struct {
+		first, second string
+		want          bool
+	}{
+		{"http://example.com/path", "http://EXAMPLE.com:80/accepted", true},
+		{"https://example.com/path", "https://example.com:443/accepted", true},
+		{"http://example.com/path", "http://other.example/accepted", false},
+		{"http://example.com/path", "http://example.com:8080/accepted", false},
+		{"http://example.com/path", "https://example.com/accepted", false},
+		{"https://example.com/path", "http://example.com/accepted", false},
+	} {
+		first, _ := url.Parse(tt.first)
+		second, _ := url.Parse(tt.second)
+		if got := sameOrigin(first, second); got != tt.want {
+			t.Errorf("sameOrigin(%q, %q) = %v, want %v", tt.first, tt.second, got, tt.want)
+		}
 	}
 }
 

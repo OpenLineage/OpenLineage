@@ -9,6 +9,7 @@ import os
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
+import requests
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
@@ -18,12 +19,28 @@ from openlineage.client.transport.http import (
     HttpConfig,
     HttpTransport,
     TokenProvider,
+    _raise_on_method_changing_redirect,
 )
+from openlineage.client.transport.http_common import same_origin
 from openlineage.client.uuid import generate_new_uuid
 
 
 class CustomTokenProvider(TokenProvider):
     pass
+
+
+@pytest.mark.parametrize(
+    ("location", "expected"),
+    [
+        ("/accepted", True),
+        ("http://EXAMPLE.com:80/accepted", True),
+        ("http://example.com:8080/accepted", False),
+        ("https://example.com/accepted", False),
+        ("http://[invalid", False),
+    ],
+)
+def test_redirect_origin_comparison(location, expected):
+    assert same_origin("http://example.com/api/v1/lineage", location) is expected
 
 
 class NotATokenProvider:
@@ -276,6 +293,142 @@ class TestHttpTransportSync:
 
         assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
         assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+        assert call_args.kwargs["hooks"] == {
+            "response": [_raise_on_method_changing_redirect],
+        }
+
+    def test_http_transport_does_not_mutate_shared_session_hooks(self):
+        session = requests.Session()
+        caller_hook = MagicMock()
+        session.hooks["response"].append(caller_hook)
+        hooks = {name: callbacks.copy() for name, callbacks in session.hooks.items()}
+        transport = HttpTransport(HttpConfig(url="http://example.com", session=session))
+
+        assert session.hooks == hooks
+
+        response = MagicMock(status_code=200)
+        with (
+            patch.object(session, "post", return_value=response) as post,
+            patch("openlineage.client.serde.Serde.to_json", return_value="{}"),
+        ):
+            transport.emit(MagicMock())
+
+        assert post.call_args.kwargs["hooks"] == {
+            "response": [_raise_on_method_changing_redirect, caller_hook],
+        }
+        assert session.hooks == hooks
+
+        transport.close()
+
+    def test_http_transport_accepts_callable_session_hook(self):
+        session = requests.Session()
+        observed = []
+
+        def caller_hook(response, **_):
+            observed.append(response.status_code)
+
+        session.hooks["response"] = caller_hook
+        response = requests.Response()
+        response.status_code = 200
+        response._content = b""
+        adapter = MagicMock(spec=requests.adapters.HTTPAdapter)
+        adapter.send.return_value = response
+        transport = HttpTransport(HttpConfig(url="http://example.com", session=session, adapter=adapter))
+
+        with patch("openlineage.client.serde.Serde.to_json", return_value="{}"):
+            transport.emit(MagicMock())
+
+        assert observed == [200]
+        assert session.hooks["response"] is caller_hook
+        adapter.send.assert_called_once()
+        transport.close()
+
+    @pytest.mark.parametrize("status_code", [307, 308])
+    @pytest.mark.parametrize(
+        "location",
+        [
+            "http://other.example/accepted",
+            "http://example.com:8080/accepted",
+            "https://example.com/accepted",
+        ],
+    )
+    def test_http_transport_blocks_cross_origin_redirect_before_sending_body(self, status_code, location):
+        source = "http://example.com/api/v1/lineage"
+        response = requests.Response()
+        response.status_code = status_code
+        response.url = source
+        response.request = requests.Request("POST", source).prepare()
+        response.headers["Location"] = location
+        response._content = b"redirect response"
+        source_adapter = MagicMock(spec=requests.adapters.HTTPAdapter)
+        source_adapter.send.return_value = response
+        target_adapter = MagicMock(spec=requests.adapters.HTTPAdapter)
+        session = requests.Session()
+        session.mount(location, target_adapter)
+        transport = HttpTransport(
+            HttpConfig(
+                url="http://example.com",
+                session=session,
+                adapter=source_adapter,
+                custom_headers={"X-Secret": "secret"},
+            )
+        )
+
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"event": "lineage"}'):
+            with pytest.raises(requests.HTTPError, match="cross-origin redirect"):
+                transport.emit(MagicMock())
+
+        source_adapter.send.assert_called_once()
+        assert source_adapter.send.call_args.args[0].headers["X-Secret"] == "secret"
+        target_adapter.send.assert_not_called()
+        transport.close()
+
+    @pytest.mark.parametrize("status_code", [307, 308])
+    def test_http_transport_preserves_post_body_on_same_origin_redirect(self, status_code):
+        seen = []
+
+        def send(request, **_):
+            seen.append(request)
+            response = requests.Response()
+            response.status_code = status_code if request.url.endswith("/api/v1/lineage") else 200
+            response.url = request.url
+            response.request = request
+            response._content = b""
+            if response.status_code != 200:
+                response.headers["Location"] = "/accepted"
+            return response
+
+        adapter = MagicMock(spec=requests.adapters.HTTPAdapter)
+        adapter.send.side_effect = send
+        transport = HttpTransport(
+            HttpConfig(url="http://example.com", session=requests.Session(), adapter=adapter)
+        )
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"event": "lineage"}'):
+            assert transport.emit(MagicMock()).status_code == 200
+
+        assert [request.method for request in seen] == ["POST", "POST"]
+        assert [request.body for request in seen] == ['{"event": "lineage"}'] * 2
+        transport.close()
+
+    @pytest.mark.parametrize("status_code", [301, 302, 303])
+    def test_http_transport_rejects_method_changing_redirects(self, status_code):
+        response = requests.Response()
+        response.status_code = status_code
+        response._content = b"redirect response"
+
+        with pytest.raises(requests.HTTPError, match=f"HTTP {status_code} redirect") as error:
+            _raise_on_method_changing_redirect(response)
+
+        assert error.value.response.text == "redirect response"
+
+    @pytest.mark.parametrize("status_code", [307, 308])
+    def test_http_transport_allows_method_preserving_redirects(self, status_code):
+        response = requests.Response()
+        response.status_code = status_code
+        response.request = requests.Request("POST", "http://example.com/api/v1/lineage").prepare()
+        response.headers["Location"] = "/accepted"
+
+        _raise_on_method_changing_redirect(response)
 
     def test_http_transport_with_gzip_compression(self, mock_http_session_class):
         mock_session_class, mock_client, mock_response = mock_http_session_class
@@ -325,6 +478,7 @@ class TestHttpTransportSync:
 
     def test_http_transport_restores_debuglevel_after_failed_emit(self, mock_http_session_class):
         mock_session_class, mock_client, mock_response = mock_http_session_class
+        mock_response.status_code = 500
         mock_response.raise_for_status.side_effect = RuntimeError("request failed")
 
         config = HttpConfig(url="http://example.com")

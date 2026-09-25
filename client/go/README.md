@@ -247,6 +247,8 @@ transport.Config{
 
 Sends events to an HTTP endpoint (e.g., [Marquez](https://marquezproject.ai/)).
 
+The transport rejects `301`, `302`, and `303` redirects because they can change the POST to a GET and discard the event body. It follows `307` and `308` only when the scheme, host, and effective port stay the same. Configure proxies to use same-origin `307` or `308` redirects, and configure an HTTPS URL directly instead of relying on an HTTP-to-HTTPS redirect. A terminal non-2xx response fails emission.
+
 ```go
 transport.Config{
     Type: transport.TransportTypeHTTP,
@@ -551,4 +553,3 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
 ## License
 
 Apache License 2.0 - see [LICENSE](../../LICENSE) for details.
-

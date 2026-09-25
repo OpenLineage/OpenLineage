@@ -18,7 +18,7 @@ import attr
 import requests
 import urllib3.util
 from openlineage.client.serde import Serde
-from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
+from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG, same_origin
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields, import_from_string
 from requests import Session
@@ -30,6 +30,20 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+
+def _raise_on_method_changing_redirect(response: Response, **_: Any) -> None:
+    if response.status_code in (301, 302, 303):
+        # Consume the body so it remains available on the raised exception.
+        len(response.content)
+        msg = f"Refusing HTTP {response.status_code} redirect for lineage event POST"
+        raise requests.HTTPError(msg, response=response)
+    if response.status_code in (307, 308) and (location := response.headers.get("Location")):
+        source_url = response.request.url
+        if source_url is None or not same_origin(source_url, location):
+            len(response.content)
+            msg = f"Refusing cross-origin redirect for lineage event POST: {location}"
+            raise requests.HTTPError(msg, response=response)
 
 
 class TokenProvider:
@@ -498,6 +512,13 @@ class HttpTransport(Transport):
         http_client.HTTPConnection.debuglevel = 0
         try:
             body, headers = self._prepare_request(Serde.to_json(event))
+            session_hooks = self.session.hooks.get("response") or ()
+            if callable(session_hooks):
+                session_hooks = (session_hooks,)
+            response_hooks = [
+                _raise_on_method_changing_redirect,
+                *(hook for hook in session_hooks if hook is not _raise_on_method_changing_redirect),
+            ]
 
             resp = self.session.post(
                 url=urljoin(self.url, self.endpoint),
@@ -505,9 +526,13 @@ class HttpTransport(Transport):
                 headers=headers,
                 timeout=self.timeout,
                 verify=self.verify,
+                hooks={"response": response_hooks},
             )
             resp.close()
-            resp.raise_for_status()
+            if not 200 <= resp.status_code < 300:
+                resp.raise_for_status()
+                msg = f"Unexpected HTTP status {resp.status_code} for lineage event POST"
+                raise requests.HTTPError(msg, response=resp)
             return resp
         finally:
             http_client.HTTPConnection.debuglevel = prev_debuglevel

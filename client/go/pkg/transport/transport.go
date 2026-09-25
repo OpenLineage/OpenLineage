@@ -11,13 +11,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (
+	maxRedirects = 10
+
 	// TransportTypeHTTP is the HTTP transport type.
 	TransportTypeHTTP TransportType = "http"
 	// TransportTypeConsole is the console transport type.
@@ -64,6 +69,21 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 	case TransportTypeHTTP:
 		retryClient := retryablehttp.NewClient()
 		retryClient.Logger = nil // suppress default debug logging
+		checkRedirect := func(req *http.Request, via []*http.Request) error {
+			if len(via) >= maxRedirects {
+				// retryablehttp recognizes this exact shape and does not retry the redirect loop.
+				return fmt.Errorf("stopped after %d redirects", maxRedirects)
+			}
+			switch req.Response.StatusCode {
+			case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther:
+				return http.ErrUseLastResponse
+			}
+			if !sameOrigin(via[len(via)-1].URL, req.URL) {
+				return http.ErrUseLastResponse
+			}
+			return nil
+		}
+		retryClient.HTTPClient.CheckRedirect = checkRedirect
 
 		timeout := defaultTimeout
 		if config.HTTP.TimeoutInMillis > 0 {
@@ -72,6 +92,7 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 
 		httpClient := retryClient.StandardClient()
 		httpClient.Timeout = timeout
+		httpClient.CheckRedirect = checkRedirect
 
 		u, err := url.Parse(config.HTTP.URL)
 		if err != nil {
@@ -97,4 +118,28 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 	default:
 		return nil, errors.New("no valid transport specified")
 	}
+}
+
+func sameOrigin(first, second *url.URL) bool {
+	port := originPort(first)
+	return strings.EqualFold(first.Scheme, second.Scheme) &&
+		strings.EqualFold(first.Hostname(), second.Hostname()) &&
+		first.Hostname() != "" && port != -1 && port == originPort(second)
+}
+
+func originPort(u *url.URL) int {
+	if port := u.Port(); port != "" {
+		value, err := strconv.Atoi(port)
+		if err != nil {
+			return -1
+		}
+		return value
+	}
+	if strings.EqualFold(u.Scheme, "http") {
+		return 80
+	}
+	if strings.EqualFold(u.Scheme, "https") {
+		return 443
+	}
+	return -1
 }

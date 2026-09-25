@@ -257,6 +257,8 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
 
 Events are serialized to JSON, and then are sent as HTTP POST request with `Content-Type: application/json`. Events are sent immediately and the call blocks until completion. Uses httpx2 with built-in retry support and raises exceptions on failure.
 
+The HTTP transports reject `301`, `302`, and `303` redirects because they can change the POST to a GET and discard the event body. They follow `307` and `308` only when the scheme, host, and effective port stay the same. Configure proxies to use same-origin `307` or `308` redirects, and configure an HTTPS URL directly instead of relying on an HTTP-to-HTTPS redirect. A terminal non-2xx response fails emission.
+
 #### Examples
 
 <Tabs groupId="integrations">
@@ -2247,5 +2249,3 @@ Custom trimmers must respect two constraints:
   For example, a trimmer that toggles a name between `/data/table/a` and `/data/table/b`
   on successive calls would never converge.
   If convergence is not reached, the reducer falls back to the original name.
-
-
