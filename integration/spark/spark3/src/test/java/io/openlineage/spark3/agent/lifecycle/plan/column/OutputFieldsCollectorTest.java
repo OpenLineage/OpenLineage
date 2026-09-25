@@ -18,8 +18,10 @@ import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
+import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,6 +30,8 @@ import scala.collection.immutable.Seq;
 class OutputFieldsCollectorTest {
 
   private static final String SOME_NAME = "some-name";
+  private static final String NAME_1 = "name1";
+  private static final String NAME_2 = "name2";
   LogicalPlan plan = mock(LogicalPlan.class);
   OpenLineageContext olContext = mock(OpenLineageContext.class);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
@@ -41,10 +45,10 @@ class OutputFieldsCollectorTest {
 
   @BeforeEach
   void setup() {
-    when(attr1.name()).thenReturn("name1");
+    when(attr1.name()).thenReturn(NAME_1);
     when(attr1.exprId()).thenReturn(exprId1);
 
-    when(attr2.name()).thenReturn("name2");
+    when(attr2.name()).thenReturn(NAME_2);
     when(attr2.exprId()).thenReturn(exprId2);
 
     when(clContext.getBuilder()).thenReturn(builder);
@@ -59,8 +63,8 @@ class OutputFieldsCollectorTest {
 
     OutputFieldsCollector.collect(clContext, plan);
 
-    Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
-    Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");
+    Mockito.verify(builder, times(1)).addOutput(exprId1, NAME_1);
+    Mockito.verify(builder, times(1)).addOutput(exprId2, NAME_2);
   }
 
   @Test
@@ -123,7 +127,50 @@ class OutputFieldsCollectorTest {
 
     OutputFieldsCollector.collect(clContext, plan);
 
-    Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
-    Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");
+    Mockito.verify(builder, times(1)).addOutput(exprId1, NAME_1);
+    Mockito.verify(builder, times(1)).addOutput(exprId2, NAME_2);
+  }
+
+  @Test
+  void verifyCreateTableAsSelectOutputIsTakenFromQuery() {
+    Seq<Attribute> commandOutput = commandOutputWithMismatchedExprIds();
+    CreateTableAsSelect ctas = mock(CreateTableAsSelect.class);
+    when(ctas.output()).thenReturn(commandOutput);
+    when(ctas.query()).thenReturn(plan);
+    when(plan.output()).thenReturn(attrs);
+
+    OutputFieldsCollector.collect(clContext, ctas);
+
+    verifyOnlyQueryOutputsCollected();
+  }
+
+  @Test
+  void verifyReplaceTableAsSelectOutputIsTakenFromQuery() {
+    Seq<Attribute> commandOutput = commandOutputWithMismatchedExprIds();
+    ReplaceTableAsSelect rtas = mock(ReplaceTableAsSelect.class);
+    when(rtas.output()).thenReturn(commandOutput);
+    when(rtas.query()).thenReturn(plan);
+    when(plan.output()).thenReturn(attrs);
+
+    OutputFieldsCollector.collect(clContext, rtas);
+
+    verifyOnlyQueryOutputsCollected();
+  }
+
+  /**
+   * Some runtimes (e.g. Databricks) expose the command's output with ExprIds that differ from the
+   * query's. Those must not be used as output fields.
+   */
+  private Seq<Attribute> commandOutputWithMismatchedExprIds() {
+    Attribute commandAttr = mock(Attribute.class);
+    when(commandAttr.name()).thenReturn(NAME_1);
+    when(commandAttr.exprId()).thenReturn(mock(ExprId.class));
+    return ScalaConversionUtils.fromList(Arrays.asList(commandAttr)).toSeq();
+  }
+
+  private void verifyOnlyQueryOutputsCollected() {
+    Mockito.verify(builder, times(1)).addOutput(exprId1, NAME_1);
+    Mockito.verify(builder, times(1)).addOutput(exprId2, NAME_2);
+    Mockito.verify(builder, times(2)).addOutput(Mockito.any(), Mockito.any());
   }
 }

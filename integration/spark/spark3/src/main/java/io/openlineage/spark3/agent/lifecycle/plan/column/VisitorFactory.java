@@ -22,6 +22,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.Icebe
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.JoinVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.OperatorVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.ProjectVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.ReplaceTableAsSelectVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.SortVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator.UnionVisitor;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ class VisitorFactory {
             new ProjectVisitor(),
             new GenerateVisitor(),
             new CreateTableAsSelectVisitor(),
+            new ReplaceTableAsSelectVisitor(),
             new DistinctVisitor(),
             new AggregateVisitor(),
             new JoinVisitor(),
