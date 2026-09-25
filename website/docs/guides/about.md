@@ -4,12 +4,12 @@ sidebar_position: 1
 
 # About
 
-The following tutorials take you through the process of exploiting the lineage metadata provided by Marquez and OpenLineage to solve common data engineering problems and make new analytical and historical insights into your pipelines.
+The following tutorials guide you through using OpenLineage to collect, emit, and leverage data lineage metadata across your pipelines to solve common data engineering problems and gain analytical and operational insights.
 
-The first tutorial, "Using OpenLineage with Spark," provides an introduction to OpenLineage's integration with Apache Spark. You will learn how to use Marquez and the OpenLineage standard to produce lineage metadata about jobs and datasets created using Spark and BigQuery in a Jupyter notebook environment.
+While several tutorials use [Marquez](https://marquezproject.ai/) as an open-source reference implementation for backend storage and visualization, OpenLineage is designed to be consumer- and vendor-neutral. Emitted OpenLineage events can be sent to and consumed by any OpenLineage-compatible backend or metadata platform.
 
-The second tutorial, "Using OpenLineage with Airflow," shows you how to use OpenLineage on Apache Airflow to produce data lineage on supported operators to emit lineage events to Marquez backend. The tutorial also introduces you to the OpenLineage proxy to monitor the event data being emitted.
-
-The third tutorial, "Backfilling Airflow DAGs Using Marquez," shows you how to use Marquez's Airflow integration and the Marquez CLI to backfill failing runs with the help of lineage metadata. You will learn how data lineage can be used to automate the backfilling process.
-
-The fourth tutorial, "Using Marquez with dbt," takes you through the process of setting up Marquez's dbt integration to harvest metadata produced by dbt. You will learn how to create a Marquez instance, install the integration, configure your dbt installation, and test the configuration using dbt.  
+- **[Using OpenLineage with Spark](spark.md)** provides an introduction to OpenLineage's integration with Apache Spark. You will learn how to produce lineage metadata about jobs and datasets created using Spark and BigQuery in a Jupyter notebook environment and emit events to a backend.
+- **[Using OpenLineage with Airflow](airflow-quickstart.md)** demonstrates how to use OpenLineage on Apache Airflow to capture data lineage from supported operators and emit events to a backend. The tutorial also introduces the OpenLineage proxy to inspect and monitor emitted event data.
+- **[Backfilling Airflow DAGs Using Marquez](airflow-backfill-dags.md)** shows how lineage metadata stored in an OpenLineage-compatible backend can be used alongside the Marquez CLI to automate backfilling for failing DAG runs.
+- **[Using Marquez with dbt](dbt.md)** takes you through configuring dbt with OpenLineage to harvest lineage metadata produced during dbt runs and view it in a backend.
+- **[OpenLineage for Spark Connectors](spark-connector.md)** explores how OpenLineage extracts lineage from Spark LogicalPlans and provides architectural guidance for Spark connector developers.
