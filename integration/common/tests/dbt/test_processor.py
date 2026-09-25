@@ -163,6 +163,22 @@ def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
     )
 
 
+def test_presto_namespace(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.PRESTO
+    dbt_artifact_processor.extract_dataset_namespace({"host": "presto.example.com", "port": 8443})
+
+    assert dbt_artifact_processor.dataset_namespace == "presto://presto.example.com:8443"
+
+
+def test_watsonx_presto_namespace(dbt_artifact_processor):
+    # IBM's dbt-watsonx-presto is a fork of dbt-presto over the same prestodb client,
+    # so it shares presto's namespace scheme.
+    dbt_artifact_processor.adapter_type = Adapter.WATSONX_PRESTO
+    dbt_artifact_processor.extract_dataset_namespace({"host": "watsonx.example.com", "port": 443})
+
+    assert dbt_artifact_processor.dataset_namespace == "presto://watsonx.example.com:443"
+
+
 @pytest.mark.parametrize(
     "profile, expected",
     [
@@ -331,6 +347,23 @@ def test_extract_adapter_type_fabric(dbt_artifact_processor):
     # `Adapter[type.upper()]` resolves it without NotImplementedError.
     dbt_artifact_processor.extract_adapter_type({"type": "fabric"})
     assert dbt_artifact_processor.adapter_type == Adapter.FABRIC
+
+
+@pytest.mark.parametrize(
+    "profile_type, expected",
+    [
+        ("presto", Adapter.PRESTO),
+        # dbt-watsonx-presto registers itself as `watsonx_presto`, not `presto`.
+        ("watsonx_presto", Adapter.WATSONX_PRESTO),
+    ],
+)
+def test_extract_adapter_type_presto_family(dbt_artifact_processor, profile_type, expected):
+    profile = {"type": profile_type, "host": "presto.example.com", "port": 443}
+    dbt_artifact_processor.extract_adapter_type(profile)
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    assert dbt_artifact_processor.adapter_type == expected
+    assert dbt_artifact_processor.dataset_namespace == "presto://presto.example.com:443"
 
 
 class TestParseSeverity:
