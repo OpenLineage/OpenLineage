@@ -4,7 +4,7 @@
 import logging
 from datetime import datetime
 
-from facets.run_facets import PrefectDeploymentRunFacet
+from . import facets, listener
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import Dataset
 from openlineage.client.facet import (
@@ -32,20 +32,17 @@ class PrefectOpenLineageAdapter:
         flow_name: str,
         flow_namespace: str,
         prefect_version: str | None = None,
-        deployment_id: str | None = None,
-        deployment_created: str | None = None,
-        deployment_updated: str | None = None,
-        deployment_name: str | None = None,
+        deployment: listener.DeploymentInfo | None = None,
     ) -> RunEvent:
         """Create and emit a flow-level OpenLineage event."""
 
-        if all([deployment_id, deployment_created, deployment_updated, deployment_name]):
+        if deployment:
             run_facets = {
-                "prefectDeployment": PrefectDeploymentRunFacet(
-                    deploymentId=deployment_id,
-                    created=deployment_created,
-                    updated=deployment_updated,
-                    name=deployment_name,
+                "prefectDeployment": facets.run_facets.PrefectDeploymentRunFacet(
+                    deploymentId=deployment.id,
+                    created=deployment.created,
+                    updated=deployment.updated,
+                    name=deployment.name,
                 ),
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version, name="Prefect"
@@ -90,16 +87,13 @@ class PrefectOpenLineageAdapter:
         namespace: str | None  = None,
         job_deps: list | None = None,
         prefect_version: str | None = None,
-        deployment_id: str | None = None,
-        deployment_created: str | None = None,
-        deployment_updated: str | None = None,
-        deployment_name: str | None = None,
+        deployment: listener.DeploymentInfo | None = None,
         input_datasets: list | None = None,
         output_datasets: list | None = None,
     ) -> RunEvent:
         """Create and emit a task-level OpenLineage event."""
 
-        if deployment_id:
+        if deployment:
             run_facets = {
                 "nominalTime": NominalTimeRunFacet(nominalStartTime=expectedevent_time),
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
@@ -109,11 +103,11 @@ class PrefectOpenLineageAdapter:
                     run={"runId": flow_run_id},
                     job={"namespace": namespace, "name": flow_name},
                 ),
-                "prefectDeployment": PrefectDeploymentRunFacet(
-                    deploymentId=deployment_id,
-                    created=deployment_created,
-                    updated=deployment_updated,
-                    name=deployment_name,
+                "prefectDeployment": facets.run_facets.PrefectDeploymentRunFacet(
+                    deploymentId=deployment.id,
+                    created=deployment.created,
+                    updated=deployment.updated,
+                    name=deployment.name,
                 ),
             }
         else:
