@@ -13,7 +13,6 @@ from . import adapter
 from openlineage.client.run import RunState
 from openlineage.client.uuid import generate_static_uuid
 
-from prefect import client
 from prefect.client.orchestration import get_client
 from prefect.events.clients import get_events_subscriber
 from prefect.events.filters import EventFilter, EventNameFilter
@@ -28,8 +27,8 @@ logger: logging.Logger = logging.getLogger(__name__)
 class PrefectOpenLineageListener:
     def __init__(
         self,
-        client: client = None,
-        ol_adapter: adapter.PrefectOpenLineageAdapter = None,
+        client = None,
+        ol_adapter = None,
     ):
         self.client = client or get_client()
         self.ol_adapter = ol_adapter or adapter.PrefectOpenLineageAdapter()

@@ -24,7 +24,6 @@ For example:
 
 ```py
 import asyncio
-import openlineage_prefect
 from openlineage_prefect.prefect_adapter.listener import PrefectOpenLineageListener
 
 async def main():

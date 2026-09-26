@@ -3,8 +3,9 @@
 
 import logging
 from datetime import datetime
+from typing import Any
 
-from . import facets, listener
+from . import facets
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import Dataset
 from openlineage.client.facet import (
@@ -32,7 +33,7 @@ class PrefectOpenLineageAdapter:
         flow_name: str,
         flow_namespace: str,
         prefect_version: str | None = None,
-        deployment: listener.DeploymentInfo | None = None,
+        deployment: Any = None,
     ) -> RunEvent:
         """Create and emit a flow-level OpenLineage event."""
 
@@ -87,7 +88,7 @@ class PrefectOpenLineageAdapter:
         namespace: str | None  = None,
         job_deps: list | None = None,
         prefect_version: str | None = None,
-        deployment: listener.DeploymentInfo | None = None,
+        deployment: Any = None,
         input_datasets: list | None = None,
         output_datasets: list | None = None,
     ) -> RunEvent:
