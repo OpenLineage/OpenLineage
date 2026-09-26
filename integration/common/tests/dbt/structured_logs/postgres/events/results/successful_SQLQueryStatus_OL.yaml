@@ -180,7 +180,7 @@
         },
         "externalQuery": {
           "externalQueryId": "01bdd1f2-020e-223c-0046-e4070065a01a",
-          "source": "source"
+          "source": "postgres://postgres:5432"
         }
       }
     },

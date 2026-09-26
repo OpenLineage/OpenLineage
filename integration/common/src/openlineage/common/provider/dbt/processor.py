@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import collections
 import datetime
+import json
 import logging
 from abc import abstractmethod
 from collections.abc import Sequence
 from enum import Enum
+from functools import cached_property
 from typing import Any
 
 import attr
@@ -29,12 +31,19 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
     schema_dataset,
     sql_job,
+    symlinks_dataset,
     tags_run,
     test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
+    DbtExposure,
+    DbtExposuresDatasetFacet,
+    DbtIncrementalConfig,
+    DbtModelConfig,
+    DbtModelDatasetFacet,
     DbtNodeJobFacet,
+    DbtPartitionBy,
     DbtRunRunFacet,
     DbtVersionRunFacet,
     ParentRunMetadata,
@@ -58,8 +67,11 @@ class Adapter(Enum):
     ATHENA = "athena"
     DUCKDB = "duckdb"
     TRINO = "trino"
+    PRESTO = "presto"
+    WATSONX_PRESTO = "watsonx_presto"
     GLUE = "glue"
     CLICKHOUSE = "clickhouse"
+    FABRIC = "fabric"
 
     @staticmethod
     def adapters() -> str:
@@ -181,10 +193,18 @@ class DbtArtifactProcessor:
         self.skip_errors = skip_errors
         self.run_metadata: dict[str, Any] = {}
         self.command = None
+        self.full_refresh: bool | None = None
         self.models = models or []
         self.selector = selector
         self.manifest_version = None
         self.adapter_type: Adapter | None = None
+        # Set for adapters that can provide a stable catalog identifier in addition to
+        # the primary dataset namespace. For Athena, this is populated from the supported
+        # assume-role ARN or a best-effort STS lookup; lookup failures leave it unset.
+        self.dataset_symlink_namespace: str | None = None
+        # Populated by parse(); retained so manifest-declared exposures can be indexed
+        # and attached to the datasets they depend on.
+        self.manifest: dict[str, Any] = {}
 
     @property
     def dbt_run_metadata(self):
@@ -202,10 +222,12 @@ class DbtArtifactProcessor:
         Parse dbt manifest and run_result and produce OpenLineage events.
         """
         manifest, run_result, profile, catalog = self.get_dbt_metadata()
+        self.manifest = manifest
         self.manifest_version = self.get_schema_version(manifest)
 
         self.run_metadata = run_result["metadata"]
         self.command = run_result["args"]["which"]
+        self.full_refresh = self._full_refresh_from_args(run_result["args"])
 
         self.extract_adapter_type(profile)
         self.extract_dataset_namespace(profile)
@@ -247,12 +269,20 @@ class DbtArtifactProcessor:
 
         # Default to query_id for all Adapters
         query_id_key: str = "query_id"
+        query_id: str | None
 
         # Use the adapter type to make sure the correct key is used
         if self.adapter_type == Adapter.BIGQUERY:
             query_id_key = "job_id"
-
-        query_id: str | None = run_result["adapter_response"].get(query_id_key)
+            project_id: str | None = run_result["adapter_response"].get("project_id")
+            location: str | None = run_result["adapter_response"].get("location")
+            job_id: str | None = run_result["adapter_response"].get(query_id_key)
+            if project_id is not None and location is not None and job_id is not None:
+                query_id = f"{project_id}:{location}.{job_id}"
+            else:
+                query_id = job_id
+        else:
+            query_id = run_result["adapter_response"].get(query_id_key)
 
         if isinstance(query_id, str):
             # For Databricks, "N/A" could be returned if the query_id is None; catch that
@@ -283,22 +313,29 @@ class DbtArtifactProcessor:
             output_node = nodes[name]
             started_at, completed_at = self.get_timings(run["timing"])
 
-            inputs = []
+            # (node_id, node) so exposures depending on an input can be looked up below.
+            inputs: list[tuple[str, ModelNode]] = []
             for node in context.manifest["parent_map"][run["unique_id"]]:
                 if node.startswith("model."):
                     inputs.append(
-                        ModelNode(
-                            type="model",
-                            metadata_node=nodes[node],
-                            catalog_node=get_from_nullable_chain(context.catalog, ["nodes", node]),
+                        (
+                            node,
+                            ModelNode(
+                                type="model",
+                                metadata_node=nodes[node],
+                                catalog_node=get_from_nullable_chain(context.catalog, ["nodes", node]),
+                            ),
                         )
                     )
                 elif node.startswith("source."):
                     inputs.append(
-                        ModelNode(
-                            type="source",
-                            metadata_node=context.manifest["sources"][node],
-                            catalog_node=get_from_nullable_chain(context.catalog, ["sources", node]),
+                        (
+                            node,
+                            ModelNode(
+                                type="source",
+                                metadata_node=context.manifest["sources"][node],
+                                catalog_node=get_from_nullable_chain(context.catalog, ["sources", node]),
+                            ),
                         )
                     )
 
@@ -342,10 +379,8 @@ class DbtArtifactProcessor:
                 job_facets["sql"] = sql_job.SQLJobFacet(query=sql, dialect=self.extract_dialect())
 
             run_facets: dict[str, RunFacet] = {}
-            if tags := output_node.get("tags", None):
-                run_facets["tags"] = tags_run.TagsRunFacet(
-                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-                )
+            if tags_facet := self._build_tags_run_facet(output_node.get("tags"), output_node.get("meta")):
+                run_facets["tags"] = tags_facet
 
             output_dataset = self.node_to_output_dataset(
                 ModelNode(
@@ -363,6 +398,19 @@ class DbtArtifactProcessor:
                 if column_lineage:
                     output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
 
+            # Attach exposures only for successful builds (FAIL emits no outputs, skipped
+            # nodes are filtered above).
+            succeeded = run["status"] == "success"
+            input_datasets = []
+            for node_id, input_node in inputs:
+                input_dataset = self.node_to_dataset(input_node, has_facets=True)
+                if succeeded:
+                    input_dataset.facets.update(self._exposures_facets(node_id))  # type: ignore
+                input_datasets.append(input_dataset)
+
+            if succeeded:
+                output_dataset.facets.update(self._exposures_facets(run["unique_id"]))  # type: ignore
+
             events.add(
                 self.to_openlineage_events(
                     run["status"],
@@ -370,7 +418,7 @@ class DbtArtifactProcessor:
                     completed_at,
                     self.get_run(run_id=run_id, query_id=query_id, run_facets=run_facets),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
-                    [self.node_to_dataset(node, has_facets=True) for node in inputs],
+                    input_datasets,
                     output_dataset,
                 )
             )
@@ -385,23 +433,27 @@ class DbtArtifactProcessor:
 
         events = DbtEvents()
         manifest_nodes = {**context.manifest["nodes"], **context.manifest["sources"]}
-        for name, node in manifest_nodes.items():
-            if name.startswith("model."):
+        for unique_id, node in manifest_nodes.items():
+            if unique_id.startswith("model."):
                 node_type = "model"
-            elif name.startswith("source."):
+            elif unique_id.startswith("source."):
                 node_type = "source"
             else:
                 continue
-            if len(assertions[name]) == 0:
+            node_assertions = assertions[unique_id]
+            if len(node_assertions) == 0:
                 continue
 
             assertion_facet = data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(
-                assertions=assertions[name]
+                assertions=node_assertions
             )
 
-            namespace, name, _, _ = self.extract_dataset_data(
+            namespace, name, dataset_facets, _ = self.extract_dataset_data(
                 ModelNode(type=node_type, metadata_node=node), assertion_facet, has_facets=False
             )
+            # Keep the assertion facet in both locations for compatibility, while
+            # retaining dataset facets such as the Athena Glue symlink.
+            dataset_facets["dataQualityAssertions"] = assertion_facet  # type: ignore[assignment]
 
             job_name = self._format_dataset_name(
                 node["database"],
@@ -426,16 +478,21 @@ class DbtArtifactProcessor:
             }
 
             run_facets: dict[str, RunFacet] = {}
-            if tags := node.get("tags", None):
-                run_facets["tags"] = tags_run.TagsRunFacet(
-                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-                )
+            if tags_facet := self._build_tags_run_facet(node.get("tags"), node.get("meta")):
+                run_facets["tags"] = tags_facet
 
             run_id = str(generate_new_uuid())
-            dataset_facets: dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
+            # The aggregate per-model test event is FAIL when any of its assertions failed.
+            # Warn-severity failures count as success so they don't block the pipeline,
+            # mirroring dbt's own success/failure semantics.
+            status = (
+                "success"
+                if all(a.success or (a.severity or "").lower() == "warn" for a in node_assertions)
+                else "error"
+            )
             events.add(
                 self.to_openlineage_events(
-                    "success",
+                    status,
                     started_at,
                     completed_at,
                     self.get_run(run_id=run_id, run_facets=run_facets),
@@ -444,7 +501,7 @@ class DbtArtifactProcessor:
                         InputDataset(
                             namespace=namespace,
                             name=name,
-                            inputFacets=dataset_facets,
+                            inputFacets={"dataQualityAssertions": assertion_facet},
                             # TODO: remove this next release
                             facets=dataset_facets,  # type: ignore
                         )
@@ -480,10 +537,8 @@ class DbtArtifactProcessor:
             run_facets_per_test: dict[str, RunFacet] = {
                 "test": test_run.TestRunFacet(tests=[test_obj]),
             }
-            if tags := test_node.get("tags", None):
-                run_facets_per_test["tags"] = tags_run.TagsRunFacet(
-                    tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-                )
+            if tags_facet := self._build_tags_run_facet(test_node.get("tags"), test_node.get("meta")):
+                run_facets_per_test["tags"] = tags_facet
 
             job_facets_per_test: dict[str, JobFacet] = {
                 "jobType": job_type_job.JobTypeJobFacet(
@@ -525,11 +580,11 @@ class DbtArtifactProcessor:
                 continue
             parent_node = manifest_nodes.get(parent_id)
             if parent_node:
-                ptype = "model" if parent_id.startswith("model.") else "source"
-                ns, nm, _, _ = self.extract_dataset_data(
+                ptype = "source" if parent_id.startswith("source.") else "model"
+                ns, nm, facets, _ = self.extract_dataset_data(
                     ModelNode(type=ptype, metadata_node=parent_node), None, has_facets=False
                 )
-                inputs.append(InputDataset(namespace=ns, name=nm))
+                inputs.append(InputDataset(namespace=ns, name=nm, facets=facets))
         return inputs
 
     def _build_test_execution(
@@ -586,19 +641,17 @@ class DbtArtifactProcessor:
                 if any(node.startswith(prefix) for prefix in ["model.", "source.", "seed."]):
                     model_node = node
 
-            if self.manifest_version >= 12:  # type: ignore
+            # test_metadata presence is the canonical dbt discriminator between generic tests
+            # (always have test_metadata, regardless of manifest version) and singular tests
+            # (plain SQL files, never have it). Do not gate this on manifest_version.
+            test_metadata = test_node.get("test_metadata")
+            if test_metadata:
+                name = test_metadata["name"]
+                node_columns = test_metadata
+            else:
+                # Singular test — no test_metadata, use node name directly
                 name = test_node["name"]
                 node_columns = test_node
-
-            else:
-                test_metadata = test_node.get("test_metadata")
-                if test_metadata:
-                    name = test_metadata["name"]
-                    node_columns = test_metadata
-                else:
-                    # Singular test — no test_metadata, use node name directly
-                    name = test_node["name"]
-                    node_columns = test_node
 
             # Extract severity from config, normalize to lowercase
             config = test_node.get("config", {})
@@ -613,8 +666,10 @@ class DbtArtifactProcessor:
             assertions[model_node].append(
                 data_quality_assertions_dataset.Assertion(
                     assertion=name,
+                    name=test_node.get("name"),
                     success=True if run["status"] == "pass" else False,
-                    column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
+                    column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"])
+                    or test_node.get("column_name"),
                     severity=severity,
                     actual=actual,
                     expected=expected,
@@ -766,14 +821,14 @@ class DbtArtifactProcessor:
         assertions: data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet | None,
         has_facets: bool = False,
     ) -> tuple[str, str, dict, dict]:
-        facets: dict[str, DatasetFacet]
+        facets: dict[str, DatasetFacet] = {}
         input_facets: dict[str, InputDatasetFacet] = {}
+        if symlink := self._create_dataset_symlink(node):
+            facets["symlinks"] = symlink
         if has_facets:
-            facets = {
-                "dataSource": datasource_dataset.DatasourceDatasetFacet(
-                    name=self.dataset_namespace, uri=self.dataset_namespace
-                ),
-            }
+            facets["dataSource"] = datasource_dataset.DatasourceDatasetFacet(
+                name=self.dataset_namespace, uri=self.dataset_namespace
+            )
 
             documentation = node.metadata_node.get("description", "")
             if documentation:
@@ -795,11 +850,13 @@ class DbtArtifactProcessor:
                 facets["schema"] = schema_dataset.SchemaDatasetFacet(fields=fields)
 
             if owner := get_from_nullable_chain(node.metadata_node, ["meta", "owner"]):
+                names = owner if isinstance(owner, list) else [owner]
                 facets["ownership"] = ownership_dataset.OwnershipDatasetFacet(
-                    owners=[ownership_dataset.Owner(name=owner)]
+                    owners=[ownership_dataset.Owner(name=name) for name in names]
                 )
-        else:
-            facets = {}
+
+            if dbt_model_facet := self._create_dbt_model_dataset_facet(node):
+                facets["dbt_model"] = dbt_model_facet
         if node.type == "source":
             table = node.metadata_node["name"]
         else:
@@ -814,6 +871,160 @@ class DbtArtifactProcessor:
             facets,
             input_facets,
         )
+
+    def _create_dataset_symlink(self, node: ModelNode) -> symlinks_dataset.SymlinksDatasetFacet | None:
+        """Create an alternate catalog identifier for an Athena dataset.
+
+        dbt-athena identifies the catalog and Glue database separately in its
+        manifest: ``database`` is the catalog (usually ``awsdatacatalog``) and
+        ``schema`` is the Glue database. The AWS account is taken from the
+        supported ``assume_role_arn`` when available, or resolved with a
+        best-effort STS lookup. If neither path succeeds, the existing Athena
+        identifier is retained and no symlink is emitted.
+        """
+        if self.adapter_type != Adapter.ATHENA or not self.dataset_symlink_namespace:
+            return None
+
+        database = node.metadata_node.get("schema")
+        table = node.metadata_node.get("name" if node.type == "source" else "alias")
+        if not database or not table:
+            return None
+
+        return symlinks_dataset.SymlinksDatasetFacet(
+            identifiers=[
+                symlinks_dataset.Identifier(
+                    namespace=self.dataset_symlink_namespace,
+                    name=f"table/{database}/{table}",
+                    type="TABLE",
+                )
+            ]
+        )
+
+    def _create_dbt_model_dataset_facet(self, node: ModelNode) -> DbtModelDatasetFacet | None:
+        """Build a DbtModelDatasetFacet from a dbt manifest node's resolved ``config``.
+
+        Reads ``materialized``/``access``/``owner``/``group`` from ``node.metadata_node["config"]``,
+        plus the incremental rebuild config for ``materialized == "incremental"`` models.
+        Returns ``None`` when the node carries none of them, so we don't attach an empty facet.
+        The node's ``meta`` map is emitted separately as tags (see ``_build_tags_run_facet``).
+        """
+        raw_config = node.metadata_node.get("config") or {}
+        model_config = DbtModelConfig(
+            materialized=raw_config.get("materialized") or None,
+            access=raw_config.get("access") or None,
+            owner=raw_config.get("owner") or None,
+            group=raw_config.get("group") or None,
+        )
+        if model_config.materialized == "incremental":
+            model_config.incremental = self._build_incremental_config(raw_config)
+        if not any(attr.astuple(model_config)):
+            return None
+
+        return DbtModelDatasetFacet(config=model_config)
+
+    def _build_incremental_config(self, raw_config: dict) -> DbtIncrementalConfig:
+        """Read the incremental rebuild config from a resolved dbt node ``config``.
+
+        Always returns a config object so the caller can use its presence to mark a model
+        incremental, even when no individual field is set.
+        """
+        strategy = raw_config.get("incremental_strategy") or None
+        incremental = DbtIncrementalConfig(
+            strategy=strategy,
+            unique_key=self._to_string_list(raw_config.get("unique_key")),
+            # incremental_predicates is the cross-adapter key; predicates is a Spark alias.
+            incremental_predicates=(
+                self._to_string_list(raw_config.get("incremental_predicates"))
+                or self._to_string_list(raw_config.get("predicates"))
+            ),
+            on_schema_change=raw_config.get("on_schema_change") or None,
+            partition_by=self._parse_partition_by(raw_config.get("partition_by")),
+        )
+        # Microbatch parameters apply only to the microbatch strategy. dbt resolves defaults
+        # (notably lookback=1) onto every model, so gate them to avoid emitting a phantom
+        # time window on merge/insert_overwrite models.
+        if strategy == "microbatch":
+            incremental.event_time = raw_config.get("event_time") or None
+            incremental.batch_size = raw_config.get("batch_size") or None
+            incremental.begin = raw_config.get("begin") or None
+            lookback = raw_config.get("lookback")
+            # bool is an int subclass; reject it so a stray true/false is not read as a count.
+            if isinstance(lookback, int) and not isinstance(lookback, bool):
+                incremental.lookback = lookback
+        full_refresh = raw_config.get("full_refresh")
+        if isinstance(full_refresh, bool):
+            incremental.full_refresh = full_refresh
+        return incremental
+
+    @staticmethod
+    def _full_refresh_from_args(args: dict) -> bool | None:
+        """Read the run-wide --full-refresh flag from run_results.json args.
+
+        Returns ``None`` when the flag is absent so the facet can omit it rather than
+        report a default the invocation never set.
+        """
+        value = args.get("full_refresh")
+        return value if isinstance(value, bool) else None
+
+    @staticmethod
+    def _to_string_list(raw: Any) -> list[str] | None:
+        """Normalize a dbt config value (single string, list, or None) into a list of strings.
+
+        Empty and non-string elements are dropped; returns ``None`` when nothing remains.
+        """
+        if isinstance(raw, str):
+            return [raw] if raw else None
+        if isinstance(raw, (list, tuple)):
+            values = [element for element in raw if isinstance(element, str) and element]
+            return values or None
+        return None
+
+    @staticmethod
+    def _parse_partition_by(raw: Any) -> DbtPartitionBy | None:
+        """Normalize dbt's polymorphic ``partition_by`` config.
+
+        BigQuery uses an object ({field, data_type, granularity}); Spark and other adapters use a
+        single column or a list of columns. Returns ``None`` when nothing is set.
+        """
+        if isinstance(raw, dict):
+            partition = DbtPartitionBy(
+                field=raw.get("field") or None,
+                data_type=raw.get("data_type") or None,
+                granularity=raw.get("granularity") or None,
+            )
+            if not any(attr.astuple(partition)):
+                return None
+            return partition
+        columns = DbtArtifactProcessor._to_string_list(raw)
+        return DbtPartitionBy(columns=columns) if columns else None
+
+    @staticmethod
+    def _meta_tag_value(value: Any) -> str:
+        """Render a dbt ``meta`` value as a tag value string.
+
+        Booleans use dbt's lowercase ``true``/``false`` (matching how plain dbt tags are emitted),
+        other scalars are stringified, and nested structures fall back to compact JSON.
+        """
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        if isinstance(value, str):
+            return value
+        if isinstance(value, (int, float)):
+            return str(value)
+        return json.dumps(value)
+
+    def _build_tags_run_facet(self, tags: list | None, meta: dict | None) -> tags_run.TagsRunFacet | None:
+        """Build a TagsRunFacet from a dbt node's ``tags`` and ``meta``.
+
+        Plain dbt ``tags`` keep ``source="DBT"`` and value ``"true"``; each ``meta`` entry becomes a
+        key/value tag with ``source="DBT_META"``. Returns ``None`` when there is nothing to emit.
+        """
+        fields = [tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in (tags or [])]
+        fields += [
+            tags_run.TagsRunFacetFields(key=key, value=self._meta_tag_value(value), source="DBT_META")
+            for key, value in (meta or {}).items()
+        ]
+        return tags_run.TagsRunFacet(tags=fields) if fields else None
 
     @staticmethod
     def extract_metadata_fields(columns: list[dict]) -> list[schema_dataset.SchemaDatasetFacetFields]:
@@ -859,6 +1070,90 @@ class DbtArtifactProcessor:
 
     def extract_dataset_namespace(self, profile: dict):
         self.dataset_namespace = self.extract_namespace(profile)
+        self.dataset_symlink_namespace = self._extract_dataset_symlink_namespace(profile)
+
+    @staticmethod
+    def _extract_profile_aws_account_id(profile: dict) -> str | None:
+        """Extract the account ID from dbt-athena's supported role ARN setting."""
+        role_arn = profile.get("assume_role_arn")
+        if not isinstance(role_arn, str):
+            return None
+        parts = role_arn.split(":")
+        if len(parts) > 4 and parts[0] == "arn" and parts[2] == "iam" and parts[4]:
+            return parts[4]
+        return None
+
+    def _lookup_aws_account_id(self, profile: dict) -> str | None:
+        """Best-effort account lookup using the credentials described by a dbt profile.
+
+        dbt-athena resolves its credentials through boto3 and optionally assumes an
+        IAM role. This method mirrors that resolution lazily so importing the dbt
+        integration does not require boto3. Every import, credential, and network
+        error is swallowed because account enrichment must never fail dbt or event
+        processing.
+        """
+        try:
+            import boto3  # type: ignore[import-not-found]
+        except Exception as error:
+            self.logger.debug(
+                "Skipping Athena Glue account lookup; boto3 is unavailable (%s).",
+                type(error).__name__,
+            )
+            return None
+
+        try:
+            region_name = profile.get("region_name")
+            session = boto3.session.Session(
+                aws_access_key_id=profile.get("aws_access_key_id"),
+                aws_secret_access_key=profile.get("aws_secret_access_key"),
+                aws_session_token=profile.get("aws_session_token"),
+                region_name=region_name,
+                profile_name=profile.get("aws_profile_name"),
+            )
+
+            role_arn = profile.get("assume_role_arn")
+            if role_arn:
+                assume_role_kwargs = {
+                    "RoleArn": role_arn,
+                    "RoleSessionName": profile.get("assume_role_session_name") or "dbt-athena",
+                }
+                if profile.get("assume_role_external_id"):
+                    assume_role_kwargs["ExternalId"] = profile["assume_role_external_id"]
+                if profile.get("assume_role_duration_seconds") is not None:
+                    assume_role_kwargs["DurationSeconds"] = int(profile["assume_role_duration_seconds"])
+
+                assumed_role = session.client("sts").assume_role(**assume_role_kwargs)
+                credentials = assumed_role["Credentials"]
+                session = boto3.session.Session(
+                    aws_access_key_id=credentials["AccessKeyId"],
+                    aws_secret_access_key=credentials["SecretAccessKey"],
+                    aws_session_token=credentials["SessionToken"],
+                    region_name=region_name,
+                )
+
+            account_id = session.client("sts").get_caller_identity().get("Account")
+            if account_id is None or not str(account_id).strip():
+                return None
+            return str(account_id).strip()
+        except Exception as error:
+            self.logger.debug(
+                "Skipping Athena Glue account lookup after an AWS error (%s).",
+                type(error).__name__,
+            )
+            return None
+
+    def _extract_dataset_symlink_namespace(self, profile: dict) -> str | None:
+        if self.adapter_type != Adapter.ATHENA:
+            return None
+
+        # Avoid an AWS call when the supported assume_role_arn already exposes
+        # the target account, but fall back to the effective credential identity
+        # for the common aws_profile_name/default credential-chain case.
+        account_id = self._extract_profile_aws_account_id(profile) or self._lookup_aws_account_id(profile)
+        if not account_id:
+            return None
+
+        return f"arn:aws:glue:{profile['region_name']}:{account_id}"
 
     def extract_namespace(self, profile: dict) -> str:
         """Extract namespace from profile's type"""
@@ -874,10 +1169,17 @@ class DbtArtifactProcessor:
             return f"clickhouse://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.TRINO:
             return f"trino://{profile['host']}:{profile['port']}"
+        elif self.adapter_type in (Adapter.PRESTO, Adapter.WATSONX_PRESTO):
+            # watsonx_presto is IBM's fork of dbt-presto: same prestodb client, same namespace
+            return f"presto://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.DATABRICKS:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:
             return f"mssql://{profile['server']}:{profile['port']}"
+        elif self.adapter_type == Adapter.FABRIC:
+            if "port" in profile:
+                return f"fabric-warehouse://{profile['server']}:{profile['port']}"
+            return f"fabric-warehouse://{profile['server']}"
         elif self.adapter_type == Adapter.DREMIO:
             return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.ATHENA:
@@ -899,9 +1201,9 @@ class DbtArtifactProcessor:
                 SparkConnectionMethod.HTTP.value,
                 SparkConnectionMethod.ODBC.value,
             ]:
-                port = "443"
+                port = ":443"
             elif profile["method"] == SparkConnectionMethod.THRIFT.value:
-                port = "10001"
+                port = ":10001"
 
             if profile["method"] in SparkConnectionMethod.methods():
                 return f"spark://{profile['host']}{port}"
@@ -959,6 +1261,38 @@ class DbtArtifactProcessor:
 
     @abstractmethod
     def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]: ...
+
+    def _exposures_manifest(self) -> dict:
+        """Manifest to read ``exposures`` from (overridden where it lives elsewhere)."""
+        return self.manifest
+
+    @cached_property
+    def _exposures_by_node_id(self) -> dict[str, list[DbtExposure]]:
+        """Exposures indexed by each node id in their ``depends_on.nodes``.
+
+        Lets a model's input/output datasets look up the exposures that consume them.
+        """
+        raw_exposures = self._exposures_manifest().get("exposures") or {}
+        index: dict[str, list[DbtExposure]] = collections.defaultdict(list)
+        for raw_exposure in raw_exposures.values():
+            exposure = DbtExposure(
+                unique_id=raw_exposure.get("unique_id"),
+                name=raw_exposure.get("name"),
+                type=raw_exposure.get("type"),
+                url=raw_exposure.get("url"),
+            )
+            for node_id in get_from_nullable_chain(raw_exposure, ["depends_on", "nodes"]) or []:
+                index[node_id].append(exposure)
+        return dict(index)
+
+    def _exposures_facets(self, node_id: str | None) -> dict[str, DbtExposuresDatasetFacet]:
+        """Exposures dataset facet for the dataset with this node id, or empty if none.
+
+        Applies to both a model's output and its inputs; the input case covers
+        source-backed exposures, since a source only ever appears as an input.
+        """
+        exposures = self._exposures_by_node_id.get(node_id) if node_id else None
+        return {"dbt_exposures": DbtExposuresDatasetFacet(exposures=exposures)} if exposures else {}
 
     def processing_engine_facet(self) -> dict[str, processing_engine_run.ProcessingEngineRunFacet]:
         dbt_version = self.run_metadata.get("dbt_version")

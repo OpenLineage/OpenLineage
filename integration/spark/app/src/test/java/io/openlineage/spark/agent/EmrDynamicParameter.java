@@ -6,23 +6,20 @@
 package io.openlineage.spark.agent;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
 
 /**
  * Enumeration of dynamic parameters used in the EMR integration tests. Each parameter corresponds
  * to a system property that can be set to customize test behavior.
  *
  * <p>Parameters can be specified when running the application using the {@code -D} JVM argument
- * syntax: {@code -Dopenlineage.test.<parameterName>=value}.
+ * syntax: {@code -Dopenlineage.tests.emr.<parameterName>=value}.
  *
  * <p>For example, to set the EMR cluster ID, you can use: {@code
- * -Dopenlineage.test.clusterId=your-cluster-id}
+ * -Dopenlineage.tests.emr.clusterId=your-cluster-id}
  *
  * <p>This enum includes parameters for development settings and cluster configuration, such as
  * preventing S3 cleanup, specifying instance types, and setting the bucket name for test artifacts.
  */
-@Slf4j
 @Getter
 public enum EmrDynamicParameter implements DynamicParameter {
 
@@ -102,11 +99,6 @@ public enum EmrDynamicParameter implements DynamicParameter {
   EmrDynamicParameter(String parameterName, String defaultValue) {
     this.parameterName = parameterName;
     this.defaultValue = defaultValue;
-    this.prefix = "openlineage.test";
-  }
-
-  @Override
-  public Logger getLog() {
-    return log;
+    this.prefix = "openlineage.tests.emr";
   }
 }

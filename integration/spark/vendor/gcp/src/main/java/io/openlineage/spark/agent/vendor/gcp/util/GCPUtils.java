@@ -49,6 +49,7 @@ public class GCPUtils {
   public static final String SPARK_APP_NAME = "spark.app.name";
   public static final String GOOGLE_METADATA_API = "google.metadata.api.base-url";
   public static final String SPARK_MASTER = "spark.master";
+  private static final String JOB_ATTEMPT_TIMESTAMP_PREFIX = "dataproc_job_attempt_timestamp_";
   private static final String JOB_ID_PREFIX = "dataproc_job_";
   private static final String JOB_UUID_PREFIX = "dataproc_uuid_";
   private static final String METADATA_FLAVOUR = "Metadata-Flavor";
@@ -154,7 +155,7 @@ public class GCPUtils {
   }
 
   private static Optional<String> getDataprocJobID(SparkContext context) {
-    return getPropertyFromYarnTag(context, JOB_ID_PREFIX);
+    return getPropertyFromYarnTag(context, JOB_ID_PREFIX, JOB_ATTEMPT_TIMESTAMP_PREFIX);
   }
 
   private static Optional<String> getDataprocJobUUID(SparkContext context) {
@@ -232,7 +233,19 @@ public class GCPUtils {
       return Optional.empty();
     }
     return Arrays.stream(yarnTag.split(","))
-        .filter(tag -> tag.contains(tagPrefix))
+        .filter(tag -> tag.startsWith(tagPrefix))
+        .findFirst()
+        .map(tag -> tag.substring(tagPrefix.length()));
+  }
+
+  private static Optional<String> getPropertyFromYarnTag(
+      SparkContext context, String tagPrefix, String excludePrefix) {
+    String yarnTag = context.getConf().get(SPARK_YARN_TAGS, null);
+    if (yarnTag == null) {
+      return Optional.empty();
+    }
+    return Arrays.stream(yarnTag.split(","))
+        .filter(tag -> tag.startsWith(tagPrefix) && !tag.startsWith(excludePrefix))
         .findFirst()
         .map(tag -> tag.substring(tagPrefix.length()));
   }

@@ -17,6 +17,7 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -41,6 +42,24 @@ class DataSourceV2RelationOutputDatasetBuilderTest {
   void testDataSourceV2RelationOutputDatasetBuilderIsDefinedAtLogicalPlan() {
     assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
     assertTrue(builder.isDefinedAtLogicalPlan(mock(DataSourceV2Relation.class)));
+  }
+
+  @Test
+  void testDataSourceV2RelationQueryRootIsNotAnOutput() {
+    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
+    when(context.getOptimizedPlanOptional()).thenReturn(Optional.of(relation));
+    when(context.getAnalyzedPlanOptional()).thenReturn(Optional.of(relation));
+
+    assertFalse(builder.isDefinedAtLogicalPlan(relation));
+  }
+
+  @Test
+  void testNestedDataSourceV2RelationCanBeAnOutput() {
+    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
+    when(context.getOptimizedPlanOptional()).thenReturn(Optional.of(mock(LogicalPlan.class)));
+    when(context.getAnalyzedPlanOptional()).thenReturn(Optional.of(mock(LogicalPlan.class)));
+
+    assertTrue(builder.isDefinedAtLogicalPlan(relation));
   }
 
   @Test

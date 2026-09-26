@@ -65,15 +65,32 @@ class JdbcDatasetUtilsTestForMySql {
                 "jdbc:mysql://hostname:3307", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3307")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:3307",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue(
+            "namespace", "mysql://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:3307")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
   void testGetDatasetIdentifierWithDatabase() {
+    // Qualified table name: explicit database overrides URL database
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://hostname/mydb", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3306")
-        .hasFieldOrPropertyWithValue("name", "mydb.schema.table1");
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    // Unqualified table name: URL database is used
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql://hostname/mydb", "table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3306")
+        .hasFieldOrPropertyWithValue("name", "mydb.table1");
   }
 
   @Test
@@ -124,7 +141,7 @@ class JdbcDatasetUtilsTestForMySql {
             JdbcDatasetUtils.getDatasetIdentifier(
                 "JDBC:MYSQL://TEST.HOST.COM/MYDB", "SCHEMA.TABLE1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "mysql://test.host.com:3306")
-        .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
+        .hasFieldOrPropertyWithValue("name", "SCHEMA.TABLE1");
   }
 
   @Test

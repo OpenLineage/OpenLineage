@@ -11,7 +11,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Optional;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -30,7 +29,6 @@ public class AwsUtils {
   private static final String SPARK_SQL_CATALOG_PREFIX = "spark.sql.catalog.";
   private static final String GLUE_CATALOG_SUFFIX = "GlueCatalog";
 
-  @SneakyThrows
   public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
     if (isHiveUsingGlue(sparkConf, hadoopConf) || isIcebergUsingGlue(sparkConf)) {
       return awsRegion()
@@ -71,11 +69,17 @@ public class AwsUtils {
     Optional<String> glueJobAccountId =
         SparkConfUtils.findSparkConfigKey(sparkConf, "spark.glue.accountId");
     if (glueJobAccountId.isPresent()) {
-      log.debug("Using [spark.glue.account] property [{}] as catalog ID.", glueJobAccountId.get());
+      log.debug(
+          "Using [spark.glue.accountId] property [{}] as catalog ID.", glueJobAccountId.get());
       return glueJobAccountId;
     } else {
       log.debug("Fetching current account ID to use as the catalog ID.");
-      return Optional.of(AwsAccountIdFetcher.getAccountId());
+      try {
+        return Optional.ofNullable(AwsAccountIdFetcher.getAccountId());
+      } catch (Exception e) {
+        log.warn("Unable to retrieve AWS account ID to build Glue catalog ARN.", e);
+        return Optional.empty();
+      }
     }
   }
 
@@ -108,7 +112,7 @@ public class AwsUtils {
     return hadoopPropertyCatalogId;
   }
 
-  private static @NotNull Optional<String> awsRegion() {
+  static @NotNull Optional<String> awsRegion() {
     // First, try environment variables
     Optional<String> envRegion =
         Optional.ofNullable(System.getenv("AWS_DEFAULT_REGION"))
@@ -175,7 +179,7 @@ public class AwsUtils {
         }
       }
     } catch (Exception e) {
-      log.debug("Could not retrieve region from EC2 metadata service: {}", e.getMessage());
+      log.debug("Could not retrieve region from EC2 metadata service", e);
     } finally {
       if (tokenConnection != null) {
         tokenConnection.disconnect();

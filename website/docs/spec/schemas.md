@@ -50,9 +50,9 @@ Make your changes
 Configure Java clent
 
 1. cd `/client/java`
-1. `./gradlew clean publishToMavenLocal` (Publish code to the local Maven project.)
-1. `./gradlew generateCode` (Generate the Java classes for new schema changes.)
-1. `./gradlew test` (Ensure things are working)
+1. `task generate` (Generate the Java classes for new schema changes.)
+1. `task test` (Ensure things are working)
+1. `task publish-local` (Publish code to the local Maven repository.)
 
 Configure Python client
 

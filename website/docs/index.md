@@ -64,6 +64,7 @@ OpenLineage supports integrations with several systems.
 - [Apache Hive](https://github.com/OpenLineage/OpenLineage/tree/main/integration/hive)
 - [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
 - [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
+- [Feast](https://github.com/feast-dev/feast)
 - [Great Expectations](https://openlineage.io/docs/integrations/great-expectations)
 - [SQL](https://github.com/OpenLineage/OpenLineage/tree/main/integration/sql)
 - [Trino](https://openlineage.io/docs/integrations/trino)

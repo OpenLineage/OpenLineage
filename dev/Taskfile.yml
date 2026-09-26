@@ -1,0 +1,44 @@
+# Tasks for the maintainers' release tooling. Included by the root Taskfile
+# as `maintenance:`.
+#
+# GITHUB_TOKEN can live in .env in this directory (copy .env.template).
+# Each task loads it itself via task-level `dotenv:` (the file-level form is
+# forbidden in included Taskfiles), so it works both here and via the root
+# catalog; an exported GITHUB_TOKEN takes precedence.
+version: '3'
+
+tasks:
+  # PREVIOUS must be an existing GitHub release tag (`gh release list`);
+  # CURRENT is the version being released and doesn't need to exist yet.
+  changes:
+    desc: Update CHANGELOG.md with changes between two releases (PREVIOUS=1.4.1 CURRENT=1.5.0; GITHUB_TOKEN from .env or environment)
+    dotenv: ['.env']
+    preconditions:
+      - sh: test -n "$GITHUB_TOKEN"
+        msg: 'GITHUB_TOKEN is not set — fill it in dev/.env or export it'
+    requires:
+      vars: [PREVIOUS, CURRENT]
+    cmds:
+      # --path is passed explicitly: the script's default (../OpenLineage/CHANGELOG.md)
+      # only resolves when the checkout directory is literally named "OpenLineage".
+      - uv run --no-project --with-requirements requirements.txt python get_changes.py --github_token "$GITHUB_TOKEN" --previous {{.PREVIOUS}} --current {{.CURRENT}} --path ../CHANGELOG.md
+
+  contributor-stats:
+    desc: Export contributor stats to dev/contributor_stats_table.csv (GITHUB_TOKEN from .env or environment; optional DATE_START/DATE_END as YYYY-MM-DD, defaults to the current month)
+    dotenv: ['.env']
+    preconditions:
+      - sh: test -n "$GITHUB_TOKEN"
+        msg: 'GITHUB_TOKEN is not set — fill it in dev/.env or export it'
+    cmds:
+      - uv run --no-project --with-requirements requirements.txt python get_contributor_stats.py --github-token "$GITHUB_TOKEN" {{if .DATE_START}}--date-start {{.DATE_START}}{{end}} {{if .DATE_END}}--date-end {{.DATE_END}}{{end}}
+
+  release-doc:
+    desc: Print the docs-site release doc for a release tag (TAG=1.5.0; GITHUB_TOKEN from .env or environment)
+    dotenv: ['.env']
+    preconditions:
+      - sh: test -n "$GITHUB_TOKEN"
+        msg: 'GITHUB_TOKEN is not set — fill it in dev/.env or export it'
+    requires:
+      vars: [TAG]
+    cmds:
+      - uv run --no-project --with-requirements requirements.txt python create_release_doc.py --token "$GITHUB_TOKEN" --tag {{.TAG}}

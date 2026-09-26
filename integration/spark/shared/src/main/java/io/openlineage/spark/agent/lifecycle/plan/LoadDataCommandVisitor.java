@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
@@ -40,9 +39,10 @@ public class LoadDataCommandVisitor
             table ->
                 Collections.singletonList(
                     outputDataset()
-                        .getDataset(
-                            PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
-                            table.schema())))
+                        .sparkDatasetBuilder()
+                        .dataset(table)
+                        .schema(table.schema())
+                        .build()))
         .orElseGet(Collections::emptyList);
   }
 

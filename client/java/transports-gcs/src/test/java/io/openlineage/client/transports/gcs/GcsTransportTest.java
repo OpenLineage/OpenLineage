@@ -7,6 +7,7 @@ package io.openlineage.client.transports.gcs;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
@@ -32,7 +33,7 @@ class GcsTransportTest {
   void shouldWriteEventToGcsWithNamePrefix() {
     Storage localStorage = LocalStorageHelper.getOptions().getService();
     GcsTransportConfig config =
-        new GcsTransportConfig("test_project", "test_bucket", null, "some_prefix");
+        new GcsTransportConfig("test_project", "test_bucket", null, "some_prefix", null, null);
     GcsTransport transport = new GcsTransport(localStorage, config);
     OpenLineageClient client = new OpenLineageClient(transport);
 
@@ -53,7 +54,7 @@ class GcsTransportTest {
   void shouldWriteEventToGcsWithPathPrefix() {
     Storage localStorage = LocalStorageHelper.getOptions().getService();
     GcsTransportConfig config =
-        new GcsTransportConfig("test_project", "test_bucket", null, "some/prefix/");
+        new GcsTransportConfig("test_project", "test_bucket", null, "some/prefix/", null, null);
     GcsTransport transport = new GcsTransport(localStorage, config);
     OpenLineageClient client = new OpenLineageClient(transport);
 
@@ -74,7 +75,7 @@ class GcsTransportTest {
   void shouldThrowIfObjectAlreadyExists() {
     Storage localStorage = LocalStorageHelper.getOptions().getService();
     GcsTransportConfig config =
-        new GcsTransportConfig("test_project", "test_bucket", null, "some/prefix/");
+        new GcsTransportConfig("test_project", "test_bucket", null, "some/prefix/", null, null);
     GcsTransport transport = new GcsTransport(localStorage, config);
     OpenLineageClient client = new OpenLineageClient(transport);
 
@@ -88,6 +89,22 @@ class GcsTransportTest {
                         ZonedDateTime.now(clock).toInstant().toEpochMilli())))
             .build());
     assertThrows(OpenLineageClientException.class, () -> client.emit(event));
+  }
+
+  @Test
+  void shouldConfigureRetrySettings() throws Exception {
+    GcsTransportConfig config = new GcsTransportConfig();
+    config.setProjectId("test_project");
+    config.setBucketName("test_bucket");
+    config.setMaxRetries(3);
+    config.setRetryIntervalMillis(2500);
+
+    GcsTransport transport = new GcsTransport(config);
+    RetrySettings retrySettings = transport.getStorage().getOptions().getRetrySettings();
+
+    assertEquals(3, retrySettings.getMaxAttempts());
+    assertEquals(2500L, retrySettings.getInitialRetryDelayDuration().toMillis());
+    assertEquals(2500L, retrySettings.getMaxRetryDelayDuration().toMillis());
   }
 
   public static OpenLineage.RunEvent runEvent(Clock clock) {

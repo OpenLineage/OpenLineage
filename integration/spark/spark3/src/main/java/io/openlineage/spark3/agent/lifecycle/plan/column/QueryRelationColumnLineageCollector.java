@@ -4,6 +4,8 @@
 */
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static io.openlineage.client.utils.SnowflakeUtils.stripQuotes;
+
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
@@ -94,14 +96,14 @@ public class QueryRelationColumnLineageCollector {
                       if (!p.lineage().isEmpty()) {
                         p.lineage().stream()
                             .map(builder::getMapping)
-                            .forEach(eid -> builder.addDependency(descendantId, eid));
+                            .forEach(eid -> builder.addDependency(descendantId, eid, ""));
                       }
                     }));
   }
 
   private static ExprId getDescendantId(List<Attribute> output, ColumnMeta column) {
     return output.stream()
-        .filter(e -> e.name().equals(column.name()))
+        .filter(e -> stripQuotes(e.name()).equals(stripQuotes(column.name())))
         .map(NamedExpression::exprId)
         .findFirst()
         .orElseGet(NamedExpression::newExprId);

@@ -15,9 +15,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.HashMap;
 import java.util.List;
@@ -118,8 +118,8 @@ class AlterTableCommandDatasetBuilderTest {
   void testApplyDatasetVersionIncluded() {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      try (MockedStatic mockCatalog = mockStatic(CatalogUtils3.class)) {
-        when(CatalogUtils3.getDatasetVersion(
+      try (MockedStatic mockCatalog = mockStatic(CatalogUtils.class)) {
+        when(CatalogUtils.getDatasetVersion(
                 openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(Optional.of("v2"));
 

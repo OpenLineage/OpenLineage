@@ -41,6 +41,9 @@ class HttpTransportSslContextTest {
   OpenLineage.RunEvent event =
       new OpenLineage(URI.create("http://test.producer")).newRunEventBuilder().build();
 
+  private static final String TLS_HANDSHAKE_FAILURE =
+      "TLS handshake failure while a client attempted to connect to";
+
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
@@ -101,9 +104,24 @@ class HttpTransportSslContextTest {
     // make sure client exception is thrown
     assertThrows(OpenLineageClientException.class, () -> httpTransport.emit(event));
 
-    // make sure logs contain handshake failure message
-    assertThat(mockServer.retrieveLogMessages(request(API_V1_LINEAGE)))
-        .contains("TLS handshake failure while a client attempted to connect to");
+    // MockServer log retrieval can lag behind the client exception; poll briefly.
+    assertThat(retrieveLogMessagesWithRetry(request(API_V1_LINEAGE)))
+        .isNotNull()
+        .contains(TLS_HANDSHAKE_FAILURE);
+  }
+
+  @SneakyThrows
+  private String retrieveLogMessagesWithRetry(HttpRequest request) {
+    long deadlineNanos = System.nanoTime() + 5_000_000_000L;
+    String messages;
+    do {
+      messages = mockServer.retrieveLogMessages(request);
+      if (messages != null) {
+        return messages;
+      }
+      Thread.sleep(50);
+    } while (System.nanoTime() < deadlineNanos);
+    return messages;
   }
 
   @Test

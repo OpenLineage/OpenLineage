@@ -8,7 +8,9 @@ package io.openlineage.client;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -50,6 +52,7 @@ public class SchemaParser {
           return new PrimitiveType(typeName, typeJson.has("format") ? typeJson.get("format").asText() : null);
         } else if (typeName.equals("object") && (typeJson.has("properties") || typeJson.has("additionalProperties") || typeJson.has("patternProperties"))) {
           List<Field> fields = new ArrayList<Field>();
+          Map<String, List<String>> dependentRequired = new LinkedHashMap<>();
           boolean hasAdditionalProperties = false;
           Type additionalPropertiesType = null;
           if (typeJson.has("properties")) {
@@ -65,6 +68,19 @@ public class SchemaParser {
               } else {
                 fields.add(new Field(field.getKey(), fieldType, description));
               }
+            }
+          }
+          if (typeJson.has("dependentRequired")) {
+            for (Iterator<Entry<String, JsonNode>> dependenciesJson =
+                    typeJson.get("dependentRequired").fields();
+                dependenciesJson.hasNext(); ) {
+              Entry<String, JsonNode> dependency = dependenciesJson.next();
+              List<String> requiredProperties = new ArrayList<>();
+              dependency
+                  .getValue()
+                  .elements()
+                  .forEachRemaining(property -> requiredProperties.add(property.asText()));
+              dependentRequired.put(dependency.getKey(), requiredProperties);
             }
           }
           if (typeJson.has("additionalProperties")) {
@@ -85,7 +101,8 @@ public class SchemaParser {
               additionalPropertiesType = parse(patternField.getValue());
             }
           }
-          return new ObjectType(fields, hasAdditionalProperties, additionalPropertiesType);
+          return new ObjectType(
+              fields, hasAdditionalProperties, additionalPropertiesType, dependentRequired);
         } else if (typeName.equals("array")) {
           Type itemsType = parse(typeJson.get("items"));
           return new ArrayType(itemsType);
@@ -423,12 +440,18 @@ public class SchemaParser {
     private final List<Field> properties;
     private final boolean additionalProperties;
     private final Type additionalPropertiesType;
+    private final Map<String, List<String>> dependentRequired;
 
-    public ObjectType(List<Field> properties, boolean additionalProperties, Type additionalPropertiesType) {
+    public ObjectType(
+        List<Field> properties,
+        boolean additionalProperties,
+        Type additionalPropertiesType,
+        Map<String, List<String>> dependentRequired) {
       super();
       this.properties = properties;
       this.additionalProperties = additionalProperties;
       this.additionalPropertiesType = additionalPropertiesType;
+      this.dependentRequired = dependentRequired;
     }
 
     public boolean isObject() { return true; };
@@ -448,6 +471,10 @@ public class SchemaParser {
 
     public Type getAdditionalPropertiesType() {
       return additionalPropertiesType;
+    }
+
+    public Map<String, List<String>> getDependentRequired() {
+      return dependentRequired;
     }
 
     @Override

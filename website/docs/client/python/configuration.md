@@ -15,6 +15,7 @@ The OpenLineage Python client supports four main configuration sections that con
 2. **Facets** - Configures some facets (e.g., which environment variables are attached to events as facet)
 3. **Filters** - Defines rules to selectively exclude certain events from being emitted
 4. **Tags** - Configures custom tags added to jobs and runs entities as custom facet.
+5. **Dataset Reducing** - Configures dataset reducing, including name trimmers that can strip trailing segments from path-like names.
 
 Configuration can be provided in several ways:
 
@@ -237,10 +238,11 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
 - `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
 - `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
-  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication:
     - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
   - Configuration options for `jwt` authentication are documented in the [JWT Token Provider](#jwt-token-provider) section.
+  - Configuration options for `oauth2` authentication are documented in the [OAuth2 Token Provider](#oauth2-token-provider) section.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 - `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
@@ -253,7 +255,7 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
 
 #### Behavior
 
-Events are serialized to JSON, and then are sent as HTTP POST request with `Content-Type: application/json`. Events are sent immediately and the call blocks until completion. Uses httpx with built-in retry support and raises exceptions on failure.
+Events are serialized to JSON, and then are sent as HTTP POST request with `Content-Type: application/json`. Events are sent immediately and the call blocks until completion. Uses httpx2 with built-in retry support and raises exceptions on failure.
 
 #### Examples
 
@@ -461,6 +463,103 @@ client = OpenLineageClient(transport=HttpTransport(http_config))
 </TabItem>
 </Tabs>
 
+#### OAuth2 Token Provider
+
+The `OAuth2ClientCredentialsTokenProvider` obtains an access token with the OAuth 2.0 client credentials grant ([RFC 6749, section 4.4](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4)). Use it when the OpenLineage backend is protected by an OAuth 2.0 authorization server that issues short-lived access tokens to a client ID and client secret.
+
+##### Configuration
+
+When using OAuth2 client credentials authentication with HTTP transport, configure the `auth` section as follows:
+
+- `type` - string, must be `"oauth2"`. Required.
+- `clientId` - string, the OAuth 2.0 client ID. Required.
+- `clientSecret` - string, the OAuth 2.0 client secret. Required.
+- `tokenEndpoint` - string, the URL of the token endpoint. Required.
+- `scope` - string, space separated scopes to request. Optional.
+- `clientAuthMethod` - string, how the client credentials are sent to the token endpoint: `"client_secret_basic"` (HTTP Basic `Authorization` header, with the credentials form-urlencoded as required by [RFC 6749, section 2.3.1](https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1)) or `"client_secret_post"` (request body). Optional, default: `"client_secret_basic"`.
+- `tokenFields` - list of strings, JSON field names to search for the token in the response. Optional, default: `["access_token"]`.
+- `expiresInField` - string, JSON field name containing the token expiration time in seconds. Optional, default: `"expires_in"`.
+- `tokenRefreshBuffer` - integer, number of seconds before token expiry to trigger a refresh. Optional, default: `120`.
+
+##### Behavior
+
+- The provider sends a POST request with URL-encoded form data containing `grant_type=client_credentials` and, if configured, `scope`.
+- Tokens are cached and automatically refreshed before expiration (default: 120 seconds before expiry, configurable via `tokenRefreshBuffer`). The client credentials grant does not issue refresh tokens, so every refresh is a new token request.
+- If no expiration is provided in the response, the provider attempts to extract it from the JWT payload's `exp` claim.
+- The provider supports multiple JSON field names for the token, trying each in order until a match is found.
+- Field matching is case-insensitive and handles both snake_case and camelCase variations (e.g., `expires_in` matches `expiresIn`).
+- If the response contains neither an expiry field nor a JWT `exp` claim, the token cannot be cached and a new one is requested for every event. A warning is logged when this happens.
+
+##### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="env-vars" label="Environment Variables">
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=http
+OPENLINEAGE__TRANSPORT__URL=https://backend:5000
+OPENLINEAGE__TRANSPORT__AUTH__TYPE=oauth2
+OPENLINEAGE__TRANSPORT__AUTH__CLIENT_ID=your-client-id
+OPENLINEAGE__TRANSPORT__AUTH__CLIENT_SECRET=your-client-secret
+OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT=https://auth.example.com/token
+```
+
+</TabItem>
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: http
+  url: https://backend:5000
+  auth:
+    type: oauth2
+    clientId: your-client-id
+    clientSecret: your-client-secret
+    tokenEndpoint: https://auth.example.com/token
+```
+
+With the client credentials sent in the request body and a scope:
+
+```yaml
+transport:
+  type: http
+  url: https://backend:5000
+  auth:
+    type: oauth2
+    clientId: your-client-id
+    clientSecret: your-client-secret
+    tokenEndpoint: https://auth.example.com/token
+    clientAuthMethod: client_secret_post
+    scope: openid
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.http import (
+    HttpConfig,
+    HttpTransport,
+    OAuth2ClientCredentialsTokenProvider,
+)
+
+http_config = HttpConfig(
+    url="https://backend:5000",
+    auth=OAuth2ClientCredentialsTokenProvider({
+        "clientId": "your-client-id",
+        "clientSecret": "your-client-secret",
+        "tokenEndpoint": "https://auth.example.com/token"
+    })
+)
+
+client = OpenLineageClient(transport=HttpTransport(http_config))
+```
+
+</TabItem>
+</Tabs>
+
+
 ### Async HTTP Transport
 
 The Async HTTP transport provides high-performance, non-blocking event emission with advanced queuing and ordering guarantees. Use this transport when you need high throughput or want to avoid blocking your application on lineage event delivery.
@@ -475,10 +574,11 @@ Async transport API is experimental, and can change over the next few releases.
 - `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
 - `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
-  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key` or `jwt`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication:
     - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
   - Configuration options for `jwt` authentication are documented in the [JWT Token Provider](#jwt-token-provider) section.
+  - Configuration options for `oauth2` authentication are documented in the [OAuth2 Token Provider](#oauth2-token-provider) section.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 - `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `10000`.
@@ -1809,6 +1909,14 @@ While the configuration is read only at client creation time (so the environment
 a client has been created) - the value of the variables will be read and appended to the event at the time of event emission.
 :::
 
+### Merge behavior
+
+If the event already contains an `environmentVariables` facet (set by an integration or producer), the client-configured variables are **merged** into it rather than replacing it.
+
+- Variables already present in the event take precedence over client-configured ones.
+- If the same variable name exists in both with different values, the event-supplied value is kept and a warning is logged.
+- Variables present only in the client configuration are appended to the existing facet.
+
 ### Examples
 
 <Tabs groupId="env-vars-run-facet">
@@ -1970,4 +2078,174 @@ client = OpenLineageClient(config=config)
 
 </TabItem>
 </Tabs>
+
+
+## Dataset Reducing
+
+:::note
+At the moment, dataset reducing is supported only for `RunEvent`.
+:::
+
+Dataset names may sometimes not represent an actual dataset, but rather it's subset.
+This is mainly an issue with object storage paths with partitioning,
+e.g. `s3://bucket/dataset/dt=2025-09-01/`, where the actual dataset is `s3://bucket/dataset`,
+while the trailing `/dt=2025-09-01/` segment represents a subset of the dataset.
+
+To address this, a **dataset name trimmer** can be applied to trim trailing name segments that are not part of the actual dataset name.
+
+### How It Works
+- The **trimmed dataset name** becomes the dataset name.
+- The **full, non-trimmed dataset name** is stored in the **subset definition facet** as a `LocationSubsetCondition`.
+- All datasets with the same name after trimming are treated as a single dataset (assuming they do not differ in other ways).
+
+### Why It Matters
+This approach is especially useful for input datasets, where multiple paths may point to the same directory.
+
+- The **subset definition facet** captures all directories read.
+- This reduces the size of OpenLineage events by avoiding duplication, since otherwise each directory would be treated as a separate dataset.
+
+### Reducing Datasets in Python Client
+Datasets are reduced into a single dataset only if:
+1. Their names are trimmed to the same dataset name.
+2. They share identical facets.
+
+Dataset reducing is **disabled by default**. It must be explicitly enabled via the `reducing_enabled` flag.
+
+The list of enabled trimmers can be managed using `disabled_trimmers` and `extra_trimmers` configuration parameters.
+
+In most cases, trimmers work on the last directory segment of the dataset name.
+
+The trimming process runs repeatedly (in a loop), applying trimmers one by one
+in an undefined order until no additional segments of the path can be removed.
+The iterative nature of the process allows for trimming of multiple segments of the path,
+e.g. `/path/2025-09-01/hour=05/` → `/path` (both `dt=2025-09-01` and `hour=05` segments are removed).
+If one of the trimmers fails for any reason, it is skipped and the process continues with the next trimmer.
+
+### Built-in Trimmers
+By default, the OpenLineage Python client comes with the following trimmers:
+* `openlineage.client.dataset.trimmers.KeyValueTrimmer`
+* `openlineage.client.dataset.trimmers.DateTrimmer`
+* `openlineage.client.dataset.trimmers.MultiDirDateTrimmer`
+* `openlineage.client.dataset.trimmers.YearMonthTrimmer`
+
+#### KeyValueTrimmer
+
+Removes the last segment of the dataset name if it follows a `key=value` pattern.
+
+* `/path/dt=2025-09-01/` → becomes `/path`
+* `/path/key=value/example/hour=05/` → becomes `/path/key=value/example`
+
+#### DateTrimmer
+
+Removes the last segment of the dataset name is a date-like. It must be a valid and recognized date pattern (`yyyy-MM-dd`, `dd.MM.yyyy`, `yyyyMMdd`).
+Additionally, it can contain extra digits and the following non-numeric characters:`T`, `Z`, `:`, `.`, `-`.
+
+* `/path/20250901/` → becomes `/path`
+* `/path/2025-09-01/` → becomes `/path`
+* `/path/20250722T901Z/` → becomes `/path`
+* `/path/2025-09-01/example/20250901/` → becomes `/path/2025-09-01/example`
+* `/path/2025-25-01/` → remains unchanged as it is not a valid date
+
+#### MultiDirDateTrimmer
+
+Remove multiple trailing segments at once if they represent a valid date or year/month.
+
+* `/path/2025/09/01/` → becomes `/path`
+* `/path/2025/09/` → becomes `/path`
+* `/path/2025/13/` → remains unchanged as it is not a valid date
+
+#### YearMonthTrimmer
+
+Removes the last segment if it is a valid year and month (in format of `yyyyMM` or `yyyy-MM`).
+
+* `/path/202509/` → becomes `/path`
+* `/path/2025-09/` → becomes `/path`
+* `/path/2025-09/example/202509` → becomes `/path/2025-09/example`
+* `/path/202533/` → remains unchanged as it is not a valid date
+
+### Configuration
+
+Dataset reducing is configured under the `dataset` key. The following options are available:
+
+| Option              | Type                         | Default | Description                                                                        |
+|---------------------|------------------------------|---------|------------------------------------------------------------------------------------|
+| `reducing_enabled`  | `bool`                       | `false` | Enables dataset reducing with name trimming.                                       |
+| `disabled_trimmers` | `str` (comma-separated list) |         | Fully qualified class names of [built-in trimmers](#built-in-trimmers) to disable. |
+| `extra_trimmers`    | `str` (comma-separated list) |         | Fully qualified class names of additional custom trimmers to enable.               |
+
+#### Examples
+
+<Tabs groupId="dataset-reducing">
+<TabItem value="env-vars" label="Environment Variables">
+
+```sh
+OPENLINEAGE__DATASET__REDUCING_ENABLED=true
+OPENLINEAGE__DATASET__DISABLED_TRIMMERS="openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer"
+OPENLINEAGE__DATASET__EXTRA_TRIMMERS="mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer"
+```
+
+</TabItem>
+<TabItem value="yaml" label="YAML Config">
+
+```yaml
+dataset:
+  reducing_enabled: true
+  disabled_trimmers: "openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer"
+  extra_trimmers: "mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer"
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+
+config = {
+    "dataset": {
+        "reducing_enabled": True,
+        "disabled_trimmers": "openlineage.client.dataset.trimmers.DateTrimmer;openlineage.client.dataset.trimmers.KeyValueTrimmer",
+        "extra_trimmers": "mypackage.CustomTrimmer;mypackage.AnotherCustomTrimmer",
+    },
+    "transport": {"type": "console"}
+}
+client = OpenLineageClient(config=config)
+```
+
+</TabItem>
+</Tabs>
+
+### Custom Trimmers
+
+You can implement your own trimmer by subclassing `DatasetNameTrimmer`:
+
+```python
+from openlineage.client.dataset.trimmers import DatasetNameTrimmer
+
+class CustomTrimmer(DatasetNameTrimmer):
+    def trim(self, name: str) -> str:
+        # Custom trimming logic
+        last = self._get_last_part(name)
+        if last.startswith("custom_prefix_"):
+            return self._remove_last_part(name)
+        return name
+```
+
+Register the trimmer using its fully qualified class name in the `extra_trimmers` configuration.
+
+#### Requirements
+
+Custom trimmers must respect two constraints:
+
+- **Non-lengthening** — `trim(name)` must never return a string longer than `name`.
+  If violated, the dataset is left completely untrimmed — the original name is kept and no
+  further trimmers are applied.
+
+- **Convergence** — repeated application must eventually stabilise into a fixed point.
+  A trimmer may require multiple passes to fully trim a name (e.g. stripping one `key=value`
+  path segment at a time from `/path/example/month=10/day=14` is perfectly fine),
+  but the process must not loop indefinitely.
+  For example, a trimmer that toggles a name between `/data/table/a` and `/data/table/b`
+  on successive calls would never converge.
+  If convergence is not reached, the reducer falls back to the original name.
+
 

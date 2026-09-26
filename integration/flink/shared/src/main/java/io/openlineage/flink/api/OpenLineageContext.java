@@ -12,6 +12,8 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombined
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -36,6 +38,13 @@ import org.apache.flink.api.common.JobID;
 public class OpenLineageContext {
 
   @Builder.Default UUID runUuid = UUIDUtils.generateNewUUID();
+
+  /** Sets a deterministic UUIDv7 OpenLineage run UUID from the Flink job ID and start time. */
+  public void setRunUuidFromFlinkJobId(JobID jobId, Instant jobStartTime) {
+    this.runUuid =
+        UUIDUtils.generateStaticUUID(
+            jobStartTime, jobId.toHexString().getBytes(StandardCharsets.UTF_8));
+  }
 
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage

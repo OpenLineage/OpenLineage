@@ -17,9 +17,9 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.util.Collections;
 import java.util.HashMap;
@@ -153,7 +153,7 @@ class TableContentChangeDatasetBuilderTest {
       LogicalPlan logicalPlan,
       OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     try (MockedStatic mockedPlanUtils3 = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
-      try (MockedStatic mockedVersions = mockStatic(CatalogUtils3.class)) {
+      try (MockedStatic mockedVersions = mockStatic(CatalogUtils.class)) {
         OpenLineage.Dataset dataset = mock(OpenLineage.OutputDataset.class);
         DatasetFacetsBuilder datasetFacetsBuilder = mock(DatasetFacetsBuilder.class);
         when(compositeFacetsBuilder.getFacets()).thenReturn(datasetFacetsBuilder);

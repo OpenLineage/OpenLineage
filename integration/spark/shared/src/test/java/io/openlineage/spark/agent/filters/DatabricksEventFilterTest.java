@@ -82,6 +82,13 @@ class DatabricksEventFilterTest {
   }
 
   @Test
+  @SetEnvironmentVariable(key = DATABRICKS_RUNTIME_VERSION, value = DATABRICKS_RUNTIME_13_3)
+  void testAppendDataExecIsNotFiltered() {
+    when(node.nodeName()).thenReturn("append_data_exec_v1");
+    assertThat(filter.isDisabled(event)).isFalse();
+  }
+
+  @Test
   void testNonDatabricksEnvironmentEarlyReturn() {
     // Without DATABRICKS_RUNTIME_VERSION env var and without workspace URL in SparkConf,
     // filter should return false

@@ -239,7 +239,13 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
 
     String namespace = KafkaBootstrapServerResolver.resolve(servers);
     return topics.stream()
-        .map(topic -> datasetFactory.getDataset(topic, namespace, schema))
+        .map(
+            topic ->
+                datasetFactory
+                    .sparkDatasetBuilder()
+                    .dataset(topic, namespace)
+                    .schema(schema)
+                    .build())
         .collect(Collectors.toList());
   }
 }

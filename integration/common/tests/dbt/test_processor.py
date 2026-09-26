@@ -2,14 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import os
+import sys
+import types
 from unittest.mock import MagicMock
 
 import pytest
 from openlineage.client.facet_v2 import external_query_run, processing_engine_run
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
-from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext
+from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext, ModelNode
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
+from openlineage.common.provider.dbt.utils import get_dbt_profiles_dir
 
 DBT_VERSION = "0.0.1"
 JOB_NAMESPACE = "job-namespace"
@@ -57,6 +61,12 @@ def dbt_artifact_processor():
             {"account": "gp12345.us-east-1"},
         ),  # Snowflake
         ("job_id", Adapter.BIGQUERY, "bigquery", {}),  # BigQuery
+        (
+            "query_id",
+            Adapter.FABRIC,
+            "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com",
+            {"server": "myworkspace.datawarehouse.fabric.microsoft.com"},
+        ),  # Microsoft Fabric Warehouse
     ],
 )
 def test_get_query_id(
@@ -88,6 +98,30 @@ def test_get_query_id(
     }
 
 
+@pytest.mark.parametrize(
+    "adapter_response, expected_query_id",
+    [
+        (
+            {"project_id": "test-project", "location": "US", "job_id": QUERY_ID},
+            f"test-project:US.{QUERY_ID}",
+        ),
+        ({"project_id": "test-project", "job_id": QUERY_ID}, QUERY_ID),
+        ({"location": "US", "job_id": QUERY_ID}, QUERY_ID),
+        ({"job_id": QUERY_ID}, QUERY_ID),
+        ({"project_id": "test-project", "location": "US"}, None),
+    ],
+)
+def test_get_query_id_bigquery_job_reference_parts(
+    adapter_response, expected_query_id, dbt_artifact_processor, run_result
+):
+    run_result["adapter_response"].update(adapter_response)
+    dbt_artifact_processor.adapter_type = Adapter.BIGQUERY
+
+    generated_query_id = dbt_artifact_processor.get_query_id(run_result)
+
+    assert generated_query_id == expected_query_id
+
+
 def test_invalid_adapter(dbt_artifact_processor, run_result):
     run_result["adapter_response"]["query_id"] = None
     dbt_artifact_processor.adapter_type = Adapter.GLUE
@@ -115,6 +149,221 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     generated_query_id = dbt_artifact_processor.get_query_id(run_result)
 
     assert generated_query_id is None
+
+
+def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.FABRIC
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433}
+    )
+
+    assert (
+        dbt_artifact_processor.dataset_namespace
+        == "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1433"
+    )
+
+
+def test_presto_namespace(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.PRESTO
+    dbt_artifact_processor.extract_dataset_namespace({"host": "presto.example.com", "port": 8443})
+
+    assert dbt_artifact_processor.dataset_namespace == "presto://presto.example.com:8443"
+
+
+def test_watsonx_presto_namespace(dbt_artifact_processor):
+    # IBM's dbt-watsonx-presto is a fork of dbt-presto over the same prestodb client,
+    # so it shares presto's namespace scheme.
+    dbt_artifact_processor.adapter_type = Adapter.WATSONX_PRESTO
+    dbt_artifact_processor.extract_dataset_namespace({"host": "watsonx.example.com", "port": 443})
+
+    assert dbt_artifact_processor.dataset_namespace == "presto://watsonx.example.com:443"
+
+
+@pytest.mark.parametrize(
+    "profile, expected",
+    [
+        # port given: the branch that already separates it with a colon
+        (
+            {"method": "http", "host": "myhost.databricks.com", "port": 443},
+            "spark://myhost.databricks.com:443",
+        ),
+        (
+            {"method": "thrift", "host": "myhost.databricks.com", "port": 10001},
+            "spark://myhost.databricks.com:10001",
+        ),
+        # port omitted: dbt-spark defaults it, so the profile has no port key
+        ({"method": "http", "host": "myhost.databricks.com"}, "spark://myhost.databricks.com:443"),
+        ({"method": "odbc", "host": "myhost.databricks.com"}, "spark://myhost.databricks.com:443"),
+        (
+            {"method": "thrift", "host": "myhost.databricks.com"},
+            "spark://myhost.databricks.com:10001",
+        ),
+    ],
+)
+def test_spark_namespace_separates_the_port(dbt_artifact_processor, profile, expected):
+    dbt_artifact_processor.adapter_type = Adapter.SPARK
+
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    assert dbt_artifact_processor.dataset_namespace == expected
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [
+        {
+            "region_name": "us-east-1",
+            "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena",
+        },
+    ],
+)
+def test_athena_dataset_symlink_uses_assume_role_account(dbt_artifact_processor, profile):
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    model = ModelNode(
+        type="model",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "alias": "orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(model, None)
+
+    assert facets["symlinks"].identifiers[0].namespace == "arn:aws:glue:us-east-1:123456789012"
+    assert facets["symlinks"].identifiers[0].name == "table/analytics/orders"
+    assert facets["symlinks"].identifiers[0].type == "TABLE"
+
+
+def test_athena_dataset_symlink_uses_source_name(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"region_name": "us-east-1", "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena"}
+    )
+
+    source = ModelNode(
+        type="source",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "name": "raw_orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(source, None)
+
+    assert facets["symlinks"].identifiers[0].name == "table/analytics/raw_orders"
+
+
+def test_athena_dataset_symlink_uses_effective_profile_credentials(monkeypatch, dbt_artifact_processor):
+    class FakeStsClient:
+        def get_caller_identity(self):
+            return {"Account": "123456789012"}
+
+    class FakeSession:
+        instances = []
+
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            self.instances.append(self)
+
+        def client(self, service_name):
+            assert service_name == "sts"
+            return FakeStsClient()
+
+    fake_boto3 = types.ModuleType("boto3")
+    fake_boto3.session = types.SimpleNamespace(Session=FakeSession)
+    monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
+
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace(
+        {"region_name": "us-east-1", "aws_profile_name": "production"}
+    )
+
+    assert dbt_artifact_processor.dataset_symlink_namespace == "arn:aws:glue:us-east-1:123456789012"
+    assert FakeSession.instances[0].kwargs["profile_name"] == "production"
+
+
+def test_athena_dataset_symlink_is_omitted_without_profile_account(monkeypatch, dbt_artifact_processor):
+    monkeypatch.setitem(sys.modules, "boto3", None)
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.extract_dataset_namespace({"region_name": "us-east-1"})
+
+    model = ModelNode(
+        type="model",
+        metadata_node={
+            "database": "awsdatacatalog",
+            "schema": "analytics",
+            "alias": "orders",
+        },
+    )
+
+    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(model, None)
+
+    assert "symlinks" not in facets
+
+
+class TestGetDbtProfilesDir:
+    """dbt looks in the working directory only if it holds a profiles.yml, then ~/.dbt."""
+
+    def test_command_line_wins(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("DBT_PROFILES_DIR", str(tmp_path / "from_env"))
+        monkeypatch.chdir(tmp_path)
+
+        got = get_dbt_profiles_dir(["dbt", "run", "--profiles-dir", "/from/command"])
+
+        assert got == "/from/command"
+
+    def test_env_var_wins_over_working_directory(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("DBT_PROFILES_DIR", "/from/env")
+        monkeypatch.chdir(tmp_path)
+
+        got = get_dbt_profiles_dir(["dbt", "run"])
+
+        assert got == "/from/env"
+
+    def test_working_directory_when_it_holds_a_profile(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("DBT_PROFILES_DIR", raising=False)
+        (tmp_path / "profiles.yml").write_text("")
+        monkeypatch.chdir(tmp_path)
+
+        got = get_dbt_profiles_dir(["dbt", "run"])
+
+        assert got == str(tmp_path)
+
+    def test_default_directory_when_working_directory_has_no_profile(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("DBT_PROFILES_DIR", raising=False)
+        monkeypatch.chdir(tmp_path)
+
+        got = get_dbt_profiles_dir(["dbt", "run"])
+
+        assert got == os.path.expanduser("~/.dbt/")
+
+
+def test_extract_adapter_type_fabric(dbt_artifact_processor):
+    # dbt-fabric profiles use `type: fabric`; the enum name must match so
+    # `Adapter[type.upper()]` resolves it without NotImplementedError.
+    dbt_artifact_processor.extract_adapter_type({"type": "fabric"})
+    assert dbt_artifact_processor.adapter_type == Adapter.FABRIC
+
+
+@pytest.mark.parametrize(
+    "profile_type, expected",
+    [
+        ("presto", Adapter.PRESTO),
+        # dbt-watsonx-presto registers itself as `watsonx_presto`, not `presto`.
+        ("watsonx_presto", Adapter.WATSONX_PRESTO),
+    ],
+)
+def test_extract_adapter_type_presto_family(dbt_artifact_processor, profile_type, expected):
+    profile = {"type": profile_type, "host": "presto.example.com", "port": 443}
+    dbt_artifact_processor.extract_adapter_type(profile)
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    assert dbt_artifact_processor.adapter_type == expected
+    assert dbt_artifact_processor.dataset_namespace == "presto://presto.example.com:443"
 
 
 class TestParseSeverity:
@@ -265,11 +514,11 @@ class TestParseSingularTests:
             producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
             job_namespace="test-namespace",
         )
-        processor.manifest_version = 11  # Use version < 12 for test_metadata path
+        processor.manifest_version = 11  # pre-v12; the buggy branch used to skip test_metadata here
         return processor
 
     def test_singular_test_no_test_metadata(self, processor):
-        """Singular tests (manifest v<12) have no test_metadata; name comes from node name."""
+        """Singular tests (manifest v<12 and v12+) have no test_metadata; name comes from node name."""
         nodes = {
             "test.project.assert_no_future_dates": {
                 "name": "assert_no_future_dates",
@@ -300,6 +549,21 @@ class TestParseSingularTests:
         assert assertion.success is True
         assert assertion.column is None
 
+    def test_seed_parent_resolves_to_alias_not_name(self, processor):
+        """A seed materializes as a real table addressed by its alias, like a
+        model -- only true sources are addressed by their logical name."""
+        manifest_nodes = {
+            "seed.project.raw_customers": {
+                "name": "raw_customers",
+                "alias": "customers_physical",
+                "database": "db",
+                "schema": "public",
+            },
+        }
+        parent_map = {"test.project.assert_seed": ["seed.project.raw_customers"]}
+        inputs = processor._resolve_test_inputs("test.project.assert_seed", parent_map, manifest_nodes)
+        assert [i.name for i in inputs] == ["db.public.customers_physical"]
+
 
 class TestParseFailures:
     """Tests for failure-count extraction in parse_assertions (generic tests)."""
@@ -310,7 +574,7 @@ class TestParseFailures:
             producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
             job_namespace="test-namespace",
         )
-        processor.manifest_version = 11  # Use version < 12 for test_metadata path
+        processor.manifest_version = 11  # pre-v12; version no longer gates parse_assertions
         return processor
 
     def test_warning_test_with_nine_failures(self, processor):
@@ -401,3 +665,376 @@ class TestParseFailures:
 
         assert assertion.actual is None
         assert assertion.expected is None
+
+
+class TestParseAssertionNames:
+    """Regression for the manifest_version >= 12 bug in parse_assertions.
+
+    The bug: a version guard used test_node["name"] (verbose full node name, e.g.
+    "unique_customers_customer_id") instead of test_metadata["name"] (short test type, e.g.
+    "unique") for all v12 nodes, and lost column association because test_node has no
+    top-level "kwargs" key.
+
+    The fix: test_metadata presence (not manifest version) is the canonical dbt discriminator.
+    GenericTestNode always has test_metadata; SingularTestNode never does — in every version.
+    """
+
+    @pytest.fixture
+    def processor(self):
+        return DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="test-namespace",
+        )
+
+    def _make_context(self, node_key, node):
+        return DbtRunContext(
+            manifest={"parent_map": {node_key: ["model.jaffle_shop.customers"]}},
+            run_results={"results": [{"unique_id": node_key, "status": "fail", "failures": 1}]},
+        )
+
+    def test_generic_test_v12_uses_short_name_from_test_metadata(self, processor):
+        """Generic test on manifest v12: assertion name comes from test_metadata, not node name."""
+        processor.manifest_version = 12
+        node_key = "test.jaffle_shop.unique_customers_customer_id.d48e126d80"
+        node = {
+            "name": "unique_customers_customer_id",  # verbose — must NOT be used
+            "test_metadata": {
+                "name": "unique",  # short type — must be used
+                "kwargs": {"column_name": "id"},
+                "namespace": None,
+            },
+        }
+        assertion = processor.parse_assertions(self._make_context(node_key, node), {node_key: node})[
+            "model.jaffle_shop.customers"
+        ][0]
+
+        assert assertion.assertion == "unique"
+        assert assertion.column == "id"
+
+    def test_generic_test_v12_without_model_kwarg_resolves_column(self, processor):
+        """v12 manifests omit the model kwarg from kwargs; column_name must still resolve."""
+        processor.manifest_version = 12
+        node_key = "test.jaffle_shop.not_null_customers_customer_id.923d2d910a"
+        node = {
+            "name": "not_null_customers_customer_id",
+            "test_metadata": {
+                "name": "not_null",
+                "kwargs": {"column_name": "customer_id"},  # no "model" kwarg — v12 style
+                "namespace": None,
+            },
+        }
+        assertion = processor.parse_assertions(self._make_context(node_key, node), {node_key: node})[
+            "model.jaffle_shop.customers"
+        ][0]
+
+        assert assertion.assertion == "not_null"
+        assert assertion.column == "customer_id"
+
+
+class TestAggregateTestEventStatus:
+    """Per-model aggregate test job emits FAIL when an error-severity assertion failed,
+    and COMPLETE when all assertions passed or only warn-severity ones failed.
+
+    Regression: legacy ``processor.parse_test`` previously hardcoded status="success",
+    so failing tests were emitted as COMPLETE."""
+
+    @pytest.fixture
+    def processor(self):
+        p = DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="ns",
+        )
+        p.manifest_version = 11
+        p.command = "test"
+        p.dataset_namespace = "snowflake://acct"
+        p.dbt_run_run_facet = MagicMock(return_value={})
+        return p
+
+    @staticmethod
+    def _ctx(test_results):
+        manifest = {
+            "nodes": {
+                "model.project.my_model": {
+                    "database": "DB",
+                    "schema": "SCH",
+                    "alias": "my_model",
+                    "unique_id": "model.project.my_model",
+                    "columns": {},
+                },
+            },
+            "sources": {},
+            "parent_map": {
+                f"test.project.t{i}": ["model.project.my_model"] for i in range(len(test_results))
+            },
+        }
+        run_results = {"results": test_results}
+        nodes = {
+            f"test.project.t{i}": {
+                "name": f"t{i}",
+                "test_metadata": {"name": f"t{i}", "kwargs": {"column_name": "id"}},
+                "config": {"severity": severity},
+            }
+            for i, (severity, _status) in enumerate([(r["_severity"], r["status"]) for r in test_results])
+        }
+        # remove the synthetic _severity key from results so they look like real run_results
+        for r in test_results:
+            r.pop("_severity", None)
+        return DbtRunContext(manifest=manifest, run_results=run_results, catalog=None), nodes
+
+    def _event_types(self, processor, test_results):
+        ctx, nodes = self._ctx(test_results)
+        events = processor.parse_test(ctx, nodes)
+        return [e.eventType.value for e in events.starts + events.completes + events.fails]
+
+    def test_all_pass_emits_complete(self, processor):
+        results = [
+            {"unique_id": "test.project.t0", "status": "pass", "_severity": "error"},
+        ]
+        assert self._event_types(processor, results) == ["START", "COMPLETE"]
+
+    def test_error_severity_failure_emits_fail(self, processor):
+        results = [
+            {"unique_id": "test.project.t0", "status": "fail", "failures": 3, "_severity": "error"},
+        ]
+        assert self._event_types(processor, results) == ["START", "FAIL"]
+
+    def test_warn_severity_failure_emits_complete(self, processor):
+        # dbt itself doesn't fail the run on warn-severity test failures, so the
+        # aggregate test job stays COMPLETE — mirroring CommandCompleted.success=true.
+        results = [
+            {"unique_id": "test.project.t0", "status": "warn", "failures": 3, "_severity": "warn"},
+        ]
+        assert self._event_types(processor, results) == ["START", "COMPLETE"]
+
+    def test_mixed_pass_and_warn_failure_emits_complete(self, processor):
+        results = [
+            {"unique_id": "test.project.t0", "status": "pass", "_severity": "error"},
+            {"unique_id": "test.project.t1", "status": "warn", "failures": 1, "_severity": "warn"},
+        ]
+        assert self._event_types(processor, results) == ["START", "COMPLETE"]
+
+    def test_mixed_error_and_warn_failure_emits_fail(self, processor):
+        results = [
+            {"unique_id": "test.project.t0", "status": "fail", "failures": 1, "_severity": "error"},
+            {"unique_id": "test.project.t1", "status": "warn", "failures": 1, "_severity": "warn"},
+        ]
+        assert self._event_types(processor, results) == ["START", "FAIL"]
+
+
+class TestDbtModelDatasetFacet:
+    """Covers parsing of a dbt manifest node's resolved ``config`` into the dbt_model dataset facet.
+
+    The facet is built in DbtArtifactProcessor.extract_dataset_data and is therefore shared by
+    both the legacy local processor and the structured-logs processor. Node ``meta`` is no longer
+    on this facet — it is emitted as tags (see TestDbtMetaTags).
+    """
+
+    def _node(self, metadata_node):
+        from openlineage.common.provider.dbt.processor import ModelNode
+
+        base = {"database": "db", "schema": "sch", "alias": "orders", "columns": {}}
+        base.update(metadata_node)
+        return ModelNode(type="model", metadata_node=base)
+
+    def test_extracts_config(self, dbt_artifact_processor):
+        node = self._node(
+            {
+                "config": {
+                    "materialized": "incremental",
+                    "access": "public",
+                    "group": "finance",
+                },
+            }
+        )
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(node)
+        assert facet is not None
+        assert facet.config.materialized == "incremental"
+        assert facet.config.access == "public"
+        assert facet.config.group == "finance"
+        assert facet.config.owner is None
+        assert not hasattr(facet, "meta")
+
+    def test_empty_strings_are_dropped(self, dbt_artifact_processor):
+        # config present but every field blank -> no facet
+        node = self._node({"config": {"materialized": "", "access": ""}})
+        assert dbt_artifact_processor._create_dbt_model_dataset_facet(node) is None
+
+    def test_meta_does_not_produce_config_facet(self, dbt_artifact_processor):
+        # meta alone no longer yields a dbt_model facet; it is emitted as tags instead
+        node = self._node({"config": {}, "meta": {"tier": "gold"}})
+        assert dbt_artifact_processor._create_dbt_model_dataset_facet(node) is None
+
+    def test_no_config_returns_none(self, dbt_artifact_processor):
+        node = self._node({})
+        assert dbt_artifact_processor._create_dbt_model_dataset_facet(node) is None
+
+    def test_facet_attached_to_dataset_facets(self, dbt_artifact_processor):
+        node = self._node({"config": {"materialized": "table"}})
+        _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(node, None, has_facets=True)
+        assert "dbt_model" in facets
+        assert facets["dbt_model"].config.materialized == "table"
+
+
+class TestDbtIncrementalConfig:
+    """Covers the incremental rebuild config attached to the dbt_model facet for
+    ``materialized == "incremental"`` models."""
+
+    def _node(self, config):
+        from openlineage.common.provider.dbt.processor import ModelNode
+
+        base = {"database": "db", "schema": "sch", "alias": "orders", "columns": {}, "config": config}
+        return ModelNode(type="model", metadata_node=base)
+
+    def test_none_for_non_incremental_models(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(self._node({"materialized": "table"}))
+        assert facet.config.incremental is None
+
+    def test_present_even_when_no_fields_set(self, dbt_artifact_processor):
+        # presence alone marks the model incremental, mirroring the manifest
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental"})
+        )
+        incremental = facet.config.incremental
+        assert incremental is not None
+        assert incremental.strategy is None
+        assert incremental.unique_key is None
+
+    def test_extracts_merge_config(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node(
+                {
+                    "materialized": "incremental",
+                    "incremental_strategy": "merge",
+                    "unique_key": "id",
+                    "incremental_predicates": ["dbt_valid_to is null"],
+                    "on_schema_change": "append_new_columns",
+                }
+            )
+        )
+        incremental = facet.config.incremental
+        assert incremental.strategy == "merge"
+        assert incremental.unique_key == ["id"]
+        assert incremental.incremental_predicates == ["dbt_valid_to is null"]
+        assert incremental.on_schema_change == "append_new_columns"
+
+    def test_unique_key_list_preserved(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "unique_key": ["a", "", "b"]})
+        )
+        assert facet.config.incremental.unique_key == ["a", "b"]
+
+    def test_predicates_alias_fallback(self, dbt_artifact_processor):
+        # the Spark ``predicates`` alias is used only when incremental_predicates is absent
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "predicates": ["ds >= '2024-01-01'"]})
+        )
+        assert facet.config.incremental.incremental_predicates == ["ds >= '2024-01-01'"]
+
+    def test_microbatch_params_gated_to_microbatch(self, dbt_artifact_processor):
+        # a non-microbatch model with a resolved lookback default must not emit it
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "incremental_strategy": "merge", "lookback": 1})
+        )
+        assert facet.config.incremental.lookback is None
+        assert facet.config.incremental.event_time is None
+
+    def test_microbatch_params_captured(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node(
+                {
+                    "materialized": "incremental",
+                    "incremental_strategy": "microbatch",
+                    "event_time": "event_ts",
+                    "batch_size": "day",
+                    "begin": "2024-01-01",
+                    "lookback": 2,
+                }
+            )
+        )
+        incremental = facet.config.incremental
+        assert incremental.event_time == "event_ts"
+        assert incremental.batch_size == "day"
+        assert incremental.begin == "2024-01-01"
+        assert incremental.lookback == 2
+
+    def test_partition_by_bigquery_object(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node(
+                {
+                    "materialized": "incremental",
+                    "partition_by": {"field": "created_at", "data_type": "timestamp", "granularity": "day"},
+                }
+            )
+        )
+        partition = facet.config.incremental.partition_by
+        assert partition.field == "created_at"
+        assert partition.data_type == "timestamp"
+        assert partition.granularity == "day"
+        assert partition.columns is None
+
+    def test_partition_by_column_list(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "partition_by": ["ds", "region"]})
+        )
+        partition = facet.config.incremental.partition_by
+        assert partition.columns == ["ds", "region"]
+        assert partition.field is None
+
+    def test_full_refresh_override(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._create_dbt_model_dataset_facet(
+            self._node({"materialized": "incremental", "full_refresh": False})
+        )
+        assert facet.config.incremental.full_refresh is False
+
+
+class TestFullRefreshFromArgs:
+    """Covers the run-wide --full-refresh flag read from run_results.json args."""
+
+    def test_true(self, dbt_artifact_processor):
+        assert dbt_artifact_processor._full_refresh_from_args({"full_refresh": True}) is True
+
+    def test_false(self, dbt_artifact_processor):
+        assert dbt_artifact_processor._full_refresh_from_args({"full_refresh": False}) is False
+
+    def test_absent(self, dbt_artifact_processor):
+        assert dbt_artifact_processor._full_refresh_from_args({}) is None
+
+    def test_non_bool_ignored(self, dbt_artifact_processor):
+        # a stray non-boolean value must not be reported as a flag
+        assert dbt_artifact_processor._full_refresh_from_args({"full_refresh": "true"}) is None
+
+
+class TestDbtMetaTags:
+    """Covers dbt ``tags`` (source DBT) and ``meta`` (source DBT_META) -> TagsRunFacet."""
+
+    def test_none_when_empty(self, dbt_artifact_processor):
+        assert dbt_artifact_processor._build_tags_run_facet(None, None) is None
+        assert dbt_artifact_processor._build_tags_run_facet([], {}) is None
+
+    def test_plain_tags_keep_dbt_source(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._build_tags_run_facet(["pii", "core"], None)
+        assert [(t.key, t.value, t.source) for t in facet.tags] == [
+            ("pii", "true", "DBT"),
+            ("core", "true", "DBT"),
+        ]
+
+    def test_meta_becomes_dbt_meta_tags(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._build_tags_run_facet(
+            None, {"owner": "data-team", "pii": False, "tier": "gold", "freshness_h": 24}
+        )
+        assert [(t.key, t.value, t.source) for t in facet.tags] == [
+            ("owner", "data-team", "DBT_META"),
+            ("pii", "false", "DBT_META"),
+            ("tier", "gold", "DBT_META"),
+            ("freshness_h", "24", "DBT_META"),
+        ]
+
+    def test_nested_meta_value_is_json(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._build_tags_run_facet(None, {"sla": {"freshness_hours": 24}})
+        assert facet.tags[0].key == "sla"
+        assert facet.tags[0].value == '{"freshness_hours": 24}'
+        assert facet.tags[0].source == "DBT_META"
+
+    def test_tags_and_meta_combined(self, dbt_artifact_processor):
+        facet = dbt_artifact_processor._build_tags_run_facet(["core"], {"tier": "gold"})
+        assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "DBT_META")]

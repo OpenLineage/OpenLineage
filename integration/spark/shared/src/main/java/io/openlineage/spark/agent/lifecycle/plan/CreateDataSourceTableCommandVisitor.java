@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
@@ -35,13 +34,14 @@ public class CreateDataSourceTableCommandVisitor
 
     CreateDataSourceTableCommand command = (CreateDataSourceTableCommand) x;
     CatalogTable catalogTable = command.table();
-
     return Collections.singletonList(
         outputDataset()
-            .getDataset(
-                PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
-                catalogTable.schema(),
-                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
+            .sparkDatasetBuilder()
+            .dataset(catalogTable)
+            .schema(catalogTable.schema())
+            .lifecycleStateChange(
+                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)
+            .build());
   }
 
   @Override

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
@@ -24,10 +25,27 @@ SITE_MAPPING = {
     "us5.datadoghq.com": "https://data-obs-intake.us5.datadoghq.com",
     "datadoghq.eu": "https://data-obs-intake.datadoghq.eu",
     "ddog-gov.com": "https://data-obs-intake.ddog-gov.com",
+    "us2.ddog-gov.com": "https://data-obs-intake.us2.ddog-gov.com",
     "ap1.datadoghq.com": "https://data-obs-intake.ap1.datadoghq.com",
     "ap2.datadoghq.com": "https://data-obs-intake.ap2.datadoghq.com",
+    "uk1.datadoghq.com": "https://data-obs-intake.uk1.datadoghq.com",
     "datad0g.com": "https://data-obs-intake.datad0g.com",
 }
+
+
+def _default_retry() -> dict[str, Any]:
+    return {
+        "total": 5,
+        "read": 5,
+        "connect": 5,
+        "backoff_factor": 0.3,
+        "status_forcelist": [500, 502, 503, 504],
+        "allowed_methods": ["HEAD", "POST"],
+    }
+
+
+def _default_async_transport_rules() -> dict[str, dict[str, bool]]:
+    return {"dbt": {"*": True}}
 
 
 def _is_valid_url(url: str) -> bool:
@@ -43,19 +61,10 @@ class DatadogConfig(Config):
     apiKey: str = attr.field()  # noqa: N815
     site: str = attr.field(default="datadoghq.com")
     timeout: float = attr.field(default=5.0)
-    retry: dict[str, Any] = attr.field(
-        default={
-            "total": 5,
-            "read": 5,
-            "connect": 5,
-            "backoff_factor": 0.3,
-            "status_forcelist": [500, 502, 503, 504],
-            "allowed_methods": ["HEAD", "POST"],
-        }
-    )
+    retry: dict[str, Any] = attr.field(factory=_default_retry)
     max_queue_size: int = attr.field(default=10000)
     max_concurrent_requests: int = attr.field(default=100)
-    async_transport_rules: dict[str, dict[str, bool]] = attr.field(default={"dbt": {"*": True}})
+    async_transport_rules: dict[str, dict[str, bool]] = attr.field(factory=_default_async_transport_rules)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> DatadogConfig:
@@ -111,21 +120,31 @@ class DatadogTransport(Transport):
                 "max_concurrent_requests": config.max_concurrent_requests,
             }
         )
-        async_http_config = AsyncHttpConfig.from_dict(async_config)
-        self.async_http = AsyncHttpTransport(async_http_config)
+        self._async_http_config = AsyncHttpConfig.from_dict(async_config)
+        # AsyncHttpTransport spawns a worker thread on construction, so it's built lazily,
+        # on the first event that actually routes to it, instead of unconditionally here.
+        self.async_http: AsyncHttpTransport | None = None
+        self._async_http_lock = threading.Lock()
+
+    def _get_async_http(self) -> AsyncHttpTransport:
+        if self.async_http is None:
+            with self._async_http_lock:
+                if self.async_http is None:
+                    self.async_http = AsyncHttpTransport(self._async_http_config)
+        return self.async_http
 
     def emit(self, event: Event) -> Any:
         # Check if event has JobTypeJobFacet with integration = "dbt"
         should_use_async = self._should_use_async_transport(event)
 
         if should_use_async:
-            return self.async_http.emit(event)
+            return self._get_async_http().emit(event)
         else:
             return self.http.emit(event)
 
     def close(self, timeout: float = -1) -> bool:
         http_result = self.http.close(timeout)
-        async_result = self.async_http.close(timeout)
+        async_result = self.async_http.close(timeout) if self.async_http is not None else True
         return http_result and async_result
 
     def _should_use_async_transport(self, event: Event) -> bool:

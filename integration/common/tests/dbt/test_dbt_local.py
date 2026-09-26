@@ -17,6 +17,10 @@ from openlineage.common.provider.dbt.local import (
     LazyJinjaLoadDict,
 )
 from openlineage.common.provider.dbt.processor import ParentRunMetadata
+from openlineage.common.provider.dbt.utils import (
+    get_parent_run_metadata,
+    get_parent_run_metadata_from_context,
+)
 from openlineage.common.test import match
 
 CURRENT_DIR = str(Path(__file__).absolute().parent)
@@ -37,6 +41,157 @@ def parent_run_metadata():
         root_parent_job_name="root-parent-job-name",
         root_parent_job_namespace="root-parent-job-namespace",
     )
+
+
+def test_get_parent_run_metadata_from_context_valid(monkeypatch):
+    monkeypatch.setenv(
+        "OPENLINEAGE_CONTEXT",
+        json.dumps(
+            {
+                "parent": {
+                    "run": {
+                        "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11",
+                        "facets": {"processing_engine": {"version": "2.10.0"}},
+                    },
+                    "job": {
+                        "namespace": "airflow",
+                        "name": "my_dag.my_task",
+                        "facets": {"jobType": {"processingType": "BATCH", "integration": "AIRFLOW"}},
+                    },
+                    "root": {
+                        "run": {
+                            "runId": "a0000000-3c3c-1a1a-2b2b-c1b95c24ff11",
+                            "facets": {"processing_engine": {"version": "2.10.0"}},
+                        },
+                        "job": {
+                            "namespace": "airflow",
+                            "name": "my_dag",
+                            "facets": {"jobType": {"processingType": "BATCH", "integration": "AIRFLOW"}},
+                        },
+                    },
+                }
+            }
+        ),
+    )
+
+    metadata = get_parent_run_metadata_from_context()
+
+    assert metadata == ParentRunMetadata(
+        run_id="f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11",
+        job_name="my_dag.my_task",
+        job_namespace="airflow",
+        run_facets={"processing_engine": {"version": "2.10.0"}},
+        job_facets={"jobType": {"processingType": "BATCH", "integration": "AIRFLOW"}},
+        root_parent_run_id="a0000000-3c3c-1a1a-2b2b-c1b95c24ff11",
+        root_parent_job_name="my_dag",
+        root_parent_job_namespace="airflow",
+        root_run_facets={"processing_engine": {"version": "2.10.0"}},
+        root_job_facets={"jobType": {"processingType": "BATCH", "integration": "AIRFLOW"}},
+    )
+
+
+def test_get_parent_run_metadata_from_context_not_set(monkeypatch):
+    monkeypatch.delenv("OPENLINEAGE_CONTEXT", raising=False)
+    assert get_parent_run_metadata_from_context() is None
+
+
+def test_get_parent_run_metadata_from_context_malformed_json(monkeypatch, caplog):
+    monkeypatch.setenv("OPENLINEAGE_CONTEXT", "not valid json")
+    assert get_parent_run_metadata_from_context() is None
+    assert "failed to parse it as JSON" in caplog.text
+
+
+def test_get_parent_run_metadata_from_context_missing_parent_run_key(monkeypatch):
+    monkeypatch.setenv("OPENLINEAGE_CONTEXT", json.dumps({"somethingElse": {}}))
+    assert get_parent_run_metadata_from_context() is None
+
+
+@pytest.mark.parametrize(
+    "parent",
+    [
+        {"run": {"runId": "abc"}},  # job missing entirely
+        {"job": {"namespace": "ns", "name": "job"}},  # run missing entirely
+        {"run": {"runId": "abc"}, "job": {"name": "job"}},  # job.namespace missing
+        {"run": {}, "job": {"namespace": "ns", "name": "job"}},  # run.runId missing
+    ],
+    ids=["missing_job", "missing_run", "missing_job_namespace", "missing_run_id"],
+)
+def test_get_parent_run_metadata_from_context_missing_required_fields(monkeypatch, caplog, parent):
+    monkeypatch.setenv("OPENLINEAGE_CONTEXT", json.dumps({"parent": parent}))
+
+    assert get_parent_run_metadata_from_context() is None
+    assert "missing required run/job fields" in caplog.text
+
+
+def test_get_parent_run_metadata_from_context_without_root_defaults_to_self(monkeypatch):
+    monkeypatch.setenv(
+        "OPENLINEAGE_CONTEXT",
+        json.dumps(
+            {
+                "parent": {
+                    "run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"},
+                    "job": {"namespace": "airflow", "name": "my_dag.my_task"},
+                }
+            }
+        ),
+    )
+
+    metadata = get_parent_run_metadata_from_context()
+
+    assert metadata.root_parent_run_id == metadata.run_id
+    assert metadata.root_parent_job_name == metadata.job_name
+    assert metadata.root_parent_job_namespace == metadata.job_namespace
+
+
+def test_get_parent_run_metadata_from_context_unknown_top_level_keys_ignored(monkeypatch):
+    monkeypatch.setenv(
+        "OPENLINEAGE_CONTEXT",
+        json.dumps(
+            {
+                "someFutureField": {"anything": "goes"},
+                "parent": {
+                    "run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"},
+                    "job": {"namespace": "airflow", "name": "my_dag.my_task"},
+                },
+            }
+        ),
+    )
+
+    assert get_parent_run_metadata_from_context() is not None
+
+
+def test_get_parent_run_metadata_context_takes_precedence_over_legacy(monkeypatch):
+    monkeypatch.setenv(
+        "OPENLINEAGE_CONTEXT",
+        json.dumps(
+            {
+                "parent": {
+                    "run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"},
+                    "job": {"namespace": "context-namespace", "name": "context-job"},
+                }
+            }
+        ),
+    )
+    monkeypatch.setenv(
+        "OPENLINEAGE_PARENT_ID", "legacy-namespace/legacy-job/f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+    )
+
+    metadata = get_parent_run_metadata()
+
+    assert metadata.job_namespace == "context-namespace"
+    assert metadata.job_name == "context-job"
+
+
+def test_get_parent_run_metadata_falls_back_to_legacy_when_context_malformed(monkeypatch):
+    monkeypatch.setenv("OPENLINEAGE_CONTEXT", "not valid dict")
+    monkeypatch.setenv(
+        "OPENLINEAGE_PARENT_ID", "legacy-namespace/legacy-job/f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+    )
+
+    metadata = get_parent_run_metadata()
+
+    assert metadata.job_namespace == "legacy-namespace"
+    assert metadata.job_name == "legacy-job"
 
 
 def serialize(inst, field, value):

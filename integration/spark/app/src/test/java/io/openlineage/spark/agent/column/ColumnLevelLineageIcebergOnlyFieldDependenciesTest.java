@@ -121,6 +121,7 @@ class ColumnLevelLineageIcebergOnlyFieldDependenciesTest {
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(mock(SparkOpenLineageExtensionVisitorWrapper.class))
+            .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
             .build();
 
     context

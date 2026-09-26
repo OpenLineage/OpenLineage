@@ -38,9 +38,7 @@ class ExpectationsParser:
 
     @classmethod
     def can_accept(cls, expectation_result: ExpectationValidationResult) -> Any | None:
-        expectation_type = get_from_nullable_chain(
-            expectation_result, ["expectation_config", "expectation_type"]
-        )
+        expectation_type = get_from_nullable_chain(expectation_result, ["expectation_config", "type"])
         return expectation_type and expectation_type == cls.expectation_key
 
     @staticmethod
@@ -68,10 +66,14 @@ class EqualRowCountExpectationsParser(BetweenRowCountExpectationsParser):
 
 class FileSizeExpectationsParser(ExpectationsParser):
     expectation_key = "expect_file_size_to_be_between"
+    facet_key = "bytes"
 
     @staticmethod
     def parse_expectation_result(expectation_result: dict) -> ExpectationsParserResult:  # type: ignore # noqa
-        pass  # TODO: file asset validation
+        return ExpectationsParserResult(
+            FileSizeExpectationsParser.facet_key,
+            get_from_nullable_chain(expectation_result, ["result", "observed_value"]),
+        )
 
 
 class ColumnExpectationsParser(ExpectationsParser):
@@ -83,9 +85,7 @@ class ColumnExpectationsParser(ExpectationsParser):
 
     @classmethod
     def can_accept(cls, expectation_result: ExpectationValidationResult) -> Any | None:
-        expectation_type = get_from_nullable_chain(
-            expectation_result, ["expectation_config", "expectation_type"]
-        )
+        expectation_type = get_from_nullable_chain(expectation_result, ["expectation_config", "type"])
         extracted_column = get_from_nullable_chain(
             expectation_result, ["expectation_config", "kwargs", "column"]
         )
@@ -186,7 +186,7 @@ class ValuesQuantileExpectationParser(ColumnExpectationsParser):
 EXPECTATIONS_PARSERS = [
     BetweenRowCountExpectationsParser,
     EqualRowCountExpectationsParser,
-    # FileSizeExpectationsParser,
+    FileSizeExpectationsParser,
 ]
 
 COLUMN_EXPECTATIONS_PARSER = [

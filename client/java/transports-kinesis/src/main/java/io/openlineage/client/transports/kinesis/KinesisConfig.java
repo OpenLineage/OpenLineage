@@ -24,7 +24,7 @@ public final class KinesisConfig implements TransportConfig, MergeConfig<Kinesis
   @Getter @Setter private String roleArn;
 
   // check
-  // https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties
+  // https://github.com/awslabs/amazon-kinesis-producer/blob/v1.0.7/java/amazon-kinesis-producer-sample/default_config.properties
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   @Getter
   @Setter

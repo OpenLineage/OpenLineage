@@ -6,10 +6,10 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -48,47 +48,13 @@ public class InsertIntoHiveTableVisitor
 
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
-    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacetForHive =
-        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context);
-    OpenLineage.OutputDataset outputDataset;
+    SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
+        outputDataset().sparkDatasetBuilder().dataset(table).schema(table.schema()).catalog();
     if (cmd.overwrite()) {
-      outputDataset =
-          catalogDatasetFacetForHive
-              .map(
-                  catalogDatasetFacet ->
-                      outputDataset()
-                          .getDataset(
-                              PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
-                              table.schema(),
-                              OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                                  .OVERWRITE,
-                              catalogDatasetFacet))
-              .orElse(
-                  outputDataset()
-                      .getDataset(
-                          PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
-                          table.schema(),
-                          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                              .OVERWRITE));
-
-    } else {
-      outputDataset =
-          catalogDatasetFacetForHive
-              .map(
-                  catalogDatasetFacet ->
-                      outputDataset()
-                          .getDataset(
-                              PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
-                              table.schema(),
-                              catalogDatasetFacet))
-              .orElse(
-                  outputDataset()
-                      .getDataset(
-                          PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
-                          table.schema()));
+      builder.lifecycleStateChange(
+          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
     }
-
-    return Collections.singletonList(outputDataset);
+    return Collections.singletonList(builder.build());
   }
 
   @Override

@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
@@ -39,8 +38,11 @@ public class AlterTableAddPartitionCommandVisitor
     // The generated datasets will not include partition nor location information
     return Collections.singletonList(
         outputDataset()
-            .getDataset(
-                PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
-                catalogTable.schema()));
+            .sparkDatasetBuilder()
+            .dataset(catalogTable)
+            .schema(catalogTable.schema())
+            .lifecycleStateChange(
+                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER)
+            .build());
   }
 }

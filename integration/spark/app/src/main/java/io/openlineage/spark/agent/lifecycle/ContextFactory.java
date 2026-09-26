@@ -60,6 +60,7 @@ public class ContextFactory {
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
             .build();
 
     String resolvedAppName = JobNameBuilder.buildApplicationName(olContext);
@@ -84,6 +85,7 @@ public class ContextFactory {
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
             .build();
 
     OpenLineageRunEventBuilder runEventBuilder =
@@ -113,6 +115,7 @@ public class ContextFactory {
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -142,6 +145,7 @@ public class ContextFactory {
                       .openLineageConfig(config)
                       .sparkExtensionVisitorWrapper(
                           new SparkOpenLineageExtensionVisitorWrapper(config))
+                      .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

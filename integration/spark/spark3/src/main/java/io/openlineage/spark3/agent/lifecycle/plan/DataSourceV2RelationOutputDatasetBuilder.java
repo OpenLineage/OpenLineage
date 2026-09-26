@@ -39,7 +39,9 @@ public class DataSourceV2RelationOutputDatasetBuilder
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan logicalPlan) {
-    return logicalPlan instanceof DataSourceV2Relation;
+    // Write builders delegate their target relations here. A relation at the query root has no
+    // write command and must not be classified as an output.
+    return logicalPlan instanceof DataSourceV2Relation && !isQueryPlanRoot(logicalPlan);
   }
 
   @Override

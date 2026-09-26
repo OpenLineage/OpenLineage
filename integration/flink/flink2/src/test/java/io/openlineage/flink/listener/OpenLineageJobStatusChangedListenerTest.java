@@ -227,6 +227,36 @@ class OpenLineageJobStatusChangedListenerTest {
   }
 
   @Test
+  @SneakyThrows
+  void testOnEventJobCanceled() {
+    listener = new OpenLineageJobStatusChangedListener(context, factory);
+
+    // emit start event
+    JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
+    when(createdEvent.jobName()).thenReturn("event-job-name");
+    listener.onEvent(createdEvent);
+
+    // emit abort event
+    DefaultJobExecutionStatusEvent statusEvent =
+        new DefaultJobExecutionStatusEvent(
+            new JobID(1, 2),
+            "jobName",
+            JobStatus.RUNNING,
+            JobStatus.CANCELED,
+            mock(Throwable.class));
+    listener.onEvent(statusEvent);
+
+    List<RunEvent> eventsEmitted =
+        Files.readAllLines(Path.of(eventFileLocation)).stream()
+            .map(OpenLineageClientUtils::runEventFromJson)
+            .collect(Collectors.toList());
+
+    assertThat(eventsEmitted).hasSize(2);
+    assertThat(eventsEmitted.get(0).getEventType()).isEqualTo(EventType.START);
+    assertThat(eventsEmitted.get(1).getEventType()).isEqualTo(EventType.ABORT);
+  }
+
+  @Test
   void testCircuitBreaker() {
     OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
     CircuitBreaker circuitBreaker = mock(CircuitBreaker.class);

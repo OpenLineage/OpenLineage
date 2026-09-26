@@ -19,41 +19,6 @@ type EventTypes interface {
 	RunEvent | DatasetEvent | JobEvent
 }
 
-// RunEvent represents an OpenLineage run event.
-type RunEvent struct {
-	Run RunInfo
-	Job Job
-
-	EventType EventType
-
-	// The set of **input** datasets.
-	Inputs []InputElement
-
-	// The set of **output** datasets.
-	Outputs []OutputElement
-
-	BaseEvent
-}
-
-// AsEmittable converts this RunEvent to an emittable Event.
-func (e *RunEvent) AsEmittable() Event {
-	eventType := e.EventType
-	if eventType == "" {
-		eventType = EventTypeOther
-	}
-
-	return Event{
-		EventTime: e.EventTime,
-		EventType: &eventType,
-		Run:       &e.Run,
-		Job:       &e.Job,
-		Inputs:    e.Inputs,
-		Outputs:   e.Outputs,
-		Producer:  e.Producer,
-		SchemaURL: e.SchemaURL,
-	}
-}
-
 // NewNamespacedRunEvent creates a new RunEvent with an explicit namespace.
 func NewNamespacedRunEvent(
 	eventType EventType,
@@ -62,16 +27,17 @@ func NewNamespacedRunEvent(
 	jobNamespace string,
 	producer string,
 ) *RunEvent {
+	et := eventType
 	return &RunEvent{
 		BaseEvent: BaseEvent{
 			Producer:  producer,
 			SchemaURL: RunEventSchemaURL,
 			EventTime: time.Now(),
 		},
-		Run: RunInfo{
+		Run: Run{
 			RunID: runID.String(),
 		},
-		EventType: eventType,
+		EventType: &et,
 		Job: Job{
 			Name:      jobName,
 			Namespace: jobNamespace,
@@ -120,11 +86,11 @@ func (r *RunEvent) WithOutputs(outputs ...OutputElement) *RunEvent {
 func (r *RunEvent) WithParent(parentID uuid.UUID, jobName, namespace string) *RunEvent {
 	parent := facets.NewParentRunFacet(
 		r.Producer,
-		facets.ParentJob{
+		facets.ParentRunFacetJob{
 			Name:      jobName,
 			Namespace: namespace,
 		},
-		facets.ParentRun{
+		facets.ParentRunFacetRun{
 			RunID: parentID.String(),
 		},
 	)

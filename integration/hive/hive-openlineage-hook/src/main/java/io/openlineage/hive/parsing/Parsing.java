@@ -50,21 +50,37 @@ public class Parsing {
     for (String subAlias : qb.getSubqAliases()) {
       QBExpr qbExpr = qb.getSubqForAlias(subAlias);
       query.getSubQueries().computeIfAbsent(subAlias, k -> new ArrayList<>());
-      if (qbExpr.getOpcode().equals(QBExpr.Opcode.NULLOP)) {
-        QB subQB = qbExpr.getQB();
-        query.getSubQueries().get(subAlias).add(buildQueryTree(subQB, outputTable));
-      } else {
-        // This could be, for example, a UNION query
-        QB subQB1 = qbExpr.getQBExpr1().getQB();
-        query.getSubQueries().get(subAlias).add(buildQueryTree(subQB1, outputTable));
-        QB subQB2 = qbExpr.getQBExpr2().getQB();
-        query.getSubQueries().get(subAlias).add(buildQueryTree(subQB2, outputTable));
-      }
+      addQBExprToSubQueries(qbExpr, query, subAlias, outputTable);
     }
 
     // Parse the expressions in the query clauses (SELECT, JOIN, GROUP BY, etc.)
     Parsing.parseQueryExpressions(qb, outputTable, query);
     return query;
+  }
+
+  /**
+   * Recursively add a {@link QBExpr} to {@code query.getSubQueries().get(subAlias)}.
+   *
+   * <p>Hive parses chained set operations ({@code UNION ALL} / {@code INTERSECT} / {@code EXCEPT})
+   * left-associatively as a binary tree of non-{@code NULLOP} {@code QBExpr}s. Only the leaves of
+   * that tree wrap a concrete {@link QB} via {@code QBExpr#getQB()}; intermediate non-{@code
+   * NULLOP} nodes return {@code null} from {@code getQB()}, so the previous code's assumption that
+   * both legs of a non-{@code NULLOP} {@code QBExpr} could be unwrapped with a single {@code
+   * .getQB()} call NPE'd for any 3+ way set operation. See OpenLineage#4481.
+   *
+   * <p>The fix is to recurse: at each level, either follow the {@code NULLOP} leaf into {@code
+   * buildQueryTree} or descend into both legs of the binary node.
+   */
+  private static void addQBExprToSubQueries(
+      QBExpr qbExpr, QueryExpr query, String subAlias, String outputTable) {
+    if (qbExpr.getOpcode().equals(QBExpr.Opcode.NULLOP)) {
+      QB subQB = qbExpr.getQB();
+      query.getSubQueries().get(subAlias).add(buildQueryTree(subQB, outputTable));
+    } else {
+      // Set operation. Each leg may itself be a non-NULLOP QBExpr for 3+ way unions.
+      addQBExprToSubQueries(qbExpr.getQBExpr1(), query, subAlias, outputTable);
+      addQBExprToSubQueries(qbExpr.getQBExpr2(), query, subAlias, outputTable);
+    }
   }
 
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")

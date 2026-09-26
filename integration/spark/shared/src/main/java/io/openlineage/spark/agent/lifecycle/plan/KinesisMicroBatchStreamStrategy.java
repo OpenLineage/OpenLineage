@@ -39,19 +39,22 @@ public class KinesisMicroBatchStreamStrategy extends StreamStrategy {
     Optional<String> endpointUrl = tryReadField(options.get(), "endpointUrl");
     Optional<String> streamName = tryReadField(options.get(), "streamName");
 
+    String namespace =
+        "kinesis://"
+            + endpointUrl
+                .map(URI::create)
+                .map(
+                    uri ->
+                        isValidPort(uri.getPort())
+                            ? uri.getHost() + ":" + uri.getPort()
+                            : uri.getHost())
+                .orElse("");
     return Collections.singletonList(
-        datasetFactory.getDataset(
-            streamName.orElse(""),
-            "kinesis://"
-                + endpointUrl
-                    .map(URI::create)
-                    .map(
-                        uri ->
-                            isValidPort(uri.getPort())
-                                ? uri.getHost() + ":" + uri.getPort()
-                                : uri.getHost())
-                    .orElse(""),
-            schema));
+        datasetFactory
+            .sparkDatasetBuilder()
+            .dataset(streamName.orElse(""), namespace)
+            .schema(schema)
+            .build());
   }
 
   boolean isValidPort(int port) {

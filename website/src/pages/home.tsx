@@ -152,9 +152,8 @@ const About = () => {
         <p className="mt-5 text-lg">
           OpenLineage is an open platform for collection and analysis of data lineage. It tracks metadata about
           datasets, jobs, and runs, giving users the information required to identify the root cause of complex issues
-          and understand the impact of changes. OpenLineage contains an open standard for lineage data collection, a
-          metadata repository reference implementation (Marquez), libraries for common languages, and integrations with
-          data pipeline tools.
+          and understand the impact of changes. OpenLineage contains an open standard for lineage data collection,
+          libraries for common languages, and integrations with data pipeline tools.
         </p>
         <img
           src="img/ol-stack.svg"
@@ -212,19 +211,19 @@ const Deploy = () => {
           OpenLineage supports both simple deployments with single consumers and complex deployments with multiple
           consumers.
         </p>
-        <h3 className="text-color-1 text-2xl lg:text-3xl">Simple</h3>
+        <h3 className="text-color-1 text-2xl lg:text-3xl mb-0">Simple</h3>
         <img
           src="img/simple-deployments.png"
           alt="wireframes of simple deployments"
           {...spanAttrs}
-          className="h-full w-4/5 max-w-none lg:h-auto lg:w-4/5 py-3 pt-6 mb-6"
+          className="h-full w-4/5 max-w-none lg:h-auto lg:w-4/5 pt-2 pb-0 mb-0"
         />
-        <h3 className="text-color-1 text-2xl lg:text-3xl">Complex</h3>
+        <h3 className="text-color-1 text-2xl lg:text-3xl mt-2 mb-0">Complex</h3>
         <img
           src="img/complex-deployments.png"
           alt="wireframe of a complex deployment"
           {...spanAttrs}
-          className="h-full w-4/5 max-w-none lg:h-auto lg:w-4/5 py-3 pt-6 mb-6"
+          className="h-full w-4/5 max-w-none lg:h-auto lg:w-4/5 pt-2 pb-0 mb-0"
         />
       </div>
     </div>

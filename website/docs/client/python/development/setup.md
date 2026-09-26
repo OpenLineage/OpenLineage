@@ -16,36 +16,33 @@ Install UV if you haven't already:
 $ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-## Quick Start with Makefile
+## Quick Start with Task
 
-The repository includes a Makefile to simplify the development environment setup:
+The repository includes [Task](https://taskfile.dev/installation/) files to simplify the development environment setup. From the repository root:
 
 ```bash
 # View all available commands
-$ make help
+$ task --list
 
-# Setup all Python integrations at once
-$ make setup-all
-
-# Or setup specific integrations
-$ make setup-client      # Python client
-$ make setup-common      # Integration common library
-$ make setup-dbt         # dbt integration
+# Setup specific packages
+$ task clients:python:setup       # Python client
+$ task integrations:common:setup  # Integration common library
+$ task integrations:dbt:setup     # dbt integration
 
 # Run tests
-$ make test-all          # Test all integrations
-$ make test-client       # Test specific integration
+$ task python:test                # Test all Python packages
+$ task clients:python:test        # Test a specific package
 
 # Run linting and type checking
-$ make lint-all          # Run all linting
-$ make fix-format        # Auto-fix formatting issues
-
-# Check status of your setup
-$ make status
+$ task python:lint                # Check formatting and lint (ruff)
+$ task python:format              # Auto-fix formatting issues (ruff)
+$ task python:typecheck           # Run mypy across all Python packages
 
 # Clean all virtual environments
-$ make clean
+$ task python:clean
 ```
+
+Each package also has its own `Taskfile.yml`, so inside e.g. `client/python` you can simply run `task setup`, `task test`, or `task typecheck`.
 
 ## Manual Setup
 

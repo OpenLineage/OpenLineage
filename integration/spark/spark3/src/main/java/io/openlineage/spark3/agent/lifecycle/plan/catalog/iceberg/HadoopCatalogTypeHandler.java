@@ -10,6 +10,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.Iceberg
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.util.Map;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
@@ -33,9 +34,13 @@ class HadoopCatalogTypeHandler extends BaseCatalogTypeHandler {
 
   @Override
   @SneakyThrows
-  DatasetIdentifier getIdentifier(
+  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
       SparkSession session, Map<String, String> catalogConf, String table) {
     String warehouseLocation = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
-    return FilesystemDatasetUtils.fromLocationAndName(new Path(warehouseLocation).toUri(), table);
+    DatasetIdentifier di =
+        FilesystemDatasetUtils.fromLocationAndName(new Path(warehouseLocation).toUri(), table);
+    return Optional.of(
+        new DatasetIdentifier.Symlink(
+            di.getName(), di.getNamespace(), DatasetIdentifier.SymlinkType.TABLE));
   }
 }

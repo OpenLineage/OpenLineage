@@ -31,13 +31,17 @@ public class TypeDatasetFacetUtil {
   }
 
   /**
-   * Extracts kafka facet from {@link LineageDataset}
+   * Extracts kafka facet from {@link LineageDataset}. Other connectors (e.g. Kinesis, FLINK-39813)
+   * publish their own facet under the same {@code type} facet name, so the facet is type-checked
+   * before casting: a non-Kafka type facet yields {@link Optional#empty()} instead of a {@link
+   * ClassCastException}.
    *
    * @param dataset
    * @return
    */
   public static Optional<TypeDatasetFacet> getFacet(LineageDataset dataset) {
     return Optional.ofNullable(dataset.facets().get(TYPE_FACET_NAME))
+        .filter(f -> f instanceof TypeDatasetFacet)
         .map(f -> (TypeDatasetFacet) f);
   }
 }

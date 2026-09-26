@@ -14,6 +14,72 @@ fn select_simple() {
         }
     )
 }
+
+#[test]
+fn select_where_exists_subquery() {
+    assert_eq!(
+        test_sql("SELECT 1 WHERE EXISTS (SELECT 1 FROM customers);")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_having_exists_subquery() {
+    assert_eq!(
+        test_sql(
+            "SELECT count(*)
+             FROM orders
+             HAVING EXISTS (SELECT 1 FROM customers);"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers", "orders"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_qualify_exists_subquery() {
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT row_number() OVER (ORDER BY id)
+             FROM orders
+             QUALIFY EXISTS (SELECT 1 FROM customers);",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers", "orders"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_aggregate_filter_subquery() {
+    assert_eq!(
+        test_sql(
+            "SELECT count(*) FILTER (
+                 WHERE EXISTS (SELECT 1 FROM customers)
+             ) FROM orders;"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["customers", "orders"]),
+            out_tables: vec![]
+        }
+    )
+}
+
 #[test]
 fn select_from_schema_table() {
     assert_eq!(
@@ -40,6 +106,39 @@ fn select_join() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["table0", "table1"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_parenthesized_join() {
+    for sql in [
+        "SELECT * FROM (foo JOIN bar ON foo.id = bar.id)",
+        "SELECT * FROM (foo JOIN bar ON foo.id = bar.id) AS joined",
+    ] {
+        assert_eq!(
+            test_sql(sql).unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["bar", "foo"]),
+                out_tables: vec![]
+            }
+        )
+    }
+}
+
+#[test]
+fn select_join_condition_subquery() {
+    assert_eq!(
+        test_sql(
+            "SELECT a.id
+             FROM a
+             JOIN b ON b.id IN (SELECT c.id FROM c)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b", "c"]),
             out_tables: vec![]
         }
     )
@@ -130,6 +229,19 @@ fn select_redshift() {
 }
 
 #[test]
+fn select_sqlserver() {
+    assert_eq!(
+        test_sql_dialect("SELECT [col1] FROM [test_schema].[test_table]", "sqlserver")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["[test_schema].[test_table]"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
 fn select_with_table_generator() {
     assert_eq!(
         test_sql(
@@ -138,6 +250,124 @@ fn select_with_table_generator() {
             FROM TABLE(GENERATOR(ROWCOUNT => (12 * 6)))
             JOIN test_schema.test_table ON test_table.d = row_number()
             "
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_generate_array() {
+    // Regression test for the panic reported at
+    // https://github.com/OpenLineage/OpenLineage/issues/1358 for Snowflake's
+    // TABLE(GENERATOR(...)), applied to BigQuery's UNNEST(GENERATE_ARRAY(...))
+    // table factor, which was still unhandled: `TableFactor::UNNEST` fell
+    // through to the catch-all `Err` arm in `Visit for TableFactor`.
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT test_table.col0, n
+            FROM test_schema.test_table
+            CROSS JOIN UNNEST(GENERATE_ARRAY(1, 1000)) AS n
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_literal_array() {
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM UNNEST([1, 2, 3]) AS n", "bigquery")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![],
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_with_offset() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT test_table.col0, n, offset
+            FROM test_schema.test_table
+            CROSS JOIN UNNEST(GENERATE_ARRAY(1, 1000)) AS n WITH OFFSET AS offset
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_array_subquery() {
+    // UNNEST's own array expression can reference a real table (e.g. a subquery
+    // wrapped in ARRAY(...)) - that shouldn't be silently discarded.
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT n FROM UNNEST(ARRAY(SELECT id FROM source_table)) AS n",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["source_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unpivot() {
+    // Regression test for the same TableFactor::Unpivot gap as UNNEST above -
+    // this variant had no arm and fell through to the catch-all `Err`.
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT *
+            FROM test_schema.test_table
+            UNPIVOT(sales FOR quarter IN (q1_sales, q2_sales, q3_sales))
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unpivot_with_alias() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT unpivoted.quarter, unpivoted.sales
+            FROM test_schema.test_table
+            UNPIVOT(sales FOR quarter IN (q1_sales AS 'Q1', q2_sales AS 'Q2')) AS unpivoted
+            ",
+            "bigquery"
         )
         .unwrap()
         .table_lineage,
@@ -184,6 +414,19 @@ fn select_bq_array_function() {
             .table_lineage,
         TableLineage {
             in_tables: vec![table("my_bq_dataset.my_table_2")],
+            out_tables: vec![],
+        }
+    )
+}
+
+#[test]
+fn select_bq_array_subquery() {
+    assert_eq!(
+        test_sql_dialect("SELECT ARRAY(SELECT id FROM source_table)", "bigquery")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("source_table")],
             out_tables: vec![],
         }
     )

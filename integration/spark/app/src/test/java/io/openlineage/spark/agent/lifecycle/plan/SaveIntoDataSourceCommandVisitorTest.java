@@ -8,8 +8,6 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import static io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -98,7 +96,6 @@ class SaveIntoDataSourceCommandVisitorTest {
     when(command.query()).thenReturn(localRelation);
     when(localRelation.output())
         .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(attr1, attr2)).toSeq());
-    when(datasetFactory.getDataset(any(), any(), eq(OVERWRITE))).thenReturn(dataset);
 
     List<OpenLineage.OutputDataset> datasets =
         visitor.apply(mock(SparkListenerEvent.class), command);

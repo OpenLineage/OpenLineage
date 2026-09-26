@@ -1,0 +1,19 @@
+version: '3'
+
+# Repo-wide Python formatting/linting (ruff) lives in the root Taskfile.
+tasks:
+  setup:
+    desc: Install dependencies into the local venv (uv sync)
+    cmds:
+      - uv sync --extra dev --active
+
+  test:
+    desc: Run unit tests
+    deps: [setup]
+    cmds:
+      - uv run pytest tests/
+
+  typecheck:
+    desc: Run mypy type checking
+    cmds:
+      - uv run mypy src/ --ignore-missing-imports

@@ -6,8 +6,6 @@
 package openlineage
 
 import (
-	"time"
-
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
@@ -20,18 +18,6 @@ const (
 
 // DefaultNamespace is the default namespace used when none is specified.
 var DefaultNamespace = "default"
-
-// BaseEvent contains fields common to all OpenLineage event types.
-type BaseEvent struct {
-	// EventTime is the time the event occurred at.
-	EventTime time.Time
-	// Producer is a URI identifying the producer of this metadata.
-	// For example this could be a git url with a given tag or sha.
-	Producer string
-	// SchemaURL is the JSON Pointer (https://tools.ietf.org/html/rfc6901) URL
-	// to the corresponding version of the schema definition for this event.
-	SchemaURL string
-}
 
 // NewInputElement creates a new InputElement with the given name and namespace.
 func NewInputElement(name, namespace string) InputElement {

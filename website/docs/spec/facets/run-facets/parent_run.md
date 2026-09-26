@@ -14,6 +14,15 @@ optionally contains information about the root job contained in the root field.
 The root job represents the initial operation that started the whole chain of parent-child jobs - for example, the 
 Airflow DAG execution that eventually spawned Airflow tasks which then spawned Spark jobs.
 
+The `job` and `run` objects, both at the parent level and at the root level, can also optionally carry a `facets` field.
+This lets a producer forward a selected subset of facets from that parent/root job or run into the child event, for convenience -
+for example, when the child cannot reliably resolve the parent's own event to look them up itself.
+
+This mechanism is not designed to replace the information contained in the parent run's own event, and should not be treated as
+a source of truth if the two ever differ. In practice, the forwarded facets and the parent's own event should never diverge, but
+the specification only defines the shape of this field - it cannot guarantee that every implementation keeps the forwarded values
+in sync with the parent's own event. Resolving the parent run's own event remains the authoritative way to get full information.
+
 Example: 
 
 ```json
@@ -24,7 +33,14 @@ Example:
       "parent": {
         "job": {
           "name": "the-execution-parent-job", 
-          "namespace": "the-namespace"
+          "namespace": "the-namespace",
+          "facets": {
+            "jobType": {
+              "processingType": "BATCH",
+              "integration": "AIRFLOW",
+              "jobType": "TASK"
+            }
+          }
         },
         "run": {
           "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
@@ -35,7 +51,14 @@ Example:
             "namespace": "another-namespace"
           },
           "run": {
-            "runId": "f1234567-4f4f-1a1a-2b2b-abcdef123456"
+            "runId": "f1234567-4f4f-1a1a-2b2b-abcdef123456",
+            "facets": {
+                "processing_engine": {
+                    "version": "2.5.0",
+                    "name": "Spark",
+                    "openlineageAdapterVersion": "1.23.0"
+                }
+            }
           }
         }
       }
@@ -45,4 +68,4 @@ Example:
 }
 ```
 
-The facet specification can be found [here](https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json).
+The facet specification can be found [here](https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json).

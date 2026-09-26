@@ -1,0 +1,13 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+package io.openlineage.spark.agent.lifecycle.plan.catalog;
+
+public class UnsupportedCatalogException extends RuntimeException {
+
+  public UnsupportedCatalogException(String catalog) {
+    super(catalog);
+  }
+}

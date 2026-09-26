@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static io.openlineage.spark.agent.util.FacetUtils.isFacetDisabled;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputStatisticsInputDatasetFacetBuilder;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
@@ -18,7 +20,9 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +37,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogStatistics;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
+import org.apache.spark.sql.execution.datasources.InMemoryFileIndex;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
@@ -134,38 +139,41 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     DatasetIdentifier di =
         PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get());
 
-    DatasetCompositeFacetsBuilder datasetFacetsBuilder =
-        datasetFactory.createCompositeFacetBuilder();
-    datasetFacetsBuilder
-        .getFacets()
-        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), logRel.schema()))
-        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
+    SparkDatasetBuilder<D> sparkBuilder =
+        datasetFactory.sparkDatasetBuilder().dataset(di).schema(logRel.schema());
+    DatasetCompositeFacetsBuilder datasetFacetsBuilder = sparkBuilder.getInner();
 
-    InputStatisticsInputDatasetFacetBuilder statsBuilder =
-        context.getOpenLineage().newInputStatisticsInputDatasetFacetBuilder();
-    ScalaConversionUtils.asJavaOptional(catalogTable.stats())
-        .map(CatalogStatistics::sizeInBytes)
-        .ifPresent(
-            bytes -> {
-              statsBuilder.size(bytes.longValue());
-              if (catalogTable.ignoredProperties().contains("numFiles")) {
-                statsBuilder.fileCount(
-                    Long.valueOf(catalogTable.ignoredProperties().get("numFiles").get()));
-              }
-              datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
-            });
-    if (catalogTable.stats() == null || catalogTable.stats().isEmpty()) {
-      Optional.ofNullable(logRel.relation())
-          .map(BaseRelation::sizeInBytes)
+    if (!isFacetDisabled(context, "inputStatistics")) {
+      InputStatisticsInputDatasetFacetBuilder statsBuilder =
+          context.getOpenLineage().newInputStatisticsInputDatasetFacetBuilder();
+      ScalaConversionUtils.asJavaOptional(catalogTable.stats())
+          .map(CatalogStatistics::sizeInBytes)
           .ifPresent(
-              size -> {
-                // https://github.com/apache/spark/blob/v3.5.7/sql/catalyst/src/main/scala/org/apache/spark/sql/internal/SQLConf.scala#L2565
-                // https://github.com/apache/spark/blob/v3.5.7/sql/core/src/main/scala/org/apache/spark/sql/sources/interfaces.scala#L209
-                if (size < Long.MAX_VALUE) {
-                  statsBuilder.size(size);
-                  datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
+              bytes -> {
+                statsBuilder.size(bytes.longValue());
+                if (catalogTable.ignoredProperties().contains("numFiles")) {
+                  statsBuilder.fileCount(
+                      Long.valueOf(catalogTable.ignoredProperties().get("numFiles").get()));
                 }
+                datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
               });
+      if (catalogTable.stats() == null || catalogTable.stats().isEmpty()) {
+        Optional.ofNullable(logRel.relation())
+            .filter(
+                relation ->
+                    !(relation instanceof HadoopFsRelation)
+                        || ((HadoopFsRelation) relation).location() instanceof InMemoryFileIndex)
+            .map(BaseRelation::sizeInBytes)
+            .ifPresent(
+                size -> {
+                  // https://github.com/apache/spark/blob/v3.5.7/sql/catalyst/src/main/scala/org/apache/spark/sql/internal/SQLConf.scala#L2565
+                  // https://github.com/apache/spark/blob/v3.5.7/sql/core/src/main/scala/org/apache/spark/sql/sources/interfaces.scala#L209
+                  if (size < Long.MAX_VALUE) {
+                    statsBuilder.size(size);
+                    datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
+                  }
+                });
+      }
     }
 
     getDatasetVersion(logRel)
@@ -173,7 +181,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
             v -> DatasetVersionUtils.buildVersionOutputFacets(context, datasetFacetsBuilder, v));
 
     addCatalogAndStorageFacets(catalogTable, datasetFacetsBuilder);
-    return Collections.singletonList(datasetFactory.getDataset(di, datasetFacetsBuilder));
+    return Collections.singletonList(sparkBuilder.build());
   }
 
   private List<D> handleHadoopFsRelation(LogicalRelation x) {
@@ -186,53 +194,39 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                 Configuration hadoopConfig =
                     session.sessionState().newHadoopConfWithOptions(relation.options());
 
-                DatasetCompositeFacetsBuilder datasetFacetsBuilder =
-                    datasetFactory.createCompositeFacetBuilder();
-                getDatasetVersion(x)
-                    .map(
-                        version ->
-                            datasetFacetsBuilder
-                                .getFacets()
-                                .version(
-                                    context
-                                        .getOpenLineage()
-                                        .newDatasetVersionDatasetFacet(version)));
+                Optional<OpenLineage.DatasetVersionDatasetFacet> datasetVersion =
+                    getDatasetVersion(x)
+                        .map(v -> context.getOpenLineage().newDatasetVersionDatasetFacet(v));
 
-                if (relation.inputFiles() != null) {
-                  datasetFacetsBuilder
-                      .getInputFacets()
-                      .inputStatistics(
-                          context
-                              .getOpenLineage()
-                              .newInputStatisticsInputDatasetFacetBuilder()
-                              .size(relation.sizeInBytes())
-                              .fileCount(
-                                  Optional.of(relation.inputFiles())
-                                      .map(l -> l.length)
-                                      .map(Long::valueOf)
-                                      .orElse(0L))
-                              .build());
-                }
+                Optional<OpenLineage.InputStatisticsInputDatasetFacet> inputStats =
+                    // Dynamic indexes (notably Delta) can run Spark jobs to enumerate files.
+                    // Do not block the listener bus for optional statistics: use cached listings.
+                    Optional.of(relation)
+                        .filter(r -> !isFacetDisabled(context, "inputStatistics"))
+                        .filter(r -> r.location() instanceof InMemoryFileIndex)
+                        .map(HadoopFsRelation::inputFiles)
+                        .map(
+                            files ->
+                                context
+                                    .getOpenLineage()
+                                    .newInputStatisticsInputDatasetFacetBuilder()
+                                    .size(relation.sizeInBytes())
+                                    .fileCount((long) files.length)
+                                    .build());
 
                 Collection<Path> rootPaths =
                     ScalaConversionUtils.fromSeq(relation.location().rootPaths());
 
                 if (isSingleFileRelation(rootPaths, hadoopConfig)) {
                   return Collections.singletonList(
-                      datasetFactory.getDataset(
+                      buildHadoopDataset(
                           rootPaths.stream().findFirst().get().toUri(),
-                          relation.schema(),
-                          datasetFacetsBuilder));
+                          relation,
+                          datasetVersion,
+                          inputStats));
                 } else {
                   return PlanUtils.getDirectoryPaths(rootPaths, hadoopConfig).stream()
-                      .map(
-                          p -> {
-                            // TODO- refactor this to return a single partitioned dataset based on
-                            // static
-                            // static partitions in the relation
-                            return datasetFactory.getDataset(
-                                p.toUri(), relation.schema(), datasetFacetsBuilder);
-                          })
+                      .map(p -> buildHadoopDataset(p.toUri(), relation, datasetVersion, inputStats))
                       .collect(Collectors.toList());
                 }
               })
@@ -258,7 +252,12 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       List<Path> paths =
           new ArrayList<>(ScalaConversionUtils.fromSeq(relation.location().rootPaths()));
       for (Path p : paths) {
-        inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
+        inputDatasets.add(
+            datasetFactory
+                .sparkDatasetBuilder()
+                .dataset(p.toUri())
+                .schema(relation.schema())
+                .build());
       }
       if (inputDatasets.isEmpty()) {
         return Collections.emptyList();
@@ -266,6 +265,18 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         return inputDatasets;
       }
     }
+  }
+
+  private D buildHadoopDataset(
+      URI uri,
+      HadoopFsRelation relation,
+      Optional<OpenLineage.DatasetVersionDatasetFacet> datasetVersion,
+      Optional<OpenLineage.InputStatisticsInputDatasetFacet> inputStats) {
+    SparkDatasetBuilder<D> b =
+        datasetFactory.sparkDatasetBuilder().dataset(uri).schema(relation.schema());
+    datasetVersion.ifPresent(b::version);
+    inputStats.ifPresent(s -> b.getInner().getInputFacets().inputStatistics(s));
+    return b.build();
   }
 
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")

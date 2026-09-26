@@ -68,6 +68,21 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   public void end(SparkListenerStageCompleted stageCompleted) {}
 
   @Override
+  public void clearRetainedState() {
+    runEventBuilder.clearRetainedState();
+  }
+
+  @Override
+  public int getRetainedJobCount() {
+    return runEventBuilder.getRetainedJobCount();
+  }
+
+  @Override
+  public int getRetainedStageCount() {
+    return runEventBuilder.getRetainedStageCount();
+  }
+
+  @Override
   public void start(SparkListenerApplicationStart applicationStart) {
     String applicationId =
         olContext.getSparkContext().map(context -> context.applicationId()).orElse(null);
@@ -134,20 +149,42 @@ class SparkApplicationExecutionContext implements ExecutionContext {
         && eventEmitter.getParentJobName().isPresent()
         && eventEmitter.getParentJobNamespace().isPresent()) {
       OpenLineage ol = olContext.getOpenLineage();
-      return ol.newParentRunFacet(
-          ol.newParentRunFacetRun(eventEmitter.getParentRunId().get()),
-          ol.newParentRunFacetJob(
-              eventEmitter.getParentJobNamespace().get(), eventEmitter.getParentJobName().get()),
-          ol.newParentRunFacetRoot(
-              ol.newRootRun(
-                  eventEmitter.getRootParentRunId().orElse(eventEmitter.getParentRunId().get())),
-              ol.newRootJob(
-                  eventEmitter
-                      .getRootParentJobNamespace()
-                      .orElse(eventEmitter.getParentJobNamespace().get()),
-                  eventEmitter
-                      .getRootParentJobName()
-                      .orElse(eventEmitter.getParentJobName().get()))));
+      return ol.newParentRunFacetBuilder()
+          .run(
+              ol.newParentRunFacetRunBuilder()
+                  .runId(eventEmitter.getParentRunId().get())
+                  .facets(eventEmitter.getParentRunFacets().orElse(null))
+                  .build())
+          .job(
+              ol.newParentRunFacetJobBuilder()
+                  .namespace(eventEmitter.getParentJobNamespace().get())
+                  .name(eventEmitter.getParentJobName().get())
+                  .facets(eventEmitter.getParentJobFacets().orElse(null))
+                  .build())
+          .root(
+              ol.newParentRunFacetRootBuilder()
+                  .run(
+                      ol.newRootRunBuilder()
+                          .runId(
+                              eventEmitter
+                                  .getRootParentRunId()
+                                  .orElse(eventEmitter.getParentRunId().get()))
+                          .facets(eventEmitter.getRootParentRunFacets().orElse(null))
+                          .build())
+                  .job(
+                      ol.newRootJobBuilder()
+                          .namespace(
+                              eventEmitter
+                                  .getRootParentJobNamespace()
+                                  .orElse(eventEmitter.getParentJobNamespace().get()))
+                          .name(
+                              eventEmitter
+                                  .getRootParentJobName()
+                                  .orElse(eventEmitter.getParentJobName().get()))
+                          .facets(eventEmitter.getRootParentJobFacets().orElse(null))
+                          .build())
+                  .build())
+          .build();
     }
     return null;
   }

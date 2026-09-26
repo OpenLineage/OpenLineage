@@ -24,7 +24,7 @@ To use this transport in your project, you need to include the following depende
 - `streamName` - the streamName of the Kinesis. Required.
 - `region` - the region of the Kinesis. Required.
 - `roleArn` - the roleArn which is allowed to read/write to Kinesis stream. Optional.
-- `properties` - a dictionary that contains a [Kinesis allowed properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties). Optional.
+- `properties` - a dictionary that contains a [Kinesis allowed properties](https://github.com/awslabs/amazon-kinesis-producer/blob/v1.0.7/java/amazon-kinesis-producer-sample/default_config.properties). Optional.
 
 #### Behavior
 

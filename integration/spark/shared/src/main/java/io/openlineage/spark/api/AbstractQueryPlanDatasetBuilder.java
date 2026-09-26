@@ -140,6 +140,11 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
             .collect(Collectors.toList()));
   }
 
+  protected boolean isQueryPlanRoot(LogicalPlan logicalPlan) {
+    return context.getOptimizedPlanOptional().filter(root -> root == logicalPlan).isPresent()
+        || context.getAnalyzedPlanOptional().filter(root -> root == logicalPlan).isPresent();
+  }
+
   /**
    * Similar to the logic in {@link AbstractPartial}, this reads the type from the <i>second</i>
    * generic argument on the class, if it is present and non-null.

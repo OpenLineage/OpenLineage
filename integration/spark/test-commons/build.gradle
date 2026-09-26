@@ -1,0 +1,25 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+// Plain Java test-support utilities shared across the integration test source sets
+// (e.g. app and spark40). Intentionally has no Spark/Scala dependencies and does not
+// apply the scala-variants plugin, so it exposes a single capability and can be
+// consumed from any module without variant/capability conflicts.
+//
+// The utilities live in the `testFixtures` source set (not `main`) because they are
+// test-support code, not shipped agent code. Consumers depend on them via
+// `testFixtures(project(":test-commons"))`; keeping them out of `main` also keeps them
+// out of the agent shadow jar and out of the jarVerification source scan.
+plugins {
+    id("java-library")
+    id("java-test-fixtures")
+    id("com.diffplug.spotless")
+    id("io.freefair.lombok")
+    id("io.openlineage.common-config")
+}
+
+dependencies {
+    testFixturesApi("org.slf4j:slf4j-api:2.0.16")
+}

@@ -38,12 +38,20 @@ jobs:
         with:
           distribution: 'corretto'
           java-version: '17'
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Spark integration dependencies
-        run: ./buildDependencies.sh
+        run: task setup
       - name: Build Spark integration jar
-        run: ./gradlew shadowJar -x test -Pjava.compile.home=${JAVA_HOME}
+        run: task jar -- -Pjava.compile.home=${JAVA_HOME}
       - name: Run AWS integration tests
-        run: ./gradlew awsIntegrationTest --info -x test -Pjava.compile.home=${JAVA_HOME} -Dopenlineage.tests.bucketName=${{ secrets.EMR_TESTS_BUCKET_NAME }} -Dopenlineage.tests.ec2SubnetId=${{ secrets.EMR_TESTS_EC2_SUBNET_ID }}
+        env:
+          BUCKET: ${{ secrets.EMR_TESTS_BUCKET_NAME }}
+          SUBNET: ${{ secrets.EMR_TESTS_EC2_SUBNET_ID }}
+        run: task aws-integration-test -- -Pjava.compile.home=${JAVA_HOME}
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()

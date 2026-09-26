@@ -77,8 +77,11 @@ public class BigQueryNodeInputVisitor
                 }
               }
               return Collections.singletonList(
-                  factory.getDataset(
-                      getBigQueryTableName(relation).get(), BIGQUERY_NAMESPACE, relation.schema()));
+                  factory
+                      .sparkDatasetBuilder()
+                      .dataset(getBigQueryTableName(relation).get(), BIGQUERY_NAMESPACE)
+                      .schema(relation.schema())
+                      .build());
             })
         .orElse(Collections.emptyList());
   }

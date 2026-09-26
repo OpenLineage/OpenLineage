@@ -48,7 +48,7 @@
         },
         "parent": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run": {
             "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
           },
@@ -74,7 +74,7 @@
       "facets": {
         "jobType": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
           "_deleted": null,
           "processingType": "BATCH",
           "integration": "DBT",
@@ -146,7 +146,7 @@
         },
         "parent": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run": {
             "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
           },
@@ -172,7 +172,7 @@
       "facets": {
         "jobType": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
           "_deleted": null,
           "processingType": "BATCH",
           "integration": "DBT",
@@ -244,7 +244,7 @@
         },
         "parent": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run": {
             "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
           },
@@ -270,7 +270,7 @@
       "facets": {
         "jobType": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
           "_deleted": null,
           "processingType": "BATCH",
           "integration": "DBT",
@@ -342,7 +342,7 @@
         },
         "parent": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run": {
             "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
           },
@@ -368,7 +368,7 @@
       "facets": {
         "jobType": {
           "_producer": "{{ any(result) }}",
-          "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json#/$defs/JobTypeJobFacet",
           "_deleted": null,
           "processingType": "BATCH",
           "integration": "DBT",

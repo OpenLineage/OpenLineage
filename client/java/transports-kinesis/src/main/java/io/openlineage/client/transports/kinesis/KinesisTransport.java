@@ -5,11 +5,6 @@
 
 package io.openlineage.client.transports.kinesis;
 
-import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
-import com.amazonaws.services.kinesis.producer.KinesisProducer;
-import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
-import com.amazonaws.services.kinesis.producer.UserRecord;
-import com.amazonaws.services.kinesis.producer.UserRecordResult;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -22,11 +17,21 @@ import java.util.concurrent.Executors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
+import software.amazon.kinesis.producer.KinesisProducer;
+import software.amazon.kinesis.producer.KinesisProducerConfiguration;
+import software.amazon.kinesis.producer.UserRecord;
+import software.amazon.kinesis.producer.UserRecordResult;
 
 @Slf4j
 public class KinesisTransport extends Transport {
   private final String streamName;
   private final String region;
+
   private final String roleArn;
 
   private final KinesisProducer producer;
@@ -50,8 +55,16 @@ public class KinesisTransport extends Transport {
         KinesisProducerConfiguration.fromProperties(kinesisConfig.getProperties());
     config.setRegion(this.region);
     if (StringUtils.isNotBlank(roleArn)) {
-      config.setCredentialsProvider(
-          new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, "OLProducer").build());
+      AwsCredentialsProvider credentialsProvider =
+          StsAssumeRoleCredentialsProvider.builder()
+              .stsClient(StsClient.builder().region(Region.of(this.region)).build())
+              .refreshRequest(
+                  AssumeRoleRequest.builder()
+                      .roleArn(roleArn)
+                      .roleSessionName("OLProducer")
+                      .build())
+              .build();
+      config.setCredentialsProvider(credentialsProvider);
     }
     this.producer = new KinesisProducer(config);
     this.listeningExecutor = Executors.newSingleThreadExecutor();

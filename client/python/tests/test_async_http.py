@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import asyncio
 import datetime
 import gzip
 import hashlib
 import os
+import queue
 import threading
 import time
 from contextlib import contextmanager
@@ -138,7 +140,7 @@ class TestAsyncHttpTransport:
         with pytest.raises(ValueError, match="Need valid url"):
             AsyncHttpTransport(AsyncHttpConfig(url=""))
 
-        # Test URL that causes httpx.URL to raise an exception
+        # Test URL that causes httpx2.URL to raise an exception
         with pytest.raises(ValueError, match="Need valid url"):
             AsyncHttpTransport(AsyncHttpConfig(url="://invalid"))
 
@@ -234,6 +236,63 @@ class TestAsyncHttpTransport:
                 assert run_id in transport.pending_completion_events
                 assert len(transport.pending_completion_events[run_id]) == 1
 
+    def test_completion_is_not_stranded_when_start_finishes_during_emit(self):
+        config = AsyncHttpConfig(url="http://example.com", max_concurrent_requests=1)
+        transport = AsyncHttpTransport(config)
+        start_processing = threading.Event()
+        finish_start = threading.Event()
+        start_finished = threading.Event()
+
+        async def process_event(client, semaphore, request, from_main_queue=True):
+            if request.event_type == "START":
+                start_processing.set()
+                while not finish_start.is_set():
+                    await asyncio.sleep(0.01)
+
+            released = transport._mark_success(request)
+            if request.event_type == "START":
+                start_finished.set()
+            if from_main_queue:
+                transport.event_queue.task_done()
+            return released
+
+        def event(state, second):
+            return RunEvent(
+                eventType=state,
+                eventTime=f"2026-08-27T00:00:{second:02d}Z",
+                run=Run(runId="00000000-0000-0000-0000-000000000002"),
+                job=Job(namespace="test", name="atomic-completion-queueing"),
+                producer="test",
+                schemaURL="test",
+            )
+
+        original_prepare_request = transport._prepare_request
+
+        def finish_start_before_preparing_completion(event_str):
+            finish_start.set()
+            assert start_finished.wait(1)
+            return original_prepare_request(event_str)
+
+        try:
+            with patch.object(transport, "_process_event", side_effect=process_event):
+                transport.emit(event(RunState.START, 0))
+                assert start_processing.wait(1)
+
+                with patch.object(
+                    transport,
+                    "_prepare_request",
+                    side_effect=finish_start_before_preparing_completion,
+                ):
+                    transport.emit(event(RunState.COMPLETE, 1))
+
+                finish_start.set()
+                assert transport.wait_for_completion(timeout=1)
+                assert transport.get_stats() == {"pending": 0, "success": 2, "failed": 0}
+                assert not transport.pending_completion_events
+        finally:
+            finish_start.set()
+            transport.close(timeout=1)
+
     def test_async_http_transport_completion_without_start_scheduled(self):
         """Test that COMPLETE events without a scheduled START are processed immediately."""
         config = AsyncHttpConfig(url="http://example.com")
@@ -278,6 +337,84 @@ class TestAsyncHttpTransport:
                 result = transport.wait_for_completion(timeout=1.0)
                 assert result  # Should succeed immediately
 
+            assert not transport.may_exit.is_set()
+
+    def test_wait_for_completion_keeps_worker_available_for_later_events(self):
+        config = AsyncHttpConfig(url="http://example.com")
+        transport = AsyncHttpTransport(config)
+
+        async def process_event(client, semaphore, request, from_main_queue=True):
+            transport._mark_success(request)
+            if from_main_queue:
+                transport.event_queue.task_done()
+            return []
+
+        with closing_immediately(transport) as transport:
+            assert transport.wait_for_completion(timeout=1.0)
+
+            # Give the worker time to observe a stale exit signal before emitting again.
+            time.sleep(0.2)
+            assert transport.worker_thread.is_alive()
+
+            with (
+                patch.object(transport, "_process_event", side_effect=process_event) as mock_process,
+                patch.object(Serde, "to_json", return_value='{"test": "event"}'),
+            ):
+                transport.emit(MagicMock())
+                assert transport.wait_for_completion(timeout=1.0)
+
+            mock_process.assert_awaited_once()
+            assert transport.get_stats()["success"] == 1
+
+    def test_released_events_do_not_deadlock_full_queue(self):
+        config = AsyncHttpConfig(url="http://example.com", max_queue_size=1, max_concurrent_requests=1)
+        transport = AsyncHttpTransport(config)
+        start_processing = threading.Event()
+        finish_start = threading.Event()
+        completed = False
+
+        async def process_event(client, semaphore, request, from_main_queue=True):
+            if request.event_type == "START":
+                start_processing.set()
+                while not finish_start.is_set():
+                    await asyncio.sleep(0.01)
+
+            released = transport._mark_success(request)
+            if from_main_queue:
+                transport.event_queue.task_done()
+            return released
+
+        def event(state, second):
+            return RunEvent(
+                eventType=state,
+                eventTime=f"2026-08-20T00:00:{second:02d}Z",
+                run=Run(runId="00000000-0000-0000-0000-000000000001"),
+                job=Job(namespace="test", name="queue-release"),
+                producer="test",
+                schemaURL="test",
+            )
+
+        try:
+            with patch.object(transport, "_process_event", side_effect=process_event):
+                transport.emit(event(RunState.START, 0))
+                assert start_processing.wait(1)
+                for second in range(1, 5):
+                    transport.emit(event(RunState.RUNNING, second))
+
+                finish_start.set()
+                completed = transport.wait_for_completion(timeout=1)
+                assert completed
+                assert transport.get_stats() == {"pending": 0, "success": 5, "failed": 0}
+        finally:
+            finish_start.set()
+            if not completed:
+                while True:
+                    try:
+                        transport.event_queue.get_nowait()
+                    except queue.Empty:
+                        break
+            transport.close(timeout=1)
+
     def test_async_http_transport_get_stats(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
@@ -320,9 +457,10 @@ class TestAsyncHttpTransport:
             result = transport.close(timeout=1.0)
 
             assert result
+            assert transport.may_exit.is_set()
             mock_wait.assert_called_once_with(1.0)
 
-    @patch("httpx.AsyncClient")
+    @patch("httpx2.AsyncClient")
     def test_async_http_transport_with_gzip_compression(self, mock_client_class):
         """Test AsyncHttpTransport with gzip compression"""
         config = AsyncHttpConfig(url="http://example.com", compression=HttpCompression.GZIP)
@@ -442,8 +580,8 @@ class TestAsyncHttpTransport:
                 headers={"header": "value"},
             )
 
-            # Add pending completion event first
-            transport._add_pending_completion_event(request)
+            transport._add_event(start_request)
+            assert transport._add_pending_completion_event(request)
 
             # Mark START as successful
             pending_events = transport._mark_success(start_request)
@@ -451,6 +589,130 @@ class TestAsyncHttpTransport:
             assert len(pending_events) == 1
             assert pending_events[0] == request
             assert "run-123" not in transport.pending_completion_events
+
+    def test_async_transport_mark_failed_start_event_releases_pending(self):
+        """A failed START should not drop its pending completion events - they should be
+        released for their own delivery attempt, the same as a successful START would."""
+        config = AsyncHttpConfig(url="http://example.com")
+        transport = AsyncHttpTransport(config)
+
+        with closing_immediately(transport) as transport:
+            request = Request(
+                event_id="run-123-COMPLETE",
+                run_id="run-123",
+                body=b"data",
+                event_type="COMPLETE",
+                headers={"header": "value"},
+            )
+            start_request = Request(
+                event_id="run-123-START",
+                run_id="run-123",
+                body=b"data",
+                event_type="START",
+                headers={"header": "value"},
+            )
+
+            transport._add_event(start_request)
+            assert transport._add_pending_completion_event(request)
+
+            released = transport._mark_failed(start_request)
+
+            assert len(released) == 1
+            assert released[0] == request
+            assert "run-123" not in transport.pending_completion_events
+            # The completion event is still tracked as pending - it hasn't been given
+            # up on, just handed back for its own delivery attempt.
+            assert transport.events.get(request.event_id) == "pending"
+            assert transport.event_stats["pending"] == 1
+
+    def test_start_retryable_failure_holds_pending_until_retries_exhausted(self):
+        """A retryable START failure (5xx, timeout) must not release its pending completion
+        events on every failed attempt - only once the START has genuinely given up."""
+        config = AsyncHttpConfig(url="http://example.com")
+        config.retry = {"total": 2, "backoff_factor": 0.01, "status_forcelist": [503]}
+        transport = AsyncHttpTransport(config)
+
+        with closing_immediately(transport) as transport:
+            import asyncio
+
+            async def test_body():
+                start_request = Request(
+                    event_id="run-1-START", run_id="run-1", event_type="START", body="", headers={}
+                )
+                completion_request = Request(
+                    event_id="run-1-COMPLETE", run_id="run-1", event_type="COMPLETE", body="", headers={}
+                )
+                transport._add_event(start_request)
+                assert transport._add_pending_completion_event(completion_request)
+
+                call_count = 0
+
+                async def fake_post(*args, **kwargs):
+                    nonlocal call_count
+                    call_count += 1
+                    # Every attempt but the last is still retryable - the completion event
+                    # must still be waiting on the START at this point.
+                    if call_count <= config.retry["total"]:
+                        assert "run-1" in transport.pending_completion_events
+                    return MagicMock(status_code=503)
+
+                mock_client = MagicMock()
+                mock_client.post = fake_post
+
+                semaphore = asyncio.Semaphore(1)
+                released = await transport._process_event(
+                    mock_client, semaphore, start_request, from_main_queue=False
+                )
+
+                # initial attempt + 2 retries
+                assert call_count == 3
+                assert len(released) == 1
+                assert released[0] == completion_request
+                assert "run-1" not in transport.pending_completion_events
+
+            asyncio.run(test_body())
+
+    def test_start_permanent_failure_releases_pending_immediately(self):
+        """A non-retryable START failure (e.g. 4xx) has nothing to exhaust - it's terminal
+        on the first attempt, so its pending completion events are released right away."""
+        config = AsyncHttpConfig(url="http://example.com")
+        config.retry = {"total": 5, "backoff_factor": 0.01, "status_forcelist": [503]}
+        transport = AsyncHttpTransport(config)
+
+        with closing_immediately(transport) as transport:
+            import asyncio
+
+            async def test_body():
+                start_request = Request(
+                    event_id="run-2-START", run_id="run-2", event_type="START", body="", headers={}
+                )
+                completion_request = Request(
+                    event_id="run-2-COMPLETE", run_id="run-2", event_type="COMPLETE", body="", headers={}
+                )
+                transport._add_event(start_request)
+                assert transport._add_pending_completion_event(completion_request)
+
+                call_count = 0
+
+                async def fake_post(*args, **kwargs):
+                    nonlocal call_count
+                    call_count += 1
+                    return MagicMock(status_code=401)  # not in status_forcelist
+
+                mock_client = MagicMock()
+                mock_client.post = fake_post
+
+                semaphore = asyncio.Semaphore(1)
+                released = await transport._process_event(
+                    mock_client, semaphore, start_request, from_main_queue=False
+                )
+
+                assert call_count == 1
+                assert len(released) == 1
+                assert released[0] == completion_request
+                assert "run-2" not in transport.pending_completion_events
+
+            asyncio.run(test_body())
 
     def test_async_transport_mark_failed(self):
         config = AsyncHttpConfig(url="http://example.com")
@@ -480,12 +742,21 @@ class TestAsyncHttpTransport:
                 body=b"data",
                 headers={"header": "value"},
             )
+            start_request = Request(
+                event_id="run-123-START",
+                event_type="START",
+                run_id="run-123",
+                body=b"data",
+                headers={"header": "value"},
+            )
 
-            transport._add_pending_completion_event(request)
+            transport._add_event(start_request)
+            assert transport._add_pending_completion_event(request)
 
             assert "run-123" in transport.pending_completion_events.keys()
             assert len(transport.pending_completion_events["run-123"]) == 1
             assert transport.pending_completion_events["run-123"][0] == request
+            assert transport.events[request.event_id] == "pending"
 
     def test_async_transport_all_processed(self):
         config = AsyncHttpConfig(url="http://example.com")
@@ -494,11 +765,16 @@ class TestAsyncHttpTransport:
         with closing_immediately(transport) as transport:
             assert transport._all_processed()  # No events
             request = Request("event-1", "", {})
+            duplicate = Request("event-1", "", {})
 
             transport._add_event(request)
+            transport._add_event(duplicate)
             assert not transport._all_processed()  # Pending event
 
             transport._mark_success(request)
+            assert not transport._all_processed()  # Duplicate event still pending
+
+            transport._mark_success(duplicate)
             assert transport._all_processed()  # All processed
 
 
@@ -635,11 +911,13 @@ class TestAsyncHttpTransportErrorHandling:
 
         with closing_immediately(transport) as transport:
             run_id = "test-run-456"
+            start_request = Request(f"{run_id}-START", "", {}, run_id=run_id, event_type="START")
             request1 = Request("event1", "", {}, run_id=run_id, event_type="COMPLETE")
             request2 = Request("event2", "", {}, run_id=run_id, event_type="FAIL")
 
-            transport._add_pending_completion_event(request1)
-            transport._add_pending_completion_event(request2)
+            transport._add_event(start_request)
+            assert transport._add_pending_completion_event(request1)
+            assert transport._add_pending_completion_event(request2)
 
             assert len(transport.pending_completion_events[run_id]) == 2
 
@@ -713,7 +991,7 @@ class TestAsyncHttpTransportErrorHandling:
 
         with closing_immediately(transport) as transport:
             request = Request(event_id="test", body="", headers={}, run_id=None)
-            transport._add_pending_completion_event(request)
+            assert not transport._add_pending_completion_event(request)
 
             # Should not add anything to pending events
             assert len(transport.pending_completion_events) == 0
@@ -770,32 +1048,6 @@ class TestAsyncHttpTransportErrorHandling:
         transport.close()
 
         assert not transport.worker_thread.is_alive()
-
-    def test_is_start_in_progress(self):
-        """Test _is_start_in_progress method"""
-        config = AsyncHttpConfig(url="http://example.com")
-        transport = AsyncHttpTransport(config)
-
-        with closing_immediately(transport) as transport:
-            run_id = "test-run-123"
-
-            # Initially no START is in progress
-            assert not transport._is_start_in_progress(run_id)
-
-            # Add a START event to make it in progress
-            start_request = Request(
-                event_id=f"{run_id}-START", run_id=run_id, body="", event_type="START", headers={}
-            )
-            transport._add_event(start_request)
-
-            # Now it should be in progress
-            assert transport._is_start_in_progress(run_id)
-
-            # Complete the START event
-            transport._mark_success(start_request)
-
-            # Should no longer be in progress
-            assert not transport._is_start_in_progress(run_id)
 
     def test_wait_for_completion_with_infinite_timeout(self):
         """Test wait_for_completion with timeout=-1 (infinite wait)"""

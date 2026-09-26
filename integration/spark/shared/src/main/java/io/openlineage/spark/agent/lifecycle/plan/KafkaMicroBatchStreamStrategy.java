@@ -83,7 +83,8 @@ public final class KafkaMicroBatchStreamStrategy extends StreamStrategy {
 
     List<InputDataset> datasets = new ArrayList<>();
     for (String topic : topics) {
-      InputDataset dataset = datasetFactory.getDataset(topic, namespace, schema);
+      InputDataset dataset =
+          datasetFactory.sparkDatasetBuilder().dataset(topic, namespace).schema(schema).build();
       datasets.add(dataset);
     }
     return datasets;

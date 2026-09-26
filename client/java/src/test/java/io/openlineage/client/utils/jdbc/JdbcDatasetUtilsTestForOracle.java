@@ -103,6 +103,15 @@ class JdbcDatasetUtilsTestForOracle {
                 "jdbc:oracle:thin:@hostname:1522", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1522")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:oracle:thin:@[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:1522",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue(
+            "namespace", "oracle://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:1522")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
@@ -195,7 +204,50 @@ class JdbcDatasetUtilsTestForOracle {
 
   @Test
   void testGetDatasetIdentifierWithTnsFormat() {
-    // Currently TNS format is not parsed properly. Just drop credentials
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=hostname)(PORT=1521))(CONNECT_DATA=(INSTANCE_NAME=ORCL)))",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
+        .hasFieldOrPropertyWithValue("name", "ORCL.schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:oracle:oci@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=hostname)(PORT=1521))(CONNECT_DATA=(INSTANCE_NAME=ORCL)))",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
+        .hasFieldOrPropertyWithValue("name", "ORCL.schema.table1");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithTnsFormatLowercaseAndServiceName() {
+    // Matches the exact connection string reported in
+    // https://github.com/OpenLineage/OpenLineage/issues/4122
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:oracle:thin:@(description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=hostname))(connect_data=(service_name=servicename)))",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1522")
+        .hasFieldOrPropertyWithValue("name", "servicename.schema.table1");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithTnsFormatMissingPortOnSomeAddresses() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=host1))(ADDRESS=(PROTOCOL=tcp)(HOST=host2)(PORT=1522)))(CONNECT_DATA=(SID=orcl)))",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://host1:1521,host2:1522")
+        .hasFieldOrPropertyWithValue("name", "orcl.schema.table1");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithMalformedTnsFormat() {
+    // Falls back to sanitize-and-passthrough behavior, same as other unparseable URLs.
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=hostname)(PORT=1521)))(CONNECT_DATA=(INSTANCE_NAME=ORCL)))",
@@ -204,16 +256,6 @@ class JdbcDatasetUtilsTestForOracle {
         .hasFieldOrPropertyWithValue(
             "namespace",
             "oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=hostname)(PORT=1521)))(CONNECT_DATA=(INSTANCE_NAME=ORCL)))")
-        .hasFieldOrPropertyWithValue("name", "schema.table1");
-
-    assertThat(
-            JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:oci@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=hostname)(PORT=1521)))(CONNECT_DATA=(INSTANCE_NAME=ORCL)))",
-                "schema.table1",
-                new Properties()))
-        .hasFieldOrPropertyWithValue(
-            "namespace",
-            "oracle:oci@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=hostname)(PORT=1521)))(CONNECT_DATA=(INSTANCE_NAME=ORCL)))")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -225,9 +267,8 @@ class JdbcDatasetUtilsTestForOracle {
                 "schema.table1",
                 new Properties()))
         .hasFieldOrPropertyWithValue(
-            "namespace",
-            "oracle:thin:@(DESCRIPTION= (ADDRESS_LIST= (LOAD_BALANCE=ON) (ADDRESS=(PROTOCOL=tcp)(HOST=salesserver1)(PORT=1521)) (ADDRESS=(PROTOCOL=tcp)(HOST=salesserver2)(PORT=1522))(ADDRESS=(PROTOCOL=tcp)(HOST=salesserver3)(PORT=1522)))(CONNECT_DATA=(SERVICE_NAME=sales.us.example.com)))")
-        .hasFieldOrPropertyWithValue("name", "schema.table1");
+            "namespace", "oracle://salesserver1:1521,salesserver2:1522,salesserver3:1522")
+        .hasFieldOrPropertyWithValue("name", "sales.us.example.com.schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
@@ -235,9 +276,8 @@ class JdbcDatasetUtilsTestForOracle {
                 "schema.table1",
                 new Properties()))
         .hasFieldOrPropertyWithValue(
-            "namespace",
-            "oracle:oci@(DESCRIPTION= (ADDRESS_LIST= (LOAD_BALANCE=ON) (ADDRESS=(PROTOCOL=tcp)(HOST=salesserver1)(PORT=1521)) (ADDRESS=(PROTOCOL=tcp)(HOST=salesserver2)(PORT=1522))(ADDRESS=(PROTOCOL=tcp)(HOST=salesserver3)(PORT=1522)))(CONNECT_DATA=(SERVICE_NAME=sales.us.example.com)))")
-        .hasFieldOrPropertyWithValue("name", "schema.table1");
+            "namespace", "oracle://salesserver1:1521,salesserver2:1522,salesserver3:1522")
+        .hasFieldOrPropertyWithValue("name", "sales.us.example.com.schema.table1");
   }
 
   @Test

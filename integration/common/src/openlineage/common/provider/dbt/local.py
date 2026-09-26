@@ -289,8 +289,11 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         """
         from_command = parse_single_arg(command, ["--profiles-dir"])
         from_env_var = os.getenv("DBT_PROFILES_DIR")
-        default_dir = "~/.dbt/"
-        current_working_directory = os.getcwd()
+        default_dir = os.path.expanduser("~/.dbt/")
+        # dbt only falls back to the working directory when it actually holds a
+        # profiles.yml, otherwise it uses default_dir.
+        cwd = os.getcwd()
+        current_working_directory = cwd if os.path.exists(os.path.join(cwd, "profiles.yml")) else None
         return from_command or from_env_var or current_working_directory or default_dir
 
     def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]:
@@ -304,5 +307,6 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
                 project_version=self.project_version,
                 profile_name=self.profile_name,
                 dbt_runtime="core",
+                full_refresh=self.full_refresh,
             )
         }

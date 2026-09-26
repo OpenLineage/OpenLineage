@@ -42,6 +42,8 @@ class ProjectVisitorTest {
 
     visitor.apply(project, builder);
 
-    verify(builder).addDependency(EXPR_ID_2, EXPR_ID_1, TransformationInfo.identity());
+    verify(builder)
+        .addDependency(
+            EXPR_ID_2, EXPR_ID_1, "name2", TransformationInfo.identity("name1 AS name2"));
   }
 }

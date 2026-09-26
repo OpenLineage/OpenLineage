@@ -67,6 +67,13 @@ workflows:
           name: "CPython 3.13"
           tox_env: py313
           py_env: "3.13"
+      - unit-test-client-python:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          name: "CPython 3.14"
+          tox_env: py314
+          py_env: "3.14"
       - unit-tests-client-python:
           filters:
             tags:
@@ -76,6 +83,7 @@ workflows:
             - "CPython 3.11"
             - "CPython 3.12"
             - "CPython 3.13"
+            - "CPython 3.14"
       - build-client-python:
           filters:
             tags:

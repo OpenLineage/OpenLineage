@@ -5,10 +5,10 @@
 
 package io.openlineage.spark.agent.vendor.snowflake.lifecycle.plan.column;
 
+import static io.openlineage.client.utils.SnowflakeUtils.SNOWFLAKE_NAMESPACE_PREFIX;
 import static io.openlineage.client.utils.SnowflakeUtils.parseAccountIdentifier;
 import static io.openlineage.client.utils.SnowflakeUtils.stripQuotes;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
-import static io.openlineage.spark.agent.vendor.snowflake.Constants.SNOWFLAKE_PREFIX;
 import static io.openlineage.spark.agent.vendor.snowflake.SnowflakeTable.getQualifiedName;
 import static java.util.Arrays.stream;
 
@@ -48,7 +48,7 @@ class SnowflakeColumnLineageVisitorDelegate {
     MergedParameters params = snowflakeRelation.params();
     this.database = stripQuotes(params.sfDatabase());
     this.schema = stripQuotes(params.sfSchema());
-    this.namespace = SNOWFLAKE_PREFIX + parseAccountIdentifier(params.sfFullURL());
+    this.namespace = SNOWFLAKE_NAMESPACE_PREFIX + parseAccountIdentifier(params.sfFullURL());
 
     this.sqlMeta = extractQueryFromSnowflake(snowflakeRelation).orElse(null);
     this.sqlCollector =

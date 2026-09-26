@@ -111,7 +111,8 @@ public class MergeIntoCommandEdgeColumnLineageBuilder implements ColumnLevelLine
                             .getBuilder()
                             .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
                             .get(),
-                        ((AttributeReference) action.child()).exprId()));
+                        ((AttributeReference) action.child()).exprId(),
+                        action.targetColNameParts().mkString()));
   }
 
   public Stream<Expression> getMergeActions(LogicalPlan node) {

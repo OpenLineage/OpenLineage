@@ -159,23 +159,25 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
 
     String namespace =
         String.format("%s%s%s/%s", KUSTO_PREFIX, kustoCluster, KUSTO_URL_SUFFIX, database);
-    output = Collections.singletonList(datasetFactory.getDataset(name, namespace, schema));
+    output =
+        Collections.singletonList(
+            datasetFactory.sparkDatasetBuilder().dataset(name, namespace).schema(schema).build());
     return output;
   }
 
   @Override
   public List<D> apply(LogicalPlan x) {
     BaseRelation relation = ((LogicalRelation) x).relation();
-    List<D> output;
     Optional<String> name = getName(relation);
     Optional<String> namespace = getNamespace(relation);
     if (name.isPresent() && namespace.isPresent()) {
-      output =
-          Collections.singletonList(
-              factory.getDataset(name.get(), namespace.get(), relation.schema()));
-    } else {
-      output = Collections.emptyList();
+      return Collections.singletonList(
+          factory
+              .sparkDatasetBuilder()
+              .dataset(name.get(), namespace.get())
+              .schema(relation.schema())
+              .build());
     }
-    return output;
+    return Collections.emptyList();
   }
 }

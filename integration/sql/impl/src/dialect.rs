@@ -41,6 +41,7 @@ pub fn get_dialect(name: &str) -> &'static dyn CanonicalDialect {
         "hive" => &HiveDialect {},
         "mysql" => &MySqlDialect {},
         "mssql" => &MsSqlDialect {},
+        "sqlserver" => &MsSqlDialect {},
         "sqlite" => &SQLiteDialect {},
         "ansi" => &AnsiDialect {},
         "generic" => &GenericDialect,

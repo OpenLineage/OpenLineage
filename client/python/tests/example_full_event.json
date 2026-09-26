@@ -14,11 +14,13 @@
         "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
         "_schemaURL": "http://test.schema.url",
         "run": {
-          "runId": "3f5e83fa-3480-44ff-99c5-ff943904e5e8"
+          "runId": "3f5e83fa-3480-44ff-99c5-ff943904e5e8",
+          "facets": {}
         },
         "job": {
           "namespace": "my-scheduler-namespace",
-          "name": "myjob.mytask"
+          "name": "myjob.mytask",
+          "facets": {}
         }
       },
       "tags": {

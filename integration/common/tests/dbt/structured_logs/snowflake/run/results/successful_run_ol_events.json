@@ -297,6 +297,10 @@
         },
         "dbt_run": {
           "invocation_id": "840564b6-274e-409a-a0a2-a8665b5b130a"
+        },
+        "externalQuery": {
+          "externalQueryId": "01b8ea94-0412-5972-2a66-0301dfe7e617",
+          "source": "snowflake://mysnowflakeaccount.us-east-1.aws"
         }
       }
     },

@@ -22,7 +22,8 @@ workflows:
           matrix:
             parameters:
               env-variant: [
-                'java:8-spark:3.2.4-scala:2.12-full-tests',
+                # Runs on every PR: oldest supported Spark on oldest supported Java.
+                'java:8-spark:3.2.4-scala:2.12',
                 'java:8-spark:3.2.4-scala:2.13-full-tests',
                 'java:8-spark:3.3.4-scala:2.12-full-tests',
                 'java:8-spark:3.3.4-scala:2.13-full-tests',
@@ -33,8 +34,11 @@ workflows:
                 'java:8-spark:3.5.6-scala:2.12-full-tests',
                 'java:8-spark:3.5.6-scala:2.13-full-tests',
                 'java:17-spark:3.5.6-scala:2.12-full-tests',
-                'java:17-spark:3.5.6-scala:2.13',
-                'java:17-spark:4.0.0-scala:2.13'
+                'java:17-spark:3.5.6-scala:2.13-full-tests',
+                'java:17-spark:4.0.0-scala:2.13-full-tests',
+                'java:17-spark:4.2.0-scala:2.13-full-tests',
+                # Runs on every PR: newest supported Spark on newest supported Java.
+                'java:21-spark:4.2.0-scala:2.13'
               ]
           requires:
             - build-integration-sql-java
@@ -113,7 +117,8 @@ workflows:
           matrix:
             parameters:
               env-variant: [
-                'java:8-spark:3.2.4-scala:2.12-full-tests',
+                # Runs on every PR: oldest supported Spark on oldest supported Java.
+                'java:8-spark:3.2.4-scala:2.12',
                 'java:8-spark:3.2.4-scala:2.13-full-tests',
                 'java:8-spark:3.3.4-scala:2.12-full-tests',
                 'java:8-spark:3.3.4-scala:2.13-full-tests',
@@ -124,8 +129,11 @@ workflows:
                 'java:8-spark:3.5.6-scala:2.12-full-tests',
                 'java:8-spark:3.5.6-scala:2.13-full-tests',
                 'java:17-spark:3.5.6-scala:2.12-full-tests',
-                'java:17-spark:3.5.6-scala:2.13',
-                'java:17-spark:4.0.0-scala:2.13'
+                'java:17-spark:3.5.6-scala:2.13-full-tests',
+                'java:17-spark:4.0.0-scala:2.13-full-tests',
+                'java:17-spark:4.2.0-scala:2.13-full-tests',
+                # Runs on every PR: newest supported Spark on newest supported Java.
+                'java:21-spark:4.2.0-scala:2.13'
               ]
           requires:
             - approval-integration-spark

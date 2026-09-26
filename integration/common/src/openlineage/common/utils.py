@@ -26,10 +26,8 @@ def get_from_nullable_chain(source: Any, chain: list[str]) -> Any | None:
     if not result:
         return None
     """
-    chain.reverse()
     try:
-        while chain:
-            next_key = chain.pop()
+        for next_key in chain:
             if isinstance(source, dict):
                 source = source.get(next_key)
             else:
@@ -54,7 +52,7 @@ def parse_single_arg(args, keys: list[str], default=None) -> str | None:
     """
     for key in keys:
         for i, arg in enumerate(args):
-            if arg == key and len(args) > i:
+            if arg == key and i + 1 < len(args):
                 return args[i + 1]
             if arg.startswith(f"{key}="):
                 return arg.split("=", 1)[1]
@@ -145,7 +143,9 @@ def add_or_replace_command_line_option(
 
 
 def has_command_line_option(command_line: list[str], command_option: str) -> bool:
-    return command_option in command_line
+    # parse_single_arg accepts both `{key} {value}` and `{key}={value}`, so an
+    # option present in the inline form must be reported here too.
+    return any(arg == command_option or arg.startswith(f"{command_option}=") for arg in command_line)
 
 
 def remove_command_line_option(
@@ -155,14 +155,23 @@ def remove_command_line_option(
         return command_line
 
     command_line = list(command_line)
-    command_option_index = command_line.index(command_option)
+    command_option_index = next(
+        i
+        for i, arg in enumerate(command_line)
+        if arg == command_option or arg.startswith(f"{command_option}=")
+    )
+
+    # The inline `{key}={value}` form carries its value in the same token, so
+    # popping the option already removes the value.
+    inline_value = command_line[command_option_index].startswith(f"{command_option}=")
 
     # Remove the option itself
     command_line.pop(command_option_index)
 
-    # Optionally remove the value if requested and it exists
+    # Optionally remove the value if requested and it exists (space-separated form only)
     if (
         remove_value
+        and not inline_value
         and command_option_index < len(command_line)
         and not command_line[command_option_index].startswith("-")
     ):

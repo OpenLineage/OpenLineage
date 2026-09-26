@@ -6,14 +6,13 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.DatasetVersionUtils;
+import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;
@@ -105,24 +104,20 @@ public class CreateReplaceDatasetBuilder
       return Collections.emptyList();
     }
 
-    OpenLineage openLineage = context.getOpenLineage();
-    DatasetCompositeFacetsBuilder builder = new DatasetCompositeFacetsBuilder(openLineage);
-
-    builder
-        .getFacets()
-        .schema(PlanUtils.schemaFacet(openLineage, schema))
-        .lifecycleStateChange(
-            openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
-        .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
+    SparkDatasetBuilder<OpenLineage.OutputDataset> sparkBuilder =
+        outputDataset()
+            .sparkDatasetBuilder()
+            .dataset(di.get())
+            .schema(schema)
+            .lifecycleStateChange(lifecycleStateChange);
 
     if (includeDatasetVersion(event)) {
-      Optional<String> datasetVersion =
-          CatalogUtils3.getDatasetVersion(context, tableCatalog, identifier, tableProperties);
-      datasetVersion.ifPresent(
-          version -> DatasetVersionUtils.buildVersionOutputFacets(context, builder, version));
+      CatalogUtils.getDatasetVersion(context, tableCatalog, identifier, tableProperties)
+          .ifPresent(sparkBuilder::version);
     }
-    CatalogUtils3.addStorageAndCatalogFacets(context, tableCatalog, tableProperties, builder);
-    return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
+    CatalogUtils.addStorageAndCatalogFacets(
+        context, tableCatalog, tableProperties, sparkBuilder.getInner());
+    return Collections.singletonList(sparkBuilder.build());
   }
 
   @Override

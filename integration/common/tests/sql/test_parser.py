@@ -265,7 +265,9 @@ def test_parse_bugged_cte():
             FROM sum_trans
             WHERE count > 1000 OR balance > 100000;
     """
-    assert parse(sql).errors == [ExtractionError(0, "Expected: ), found: ( at Line: 3, Column: 34", sql)]
+    assert parse(sql, dialect="postgres").errors == [
+        ExtractionError(0, "Expected: ), found: ( at Line: 3, Column: 34", sql)
+    ]
 
 
 def test_parse_recursive_cte():

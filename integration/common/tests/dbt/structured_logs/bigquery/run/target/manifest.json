@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+    "dbt_version": "1.11.0",
+    "generated_at": "2026-06-01T21:13:19.000000Z",
+    "invocation_id": "11111111-1111-4111-8111-111111111111",
+    "adapter_type": "bigquery"
+  },
+  "nodes": {
+    "model.jaffle_shop.stg_locations": {
+      "database": "example-bigquery-project",
+      "schema": "jaffle_shop",
+      "name": "stg_locations",
+      "alias": "stg_locations",
+      "resource_type": "model",
+      "unique_id": "model.jaffle_shop.stg_locations",
+      "package_name": "jaffle_shop",
+      "original_file_path": "models/staging/stg_locations.sql",
+      "path": "staging/stg_locations.sql",
+      "description": "List of open locations with basic cleaning and transformation applied, one row per location.",
+      "columns": {
+        "location_id": {
+          "name": "location_id",
+          "description": "The unique key for each location.",
+          "meta": {},
+          "data_type": null,
+          "quote": null,
+          "tags": []
+        }
+      },
+      "meta": {},
+      "tags": [],
+      "config": {
+        "materialized": "view"
+      },
+      "depends_on": {
+        "macros": [],
+        "nodes": [
+          "source.jaffle_shop.raw.raw_stores"
+        ]
+      },
+      "compiled_code": "with renamed as (\n\n    select\n        id as location_id,\n        name as location_name,\n        tax_rate\n    from `example-bigquery-project`.`raw`.`raw_stores`\n\n)\n\nselect\n    location_id,\n    location_name,\n    tax_rate\nfrom renamed",
+      "relation_name": "`example-bigquery-project`.`jaffle_shop`.`stg_locations`"
+    }
+  },
+  "sources": {
+    "source.jaffle_shop.raw.raw_stores": {
+      "database": "example-bigquery-project",
+      "schema": "raw",
+      "name": "raw_stores",
+      "identifier": "raw_stores",
+      "source_name": "raw",
+      "resource_type": "source",
+      "unique_id": "source.jaffle_shop.raw.raw_stores",
+      "package_name": "jaffle_shop",
+      "original_file_path": "models/staging/schema.yml",
+      "path": "models/staging/schema.yml",
+      "description": "",
+      "columns": {},
+      "meta": {},
+      "tags": [],
+      "config": {
+        "enabled": true
+      }
+    }
+  },
+  "parent_map": {
+    "model.jaffle_shop.stg_locations": [
+      "source.jaffle_shop.raw.raw_stores"
+    ],
+    "source.jaffle_shop.raw.raw_stores": []
+  },
+  "child_map": {
+    "model.jaffle_shop.stg_locations": [],
+    "source.jaffle_shop.raw.raw_stores": [
+      "model.jaffle_shop.stg_locations"
+    ]
+  }
+}

@@ -39,6 +39,27 @@ class FilesystemDatasetUtilsTestForWASBS {
 
   @Test
   @SneakyThrows
+  void testFromLocationWithDifferentProtocol() {
+    // The non-TLS scheme {@code wasb} differs from {@code wasbs} only in transport security and
+    // addresses the same data, so it is normalized to the canonical {@code wasbs} scheme defined by
+    // the OpenLineage naming spec
+    assertThat(FilesystemDatasetUtils.fromLocation(new URI("wasb://container@bucket/warehouse")))
+        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket")
+        .hasFieldOrPropertyWithValue("name", "warehouse");
+  }
+
+  @Test
+  @SneakyThrows
+  void testFromLocationAndNameWithDifferentProtocol() {
+    assertThat(
+            FilesystemDatasetUtils.fromLocationAndName(
+                new URI("wasb://container@bucket/warehouse"), "default.table"))
+        .hasFieldOrPropertyWithValue("namespace", "wasbs://container@bucket/warehouse")
+        .hasFieldOrPropertyWithValue("name", "default.table");
+  }
+
+  @Test
+  @SneakyThrows
   void testFromLocationAndName() {
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(

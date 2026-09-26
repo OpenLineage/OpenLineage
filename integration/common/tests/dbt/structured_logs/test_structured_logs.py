@@ -9,6 +9,8 @@ from unittest import mock
 import attr
 import pytest
 import yaml
+from openlineage.client.facet_v2 import column_lineage_dataset
+from openlineage.common.provider.dbt.facets import ParentRunMetadata
 from openlineage.common.provider.dbt.processor import Adapter
 from openlineage.common.provider.dbt.structured_logs import (
     DbtStructuredLogsProcessor,
@@ -49,6 +51,109 @@ def patch_get_dbt_profiles_dir(monkeypatch):
     )
 
 
+def node_finished_processor(adapter_type=Adapter.SNOWFLAKE, dataset_namespace="test-namespace"):
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir=CURRENT_DIR,
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+    processor._dbt_version = "1.8.2"
+    processor._dbt_invocation_id = "test-invocation-id"
+    processor.dbt_run_metadata = ParentRunMetadata(
+        run_id=DUMMY_UUID_4,
+        job_name="dbt-run-jaffle_shop",
+        job_namespace="dbt-test-namespace",
+    )
+    processor.adapter_type = adapter_type
+    processor.dataset_namespace = dataset_namespace
+    processor._compiled_manifest = {
+        "nodes": {
+            "model.jaffle_shop.orders": {
+                "database": "REPORTING",
+                "schema": "TEST_GENERAL",
+                "alias": "orders",
+                "unique_id": "model.jaffle_shop.orders",
+                "columns": {},
+                "meta": {},
+                "tags": [],
+            },
+            "snapshot.jaffle_shop.orders_snapshot": {
+                "database": "REPORTING",
+                "schema": "SNAPSHOTS",
+                "alias": "orders_snapshot",
+                "unique_id": "snapshot.jaffle_shop.orders_snapshot",
+                "columns": {},
+                "meta": {},
+                "tags": [],
+            },
+            "test.jaffle_shop.not_null_orders_id": {
+                "database": "REPORTING",
+                "schema": "TEST_GENERAL_dbt_test__audit",
+                "alias": "not_null_orders_id",
+                "name": "not_null_orders_id",
+                "unique_id": "test.jaffle_shop.not_null_orders_id",
+                "columns": {},
+                "meta": {},
+                "tags": [],
+                "config": {},
+                "test_metadata": {"name": "not_null", "kwargs": {"column_name": "id"}},
+                "attached_node": "model.jaffle_shop.orders",
+            },
+        },
+        "sources": {},
+        "parent_map": {
+            "model.jaffle_shop.orders": [],
+            "snapshot.jaffle_shop.orders_snapshot": ["model.jaffle_shop.orders"],
+            "test.jaffle_shop.not_null_orders_id": ["model.jaffle_shop.orders"],
+        },
+    }
+    return processor
+
+
+def node_finished_event(
+    unique_id="model.jaffle_shop.orders",
+    resource_type="model",
+    adapter_response=None,
+    node_status="success",
+):
+    return {
+        "data": {
+            "node_info": {
+                "node_finished_at": "2024-01-01T00:00:01.000000",
+                "node_started_at": "2024-01-01T00:00:00.000000",
+                "node_status": node_status,
+                "resource_type": resource_type,
+                "unique_id": unique_id,
+            },
+            "run_result": {
+                "adapter_response": adapter_response or {},
+                "message": "",
+                "num_failures": 0,
+                "status": node_status,
+            },
+        },
+        "info": {"name": "NodeFinished", "ts": "2024-01-01T00:00:01.000000Z"},
+    }
+
+
+def sample_column_lineage_facet():
+    return column_lineage_dataset.ColumnLineageDatasetFacet(
+        fields={
+            "order_id": column_lineage_dataset.Fields(
+                inputFields=[
+                    column_lineage_dataset.InputField(
+                        namespace="test-namespace",
+                        name="REPORTING.TEST_GENERAL.stg_orders",
+                        field="id",
+                    )
+                ]
+            )
+        }
+    )
+
+
 ##################
 # test functions
 ##################
@@ -80,6 +185,14 @@ def patch_get_dbt_profiles_dir(monkeypatch):
             CURRENT_DIR + "/snowflake/run/logs/successful_run_logs.jsonl",
             CURRENT_DIR + "/snowflake/run/results/successful_run_ol_events.json",
             CURRENT_DIR + "/snowflake/run/target/manifest.json",
+        ),
+        # successful bigquery run
+        (
+            "bigquery",
+            ["dbt", "run", "..."],
+            CURRENT_DIR + "/bigquery/run/logs/successful_run_logs.jsonl",
+            CURRENT_DIR + "/bigquery/run/results/successful_run_ol_events.json",
+            CURRENT_DIR + "/bigquery/run/target/manifest.json",
         ),
         # failed snowflake run
         (
@@ -160,6 +273,7 @@ def patch_get_dbt_profiles_dir(monkeypatch):
         "postgres_successful_dbt_run",
         "postgres_failed_dbt_run",
         "snowflake_successful_dbt_run",
+        "bigquery_successful_dbt_run",
         "snowflake_failed_dbt_run",
         # seed command
         "postgres_dbt_seed",
@@ -262,6 +376,189 @@ def test_dataset_namespace(mock_run_dbt_command, target, expected_dataset_namesp
         pass
 
     assert processor.dataset_namespace == expected_dataset_namespace
+
+
+@pytest.mark.parametrize(
+    "adapter_type, dataset_namespace, adapter_response, expected_external_query_id",
+    [
+        (
+            Adapter.BIGQUERY,
+            "bigquery",
+            {"project_id": "test-project", "location": "US", "job_id": "job-123"},
+            "test-project:US.job-123",
+        ),
+        (
+            Adapter.BIGQUERY,
+            "bigquery",
+            {"project_id": "test-project", "job_id": "job-123"},
+            "job-123",
+        ),
+        (
+            Adapter.BIGQUERY,
+            "bigquery",
+            {"location": "US", "job_id": "job-123"},
+            "job-123",
+        ),
+        (Adapter.BIGQUERY, "bigquery", {"job_id": "job-123"}, "job-123"),
+        (Adapter.SNOWFLAKE, "snowflake://test-account", {"query_id": "query-123"}, "query-123"),
+    ],
+    ids=[
+        "bigquery_full_job_reference",
+        "bigquery_project_and_job_id",
+        "bigquery_location_and_job_id",
+        "bigquery_job_id_only",
+        "query_id_adapter",
+    ],
+)
+def test_node_finished_external_query(
+    adapter_type, dataset_namespace, adapter_response, expected_external_query_id
+):
+    processor = node_finished_processor(
+        adapter_type=adapter_type,
+        dataset_namespace=dataset_namespace,
+    )
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(adapter_response=adapter_response),
+    )
+    external_query = ol_event_to_dict(event)["run"]["facets"]["externalQuery"]
+
+    assert external_query["externalQueryId"] == expected_external_query_id
+    assert external_query["source"] == dataset_namespace
+
+
+def test_node_finished_bigquery_missing_job_id_has_no_external_query():
+    processor = node_finished_processor(adapter_type=Adapter.BIGQUERY, dataset_namespace="bigquery")
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(adapter_response={"project_id": "test-project", "location": "US"}),
+    )
+
+    assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
+
+
+def test_test_node_finished_assertion_carries_test_name():
+    # The run_results path sets Assertion.name from the manifest node; the structured-logs
+    # path has to produce the same facet.
+    processor = node_finished_processor()
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="test.jaffle_shop.not_null_orders_id",
+            resource_type="test",
+            node_status="pass",
+        ),
+    )
+    assertions = ol_event_to_dict(event)["inputs"][0]["facets"]["dataQualityAssertions"]["assertions"]
+
+    assert len(assertions) == 1
+    assert assertions[0]["assertion"] == "not_null"
+    assert assertions[0]["name"] == "not_null_orders_id"
+
+
+def test_test_node_finished_has_no_external_query():
+    processor = node_finished_processor(
+        adapter_type=Adapter.SNOWFLAKE,
+        dataset_namespace="snowflake://test-account",
+    )
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="test.jaffle_shop.not_null_orders_id",
+            resource_type="test",
+            adapter_response={"query_id": "query-123"},
+            node_status="pass",
+        ),
+    )
+
+    assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
+
+
+@pytest.mark.parametrize(
+    "unique_id, resource_type, node_status",
+    [
+        ("model.jaffle_shop.orders", "model", "success"),
+        ("model.jaffle_shop.orders", "model", "fail"),
+        ("snapshot.jaffle_shop.orders_snapshot", "snapshot", "success"),
+    ],
+    ids=["model_complete", "model_fail", "snapshot_complete"],
+)
+def test_node_finished_attaches_column_lineage(unique_id, resource_type, node_status):
+    processor = node_finished_processor()
+    compiled_sql = "select id as order_id from REPORTING.TEST_GENERAL.stg_orders"
+    processor._compiled_manifest["nodes"][unique_id]["compiled_code"] = compiled_sql
+    facet = sample_column_lineage_facet()
+    processor.get_column_lineage = mock.Mock(return_value=facet)
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id=unique_id,
+            resource_type=resource_type,
+            node_status=node_status,
+        )
+    )
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert output_facets["columnLineage"] == ol_event_to_dict(facet)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+
+
+def test_node_finished_missing_compiled_sql_has_no_column_lineage():
+    processor = node_finished_processor()
+    processor.get_column_lineage = mock.Mock(return_value=sample_column_lineage_facet())
+
+    event = processor.parse_node_finished_event(node_finished_event())
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert "columnLineage" not in output_facets
+    processor.get_column_lineage.assert_not_called()
+
+
+def test_node_finished_uses_compiled_sql_fallback_for_column_lineage():
+    processor = node_finished_processor()
+    compiled_sql = "select id as order_id from REPORTING.TEST_GENERAL.stg_orders"
+    processor._compiled_manifest["nodes"]["model.jaffle_shop.orders"]["compiled_sql"] = compiled_sql
+    facet = sample_column_lineage_facet()
+    processor.get_column_lineage = mock.Mock(return_value=facet)
+
+    event = processor.parse_node_finished_event(node_finished_event())
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert output_facets["columnLineage"] == ol_event_to_dict(facet)
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+
+
+def test_node_finished_column_lineage_parse_failure_has_no_column_lineage():
+    processor = node_finished_processor()
+    compiled_sql = "select id as order_id from REPORTING.TEST_GENERAL.stg_orders"
+    processor._compiled_manifest["nodes"]["model.jaffle_shop.orders"]["compiled_code"] = compiled_sql
+    processor.get_column_lineage = mock.Mock(return_value=None)
+
+    event = processor.parse_node_finished_event(node_finished_event())
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert "columnLineage" not in output_facets
+    processor.get_column_lineage.assert_called_once_with("test-namespace", compiled_sql)
+
+
+def test_test_node_finished_has_no_column_lineage():
+    processor = node_finished_processor()
+    processor._compiled_manifest["nodes"]["test.jaffle_shop.not_null_orders_id"]["compiled_code"] = (
+        "select id from REPORTING.TEST_GENERAL.orders"
+    )
+    processor.get_column_lineage = mock.Mock(return_value=sample_column_lineage_facet())
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="test.jaffle_shop.not_null_orders_id",
+            resource_type="test",
+            node_status="pass",
+        )
+    )
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+
+    assert "columnLineage" not in output_facets
+    processor.get_column_lineage.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -1989,3 +2286,211 @@ class TestTestRunFacet:
         result = ol_event_to_dict(processor.parse_node_finished_event(event))
 
         assert "test" not in result["run"]["facets"]
+
+
+class TestFullRefreshFromCommandLine:
+    """Covers detecting the run-wide --full-refresh flag on the dbt command line,
+    the log-driven path's substitute for run_results.json args."""
+
+    def test_full_refresh(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "--full-refresh"])
+            is True
+        )
+
+    def test_full_refresh_short_flag(self):
+        assert DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "-f"]) is True
+
+    def test_no_full_refresh(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run", "--no-full-refresh"])
+            is False
+        )
+
+    def test_last_flag_wins_no_then_full(self):
+        # dbt resolves the flag last-occurrence-wins
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(
+                ["dbt", "run", "--no-full-refresh", "--full-refresh"]
+            )
+            is True
+        )
+
+    def test_last_flag_wins_full_then_no(self):
+        assert (
+            DbtStructuredLogsProcessor._full_refresh_from_command_line(
+                ["dbt", "run", "--full-refresh", "--no-full-refresh"]
+            )
+            is False
+        )
+
+    def test_absent(self):
+        assert DbtStructuredLogsProcessor._full_refresh_from_command_line(["dbt", "run"]) is None
+
+    def test_flag_flows_to_run_facet(self):
+        # end-to-end: the CLI flag is wired through to the emitted DbtRunRunFacet
+        processor = DbtStructuredLogsProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="dbt-test-namespace",
+            project_dir=CURRENT_DIR,
+            target="postgres",
+            dbt_command_line=["dbt", "run", "--full-refresh"],
+        )
+        processor._dbt_invocation_id = "test-invocation-id"
+        processor.project_name = "jaffle_shop"
+        processor.project_version = "1.0.0"
+        processor.profile_name = "jaffle_shop"
+
+        facet = processor.dbt_run_run_facet()["dbt_run"]
+        assert facet.full_refresh is True
+
+
+def _command_completed_event(path):
+    """Return the CommandCompleted dbt log event from a fixture list."""
+    events = yaml.safe_load(open(path))
+    return next(event for event in events if event["info"]["name"] == "CommandCompleted")
+
+
+def test_command_completed_no_longer_carries_exposures():
+    """Exposures used to be attached to the run wrapper COMPLETE event; they now live on
+    the model's output dataset instead (see test_node_finished_attaches_exposures_on_success_only
+    below), so CommandCompleted events must never carry a dbt_exposures run facet."""
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir=CURRENT_DIR,
+        target="postgres",
+        dbt_command_line=["dbt", "run"],
+    )
+    processor.dataset_namespace = "postgres://the-namespace"
+    processor.dbt_run_metadata = ParentRunMetadata(
+        run_id=DUMMY_UUID_4,
+        job_name="dbt-run-my-project",
+        job_namespace="dbt-test-namespace",
+    )
+    processor._compiled_manifest = {
+        "nodes": {
+            "model.p.orders": {"database": "db", "schema": "public", "name": "orders"},
+        },
+        "exposures": {
+            "exposure.p.dash": {
+                "unique_id": "exposure.p.dash",
+                "name": "dash",
+                "type": "dashboard",
+                "depends_on": {"nodes": ["model.p.orders"]},
+            },
+        },
+    }
+
+    success_event = processor._parse_command_completed_event(
+        _command_completed_event(CURRENT_DIR + "/postgres/events/logs/successful_CommandCompleted.yaml")
+    )
+    assert "dbt_exposures" not in success_event.run.facets
+
+    failed_event = processor._parse_command_completed_event(
+        _command_completed_event(CURRENT_DIR + "/postgres/events/logs/failed_CommandCompleted.yaml")
+    )
+    assert "dbt_exposures" not in failed_event.run.facets
+
+
+def test_node_finished_attaches_exposures_on_success_only():
+    """The dbt_exposures dataset facet is attached to a model's output dataset when the
+    model builds successfully (COMPLETE), and omitted when it fails (FAIL)."""
+    processor = node_finished_processor()
+    processor._compiled_manifest["exposures"] = {
+        "exposure.jaffle_shop.dash": {
+            "unique_id": "exposure.jaffle_shop.dash",
+            "name": "dash",
+            "type": "dashboard",
+            "depends_on": {"nodes": ["model.jaffle_shop.orders"]},
+        },
+    }
+
+    success_event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="model.jaffle_shop.orders", resource_type="model", node_status="success"
+        )
+    )
+    success_output_facets = ol_event_to_dict(success_event)["outputs"][0]["facets"]
+    assert "dbt_exposures" in success_output_facets
+    facet = success_event.outputs[0].facets["dbt_exposures"]
+    assert [exposure.unique_id for exposure in facet.exposures] == ["exposure.jaffle_shop.dash"]
+
+    fail_event = processor.parse_node_finished_event(
+        node_finished_event(unique_id="model.jaffle_shop.orders", resource_type="model", node_status="fail")
+    )
+    fail_output_facets = ol_event_to_dict(fail_event)["outputs"][0]["facets"]
+    assert "dbt_exposures" not in fail_output_facets
+
+
+def test_node_finished_no_exposures_has_no_exposures_facet():
+    processor = node_finished_processor()
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="model.jaffle_shop.orders", resource_type="model", node_status="success"
+        )
+    )
+    output_facets = ol_event_to_dict(event)["outputs"][0]["facets"]
+    assert "dbt_exposures" not in output_facets
+
+
+def test_node_finished_attaches_source_backed_exposure_to_input_on_success_only():
+    """A source-backed exposure (depends_on a source() the model reads) lands on the model's
+    INPUT dataset when the model builds successfully, and is omitted on failure. A
+    model-backed exposure still lands on the output."""
+    processor = node_finished_processor()
+    processor._compiled_manifest["sources"] = {
+        "source.jaffle_shop.raw.events": {
+            "database": "RAW",
+            "schema": "INGEST",
+            "alias": "events",
+            "name": "events",
+            "unique_id": "source.jaffle_shop.raw.events",
+            "columns": {},
+            "meta": {},
+            "tags": [],
+        },
+    }
+    processor._compiled_manifest["parent_map"]["model.jaffle_shop.orders"] = ["source.jaffle_shop.raw.events"]
+    processor._compiled_manifest["exposures"] = {
+        "exposure.jaffle_shop.model_dash": {
+            "unique_id": "exposure.jaffle_shop.model_dash",
+            "name": "model_dash",
+            "type": "dashboard",
+            "depends_on": {"nodes": ["model.jaffle_shop.orders"]},
+        },
+        "exposure.jaffle_shop.source_dash": {
+            "unique_id": "exposure.jaffle_shop.source_dash",
+            "name": "source_dash",
+            "type": "dashboard",
+            "depends_on": {"nodes": ["source.jaffle_shop.raw.events"]},
+        },
+    }
+
+    success_event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id="model.jaffle_shop.orders", resource_type="model", node_status="success"
+        )
+    )
+
+    # Source-backed exposure lands on the input dataset.
+    assert len(success_event.inputs) == 1
+    input_facets = success_event.inputs[0].facets
+    assert "dbt_exposures" in input_facets
+    assert [e.unique_id for e in input_facets["dbt_exposures"].exposures] == [
+        "exposure.jaffle_shop.source_dash"
+    ]
+
+    # Model-backed exposure still lands on the output dataset.
+    output_facets = success_event.outputs[0].facets
+    assert [e.unique_id for e in output_facets["dbt_exposures"].exposures] == [
+        "exposure.jaffle_shop.model_dash"
+    ]
+
+    # On a failed build, nothing is attached to the input.
+    processor.node_id_to_inputs = {}
+    fail_event = processor.parse_node_finished_event(
+        node_finished_event(unique_id="model.jaffle_shop.orders", resource_type="model", node_status="fail")
+    )
+    assert "dbt_exposures" not in fail_event.inputs[0].facets

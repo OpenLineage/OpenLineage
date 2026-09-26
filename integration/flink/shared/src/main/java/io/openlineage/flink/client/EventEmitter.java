@@ -13,6 +13,7 @@ import io.openlineage.client.OpenLineageConfig;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +43,14 @@ public class EventEmitter {
   public void emit(OpenLineage.RunEvent event) {
     try {
       client.emit(event);
+    } catch (OpenLineageClientException exception) {
+      log.error("Failed to emit OpenLineage event: ", exception);
+    }
+  }
+
+  public void emit(OpenLineage.RunEvent event, Duration timeout) {
+    try {
+      client.emit(event, timeout);
     } catch (OpenLineageClientException exception) {
       log.error("Failed to emit OpenLineage event: ", exception);
     }

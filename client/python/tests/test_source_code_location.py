@@ -548,6 +548,10 @@ class TestGetCiPrNumber:
     def test_github_actions_pull_request(self):
         assert get_ci_pr_number() == "42"
 
+    @patch.dict("os.environ", {"GITHUB_REF": "refs/pull/42/head"}, clear=True)
+    def test_github_actions_pull_request_head_ref(self):
+        assert get_ci_pr_number() == "42"
+
     @patch.dict("os.environ", {"GITHUB_REF": "refs/heads/main"}, clear=True)
     def test_github_actions_push_returns_none(self):
         assert get_ci_pr_number() is None

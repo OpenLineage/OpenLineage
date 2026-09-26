@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.openlineage.client.DefaultConfigPathProvider;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.ConsoleConfig;
@@ -35,6 +36,7 @@ public class ArgumentParser {
       "spark.openlineage.parentJobNamespace";
   public static final String SPARK_CONF_PARENT_JOB_NAME = "spark.openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
+  public static final String SPARK_CONF_CONTEXT = "spark.openlineage.context";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String SPARK_CONF_APP_RUN_ID = "spark.openlineage.applicationRunId";
   public static final String ARRAY_PREFIX_CHAR = "[";
@@ -124,10 +126,18 @@ public class ArgumentParser {
         .ifPresent(config::setOverriddenApplicationRunId);
 
     findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(config::setNamespace);
-    findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAME).ifPresent(config::setParentJobName);
-    findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAMESPACE)
-        .ifPresent(config::setParentJobNamespace);
-    findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(config::setParentRunId);
+
+    Optional<ParentRunContext.ParentRun> parentRunContext =
+        findSparkConfigKey(conf, SPARK_CONF_CONTEXT).flatMap(ArgumentParser::parseParentRunContext);
+    if (parentRunContext.isPresent()) {
+      applyContext(parentRunContext.get(), config);
+    } else {
+      findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAME).ifPresent(config::setParentJobName);
+      findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAMESPACE)
+          .ifPresent(config::setParentJobNamespace);
+      findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(config::setParentRunId);
+    }
+
     findSparkConfigKey(conf, SPARK_TEST_EXTENSION_PROVIDER)
         .ifPresent(config::setTestExtensionProvider);
     findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME)
@@ -136,6 +146,44 @@ public class ArgumentParser {
     findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE)
         .map(Boolean::valueOf)
         .ifPresent(v -> config.getJobName().setReplaceDotWithUnderscore(v));
+  }
+
+  /** Parses {@code spark.openlineage.context}, returning empty on any parsing/validation error. */
+  private static Optional<ParentRunContext.ParentRun> parseParentRunContext(String raw) {
+    ParentRunContext.ParentRun parentRun;
+    try {
+      parentRun =
+          OpenLineageClientUtils.newObjectMapper()
+              .readValue(raw, ParentRunContext.class)
+              .getParent();
+    } catch (Exception e) {
+      log.warn(
+          "Failed to parse spark.openlineage.context as JSON; falling back to legacy config", e);
+      return Optional.empty();
+    }
+    if (parentRun == null || parentRun.getRun() == null || parentRun.getJob() == null) {
+      log.warn("spark.openlineage.context is missing required parent.run/parent.job; ignoring");
+      return Optional.empty();
+    }
+    return Optional.of(parentRun);
+  }
+
+  private static void applyContext(
+      ParentRunContext.ParentRun parentRun, SparkOpenLineageConfig config) {
+    config.setParentRunId(parentRun.getRun().getRunId().toString());
+    config.setParentJobNamespace(parentRun.getJob().getNamespace());
+    config.setParentJobName(parentRun.getJob().getName());
+    config.setParentRunFacets(parentRun.getRun().getFacets());
+    config.setParentJobFacets(parentRun.getJob().getFacets());
+
+    OpenLineage.ParentRunFacetRoot root = parentRun.getRoot();
+    if (root != null) {
+      config.setRootParentRunId(root.getRun().getRunId().toString());
+      config.setRootParentJobNamespace(root.getJob().getNamespace());
+      config.setRootParentJobName(root.getJob().getName());
+      config.setRootParentRunFacets(root.getRun().getFacets());
+      config.setRootParentJobFacets(root.getJob().getFacets());
+    }
   }
 
   /**

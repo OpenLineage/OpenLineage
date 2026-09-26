@@ -6,11 +6,12 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
+import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -33,45 +34,20 @@ public class InsertIntoHiveDirVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHiveDirCommand cmd = (InsertIntoHiveDirCommand) x;
     Optional<URI> optionalUri = ScalaConversionUtils.asJavaOptional(cmd.storage().locationUri());
-    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacetForHive =
-        CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context);
+
     return optionalUri
         .map(
             uri -> {
-              OpenLineage.OutputDataset outputDataset;
+              SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
+                  outputDataset()
+                      .sparkDatasetBuilder()
+                      .dataset(uri)
+                      .schema(cmd.query().schema())
+                      .catalog();
               if (cmd.overwrite()) {
-                outputDataset =
-                    catalogDatasetFacetForHive
-                        .map(
-                            catalogFacet ->
-                                outputDataset()
-                                    .getDataset(
-                                        PathUtils.fromURI(uri),
-                                        cmd.query().schema(),
-                                        OpenLineage.LifecycleStateChangeDatasetFacet
-                                            .LifecycleStateChange.OVERWRITE,
-                                        catalogFacet))
-                        .orElse(
-                            outputDataset()
-                                .getDataset(
-                                    PathUtils.fromURI(uri),
-                                    cmd.query().schema(),
-                                    OpenLineage.LifecycleStateChangeDatasetFacet
-                                        .LifecycleStateChange.OVERWRITE));
-
-              } else {
-                outputDataset =
-                    catalogDatasetFacetForHive
-                        .map(
-                            catalogFacet ->
-                                outputDataset()
-                                    .getDataset(
-                                        PathUtils.fromURI(uri), cmd.query().schema(), catalogFacet))
-                        .orElse(
-                            outputDataset()
-                                .getDataset(PathUtils.fromURI(uri), cmd.query().schema()));
+                builder.lifecycleStateChange(LifecycleStateChange.OVERWRITE);
               }
-              return Collections.singletonList(outputDataset);
+              return Collections.singletonList(builder.build());
             })
         .orElse(Collections.emptyList());
   }

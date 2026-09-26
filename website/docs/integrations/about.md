@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: About
+slug: /integrations
 ---
 
 # OpenLineage Integrations
@@ -19,9 +20,9 @@ An empty column means it is not yet documented if the mechanism implements this 
 | Mechanism          | Integration       | Metadata Gathered                             | InputDatasetFacet | OutputDatasetFacet | SqlJobFacet | SchemaDatasetFacet | DataSourceDatasetFacet | DataQualityMetricsInputDatasetFacet | DataQualityAssertionsDatasetFacet | SourceCodeJobFacet | ExternalQueryRunFacet | DocumentationDatasetFacet | SourceCodeLocationJobFacet | DocumentationJobFacet | ParentRunFacet |
 |:-------------------|:------------------|:----------------------------------------------|:------------------|:-------------------|:------------|:-------------------|:-----------------------|:------------------------------------|:----------------------------------|:-------------------|:----------------------|:--------------------------|:---------------------------|:----------------------|:---------------|
 | dbt                | dbt Project Files | Lineage<br />Row count<br />Byte count.       | ✔️                 |                    |             |                    |                        |                                     |                                   |                    |                       |                           |                            |                       |                |
-| Feast              | Feature Store Config | Lineage<br />Schema<br />Feature metadata  | ✔️                 | ✔️                  |             | ✔️                  | ✔️                      |                                     |                                   |                    |                       | ✔️                         |                            |                       |                |
+| Feast              | Feature Store Config<br />REST API Server | Lineage<br />Schema<br />Feature metadata<br />Event ingestion<br />Cross-producer lineage | ✔️                 | ✔️                  |             | ✔️                  | ✔️                      |                                     |                                   |                    |                       | ✔️                         |                            |                       |                |
 | Great Expectations | Action            | Data quality assertions                       | ✔️                 |                    |             |                    |                        | ✔️                                   | ✔️                                 |                    |                       |                           |                            |                       |                |
-| Spark              | SparkListener     | Schema<br />Row count<br /> Column lineage    | ✔️                 |                    |             |                    |                        |                                     |                                   |                    |                       |                           |                            |                       |                |
+| Spark              | SparkListener     | Schema<br />Row count<br /> Column lineage    | ✔️                 | ✔️                  | ✔️           | ✔️                  | ✔️                      |                                     |                                   |                    |                       |                           |                            |                       | ✔️              |
 
 
 ## Compatibility matrix

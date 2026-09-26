@@ -11,30 +11,6 @@ import (
 	"github.com/OpenLineage/openlineage/client/go/pkg/facets"
 )
 
-// JobEvent represents an OpenLineage job event.
-type JobEvent struct {
-	Job Job
-
-	// The set of **input** datasets.
-	Inputs []InputElement
-	// The set of **output** datasets.
-	Outputs []OutputElement
-
-	BaseEvent
-}
-
-// AsEmittable converts this JobEvent to an emittable Event.
-func (e *JobEvent) AsEmittable() Event {
-	return Event{
-		EventTime: e.EventTime,
-		Job:       &e.Job,
-		Inputs:    e.Inputs,
-		Outputs:   e.Outputs,
-		Producer:  e.Producer,
-		SchemaURL: e.SchemaURL,
-	}
-}
-
 // NewJobEvent creates a new JobEvent with an explicit namespace.
 func NewJobEvent(name, namespace, producer string) *JobEvent {
 	return &JobEvent{

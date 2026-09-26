@@ -7,6 +7,8 @@ package io.openlineage.client.transports;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -100,6 +102,11 @@ public final class KafkaTransport extends Transport {
   }
 
   @Override
+  public void emit(@NonNull OpenLineage.RunEvent runEvent, @NonNull Duration timeout) {
+    emit(OpenLineageClientUtils.toJson(runEvent), getMessageKey(runEvent), timeout);
+  }
+
+  @Override
   public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
     emit(OpenLineageClientUtils.toJson(datasetEvent), getMessageKey(datasetEvent));
   }
@@ -110,6 +117,10 @@ public final class KafkaTransport extends Transport {
   }
 
   private void emit(String eventAsJson, String eventKey) {
+    emit(eventAsJson, eventKey, null);
+  }
+
+  private void emit(String eventAsJson, String eventKey, Duration timeout) {
     String partitionKey = messageKey;
     if (partitionKey == null) {
       partitionKey = eventKey;
@@ -118,7 +129,14 @@ public final class KafkaTransport extends Transport {
     final ProducerRecord<String, String> record =
         new ProducerRecord<>(topicName, partitionKey, eventAsJson);
     try {
-      producer.send(record);
+      if (timeout == null) {
+        producer.send(record);
+      } else {
+        producer.send(record).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.warn("Interrupted while waiting to collect lineage event: {}", eventAsJson, e);
     } catch (Exception e) {
       log.error("Failed to collect lineage event: {}", eventAsJson, e);
     }

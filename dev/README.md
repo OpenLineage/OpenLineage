@@ -1,33 +1,44 @@
-### Using `get_changes`
+# Release tooling
 
-The changes will appear in ../CHANGELOG.md.
+The scripts in this directory are run via [Task](https://taskfile.dev) —
+run `task --list` here to see all available tasks (or `task --list` at the
+repo root for the `maintenance:`-prefixed versions). Python dependencies from
+`requirements.txt` are provisioned automatically on each run, so no setup
+step is needed.
 
-#### Requirements
+All tasks require a GitHub personal access token. For instructions on
+creating one, see:
+https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
 
-Install the required dependencies in requirements.txt.
+To avoid passing the token on every invocation, copy `.env.template` in this
+directory to `.env` (gitignored) and set it there; the tasks load it
+automatically wherever they are invoked from.
 
-The script also requires a GitHub token.
-
-For instructions on creating a GitHub personal access token to use the GitHub API,
-see: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token.
-
-#### Running the script
-
-Run the script from the root directory: 
+### Updating the changelog
 
 ```sh
-python3 dev/get_changes.py --github_token token --previous 1.4.1 --current 1.5.0
+GITHUB_TOKEN=<token> task changes PREVIOUS=1.4.1 CURRENT=1.5.0
 ```
 
-If you get a `command not found` or similar error, make sure you have made the 
-script an executable (e.g., `chmod u+x ./dev/get_changes.py`).
+The changes between the two releases will appear in `../CHANGELOG.md`.
 
-### Using `get_contributor_stats`
+### Generating contributor stats
 
-A GitHub token with `repo` rights is required (pass it via the `--github-token` parameter).
+```sh
+GITHUB_TOKEN=<token> task contributor-stats
+```
 
-The start date defaults to the beginning of the current month, and the end date defaults to the last day of the current month (UTC).
+The token needs `repo` rights. The date range defaults to the current month
+(UTC); override it with `DATE_START=2026-05-01 DATE_END=2026-05-31`
+(`%Y-%m-%d` format).
 
-These dates can be changed via the `--date-start` and `--date-end` parameters in `%Y-%m-%d` format.
+If all goes well, a table in csv format (`contributor_stats_table.csv`) will
+appear in this directory.
 
-If all goes well, a table in csv format will appear in this directory.
+### Creating a docs-site release doc
+
+```sh
+GITHUB_TOKEN=<token> task release-doc TAG=1.5.0
+```
+
+Prints the release doc for the given release tag to stdout.

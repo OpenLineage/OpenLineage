@@ -126,6 +126,7 @@ class ColumnLevelLineageIcebergTest {
 
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
     config.getColumnLineageConfig().setDatasetLineageEnabled(true);
+    config.getColumnLineageConfig().setDescriptionsEnabled(true);
     context =
         OpenLineageContext.builder()
             .sparkSession(spark)
@@ -135,6 +136,7 @@ class ColumnLevelLineageIcebergTest {
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(mock(SparkOpenLineageExtensionVisitorWrapper.class))
+            .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
             .build();
 
     context
@@ -383,7 +385,12 @@ class ColumnLevelLineageIcebergTest {
     assertColumnDependsOnInputs(facet, "c", 1);
     assertColumnDependsOnInputs(facet, "d", 1);
     assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(FILTER));
+        facet,
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(
+            FILTER, "WHERE ((local.db.t1.a IS NOT NULL) AND (local.db.t1.a = 1))"));
   }
 
   @Test

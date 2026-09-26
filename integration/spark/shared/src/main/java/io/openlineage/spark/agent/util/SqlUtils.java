@@ -41,13 +41,13 @@ public class SqlUtils {
             meta ->
                 meta.inTables().stream()
                     .map(
-                        dbtm -> {
-                          return datasetFactory.getDataset(
-                              new DatasetIdentifier(
-                                  getName(defaultDatabase, defaultSchema, dbtm.qualifiedName()),
-                                  namespace),
-                              datasetFactory.createCompositeFacetBuilder());
-                        })
+                        dbtm ->
+                            datasetFactory
+                                .sparkDatasetBuilder()
+                                .dataset(
+                                    getName(defaultDatabase, defaultSchema, dbtm.qualifiedName()),
+                                    namespace)
+                                .build())
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
   }
@@ -78,10 +78,10 @@ public class SqlUtils {
                 DatasetIdentifier di = datasetIdentifierFunction.apply(dbtm);
 
                 if (numberOfTables > 1) {
-                  return datasetFactory.getDataset(di.getName(), di.getNamespace());
+                  return datasetFactory.sparkDatasetBuilder().dataset(di).build();
                 }
 
-                return datasetFactory.getDataset(di.getName(), di.getNamespace(), schema);
+                return datasetFactory.sparkDatasetBuilder().dataset(di).schema(schema).build();
               })
           .collect(Collectors.toList());
     }
@@ -89,8 +89,11 @@ public class SqlUtils {
         .map(
             dbtm -> {
               DatasetIdentifier di = datasetIdentifierFunction.apply(dbtm);
-              return datasetFactory.getDataset(
-                  di.getName(), di.getNamespace(), generateSchemaFromSqlMeta(dbtm, schema, meta));
+              return datasetFactory
+                  .sparkDatasetBuilder()
+                  .dataset(di)
+                  .schema(generateSchemaFromSqlMeta(dbtm, schema, meta))
+                  .build();
             })
         .collect(Collectors.toList());
   }

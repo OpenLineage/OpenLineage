@@ -9,8 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.amazonaws.services.kinesis.producer.KinesisProducer;
-import com.amazonaws.services.kinesis.producer.UserRecord;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
@@ -25,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import software.amazon.kinesis.producer.KinesisProducer;
+import software.amazon.kinesis.producer.UserRecord;
 
 class KinesisTransportTest {
   @Test

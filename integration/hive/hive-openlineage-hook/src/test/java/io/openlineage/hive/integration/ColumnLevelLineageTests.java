@@ -183,6 +183,34 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
     verifyEvents("cllUnionStart.json", "cllUnionComplete.json");
   }
 
+  // Regression test for OpenLineage#4481: Hive parses chained set operations
+  // (UNION ALL / INTERSECT / EXCEPT) left-associatively as a binary tree of
+  // non-NULLOP QBExpr nodes. Parsing.buildQueryTree previously assumed both
+  // legs of a non-NULLOP QBExpr were NULLOP-wrapped QBs, so any 3+ way union
+  // NPE'd at QBExpr#getQB on the intermediate node and the lineage hook
+  // dropped the event silently. Witness: the fix lets buildQueryTree recurse
+  // into both legs, so the hook completes and emits at least one lineage
+  // event for a 3-way UNION ALL CTAS. Today's master would record zero
+  // events because of the NPE.
+  @Test
+  public void unionThreeWay() {
+    createManagedHiveTable("t1", "a int, b string");
+    createManagedHiveTable("t2", "a int, c string");
+    createManagedHiveTable("t3", "a int, d string");
+    runHiveQuery(
+        "CREATE TABLE xxx AS\n"
+            + "SELECT a, b FROM t1\n"
+            + "UNION ALL\n"
+            + "SELECT a, c FROM t2\n"
+            + "UNION ALL\n"
+            + "SELECT a, d FROM t3");
+    assertThat(mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+        .as(
+            "lineage events must be emitted for a 3-way UNION ALL; "
+                + "today's master records zero because Parsing.buildQueryTree NPEs")
+        .isNotEmpty();
+  }
+
   @Test
   void simpleInsertValues() {
     createManagedHiveTable("t1", "a int, b string");

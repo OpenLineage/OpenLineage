@@ -1,0 +1,7 @@
+# Make `env:` declared in Taskfiles take precedence over inherited shell
+# environment variables. Needed so the per-component JAVA_HOME pinning wins
+# over whatever JDK happens to be active in the developer's shell.
+# To build with a different JDK intentionally, set the version explicitly:
+# `JAVA_VERSION=21 task build` (consumed by dev/java-home.sh).
+experiments:
+  ENV_PRECEDENCE: 1

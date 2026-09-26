@@ -1,0 +1,77 @@
+{
+  "$comment": "Copyright 2018-2026 contributors to the OpenLineage project; SPDX-License-Identifier: Apache-2.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "BaseFacet": {
+      "type": "object",
+      "properties": {
+        "_producer": {
+          "type": "string",
+          "format": "uri"
+        },
+        "_schemaURL": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "additionalProperties": true
+    },
+    "JobFacet": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseFacet"
+        }
+      ]
+    },
+    "DatasetFacet": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseFacet"
+        }
+      ]
+    },
+    "Job": {
+      "type": "object",
+      "properties": {
+        "facets": {
+          "type": "object",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/JobFacet"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "Dataset": {
+      "type": "object",
+      "properties": {
+        "facets": {
+          "type": "object",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/DatasetFacet"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "job": {
+      "$ref": "#/$defs/Job"
+    },
+    "dataset": {
+      "$ref": "#/$defs/Dataset"
+    }
+  }
+}

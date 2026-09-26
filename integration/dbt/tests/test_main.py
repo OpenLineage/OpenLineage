@@ -1,5 +1,6 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import json
 from unittest import mock
 
 import pytest
@@ -31,6 +32,29 @@ def test_structured_logs(command_line: str, number_of_calls: int, monkeypatch):
 
     assert mock_consume_structured_logs.called == number_of_calls
     assert mock_consume_local_artifacts.called == 1 - number_of_calls
+
+
+@pytest.mark.parametrize(
+    "job_name_args",
+    [
+        ["--openlineage-dbt-job-name", "myjob"],
+        ["--openlineage-dbt-job-name=myjob"],
+    ],
+    ids=["space_form", "equals_form"],
+)
+def test_main_strips_openlineage_job_name_before_dbt(job_name_args, monkeypatch):
+    # The dbt-ol-only --openlineage-dbt-job-name option must be consumed by the
+    # wrapper: whether it is passed as `--opt value` or `--opt=value`, it must not
+    # leak into the args handed to dbt (dbt exits non-zero on an unknown option).
+    mock_consume_local_artifacts = mock.MagicMock()
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", mock_consume_local_artifacts)
+    monkeypatch.setattr("sys.argv", ["dbt-ol", "run", *job_name_args, "--select", "orders"])
+
+    main()
+
+    passed_args = mock_consume_local_artifacts.call_args.kwargs["args"]
+    assert not any(arg.startswith("--openlineage-dbt-job-name") for arg in passed_args)
+    assert mock_consume_local_artifacts.call_args.kwargs["openlineage_job_name"] == "myjob"
 
 
 @pytest.mark.parametrize(
@@ -132,3 +156,191 @@ def test_consume_structured_logs(command_line, os_envs, function_kwargs, monkeyp
         selector=function_kwargs["model_selector"],
         openlineage_job_name=None,
     )
+
+
+def _setup_local_artifacts_mocks(monkeypatch, env):
+    """Wire up just enough mocks to drive consume_local_artifacts() up to the
+    point where it sets ``processor.dbt_run_metadata``."""
+    monkeypatch.setattr("os.environ", env)
+    mock_processor = mock.MagicMock()
+    mock_processor.parse.return_value.events.return_value = []
+    mock_processor.run_result_path = "/nonexistent/run_results.json"
+    mock_processor.job_name = "dbt-job-name"
+    monkeypatch.setattr(
+        "openlineage.dbt.DbtLocalArtifactProcessor", mock.MagicMock(return_value=mock_processor)
+    )
+    monkeypatch.setattr("openlineage.dbt.OpenLineageClient", mock.MagicMock())
+
+    process_mock = mock.MagicMock()
+    process_mock.__enter__ = mock.MagicMock(return_value=process_mock)
+    process_mock.__exit__ = mock.MagicMock(return_value=None)
+    process_mock.wait.return_value = 0
+    monkeypatch.setattr("openlineage.dbt.subprocess.Popen", mock.MagicMock(return_value=process_mock))
+
+    return mock_processor
+
+
+def test_consume_local_artifacts_propagates_root_parent_metadata(monkeypatch):
+    """Regression: child node events must keep the orchestrator's root parent so
+    backends can stitch the full Airflow → dbt-run → node lineage chain."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_PARENT_ID": f"{parent_namespace}/{parent_job}/{parent_run_id}",
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    # Child events use processor.dbt_run_metadata as their parent facet — root must
+    # point at the orchestrator that started us, not be left blank.
+    md = processor.dbt_run_metadata
+    assert md.root_parent_run_id == parent_run_id
+    assert md.root_parent_job_name == parent_job
+    assert md.root_parent_job_namespace == parent_namespace
+
+
+def test_consume_local_artifacts_reads_parent_from_openlineage_context(monkeypatch):
+    """OPENLINEAGE_CONTEXT alone must identify the parent: it is the standardized
+    replacement for OPENLINEAGE_PARENT_ID, so an orchestrator that only sets the
+    new variable still has to end up as the parent of the dbt run."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "dddddddd-0000-0000-0000-000000000004"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_CONTEXT": json.dumps(
+            {
+                "parent": {
+                    "run": {"runId": parent_run_id},
+                    "job": {"namespace": parent_namespace, "name": parent_job},
+                }
+            }
+        ),
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    md = processor.dbt_run_metadata
+    assert md.root_parent_run_id == parent_run_id
+    assert md.root_parent_job_name == parent_job
+    assert md.root_parent_job_namespace == parent_namespace
+
+
+def test_consume_local_artifacts_root_when_no_external_parent(monkeypatch):
+    """When no orchestrator wraps dbt-ol, the dbt run is itself the root —
+    so child events get root pointing at the dbt-run wrapper."""
+    from openlineage.dbt import consume_local_artifacts
+
+    env = {"OPENLINEAGE_NAMESPACE": "dbt"}  # no OPENLINEAGE_PARENT_ID
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    md = processor.dbt_run_metadata
+    # Root falls back to the wrapper's own start event.
+    assert md.root_parent_run_id == md.run_id
+    assert md.root_parent_job_name == md.job_name
+    assert md.root_parent_job_namespace == md.job_namespace
+
+
+def test_consume_local_artifacts_explicit_root_different_from_parent(monkeypatch):
+    """When OPENLINEAGE_ROOT_PARENT_ID is provided and distinct from the immediate
+    parent, child events must use root values — not parent values — for the root field."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "aaaaaaaa-0000-0000-0000-000000000001"
+    root_namespace = "prefect"
+    root_job = "root-flow"
+    root_run_id = "bbbbbbbb-0000-0000-0000-000000000002"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_PARENT_ID": f"{parent_namespace}/{parent_job}/{parent_run_id}",
+        "OPENLINEAGE_ROOT_PARENT_ID": f"{root_namespace}/{root_job}/{root_run_id}",
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    md = processor.dbt_run_metadata
+    # Root must reflect the explicit root, not the immediate parent.
+    assert md.root_parent_run_id == root_run_id
+    assert md.root_parent_job_name == root_job
+    assert md.root_parent_job_namespace == root_namespace
+    # Immediate parent stays as-is.
+    assert md.run_id != root_run_id
+    assert md.job_name != root_job
+
+
+def test_consume_local_artifacts_partial_root_falls_back_to_parent(monkeypatch):
+    """When OPENLINEAGE_ROOT_PARENT_ID is malformed (not all three identifiers
+    present), root info must not be partially applied — it should fall back
+    entirely to the immediate parent values."""
+    from openlineage.dbt import consume_local_artifacts
+
+    parent_namespace = "airflow"
+    parent_job = "airflow-dag.task"
+    parent_run_id = "cccccccc-0000-0000-0000-000000000003"
+    env = {
+        "OPENLINEAGE_NAMESPACE": "dbt",
+        "OPENLINEAGE_PARENT_ID": f"{parent_namespace}/{parent_job}/{parent_run_id}",
+        "OPENLINEAGE_ROOT_PARENT_ID": "invalid-not-three-parts",
+    }
+    processor = _setup_local_artifacts_mocks(monkeypatch, env)
+
+    consume_local_artifacts(
+        args=["dbt", "run"],
+        target=None,
+        target_path=None,
+        project_dir="./",
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+    md = processor.dbt_run_metadata
+    # Partial root data must not bleed into result; fall back to the parent entirely.
+    assert md.root_parent_run_id == parent_run_id
+    assert md.root_parent_job_name == parent_job
+    assert md.root_parent_job_namespace == parent_namespace

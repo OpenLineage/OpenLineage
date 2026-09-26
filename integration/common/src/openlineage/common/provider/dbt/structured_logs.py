@@ -22,7 +22,6 @@ from openlineage.client.facet_v2 import (
     job_type_job,
     processing_engine_run,
     sql_job,
-    tags_run,
     test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
@@ -123,6 +122,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         super().__init__(*args, **kwargs)
 
         self.dbt_command_line: list[str] = dbt_command_line
+        # No run_results.json on the log-driven path; read the flag off the command line instead.
+        self.full_refresh = self._full_refresh_from_command_line(self.dbt_command_line)
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
         self.is_random_logfile: bool = is_random_logfile(command=self.dbt_command_line)
@@ -149,6 +150,22 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.processed_bytes = 0
 
         self.dbt_command_return_code = 0
+
+    @staticmethod
+    def _full_refresh_from_command_line(command_line: list[str]) -> bool | None:
+        """Detect the --full-refresh flag on the dbt command line.
+
+        dbt resolves --full-refresh / --no-full-refresh last-occurrence-wins, so the last
+        matching token decides. Returns ``None`` when neither is present so the facet omits
+        the flag rather than assuming a default.
+        """
+        full_refresh: bool | None = None
+        for token in command_line:
+            if token in ("--full-refresh", "-f"):
+                full_refresh = True
+            elif token == "--no-full-refresh":
+                full_refresh = False
+        return full_refresh
 
     @cached_property
     def dbt_command(self) -> str | None:
@@ -209,6 +226,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return self._compiled_manifest
         else:
             return {}
+
+    def _exposures_manifest(self) -> dict:
+        return self.compiled_manifest
 
     def parse(self) -> Generator[RunEvent, None, None]:  # type: ignore[override]
         """
@@ -370,11 +390,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             "parent": self.dbt_run_metadata.to_openlineage(),
         }
 
-        # Add tags if they exist for this node
-        if tags := self._get_node_tags(node_unique_id):
-            run_facets["tags"] = tags_run.TagsRunFacet(
-                tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-            )
+        # Add tags (dbt tags + meta) if they exist for this node
+        if tags_facet := self._build_tags_run_facet(
+            self._get_node_tags(node_unique_id), self._get_node_meta(node_unique_id)
+        ):
+            run_facets["tags"] = tags_facet
 
         resource_type = event["data"]["node_info"]["resource_type"]
         job_name = self._get_job_name(event)
@@ -438,11 +458,19 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             "parent": self.dbt_run_metadata.to_openlineage(),
         }
 
-        # Add tags if they exist for this node
-        if tags := self._get_node_tags(node_unique_id):
-            run_facets["tags"] = tags_run.TagsRunFacet(
-                tags=[tags_run.TagsRunFacetFields(key=tag, value="true", source="DBT") for tag in tags]
-            )
+        if resource_type in ("model", "snapshot"):
+            run_result = get_from_nullable_chain(event, ["data", "run_result"]) or {}
+            if query_id := self.get_query_id(run_result):
+                run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
+                    externalQueryId=query_id,
+                    source=self.dataset_namespace,
+                )
+
+        # Add tags (dbt tags + meta) if they exist for this node
+        if tags_facet := self._build_tags_run_facet(
+            self._get_node_tags(node_unique_id), self._get_node_meta(node_unique_id)
+        ):
+            run_facets["tags"] = tags_facet
 
         job_name = self._get_job_name(event)
         node_metadata = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
@@ -481,13 +509,31 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         else:
             self.logger.info("Node %s has an unknown node status %s", node_unique_id, node_status)
 
-        inputs = [
-            self.node_to_dataset(node=model_input, has_facets=True)
-            for model_input in self._get_model_inputs(node_unique_id)
-        ]
+        # Attach exposures only on a successful (COMPLETE) build.
+        succeeded = event_type == RunState.COMPLETE
+        inputs = []
+        for model_input in self._get_model_inputs(node_unique_id):
+            input_dataset = self.node_to_dataset(node=model_input, has_facets=True)
+            if succeeded:
+                input_dataset.facets.update(  # type: ignore
+                    self._exposures_facets(model_input.metadata_node.get("unique_id"))
+                )
+            inputs.append(input_dataset)
         outputs = []
         if node := self._get_model_node(node_unique_id):
-            outputs = [self.node_to_output_dataset(node=node, has_facets=True)]
+            output_dataset = self.node_to_output_dataset(node=node, has_facets=True)
+            if resource_type in ("model", "snapshot") and event_type in (RunState.COMPLETE, RunState.FAIL):
+                compiled_sql = node.metadata_node.get("compiled_code") or node.metadata_node.get(
+                    "compiled_sql"
+                )
+                if compiled_sql:
+                    column_lineage = self.get_column_lineage(output_dataset.namespace, compiled_sql)
+                    if column_lineage:
+                        output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
+
+                if succeeded:
+                    output_dataset.facets.update(self._exposures_facets(node_unique_id))  # type: ignore
+            outputs = [output_dataset]
 
         if resource_type == "test":
             success = node_status == "pass"
@@ -596,6 +642,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return dq.Assertion(
             assertion=name,
+            name=manifest_test_node.get("name"),
             success=success,
             column=column,
             severity=severity,
@@ -678,7 +725,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
             if query_id := get_from_nullable_chain(event, ["data", "query_id"]):
                 run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
-                    externalQueryId=query_id, source="source"
+                    externalQueryId=query_id, source=self.dataset_namespace
                 )
 
         return generate_run_event(
@@ -779,6 +826,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 project_version=self.project_version,
                 profile_name=self.profile_name,
                 dbt_runtime="core",
+                full_refresh=self.full_refresh,
             )
         }
 
@@ -973,6 +1021,15 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
         manifest_node = all_nodes[node_id]
         return manifest_node.get("tags", [])
+
+    @handle_keyerror
+    def _get_node_meta(self, node_id: str) -> dict:
+        """
+        Extract the free-form ``meta`` map from a dbt node in the compiled manifest
+        """
+        all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
+        manifest_node = all_nodes[node_id]
+        return manifest_node.get("meta", {})
 
     def _get_model_inputs(self, node_id) -> list[ModelNode]:
         """

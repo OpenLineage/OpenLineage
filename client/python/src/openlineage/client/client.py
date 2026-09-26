@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import os
@@ -13,6 +12,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import attr
 import yaml
 from openlineage.client import constants, event_v2
+from openlineage.client.dataset import DatasetConfig, DatasetReducer
 from openlineage.client.facet_v2 import (
     environment_variables_run,
     source_code_location_job,
@@ -38,7 +38,7 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import deep_merge_dicts
+from openlineage.client.utils import deep_merge_dicts, split_into_list
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -68,6 +68,7 @@ class OpenLineageConfig:
     facets: FacetsConfig = attr.field(factory=FacetsConfig)
     filters: list[FilterConfig] = attr.field(factory=list)
     tags: TagsConfig = attr.field(factory=TagsConfig)
+    dataset: DatasetConfig = attr.field(factory=DatasetConfig)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:
@@ -90,6 +91,12 @@ class OpenLineageConfig:
                 job=params["tags"].get("job", {}),
                 run=params["tags"].get("run", {}),
             )
+        if "dataset" in params:
+            ds = dict(params["dataset"])
+            ds["disabled_trimmers"] = split_into_list(ds.get("disabled_trimmers", []))
+            ds["extra_trimmers"] = split_into_list(ds.get("extra_trimmers", []))
+            config.dataset = DatasetConfig(**ds)
+
         return config
 
 
@@ -142,6 +149,8 @@ class OpenLineageClient:
             if _filter:
                 self._filters.append(_filter)
 
+        self._dataset_reducer: DatasetReducer | None = None
+
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
         warnings.warn(
@@ -183,6 +192,11 @@ class OpenLineageClient:
         event = self.add_environment_facets(event)
         event = self.update_event_tags_facets(event)
         event = self.add_source_code_location_facet(event)
+        if self.config.dataset.reducing_enabled:
+            # Reduce datasets to their canonical form (e.g. "/data/events" instead of
+            # "/data/events/dt=2025-09-01"). All subsequent processing (e.g. event filtering)
+            # will work on these modified values.
+            event = self.reduce_datasets(event)
 
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
@@ -291,7 +305,7 @@ class OpenLineageClient:
     @staticmethod
     def _get_config_file_content(config_path: str) -> dict[str, Any]:
         try:
-            with open(config_path) as f:
+            with open(config_path, encoding="utf-8") as f:
                 config: dict[str, Any] | None = yaml.safe_load(f)
                 if not config:
                     log.error("Empty OpenLineage config file: `%s`", config_path)
@@ -417,8 +431,17 @@ class OpenLineageClient:
             keys = env_key[len(cls.DYNAMIC_ENV_VARS_PREFIX) :].split("__")
 
             # Parse value (try to parse as JSON, otherwise lowercase the value)
-            with contextlib.suppress(json.JSONDecodeError):
+            try:
                 env_value = json.loads(env_value)  # noqa: PLW2901
+            except json.JSONDecodeError as err:
+                if any(c in env_value for c in "{}[]"):
+                    log.warning(
+                        "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "
+                        "Treating as plain string. Error: %s",
+                        env_key,
+                        env_value,
+                        err,
+                    )
             cls._insert_into_config(config, keys, env_value)
 
         return config
@@ -444,11 +467,40 @@ class OpenLineageClient:
             env_vars := self._collect_environment_variables()
         ):
             event.run.facets = event.run.facets or {}
+
+            # Vars the client was configured to collect from the environment
+            client_collected_env_vars = [
+                environment_variables_run.EnvironmentVariable(name=name, value=value)
+                for name, value in env_vars.items()
+            ]
+
+            # Vars already provided in the event
+            event_env_vars: list[environment_variables_run.EnvironmentVariable] = []
+            current_env_vars_facet = event.run.facets.get("environmentVariables")
+            if isinstance(current_env_vars_facet, environment_variables_run.EnvironmentVariablesRunFacet):
+                event_env_vars = current_env_vars_facet.environmentVariables or []
+
+            # Event-supplied vars take precedence; skip client vars that would overwrite them
+            event_env_vars_by_name = {ev.name: ev for ev in event_env_vars}
+            additional_env_vars = []
+            for client_env_var in client_collected_env_vars:
+                if client_env_var.name in event_env_vars_by_name:
+                    event_env_var_value = event_env_vars_by_name[client_env_var.name].value
+                    if client_env_var.value != event_env_var_value:
+                        log.warning(
+                            "Environment variable `%s` is already present in the event with value `%s`, "
+                            "but the OpenLineage client wanted to set it to `%s`. "
+                            "Keeping the event-supplied value `%s`.",
+                            client_env_var.name,
+                            event_env_var_value,
+                            client_env_var.value,
+                            event_env_var_value,
+                        )
+                else:
+                    additional_env_vars.append(client_env_var)
+
             event.run.facets["environmentVariables"] = environment_variables_run.EnvironmentVariablesRunFacet(
-                environmentVariables=[
-                    environment_variables_run.EnvironmentVariable(name=name, value=value)
-                    for name, value in env_vars.items()
-                ]
+                environmentVariables=event_env_vars + additional_env_vars
             )
         return event
 
@@ -518,7 +570,7 @@ class OpenLineageClient:
         """
 
         # Get tags from the facet that will not be updated (Do not have the same key as a user tag)
-        user_tag_keys = [tag.key for tag in user_tags]
+        user_tag_keys = [tag.key.lower() for tag in user_tags]
         keep_tags = []
         if tags_facet.tags is not None:
             keep_tags = [tag for tag in tags_facet.tags if tag.key.lower() not in user_tag_keys]
@@ -530,8 +582,8 @@ class OpenLineageClient:
             facet_tag_keys = {tag.key.lower(): tag.key for tag in tags_facet.tags}
 
         for user_tag in user_tags:
-            if user_tag.key in facet_tag_keys:
-                facet_tag_key = facet_tag_keys[user_tag.key]
+            if user_tag.key.lower() in facet_tag_keys:
+                facet_tag_key = facet_tag_keys[user_tag.key.lower()]
                 if user_tag.source == "USER":
                     log.info("Overriding integration-supplied tag `%s` with user-supplied tag", facet_tag_key)
                 user_tag.key = facet_tag_key
@@ -595,3 +647,14 @@ class OpenLineageClient:
                 pullRequestNumber=scl["pullRequestNumber"],
             )
         return event
+
+    def reduce_datasets(self, event: Event) -> Event:
+        if not self._dataset_reducer:
+            self._dataset_reducer = DatasetReducer(self.config.dataset)
+
+        if not isinstance(event, event_v2.RunEvent):
+            return event
+
+        new_inputs = self._dataset_reducer.reduce_inputs(event.inputs) if event.inputs else event.inputs
+        new_outputs = self._dataset_reducer.reduce_outputs(event.outputs) if event.outputs else event.outputs
+        return attr.evolve(event, inputs=new_inputs, outputs=new_outputs)

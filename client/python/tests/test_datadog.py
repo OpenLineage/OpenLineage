@@ -25,6 +25,26 @@ class TestDatadogConfig:
         assert config.max_queue_size == 10000
         assert config.max_concurrent_requests == 100
 
+    def test_datadog_config_retry_default_is_per_instance(self):
+        first = DatadogConfig.from_dict({"apiKey": "first-key"})
+        second = DatadogConfig.from_dict({"apiKey": "second-key"})
+
+        first.retry["total"] = 1
+        first.retry["status_forcelist"].append(429)
+
+        assert second.retry["total"] == 5
+        assert second.retry["status_forcelist"] == [500, 502, 503, 504]
+
+    def test_datadog_config_async_rules_default_is_per_instance(self):
+        first = DatadogConfig.from_dict({"apiKey": "first-key"})
+        second = DatadogConfig.from_dict({"apiKey": "second-key"})
+
+        first.async_transport_rules["spark"] = {"*": True}
+        first.async_transport_rules["dbt"]["test"] = False
+
+        assert "spark" not in second.async_transport_rules
+        assert second.async_transport_rules == {"dbt": {"*": True}}
+
     def test_datadog_config_full(self):
         """Test full config with all parameters."""
         config = DatadogConfig.from_dict(
@@ -156,7 +176,8 @@ class TestDatadogTransportInitialization:
     @patch("openlineage.client.transport.datadog.HttpTransport")
     @patch("openlineage.client.transport.datadog.AsyncHttpTransport")
     def test_datadog_transport_initialization(self, mock_async_http, mock_http):
-        """Test that DatadogTransport creates both HTTP and AsyncHTTP transports."""
+        """Test that DatadogTransport eagerly creates the HTTP transport but defers the
+        AsyncHTTP transport (and its worker thread) until it is actually needed."""
         config = DatadogConfig.from_dict({"apiKey": "test-key", "site": "datadoghq.com"})
         transport = DatadogTransport(config)
 
@@ -164,8 +185,22 @@ class TestDatadogTransportInitialization:
         assert transport.kind == "datadog"
         assert transport.config == config
 
-        # Verify both transports were created
+        # HTTP transport is created eagerly, AsyncHTTP transport is not (lazy construction)
         mock_http.assert_called_once()
+        mock_async_http.assert_not_called()
+        assert transport.async_http is None
+
+        # Once an event actually routes to async, the transport is built on demand
+        job_facets = {"jobType": JobTypeJobFacet(processingType="BATCH", integration="dbt", jobType="MODEL")}
+        event = RunEvent(
+            eventType=RunState.START,
+            eventTime="2024-01-01T00:00:00Z",
+            run=Run(runId=str(generate_new_uuid())),
+            job=Job(namespace="test", name="job", facets=job_facets),
+            producer="test",
+            schemaURL="test",
+        )
+        transport.emit(event)
         mock_async_http.assert_called_once()
 
     @patch("openlineage.client.transport.datadog.HttpTransport")
@@ -188,7 +223,7 @@ class TestDatadogTransportInitialization:
             mock_async_http.reset_mock()
 
             config = DatadogConfig.from_dict({"apiKey": "test-key", "site": site})
-            transport = DatadogTransport(config)  # noqa: F841
+            transport = DatadogTransport(config)
 
             # Check HTTP transport config
             http_call_args = mock_http.call_args[0][0]
@@ -196,7 +231,8 @@ class TestDatadogTransportInitialization:
             assert http_call_args.compression.value == "gzip"
             assert http_call_args.auth.api_key == "test-key"
 
-            # Check AsyncHTTP transport config
+            # AsyncHTTP transport is only built lazily, once an event routes to it
+            transport._get_async_http()
             async_call_args = mock_async_http.call_args[0][0]
             assert async_call_args.url == expected_url
             assert async_call_args.compression.value == "gzip"
@@ -216,7 +252,7 @@ class TestDatadogTransportInitialization:
                 "retry": {"total": 7, "backoff_factor": 0.8, "status_forcelist": [500, 502, 503]},
             }
         )
-        transport = DatadogTransport(config)  # noqa: F841
+        transport = DatadogTransport(config)
 
         # Check HTTP transport config
         http_call_args = mock_http.call_args[0][0]
@@ -225,7 +261,8 @@ class TestDatadogTransportInitialization:
         assert http_call_args.retry["backoff_factor"] == 0.8
         assert http_call_args.retry["status_forcelist"] == [500, 502, 503]
 
-        # Check AsyncHTTP transport config
+        # AsyncHTTP transport is only built lazily, once an event routes to it
+        transport._get_async_http()
         async_call_args = mock_async_http.call_args[0][0]
         assert async_call_args.timeout == 15.0
         assert async_call_args.max_queue_size == 2000
@@ -249,7 +286,7 @@ class TestDatadogTransportInitialization:
             mock_async_http.reset_mock()
 
             config = DatadogConfig.from_dict({"apiKey": "test-key", "site": custom_url})
-            transport = DatadogTransport(config)  # noqa: F841
+            transport = DatadogTransport(config)
 
             # Check HTTP transport config uses custom URL
             http_call_args = mock_http.call_args[0][0]
@@ -257,7 +294,8 @@ class TestDatadogTransportInitialization:
             assert http_call_args.compression.value == "gzip"
             assert http_call_args.auth.api_key == "test-key"
 
-            # Check AsyncHTTP transport config uses custom URL
+            # AsyncHTTP transport is only built lazily, once an event routes to it
+            transport._get_async_http()
             async_call_args = mock_async_http.call_args[0][0]
             assert async_call_args.url == custom_url
             assert async_call_args.compression.value == "gzip"
@@ -606,12 +644,30 @@ class TestDatadogTransportMethods:
 
         config = DatadogConfig.from_dict({"apiKey": "test-key", "site": "datadoghq.com"})
         transport = DatadogTransport(config)
+        transport._get_async_http()  # force construction, as if an event had routed to it
 
         result = transport.close(timeout=30.0)
 
         # Verify both transports were closed with the timeout
         mock_http_instance.close.assert_called_once_with(30.0)
         mock_async_instance.close.assert_called_once_with(30.0)
+        assert result is True
+
+    @patch("openlineage.client.transport.datadog.HttpTransport")
+    @patch("openlineage.client.transport.datadog.AsyncHttpTransport")
+    def test_close_method_without_async_transport_ever_used(self, mock_async_http, mock_http):
+        """Test that close() does not construct the AsyncHTTP transport if it was never needed."""
+        mock_http_instance = MagicMock()
+        mock_http.return_value = mock_http_instance
+        mock_http_instance.close.return_value = True
+
+        config = DatadogConfig.from_dict({"apiKey": "test-key", "site": "datadoghq.com"})
+        transport = DatadogTransport(config)
+
+        result = transport.close(timeout=30.0)
+
+        mock_http_instance.close.assert_called_once_with(30.0)
+        mock_async_http.assert_not_called()
         assert result is True
 
     @patch("openlineage.client.transport.datadog.HttpTransport")
@@ -630,6 +686,7 @@ class TestDatadogTransportMethods:
 
         config = DatadogConfig.from_dict({"apiKey": "test-key", "site": "datadoghq.com"})
         transport = DatadogTransport(config)
+        transport._get_async_http()  # force construction, as if an event had routed to it
 
         result = transport.close()
 

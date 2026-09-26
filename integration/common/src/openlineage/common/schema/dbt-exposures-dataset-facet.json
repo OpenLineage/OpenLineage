@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/integration/common/openlineage/common/schema/dbt-exposures-dataset-facet.json",
+  "$defs": {
+    "DbtExposuresDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "exposures": {
+              "type": "array",
+              "description": "The exposures that consume this dataset",
+              "items": {
+                "$ref": "#/$defs/DbtExposure"
+              }
+            }
+          },
+          "required": ["exposures"]
+        }
+      ],
+      "type": "object"
+    },
+    "DbtExposure": {
+      "type": "object",
+      "properties": {
+        "unique_id": {
+          "type": "string",
+          "description": "Unique identifier for the dbt exposure",
+          "example": "exposure.my_project.weekly_report"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the dbt exposure",
+          "example": "weekly_report"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of the exposure as declared in dbt",
+          "example": "dashboard"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of the downstream consumer the exposure points to",
+          "example": "https://bi.tool/dashboards/1"
+        }
+      },
+      "required": ["unique_id", "name"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "dbt_exposures": {
+      "$ref": "#/$defs/DbtExposuresDatasetFacet"
+    }
+  }
+}

@@ -271,13 +271,11 @@ def consume_local_artifacts(
 ):
     logger = logging.getLogger("openlineage.dbt")
     logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
-    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
-    parent_run_metadata = None
-    # We can get this if we have been orchestrated by an external system like airflow
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
-
-    if parent_id:
-        parent_run_metadata = get_parent_run_metadata()
+    # We can get this if we have been orchestrated by an external system like airflow.
+    # get_parent_run_metadata() reads OPENLINEAGE_CONTEXT first and only then the legacy
+    # OPENLINEAGE_PARENT_ID, so it must not be gated on the legacy variable being set.
+    parent_run_metadata = get_parent_run_metadata()
     client = OpenLineageClient()
 
     processor = DbtLocalArtifactProcessor(
@@ -301,10 +299,36 @@ def consume_local_artifacts(
         parent_run_metadata=parent_run_metadata,
     )
 
+    # Carry the root parent through to per-node events so backends can stitch the full
+    # orchestrator → dbt-run → node chain. Without this, child events get root=None.
+    # All three root fields must be present together; partial data falls back to the
+    # immediate parent to avoid mixing fields from different runs/jobs.
+    if parent_run_metadata:
+        root_all_present = (
+            parent_run_metadata.root_parent_run_id
+            and parent_run_metadata.root_parent_job_name
+            and parent_run_metadata.root_parent_job_namespace
+        )
+        if root_all_present:
+            root_parent_run_id = parent_run_metadata.root_parent_run_id
+            root_parent_job_name = parent_run_metadata.root_parent_job_name
+            root_parent_job_namespace = parent_run_metadata.root_parent_job_namespace
+        else:
+            root_parent_run_id = parent_run_metadata.run_id
+            root_parent_job_name = parent_run_metadata.job_name
+            root_parent_job_namespace = parent_run_metadata.job_namespace
+    else:
+        root_parent_run_id = start_event.run.runId
+        root_parent_job_name = start_event.job.name
+        root_parent_job_namespace = start_event.job.namespace
+
     dbt_run_metadata = ParentRunMetadata(
         run_id=start_event.run.runId,
         job_name=start_event.job.name,
         job_namespace=start_event.job.namespace,
+        root_parent_run_id=root_parent_run_id,
+        root_parent_job_name=root_parent_job_name,
+        root_parent_job_namespace=root_parent_job_namespace,
     )
     # Set parent run metadata to use it as parent run facet
     processor.dbt_run_metadata = dbt_run_metadata
