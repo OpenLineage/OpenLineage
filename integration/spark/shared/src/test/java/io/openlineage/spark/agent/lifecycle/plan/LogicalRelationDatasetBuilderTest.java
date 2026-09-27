@@ -6,7 +6,9 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -17,6 +19,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -38,12 +41,15 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.catalog.CatalogStatistics;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.FileIndex;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
+import org.apache.spark.sql.execution.datasources.InMemoryFileIndex;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
@@ -143,13 +149,20 @@ class LogicalRelationDatasetBuilderTest {
     assertEquals(targetUri, ds.getFacets().getDataSource().getName());
   }
 
-  @Test
-  void testApplyForHadoopFsRelation() {
+  @ParameterizedTest
+  @CsvSource({"false,false", "true,false", "false,true", "true,true"})
+  void testApplyForHadoopFsRelation(boolean filesAlreadyListed, boolean statisticsDisabled) {
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
+    config
+        .getFacetsConfig()
+        .setDisabledFacets(Collections.singletonMap("inputStatistics", statisticsDisabled));
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(config);
     HadoopFsRelation hadoopFsRelation = mock(HadoopFsRelation.class);
     LogicalRelation logicalRelation = mock(LogicalRelation.class);
     Configuration hadoopConfig = mock(Configuration.class);
     SparkContext sparkContext = mock(SparkContext.class);
-    FileIndex fileIndex = mock(FileIndex.class);
+    FileIndex fileIndex =
+        filesAlreadyListed ? mock(InMemoryFileIndex.class) : mock(FileIndex.class);
     SessionState sessionState = mock(SessionState.class);
     Path p1 = new Path("/tmp/path1");
     Path p2 = new Path("/tmp/path2");
@@ -160,6 +173,18 @@ class LogicalRelationDatasetBuilderTest {
     when(session.sessionState()).thenReturn(sessionState);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
     when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    if (filesAlreadyListed && !statisticsDisabled) {
+      when(hadoopFsRelation.inputFiles()).thenReturn(new String[] {"/tmp/path1", "/tmp/path2"});
+      when(hadoopFsRelation.sizeInBytes()).thenReturn(128L);
+    } else {
+      // Neither dynamic indexes nor disabled statistics should trigger file enumeration.
+      doThrow(new AssertionError("Lineage must not enumerate files for these statistics"))
+          .when(hadoopFsRelation)
+          .inputFiles();
+      doThrow(new AssertionError("Lineage must not evaluate file statistics"))
+          .when(hadoopFsRelation)
+          .sizeInBytes();
+    }
     when(fileIndex.rootPaths())
         .thenReturn(
             scala.collection.JavaConverters.collectionAsScalaIterableConverter(
@@ -171,11 +196,80 @@ class LogicalRelationDatasetBuilderTest {
       when(PlanUtils.getDirectoryPaths(any(Collection.class), any(Configuration.class)))
           .thenReturn(Collections.singletonList(new Path("/tmp")));
 
-      List<OpenLineage.Dataset> datasets =
-          builder.apply(mock(SparkListenerEvent.class), logicalRelation);
+      LogicalRelationDatasetBuilder<OpenLineage.InputDataset> inputBuilder =
+          new LogicalRelationDatasetBuilder<>(
+              openLineageContext, DatasetFactory.input(openLineageContext), false);
+      List<OpenLineage.InputDataset> datasets =
+          inputBuilder.apply(mock(SparkListenerEvent.class), logicalRelation);
       assertEquals(1, datasets.size());
       OpenLineage.Dataset ds = datasets.get(0);
       assertEquals("/tmp", ds.getName());
+      if (filesAlreadyListed && !statisticsDisabled) {
+        assertEquals(2L, datasets.get(0).getInputFacets().getInputStatistics().getFileCount());
+        assertEquals(128L, datasets.get(0).getInputFacets().getInputStatistics().getSize());
+      } else {
+        assertNull(datasets.get(0).getInputFacets().getInputStatistics());
+      }
+    }
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "false,false,false",
+    "true,false,false",
+    "false,true,false",
+    "true,false,true",
+    "false,true,true"
+  })
+  void testCatalogStatistics(
+      boolean filesAlreadyListed, boolean hasCatalogStats, boolean statisticsDisabled) {
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
+    config
+        .getFacetsConfig()
+        .setDisabledFacets(Collections.singletonMap("inputStatistics", statisticsDisabled));
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(config);
+    HadoopFsRelation relation = mock(HadoopFsRelation.class);
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    CatalogTable table = mock(CatalogTable.class);
+    when(logicalRelation.relation()).thenReturn(relation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.apply(table));
+    when(logicalRelation.schema()).thenReturn(new StructType());
+    CatalogStatistics catalogStatistics = mock(CatalogStatistics.class);
+    when(catalogStatistics.sizeInBytes()).thenReturn(scala.math.BigInt.apply(256));
+    when(table.stats())
+        .thenReturn(hasCatalogStats ? Option.apply(catalogStatistics) : Option.empty());
+    when(table.ignoredProperties())
+        .thenReturn(ScalaConversionUtils.fromJavaMap(Collections.emptyMap()));
+    when(relation.location())
+        .thenReturn(filesAlreadyListed ? mock(InMemoryFileIndex.class) : mock(FileIndex.class));
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    if (filesAlreadyListed && !hasCatalogStats && !statisticsDisabled) {
+      when(relation.sizeInBytes()).thenReturn(128L);
+    } else {
+      doThrow(new AssertionError("Catalog lineage must not evaluate these file statistics"))
+          .when(relation)
+          .sizeInBytes();
+    }
+
+    try (MockedStatic<PathUtils> paths = mockStatic(PathUtils.class)) {
+      paths
+          .when(() -> PathUtils.fromCatalogTable(table, session))
+          .thenReturn(new DatasetIdentifier("warehouse.activity", "hive://local"));
+      LogicalRelationDatasetBuilder<OpenLineage.InputDataset> inputBuilder =
+          new LogicalRelationDatasetBuilder<>(
+              openLineageContext, DatasetFactory.input(openLineageContext), false);
+      List<OpenLineage.InputDataset> datasets =
+          inputBuilder.apply(mock(SparkListenerEvent.class), logicalRelation);
+      assertEquals(1, datasets.size());
+      assertEquals("warehouse.activity", datasets.get(0).getName());
+      assertEquals("hive://local", datasets.get(0).getNamespace());
+      if (!statisticsDisabled && (hasCatalogStats || filesAlreadyListed)) {
+        assertEquals(
+            hasCatalogStats ? 256L : 128L,
+            datasets.get(0).getInputFacets().getInputStatistics().getSize());
+      } else {
+        assertNull(datasets.get(0).getInputFacets().getInputStatistics());
+      }
     }
   }
 

@@ -121,30 +121,25 @@ public class KafkaSourceWrapper {
       log.debug(
           "Deserialization schema is {} when extracting schema facet for Kafka source",
           recordDeserializationSchema);
-      if (recordDeserializationSchema
-          .getClass()
-          .isAssignableFrom(deserializationSchemaWrapperClass)) {
-        return convert(
-            WrapperUtils.<DeserializationSchema>getFieldValue(
-                    deserializationSchemaWrapperClass,
-                    recordDeserializationSchema,
-                    "deserializationSchema")
-                .get());
-      } else if (recordDeserializationSchema
-          .getClass()
-          .isAssignableFrom(deserializationSchemaClass)) {
+      if (deserializationSchemaWrapperClass.isInstance(recordDeserializationSchema)) {
+        return WrapperUtils.<DeserializationSchema>getFieldValue(
+                deserializationSchemaWrapperClass,
+                recordDeserializationSchema,
+                "deserializationSchema")
+            .flatMap(this::convert);
+      } else if (deserializationSchemaClass.isInstance(recordDeserializationSchema)) {
         Optional<KafkaDeserializationSchema> deserializationSchemaOpt =
             WrapperUtils.<KafkaDeserializationSchema>getFieldValue(
                 deserializationSchemaClass,
                 recordDeserializationSchema,
                 "kafkaDeserializationSchema");
-        if (deserializationSchemaOpt.isPresent()) {
-          return convert(
-              WrapperUtils.<DeserializationSchema>getFieldValue(
-                      dynamicDeserializationSchemaClass,
-                      deserializationSchemaOpt.get(),
-                      "valueDeserialization")
-                  .get());
+        if (deserializationSchemaOpt.isPresent()
+            && dynamicDeserializationSchemaClass.isInstance(deserializationSchemaOpt.get())) {
+          return WrapperUtils.<DeserializationSchema>getFieldValue(
+                  dynamicDeserializationSchemaClass,
+                  deserializationSchemaOpt.get(),
+                  "valueDeserialization")
+              .flatMap(this::convert);
         }
       }
 

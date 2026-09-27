@@ -156,6 +156,23 @@ class KafkaSourceWrapperTest {
 
   @Test
   @SneakyThrows
+  void testGetSchemaFacetForUnsupportedKafkaDeserializationSchema() {
+    KafkaRecordDeserializationSchema deserializationSchema =
+        (KafkaRecordDeserializationSchema)
+            mock(
+                Class.forName(
+                    "org.apache.flink.connector.kafka.source.reader.deserializer.KafkaDeserializationSchemaWrapper"));
+    KafkaDeserializationSchema customDeserializationSchema = mock(KafkaDeserializationSchema.class);
+
+    FieldUtils.writeField(kafkaSource, DESERIALIZATION_SCHEMA, deserializationSchema, true);
+    FieldUtils.writeField(
+        deserializationSchema, "kafkaDeserializationSchema", customDeserializationSchema, true);
+
+    assertEquals(Optional.empty(), wrapper.getSchemaFacet());
+  }
+
+  @Test
+  @SneakyThrows
   void testGetAvroSchemaForNonAvroDeserializationSchema() {
     KafkaRecordDeserializationSchema deserializationSchema =
         (KafkaRecordDeserializationSchema)

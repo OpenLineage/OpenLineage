@@ -58,15 +58,10 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
       return false;
     }
 
-    Optional<CatalogPlugin> catalog = getCatalog(plan);
-
-    // check if plan has a catalog field
-    if (!catalog.isPresent()) {
-      return false;
-    }
-
-    // check catalog class starts with org.apache.iceberg
-    return catalog.get().getClass().getCanonicalName().startsWith("org.apache.iceberg");
+    return getCatalog(plan)
+        .filter(
+            catalog -> catalog instanceof SparkCatalog || catalog instanceof SparkSessionCatalog)
+        .isPresent();
   }
 
   /**
@@ -135,7 +130,12 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
   @Override
   public List<D> apply(LogicalPlan x) {
     // hack catalog to inject OpenLineageMetricsReporter
-    Catalog icebergCatalog = getIcebergCatalog(x).get();
+    Optional<Catalog> catalog = getCatalog(x).flatMap(this::getIcebergCatalog);
+    if (!catalog.isPresent()) {
+      return Collections.emptyList();
+    }
+
+    Catalog icebergCatalog = catalog.get();
     if (icebergCatalog instanceof CachingCatalog) {
       // get root catalog of a caching catalog
       Field catalogField = FieldUtils.getField(icebergCatalog.getClass(), "catalog", true);
@@ -157,8 +157,7 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     return Collections.emptyList();
   }
 
-  private Optional<Catalog> getIcebergCatalog(LogicalPlan x) {
-    CatalogPlugin catalog = getCatalog(x).get();
+  private Optional<Catalog> getIcebergCatalog(CatalogPlugin catalog) {
     if (catalog instanceof SparkCatalog) {
       return Optional.ofNullable(((SparkCatalog) catalog).icebergCatalog());
     }

@@ -50,6 +50,9 @@ public interface ExecutionContext {
 
   default void setActiveJobId(Integer activeJobId) {}
 
+  /** Called only when Spark provides enough information to classify the SQL execution. */
+  default void setCommandChildExecution(boolean commandChildExecution) {}
+
   /** Release scheduler objects retained for a completed Spark job. */
   default void evictJob(int jobId) {}
 

@@ -12,18 +12,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -48,8 +50,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.matchers.MatchType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
 
@@ -369,7 +371,6 @@ class SparkDeltaIntegrationTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testNoDuplicateEventsForDelta() {
     clearTables("t1", "t2", "t3", "t4");
 
@@ -388,24 +389,7 @@ class SparkDeltaIntegrationTest {
     dataset.write().format("delta").saveAsTable("t2");
     dataset.write().format("delta").saveAsTable("t3");
 
-    // wait until t3 complete event is sent
-    await()
-        .pollInterval(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(
-            () ->
-                mockServer.verify(
-                    request()
-                        .withPath("/api/v1/lineage")
-                        .withBody(
-                            json(
-                                "{\"outputs\":[{\"name\": \"/tmp/delta/t3\"}]}",
-                                MatchType.ONLY_MATCHING_FIELDS))));
-
-    mockServer.reset();
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+    clearEventsAfterListenerDrains();
 
     // this operation should contain only START AND STOP JOB
     spark.sql(
@@ -413,21 +397,46 @@ class SparkDeltaIntegrationTest {
             + "SELECT t1.a as a1, t2.a as a2, t3.b as b1 FROM t1 "
             + "JOIN t2 on t1.a = t2.a JOIN t3 on t2.b=t3.b");
 
-    await()
-        .pollInterval(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(10))
-        .until(
-            () -> {
-              HttpRequest[] requests =
-                  mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getOutputs().stream()
+                    .anyMatch(output -> "/tmp/delta/t4".equals(output.getName())));
+    assertThat(events.get(1).getOutputs())
+        .extracting(OutputDataset::getName)
+        .containsExactly("/tmp/delta/t4");
+  }
 
-              String lastRequestBody = requests[requests.length - 1].getBody().toString();
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = "^(3\\.[4-9].*|[4-9].*)$")
+  void testTopLevelAdaptiveAggregationEmitsTerminalPair() {
+    clearTables("aqe_read_source");
 
-              return lastRequestBody.contains("/tmp/delta/t4")
-                  && lastRequestBody.contains("create_table_as_select")
-                  && lastRequestBody.contains("COMPLETE")
-                  && requests.length == 2;
-            });
+    spark
+        .createDataFrame(
+            ImmutableList.of(RowFactory.create(1L, "bat"), RowFactory.create(3L, "horse")),
+            new StructType(
+                new StructField[] {
+                  new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                  new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                }))
+        .write()
+        .format("delta")
+        .saveAsTable("aqe_read_source");
+    clearEventsAfterListenerDrains();
+
+    // Enabling Delta must not make a user-submitted AQE aggregation look like internal Delta work.
+    spark.sql("SELECT b, sum(a) FROM aqe_read_source GROUP BY b LIMIT 1000").collectAsList();
+
+    List<RunEvent> events =
+        assertSingleTerminalPair(
+            event ->
+                event.getInputs().stream()
+                        .anyMatch(input -> "/tmp/delta/aqe_read_source".equals(input.getName()))
+                    && event.getOutputs().isEmpty());
+    assertThat(events.get(1).getInputs())
+        .extracting(InputDataset::getName)
+        .containsExactly("/tmp/delta/aqe_read_source");
   }
 
   @Test
@@ -563,13 +572,12 @@ class SparkDeltaIntegrationTest {
         .pollInterval(Duration.ofSeconds(2))
         .atMost(Duration.ofSeconds(10))
         .until(
-            () -> {
-              // wait for the merge command to complete
-              List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
-              RunEvent lastEvent = events.get(events.size() - 1);
-              return "COMPLETE".equals(lastEvent.getEventType().toString())
-                  && lastEvent.getJob().getName().contains("merge_into_command");
-            });
+            () ->
+                MockServerUtils.getEventsEmitted(mockServer).stream()
+                    .anyMatch(
+                        event ->
+                            "COMPLETE".equals(event.getEventType().toString())
+                                && event.getJob().getName().contains("merge_into_command")));
 
     List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
     Optional<RunEvent> mergeEvent =
@@ -601,6 +609,39 @@ class SparkDeltaIntegrationTest {
    */
   String getAvailableEnvVariable() {
     return (String) System.getenv().keySet().toArray()[0];
+  }
+
+  @SneakyThrows
+  private void clearEventsAfterListenerDrains() {
+    spark.sparkContext().listenerBus().waitUntilEmpty(10_000);
+    MockServerUtils.clearRequests(mockServer);
+  }
+
+  @SneakyThrows
+  private List<RunEvent> assertSingleTerminalPair(Predicate<RunEvent> predicate) {
+    spark.sparkContext().listenerBus().waitUntilEmpty(10_000);
+    List<RunEvent> allEvents =
+        Arrays.stream(mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(request -> OpenLineageClientUtils.runEventFromJson(request.getBodyAsString()))
+            .collect(Collectors.toList());
+
+    List<UUID> matchingRunIds =
+        allEvents.stream()
+            .filter(predicate)
+            .map(event -> event.getRun().getRunId())
+            .distinct()
+            .collect(Collectors.toList());
+    assertThat(matchingRunIds).hasSize(1);
+
+    UUID matchingRunId = matchingRunIds.get(0);
+    List<RunEvent> events =
+        allEvents.stream()
+            .filter(event -> matchingRunId.equals(event.getRun().getRunId()))
+            .collect(Collectors.toList());
+    assertThat(events)
+        .extracting(RunEvent::getEventType)
+        .containsExactly(RunEvent.EventType.START, RunEvent.EventType.COMPLETE);
+    return events;
   }
 
   private void clearTables(String... tables) {

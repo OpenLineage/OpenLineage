@@ -24,15 +24,30 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.net.StandardProtocolFamily;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnixDomainSocketAddress;
+import java.nio.channels.Channels;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import lombok.SneakyThrows;
@@ -46,10 +61,14 @@ import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.mockito.ArgumentCaptor;
 
 @SuppressWarnings("unchecked")
 class HttpTransportTest {
+
+  private static final String HEADER_TERMINATOR = "\r\n\r\n";
 
   @Test
   @SuppressWarnings("PMD")
@@ -68,6 +87,121 @@ class HttpTransportTest {
     uri.setAccessible(true);
     String target = uri.get(httpTransport).toString();
     assertEquals("http://localhost:5000/api/v1/lineage?param=value", target);
+  }
+
+  @Test
+  @SneakyThrows
+  @EnabledForJreRange(min = JRE.JAVA_16)
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
+  void transportCreatedWithUnixSocketUrl() {
+    // A unix:// url targets a Unix Domain Socket; the request is issued against a
+    // placeholder http://localhost/<endpoint> and tunneled over the socket.
+    HttpConfig httpConfig = new HttpConfig();
+    httpConfig.setUrl(new URI("unix:///var/run/some.socket"));
+    httpConfig.setEndpoint("/api/v1/lineage");
+    httpConfig.setUrlParams(singletonMap("param", "value"));
+    HttpTransport httpTransport = new HttpTransport(httpConfig);
+    Field uri = httpTransport.getClass().getDeclaredField("uri");
+    uri.setAccessible(true);
+    String target = uri.get(httpTransport).toString();
+    assertEquals("http://localhost/api/v1/lineage?param=value", target);
+  }
+
+  @Test
+  @SneakyThrows
+  @EnabledForJreRange(min = JRE.JAVA_16)
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
+  void transportUnixSocketUsesDefaultEndpoint() {
+    HttpConfig httpConfig = new HttpConfig();
+    httpConfig.setUrl(new URI("unix:///var/run/some.socket"));
+    HttpTransport httpTransport = new HttpTransport(httpConfig);
+    Field uri = httpTransport.getClass().getDeclaredField("uri");
+    uri.setAccessible(true);
+    String target = uri.get(httpTransport).toString();
+    assertEquals("http://localhost/api/v1/lineage", target);
+  }
+
+  @Test
+  @SneakyThrows
+  @EnabledForJreRange(min = JRE.JAVA_16)
+  void httpTransportEmitsOverUnixSocket() {
+    // End-to-end check that a unix:// url really tunnels the request over a Unix
+    // Domain Socket: bind a real UDS server (JDK-native, JEP 380), emit an event
+    // through HttpTransport, and assert the bytes the server read back match the
+    // serialized event.
+    //
+    // Keep the socket path in /tmp and short — AF_UNIX paths are capped around 104
+    // characters, and the default temp dir on macOS is long enough to overflow it.
+    File socketFile = new File("/tmp/ol-uds-test-" + System.nanoTime() + ".sock");
+    socketFile.deleteOnExit();
+
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      ServerSocketChannel serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+      serverChannel.bind(UnixDomainSocketAddress.of(socketFile.toPath()));
+
+      // The server accepts one connection, reads the full HTTP request, replies 200,
+      // and returns the request body it received.
+      Future<String> received =
+          executor.submit(
+              () -> {
+                try (SocketChannel channel = serverChannel.accept()) {
+                  InputStream in = Channels.newInputStream(channel);
+                  OutputStream out = Channels.newOutputStream(channel);
+
+                  // Read headers up to the blank line terminating them.
+                  StringBuilder headers = new StringBuilder();
+                  int b = in.read();
+                  while (b != -1) {
+                    headers.append((char) b);
+                    if (headers.toString().endsWith(HEADER_TERMINATOR)) {
+                      break;
+                    }
+                    b = in.read();
+                  }
+
+                  int contentLength = 0;
+                  for (String line : headers.toString().split("\r\n")) {
+                    if (line.toLowerCase(Locale.ROOT).startsWith("content-length:")) {
+                      contentLength =
+                          Integer.parseInt(line.substring(line.indexOf(':') + 1).trim());
+                    }
+                  }
+
+                  byte[] body = new byte[contentLength];
+                  int read = 0;
+                  while (read < contentLength) {
+                    int r = in.read(body, read, contentLength - read);
+                    if (r == -1) {
+                      break;
+                    }
+                    read += r;
+                  }
+
+                  out.write(
+                      "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+                          .getBytes(StandardCharsets.UTF_8));
+                  out.flush();
+
+                  return new String(body, StandardCharsets.UTF_8);
+                }
+              });
+
+      HttpConfig config = new HttpConfig();
+      config.setUrl(new URI("unix://" + socketFile.getAbsolutePath()));
+      Transport transport = new HttpTransport(config);
+      OpenLineageClient client = new OpenLineageClient(transport);
+
+      client.emit(runEvent());
+
+      String body = received.get(10, TimeUnit.SECONDS);
+      serverChannel.close();
+
+      assertThat(body).isEqualTo(OpenLineageClientUtils.toJson(runEvent()));
+    } finally {
+      executor.shutdownNow();
+      socketFile.delete();
+    }
   }
 
   @Test
