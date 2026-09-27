@@ -574,10 +574,12 @@ def test_dbt_local_invocation_events_opt_in():
     assert len(events.starts) > 0
     assert len(events.completes) > 0
     invocation_start = events.starts[0]
-    assert invocation_start.job.name == "dbt-run-dbt_small_test"
+    # Distinct from the dbt-ol wrapper's own job name (dbt-run-{project}) so the
+    # invocation event never collides with it if this flag is ever wired into dbt-ol.
+    assert invocation_start.job.name == "dbt-invocation-dbt_small_test"
     assert invocation_start.job.facets["jobType"].jobType == "JOB"
 
     # Check child model run parent facet
     model_start = events.starts[1]
     assert model_start.run.facets["parent"].run.runId == invocation_start.run.runId
-    assert model_start.run.facets["parent"].job.name == "dbt-run-dbt_small_test"
+    assert model_start.run.facets["parent"].job.name == "dbt-invocation-dbt_small_test"

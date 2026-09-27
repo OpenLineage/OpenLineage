@@ -24,6 +24,7 @@ from openlineage.client.facet_v2 import (
     data_quality_assertions_dataset,
     datasource_dataset,
     documentation_dataset,
+    error_message_run,
     external_query_run,
     job_type_job,
     output_statistics_output_dataset,
@@ -222,33 +223,38 @@ class DbtArtifactProcessor:
 
     @property
     def invocation_job_name(self) -> str:
+        """Job name for the top-level dbt invocation event.
+
+        Deliberately distinct from ``job_name`` (used by e.g. ``DbtLocalArtifactProcessor``
+        for the dbt-ol CLI wrapper run): reusing that name would make the invocation event
+        collide with the wrapper's own START/COMPLETE for the same job, parenting the
+        wrapper run to itself. ``project_name`` (set by both the local and Cloud
+        processors) keeps invocation jobs distinct per project/account instead of
+        collapsing every dbt Cloud project into a single ``dbt-run`` job.
+        """
         if self.openlineage_job_name:
             return self.openlineage_job_name
-        if hasattr(self, "job_name") and getattr(self, "job_name"):
-            return getattr(self, "job_name")
+        project_name = getattr(self, "project_name", None)
+        if project_name:
+            name = f"dbt-invocation-{project_name}"
+            account_id = getattr(self, "account_id", None)
+            if account_id:
+                name = f"{name}-{account_id}"
+            return name
         return f"dbt-{self.command}" if self.command else "dbt-invocation"
 
-    def _extract_invocation_run_timing(self, context: DbtRunContext) -> tuple[str, str, bool]:
-        """Extract start time, complete time, and failure status from run results."""
-        started_at_list = []
-        completed_at_list = []
-        has_failure = False
-
-        for run in context.run_results.get("results", []):
-            if run.get("status") in ("error", "fail", "failed"):
-                has_failure = True
-            for t in run.get("timing", []):
-                if t.get("started_at"):
-                    started_at_list.append(t["started_at"])
-                if t.get("completed_at"):
-                    completed_at_list.append(t["completed_at"])
-
+    def _extract_invocation_start_time(self, context: DbtRunContext) -> str:
+        """Extract the earliest node start time from run results, falling back to metadata."""
+        started_at_list = [
+            t["started_at"]
+            for run in context.run_results.get("results", [])
+            for t in run.get("timing", [])
+            if t.get("started_at")
+        ]
         fallback_time = (
             self.run_metadata.get("generated_at") or datetime.datetime.now(datetime.timezone.utc).isoformat()
         )
-        start_time = min(started_at_list) if started_at_list else fallback_time
-        complete_time = max(completed_at_list) if completed_at_list else fallback_time
-        return start_time, complete_time, has_failure
+        return min(started_at_list) if started_at_list else fallback_time
 
     def _generate_invocation_run_id(self, start_time_str: str) -> str:
         """Generate a time-sortable UUIDv7 invocation run ID."""
@@ -262,15 +268,60 @@ class DbtArtifactProcessor:
             return str(generate_static_uuid(instant, raw_invocation_id.encode("utf-8")))
         return str(generate_new_uuid(instant))
 
-    def generate_invocation_events(self, context: DbtRunContext) -> DbtRunResult | None:
-        start_time, complete_time, has_failure = self._extract_invocation_run_timing(context)
+    def _invocation_root_parent(self) -> tuple[str | None, str | None, str | None]:
+        """Root parent triple to propagate onto the invocation event's ``parent`` facet.
+
+        Mirrors ``DbtStructuredLogsProcessor._setup_dbt_run_metadata``: when an external
+        orchestrator parent (``_dbt_run_metadata``) is set, carry its own root through (or
+        treat it as the root itself, if it has none), so node events parented to the
+        invocation run can still stitch the full orchestrator -> dbt-invocation -> node
+        chain. Without this, child events would get ``root=None`` even though an
+        orchestrator parent exists.
+        """
+        if not self._dbt_run_metadata:
+            return None, None, None
+        if self._dbt_run_metadata.root_parent_run_id:
+            return (
+                self._dbt_run_metadata.root_parent_run_id,
+                self._dbt_run_metadata.root_parent_job_name,
+                self._dbt_run_metadata.root_parent_job_namespace,
+            )
+        return (
+            self._dbt_run_metadata.run_id,
+            self._dbt_run_metadata.job_name,
+            self._dbt_run_metadata.job_namespace,
+        )
+
+    def _invocation_job_facets(self) -> dict[str, JobFacet]:
+        # A fresh dict per call: the same instance must not be shared between the
+        # invocation's START and terminal events, since callers may mutate either.
+        return {
+            "jobType": job_type_job.JobTypeJobFacet(
+                jobType="JOB",
+                integration="DBT",
+                processingType="BATCH",
+                producer=self.producer,
+            )
+        }
+
+    def generate_invocation_start_event(self, context: DbtRunContext) -> RunEvent:
+        """Build the top-level dbt invocation START event.
+
+        Also registers ``_invocation_parent_metadata`` so node-level events built
+        afterwards (in ``parse_execution``/``parse_test``) are parented to this run.
+        """
+        start_time = self._extract_invocation_start_time(context)
         run_id = self._generate_invocation_run_id(start_time)
         job_name = self.invocation_job_name
 
+        root_run_id, root_job_name, root_job_namespace = self._invocation_root_parent()
         self._invocation_parent_metadata = ParentRunMetadata(
             run_id=run_id,
             job_name=job_name,
             job_namespace=self.job_namespace,
+            root_parent_run_id=root_run_id,
+            root_parent_job_name=root_job_name,
+            root_parent_job_namespace=root_job_namespace,
         )
 
         run_facets: dict[str, Any] = {
@@ -281,35 +332,63 @@ class DbtArtifactProcessor:
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
-        job_facets: dict[str, JobFacet] = {
-            "jobType": job_type_job.JobTypeJobFacet(
-                jobType="JOB",
-                integration="DBT",
-                processingType="BATCH",
-                producer=self.producer,
-            )
-        }
-
-        start_event = RunEvent(
+        return RunEvent(
             eventType=RunState.START,
             eventTime=start_time,
             run=Run(runId=run_id, facets=run_facets),
-            job=Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
+            job=Job(namespace=self.job_namespace, name=job_name, facets=self._invocation_job_facets()),
             producer=self.producer,
         )
 
-        end_state = RunState.FAIL if has_failure else RunState.COMPLETE
-        end_event = RunEvent(
+    def generate_invocation_end_event(
+        self, context: DbtRunContext, child_events: DbtEvents
+    ) -> RunEvent | None:
+        """Build the top-level dbt invocation terminal event.
+
+        Timed after ``child_events`` (rather than solely from ``run_results`` timings) so
+        the parent run never appears to finish before children whose own timing fell back
+        to "now" (e.g. tests, or nodes with no ``timing`` entries). Returns ``None`` if
+        ``generate_invocation_start_event`` was not called first.
+        """
+        if not self._invocation_parent_metadata:
+            return None
+
+        end_time_candidates = [event.eventTime for event in child_events.completes + child_events.fails]
+        fallback_time = (
+            self.run_metadata.get("generated_at") or datetime.datetime.now(datetime.timezone.utc).isoformat()
+        )
+        complete_time = max(end_time_candidates) if end_time_candidates else fallback_time
+
+        failed_ids = [
+            run["unique_id"]
+            for run in context.run_results.get("results", [])
+            if run.get("status") in ("error", "fail") and run.get("unique_id")
+        ]
+
+        run_facets: dict[str, Any] = {
+            **self.dbt_version_facet(),
+            **self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
+        }
+        if self._dbt_run_metadata:
+            run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
+
+        end_state = RunState.FAIL if failed_ids else RunState.COMPLETE
+        if end_state == RunState.FAIL:
+            run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
+                message=f"dbt invocation failed: {', '.join(failed_ids)}",
+                programmingLanguage="sql",
+            )
+
+        run_id = self._invocation_parent_metadata.run_id
+        job_name = self._invocation_parent_metadata.job_name
+        return RunEvent(
             eventType=end_state,
             eventTime=complete_time,
             run=Run(runId=run_id, facets=run_facets),
-            job=Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
+            job=Job(namespace=self.job_namespace, name=job_name, facets=self._invocation_job_facets()),
             producer=self.producer,
         )
-
-        if end_state == RunState.FAIL:
-            return DbtRunResult(start=start_event, fail=end_event)
-        return DbtRunResult(start=start_event, complete=end_event)
 
     def parse(self) -> DbtEvents:
         """
@@ -334,8 +413,6 @@ class DbtArtifactProcessor:
 
         context = DbtRunContext(manifest, run_result, catalog)
 
-        events = DbtEvents()
-
         if self.command not in ["run", "build", "test", "seed", "snapshot"]:
             if self.should_raise_on_unsupported_command:
                 raise UnsupportedDbtCommand(
@@ -343,24 +420,33 @@ class DbtArtifactProcessor:
                     "should be run, build, test, seed or snapshot"
                 )
             else:
-                return events
+                return DbtEvents()
 
-        invocation_events = (
-            self.generate_invocation_events(context) if self.emit_dbt_invocation_event else None
+        invocation_start = (
+            self.generate_invocation_start_event(context) if self.emit_dbt_invocation_event else None
         )
-        if invocation_events and invocation_events.start:
-            events.starts.append(invocation_events.start)
 
+        child_events = DbtEvents()
         if self.command in ["run", "build", "seed", "snapshot"]:
-            events += self.parse_execution(context, nodes)
+            child_events += self.parse_execution(context, nodes)
         if self.command in ["test", "build"]:
-            events += self.parse_test(context, nodes)
+            child_events += self.parse_test(context, nodes)
 
-        if invocation_events:
-            if invocation_events.complete:
-                events.completes.append(invocation_events.complete)
-            elif invocation_events.fail:
-                events.fails.append(invocation_events.fail)
+        events = DbtEvents()
+        events += child_events
+        if invocation_start is not None and child_events.events():
+            events.starts.insert(0, invocation_start)
+            invocation_end = self.generate_invocation_end_event(context, child_events)
+            if invocation_end is not None:
+                if invocation_end.eventType == RunState.FAIL:
+                    events.fails.append(invocation_end)
+                else:
+                    events.completes.append(invocation_end)
+        elif invocation_start is not None:
+            # No child events were produced (e.g. every node was skipped) — don't emit
+            # an invocation pair with no children, and drop the parent metadata since
+            # nothing referenced it.
+            self._invocation_parent_metadata = None
 
         return events
 
