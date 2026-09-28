@@ -5,7 +5,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -25,7 +27,9 @@ import io.openlineage.sql.DbTableMeta;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
@@ -77,6 +81,7 @@ class JdbcColumnLineageInputCollectorTest {
     when(logicalRelation.output())
         .thenReturn(ScalaConversionUtils.fromList(Collections.emptyList()));
     when(jdbcOptions.url()).thenReturn(url);
+    when(jdbcOptions.asConnectionProperties()).thenReturn(new Properties());
 
     scala.collection.immutable.Map<String, String> properties =
         ScalaConversionUtils.<String, String>asScalaMapEmpty();
@@ -155,5 +160,90 @@ class JdbcColumnLineageInputCollectorTest {
       verify(builder, times(1)).addInput(exprId1, datasetIdentifier1, "k");
       verify(builder, times(1)).addInput(exprId2, datasetIdentifier1, "j1");
     }
+  }
+
+  @Test
+  void testInputCollectionForSchemaQualifiedTable() {
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select k, j1 from public.jdbc_source1) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> schemaQualifiedMapping(invocation.getArgument(0)));
+
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected =
+        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  @Test
+  void testInputCollectionForJoinAcrossSchemas() {
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn(
+            "(select a.k, CONCAT(a.j1, b.j2) as j from public.jdbc_source1 a "
+                + "join sales.jdbc_source2 b on a.k = b.k) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> schemaQualifiedMapping(invocation.getArgument(0)));
+
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier source1 =
+        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    DatasetIdentifier source2 =
+        new DatasetIdentifier("test.sales.jdbc_source2", "postgres://localhost:5432");
+    verify(builder, times(1)).addInput(exprId1, source1, "k");
+    verify(builder, times(1)).addInput(exprId2, source1, "j1");
+    verify(builder, times(1)).addInput(exprId3, source2, "j2");
+    verify(builder, never()).addInput(any(ExprId.class), eq(source1), eq("j2"));
+    verify(builder, never()).addInput(any(ExprId.class), eq(source2), eq("j1"));
+  }
+
+  @Test
+  void testInputCollectionForFullyQualifiedTable() {
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select k, j1 from test.public.jdbc_source1) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class))).thenReturn(exprId1);
+
+    List<DatasetIdentifier> inputs =
+        InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
+    assertThat(inputs).hasSize(1);
+
+    visitor.collectInputs(context, logicalRelation);
+
+    verify(builder, times(1)).addInput(exprId1, inputs.get(0), "k");
+    verify(builder, times(1)).addInput(exprId1, inputs.get(0), "j1");
+  }
+
+  @Test
+  void testSelectWildcardFromSchemaQualifiedTableQuery() {
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select * from public.jdbc_source1 where x = 9) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> schemaQualifiedMapping(invocation.getArgument(0)));
+
+    AttributeReference expression1 =
+        new AttributeReference(
+            "k", IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId1, null);
+    AttributeReference expression2 =
+        new AttributeReference(
+            "j1", StringType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId2, null);
+    when(logicalRelation.output())
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(expression1, expression2)));
+
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected =
+        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  private static ExprId schemaQualifiedMapping(ColumnMeta column) {
+    Map<ColumnMeta, ExprId> map = new HashMap<>();
+    map.put(new ColumnMeta(new DbTableMeta(null, "public", "jdbc_source1"), "k"), exprId1);
+    map.put(new ColumnMeta(new DbTableMeta(null, "public", "jdbc_source1"), "j1"), exprId2);
+    map.put(new ColumnMeta(new DbTableMeta(null, "sales", "jdbc_source2"), "j2"), exprId3);
+    return map.get(column);
   }
 }

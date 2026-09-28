@@ -330,6 +330,9 @@ class InputFieldsCollectorTest {
       mockedJdbcUtils
           .when(() -> JdbcSparkUtils.extractQueryFromSpark(jdbcRelation))
           .thenReturn(Optional.of(sqlMeta));
+      mockedJdbcUtils
+          .when(() -> JdbcSparkUtils.getDatasetIdentifier(any(), any()))
+          .thenCallRealMethod();
 
       InputFieldsCollector.collect(context, plan);
     }
@@ -360,6 +363,9 @@ class InputFieldsCollectorTest {
       mockedJdbcUtils
           .when(() -> JdbcSparkUtils.extractQueryFromSpark(jdbcRelation))
           .thenReturn(Optional.of(sqlMeta));
+      mockedJdbcUtils
+          .when(() -> JdbcSparkUtils.getDatasetIdentifier(any(), any()))
+          .thenCallRealMethod();
 
       InputFieldsCollector.collect(context, plan);
     }

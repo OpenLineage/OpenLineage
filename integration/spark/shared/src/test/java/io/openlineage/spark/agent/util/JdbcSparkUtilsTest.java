@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.sql.ColumnLineage;
 import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
@@ -30,6 +31,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -53,6 +55,17 @@ class JdbcSparkUtilsTest {
 
     assertInputTables(result, testCase.expectedInputTables);
     assertColumnLineage(result, testCase.expectedColumnLineages);
+  }
+
+  @Test
+  void testGetDatasetIdentifierUsesQualifiedTableName() {
+    JDBCOptions options = JdbcOptions.builder().url(DEFAULT_URL).dbtable("public.users").build();
+
+    DatasetIdentifier identifier =
+        JdbcSparkUtils.getDatasetIdentifier(options, new DbTableMeta(null, "public", "users"));
+
+    assertEquals("testdb.public.users", identifier.getName());
+    assertEquals("postgres://localhost:5432", identifier.getNamespace());
   }
 
   private static Collection<TestCase> testCases() {
