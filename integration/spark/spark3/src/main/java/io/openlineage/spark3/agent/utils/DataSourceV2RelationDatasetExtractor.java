@@ -230,11 +230,13 @@ public class DataSourceV2RelationDatasetExtractor {
     }
 
     // The catalog may be one no CatalogHandler supports - Iceberg's rewrite actions, for example,
-    // read and write through SparkCachedTableCatalog. Fall back to resolving the dataset from the
-    // relation, which still carries the underlying table. Gated on the catalog being unsupported so
-    // that catalogs which do have a handler keep their existing fallback - the Unity Catalog one
-    // below - unchanged: that path names a table after the catalog it was handed, which is right
-    // for a real Unity Catalog and wrong for a cached catalog, whose name is the UUID cache key.
+    // read and write through SparkCachedTableCatalog (default_cache_iceberg) or, on Spark 4.1 with
+    // Iceberg 1.11+, SparkRewriteTableCatalog (default_rewrite_catalog). Fall back to resolving
+    // the dataset from the relation, which still carries the underlying table. Gated on the
+    // catalog being unsupported so that catalogs which do have a handler keep their existing
+    // fallback - the Unity Catalog one below - unchanged: that path names a table after the catalog
+    // it was handed, which is right for a real Unity Catalog and wrong for Iceberg's rewrite
+    // catalogs, whose identifier is the table cache key.
     if (!CatalogUtils.getCatalogHandler(context, tableCatalog).isPresent()) {
       Optional<DatasetIdentifier> relationIdentifier =
           getDatasetIdentifierFromRelation(context, relation);
@@ -290,10 +292,11 @@ public class DataSourceV2RelationDatasetExtractor {
   /**
    * The catalog to resolve storage and catalog facets against. Normally the relation's own, but
    * when no {@link io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler} supports that
-   * catalog - Iceberg's rewrite actions write through {@code SparkCachedTableCatalog} - facets
-   * looked up against it come back empty. Fall back to the catalog that owns the table, the same
-   * one {@link #getDatasetIdentifierExtended} resolves the identifier through, so a compaction
-   * event carries the same facets as a regular write to the table.
+   * catalog - Iceberg's rewrite actions write through {@code SparkCachedTableCatalog} or, on Spark
+   * 4.1 with Iceberg 1.11+, {@code SparkRewriteTableCatalog} - facets looked up against it come
+   * back empty. Fall back to the catalog that owns the table, the same one {@link
+   * #getDatasetIdentifierExtended} resolves the identifier through, so a compaction event carries
+   * the same facets as a regular write to the table.
    */
   private static Optional<TableCatalog> facetSource(
       OpenLineageContext context, DataSourceV2Relation relation) {

@@ -50,8 +50,9 @@ public final class DatasetVersionDatasetFacetUtils {
     }
 
     // No CatalogHandler supports the relation's catalog - Iceberg's rewrite actions write through
-    // SparkCachedTableCatalog - so the version above came back empty. Fall back to the catalog that
-    // owns the table, the same one the dataset identifier is resolved through.
+    // SparkCachedTableCatalog or, on Spark 4.1 with Iceberg 1.11+, SparkRewriteTableCatalog - so
+    // the version above came back empty. Fall back to the catalog that owns the table, the same one
+    // the dataset identifier is resolved through.
     return owningCatalogVersion(context, table);
   }
 
