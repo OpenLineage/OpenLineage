@@ -13,6 +13,7 @@ import time
 from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
+import httpx2
 import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
@@ -22,6 +23,7 @@ from openlineage.client.transport.async_http import (
     AsyncHttpTransport,
     HttpCompression,
     Request,
+    _raise_on_method_changing_redirect,
 )
 from openlineage.client.uuid import generate_new_uuid
 
@@ -119,6 +121,78 @@ class TestAsyncHttpConfig:
 
 
 class TestAsyncHttpTransport:
+    @pytest.mark.parametrize(
+        ("status_code", "should_raise"),
+        [(301, True), (302, True), (303, True), (307, False), (308, False)],
+    )
+    def test_redirect_policy(self, status_code, should_raise):
+        response = httpx2.Response(
+            status_code,
+            headers={"Location": "/accepted"},
+            request=httpx2.Request("POST", "http://example.com/api/v1/lineage"),
+        )
+
+        if should_raise:
+            with pytest.raises(httpx2.HTTPStatusError, match=f"HTTP {status_code} redirect"):
+                asyncio.run(_raise_on_method_changing_redirect(response))
+        else:
+            asyncio.run(_raise_on_method_changing_redirect(response))
+
+    @pytest.mark.parametrize("status_code", [307, 308])
+    @pytest.mark.parametrize(
+        "location",
+        [
+            "http://other.example/accepted",
+            "http://example.com:8080/accepted",
+            "https://example.com/accepted",
+        ],
+    )
+    def test_async_client_blocks_cross_origin_redirect(self, status_code, location):
+        seen = []
+
+        def handle(request):
+            seen.append(request)
+            return httpx2.Response(status_code, headers={"Location": location})
+
+        async def send():
+            async with httpx2.AsyncClient(
+                transport=httpx2.MockTransport(handle),
+                follow_redirects=True,
+                event_hooks={"response": [_raise_on_method_changing_redirect]},
+            ) as client:
+                await client.post(
+                    "http://example.com/api/v1/lineage",
+                    content=b"lineage event",
+                    headers={"X-Secret": "secret"},
+                )
+
+        with pytest.raises(httpx2.HTTPStatusError, match="cross-origin redirect"):
+            asyncio.run(send())
+        assert len(seen) == 1
+        assert seen[0].headers["X-Secret"] == "secret"
+
+    @pytest.mark.parametrize("status_code", [307, 308])
+    def test_async_client_preserves_post_body_on_same_origin_redirect(self, status_code):
+        seen = []
+
+        def handle(request):
+            seen.append(request)
+            if request.url.path == "/api/v1/lineage":
+                return httpx2.Response(status_code, headers={"Location": "/accepted"})
+            return httpx2.Response(200)
+
+        async def send():
+            async with httpx2.AsyncClient(
+                transport=httpx2.MockTransport(handle),
+                follow_redirects=True,
+                event_hooks={"response": [_raise_on_method_changing_redirect]},
+            ) as client:
+                return await client.post("http://example.com/api/v1/lineage", content=b"lineage event")
+
+        assert asyncio.run(send()).status_code == 200
+        assert [request.method for request in seen] == ["POST", "POST"]
+        assert [request.content for request in seen] == [b"lineage event", b"lineage event"]
+
     def test_async_http_transport_initialization(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
