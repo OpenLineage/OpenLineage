@@ -582,6 +582,11 @@ List<Dependency> icebergDependencies(String spark, String scala) {
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.12.0"),
+            ],
+            // Iceberg 1.11's Spark 4.1 module runs rewrite actions through SparkRewriteTableCatalog
+            // rather than the SparkCachedTableCatalog of the older modules. Spark 4.x is Scala 2.13 only.
+            "4.1.3": [
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-4.1_${scala}:1.11.0"),
             ]
     ]
 
@@ -725,6 +730,9 @@ List<Dependency> additionalJars(String spark, String scala) {
                         transitive = false
                     }),
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.5_${scala}:1.6.0")
+            ],
+            "4.1.3": [
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-4.1_${scala}:1.11.0")
             ],
     ]
 
