@@ -106,8 +106,8 @@ class PrefectOpenLineageAdapter:
                 ),
                 "prefectDeployment": facets.run_facets.PrefectDeploymentRunFacet(
                     deploymentId=deployment.id,
-                    created=deployment.created,
-                    updated=deployment.updated,
+                    created=deployment.created.isoformat(),
+                    updated=deployment.updated.isoformat(),
                     name=deployment.name,
                 ),
             }
