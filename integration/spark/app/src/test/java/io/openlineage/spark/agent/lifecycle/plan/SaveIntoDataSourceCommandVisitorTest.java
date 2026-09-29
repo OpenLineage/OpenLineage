@@ -16,6 +16,7 @@ import static org.mockito.Mockito.withSettings;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -24,12 +25,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider;
 import org.apache.spark.sql.sources.CreatableRelationProvider;
@@ -40,6 +44,8 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 import scala.collection.immutable.Map;
 
@@ -173,6 +179,81 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertEquals("string", result.get(0).getFacets().getSchema().getFields().get(1).getType());
     assertEquals("postgres://127.0.0.1:5432", result.get(0).getNamespace());
     assertEquals("some_db.public.test_table", result.get(0).getName());
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "false|jdbc:postgresql://127.0.0.1/some_db|test_table|some_db.test_table",
+        "false|jdbc:postgresql://127.0.0.1/some_db|public.test_table|some_db.public.test_table",
+        "true|jdbc:postgresql://127.0.0.1/some_db|test_table|some_db.public.test_table",
+        "true|jdbc:postgresql://127.0.0.1/some_db|public.test_table|some_db.public.test_table",
+        "true|jdbc:postgresql://127.0.0.1/some_db|public.\"Test_Table\"|some_db.public.Test_Table",
+        "true|jdbc:postgresql://127.0.0.1/some_db?currentSchema=sales|test_table|some_db.sales.test_table",
+        "true|jdbc:mysql://127.0.0.1:3306/some_db|test_table|some_db.test_table",
+      })
+  void testJdbcWriteDatasetName(
+      boolean applyDefaultSchema, String url, String dbtable, String expectedName) {
+    givenDefaultSchemaEnabled(applyDefaultSchema);
+    java.util.Map<String, String> options = new java.util.HashMap<>();
+    options.put("dbtable", dbtable);
+    options.put("url", url);
+
+    List<OpenLineage.OutputDataset> result = visitor.apply(event, jdbcWriteCommand(options));
+
+    assertEquals(1, result.size());
+    assertEquals(expectedName, result.get(0).getName());
+  }
+
+  @Test
+  void testJdbcWriteUsesConnectionProperties() {
+    givenDefaultSchemaEnabled(true);
+    java.util.Map<String, String> options = new java.util.HashMap<>();
+    options.put("dbtable", "orders");
+    options.put("url", "jdbc:sqlserver://127.0.0.1:1433");
+    options.put("databaseName", "some_db");
+
+    List<OpenLineage.OutputDataset> result = visitor.apply(event, jdbcWriteCommand(options));
+
+    assertEquals(1, result.size());
+    assertEquals("sqlserver://127.0.0.1:1433", result.get(0).getNamespace());
+    assertEquals("some_db.dbo.orders", result.get(0).getName());
+  }
+
+  @Test
+  void testJdbcWriteUsesCurrentSchemaFromCaseInsensitiveOptions() {
+    givenDefaultSchemaEnabled(true);
+    java.util.Map<String, String> options = new java.util.HashMap<>();
+    options.put("dbtable", "orders");
+    options.put("url", "jdbc:postgresql://127.0.0.1/some_db");
+    options.put("currentSchema", "sales");
+    SaveIntoDataSourceCommand command = jdbcWriteCommand(options);
+    when(command.options())
+        .thenReturn(
+            CaseInsensitiveMap$.MODULE$.apply(
+                (Map<String, String>) ScalaConversionUtils.fromJavaMap(options)));
+
+    List<OpenLineage.OutputDataset> result = visitor.apply(event, command);
+
+    assertEquals(1, result.size());
+    assertEquals("some_db.sales.orders", result.get(0).getName());
+  }
+
+  private SaveIntoDataSourceCommand jdbcWriteCommand(java.util.Map<String, String> options) {
+    SaveIntoDataSourceCommand command = mock(SaveIntoDataSourceCommand.class);
+    when(command.schema()).thenReturn(schema);
+    when(command.options()).thenReturn(ScalaConversionUtils.fromJavaMap(options));
+    when(command.dataSource()).thenReturn(mock(JdbcRelationProvider.class));
+    return command;
+  }
+
+  private void givenDefaultSchemaEnabled(boolean enabled) {
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.conf())
+        .thenReturn(
+            new SparkConf().set(JdbcDefaultSchema.ENABLED_CONFIG_KEY, String.valueOf(enabled)));
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
   }
 
   @Test

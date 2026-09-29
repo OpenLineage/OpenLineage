@@ -19,6 +19,7 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombined
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -29,7 +30,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
@@ -39,6 +43,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
 import org.apache.spark.sql.types.StringType$;
+import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -238,6 +243,78 @@ class JdbcColumnLineageInputCollectorTest {
     DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
     verify(builder, times(1)).addInput(exprId1, expected, "k");
     verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  @Test
+  void testInputCollectionForUnqualifiedTableWithDefaultSchema() {
+    givenDefaultSchemaEnabled();
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select k, j1 from jdbc_source1) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
+
+    List<DatasetIdentifier> inputs =
+        InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected =
+        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    assertThat(inputs).containsExactly(expected);
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  @Test
+  void testSelectWildcardFromUnqualifiedTableWithDefaultSchema() {
+    givenDefaultSchemaEnabled();
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select * from jdbc_source1 where x = 9) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
+    AttributeReference expression1 =
+        new AttributeReference(
+            "k", IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId1, null);
+    when(logicalRelation.output())
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(expression1)));
+
+    visitor.collectInputs(context, logicalRelation);
+
+    verify(builder, times(1))
+        .addInput(
+            exprId1,
+            new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432"),
+            "k");
+  }
+
+  @Test
+  void testInputCollectionForDbtableWithDefaultSchema() {
+    givenDefaultSchemaEnabled();
+    when(jdbcOptions.parameters())
+        .thenReturn(
+            CaseInsensitiveMap$.MODULE$.<String>apply(
+                ScalaConversionUtils.fromJavaMap(
+                    Collections.singletonMap("dbtable", "jdbc_source1"))));
+    when(jdbcRelation.schema())
+        .thenReturn(new StructType().add("k", IntegerType$.MODULE$).add("j1", StringType$.MODULE$));
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
+
+    List<DatasetIdentifier> inputs =
+        InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected =
+        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    assertThat(inputs).containsExactly(expected);
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  private void givenDefaultSchemaEnabled() {
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.conf())
+        .thenReturn(new SparkConf().set(JdbcDefaultSchema.ENABLED_CONFIG_KEY, "true"));
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
   }
 
   private static ExprId schemaQualifiedMapping(ColumnMeta column) {

@@ -10,6 +10,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.BigQueryUtils;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -69,7 +70,7 @@ public class InputFieldsCollector {
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isQueryRelationNode(node)) {
       QueryRelationColumnLineageCollector.extractExternalInputs(context, node);
-    } else if (hasJdbcSqlColumnLineage(node)) {
+    } else if (hasJdbcSqlColumnLineage(context, node)) {
       // Skip: JdbcColumnLineageVisitor handles input collection via SqlCollector, which
       // correctly resolves alias names to original column names. Using extractInternalInputs
       // here would add alias names from Spark's output attributes as phantom input fields.
@@ -94,11 +95,13 @@ public class InputFieldsCollector {
    * is available. In that case, JdbcColumnLineageVisitor/SqlCollector will handle input collection
    * with correct original column names rather than alias names.
    */
-  private static boolean hasJdbcSqlColumnLineage(LogicalPlan node) {
+  private static boolean hasJdbcSqlColumnLineage(
+      ColumnLevelLineageContext context, LogicalPlan node) {
     if (!(node instanceof LogicalRelation)) return false;
     if (!(((LogicalRelation) node).relation() instanceof JDBCRelation)) return false;
     JDBCRelation relation = (JDBCRelation) ((LogicalRelation) node).relation();
-    return JdbcSparkUtils.extractQueryFromSpark(relation)
+    return JdbcSparkUtils.extractQueryFromSpark(
+            relation, JdbcDefaultSchema.isEnabled(context.getOlContext()))
         .map(meta -> !meta.columnLineage().isEmpty())
         .orElse(false);
   }
@@ -167,7 +170,8 @@ public class InputFieldsCollector {
 
   static List<DatasetIdentifier> extractDatasetIdentifier(
       ColumnLevelLineageContext context, JDBCRelation relation) {
-    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
+    boolean applyDefaultSchema = JdbcDefaultSchema.isEnabled(context.getOlContext());
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation, applyDefaultSchema);
     return sqlMeta
         .map(
             meta ->
@@ -178,7 +182,7 @@ public class InputFieldsCollector {
                                 .getNamespaceResolver()
                                 .resolve(
                                     JdbcSparkUtils.getDatasetIdentifier(
-                                        relation.jdbcOptions(), table)))
+                                        relation.jdbcOptions(), table, applyDefaultSchema)))
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
   }

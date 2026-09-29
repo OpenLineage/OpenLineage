@@ -20,9 +20,20 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
 
   private final DatasetFactory<D> datasetFactory;
+  private final boolean applyDefaultSchema;
 
   public JdbcRelationHandler(DatasetFactory<D> datasetFactory) {
+    this(datasetFactory, false);
+  }
+
+  /**
+   * @param datasetFactory factory of the datasets
+   * @param applyDefaultSchema whether to apply the database's default schema to dataset names, see
+   *     {@link io.openlineage.spark.agent.util.JdbcDefaultSchema}
+   */
+  public JdbcRelationHandler(DatasetFactory<D> datasetFactory, boolean applyDefaultSchema) {
     this.datasetFactory = datasetFactory;
+    this.applyDefaultSchema = applyDefaultSchema;
   }
 
   public List<D> handleRelation(LogicalRelation x) {
@@ -38,10 +49,10 @@ public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
   }
 
   public List<D> getDatasets(JDBCRelation relation) {
-    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation, applyDefaultSchema);
     if (!sqlMeta.isPresent()) {
       return Collections.emptyList();
     }
-    return JdbcSparkUtils.getDatasets(datasetFactory, sqlMeta.get(), relation);
+    return JdbcSparkUtils.getDatasets(datasetFactory, sqlMeta.get(), relation, applyDefaultSchema);
   }
 }

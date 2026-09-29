@@ -68,6 +68,131 @@ class JdbcSparkUtilsTest {
     assertEquals("postgres://localhost:5432", identifier.getNamespace());
   }
 
+  @ParameterizedTest
+  @MethodSource("namingTestCases")
+  void testDatasetNames(NamingTestCase testCase) {
+    JdbcOptions options =
+        JdbcOptions.builder().url(testCase.url).dbtable(testCase.dbtable).query(testCase.query);
+    testCase.options.forEach(options::option);
+    if (!testCase.url.startsWith("jdbc:postgresql:")) {
+      // only the PostgreSQL driver is on the test classpath
+      options.option("driver", "org.postgresql.Driver");
+    }
+    givenJdbcOptions(options.build());
+    givenSchema(new StructType().add("id", DataTypes.IntegerType));
+
+    Optional<SqlMeta> result =
+        JdbcSparkUtils.extractQueryFromSpark(relation, testCase.applyDefaultSchema);
+
+    assertTrue(result.isPresent());
+    List<String> names =
+        result.get().inTables().stream()
+            .map(
+                table ->
+                    JdbcSparkUtils.getDatasetIdentifier(
+                            relation.jdbcOptions(), table, testCase.applyDefaultSchema)
+                        .getName())
+            .collect(Collectors.toList());
+    assertEquals(Collections.singletonList(testCase.expectedName), names);
+
+    // column lineage inputs must point to the same dataset as the input
+    result.get().columnLineage().stream()
+        .flatMap(cl -> cl.lineage().stream())
+        .forEach(
+            column ->
+                assertEquals(
+                    testCase.expectedName,
+                    JdbcSparkUtils.getDatasetIdentifier(
+                            relation.jdbcOptions(),
+                            column.origin().get(),
+                            testCase.applyDefaultSchema)
+                        .getName()));
+  }
+
+  private static Collection<NamingTestCase> namingTestCases() {
+    String postgres = "jdbc:postgresql://db.example:5432/app";
+    String sqlServer = "jdbc:sqlserver://db.example:1433;databaseName=app";
+    String mysql = "jdbc:mysql://db.example:3306/app";
+    return Arrays.asList(
+        // disabled: names are unchanged
+        naming(false, postgres).dbtable("orders").expectedName("app.orders").build(),
+        naming(false, postgres).dbtable("public.orders").expectedName("app.public.orders").build(),
+        naming(false, postgres)
+            .dbtable("public.\"Orders\"")
+            .expectedName("app.public.\"Orders\"")
+            .build(),
+        naming(false, postgres).query("select id from orders").expectedName("app.orders").build(),
+        naming(false, postgres + "?currentSchema=sales")
+            .dbtable("orders")
+            .expectedName("app.orders")
+            .build(),
+        naming(false, sqlServer).dbtable("orders").expectedName("app.orders").build(),
+        // enabled: PostgreSQL
+        naming(true, postgres).dbtable("orders").expectedName("app.public.orders").build(),
+        naming(true, postgres).dbtable("public.orders").expectedName("app.public.orders").build(),
+        naming(true, postgres)
+            .dbtable("app.public.orders")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(true, postgres)
+            .dbtable("public.\"Orders\"")
+            .expectedName("app.public.Orders")
+            .build(),
+        naming(true, postgres)
+            .query("select id from public.\"Orders\"")
+            .expectedName("app.public.Orders")
+            .build(),
+        naming(true, postgres)
+            .query("select id from orders where id > 0")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(true, postgres)
+            .query("select * from orders")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(true, postgres)
+            .dbtable("(select id from orders) t")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(true, postgres)
+            .query("with recent as (select id from orders) select id from recent")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(true, postgres)
+            .query("select id from sales.orders")
+            .expectedName("app.sales.orders")
+            .build(),
+        naming(true, postgres + "?currentSchema=sales")
+            .dbtable("orders")
+            .expectedName("app.sales.orders")
+            .build(),
+        naming(true, postgres + "?currentSchema=sales")
+            .query("select id from orders")
+            .expectedName("app.sales.orders")
+            .build(),
+        naming(true, postgres)
+            .option("currentSchema", "sales")
+            .dbtable("orders")
+            .expectedName("app.sales.orders")
+            .build(),
+        // enabled: SQL Server
+        naming(true, sqlServer).dbtable("orders").expectedName("app.dbo.orders").build(),
+        naming(true, sqlServer).dbtable("dbo.orders").expectedName("app.dbo.orders").build(),
+        naming(true, sqlServer).dbtable("[dbo].[orders]").expectedName("app.dbo.orders").build(),
+        naming(true, sqlServer)
+            .query("select id from orders")
+            .expectedName("app.dbo.orders")
+            .build(),
+        // enabled: databases without a schema level are unchanged
+        naming(true, mysql).dbtable("orders").expectedName("app.orders").build(),
+        naming(true, mysql).query("select id from orders").expectedName("app.orders").build());
+  }
+
+  private static NamingTestCase.NamingTestCaseBuilder naming(
+      boolean applyDefaultSchema, String url) {
+    return NamingTestCase.builder().applyDefaultSchema(applyDefaultSchema).url(url);
+  }
+
   private static Collection<TestCase> testCases() {
     return Arrays.asList(
         TestCase.builder()
@@ -227,6 +352,23 @@ class JdbcSparkUtilsTest {
     @Singular private final List<ColumnLineage> expectedColumnLineages;
   }
 
+  @Builder
+  public static class NamingTestCase {
+    private final boolean applyDefaultSchema;
+    private final String url;
+    private final String dbtable;
+    private final String query;
+    @Singular private final Map<String, String> options;
+    private final String expectedName;
+
+    @Override
+    public String toString() {
+      return String.format(
+          "applyDefaultSchema=%s url=%s dbtable=%s query=%s options=%s",
+          applyDefaultSchema, url, dbtable, query, options);
+    }
+  }
+
   private static class JdbcOptions {
     private final Map<String, String> paramsMap = new HashMap<>();
 
@@ -250,6 +392,11 @@ class JdbcSparkUtilsTest {
       if (query != null) {
         paramsMap.put(JDBCOptions$.MODULE$.JDBC_QUERY_STRING(), query);
       }
+      return this;
+    }
+
+    public JdbcOptions option(String key, String value) {
+      paramsMap.put(key, value);
       return this;
     }
 

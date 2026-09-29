@@ -9,6 +9,7 @@ import static io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsColle
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.SqlCollector;
 import io.openlineage.sql.ColumnMeta;
@@ -30,12 +31,14 @@ public class JdbcColumnLineageVisitorDelegate {
   private final List<DatasetIdentifier> datasetIdentifiers;
   private final List<Attribute> attributes;
   private final SqlCollector sqlCollector;
+  private final boolean applyDefaultSchema;
 
   public JdbcColumnLineageVisitorDelegate(
       ColumnLevelLineageContext context, JDBCRelation relation, List<Attribute> attributes) {
     this.context = context;
     this.attributes = attributes;
-    sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation).orElse(null);
+    applyDefaultSchema = JdbcDefaultSchema.isEnabled(context.getOlContext());
+    sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation, applyDefaultSchema).orElse(null);
     jdbcOptions = relation.jdbcOptions();
     datasetIdentifiers = extractDatasetIdentifier(context, relation);
     this.sqlCollector =
@@ -48,7 +51,8 @@ public class JdbcColumnLineageVisitorDelegate {
 
   public void collectInputs() {
     extractInputsFromSimpleWildcardSelect();
-    sqlCollector.collectInputs(table -> JdbcSparkUtils.getDatasetIdentifier(jdbcOptions, table));
+    sqlCollector.collectInputs(
+        table -> JdbcSparkUtils.getDatasetIdentifier(jdbcOptions, table, applyDefaultSchema));
   }
 
   public void collectExpressionDependencies() {
@@ -74,7 +78,9 @@ public class JdbcColumnLineageVisitorDelegate {
                     sf ->
                         context
                             .getNamespaceResolver()
-                            .resolve(JdbcSparkUtils.getDatasetIdentifier(jdbcOptions, table))
+                            .resolve(
+                                JdbcSparkUtils.getDatasetIdentifier(
+                                    jdbcOptions, table, applyDefaultSchema))
                             .getName()
                             .equals(di.getName()))
                 .forEach(

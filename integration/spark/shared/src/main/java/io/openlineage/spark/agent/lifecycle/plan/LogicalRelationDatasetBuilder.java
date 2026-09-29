@@ -14,6 +14,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.ExtensionLineageRelationHandler;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.DatasetVersionUtils;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -121,7 +122,8 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     } else if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation(logRel);
     } else if (logRel.relation() instanceof JDBCRelation) {
-      return new JdbcRelationHandler<>(datasetFactory).handleRelation(logRel);
+      return new JdbcRelationHandler<>(datasetFactory, JdbcDefaultSchema.isEnabled(context))
+          .handleRelation(logRel);
     }
     throw new IllegalArgumentException(
         "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "

@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -54,6 +55,7 @@ import org.apache.spark.sql.sources.BaseRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import scala.Option;
 import scala.collection.immutable.Seq;
 
@@ -326,13 +328,11 @@ class InputFieldsCollectorTest {
 
     LogicalPlan plan = createPlanWithGrandChild(logicalRelation);
 
-    try (MockedStatic<JdbcSparkUtils> mockedJdbcUtils = mockStatic(JdbcSparkUtils.class)) {
+    try (MockedStatic<JdbcSparkUtils> mockedJdbcUtils =
+        mockStatic(JdbcSparkUtils.class, Mockito.CALLS_REAL_METHODS)) {
       mockedJdbcUtils
-          .when(() -> JdbcSparkUtils.extractQueryFromSpark(jdbcRelation))
+          .when(() -> JdbcSparkUtils.extractQueryFromSpark(eq(jdbcRelation), anyBoolean()))
           .thenReturn(Optional.of(sqlMeta));
-      mockedJdbcUtils
-          .when(() -> JdbcSparkUtils.getDatasetIdentifier(any(), any()))
-          .thenCallRealMethod();
 
       InputFieldsCollector.collect(context, plan);
     }
@@ -359,13 +359,11 @@ class InputFieldsCollectorTest {
 
     LogicalPlan plan = createPlanWithGrandChild(logicalRelation);
 
-    try (MockedStatic<JdbcSparkUtils> mockedJdbcUtils = mockStatic(JdbcSparkUtils.class)) {
+    try (MockedStatic<JdbcSparkUtils> mockedJdbcUtils =
+        mockStatic(JdbcSparkUtils.class, Mockito.CALLS_REAL_METHODS)) {
       mockedJdbcUtils
-          .when(() -> JdbcSparkUtils.extractQueryFromSpark(jdbcRelation))
+          .when(() -> JdbcSparkUtils.extractQueryFromSpark(eq(jdbcRelation), anyBoolean()))
           .thenReturn(Optional.of(sqlMeta));
-      mockedJdbcUtils
-          .when(() -> JdbcSparkUtils.getDatasetIdentifier(any(), any()))
-          .thenCallRealMethod();
 
       InputFieldsCollector.collect(context, plan);
     }

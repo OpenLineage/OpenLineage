@@ -23,6 +23,7 @@ The following parameters can be specified:
 | spark.openlineage.facets.variables                        | List of environment variables (System.getenv()                                                                                                                                                                                                                                                                                                                         | \[columnLineage;\]                            |
 | spark.openlineage.capturedProperties                      | comma separated list of properties to be captured in spark properties facet (default `spark.master`, `spark.app.name`)                                                                                                                                                                                                                                                 | "spark.example1,spark.example2"               |
 | spark.openlineage.dataset.removePath.pattern              | Java regular expression that removes `?<remove>` named group from dataset path. Can be used to last path subdirectories from paths like `s3://my-whatever-path/year=2023/month=04`                                                                                                                                                                                     | `(.*)(?<remove>\/.*\/.*)`                     |
+| spark.openlineage.dataset.jdbc.defaultSchema.enabled    | Applies the database's default schema to JDBC dataset names, so that a PostgreSQL or SQL Server table gets the same `{database}.{schema}.{table}` name whether or not the job qualifies it with a schema. **Changes dataset names**, see [JDBC dataset names](#jdbc-dataset-names). By default `false`.                                                                     | true                                          |
 | spark.openlineage.jobName.appendDatasetName               | Decides whether output dataset name should be appended to job name. By default `true`.                                                                                                                                                                                                                                                                                 | false                                         |
 | spark.openlineage.jobName.replaceDotWithUnderscore        | Replaces dots in job name with underscore. Can be used to mimic legacy behaviour on Databricks platform. By default `false`.                                                                                                                                                                                                                                           | false                                         |
 | spark.openlineage.job.owners.\<ownership-type\>           | Specifies ownership of the job. Multiple entries with different types are allowed. Config key name and value are used to create job ownership type and name (available since 1.13).                                                                                                                                                                                    | spark.openlineage.job.owners.team="Some Team" |
@@ -37,3 +38,41 @@ The following parameters can be specified:
 | spark.openlineage.timeout.buildDatasetsTimePercentage     | If a timeout is set within a circuit breaker, this configures a percentage of the configured timeout that can be spent on building datasets.                                                                                                                                                                                                                           | empty list                                    |
 | spark.openlineage.timeout.facetsBuildingTimePercentage    | If a timeout is set within a circuit breaker, this configures a percentage of the configured timeout that can be spent on building facets which includes job facets, run facets, and dataset facets. This timeout applies effectively on everything besides event serialization and transport.                                                                         | empty list                                    |
 | spark.openlineage.disabled                                | Turns off OpenLineage integration, similarly to `OPENLINEAGE_DISABLED` environment property. Can be used when setting env property is not doable. This setting works only within Spark Conf to prevent OpenLineage from config parsing mechanism.                                                                                                                      | false                                         |
+
+## JDBC dataset names
+
+The [naming spec](../../../spec/naming.md) names PostgreSQL and SQL Server tables
+`{database}.{schema}.{table}`. By default, the Spark integration names a JDBC table the way the job
+refers to it, so the same table can get two names: `dbtable=orders` (or `select * from orders`)
+gives `app.orders`, while `dbtable=public.orders` gives `app.public.orders`. A job that writes
+`orders` and a job that reads `public.orders` are then not connected in the lineage graph.
+
+Setting `spark.openlineage.dataset.jdbc.defaultSchema.enabled` to `true` resolves tables without a
+schema against the schema the database would use:
+
+| Database   | Default schema                                                                                                   |
+|------------|------------------------------------------------------------------------------------------------------------------|
+| PostgreSQL | First entry of the `currentSchema` connection property (from the JDBC URL, then from the options), otherwise `public` |
+| SQL Server | `dbo`                                                                                                            |
+| Others     | None, names are unchanged                                                                                        |
+
+For PostgreSQL and SQL Server, the flag also:
+
+- parses a plain `dbtable` value with the SQL parser, as queries already are, so that quoted
+  identifiers are named the same way in both cases (`dbtable=public."Orders"` gives
+  `app.public.Orders`, like `select * from public."Orders"`),
+- applies the same naming to JDBC writes and to JDBC catalog tables,
+- keeps the database of a fully qualified table (`app.public.orders` gives `app.public.orders`
+  instead of `app.app.public.orders`).
+
+Enabling the flag renames existing datasets: `{database}.{table}` becomes
+`{database}.{defaultSchema}.{table}`, e.g. `app.orders` becomes `app.public.orders`. Consumers that
+key on dataset names may need to map the old names to the new ones.
+
+Limitations:
+
+- The default schema is resolved without connecting to the database. A `search_path` set on the
+  database or role, or a SQL Server user's default schema other than `dbo`, is not taken into
+  account. When `currentSchema` lists several schemas, the first one wins (`$user` is skipped).
+- Unquoted PostgreSQL identifiers are not folded to lower case: `PUBLIC.ORDERS` is named
+  `app.PUBLIC.ORDERS`.

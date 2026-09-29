@@ -16,12 +16,15 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.LogicalRelationFactory;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.JobNameSuffixProvider;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.sql.DbTableMeta;
 import java.net.URI;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -35,6 +38,7 @@ import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
@@ -162,12 +166,10 @@ public class SaveIntoDataSourceCommandVisitor
         .getClass()
         .getCanonicalName()
         .equals(JdbcRelationProvider.class.getCanonicalName())) {
-      String tableName = command.options().get("dbtable").get();
-      String url = command.options().get("url").get();
       return Collections.singletonList(
           outputDataset()
               .sparkDatasetBuilder()
-              .dataset(JdbcDatasetUtils.getDatasetIdentifier(url, tableName, new Properties()))
+              .dataset(getJdbcDatasetIdentifier(command))
               .schema(schema)
               .lifecycleStateChange(lifecycleStateChange)
               .build());
@@ -237,6 +239,39 @@ public class SaveIntoDataSourceCommandVisitor
               return newDs;
             })
         .collect(Collectors.toList());
+  }
+
+  private DatasetIdentifier getJdbcDatasetIdentifier(SaveIntoDataSourceCommand command) {
+    String tableName = command.options().get("dbtable").get();
+    String url = command.options().get("url").get();
+
+    if (!JdbcDefaultSchema.isEnabled(context)) {
+      return JdbcDatasetUtils.getDatasetIdentifier(url, tableName, new Properties());
+    }
+
+    // name the table the same way as JDBC reads do, see JdbcSparkUtils.extractQueryFromSpark
+    Properties properties = getJdbcConnectionProperties(command.options());
+    DbTableMeta table = JdbcSparkUtils.parseTableName(url, tableName, properties, true);
+    return JdbcSparkUtils.getDatasetIdentifier(url, table, properties, true);
+  }
+
+  private static Properties getJdbcConnectionProperties(
+      scala.collection.immutable.Map<String, String> options) {
+    // JDBC writes pass the options through a CaseInsensitiveMap, which lower-cases its keys
+    scala.collection.immutable.Map<String, String> originalOptions =
+        options instanceof CaseInsensitiveMap
+            ? ((CaseInsensitiveMap<String>) options).originalMap()
+            : options;
+    Properties properties = new Properties();
+    ScalaConversionUtils.<String, String>fromMap(originalOptions)
+        .forEach(
+            (key, value) -> {
+              String normalizedKey = key.toLowerCase(Locale.ROOT);
+              if (!"url".equals(normalizedKey) && !"dbtable".equals(normalizedKey)) {
+                properties.setProperty(key, value);
+              }
+            });
+    return properties;
   }
 
   private StructType getSchema(SaveIntoDataSourceCommand command) {
