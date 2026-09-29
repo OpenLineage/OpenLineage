@@ -6,7 +6,9 @@
 package io.openlineage.spark.agent.vendor.iceberg.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -50,5 +52,20 @@ public class OpenLineageMetricsReporterTest {
 
     verify(delegate, times(1)).initialize(initializeMap);
     verify(delegate, times(1)).report(metricsReport);
+  }
+
+  @Test
+  void testTableReporterStoresReportsWithoutCallingDelegate() {
+    MetricsReporter delegate = mock(MetricsReporter.class);
+    reporter = new OpenLineageMetricsReporter(delegate);
+
+    MetricsReporter tableReporter = reporter.getTableReporter();
+    tableReporter.report(mock(CommitReport.class));
+    tableReporter.report(mock(ScanReport.class));
+
+    assertThat(reporter.getTableReporter()).isSameAs(tableReporter);
+    assertThat(reporter.getCommitReportFacets()).hasSize(1);
+    assertThat(reporter.getScanReportFacets()).hasSize(1);
+    verify(delegate, never()).report(any());
   }
 }
