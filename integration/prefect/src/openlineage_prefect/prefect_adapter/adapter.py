@@ -81,7 +81,7 @@ class PrefectOpenLineageAdapter:
         run_id: str,
         event_type: RunState,
         event_time: datetime,
-        expectedevent_time: datetime | None = None,
+        expected_event_time: datetime | None = None,
         flow_run_id: str | None = None,
         flow_name: str | None = None,
         task_name: str | None  = None,
