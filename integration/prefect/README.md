@@ -1,12 +1,14 @@
 # Openlineage Prefect
 
-The `openlineage-prefect` integration collects and adapts Prefect flow and task metadata to the OpenLineage specification for data lineage. All transport options offered by `openlineage-python` are available, including intelligent routing of emitted events to Datadog and GCP, async http, http, and composite.
+The `openlineage-prefect` integration collects, adapts, and emits Prefect flow and task metadata in the OpenLineage specification for data lineage.
 
 ## Features
 
 The integration converts Prefect's unique run objects to idempotent tasks and flows, enabling the analysis of both over time in OpenLineage-compatible consumers.
 
-Support for OpenLineage Datasets enables the aggregation of a data source's producers and consumers across OpenLineage-compatible systems and platforms. This allows for the tracking of external upstream and downstream dependencies of Prefect data sources together with their producing and consuming tasks in Prefect flows.
+The integration supports OpenLineage Datasets, which enable the aggregation of a data source's producers and consumers across OpenLineage-compatible systems and platforms. This allows for the tracking of external upstream and downstream dependencies of Prefect data sources together with their producing and consuming tasks in Prefect flows.
+
+All transport options offered by `openlineage-python` are available, including intelligent routing of emitted events to Datadog and GCP, async http, http, and composite.
 
 ## Basic Configuration
 
@@ -24,7 +26,7 @@ export PREFECT_API_URL='http://prefecthost.com:4200/api'
 
 For more details of OpenLineage transport options and how to configure them, consult the [OpenLineage Python Client Documentation](https://openlineage.io/docs/client/python/).
 
-## Datasets
+## Leveraging Datasets
 
 The integration looks for OpenLineage Datasets in Prefect Artifacts. To attach an input or output Dataset to a job run, use `create_table_artifact` from the Prefect Artifact library to create an Artifact in a task definition context. Provide a database URI and table name via an Artifact's `table` and `description`, respectively, as shown below. Distinguish the type of Dataset by appending `_output` or `_input` to `ol-dataset` in the description.
 
@@ -59,9 +61,9 @@ if __name__ == "__main__":
 
 ## Quickstart Guide
 
-This guide explains how to spin up a **Marquez** instance for OpenLineage visualization and then how to configure a Prefect flow to send OpenLineage events to the Marquez API.
+This guide explains how to spin up a **Marquez** instance for OpenLineage visualization and then configure a Prefect flow to send OpenLineage events to the Marquez API.
 
-**Required**: an active local Prefect instance. This guide assumes the server and API are running on port 4200.
+**Required**: an active local Prefect instance. This guide assumes the server and API are using port 4200.
 
 1. **Spin up Marquez:**
     ```bash
@@ -161,13 +163,28 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
         update_customers()
     ```
 
-3. **Deploy the Update Customers flow in your local Prefect instance:**
+5. **Copy and paste the below code into new file listener.py:**
+
+    ```py
+    import asyncio
+    from openlineage_prefect.prefect_adapter.listener import PrefectOpenLineageListener
+
+    async def main():
+        await PrefectOpenLineageListener().collect_and_process_runs()
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+
+    Run the file in its own process.
+
+6. **Deploy the Update Customers flow in your local Prefect instance:**
     ```sh
     prefect deploy -n prefect-test 
     ```
 
-4. **Trigger a run of prefect-test in the Prefect UI.**
+7. **Trigger a run of prefect-test in the Prefect UI.**
 
-5. **Verify event tracking in Marquez:**
+8. **Verify event tracking in Marquez:**
     * Watch the flow completion logs pop up in your **Prefect UI**.
     * Switch tabs to the **Marquez UI** to see the structural metadata graphs dynamically drawn from your code run.

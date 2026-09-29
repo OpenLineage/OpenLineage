@@ -1,11 +1,11 @@
 ## OpenLineage-Prefect Quickstart Guide
 
-This guide demos how to spin up a **Marquez** instance for OpenLineage visualization and then how to configure a Prefect flow to send OpenLineage events to the Marquez API.
+This guide demos how to spin up a **Marquez** instance for OpenLineage visualization and how to configure Prefect to send OpenLineage events to the Marquez API.
 
-**Required**: an active local Prefect instance. This guide assumes the server and API are running on port 4200.
+**Required**: an active local Prefect instance. This guide assumes the server and API are using port 4200.
 
 1. **Spin up Marquez:**
-    ```bash
+    ```sh
     git clone git@github.com:ilum-cloud/marquez.git
     cd marquez
     ./docker/up.sh --db-port 2345
@@ -20,11 +20,11 @@ This guide demos how to spin up a **Marquez** instance for OpenLineage visualiza
 
 3. **Configure the integration:**
     ```sh
-    export OPENLINEAGE_NAMESPACE='prefect_test' &&
-    export OPENLINEAGE__TRANSPORT__TYPE='http' &&
-    export OPENLINEAGE__TRANSPORT__URL='http://localhost:5000' &&
-    export OPENLINEAGE__TRANSPORT__ENDPOINT='/api/v1/lineage' &&
-    export PREFECT_API_URL='http://localhost:4200/api'
+    export OPENLINEAGE_NAMESPACE="prefect_test" &&
+    export OPENLINEAGE__TRANSPORT__TYPE="http" &&
+    export OPENLINEAGE__TRANSPORT__URL="http://localhost:5000" &&
+    export OPENLINEAGE__TRANSPORT__ENDPOINT="/api/v1/lineage" &&
+    export PREFECT_API_URL="http://localhost:4200/api"
     ```
 
 3. **Deploy the Update Customers flow in your local Prefect instance:**

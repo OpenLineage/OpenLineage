@@ -15,14 +15,15 @@ def load_customers():
     """Flaky task"""
     choice = random.choice(CHOICES)
     if choice == 1:
-        print("1")
         with duckdb.connect("company_customers_db.duckdb") as connector:
             customers = connector.execute("SELECT * FROM org_customers").fetchall()
     else:
-        print("0")
         with duckdb.connect("company_customers_db.duckdb") as connector:
             customers = connector.execute("SELECT * FROM org_customer").fetchall() # fails
 
+    # Artifacts inform the integration about data sources in flows.
+    # The description must consist of `ol-dataset` followed by `_input` or `_output`.
+    # The table definition must be a list of OpenLineage Datasets.
     create_table_artifact(
         key="get-org-customers",
         table=ORG_CUSTOMERS_TABLE,

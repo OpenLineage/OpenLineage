@@ -20,6 +20,7 @@ from prefect.events.schemas.events import Event
 from prefect.exceptions import ObjectNotFound, PrefectHTTPStatusError
 
 JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "default")
+JOB_NAME_TYPE: str = os.environ.get("JOB_NAME_TYPE", "base")
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -74,10 +75,7 @@ class PrefectOpenLineageListener:
         flow_name: str
 
     async def get_deployment_and_flow_info(self, flow_run_id: str) -> tuple:
-        try:
-            flow_run = await self.client.read_flow_run(flow_run_id)
-        except:
-            logger.info("error msg here")
+        flow_run = await self.client.read_flow_run(flow_run_id)
         flow_id = flow_run.flow_id
         flow = await self.client.read_flow(flow_id)
         flow_name = flow.name
@@ -172,12 +170,6 @@ class PrefectOpenLineageListener:
         task_run = await self.client.read_task_run(task_run_id)
         return await self.get_flow_ns(task_run.flow_run_id)
 
-    async def get_flow_run_start_time(self, flow_run_id: str) -> datetime:
-        """Retrieves the start time of a flow run."""
-
-        flow_run = await self.client.read_flow_run(flow_run_id)
-        return flow_run.start_time
-
     async def get_artifacts_by_task_run(self, run_id: str) -> list[dict]:
         """Retrieve artifacts associated with a given task run ID."""
 
@@ -214,7 +206,11 @@ class PrefectOpenLineageListener:
                 if task_run_id:
                     parent_namespace: dict = await self.get_job_ns(task_run_id)
                     parent_run = await self.client.read_task_run(task_run_id)
-                    parent_name = self.get_base_name(parent_run.name)
+                    print(f"Processing parent run: {parent_run.name}")
+                    if JOB_NAME_TYPE == "base":
+                        parent_name = self.get_base_name(parent_run.name)
+                    elif JOB_NAME_TYPE == "full":
+                        parent_name = parent_run.name
                     parent_run_id = self.build_run_id(
                         parent_run.start_time, parent_name, parent_namespace
                     )
@@ -276,7 +272,11 @@ class PrefectOpenLineageListener:
         event_time = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
         expected_start_time = event.payload["task_run"]["expected_start_time"]
         prefect_task_run_id = event.resource.id.split(".")[-1]
-        task_name = self.get_base_name(event.resource.name)
+        if JOB_NAME_TYPE == "base":
+            task_name = self.get_base_name(event.resource.name)
+        elif JOB_NAME_TYPE == "full":
+            task_name = event.resource.name
+        print(task_name)
         try:
             task_run = await self.client.read_task_run(prefect_task_run_id)
             namespace = await self.get_job_ns(prefect_task_run_id)
