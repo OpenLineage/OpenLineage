@@ -39,6 +39,7 @@ public final class JdbcDefaultSchema {
   private static final String POSTGRES_CURRENT_SCHEMA_PROPERTY = "currentSchema";
   private static final String POSTGRES_USER_SCHEMA = "$user";
 
+  /** Utility class, not meant to be instantiated. */
   private JdbcDefaultSchema() {}
 
   /**
@@ -85,6 +86,13 @@ public final class JdbcDefaultSchema {
     return Optional.empty();
   }
 
+  /**
+   * Finds the {@code currentSchema} PostgreSQL connection property.
+   *
+   * @param jdbcUrl JDBC URL, whose parameters take precedence over the properties
+   * @param properties JDBC connection properties, may be {@code null}
+   * @return first usable schema of the search path, empty if the property isn't set
+   */
   private static Optional<String> postgresCurrentSchema(String jdbcUrl, Properties properties) {
     // As in the PostgreSQL JDBC driver, URL parameters take precedence over properties
     Optional<String> fromUrl = postgresCurrentSchemaFromUrl(jdbcUrl);
@@ -95,6 +103,12 @@ public final class JdbcDefaultSchema {
         .flatMap(JdbcDefaultSchema::firstSearchPathEntry);
   }
 
+  /**
+   * Reads the {@code currentSchema} parameter from the query string of a JDBC URL.
+   *
+   * @param jdbcUrl JDBC URL
+   * @return URL-decoded value of the parameter, empty if the URL doesn't have it
+   */
   private static Optional<String> postgresCurrentSchemaFromUrl(String jdbcUrl) {
     int queryStart = jdbcUrl.indexOf('?');
     if (queryStart < 0) {
@@ -110,6 +124,12 @@ public final class JdbcDefaultSchema {
     return Optional.empty();
   }
 
+  /**
+   * Reads {@code currentSchema} from the JDBC connection properties, ignoring the case of the key.
+   *
+   * @param properties JDBC connection properties, may be {@code null}
+   * @return value of the property, empty if it isn't set
+   */
   private static Optional<String> postgresCurrentSchemaFromProperties(Properties properties) {
     if (properties == null) {
       return Optional.empty();
@@ -138,6 +158,12 @@ public final class JdbcDefaultSchema {
     return Optional.empty();
   }
 
+  /**
+   * Decodes a URL parameter value.
+   *
+   * @param value URL-encoded value
+   * @return decoded value, or the original one if it can't be decoded
+   */
   private static String urlDecode(String value) {
     try {
       return URLDecoder.decode(value, "UTF-8");

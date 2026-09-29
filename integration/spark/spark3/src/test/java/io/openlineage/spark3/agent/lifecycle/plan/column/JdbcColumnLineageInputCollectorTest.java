@@ -245,6 +245,7 @@ class JdbcColumnLineageInputCollectorTest {
     verify(builder, times(1)).addInput(exprId2, expected, "j1");
   }
 
+  /** Checks that input fields of an unqualified table get the default schema. */
   @Test
   void testInputCollectionForUnqualifiedTableWithDefaultSchema() {
     givenDefaultSchemaEnabled();
@@ -264,6 +265,7 @@ class JdbcColumnLineageInputCollectorTest {
     verify(builder, times(1)).addInput(exprId2, expected, "j1");
   }
 
+  /** Checks that a wildcard select from an unqualified table gets the default schema. */
   @Test
   void testSelectWildcardFromUnqualifiedTableWithDefaultSchema() {
     givenDefaultSchemaEnabled();
@@ -286,6 +288,7 @@ class JdbcColumnLineageInputCollectorTest {
             "k");
   }
 
+  /** Checks that a plain dbtable gets the default schema in column lineage inputs. */
   @Test
   void testInputCollectionForDbtableWithDefaultSchema() {
     givenDefaultSchemaEnabled();
@@ -310,6 +313,7 @@ class JdbcColumnLineageInputCollectorTest {
     verify(builder, times(1)).addInput(exprId2, expected, "j1");
   }
 
+  /** Enables the default schema flag in the mocked Spark configuration. */
   private void givenDefaultSchemaEnabled() {
     SparkContext sparkContext = mock(SparkContext.class);
     when(sparkContext.conf())

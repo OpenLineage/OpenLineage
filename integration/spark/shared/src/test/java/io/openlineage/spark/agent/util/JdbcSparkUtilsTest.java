@@ -68,6 +68,7 @@ class JdbcSparkUtilsTest {
     assertEquals("postgres://localhost:5432", identifier.getNamespace());
   }
 
+  /** Checks the dataset names of JDBC reads and writes, with the default schema applied or not. */
   @ParameterizedTest
   @MethodSource("namingTestCases")
   void testDatasetNames(NamingTestCase testCase) {
@@ -109,6 +110,7 @@ class JdbcSparkUtilsTest {
                         .getName()));
   }
 
+  /** Naming cases covering dialects, qualified and unqualified tables, and queries. */
   private static Collection<NamingTestCase> namingTestCases() {
     String postgres = "jdbc:postgresql://db.example:5432/app";
     String sqlServer = "jdbc:sqlserver://db.example:1433;databaseName=app";

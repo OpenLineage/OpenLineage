@@ -241,6 +241,14 @@ public class SaveIntoDataSourceCommandVisitor
         .collect(Collectors.toList());
   }
 
+  /**
+   * Builds the identifier of the table written by a JDBC write. With the default schema enabled,
+   * the table is named the same way as the tables of JDBC reads, so that writers and readers of a
+   * table share one dataset name. Otherwise the {@code dbtable} option is used as it is.
+   *
+   * @param command JDBC write command
+   * @return dataset identifier, before namespace resolution
+   */
   private DatasetIdentifier getJdbcDatasetIdentifier(SaveIntoDataSourceCommand command) {
     String tableName = command.options().get("dbtable").get();
     String url = command.options().get("url").get();
@@ -255,6 +263,13 @@ public class SaveIntoDataSourceCommandVisitor
     return JdbcSparkUtils.getDatasetIdentifier(url, table, properties, true);
   }
 
+  /**
+   * Collects the connection properties of a JDBC write, i.e. its options without {@code url} and
+   * {@code dbtable}.
+   *
+   * @param options options of the write command
+   * @return connection properties, with the keys as the user wrote them
+   */
   private static Properties getJdbcConnectionProperties(
       scala.collection.immutable.Map<String, String> options) {
     // JDBC writes pass the options through a CaseInsensitiveMap, which lower-cases its keys

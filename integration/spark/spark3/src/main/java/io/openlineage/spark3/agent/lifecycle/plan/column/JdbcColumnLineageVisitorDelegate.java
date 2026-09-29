@@ -33,6 +33,14 @@ public class JdbcColumnLineageVisitorDelegate {
   private final SqlCollector sqlCollector;
   private final boolean applyDefaultSchema;
 
+  /**
+   * Creates a delegate that collects column lineage of a JDBC relation, naming the input datasets
+   * with the database's default schema when it is enabled.
+   *
+   * @param context column-level lineage context
+   * @param relation JDBC relation
+   * @param attributes output attributes of the relation
+   */
   public JdbcColumnLineageVisitorDelegate(
       ColumnLevelLineageContext context, JDBCRelation relation, List<Attribute> attributes) {
     this.context = context;
@@ -49,12 +57,14 @@ public class JdbcColumnLineageVisitorDelegate {
     return sqlMeta != null;
   }
 
+  /** Adds the input fields of the relation's query to the column-level lineage. */
   public void collectInputs() {
     extractInputsFromSimpleWildcardSelect();
     sqlCollector.collectInputs(
         table -> JdbcSparkUtils.getDatasetIdentifier(jdbcOptions, table, applyDefaultSchema));
   }
 
+  /** Adds the expression dependencies of the relation's query to the column-level lineage. */
   public void collectExpressionDependencies() {
     sqlCollector.collectExpressionDependencies();
   }

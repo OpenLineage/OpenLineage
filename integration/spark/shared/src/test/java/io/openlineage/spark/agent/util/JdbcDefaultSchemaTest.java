@@ -33,6 +33,7 @@ class JdbcDefaultSchemaTest {
         "jdbc:sqlserver://db.example:1433;databaseName=app|dbo",
         "jdbc:jtds:sqlserver://db.example:1433/app|dbo",
       })
+  /** Checks the default schema resolved for PostgreSQL and SQL Server URLs. */
   void testResolve(String url, String expectedSchema) {
     assertThat(JdbcDefaultSchema.resolve(url, new Properties())).contains(expectedSchema);
   }
@@ -44,11 +45,15 @@ class JdbcDefaultSchemaTest {
     "jdbc:oracle:thin:@db.example:1521:app",
     "jdbc:sqlite::memory:"
   })
+  /** Checks that databases without a schema level resolve no default schema. */
   void testResolveWithoutSchemaLevel(String url) {
     assertThat(JdbcDefaultSchema.resolve(url, new Properties())).isEmpty();
     assertThat(JdbcDefaultSchema.resolve(url, null)).isEmpty();
   }
 
+  /**
+   * Checks that currentSchema is read from the connection properties, ignoring the case of the key.
+   */
   @Test
   void testResolvePostgresCurrentSchemaFromProperties() {
     Properties properties = new Properties();
@@ -60,6 +65,7 @@ class JdbcDefaultSchemaTest {
         .contains("public");
   }
 
+  /** Checks that currentSchema in the URL wins over the connection properties, as in the driver. */
   @Test
   void testResolvePostgresUrlTakesPrecedenceOverProperties() {
     Properties properties = new Properties();
@@ -71,6 +77,7 @@ class JdbcDefaultSchemaTest {
         .contains("from_url");
   }
 
+  /** Checks that the flag is read from the Spark configuration and is off by default. */
   @Test
   void testIsEnabled() {
     assertThat(JdbcDefaultSchema.isEnabled(null)).isFalse();
@@ -90,6 +97,7 @@ class JdbcDefaultSchemaTest {
     assertThat(JdbcDefaultSchema.isEnabled(withoutSparkContext)).isFalse();
   }
 
+  /** Creates a context whose Spark context has the given configuration. */
   static OpenLineageContext contextWithConf(SparkConf conf) {
     SparkContext sparkContext = mock(SparkContext.class);
     when(sparkContext.conf()).thenReturn(conf);

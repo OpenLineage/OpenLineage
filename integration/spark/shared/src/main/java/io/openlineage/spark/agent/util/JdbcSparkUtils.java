@@ -33,6 +33,16 @@ import org.apache.spark.sql.types.StructType;
 @Slf4j
 public class JdbcSparkUtils {
 
+  /**
+   * Builds the datasets of the tables read by a JDBC relation, without applying the database's
+   * default schema.
+   *
+   * @param datasetFactory factory of the datasets
+   * @param meta tables and column lineage extracted with {@link
+   *     #extractQueryFromSpark(JDBCRelation)}
+   * @param relation JDBC relation
+   * @return input datasets
+   */
   public static <D extends OpenLineage.Dataset> List<D> getDatasets(
       DatasetFactory<D> datasetFactory, SqlMeta meta, JDBCRelation relation) {
     return getDatasets(datasetFactory, meta, relation, false);
@@ -69,6 +79,16 @@ public class JdbcSparkUtils {
    * Builds the dataset identifier of a table referenced by a JDBC relation. Input datasets and
    * column-level lineage inputs must both be named through this method, so that column lineage
    * input fields point to the same datasets as the inputs of the event.
+   *
+   * @param jdbcOptions options of the JDBC relation
+   * @param table table extracted from the relation's query
+   * @return dataset identifier, before namespace resolution
+   */
+  /**
+   * Builds the dataset identifier of a table referenced by a JDBC relation, without applying the
+   * database's default schema. Input datasets and column-level lineage inputs must both be named
+   * through this method (or its overloads), so that column lineage input fields point to the same
+   * datasets as the inputs of the event.
    *
    * @param jdbcOptions options of the JDBC relation
    * @param table table extracted from the relation's query
@@ -157,6 +177,14 @@ public class JdbcSparkUtils {
         .orElseGet(() -> splitTableName(tableName));
   }
 
+  /**
+   * Splits a table name into database, schema and table name when the SQL parser can't parse it.
+   * Only names with two ({@code schema.table}) or three ({@code database.schema.table}) parts are
+   * split; anything else is kept as a table name.
+   *
+   * @param tableName table name, optionally qualified with a schema and a database
+   * @return table meta with the parts of the name
+   */
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private static DbTableMeta splitTableName(String tableName) {
     String[] parts = tableName.split("\\.");
@@ -168,6 +196,13 @@ public class JdbcSparkUtils {
     return new DbTableMeta(null, null, tableName);
   }
 
+  /**
+   * Extracts the tables read by a JDBC relation, and the column lineage between them and the
+   * relation's output, without applying the database's default schema.
+   *
+   * @param relation JDBC relation
+   * @return tables and column lineage, empty if the query can't be parsed
+   */
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
     return extractQueryFromSpark(relation, false);
   }

@@ -206,6 +206,10 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertEquals(expectedName, result.get(0).getName());
   }
 
+  /**
+   * Checks that the connection options of a JDBC write, such as currentSchema, are used to name the
+   * table.
+   */
   @Test
   void testJdbcWriteUsesConnectionProperties() {
     givenDefaultSchemaEnabled(true);
@@ -221,6 +225,10 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertEquals("some_db.dbo.orders", result.get(0).getName());
   }
 
+  /**
+   * Checks that option keys are matched ignoring case, as Spark lower-cases the keys of a write
+   * command.
+   */
   @Test
   void testJdbcWriteUsesCurrentSchemaFromCaseInsensitiveOptions() {
     givenDefaultSchemaEnabled(true);
@@ -240,6 +248,7 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertEquals("some_db.sales.orders", result.get(0).getName());
   }
 
+  /** Creates a JDBC write command with the given options. */
   private SaveIntoDataSourceCommand jdbcWriteCommand(java.util.Map<String, String> options) {
     SaveIntoDataSourceCommand command = mock(SaveIntoDataSourceCommand.class);
     when(command.schema()).thenReturn(schema);
@@ -248,6 +257,7 @@ class SaveIntoDataSourceCommandVisitorTest {
     return command;
   }
 
+  /** Sets the default schema flag in the mocked Spark configuration. */
   private void givenDefaultSchemaEnabled(boolean enabled) {
     SparkContext sparkContext = mock(SparkContext.class);
     when(sparkContext.conf())

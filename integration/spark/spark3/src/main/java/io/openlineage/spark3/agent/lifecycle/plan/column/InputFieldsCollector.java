@@ -168,6 +168,14 @@ public class InputFieldsCollector {
     return Collections.emptyList();
   }
 
+  /**
+   * Extracts the identifiers of the tables read by a JDBC relation, named the same way as the input
+   * datasets of the event.
+   *
+   * @param context column-level lineage context
+   * @param relation JDBC relation
+   * @return identifiers of the tables, empty if the query can't be parsed
+   */
   static List<DatasetIdentifier> extractDatasetIdentifier(
       ColumnLevelLineageContext context, JDBCRelation relation) {
     boolean applyDefaultSchema = JdbcDefaultSchema.isEnabled(context.getOlContext());
