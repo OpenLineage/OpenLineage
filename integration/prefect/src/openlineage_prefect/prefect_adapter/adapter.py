@@ -41,8 +41,8 @@ class PrefectOpenLineageAdapter:
             run_facets = {
                 "prefectDeployment": facets.run_facets.PrefectDeploymentRunFacet(
                     deploymentId=deployment.id,
-                    created=deployment.created,
-                    updated=deployment.updated,
+                    created=deployment.created.isoformat(),
+                    updated=deployment.updated.isoformat(),
                     name=deployment.name,
                 ),
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
@@ -81,7 +81,7 @@ class PrefectOpenLineageAdapter:
         run_id: str,
         event_type: RunState,
         event_time: datetime,
-        expectedevent_time: datetime | None = None,
+        expected_event_time: datetime | None = None,
         flow_run_id: str | None = None,
         flow_name: str | None = None,
         task_name: str | None  = None,
@@ -106,8 +106,8 @@ class PrefectOpenLineageAdapter:
                 ),
                 "prefectDeployment": facets.run_facets.PrefectDeploymentRunFacet(
                     deploymentId=deployment.id,
-                    created=deployment.created,
-                    updated=deployment.updated,
+                    created=deployment.created.isoformat(),
+                    updated=deployment.updated.isoformat(),
                     name=deployment.name,
                 ),
             }
