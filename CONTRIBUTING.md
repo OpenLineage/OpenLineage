@@ -116,6 +116,31 @@ If contributing changes, additions or fixes, please include an [appropriate head
 
 To set up your local environment and start developing, check the [Development documentation](https://openlineage.io/docs/development/developing/).
 
+### Building, testing and running components with Task
+
+This repository uses [Task](https://taskfile.dev) to drive the local dev workflow (setting up a
+virtual environment, running unit tests, running integration tests) for every component, instead
+of each one documenting its own bespoke commands. After [installing Task](https://taskfile.dev/installation/),
+run `task --list` from the repository root to see every available task, namespaced by component
+(e.g. `clients:python:*` for [client/python](client/python), `integrations:spark:*` (aliased
+`spark:*`) for [integration/spark](integration/spark)). You can also `cd` into a component
+directory and run `task` there directly, which lists only that component's tasks.
+
+A few concrete examples:
+
+* `task clients:python:setup` — create a virtual environment and install `client/python`'s
+  dependencies (via `uv sync`).
+* `task clients:python:test` — run `client/python`'s unit tests (implies `setup`).
+* `task spark:test` — run `integration/spark`'s unit tests.
+* `task spark:integration-test` — run `integration/spark`'s integration tests (requires Docker,
+  used for Testcontainers).
+
+Each component's own `Taskfile.yml` (e.g. [`client/python/Taskfile.yml`](client/python/Taskfile.yml),
+[`integration/spark/Taskfile.yml`](integration/spark/Taskfile.yml)) is the source of truth for what
+it can do and any environment variables or prerequisites (like Docker or cloud credentials) a
+given task needs — check its `desc:` fields, or `task --list`, rather than this file, since that's
+where they're kept up to date.
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2026 contributors to the OpenLineage project
