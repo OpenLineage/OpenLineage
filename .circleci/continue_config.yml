@@ -4,11 +4,15 @@ orbs:
   gcp-cli: circleci/gcp-cli@2.2.0
   rust: circleci/rust@1.6.0
   slack: circleci/slack@4.13.3
+  datadog: datadog/test-optimization-circleci-orb@1.2.1
 
 parameters:
   build-context:
     default: "pr"
     type: string
+  datadog-enabled:
+    default: false
+    type: boolean
   databricks-test:
     type: string
     default: "disabled"
@@ -29,6 +33,37 @@ install_python_client: &install_python_client
   run: (cd ~/openlineage/client/python && pip install . --user)
 
 commands:
+  instrument_tests:
+    description: Enable native instrumentation only when CI credentials are available
+    parameters:
+      languages:
+        type: string
+      site:
+        type: string
+    steps:
+      - when:
+          condition: << pipeline.parameters.datadog-enabled >>
+          steps:
+            - datadog/autoinstrument:
+                languages: << parameters.languages >>
+                site: << parameters.site >>
+
+  instrument_pytest:
+    description: Install Datadog in the interpreter that runs pytest
+    parameters:
+      service:
+        type: string
+      python:
+        type: string
+        description: Path to the test environment's Python interpreter
+    steps:
+      - run:
+          name: Configure Datadog for pytest
+          command: bash ~/openlineage/.circleci/setup-datadog-tests.sh pytest "$DATADOG_TEST_SERVICE" "$DATADOG_TEST_PYTHON"
+          environment:
+            DATADOG_TEST_SERVICE: << parameters.service >>
+            DATADOG_TEST_PYTHON: << parameters.python >>
+
   publish_shadow_jar_local:
     description: "Build shadow JAR and publish to maven local repo"
     steps:
@@ -271,6 +306,9 @@ jobs:
 
   build-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
+    environment:
+      DD_SERVICE: openlineage-sql-java
+      DD_ENV: ci
     docker:
       - image: cimg/openjdk:17.0
     resource_class: "medium"
@@ -278,6 +316,9 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: ~/
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: bash script/build.sh
       - persist_to_workspace:
           root: ~/
@@ -291,6 +332,9 @@ jobs:
 
   release-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
+    environment:
+      DD_SERVICE: openlineage-sql-java
+      DD_ENV: ci
     docker:
       - image: cimg/openjdk:17.0
     steps:
@@ -299,6 +343,9 @@ jobs:
           at: ~/
       # TODO: When moving to GH Actions, this should reuse jar build in
       # build-integration-sql-java rather than rebuild it.
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: bash script/build.sh
       - publish_shadow_jar
 
@@ -317,9 +364,15 @@ jobs:
       - install_uv_python:
           py_env: << parameters.py_env >>
       - run:
-          name: Run tox tests
+          name: Create tox test environment
           command: |
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --notest
+      - instrument_pytest:
+          service: openlineage-python
+          python: .tox/<< parameters.tox_env >>/bin/python
+      - run:
+          name: Run tox tests
+          command: |
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
   unit-tests-client-python:
@@ -357,8 +410,16 @@ jobs:
       - run: uv sync --extra dev
       - run: |
           uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.0" --notest
+      - instrument_pytest:
+          service: openlineage-common
+          python: .tox/py3-common-dbt-1.0/bin/python
+      - run: |
           uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.0" --skip-pkg-install
           uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.3" --notest
+      - instrument_pytest:
+          service: openlineage-common
+          python: .tox/py3-common-dbt-1.3/bin/python
+      - run: |
           uv run --python 3.10 --with tox python -m tox r -e "py3-common-dbt-1.3" --skip-pkg-install
           uv run --python 3.10 mypy --install-types --non-interactive --ignore-missing-imports src
       - run: bash <(curl -s https://codecov.io/bash)
@@ -376,7 +437,10 @@ jobs:
           at: .
       - install_uv_python
       - run: uv sync --extra dev
-      - run: uv run pytest tests/
+      - instrument_pytest:
+          service: openlineage-dbt
+          python: .venv/bin/python
+      - run: uv run --no-sync pytest tests/
 
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
@@ -430,6 +494,9 @@ jobs:
   # JAVA
   build-client-java:
     working_directory: ~/openlineage/client/java
+    environment:
+      DD_SERVICE: openlineage-java
+      DD_ENV: ci
     parameters:
       release:
         default: false
@@ -446,6 +513,9 @@ jobs:
           keys:
             - v1-client-java-{{ checksum "/tmp/checksum.txt" }}
       - set_java_version
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check jacocoTestReport
       - run: bash <(curl -s https://codecov.io/bash)
       - publish_shadow_jar_local
@@ -620,6 +690,8 @@ jobs:
       image: ubuntu-2404:current
     resource_class: large
     environment:
+      DD_SERVICE: openlineage-spark
+      DD_ENV: ci
       TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - *checkout_project_root
@@ -637,6 +709,9 @@ jobs:
           echo "Setting default Java to ${JAVA_BIN}"
           sudo update-alternatives --set java ${JAVA_BIN}
           sudo update-alternatives --set javac ${JAVAC_BIN}
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Papp.java.test.home=${JAVA_TEST_HOME} -Pspark.docker.java.version=${JAVA}
       - run:
           when: on_fail
@@ -675,6 +750,8 @@ jobs:
       image: ubuntu-2404:current
     resource_class: large
     environment:
+      DD_SERVICE: openlineage-spark
+      DD_ENV: ci
       TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - *checkout_project_root
@@ -691,6 +768,9 @@ jobs:
             - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Papp.java.test.home=${JAVA_TEST_HOME} -Pspark.docker.java.version=${JAVA}
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
@@ -709,6 +789,9 @@ jobs:
         type: boolean
         default: false
     working_directory: ~/openlineage/integration/spark-extension-interfaces
+    environment:
+      DD_SERVICE: openlineage-spark-extension-interfaces
+      DD_ENV: ci
     docker:
       - image: cimg/openjdk:17.0
     resource_class: "medium"
@@ -722,6 +805,9 @@ jobs:
       - restore_cache:
           keys:
             - v1-spark-extension-interfaces-{{ checksum "/tmp/checksum.txt" }}
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: ./gradlew --no-daemon --console=plain --stacktrace build
       - run: ./gradlew --no-daemon --console=plain --info check
       - run: |
@@ -748,6 +834,9 @@ jobs:
         type: boolean
         default: false
     working_directory: ~/openlineage/integration/spark-extension-entrypoint
+    environment:
+      DD_SERVICE: openlineage-spark-extension-entrypoint
+      DD_ENV: ci
     docker:
       - image: cimg/openjdk:17.0
     resource_class: "medium"
@@ -761,6 +850,9 @@ jobs:
       - restore_cache:
           keys:
             - v1-spark-extension-entrypoint-{{ checksum "/tmp/checksum.txt" }}
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: ./gradlew --no-daemon --console=plain --stacktrace build
       - run: ./gradlew --no-daemon --console=plain --info check
       - persist_to_workspace:
@@ -829,6 +921,8 @@ jobs:
       image: ubuntu-2404:current
     resource_class: large
     environment:
+      DD_SERVICE: openlineage-spark
+      DD_ENV: ci
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK11_HOME: /usr/lib/jvm/java-11-openjdk-amd64
     steps:
@@ -852,6 +946,9 @@ jobs:
             - run: mkdir -p app/build/logs
             - run: mkdir -p app/build/events
             - run: ./gradlew --console=plain clean shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
+            - instrument_tests:
+                languages: java
+                site: us5.datadoghq.com
             - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Dopenlineage.tests.databricks.workspace.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.workspace.token=$DATABRICKS_TOKEN
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
@@ -884,6 +981,9 @@ jobs:
                 keys:
                   - v1-configurable-integration-test
             - set_java_version
+            - run:
+                name: Configure Datadog for the Spark test container
+                command: bash .circleci/setup-datadog-tests.sh java-container openlineage-spark
             - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf.yml --test ./integration/spark/cli/tests
             - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf-docker.yml --test ./integration/spark/cli/tests
             - store_artifacts:
@@ -1008,6 +1108,8 @@ jobs:
       image: ubuntu-2404:current
     resource_class: large
     environment:
+      DD_SERVICE: openlineage-hive
+      DD_ENV: ci
       TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - *checkout_project_root
@@ -1025,6 +1127,9 @@ jobs:
           echo "Setting default Java to ${JAVA_BIN}"
           sudo update-alternatives --set java ${JAVA_BIN}
           sudo update-alternatives --set javac ${JAVAC_BIN}
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check
       - run:
           when: on_fail
@@ -1042,6 +1147,8 @@ jobs:
       image: ubuntu-2404:current
     resource_class: large
     environment:
+      DD_SERVICE: openlineage-hive
+      DD_ENV: ci
       TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - *checkout_project_root
@@ -1053,6 +1160,9 @@ jobs:
             - v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: ./gradlew --no-daemon --console=plain integrationTest -x test
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - store_test_results:
@@ -1115,6 +1225,8 @@ jobs:
       image: ubuntu-2404:current
     resource_class: large
     environment:
+      DD_SERVICE: openlineage-flink
+      DD_ENV: ci
       TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - *checkout_project_root
@@ -1127,6 +1239,9 @@ jobs:
       - attach_workspace:
           at: ~/
       - run: chmod -R 777 data/iceberg/db
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -1190,6 +1305,8 @@ jobs:
       - image: cimg/openjdk:11.0
     resource_class: large
     environment:
+      DD_SERVICE: openlineage-flink
+      DD_ENV: ci
       TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - *checkout_project_root
@@ -1201,6 +1318,9 @@ jobs:
             - v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
+      - instrument_tests:
+          languages: java
+          site: us5.datadoghq.com
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
@@ -1283,6 +1403,9 @@ jobs:
   # Go Client Jobs
   build-client-go:
     working_directory: ~/openlineage/client/go
+    environment:
+      DD_SERVICE: openlineage-go
+      DD_ENV: ci
     docker:
       - image: cimg/go:1.26
     resource_class: medium
@@ -1317,6 +1440,9 @@ jobs:
       - run:
           name: Build
           command: go build ./...
+      - instrument_tests:
+          languages: go
+          site: us5.datadoghq.com
       - run:
           name: Run tests
           command: go test ./... -v -race -coverprofile=coverage.out
