@@ -69,7 +69,7 @@ ext {
     flinkVersionShort = flinkVersion.substring(0,4)
     assertjVersion = '3.27.7'
     junit5Version = '5.14.4'
-    lombokVersion = '1.18.46'
+    lombokVersion = '1.18.48'
     mockitoVersion = '5.2.0'
     testcontainersVersion = '1.21.4'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
@@ -108,7 +108,7 @@ dependencies {
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    implementation 'org.javassist:javassist:3.32.0-GA'
+    implementation 'org.javassist:javassist:3.33.0-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.6.4'
 
     testImplementation "org.apache.flink:flink-java:$flinkVersion"
@@ -141,8 +141,8 @@ dependencies {
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "com.google.protobuf:protobuf-java:3.25.3"
-    testImplementation("org.slf4j:slf4j-api:2.0.18")
-    testImplementation("org.slf4j:slf4j-simple:2.0.18")
+    testImplementation("org.slf4j:slf4j-api:2.0.19")
+    testImplementation("org.slf4j:slf4j-simple:2.0.19")
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
