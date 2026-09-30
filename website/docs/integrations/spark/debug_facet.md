@@ -12,6 +12,62 @@ However, it definitely makes sense to enable it ad-hoc when needed, or allow sma
 when it detects that OpenLineage event is not emitted properly.
 :::
 
+## Trace dataset dispatch
+
+To see which dataset builders and plan visitors are checked and invoked, enable
+`TRACE` for `io.openlineage.spark.agent.util.DatasetDispatchTrace` in the driver's
+logging configuration. You do not need to enable the debug facet.
+
+For Log4j 2, add these entries to `log4j2.properties`:
+
+```properties
+logger.datasetDispatch.name = io.openlineage.spark.agent.util.DatasetDispatchTrace
+logger.datasetDispatch.level = trace
+```
+
+For Spark runtimes using Log4j 1, add this entry to `log4j.properties`:
+
+```properties
+log4j.logger.io.openlineage.spark.agent.util.DatasetDispatchTrace=TRACE
+```
+
+The selected appender must also accept `TRACE` events. Apply the logging
+configuration before starting the Spark application, and disable tracing after
+the investigation.
+
+Each input or output extraction phase gets a unique `capture` ID. Trace lines
+include the OpenLineage `run` ID, Spark event class, phase, handler class,
+scope-local node ID, and invocation ID. `parent` links nested checks and
+applications to the invocation that caused them. Visitor adapters report the
+underlying builder class.
+
+For example, an application can produce these abbreviated records:
+
+```text
+id=2 parent=0 operation=apply handler=...LogicalRelationDatasetBuilder node=1 nodeType=...LogicalRelation
+id=2 resultCount=1 durationNanos=42000
+id=3 parent=0 operation=check handler=...AnotherBuilder node=1 nodeType=...LogicalRelation
+id=3 node=1 visited=already-visited visitedBy=2
+id=3 match=false durationNanos=5000
+```
+
+`resultCount=0`, `result=null`, and `error=<exception class>` distinguish empty
+results, null returns, and recovered failures. A visited-state rejection names
+its originating invocation when that update was observed in the same scope;
+otherwise, it reports `visitedBy=outside-scope`. An arbitrary predicate returning
+`false` does not provide an additional reason.
+
+Tracing observes existing calls without rerunning predicates or changing handler
+order. It covers merged plan visitors, safe builder calls, and nested delegation
+through those paths. It does not explain dataset reduction, final facet
+provenance, or arbitrary extension code that bypasses dispatch.
+
+Each phase is limited to 1,000 records plus a `truncated=true` notice. Records do
+not include plan contents, dataset values, or exception messages. Node identity
+bookkeeping is bounded and released when the phase finishes, including on
+failure. Input and output phases use separate scopes, including when extraction
+runs on timeout executor threads.
+
 ## Debug Facet's content
 
 `DebugFacet` contains following information:
