@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/DataMeshGovernanceDatasetFacet.json",
+  "title": "DataMeshGovernanceDatasetFacet",
+  "type": "object",
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "The enterprise data mesh business domain owning this dataset."
+    },
+    "owner": {
+      "type": "string",
+      "description": "Team or individual accountable for the dataset contract."
+    },
+    "dataClassification": {
+      "type": "string",
+      "enum": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"],
+      "description": "Information sensitivity tier."
+    },
+    "piiColumns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of schema attributes containing sensitive or PII data."
+    },
+    "policyChecks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "policyName": {
+            "type": "string"
+          },
+          "engine": {
+            "type": "string"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["INFO", "WARN", "ERROR"]
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": ["policyName", "engine", "passed"]
+      }
+    }
+  },
+  "required": ["domain", "owner"],
+  "$defs": {}
+}
