@@ -346,6 +346,7 @@ def mock_http_session():
     mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.status_code = 200
+    mock_response.is_redirect = False
     mock_client.post.return_value = mock_response
 
     # Return both the client and response for flexibility
