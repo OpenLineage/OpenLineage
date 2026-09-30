@@ -5,10 +5,11 @@
 
 package io.openlineage.flink.tracker;
 
+import io.openlineage.flink.config.FlinkConfigParser;
+import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.time.Duration;
-import java.util.Optional;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.configuration.RestOptions;
 
 /**
  * Factory class to create instance of {@link OpenLineageContinousJobTracker}. It is included for
@@ -19,11 +20,15 @@ public class OpenLineageContinousJobTrackerFactory {
   public static OpenLineageContinousJobTracker getTracker(
       ReadableConfig config, Duration duration) {
 
-    String jobsApiUrl =
-        String.format(
-            "http://%s:%s/jobs",
-            Optional.ofNullable(config.get(RestOptions.ADDRESS)).orElse("localhost"),
-            config.get(RestOptions.PORT));
+    String restApiBaseUrl = null;
+    if (config instanceof Configuration) {
+      FlinkOpenLineageConfig olConfig = FlinkConfigParser.parse((Configuration) config);
+      if (olConfig != null) {
+        restApiBaseUrl = olConfig.getRestApiBaseUrl();
+      }
+    }
+
+    String jobsApiUrl = FlinkRestUrlDiscovery.resolveJobsApiUrl(config, restApiBaseUrl);
 
     return new OpenLineageContinousJobTracker(duration, jobsApiUrl);
   }
