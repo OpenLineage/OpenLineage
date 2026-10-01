@@ -51,6 +51,7 @@ class NameEscapingTest {
   @AfterEach
   void cleanUp() throws Exception {
     // Always restore so subsequent tests start with escaping disabled (the default).
+    NameEscaping.configure((Boolean) null);
     clearEnvironmentVariables(Set.of(ENV_VAR));
   }
 
@@ -428,7 +429,66 @@ class NameEscapingTest {
   }
 
   // -----------------------------------------------------------------------
-  // Builder integration — nameConfig field is stored on the client instance
+  // Global configure(Boolean) and configure(NameConfig) tests
+  // -----------------------------------------------------------------------
+
+  @Test
+  void configureBooleanEnablesEscaping() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+    NameEscaping.configure(true);
+    assertThat(NameEscaping.isEscapingEnabled()).isTrue();
+    assertThat(NameEscaping.escapeSegment("mydb.example.com")).isEqualTo("mydb\\.example\\.com");
+  }
+
+  @Test
+  void configureBooleanDisablesEscaping() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+    NameEscaping.configure(false);
+    assertThat(NameEscaping.isEscapingEnabled()).isFalse();
+    assertThat(NameEscaping.escapeSegment("mydb.example.com")).isEqualTo("mydb.example.com");
+  }
+
+  @Test
+  void configureNullResetsToEnvVarTrue() throws Exception {
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "true");
+    setEnvironmentVariables(env);
+
+    try {
+      NameEscaping.configure((Boolean) null);
+      assertThat(NameEscaping.isEscapingEnabled()).isTrue();
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
+  }
+
+  @Test
+  void configureTakesPrecedenceOverEnvVar() throws Exception {
+    Map<String, String> env = new HashMap<>();
+    env.put(ENV_VAR, "true");
+    setEnvironmentVariables(env);
+
+    try {
+      NameEscaping.configure(false);
+      assertThat(NameEscaping.isEscapingEnabled()).isFalse();
+      assertThat(NameEscaping.escapeSegment("a.b")).isEqualTo("a.b");
+    } finally {
+      clearEnvironmentVariables(env.keySet());
+    }
+  }
+
+  @Test
+  void configureNameConfigEnablesEscaping() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+    NameConfig cfg = new NameConfig();
+    cfg.setEscaping(true);
+    NameEscaping.configure(cfg);
+    assertThat(NameEscaping.isEscapingEnabled()).isTrue();
+    assertThat(NameEscaping.escapeSegment("a.b")).isEqualTo("a\\.b");
+  }
+
+  // -----------------------------------------------------------------------
+  // Builder integration — nameConfig configures client and global state
   // -----------------------------------------------------------------------
 
   @Test
@@ -438,9 +498,20 @@ class NameEscapingTest {
     NameConfig cfg = new NameConfig();
     cfg.setEscaping(true);
 
-    // Build the client to confirm the config is accepted; verify escaping through the same config.
+    // Build the client to confirm global escaping is enabled and naming helpers work end-to-end
     OpenLineageClient.builder().nameConfig(cfg).build().close();
-    assertThat(NameEscaping.escapeSegment("a.b", cfg)).isEqualTo("a\\.b");
+    assertThat(NameEscaping.isEscapingEnabled()).isTrue();
+    assertThat(NameEscaping.escapeSegment("a.b")).isEqualTo("a\\.b");
+
+    io.openlineage.client.dataset.Naming.Oracle oracle =
+        io.openlineage.client.dataset.Naming.Oracle.builder()
+            .host("localhost")
+            .port("1521")
+            .serviceName("mydb.example.com")
+            .schema("mySchema")
+            .table("myTable")
+            .build();
+    assertThat(oracle.getName()).isEqualTo("mydb\\.example\\.com.mySchema.myTable");
   }
 
   @Test
@@ -455,10 +526,41 @@ class NameEscapingTest {
     // Even with env var true, the config says false → escaping off.
     OpenLineageClient.builder().nameConfig(cfg).build().close();
     try {
-      assertThat(NameEscaping.escapeSegment("a.b", cfg)).isEqualTo("a.b");
+      assertThat(NameEscaping.isEscapingEnabled()).isFalse();
+      assertThat(NameEscaping.escapeSegment("a.b")).isEqualTo("a.b");
+
+      io.openlineage.client.dataset.Naming.Oracle oracle =
+          io.openlineage.client.dataset.Naming.Oracle.builder()
+              .host("localhost")
+              .port("1521")
+              .serviceName("mydb.example.com")
+              .schema("mySchema")
+              .table("myTable")
+              .build();
+      assertThat(oracle.getName()).isEqualTo("mydb.example.com.mySchema.myTable");
     } finally {
       clearEnvironmentVariables(env.keySet());
     }
+  }
+
+  @Test
+  void namingHelperAcceptsDirectNameConfig() throws Exception {
+    clearEnvironmentVariables(Set.of(ENV_VAR));
+
+    NameConfig cfg = new NameConfig();
+    cfg.setEscaping(true);
+
+    io.openlineage.client.dataset.Naming.Oracle oracle =
+        io.openlineage.client.dataset.Naming.Oracle.builder()
+            .host("localhost")
+            .port("1521")
+            .serviceName("mydb.example.com")
+            .schema("mySchema")
+            .table("myTable")
+            .nameConfig(cfg)
+            .build();
+
+    assertThat(oracle.getName()).isEqualTo("mydb\\.example\\.com.mySchema.myTable");
   }
 
   // -----------------------------------------------------------------------

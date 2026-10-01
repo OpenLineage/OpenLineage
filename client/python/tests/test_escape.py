@@ -165,6 +165,21 @@ class TestEscapingIntegrationWithNaming:
         pg = Postgres("localhost", "5432", "mydb", "myschema", "mytable")
         assert pg.get_name() == "mydb.myschema.mytable"
 
+    def test_mssql_namespace_and_name(self, monkeypatch):
+        from openlineage.client.naming.dataset import MSSQL
+
+        monkeypatch.delenv("OPENLINEAGE__NAME__ESCAPING", raising=False)
+        mssql = MSSQL("localhost", "1433", "my_db", "dbo", "my_table")
+        assert mssql.get_namespace() == "mssql://localhost:1433"
+        assert mssql.get_name() == "my_db.dbo.my_table"
+
+    def test_mssql_database_with_dots_escaped_when_enabled(self, monkeypatch):
+        from openlineage.client.naming.dataset import MSSQL
+
+        monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", "true")
+        mssql = MSSQL("localhost", "1433", "my.db", "dbo", "my_table")
+        assert mssql.get_name() == r"my\.db.dbo.my_table"
+
 
 class TestConfigure:
     """Tests for the configure() override that wires YAML config through."""
@@ -227,6 +242,17 @@ class TestOpenLineageConfigNameParsing:
         cfg = OpenLineageConfig.from_dict({"name": {"escaping": False}})
         assert cfg.name.escaping is False
 
+    def test_name_escaping_string_normalization(self):
+        from openlineage.client.client import OpenLineageConfig
+
+        for true_val in ("true", "TRUE", "True", " true "):
+            cfg = OpenLineageConfig.from_dict({"name": {"escaping": true_val}})
+            assert cfg.name.escaping is True, f"expected True for {true_val!r}"
+
+        for false_val in ("false", "FALSE", "False", "1", "0", "yes", "no", "on", "off"):
+            cfg = OpenLineageConfig.from_dict({"name": {"escaping": false_val}})
+            assert cfg.name.escaping is False, f"expected False for {false_val!r}"
+
     def test_name_absent_defaults_to_none(self):
         from openlineage.client.client import OpenLineageConfig
 
@@ -238,3 +264,28 @@ class TestOpenLineageConfigNameParsing:
 
         cfg = OpenLineageConfig.from_dict({"name": {}})
         assert cfg.name.escaping is None
+
+
+class TestOpenLineageClientEscapingEnvVar:
+    """Verify that OPENLINEAGE__NAME__ESCAPING env var works end-to-end with OpenLineageClient."""
+
+    @pytest.fixture(autouse=True)
+    def reset_override(self):
+        yield
+        configure(None)
+
+    def test_client_init_with_env_var_false_string(self, monkeypatch):
+        from openlineage.client.client import OpenLineageClient
+
+        for false_val in ("false", "FALSE", "False", "1", "yes", "on", "0", "no", "off"):
+            monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", false_val)
+            OpenLineageClient(transport=None, config={"transport": {"type": "noop"}})
+            assert is_escaping_enabled() is False, f"escaping should be disabled for env var {false_val!r}"
+
+    def test_client_init_with_env_var_true_string(self, monkeypatch):
+        from openlineage.client.client import OpenLineageClient
+
+        for true_val in ("true", "TRUE", "True", " true "):
+            monkeypatch.setenv("OPENLINEAGE__NAME__ESCAPING", true_val)
+            OpenLineageClient(transport=None, config={"transport": {"type": "noop"}})
+            assert is_escaping_enabled() is True, f"escaping should be enabled for env var {true_val!r}"

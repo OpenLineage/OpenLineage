@@ -7,6 +7,8 @@ package io.openlineage.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.naming.NameConfig;
+import io.openlineage.client.naming.NameEscaping;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +40,7 @@ class NamingTest {
 
   @AfterEach
   void restoreEnv() throws Exception {
+    NameEscaping.configure((Boolean) null);
     clearEnv(Set.of(ENV_VAR));
   }
 
@@ -97,6 +100,23 @@ class NamingTest {
     } finally {
       clearEnv(env.keySet());
     }
+  }
+
+  @Test
+  void sparkName_escapingConfiguredViaNameConfig() throws Exception {
+    clearEnv(Set.of(ENV_VAR));
+    NameConfig cfg = new NameConfig();
+    cfg.setEscaping(true);
+
+    Naming.Spark spark =
+        Naming.Spark.builder()
+            .appName("my.app")
+            .command("execute_insert")
+            .table("mydb.myschema.mytable")
+            .nameConfig(cfg)
+            .build();
+
+    assertThat(spark.getName()).isEqualTo("my\\.app.execute_insert.mydb\\.myschema\\.mytable");
   }
 
   @Test

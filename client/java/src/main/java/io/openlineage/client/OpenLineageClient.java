@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.Timer;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.naming.NameConfig;
+import io.openlineage.client.naming.NameEscaping;
 import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.Transport;
 import java.time.Duration;
@@ -68,6 +69,7 @@ public final class OpenLineageClient implements AutoCloseable {
     this.disabledFacets = Arrays.copyOf(disabledFacets, disabledFacets.length);
     this.circuitBreaker = Optional.ofNullable(circuitBreaker);
     this.nameConfig = nameConfig;
+    NameEscaping.configure(nameConfig);
     if (meterRegistry == null) {
       this.meterRegistry = MicrometerProvider.getMeterRegistry();
     } else {

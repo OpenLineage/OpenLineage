@@ -190,6 +190,23 @@ class MySQL(DatasetNaming):
 
 
 @attr.define
+class MSSQL(DatasetNaming):
+    """Naming implementation for Microsoft SQL Server."""
+
+    host: str = attr.field(validator=_check_not_empty)
+    port: str = attr.field(validator=_check_not_empty)
+    database: str = attr.field(validator=_check_not_empty)
+    schema: str = attr.field(validator=_check_not_empty)
+    table: str = attr.field(validator=_check_not_empty)
+
+    def get_namespace(self) -> str:
+        return f"mssql://{self.host}:{self.port}"
+
+    def get_name(self) -> str:
+        return f"{escape(self.database)}.{escape(self.schema)}.{escape(self.table)}"
+
+
+@attr.define
 class CrateDB(DatasetNaming):
     """Naming implementation for CrateDB."""
 

@@ -5,6 +5,7 @@
 
 package io.openlineage.client.dataset;
 
+import io.openlineage.client.naming.NameConfig;
 import io.openlineage.client.naming.NameEscaping;
 import lombok.Builder;
 
@@ -26,12 +27,19 @@ public final class Naming {
     private final String catalog;
     private final String database;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public Athena(String regionName, String catalog, String database, String table) {
+    public Athena(
+        String regionName, String catalog, String database, String table, NameConfig nameConfig) {
       this.regionName = checkArgumentNotEmpty(regionName, "regionName");
       this.catalog = checkArgumentNotEmpty(catalog, "catalog");
       this.database = checkArgumentNotEmpty(database, "database");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public Athena(String regionName, String catalog, String database, String table) {
+      this(regionName, catalog, database, table, null);
     }
 
     @Override
@@ -41,11 +49,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(catalog)
+      return NameEscaping.escapeSegment(catalog, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(database)
+          + NameEscaping.escapeSegment(database, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(table);
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -130,12 +138,19 @@ public final class Naming {
     private final String port;
     private final String schema;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public AzureSynapse(String host, String port, String schema, String table) {
+    public AzureSynapse(
+        String host, String port, String schema, String table, NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.schema = checkArgumentNotEmpty(schema, "schema");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public AzureSynapse(String host, String port, String schema, String table) {
+      this(host, port, schema, table, null);
     }
 
     @Override
@@ -145,7 +160,9 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(schema) + "." + NameEscaping.escapeSegment(table);
+      return NameEscaping.escapeSegment(schema, nameConfig)
+          + "."
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -159,6 +176,7 @@ public final class Naming {
     private final String projectId;
     private final String datasetName;
     private final String tableName;
+    private final NameConfig nameConfig;
 
     /**
      * Constructs a BigQuery naming instance.
@@ -166,11 +184,17 @@ public final class Naming {
      * @param projectId the GCP project ID (must be non-empty)
      * @param datasetName the BigQuery dataset name (must be non-empty)
      * @param tableName the BigQuery table name (must be non-empty)
+     * @param nameConfig optional name configuration for dot-escaping
      */
-    public BigQuery(String projectId, String datasetName, String tableName) {
+    public BigQuery(String projectId, String datasetName, String tableName, NameConfig nameConfig) {
       this.projectId = checkArgumentNotEmpty(projectId, "projectId");
       this.datasetName = checkArgumentNotEmpty(datasetName, "datasetName");
       this.tableName = checkArgumentNotEmpty(tableName, "tableName");
+      this.nameConfig = nameConfig;
+    }
+
+    public BigQuery(String projectId, String datasetName, String tableName) {
+      this(projectId, datasetName, tableName, null);
     }
 
     @Override
@@ -180,11 +204,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(projectId)
+      return NameEscaping.escapeSegment(projectId, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(datasetName)
+          + NameEscaping.escapeSegment(datasetName, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(tableName);
+          + NameEscaping.escapeSegment(tableName, nameConfig);
     }
   }
 
@@ -195,12 +219,19 @@ public final class Naming {
     private final String port;
     private final String keyspace;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public Cassandra(String host, String port, String keyspace, String table) {
+    public Cassandra(
+        String host, String port, String keyspace, String table, NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.keyspace = checkArgumentNotEmpty(keyspace, "keyspace");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public Cassandra(String host, String port, String keyspace, String table) {
+      this(host, port, keyspace, table, null);
     }
 
     @Override
@@ -210,7 +241,9 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(keyspace) + "." + NameEscaping.escapeSegment(table);
+      return NameEscaping.escapeSegment(keyspace, nameConfig)
+          + "."
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -260,12 +293,18 @@ public final class Naming {
     private final String port;
     private final String database;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public MySQL(String host, String port, String database, String table) {
+    public MySQL(String host, String port, String database, String table, NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public MySQL(String host, String port, String database, String table) {
+      this(host, port, database, table, null);
     }
 
     @Override
@@ -275,7 +314,87 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(database) + "." + NameEscaping.escapeSegment(table);
+      return NameEscaping.escapeSegment(database, nameConfig)
+          + "."
+          + NameEscaping.escapeSegment(table, nameConfig);
+    }
+  }
+
+  /** Naming implementation for Hive. */
+  @Builder
+  public static class Hive implements DatasetNaming {
+    private final String host;
+    private final String port;
+    private final String database;
+    private final String table;
+    private final NameConfig nameConfig;
+
+    public Hive(String host, String port, String database, String table, NameConfig nameConfig) {
+      this.host = checkArgumentNotEmpty(host, "host");
+      this.port = checkArgumentNotEmpty(port, "port");
+      this.database = checkArgumentNotEmpty(database, "database");
+      this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public Hive(String host, String port, String database, String table) {
+      this(host, port, database, table, null);
+    }
+
+    @Override
+    public String getNamespace() {
+      return "hive://" + host + ":" + port;
+    }
+
+    @Override
+    public String getName() {
+      return NameEscaping.escapeSegment(database, nameConfig)
+          + "."
+          + NameEscaping.escapeSegment(table, nameConfig);
+    }
+  }
+
+  /** Naming implementation for MSSQL. */
+  @Builder
+  public static class MSSQL implements DatasetNaming {
+    private final String host;
+    private final String port;
+    private final String database;
+    private final String schema;
+    private final String table;
+    private final NameConfig nameConfig;
+
+    public MSSQL(
+        String host,
+        String port,
+        String database,
+        String schema,
+        String table,
+        NameConfig nameConfig) {
+      this.host = checkArgumentNotEmpty(host, "host");
+      this.port = checkArgumentNotEmpty(port, "port");
+      this.database = checkArgumentNotEmpty(database, "database");
+      this.schema = checkArgumentNotEmpty(schema, "schema");
+      this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public MSSQL(String host, String port, String database, String schema, String table) {
+      this(host, port, database, schema, table, null);
+    }
+
+    @Override
+    public String getNamespace() {
+      return "mssql://" + host + ":" + port;
+    }
+
+    @Override
+    public String getName() {
+      return NameEscaping.escapeSegment(database, nameConfig)
+          + "."
+          + NameEscaping.escapeSegment(schema, nameConfig)
+          + "."
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -287,13 +406,25 @@ public final class Naming {
     private final String database;
     private final String schema;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public CrateDB(String host, String port, String database, String schema, String table) {
+    public CrateDB(
+        String host,
+        String port,
+        String database,
+        String schema,
+        String table,
+        NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
       this.schema = checkArgumentNotEmpty(schema, "schema");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public CrateDB(String host, String port, String database, String schema, String table) {
+      this(host, port, database, schema, table, null);
     }
 
     @Override
@@ -303,11 +434,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(database)
+      return NameEscaping.escapeSegment(database, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(schema)
+          + NameEscaping.escapeSegment(schema, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(table);
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -319,13 +450,25 @@ public final class Naming {
     private final String database;
     private final String schema;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public DB2(String host, String port, String database, String schema, String table) {
+    public DB2(
+        String host,
+        String port,
+        String database,
+        String schema,
+        String table,
+        NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
       this.schema = checkArgumentNotEmpty(schema, "schema");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public DB2(String host, String port, String database, String schema, String table) {
+      this(host, port, database, schema, table, null);
     }
 
     @Override
@@ -335,11 +478,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(database)
+      return NameEscaping.escapeSegment(database, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(schema)
+          + NameEscaping.escapeSegment(schema, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(table);
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -350,12 +493,19 @@ public final class Naming {
     private final String port;
     private final String database;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public OceanBase(String host, String port, String database, String table) {
+    public OceanBase(
+        String host, String port, String database, String table, NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public OceanBase(String host, String port, String database, String table) {
+      this(host, port, database, table, null);
     }
 
     @Override
@@ -365,7 +515,9 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(database) + "." + NameEscaping.escapeSegment(table);
+      return NameEscaping.escapeSegment(database, nameConfig)
+          + "."
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -377,13 +529,25 @@ public final class Naming {
     private final String serviceName;
     private final String schema;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public Oracle(String host, String port, String serviceName, String schema, String table) {
+    public Oracle(
+        String host,
+        String port,
+        String serviceName,
+        String schema,
+        String table,
+        NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.serviceName = checkArgumentNotEmpty(serviceName, "serviceName");
       this.schema = checkArgumentNotEmpty(schema, "schema");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public Oracle(String host, String port, String serviceName, String schema, String table) {
+      this(host, port, serviceName, schema, table, null);
     }
 
     @Override
@@ -393,11 +557,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(serviceName)
+      return NameEscaping.escapeSegment(serviceName, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(schema)
+          + NameEscaping.escapeSegment(schema, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(table);
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -409,13 +573,25 @@ public final class Naming {
     private final String database;
     private final String schema;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public Postgres(String host, String port, String database, String schema, String table) {
+    public Postgres(
+        String host,
+        String port,
+        String database,
+        String schema,
+        String table,
+        NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
       this.schema = checkArgumentNotEmpty(schema, "schema");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public Postgres(String host, String port, String database, String schema, String table) {
+      this(host, port, database, schema, table, null);
     }
 
     @Override
@@ -425,11 +601,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(database)
+      return NameEscaping.escapeSegment(database, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(schema)
+          + NameEscaping.escapeSegment(schema, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(table);
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -440,12 +616,19 @@ public final class Naming {
     private final String port;
     private final String database;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public Teradata(String host, String port, String database, String table) {
+    public Teradata(
+        String host, String port, String database, String table, NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public Teradata(String host, String port, String database, String table) {
+      this(host, port, database, table, null);
     }
 
     @Override
@@ -455,7 +638,9 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(database) + "." + NameEscaping.escapeSegment(table);
+      return NameEscaping.escapeSegment(database, nameConfig)
+          + "."
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -468,6 +653,24 @@ public final class Naming {
     private final String database;
     private final String schema;
     private final String table;
+    private final NameConfig nameConfig;
+
+    public Redshift(
+        String clusterIdentifier,
+        String region,
+        String port,
+        String database,
+        String schema,
+        String table,
+        NameConfig nameConfig) {
+      this.clusterIdentifier = checkArgumentNotEmpty(clusterIdentifier, "clusterIdentifier");
+      this.region = checkArgumentNotEmpty(region, "region");
+      this.port = checkArgumentNotEmpty(port, "port");
+      this.database = checkArgumentNotEmpty(database, "database");
+      this.schema = checkArgumentNotEmpty(schema, "schema");
+      this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
 
     public Redshift(
         String clusterIdentifier,
@@ -476,12 +679,7 @@ public final class Naming {
         String database,
         String schema,
         String table) {
-      this.clusterIdentifier = checkArgumentNotEmpty(clusterIdentifier, "clusterIdentifier");
-      this.region = checkArgumentNotEmpty(region, "region");
-      this.port = checkArgumentNotEmpty(port, "port");
-      this.database = checkArgumentNotEmpty(database, "database");
-      this.schema = checkArgumentNotEmpty(schema, "schema");
-      this.table = checkArgumentNotEmpty(table, "table");
+      this(clusterIdentifier, region, port, database, schema, table, null);
     }
 
     @Override
@@ -491,11 +689,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(database)
+      return NameEscaping.escapeSegment(database, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(schema)
+          + NameEscaping.escapeSegment(schema, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(table);
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -507,6 +705,22 @@ public final class Naming {
     private final String database;
     private final String schema;
     private final String table;
+    private final NameConfig nameConfig;
+
+    public Snowflake(
+        String organization_name,
+        String accountName,
+        String database,
+        String schema,
+        String table,
+        NameConfig nameConfig) {
+      this.organizationName = checkArgumentNotEmpty(organization_name, "organizationName");
+      this.accountName = checkArgumentNotEmpty(accountName, "accountName");
+      this.database = checkArgumentNotEmpty(database, "database");
+      this.schema = checkArgumentNotEmpty(schema, "schema");
+      this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
 
     public Snowflake(
         String organization_name,
@@ -514,11 +728,7 @@ public final class Naming {
         String database,
         String schema,
         String table) {
-      this.organizationName = checkArgumentNotEmpty(organization_name, "organizationName");
-      this.accountName = checkArgumentNotEmpty(accountName, "accountName");
-      this.database = checkArgumentNotEmpty(database, "database");
-      this.schema = checkArgumentNotEmpty(schema, "schema");
-      this.table = checkArgumentNotEmpty(table, "table");
+      this(organization_name, accountName, database, schema, table, null);
     }
 
     @Override
@@ -528,11 +738,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(database)
+      return NameEscaping.escapeSegment(database, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(schema)
+          + NameEscaping.escapeSegment(schema, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(table);
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 
@@ -544,13 +754,25 @@ public final class Naming {
     private final String catalog;
     private final String schema;
     private final String table;
+    private final NameConfig nameConfig;
 
-    public Trino(String host, String port, String catalog, String schema, String table) {
+    public Trino(
+        String host,
+        String port,
+        String catalog,
+        String schema,
+        String table,
+        NameConfig nameConfig) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.catalog = checkArgumentNotEmpty(catalog, "catalog");
       this.schema = checkArgumentNotEmpty(schema, "schema");
       this.table = checkArgumentNotEmpty(table, "table");
+      this.nameConfig = nameConfig;
+    }
+
+    public Trino(String host, String port, String catalog, String schema, String table) {
+      this(host, port, catalog, schema, table, null);
     }
 
     @Override
@@ -560,11 +782,11 @@ public final class Naming {
 
     @Override
     public String getName() {
-      return NameEscaping.escapeSegment(catalog)
+      return NameEscaping.escapeSegment(catalog, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(schema)
+          + NameEscaping.escapeSegment(schema, nameConfig)
           + "."
-          + NameEscaping.escapeSegment(table);
+          + NameEscaping.escapeSegment(table, nameConfig);
     }
   }
 

@@ -8,16 +8,56 @@ package openlineage
 import (
 	"os"
 	"strings"
+	"sync"
 )
 
 const nameEscapingEnvVar = "OPENLINEAGE__NAME__ESCAPING"
 
+// NameConfig holds name-related configuration for the OpenLineage client.
+//
+// The zero value (all fields nil/false) means "no override; fall back to the
+// environment variable OPENLINEAGE__NAME__ESCAPING".
+type NameConfig struct {
+	// Escaping enables automatic dot-escaping of name segments when true.
+	// A nil pointer means "no override; consult the environment variable".
+	Escaping *bool
+}
+
+var (
+	nameConfigMu     sync.RWMutex
+	nameConfigGlobal *bool // nil = no override; non-nil = config-derived value
+)
+
+// ConfigureName applies the provided NameConfig as the global override used by
+// [IsNameEscapingEnabled].
+//
+// Call this after constructing the client so that a programmatic NameConfig
+// takes precedence over the OPENLINEAGE__NAME__ESCAPING environment variable.
+// Pass a NameConfig with a nil Escaping field (or call ConfigureName(NameConfig{})
+// again) to reset to env-var-only lookup.
+func ConfigureName(cfg NameConfig) {
+	nameConfigMu.Lock()
+	defer nameConfigMu.Unlock()
+	nameConfigGlobal = cfg.Escaping
+}
+
 // IsNameEscapingEnabled reports whether dot-escaping of name segments is
 // enabled.
 //
-// Escaping is off by default and can be enabled by setting the environment
-// variable OPENLINEAGE__NAME__ESCAPING=true (case-insensitive).
+// Resolution order:
+//
+//  1. If [ConfigureName] was called with a non-nil Escaping value, that value
+//     is returned.
+//  2. Otherwise the environment variable OPENLINEAGE__NAME__ESCAPING is
+//     consulted (case-insensitive; only "true" enables escaping).
 func IsNameEscapingEnabled() bool {
+	nameConfigMu.RLock()
+	override := nameConfigGlobal
+	nameConfigMu.RUnlock()
+
+	if override != nil {
+		return *override
+	}
 	return strings.EqualFold(strings.TrimSpace(os.Getenv(nameEscapingEnvVar)), "true")
 }
 

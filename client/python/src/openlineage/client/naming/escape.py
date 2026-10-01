@@ -10,9 +10,10 @@ dot (e.g. an Oracle service name ``mydb.example.com``), the dot must be
 escaped so that consumers can unambiguously split the name into its
 constituent parts.
 
-The escaping rule (from the naming specification) is:
+The escaping rules (from the naming specification) are:
 
-    A literal ``.`` inside a segment is written as ``\\.``
+    1. A literal ``\\`` is escaped as ``\\\\``.
+    2. A literal ``.`` is escaped as ``\\.``.
 
 Escaping is **disabled by default** and can be enabled by:
 
@@ -58,7 +59,12 @@ def configure(escaping: Optional[bool]) -> None:
             explicitly, or ``None`` to reset to env-var lookup.
     """
     global _config_override  # noqa: PLW0603
-    _config_override = escaping
+    if escaping is None:
+        _config_override = None
+    elif isinstance(escaping, str):
+        _config_override = escaping.strip().lower() == "true"
+    else:
+        _config_override = escaping is True
 
 
 def is_escaping_enabled() -> bool:

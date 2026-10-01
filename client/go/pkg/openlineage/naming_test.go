@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	ol "github.com/OpenLineage/openlineage/client/go/pkg/openlineage"
+	"github.com/OpenLineage/openlineage/client/go/pkg/transport"
 )
 
 // splitEscaped splits a dot-separated OpenLineage name back into its constituent
@@ -143,5 +144,97 @@ func TestIsNameEscapingEnabled_NonTrueValues(t *testing.T) {
 				t.Errorf("expected escaping to be disabled for env value %q", v)
 			}
 		})
+	}
+}
+
+// -----------------------------------------------------------------------
+// ConfigureName — programmatic NameConfig wiring
+// -----------------------------------------------------------------------
+
+func boolPtr(b bool) *bool { return &b }
+
+const escapingEnvVar = "OPENLINEAGE__NAME__ESCAPING"
+
+func TestConfigureName_EnablesEscaping(t *testing.T) {
+	t.Setenv(escapingEnvVar, "")
+	defer ol.ConfigureName(ol.NameConfig{}) // reset
+
+	ol.ConfigureName(ol.NameConfig{Escaping: boolPtr(true)})
+	if !ol.IsNameEscapingEnabled() {
+		t.Error("expected escaping to be enabled after ConfigureName(true)")
+	}
+	got := ol.EscapeNameSegment("mydb.example.com")
+	want := `mydb\.example\.com`
+	if got != want {
+		t.Errorf("EscapeNameSegment = %q, want %q", got, want)
+	}
+}
+
+func TestConfigureName_DisablesEscaping(t *testing.T) {
+	t.Setenv(escapingEnvVar, "")
+	defer ol.ConfigureName(ol.NameConfig{}) // reset
+
+	ol.ConfigureName(ol.NameConfig{Escaping: boolPtr(false)})
+	if ol.IsNameEscapingEnabled() {
+		t.Error("expected escaping to be disabled after ConfigureName(false)")
+	}
+}
+
+func TestConfigureName_TakesPrecedenceOverEnvVar(t *testing.T) {
+	// Env var says "true" but ConfigureName says false → config wins.
+	t.Setenv(escapingEnvVar, "true")
+	defer ol.ConfigureName(ol.NameConfig{}) // reset
+
+	ol.ConfigureName(ol.NameConfig{Escaping: boolPtr(false)})
+	if ol.IsNameEscapingEnabled() {
+		t.Error("ConfigureName(false) should override env var true")
+	}
+	got := ol.EscapeNameSegment("a.b")
+	if got != "a.b" {
+		t.Errorf("EscapeNameSegment = %q, want %q", got, "a.b")
+	}
+}
+
+func TestConfigureName_NilEscapingFallsBackToEnvVar(t *testing.T) {
+	t.Setenv(escapingEnvVar, "true")
+	defer ol.ConfigureName(ol.NameConfig{}) // reset
+
+	// NameConfig with nil Escaping should not override the env var.
+	ol.ConfigureName(ol.NameConfig{})
+	if !ol.IsNameEscapingEnabled() {
+		t.Error("nil Escaping in NameConfig should fall back to env var (which is true)")
+	}
+}
+
+func TestConfigureName_Reset(t *testing.T) {
+	t.Setenv(escapingEnvVar, "false")
+	defer ol.ConfigureName(ol.NameConfig{}) // reset
+
+	ol.ConfigureName(ol.NameConfig{Escaping: boolPtr(true)})
+	// Confirm it's enabled.
+	if !ol.IsNameEscapingEnabled() {
+		t.Fatal("expected escaping enabled after configure(true)")
+	}
+	// Reset to env-var lookup.
+	ol.ConfigureName(ol.NameConfig{})
+	if ol.IsNameEscapingEnabled() {
+		t.Error("after reset, env var is false so escaping should be disabled")
+	}
+}
+
+func TestNewClient_NameConfigWired(t *testing.T) {
+	t.Setenv(escapingEnvVar, "")
+	defer ol.ConfigureName(ol.NameConfig{}) // reset
+
+	cfg := &ol.ClientConfig{
+		Transport: transport.Config{Type: transport.TransportTypeConsole},
+		Name:      ol.NameConfig{Escaping: boolPtr(true)},
+	}
+	_, err := ol.NewClient("test-producer", cfg)
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	if !ol.IsNameEscapingEnabled() {
+		t.Error("expected escaping to be enabled after NewClient with Name.Escaping=true")
 	}
 }

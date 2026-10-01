@@ -13,8 +13,12 @@ package io.openlineage.client.naming;
  * service name {@code mydb.example.com}), the dot must be escaped so that consumers can
  * unambiguously split the name into its constituent parts.
  *
- * <p>The escaping rule (from the naming specification) is: a literal {@code .} inside a segment is
- * written as {@code \\.}.
+ * <p>The escaping rules (from the naming specification) are:
+ *
+ * <ol>
+ *   <li>A literal {@code \} is replaced with {@code \\}.
+ *   <li>A literal {@code .} is replaced with {@code \.}.
+ * </ol>
  *
  * <p>Escaping is <em>disabled by default</em> and can be enabled by setting the environment
  * variable {@code OPENLINEAGE__NAME__ESCAPING} to {@code true} (case-insensitive), or by setting
@@ -37,18 +41,53 @@ public final class NameEscaping {
 
   private static final String ENV_VAR = "OPENLINEAGE__NAME__ESCAPING";
 
+  private static volatile Boolean configOverride;
+
   private NameEscaping() {}
 
   /**
-   * Returns {@code true} if dot-escaping is enabled, consulting only the environment variable
-   * {@code OPENLINEAGE__NAME__ESCAPING}.
+   * Apply the {@code name.escaping} value loaded from configuration.
    *
-   * <p>Use {@link #isEscapingEnabled(NameConfig)} when a {@link NameConfig} is available so that
-   * the YAML setting takes precedence.
+   * <p>Call this when OpenLineage configuration has been loaded so that the {@code name.escaping}
+   * setting is honoured globally. Pass {@code null} to reset to environment variable lookup.
+   *
+   * @param escaping {@code Boolean.TRUE} to enable escaping, {@code Boolean.FALSE} to disable it
+   *     explicitly, or {@code null} to reset to env-var lookup.
+   */
+  public static void configure(Boolean escaping) {
+    configOverride = escaping;
+  }
+
+  /**
+   * Apply the {@link NameConfig} loaded from configuration.
+   *
+   * <p>Call this when OpenLineage configuration has been loaded so that the {@code name.escaping}
+   * setting is honoured globally. Pass {@code null} or a config with null {@code escaping} to reset
+   * to environment variable lookup.
+   *
+   * @param nameConfig the parsed name configuration, may be {@code null}
+   */
+  public static void configure(NameConfig nameConfig) {
+    configOverride = nameConfig != null ? nameConfig.getEscaping() : null;
+  }
+
+  /**
+   * Returns {@code true} if dot-escaping is enabled.
+   *
+   * <p>Resolution order:
+   *
+   * <ol>
+   *   <li>If {@link #configure(Boolean)} or {@link #configure(NameConfig)} was called with a
+   *       non-{@code null} escaping setting, that value is returned.
+   *   <li>Otherwise the environment variable {@code OPENLINEAGE__NAME__ESCAPING} is consulted.
+   * </ol>
    *
    * @return {@code true} when escaping is active
    */
   public static boolean isEscapingEnabled() {
+    if (configOverride != null) {
+      return configOverride;
+    }
     return Boolean.valueOf(System.getenv(ENV_VAR));
   }
 
@@ -58,7 +97,8 @@ public final class NameEscaping {
    * <ol>
    *   <li>If {@code nameConfig} is non-{@code null} and its {@code escaping} field is non-{@code
    *       null}, that value is returned.
-   *   <li>Otherwise the environment variable {@code OPENLINEAGE__NAME__ESCAPING} is consulted.
+   *   <li>Otherwise global configuration and the environment variable {@code
+   *       OPENLINEAGE__NAME__ESCAPING} are consulted via {@link #isEscapingEnabled()}.
    * </ol>
    *
    * @param nameConfig the parsed name configuration, may be {@code null}

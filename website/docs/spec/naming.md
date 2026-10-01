@@ -100,18 +100,24 @@ While it is also recommended for OpenLineage producers and consumers to support 
 
 ## Escaping
 
-As OpenLineage Dataset and Job names follow the patterns defined in the naming conventions described above, it is necessary to allow for escaping of special characters - specifically it is necessary to escape dots (`.`) in OpenLineage name segments. The escaping sequence applied should be `\\`. OpenLineage producers should automatically apply the escaping sequence and OpenLineage consumers should reflect it in case they are processing the OpenLineage names and are deducing hierarchy levels from it (e.g. `database.schema.table`).
+As OpenLineage Dataset and Job names follow the patterns defined in the naming conventions described above, it is necessary to allow for escaping of special characters - specifically it is necessary to escape dots (`.`) in OpenLineage name segments. When escaping is enabled:
+
+1. A literal backslash `\` is escaped as `\\`.
+2. A literal dot `.` is escaped as `\.`.
+
+Backslashes are escaped first so that any backslashes already present in the segment are not misinterpreted as escape prefixes by consumers. OpenLineage producers should automatically apply the escaping rules and OpenLineage consumers should reflect them when processing OpenLineage names and deducing hierarchy levels (e.g. `database.schema.table`).
 
 Example:
 
-Oracle table with following coordinates is referenced as a DataSet in OpenLineage event
+An Oracle table with the following coordinates is referenced as a Dataset in an OpenLineage event:
 - Service Name = `mydb.example.com`
 - Schema Name = `mySchema`
 - Table Name = `myTable`
 
-The escaped OpenLineage name of the dataset should be `mydb\\.example\\.com.mySchema.myTable`.
+- **Logical name (unencoded string):** `mydb\.example\.com.mySchema.myTable`
+- **JSON-encoded representation:** `"mydb\\.example\\.com.mySchema.myTable"`
 
-Without the escaping mechanims in place, consumers would have no way how to correctly segment the OpenLineage name based on the pattern defined in the naming conventions.
+Without the escaping mechanisms in place, consumers would have no way how to correctly segment the OpenLineage name based on the pattern defined in the naming conventions.
 
 The Java, Python, and Go OpenLineage clients can automatically escape dots if escaping is enabled. To enable the escaping, set the following environment variable before the process starts:
 

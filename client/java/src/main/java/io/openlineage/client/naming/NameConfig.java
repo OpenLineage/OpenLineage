@@ -29,9 +29,12 @@ import lombok.ToString;
  * OPENLINEAGE__NAME__ESCAPING=true
  * }</pre>
  *
- * <p>When the environment variable is set it takes precedence because {@link NameEscaping} reads
- * {@code System.getenv("OPENLINEAGE__NAME__ESCAPING")} at call time, independently of whether the
- * YAML configuration has been loaded.
+ * <p>When both are provided, the YAML configuration takes precedence. When {@link
+ * io.openlineage.client.OpenLineageClient} is constructed it calls {@link
+ * NameEscaping#configure(NameConfig)}, which sets a global override that is consulted before the
+ * environment variable. The env var is used only as a fallback when no YAML configuration was
+ * loaded (i.e. when no {@link io.openlineage.client.OpenLineageClient} was constructed, or when the
+ * {@code name.escaping} key is absent from the YAML file).
  */
 @Getter
 @Setter

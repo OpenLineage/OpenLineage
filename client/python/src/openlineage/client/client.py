@@ -63,6 +63,14 @@ class OpenLineageClientOptions:
     adapter: HTTPAdapter | None = None
 
 
+def _to_bool(val: Any) -> bool | None:
+    if val is None:
+        return None
+    if isinstance(val, str):
+        return val.strip().lower() == "true"
+    return val is True
+
+
 @attr.define
 class NameConfig:
     """Configuration for OpenLineage name-related behaviour.
@@ -73,7 +81,7 @@ class NameConfig:
           escaping: true   # enable automatic dot-escaping of name segments (off by default)
     """
 
-    escaping: bool | None = attr.field(default=None)
+    escaping: bool | None = attr.field(default=None, converter=_to_bool)
 
 
 @attr.define
