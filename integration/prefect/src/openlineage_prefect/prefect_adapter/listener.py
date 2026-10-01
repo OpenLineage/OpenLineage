@@ -212,8 +212,8 @@ class PrefectOpenLineageListener:
                     parent["id"] if parent["input_type"] == "task_run" else None
                 )
                 if task_run_id:
-                    parent_namespace: dict = await self.get_job_ns(task_run_id)
                     parent_run = await self.client.read_task_run(task_run_id)
+                    parent_namespace: dict = await  self.get_flow_ns(parent_run.flow_run_id)
                     parent_name = self.get_base_name(parent_run.name)
                     parent_run_id = self.build_run_id(
                         parent_run.start_time, parent_name, parent_namespace
