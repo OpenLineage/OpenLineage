@@ -81,7 +81,7 @@ class PrefectOpenLineageAdapter:
         run_id: str,
         event_type: RunState,
         event_time: datetime,
-        expected_event_time: datetime | None = None,
+        expected_start_time: datetime | None = None,
         flow_run_id: str | None = None,
         flow_name: str | None = None,
         task_name: str | None  = None,
@@ -96,7 +96,7 @@ class PrefectOpenLineageAdapter:
 
         if deployment:
             run_facets = {
-                "nominalTime": NominalTimeRunFacet(nominalStartTime=expectedevent_time),
+                "nominalTime": NominalTimeRunFacet(nominalStartTime=expected_start_time),
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version, name="Prefect"
                 ),
@@ -113,7 +113,7 @@ class PrefectOpenLineageAdapter:
             }
         else:
             run_facets = {
-                "nominalTime": NominalTimeRunFacet(nominalStartTime=expectedevent_time),
+                "nominalTime": NominalTimeRunFacet(nominalStartTime=expected_start_time),
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version, name="Prefect"
                 ),

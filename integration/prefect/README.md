@@ -4,9 +4,14 @@ The `openlineage-prefect` integration collects, adapts, and emits Prefect flow a
 
 ## Features
 
-The integration converts Prefect's unique run objects to idempotent tasks and flows, enabling the analysis of both over time in OpenLineage-compatible consumers.
+The integration converts Prefect's unique run objects to idempotent tasks and flows, enabling the analysis of both over time in OpenLineage-compatible consumers. 
 
-The integration supports OpenLineage Datasets, which enable the aggregation of a data source's producers and consumers across OpenLineage-compatible systems and platforms. This allows for the tracking of external upstream and downstream dependencies of Prefect data sources together with their producing and consuming tasks in Prefect flows.
+**Note:** to override this default behavior and preserve unique job names, set the JOB_NAME_TYPE env variable to "full". Setting it to "base" reverts to the default idempotent names.
+```sh
+export JOB_NAME_TYPE="full"
+```
+
+The integration supports OpenLineage Datasets, which enable the aggregation of a data source's producers and consumers across OpenLineage-compatible systems and platforms. This allows for the tracking of external upstream and downstream dependencies of Prefect data sources together with their producing and consuming tasks in Prefect flows. For more details, see "Leveraging Datasets" below.
 
 All transport options offered by `openlineage-python` are available, including intelligent routing of emitted events to Datadog and GCP, async http, http, and composite.
 
@@ -17,11 +22,11 @@ At a minimum, define a namespace, Prefect API URL, and transport consisting of a
 For example:
 
 ```sh
-export OPENLINEAGE_NAMESPACE='prefect_test' &&
-export OPENLINEAGE__TRANSPORT__TYPE='http' &&
-export OPENLINEAGE__TRANSPORT__URL='http://lineageconsumer.com:5000' &&
-export OPENLINEAGE__TRANSPORT__ENDPOINT='/api/v1/lineage' &&
-export PREFECT_API_URL='http://prefecthost.com:4200/api'
+export OPENLINEAGE_NAMESPACE="prefect_test" &&
+export OPENLINEAGE__TRANSPORT__TYPE="http" &&
+export OPENLINEAGE__TRANSPORT__URL="http://lineageconsumer.com:5000" &&
+export OPENLINEAGE__TRANSPORT__ENDPOINT="/api/v1/lineage" &&
+export PREFECT_API_URL="http://prefecthost.com:4200/api"
 ```
 
 For more details of OpenLineage transport options and how to configure them, consult the [OpenLineage Python Client Documentation](https://openlineage.io/docs/client/python/).
@@ -66,7 +71,7 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
 **Required**: an active local Prefect instance. This guide assumes the server and API are using port 4200.
 
 1. **Spin up Marquez:**
-    ```bash
+    ```sh
     mkdir prefect-test
     cd prefect-test
     git clone git@github.com:ilum-cloud/marquez.git
@@ -85,11 +90,11 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
 
 3. **Configure the integration:**
     ```sh
-    export OPENLINEAGE_NAMESPACE='prefect_test' &&
-    export OPENLINEAGE__TRANSPORT__TYPE='http' &&
-    export OPENLINEAGE__TRANSPORT__URL='http://localhost:5000' &&
-    export OPENLINEAGE__TRANSPORT__ENDPOINT='/api/v1/lineage' &&
-    export PREFECT_API_URL='http://localhost:4200/api'
+    export OPENLINEAGE_NAMESPACE="prefect_test" &&
+    export OPENLINEAGE__TRANSPORT__TYPE="http" &&
+    export OPENLINEAGE__TRANSPORT__URL="http://localhost:5000" &&
+    export OPENLINEAGE__TRANSPORT__ENDPOINT="/api/v1/lineage" &&
+    export PREFECT_API_URL="http://localhost:4200/api"
     ```
 
 4. **Copy and paste the below code into new file quickstart.py:**
@@ -100,20 +105,18 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
     import duckdb
     from prefect.artifacts import create_table_artifact
 
-    CHOICES = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
     ORG_CUSTOMERS_TABLE = [{"database_uri":"duckdb:///company_customers_db", "table":"org_customers"}]
     FIRM_CUSTOMERS_TABLE = [{"database_uri":"duckdb:///company_customers_db", "table":"firm_customers"}]
 
     @task
     def load_customers():
         """Flaky task"""
-        choice = random.choice(CHOICES)
+        choices = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
+        choice = random.choice(choices)
         if choice == 1:
-            print("1")
             with duckdb.connect("company_customers_db.duckdb") as connector:
                 customers = connector.execute("SELECT * FROM org_customers").fetchall()
         else:
-            print("0")
             with duckdb.connect("company_customers_db.duckdb") as connector:
                 customers = connector.execute("SELECT * FROM org_customer").fetchall() # fails
 
@@ -176,9 +179,14 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
         asyncio.run(main())
     ```
 
-    Run the file in its own process.
+    Run the file in its own process:
+
+    ```py
+    python listener.py
+    ```
 
 6. **Deploy the Update Customers flow in your local Prefect instance:**
+
     ```sh
     prefect deploy -n prefect-test 
     ```
@@ -186,5 +194,6 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
 7. **Trigger a run of prefect-test in the Prefect UI.**
 
 8. **Verify event tracking in Marquez:**
-    * Watch the flow completion logs pop up in your **Prefect UI**.
-    * Switch tabs to the **Marquez UI** to see the structural metadata graphs dynamically drawn from your code run.
+
+    * Watch the flow completion logs pop up in your **Prefect UI** at https://localhost:4200.
+    * Switch tabs to the **Marquez UI** on https://localhost:3000 to see the lineage metadata graphs dynamically drawn from your code run.

@@ -206,7 +206,6 @@ class PrefectOpenLineageListener:
                 if task_run_id:
                     parent_namespace: dict = await self.get_job_ns(task_run_id)
                     parent_run = await self.client.read_task_run(task_run_id)
-                    print(f"Processing parent run: {parent_run.name}")
                     if JOB_NAME_TYPE == "base":
                         parent_name = self.get_base_name(parent_run.name)
                     elif JOB_NAME_TYPE == "full":
@@ -276,7 +275,6 @@ class PrefectOpenLineageListener:
             task_name = self.get_base_name(event.resource.name)
         elif JOB_NAME_TYPE == "full":
             task_name = event.resource.name
-        print(task_name)
         try:
             task_run = await self.client.read_task_run(prefect_task_run_id)
             namespace = await self.get_job_ns(prefect_task_run_id)
@@ -344,7 +342,7 @@ class PrefectOpenLineageListener:
                 run_id=ol_task_run_id,
                 event_type=event_state,
                 event_time=event_time,
-                expectedevent_time=expected_start_time,
+                expected_start_time=expected_start_time,
                 flow_run_id=ol_flow_run_id,
                 task_name=task_name,
                 namespace=namespace,
