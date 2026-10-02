@@ -22,31 +22,31 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
-import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.junit.jupiter.api.Test;
 import scala.collection.immutable.Seq;
 
-class CreateTableAsSelectVisitorTest {
-  CreateTableAsSelectVisitor visitor = new CreateTableAsSelectVisitor();
+class ReplaceTableAsSelectVisitorTest {
+  ReplaceTableAsSelectVisitor visitor = new ReplaceTableAsSelectVisitor();
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
   @Test
   void testIsDefinedAt() {
-    assertTrue(visitor.isDefinedAt(getCreateTableAsSelectNode(null)));
-    assertTrue(visitor.isDefinedAt(getCreateTableAsSelectNode(asSeq())));
-    assertFalse(visitor.isDefinedAt(getCreateTableAsSelectNode(asSeq(getProject()))));
+    assertTrue(visitor.isDefinedAt(getReplaceTableAsSelectNode(null)));
+    assertTrue(visitor.isDefinedAt(getReplaceTableAsSelectNode(asSeq())));
+    assertFalse(visitor.isDefinedAt(getReplaceTableAsSelectNode(asSeq(getProject()))));
     assertFalse(visitor.isDefinedAt(mock(LogicalPlan.class)));
   }
 
   @Test
   void testApply() {
     Project project = getProject();
-    CreateTableAsSelect createTableAsSelect =
-        new CreateTableAsSelect(null, null, null, project, null, null, false);
+    ReplaceTableAsSelect replaceTableAsSelect =
+        new ReplaceTableAsSelect(null, null, null, project, null, null, false);
 
-    visitor.apply(createTableAsSelect, builder);
+    visitor.apply(replaceTableAsSelect, builder);
 
     verify(builder)
         .addDependency(
@@ -58,10 +58,10 @@ class CreateTableAsSelectVisitorTest {
     Project innerProject = getProject();
     Project outerProject =
         new Project(asSeq(alias(field(NAME_2, EXPR_ID_2)).as(NAME_3, EXPR_ID_3)), innerProject);
-    CreateTableAsSelect createTableAsSelect =
-        new CreateTableAsSelect(null, null, null, outerProject, null, null, false);
+    ReplaceTableAsSelect replaceTableAsSelect =
+        new ReplaceTableAsSelect(null, null, null, outerProject, null, null, false);
 
-    visitor.apply(createTableAsSelect, builder);
+    visitor.apply(replaceTableAsSelect, builder);
 
     verify(builder)
         .addDependency(
@@ -71,8 +71,8 @@ class CreateTableAsSelectVisitorTest {
             EXPR_ID_2, EXPR_ID_1, "name2", TransformationInfo.identity("name1 AS name2"));
   }
 
-  private static LogicalPlan getCreateTableAsSelectNode(Seq<LogicalPlan> children) {
-    CreateTableAsSelect node = mock(CreateTableAsSelect.class);
+  private static LogicalPlan getReplaceTableAsSelectNode(Seq<LogicalPlan> children) {
+    ReplaceTableAsSelect node = mock(ReplaceTableAsSelect.class);
     when(node.children()).thenReturn(children);
     return node;
   }

@@ -44,6 +44,7 @@ import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
@@ -102,6 +103,51 @@ class InputFieldsCollectorTest {
       InputFieldsCollector.collect(context, plan);
     }
     verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
+  }
+
+  @Test
+  void collectFromQueryWhenCreateTableAsSelectHasNoChildren() {
+    DataSourceV2Relation relation = mockRelationWithOutput();
+    CreateTableAsSelect ctas = mock(CreateTableAsSelect.class);
+    when(ctas.children()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+    when(ctas.query()).thenReturn(relation);
+
+    collectWithDatasetIdentifier(ctas, relation);
+
+    verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
+  }
+
+  @Test
+  void collectFromQueryWhenReplaceTableAsSelectHasNoChildren() {
+    DataSourceV2Relation relation = mockRelationWithOutput();
+    ReplaceTableAsSelect rtas = mock(ReplaceTableAsSelect.class);
+    when(rtas.children()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+    when(rtas.query()).thenReturn(relation);
+
+    collectWithDatasetIdentifier(rtas, relation);
+
+    verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
+  }
+
+  private DataSourceV2Relation mockRelationWithOutput() {
+    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
+    when(relation.output())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(attributeReference))
+                .asScala()
+                .toSeq());
+    when(relation.children()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+    return relation;
+  }
+
+  private void collectWithDatasetIdentifier(LogicalPlan plan, DataSourceV2Relation relation) {
+    try (MockedStatic mocked = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
+      when(DataSourceV2RelationDatasetExtractor.getDatasetIdentifierExtended(
+              context.getOlContext(), relation))
+          .thenReturn(Collections.singletonList(di));
+      InputFieldsCollector.collect(context, plan);
+    }
   }
 
   @Test
