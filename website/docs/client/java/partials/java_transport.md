@@ -22,6 +22,10 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
   - Configuration options for `oauth2` authentication are documented in the [OAuth2 Token Provider](#oauth2-token-provider) section.
 - `headers` - dictionary specifying HTTP request headers. Optional.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
+- `proxy` - dictionary specifying outbound proxy settings. Optional. When omitted, JVM system properties (`-Dhttps.proxyHost` / `-Dhttps.proxyPort`) and the `HTTPS_PROXY` environment variable are honoured automatically — see [Proxy](#proxy) below.
+  - `host` - string, proxy host name or IP address. Required if `proxy` is set.
+  - `port` - integer, proxy port. Optional, default: `8080`.
+  - `nonProxyHosts` - string, comma-separated list of host patterns that bypass the proxy (e.g. `"localhost,*.internal"`). Optional.
 
 #### Behavior
 
@@ -47,6 +51,34 @@ and tunneled over the socket, so `endpoint`, `headers`, `auth`, `compression`, `
 the local socket.
 
 Because it builds on the JDK-native UDS support, this feature needs no extra dependencies.
+
+#### Proxy
+
+The HTTP transport automatically honours the standard JVM proxy system properties when no explicit
+`proxy` config is set:
+
+| Property | Example |
+|---|---|
+| `-Dhttps.proxyHost=squid.internal` | Proxy host for HTTPS connections |
+| `-Dhttps.proxyPort=3128` | Proxy port |
+| `-Dhttp.proxyHost=squid.internal` | Proxy host for HTTP connections |
+| `-Dhttp.proxyPort=3128` | Proxy port |
+| `-Dhttp.nonProxyHosts=localhost\|*.internal` | Pipe-separated bypass list |
+
+For Spark, set these on both driver and executors via `spark.driver.extraJavaOptions` and
+`spark.executor.extraJavaOptions`.
+
+If you need to override the proxy per-transport (e.g. when the JVM-wide setting points elsewhere),
+use the explicit `proxy` config block instead:
+
+```yaml
+transport:
+  type: http
+  url: https://lineage-endpoint
+  proxy:
+    host: squid.internal
+    port: 3128
+```
 
 #### Examples
 
@@ -100,6 +132,17 @@ transport:
   compression: gzip
 ```
 
+With proxy:
+
+```yaml
+transport:
+  type: http
+  url: https://lineage-endpoint
+  proxy:
+    host: squid.internal
+    port: 3128
+```
+
 </TabItem>
 <TabItem value="spark" label="Spark Config">
 
@@ -151,6 +194,20 @@ spark.openlineage.transport.sslContext.keyStorePath=...
 ```
 where the config contains location of the keystore file, keystore password and its type.
 It should also contain key password.
+
+With proxy:
+```ini
+spark.openlineage.transport.type=http
+spark.openlineage.transport.url=https://lineage-endpoint
+spark.openlineage.transport.proxy.host=squid.internal
+spark.openlineage.transport.proxy.port=3128
+```
+
+Or, using JVM system properties (no config change needed):
+```ini
+spark.driver.extraJavaOptions=-Dhttps.proxyHost=squid.internal -Dhttps.proxyPort=3128
+spark.executor.extraJavaOptions=-Dhttps.proxyHost=squid.internal -Dhttps.proxyPort=3128
+```
 
 <details>
 <summary>URL parsing within Spark integration</summary>
@@ -211,6 +268,13 @@ openlineage.transport.sslContext.keyStorePath=...
 where the config contains location of the keystore file, keystore password and its type.
 It should also contain key password.
 
+With proxy:
+```ini
+openlineage.transport.type=http
+openlineage.transport.url=https://lineage-endpoint
+openlineage.transport.proxy.host=squid.internal
+openlineage.transport.proxy.port=3128
+```
 
 </TabItem>
 <TabItem value="java" label="Java Code">
@@ -293,8 +357,31 @@ With SSL Context:
 ```java
  httpConfig.setSslContextConfig(new HttpSslContextConfig(keyStorePassword, keyPassword, keyStoreType, keyStoreFileName));
 ```
-where the config contains location of the keystore file, keystore password and its type. 
-It should also contain key password. 
+where the config contains location of the keystore file, keystore password and its type.
+It should also contain key password.
+
+With proxy:
+
+```java
+import java.net.URI;
+
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.client.transports.HttpProxyConfig;
+import io.openlineage.client.transports.HttpTransport;
+
+HttpProxyConfig proxyConfig = new HttpProxyConfig();
+proxyConfig.setHost("squid.internal");
+proxyConfig.setPort(3128);
+
+HttpConfig httpConfig = new HttpConfig();
+httpConfig.setUrl(URI.create("https://lineage-endpoint"));
+httpConfig.setProxyConfig(proxyConfig);
+
+OpenLineageClient client = OpenLineageClient.builder()
+  .transport(new HttpTransport(httpConfig))
+  .build();
+```
 
 </TabItem>
 </Tabs>
