@@ -1,16 +1,18 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::Context;
+use crate::context::{ColumnAncestors, Context, ContextFrame};
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
-    Function, FunctionArg, FunctionArgExpr, FunctionArguments, Ident, Join, JoinConstraint,
-    JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select, SelectItem,
-    SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, ExcludeSelectItem,
+    Expr, FromTable, Function, FunctionArg, FunctionArgExpr, FunctionArguments, Ident, Join,
+    JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameSelectItem,
+    RenameTableNameKind, Select, SelectItem, SelectItemQualifiedWildcardKind, SetExpr, Statement,
+    Subscript, Table, TableAliasColumnDef, TableFactor, TableFunctionArgs, TableObject,
+    UpdateTableFromKind, Use, Value, ValueWithSpan, WildcardAdditionalOptions, WindowSpec,
+    WindowType, With,
 };
 use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
@@ -29,13 +31,15 @@ impl Visit for With {
             context.push_frame();
             self.cte_tables[i].query.visit(context)?;
             let frame = context.pop_frame();
-            if let Some(f) = frame {
+            if let Some(mut f) = frame {
                 let table = DbTableMeta::new(
                     vec![self.cte_tables[i].alias.name.clone()],
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
+                let col_names = output_column_names(&mut f, &self.cte_tables[i].alias.columns);
+                context.register_cte_columns(table.qualified_name(), col_names);
                 context.collect_with_table(f, table);
             }
 
@@ -112,7 +116,16 @@ impl Visit for TableFactor {
             } => {
                 context.push_frame();
                 subquery.visit(context)?;
-                let frame = context.pop_frame().unwrap();
+                let mut frame = context.pop_frame().unwrap();
+
+                // Register the subquery's output columns so a wildcard over
+                // this table can be expanded, the same way a CTE's are. The
+                // FROM clause is visited before the projection, so the entry
+                // is in place by the time the wildcard is reached.
+                let col_names = output_column_names(
+                    &mut frame,
+                    alias.as_ref().map_or(&[][..], |a| a.columns.as_slice()),
+                );
 
                 if let Some(alias) = alias {
                     let table = DbTableMeta::new(
@@ -121,8 +134,13 @@ impl Visit for TableFactor {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
+                    context.register_cte_columns(table.qualified_name(), col_names);
                     context.collect_with_table(frame, table);
                 } else {
+                    // No alias means no name to key on, so the subquery's own
+                    // text stands in. It is stable within one statement, which
+                    // is all the lookup needs.
+                    context.register_cte_columns(anonymous_derived_key(subquery), col_names);
                     context.collect(frame);
                 }
 
@@ -586,6 +604,10 @@ impl Visit for Select {
             table.relation.visit(context)?;
             let frame = context.pop_frame().unwrap();
             context.collect_aliases(&frame);
+            // A derived table in this FROM item registered its columns in the
+            // frame just popped, and the projection below expands wildcards
+            // over it, so the registration comes across with the aliases.
+            context.inherit_cte_columns(&frame);
             context.collect(frame);
 
             for join in &table.joins {
@@ -593,12 +615,19 @@ impl Visit for Select {
                 join.visit(context)?;
                 let frame = context.pop_frame().unwrap();
                 context.collect_aliases(&frame);
+                // A joined derived table registers in this frame, exactly as
+                // one in the FROM item above does.
+                context.inherit_cte_columns(&frame);
                 context.collect(frame);
             }
         }
 
         let tables_frame = context.pop_frame().unwrap();
         context.collect_aliases(&tables_frame);
+        // The derived tables in this FROM clause registered their columns in
+        // that frame, and the projection below is where a wildcard over them
+        // is expanded, so the registrations have to outlive the pop.
+        context.inherit_cte_columns(&tables_frame);
 
         for projection in &self.projection {
             match projection {
@@ -611,12 +640,47 @@ impl Visit for Select {
                         )),
                         _ => context.set_unnamed_column_context(),
                     };
+                    context.record_projection_column();
                     expr.visit(context)?;
                 }
                 SelectItem::ExprWithAlias { expr, alias } => {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
+                    context.record_projection_column();
                     expr.visit(context)?;
                 }
+                SelectItem::Wildcard(options) => {
+                    let filter = WildcardFilter::from_options(options);
+                    for table_with_joins in &self.from {
+                        expand_wildcard_for_table_factor(
+                            &table_with_joins.relation,
+                            &filter,
+                            context,
+                        );
+                        for join in &table_with_joins.joins {
+                            expand_wildcard_for_table_factor(&join.relation, &filter, context);
+                        }
+                    }
+                }
+                SelectItem::QualifiedWildcard(
+                    SelectItemQualifiedWildcardKind::ObjectName(name),
+                    options,
+                ) => {
+                    let table = DbTableMeta::new(
+                        convert_to_idents(name),
+                        context.dialect(),
+                        context.default_schema().clone(),
+                        context.default_database().clone(),
+                    );
+                    expand_wildcard_for_known_table(
+                        &table,
+                        &WildcardFilter::from_options(options),
+                        context,
+                    );
+                }
+                // Deliberately not exhaustive. sqlparser adds SelectItem
+                // variants between releases — ExprWithAliases arrived in one —
+                // and a bare match here turns an upstream bump into a compile
+                // error in this file rather than a missing case to fill in.
                 _ => {}
             }
         }
@@ -705,6 +769,7 @@ impl Visit for Query {
         if self.with.is_some() {
             context.set_frame_to_main_body();
         }
+        context.inherit_cte_columns(&with_frame);
 
         self.body.visit(context)?;
 
@@ -1076,6 +1141,292 @@ fn convert_to_idents(object_name: &ObjectName) -> Vec<Ident> {
             ObjectNamePart::Function(f) => f.name.clone(),
         })
         .collect()
+}
+
+/// The modifiers a wildcard can carry, reduced to what expansion needs.
+///
+/// `SELECT *` is rarely bare in practice. Dropping these silently is worse
+/// than reporting no lineage at all: `EXCLUDE (secret)` would otherwise emit
+/// an ordinary-looking edge for a column that is not in the output, and
+/// `RENAME (x AS y)` would report the input name rather than the one a
+/// consumer sees.
+#[derive(Default)]
+struct WildcardFilter {
+    excluded: Vec<Ident>,
+    renamed: Vec<(Ident, String)>,
+    /// `SELECT * ILIKE '...'` keeps the columns whose names match a pattern.
+    /// Which ones those are is not decided here, so the whole expansion is
+    /// dropped rather than reporting columns the output may not contain.
+    suppressed: bool,
+}
+
+/// The column an `ObjectName` refers to, which is its last part — `secret` in
+/// both `secret` and `t.secret`.
+fn column_name_of(name: &ObjectName) -> Option<Ident> {
+    convert_to_idents(name).last().cloned()
+}
+
+/// Whether a modifier's identifier names this column.
+///
+/// The three dialects that have these modifiers — Snowflake, BigQuery and
+/// DuckDB — all resolve an unquoted identifier without regard to case, so
+/// `EXCLUDE (SECRET)` removes `secret`. A quoted identifier is matched
+/// exactly, which is the point of quoting it. `CanonicalDialect::canonical_name`
+/// is no help here: it strips delimiters without folding case.
+fn identifier_matches(ident: &Ident, column: &str) -> bool {
+    match ident.quote_style {
+        Some(_) => ident.value == column,
+        None => ident.value.eq_ignore_ascii_case(column),
+    }
+}
+
+impl WildcardFilter {
+    fn from_options(options: &WildcardAdditionalOptions) -> Self {
+        let mut filter = Self::default();
+
+        if let Some(exclude) = &options.opt_exclude {
+            // These are ObjectNames rather than bare idents, so a qualified
+            // form like EXCLUDE (t.secret) is possible; the column is the
+            // final part either way.
+            match exclude {
+                ExcludeSelectItem::Single(name) => {
+                    filter.excluded.extend(column_name_of(name));
+                }
+                ExcludeSelectItem::Multiple(names) => {
+                    filter
+                        .excluded
+                        .extend(names.iter().filter_map(column_name_of));
+                }
+            }
+        }
+
+        // EXCEPT is the same idea; Snowflake spells it EXCLUDE and BigQuery
+        // and DuckDB spell it EXCEPT.
+        if let Some(except) = &options.opt_except {
+            filter.excluded.push(except.first_element.clone());
+            filter
+                .excluded
+                .extend(except.additional_elements.iter().cloned());
+        }
+
+        // `SELECT * REPLACE (expr AS c)` keeps column `c` in the output but
+        // fills it from an expression, whose inputs this pass does not walk.
+        // The passthrough edge would name the wrong source, so `c` is left out
+        // and the columns beside it still expand.
+        if let Some(replace) = &options.opt_replace {
+            filter
+                .excluded
+                .extend(replace.items.iter().map(|item| item.column_name.clone()));
+        }
+
+        filter.suppressed = options.opt_ilike.is_some();
+
+        if let Some(rename) = &options.opt_rename {
+            let pairs = match rename {
+                RenameSelectItem::Single(item) => std::slice::from_ref(item),
+                RenameSelectItem::Multiple(items) => items.as_slice(),
+            };
+            filter.renamed.extend(
+                pairs
+                    .iter()
+                    .map(|p| (p.ident.clone(), p.alias.value.clone())),
+            );
+        }
+
+        filter
+    }
+
+    /// The name this column appears under in the output, or `None` if it does
+    /// not appear at all.
+    fn apply(&self, column: &str) -> Option<String> {
+        if self.suppressed {
+            return None;
+        }
+        if self
+            .excluded
+            .iter()
+            .any(|excluded| identifier_matches(excluded, column))
+        {
+            return None;
+        }
+        Some(
+            self.renamed
+                .iter()
+                .find(|(from, _)| identifier_matches(from, column))
+                .map(|(_, to)| to.clone())
+                .unwrap_or_else(|| column.to_string()),
+        )
+    }
+}
+
+/// Rename a frame's output columns to the explicit aliases a table declares,
+/// as in `WITH d(x) AS (...)` or `(...) AS d(x)`, and return the resulting
+/// names in projection order.
+///
+/// Aliases bind positionally and a table may alias fewer columns than the
+/// query projects, so anything past the end of the list keeps its own name.
+/// Both the projection order and the ancestry keys are rewritten, so the
+/// lineage a caller collects afterwards carries the exposed names too.
+fn output_column_names(
+    frame: &mut ContextFrame,
+    alias_columns: &[TableAliasColumnDef],
+) -> Vec<String> {
+    // Work out the whole set of renames before applying any of it. An alias
+    // can take the name another projected column currently holds — `d(y, x)`
+    // over `SELECT x, y` swaps the two — and inserting the first rename would
+    // then overwrite the entry the second one still has to read.
+    let renames: Vec<(usize, ColumnMeta)> = alias_columns
+        .iter()
+        .enumerate()
+        .map_while(|(position, alias)| {
+            let current = frame.projection_order.get(position)?;
+            let renamed = ColumnMeta::new(alias.name.value.clone(), current.origin.clone());
+            Some((position, renamed))
+        })
+        .filter(|(position, renamed)| frame.projection_order[*position].name != renamed.name)
+        .collect();
+
+    // Out of the map first, so no insert lands on a key another rename needs.
+    let moved: Vec<(usize, ColumnMeta, Option<ColumnAncestors>)> = renames
+        .into_iter()
+        .map(|(position, renamed)| {
+            let current = &frame.projection_order[position];
+            let ancestors = frame.column_ancestry.remove(current);
+            (position, renamed, ancestors)
+        })
+        .collect();
+
+    // Then back in, under the names the table publishes.
+    for (position, renamed, ancestors) in moved {
+        if let Some(ancestors) = ancestors {
+            frame.column_ancestry.insert(renamed.clone(), ancestors);
+        }
+        frame.projection_order[position] = renamed;
+    }
+
+    // A projection with no ancestry — a constant, say — holds a position so
+    // that the aliases after it bind correctly, but it has nothing upstream to
+    // report. Publishing it here would make a wildcard over this table emit an
+    // edge sourced from the table itself.
+    frame
+        .projection_order
+        .iter()
+        .filter(|column| frame.column_ancestry.contains_key(*column))
+        .map(|column| column.name.clone())
+        .collect()
+}
+
+fn expand_wildcard_for_table_factor(
+    relation: &TableFactor,
+    filter: &WildcardFilter,
+    context: &mut Context,
+) {
+    match relation {
+        TableFactor::Table { name, .. } => {
+            let table = DbTableMeta::new(
+                convert_to_idents(name),
+                context.dialect(),
+                context.default_schema().clone(),
+                context.default_database().clone(),
+            );
+            expand_wildcard_for_known_table(&table, filter, context);
+        }
+        // An inline derived table. Its projection is known inside the query
+        // exactly as a CTE's is, so the same uplift applies. An aliased one is
+        // registered under its alias; an unaliased one has no name to key on,
+        // so it is registered under the subquery text instead.
+        TableFactor::Derived {
+            subquery, alias, ..
+        } => {
+            let table = match alias {
+                Some(alias) => DbTableMeta::new(
+                    vec![alias.name.clone()],
+                    context.dialect(),
+                    context.default_schema().clone(),
+                    context.default_database().clone(),
+                ),
+                None => {
+                    expand_wildcard_for_anonymous_derived(subquery, filter, context);
+                    return;
+                }
+            };
+            expand_wildcard_for_known_table(&table, filter, context);
+        }
+        _ => {}
+    }
+}
+
+/// Expand a wildcard over a derived table that has no alias. The columns were
+/// registered under the subquery's own text, which is the only stable handle
+/// available in both places.
+fn expand_wildcard_for_anonymous_derived(
+    subquery: &Query,
+    filter: &WildcardFilter,
+    context: &mut Context,
+) {
+    let key = anonymous_derived_key(subquery);
+    let Some(columns) = context.cte_columns(&key).cloned() else {
+        return;
+    };
+    for column in columns {
+        let Some(output_name) = filter.apply(&column) else {
+            continue;
+        };
+        // No table to attribute to, so the ancestor keeps the subquery's own
+        // resolution, which the frame already carries.
+        context.set_column_context(Some(ColumnMeta::new(output_name.clone(), None)));
+        context.add_column_ancestors(
+            ColumnMeta::new(output_name, None),
+            vec![ColumnMeta::new(column, None)],
+        );
+    }
+}
+
+pub(crate) fn anonymous_derived_key(subquery: &Query) -> String {
+    format!("<derived>{subquery}")
+}
+
+/// Expand a wildcard over a table whose columns are already registered — a
+/// CTE, or a derived table with an alias.
+fn expand_wildcard_for_known_table(
+    table: &DbTableMeta,
+    filter: &WildcardFilter,
+    context: &mut Context,
+) {
+    let qn = table.qualified_name();
+    let resolved_qn = context.resolve_table_qualified_name(table);
+
+    // `WITH d AS (...) SELECT d.* FROM physical AS d` resolves the alias to
+    // `physical`, whose columns are not known here. Falling back to the name as
+    // written would find the CTE that happens to share it and report its
+    // columns as the physical table's, so the fallback applies only where
+    // resolution had nothing of its own to offer.
+    let resolved_elsewhere = resolved_qn != qn && !resolved_qn.is_empty();
+
+    let columns = if resolved_elsewhere {
+        context.cte_columns(&resolved_qn).cloned()
+    } else {
+        context
+            .cte_columns(&resolved_qn)
+            .or_else(|| context.cte_columns(&qn))
+            .cloned()
+    };
+
+    let columns = match columns {
+        Some(cols) => cols,
+        None => return,
+    };
+
+    for col_name in columns {
+        let Some(output_name) = filter.apply(&col_name) else {
+            continue;
+        };
+        context.set_column_context(Some(ColumnMeta::new(output_name.clone(), None)));
+        context.add_column_ancestors(
+            ColumnMeta::new(output_name, None),
+            vec![ColumnMeta::new(col_name, Some(table.clone()))],
+        );
+    }
 }
 
 pub fn extract_up_to_two_ident_values(
