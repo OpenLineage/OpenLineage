@@ -259,6 +259,19 @@ class OpenLineageRunEventBuilder {
     return facetBuilder;
   }
 
+  /**
+   * Builds the {@link InputDataset}s for the plan currently held by {@link
+   * OpenLineageContext#getQueryExecution()}, without requiring any {@link
+   * org.apache.spark.scheduler.SparkListenerEvent} context. Used to eagerly capture the lineage of
+   * a checkpoint's query, which runs as its own {@code SQLExecution} and whose plan won't be
+   * retrievable once the checkpoint completes.
+   *
+   * @see io.openlineage.spark.api.CheckpointContext
+   */
+  List<InputDataset> buildCheckpointInputDatasets() {
+    return buildInputDatasets(Collections.emptyList());
+  }
+
   private List<InputDataset> buildInputDatasets(List<Object> nodes) {
     openLineageContext
         .getQueryExecution()
