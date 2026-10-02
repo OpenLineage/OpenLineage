@@ -54,19 +54,21 @@ public class JavaRuntimeCircuitBreaker extends ExecutorCircuitBreaker {
     }
 
     long currentTimeInNanoseconds = System.nanoTime();
-    long gcCpuTime = getGCCpuTimeNS() - lastTotalGCTimeNS.get();
+    long totalGCTimeInNanoseconds = getGCCpuTimeNS();
+    long gcCpuTime = totalGCTimeInNanoseconds - lastTotalGCTimeNS.get();
     long elapsedTime = currentTimeInNanoseconds - lastTimestampInNanoseconds.get();
-    double gcCpuTimePercentage = (gcCpuTime / (double) elapsedTime) * 100;
     if (elapsedTime <= 0) {
+      // no measurable interval to compare against - only record the baseline for the next check
       lastTimestampInNanoseconds.set(currentTimeInNanoseconds);
-      lastTotalGCTimeNS.set(gcCpuTime);
+      lastTotalGCTimeNS.set(totalGCTimeInNanoseconds);
       return new CircuitBreakerState(false);
     }
+    double gcCpuTimePercentage = (gcCpuTime / (double) elapsedTime) * 100;
     double percentageFreeMemory =
         100 * ((freeMemory() + (maxMemory() - totalMemory())) / (double) maxMemory());
 
     lastTimestampInNanoseconds.set(currentTimeInNanoseconds);
-    lastTotalGCTimeNS.set(lastTotalGCTimeNS.get() + gcCpuTime);
+    lastTotalGCTimeNS.set(totalGCTimeInNanoseconds);
 
     int freeMemoryThreshold = config.getMemoryThreshold();
     int gcCPUThreshold = config.getGcCpuThreshold();
