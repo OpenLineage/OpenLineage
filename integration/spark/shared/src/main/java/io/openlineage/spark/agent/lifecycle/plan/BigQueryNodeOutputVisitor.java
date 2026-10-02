@@ -12,6 +12,7 @@ import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ReflectionUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -25,7 +26,11 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import scala.Option;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
 
 /**
  * {@link LogicalPlan} visitor that matches {@link BigQueryRelation}s or {@link
@@ -86,21 +91,34 @@ public class BigQueryNodeOutputVisitor
         .map(x -> (String) x);
   }
 
-  @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan plan) {
-    SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
-    Optional<SparkSession> session = SparkSessionUtils.activeSession();
-    return session
-        .map(
-            sparkSession ->
-                Collections.singletonList(
+    @Override
+    public List<OpenLineage.OutputDataset> apply(LogicalPlan plan) {
+        SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
+        Optional<SparkSession> session = SparkSessionUtils.activeSession();
+        if (session.isPresent()) {
+            StructType schema = saveCommand.schema();
+            if (schema == null || schema.isEmpty()) {
+                List<StructField> fields =
+                        ScalaConversionUtils.<Attribute>fromSeq(saveCommand.query().output()).stream()
+                                .map(attr ->
+                                        new StructField(
+                                                attr.name(),
+                                                attr.dataType(),
+                                                attr.nullable(),
+                                                Metadata.empty()))
+                                .collect(Collectors.toList());
+
+                schema = new StructType(fields.toArray(new StructField[0]));
+            }
+            return Collections.singletonList(
                     factory
-                        .sparkDatasetBuilder()
-                        .dataset(
-                            getFromSaveIntoDataSourceCommand(saveCommand, sparkSession),
-                            BIGQUERY_NAMESPACE)
-                        .schema(saveCommand.schema())
-                        .build()))
-        .orElse(Collections.emptyList());
-  }
+                            .sparkDatasetBuilder()
+                            .dataset(
+                                    getFromSaveIntoDataSourceCommand(saveCommand, session.get()),
+                                    BIGQUERY_NAMESPACE)
+                            .schema(schema)
+                            .build());
+        }
+        return Collections.emptyList();
+    }
 }
