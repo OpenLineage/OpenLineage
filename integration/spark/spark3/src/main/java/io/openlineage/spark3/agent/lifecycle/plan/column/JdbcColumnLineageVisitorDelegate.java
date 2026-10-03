@@ -8,7 +8,6 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector.extractDatasetIdentifier;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.SqlCollector;
@@ -26,7 +25,6 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 public class JdbcColumnLineageVisitorDelegate {
 
   private final SqlMeta sqlMeta;
-  private final String jdbcUrl;
   private final JDBCOptions jdbcOptions;
   private final ColumnLevelLineageContext context;
   private final List<DatasetIdentifier> datasetIdentifiers;
@@ -37,7 +35,6 @@ public class JdbcColumnLineageVisitorDelegate {
       ColumnLevelLineageContext context, JDBCRelation relation, List<Attribute> attributes) {
     this.context = context;
     this.attributes = attributes;
-    jdbcUrl = relation.jdbcOptions().url();
     sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation).orElse(null);
     jdbcOptions = relation.jdbcOptions();
     datasetIdentifiers = extractDatasetIdentifier(context, relation);
@@ -51,10 +48,7 @@ public class JdbcColumnLineageVisitorDelegate {
 
   public void collectInputs() {
     extractInputsFromSimpleWildcardSelect();
-    sqlCollector.collectInputs(
-        dbTableMeta ->
-            JdbcDatasetUtils.getDatasetIdentifier(
-                jdbcUrl, dbTableMeta.name(), jdbcOptions.asConnectionProperties()));
+    sqlCollector.collectInputs(table -> JdbcSparkUtils.getDatasetIdentifier(jdbcOptions, table));
   }
 
   public void collectExpressionDependencies() {
@@ -80,9 +74,7 @@ public class JdbcColumnLineageVisitorDelegate {
                     sf ->
                         context
                             .getNamespaceResolver()
-                            .resolve(
-                                JdbcDatasetUtils.getDatasetIdentifier(
-                                    jdbcUrl, table.name(), jdbcOptions.asConnectionProperties()))
+                            .resolve(JdbcSparkUtils.getDatasetIdentifier(jdbcOptions, table))
                             .getName()
                             .equals(di.getName()))
                 .forEach(
