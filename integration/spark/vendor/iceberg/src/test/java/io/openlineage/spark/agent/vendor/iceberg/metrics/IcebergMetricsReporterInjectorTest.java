@@ -50,6 +50,8 @@ import scala.Option;
 
 public class IcebergMetricsReporterInjectorTest {
 
+  private static final String CATALOG_NAME = "catalog-name";
+
   OpenLineageContext context = mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
   VendorsContext vendorsContext = new VendorsContext();
   IcebergMetricsReporterInjector injector;
@@ -173,7 +175,7 @@ public class IcebergMetricsReporterInjectorTest {
         (CatalogMetricsReporterHolder)
             context.getVendors().getVendorsContext().fromVendorsContext(VENDOR_CONTEXT_KEY).get();
 
-    assertThat(getMetricsReporter(icebergCatalog)).isEqualTo(holder.getReporterFor("catalog-name"));
+    assertThat(getMetricsReporter(icebergCatalog)).isEqualTo(holder.getReporterFor(CATALOG_NAME));
   }
 
   @ParameterizedTest
@@ -188,10 +190,26 @@ public class IcebergMetricsReporterInjectorTest {
         (CatalogMetricsReporterHolder)
             context.getVendors().getVendorsContext().fromVendorsContext(VENDOR_CONTEXT_KEY).get();
 
-    assertThat(holder.getReporterFor("catalog-name").getDelegate())
+    assertThat(holder.getReporterFor(CATALOG_NAME).getDelegate())
         .isEqualTo(existingMetricsReporter);
 
-    assertThat(getMetricsReporter(icebergCatalog)).isEqualTo(holder.getReporterFor("catalog-name"));
+    assertThat(getMetricsReporter(icebergCatalog)).isEqualTo(holder.getReporterFor(CATALOG_NAME));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideCatalogs")
+  @SneakyThrows
+  void testApplyInjectsMetricsReporterWithoutCachingCatalog(CatalogPlugin catalog) {
+    when(((TestingLogicalPlanWithCatalog) subPlan).catalog()).thenReturn(catalog);
+    when(((HasIcebergCatalog) catalog).icebergCatalog()).thenReturn(icebergCatalog);
+
+    injector.apply(plan);
+
+    CatalogMetricsReporterHolder holder =
+        (CatalogMetricsReporterHolder)
+            context.getVendors().getVendorsContext().fromVendorsContext(VENDOR_CONTEXT_KEY).get();
+
+    assertThat(getMetricsReporter(icebergCatalog)).isEqualTo(holder.getReporterFor(CATALOG_NAME));
   }
 
   private void setupCatalog(CatalogPlugin catalog) {
@@ -220,7 +238,7 @@ public class IcebergMetricsReporterInjectorTest {
   private static class TestingIcebergCatalog extends BaseMetastoreCatalog {
     @Override
     public String name() {
-      return "catalog-name";
+      return CATALOG_NAME;
     }
 
     @Override
