@@ -6,11 +6,13 @@
 package io.openlineage.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -194,6 +196,21 @@ class OpenLineageSqlTest {
         OpenLineageSql.parse(Collections.singletonList("INSERT INTO table_1 SELECT * FROM table_2"))
             .get();
     assertEquals(0, output.columnLineage().size());
+  }
+
+  @Test
+  void nativeLibraryLinkFailureIsReportedAsLoadError() {
+    // Any resource that is not a shared library makes System.load throw UnsatisfiedLinkError
+    Optional<String> error = OpenLineageSql.tryLoadNativeLibrary("OpenLineageSqlTest.class");
+    assertTrue(error.isPresent());
+    assertTrue(error.get().startsWith("Error loading native library 'OpenLineageSqlTest.class'"));
+  }
+
+  @Test
+  void missingNativeLibraryIsReportedAsLoadError() {
+    Optional<String> error = OpenLineageSql.tryLoadNativeLibrary("libdoes_not_exist.so");
+    assertTrue(error.isPresent());
+    assertTrue(error.get().startsWith("Error extracting native library 'libdoes_not_exist.so'"));
   }
 
   ColumnLineage columnLineage(String columnName, String sourceTable, String sourceColumn) {

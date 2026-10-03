@@ -95,6 +95,24 @@ public final class OpenLineageSql {
     System.load(nativeLib.getAbsolutePath());
   }
 
+  /**
+   * Loads the native library and returns an error message instead of throwing, so that a host which
+   * can't link it (e.g. missing glibc symbols or a noexec temp dir) falls back to {@link
+   * #loadError} rather than failing class initialization.
+   */
+  static Optional<String> tryLoadNativeLibrary(String libName) {
+    try {
+      loadNativeLibrary(libName);
+      return Optional.empty();
+    } catch (IOException e) {
+      return Optional.of(
+          String.format("Error extracting native library '%s': %s", libName, e.getMessage()));
+    } catch (UnsatisfiedLinkError | SecurityException e) {
+      return Optional.of(
+          String.format("Error loading native library '%s': %s", libName, e.getMessage()));
+    }
+  }
+
   static {
     String libName = "libopenlineage_sql_java";
     if (SystemUtils.IS_OS_MAC_OSX && SystemUtils.OS_ARCH.equals("aarch64")) {
@@ -109,12 +127,8 @@ public final class OpenLineageSql {
       loadError = Optional.of("Cannot link native library: unsupported OS");
     }
 
-    try {
-      loadNativeLibrary(libName);
-    } catch (IOException e) {
-      loadError =
-          Optional.of(
-              String.format("Error extracting native library '%s': %s", libName, e.getMessage()));
+    if (!loadError.isPresent()) {
+      loadError = tryLoadNativeLibrary(libName);
     }
 
     if (loadError.isPresent()) {
