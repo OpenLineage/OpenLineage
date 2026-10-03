@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -106,9 +108,10 @@ public class DeltaHandler implements CatalogHandler {
 
   /**
    * Builds a dataset identifier without touching the Delta catalog, used when the catalog cannot be
-   * queried anymore (no usable Spark session). Falls back to the table location from the plan
-   * properties, or the default warehouse location; rethrows the original failure when neither is
-   * available.
+   * queried anymore (no usable Spark session). Uses the table location from the plan properties, or
+   * else the managed table location (from the session catalog, falling back to the default
+   * warehouse layout); rethrows the original failure when none is available. Locations are
+   * qualified against the Hadoop default filesystem, the same way Spark resolves them.
    */
   @SneakyThrows
   private DatasetIdentifier fallbackDatasetIdentifier(
@@ -121,24 +124,56 @@ public class DeltaHandler implements CatalogHandler {
       return PathUtils.fromPath(new Path(identifier.name()));
     }
 
-    Optional<String> location = location(properties);
+    TableIdentifier tableIdentifier = toTableIdentifier(identifier);
+    Optional<URI> location =
+        location(properties)
+            .map(value -> new Path(value).toUri())
+            .map(Optional::of)
+            .orElseGet(() -> managedTableLocation(session, identifier, tableIdentifier));
     if (location.isPresent()) {
+      Configuration hadoopConf = session.sparkContext().hadoopConfiguration();
       return PathUtils.fromTableIdentifier(
-          toTableIdentifier(identifier), session.sparkContext(), new Path(location.get()).toUri());
-    }
-
-    Optional<URI> warehouseLocation =
-        PathUtils.getWarehouseLocation(
-            session.sparkContext().getConf(), session.sparkContext().hadoopConfiguration());
-    if (warehouseLocation.isPresent()) {
-      Path defaultLocation =
-          PathUtils.reconstructDefaultLocation(
-              warehouseLocation.get().toString(), identifier.namespace(), identifier.name());
-      return PathUtils.fromTableIdentifier(
-          toTableIdentifier(identifier), session.sparkContext(), defaultLocation.toUri());
+          tableIdentifier, session.sparkContext(), qualify(location.get(), hadoopConf));
     }
 
     throw cause;
+  }
+
+  /**
+   * Location of a managed table without an explicit location. The session catalog knows the
+   * database location (which may be custom), so prefer it; reconstruct the default warehouse layout
+   * only when the catalog cannot be queried.
+   */
+  private static Optional<URI> managedTableLocation(
+      SparkSession session, Identifier identifier, TableIdentifier tableIdentifier) {
+    try {
+      return Optional.of(PathUtils.getDefaultLocationUri(session, tableIdentifier));
+    } catch (Exception e) {
+      log.debug(
+          "Unable to resolve the default location of {} from the session catalog; "
+              + "using the default warehouse layout",
+          tableIdentifier,
+          e);
+    }
+    return PathUtils.getWarehouseLocation(
+            session.sparkContext().getConf(), session.sparkContext().hadoopConfiguration())
+        .map(
+            warehouse ->
+                PathUtils.reconstructDefaultLocation(
+                        warehouse.toString(), identifier.namespace(), identifier.name())
+                    .toUri());
+  }
+
+  /**
+   * Qualifies an absolute location that lacks a scheme or authority against {@code fs.defaultFS},
+   * as Spark does when it resolves table locations. Relative locations are left unchanged.
+   */
+  private static URI qualify(URI location, Configuration hadoopConf) {
+    Path path = new Path(location);
+    if (!path.isAbsolute()) {
+      return location;
+    }
+    return path.makeQualified(FileSystem.getDefaultUri(hadoopConf), path).toUri();
   }
 
   private static Optional<String> location(Map<String, String> properties) {
