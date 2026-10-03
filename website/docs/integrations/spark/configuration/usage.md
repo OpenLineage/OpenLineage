@@ -195,3 +195,37 @@ application at runtime, via the previously detailed methods. However, it is **st
 that more dynamic or quickly changing parameters like `spark.openlineage.parentRunId` or
 `spark.openlineage.parentJobName` be set at runtime via the CLI or `SparkSession#config` methods.
 :::
+
+### Graceful shutdown
+
+The last events of an application, such as the `COMPLETE` events of the final actions and the
+application `COMPLETE` event, are sent while the `SparkContext` is stopping. Call `spark.stop()`
+explicitly at the end of your application, as in the examples above. An explicit stop waits until
+the listener has processed all queued events.
+
+If the application ends without calling `spark.stop()`, or the driver receives `SIGTERM` (for
+example, when a Kubernetes pod is deleted or a YARN application is killed), Spark stops the
+`SparkContext` from a JVM shutdown hook instead. That hook runs through Hadoop's
+`ShutdownHookManager` and is cancelled after `hadoop.service.shutdown.timeout`, which defaults to
+30 seconds. Events that have not been sent by then are lost, and the driver log only shows a
+`ShutdownHook '...' timeout` message.
+
+To give the listener more time to send the remaining events:
+
+- Set `hadoop.service.shutdown.timeout` (for example, `120s`) in the `core-site.xml` on the
+  driver's classpath. Hadoop reads it from its default configuration, so setting
+  `spark.hadoop.hadoop.service.shutdown.timeout` has no effect.
+- On Spark 4.0 and later, you can set `spark.shutdown.timeout` instead. It must be passed as a JVM
+  system property of the driver, for example with
+  `--conf "spark.driver.extraJavaOptions=-Dspark.shutdown.timeout=120s"` on the `spark-submit`
+  command line.
+- Keep the grace period of your scheduler or orchestrator (for example, Kubernetes
+  `terminationGracePeriodSeconds`) longer than this timeout, so the driver is not killed before the
+  shutdown hook finishes.
+
+:::note
+With the `asyncTaskQueue` [circuit breaker](circuit_breaker.md), the listener waits up to
+`shutdownTimeoutSeconds` (60 seconds by default) for queued events when the application ends.
+Keep it below the shutdown hook timeout, otherwise the queue cannot drain before the hook is
+cancelled.
+:::
