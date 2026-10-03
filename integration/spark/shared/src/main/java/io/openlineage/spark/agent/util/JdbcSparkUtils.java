@@ -30,6 +30,15 @@ import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 public class JdbcSparkUtils {
+  private static final char OPEN_PAREN = '(';
+  private static final char CLOSE_PAREN = ')';
+  private static final char OPEN_BRACKET = '[';
+  private static final char CLOSE_BRACKET = ']';
+  private static final String BLOCK_COMMENT_START = "/*";
+  private static final String BLOCK_COMMENT_END = "*/";
+  private static final String LINE_COMMENT_START = "--";
+  private static final Pattern SUBQUERY_ALIAS =
+      Pattern.compile("(?i)\\s*(?:(?:AS\\s+)?(?:\\w+|\"[^\"]+\"|`[^`]+`|\\[[^\\]]+\\]))?\\s*");
 
   public static <D extends OpenLineage.Dataset> List<D> getDatasets(
       DatasetFactory<D> datasetFactory, SqlMeta meta, JDBCRelation relation) {
@@ -78,8 +87,7 @@ public class JdbcSparkUtils {
 
     String query =
         dbtable
-            .filter(t -> !dbtableIsASubquery(t))
-            .map(fromClause -> "select * from " + fromClause)
+            .map(fromClause -> unwrapSubquery(fromClause).orElse("select * from " + fromClause))
             .orElseGet(() -> queryStringFromJdbcOptions(relation.jdbcOptions()));
 
     String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
@@ -109,8 +117,56 @@ public class JdbcSparkUtils {
     return tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
   }
 
-  private static boolean dbtableIsASubquery(String dbtable) {
-    return dbtable.startsWith("(");
+  /**
+   * Returns the inner query if {@code dbtable} is a single parenthesized subquery with an optional
+   * alias, e.g. {@code (SELECT ...) AS t}. Returns empty for anything else, e.g. {@code (SELECT
+   * ...) a JOIN b ON ...}. Parentheses inside quotes, bracket-quoted identifiers and SQL comments
+   * are ignored.
+   */
+  private static Optional<String> unwrapSubquery(String dbtable) {
+    String trimmed = dbtable.trim();
+    if (!trimmed.startsWith("(")) {
+      return Optional.empty();
+    }
+    int depth = 0;
+    char quote = 0;
+    int i = 0;
+    while (i < trimmed.length()) {
+      char c = trimmed.charAt(i);
+      int next = i + 1;
+      if (quote != 0) {
+        if (c == quote && next < trimmed.length() && trimmed.charAt(next) == quote) {
+          next++; // doubled closing quote is an escaped quote, e.g. 'it''s' or [a]]b]
+        } else if (c == quote) {
+          quote = 0;
+        }
+      } else if (trimmed.startsWith(BLOCK_COMMENT_START, i)) {
+        next = skipPast(trimmed, BLOCK_COMMENT_END, i + BLOCK_COMMENT_START.length());
+      } else if (trimmed.startsWith(LINE_COMMENT_START, i)) {
+        next = skipPast(trimmed, "\n", i + LINE_COMMENT_START.length());
+      } else if (c == '\'' || c == '"' || c == '`') {
+        quote = c;
+      } else if (c == OPEN_BRACKET) {
+        quote = CLOSE_BRACKET; // bracket-quoted identifier, e.g. [a)b]
+      } else if (c == OPEN_PAREN) {
+        depth++;
+      } else if (c == CLOSE_PAREN) {
+        depth--;
+        if (depth == 0) {
+          return SUBQUERY_ALIAS.matcher(trimmed.substring(i + 1)).matches()
+              ? Optional.of(trimmed.substring(1, i))
+              : Optional.empty();
+        }
+      }
+      i = next;
+    }
+    return Optional.empty();
+  }
+
+  /** Returns the index just after the next {@code end} at or after {@code from}, or the length. */
+  private static int skipPast(String s, String end, int from) {
+    int idx = s.indexOf(end, from);
+    return idx < 0 ? s.length() : idx + end.length();
   }
 
   private static boolean dbtableIsJustATableName(String dbtable) {
