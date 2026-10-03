@@ -304,6 +304,28 @@ class DeltaHandlerTest {
   }
 
   @Test
+  void testGetDatasetVersionSetsAndClearsContextSessionWhenNoneIsActive() {
+    SparkSession.clearActiveSession();
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    DeltaTableV2 deltaTable = mock(DeltaTableV2.class, RETURNS_DEEP_STUBS);
+    when(deltaTable.snapshot().version()).thenReturn(3L);
+    when(deltaCatalog.loadTable(identifier))
+        .thenAnswer(
+            invocation -> {
+              assertThat(SparkSession.getActiveSession().isDefined()).isTrue();
+              assertThat(SparkSession.getActiveSession().get()).isSameAs(sparkSession);
+              return deltaTable;
+            });
+
+    Optional<String> version =
+        deltaHandler.getDatasetVersion(deltaCatalog, identifier, Collections.emptyMap());
+
+    assertThat(version).contains("3");
+    assertThat(SparkSession.getActiveSession().isEmpty()).isTrue();
+  }
+
+  @Test
   void testGetDatasetVersionRethrowsUnrelatedCatalogFailures() {
     Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
     when(deltaCatalog.loadTable(identifier))
