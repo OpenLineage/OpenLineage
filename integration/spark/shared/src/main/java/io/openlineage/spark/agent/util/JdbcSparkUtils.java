@@ -30,6 +30,10 @@ import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 public class JdbcSparkUtils {
+  private static final char OPEN_PAREN = '(';
+  private static final char CLOSE_PAREN = ')';
+  private static final Pattern SUBQUERY_ALIAS =
+      Pattern.compile("(?i)\\s*(?:(?:AS\\s+)?(?:\\w+|\"[^\"]+\"|`[^`]+`|\\[[^\\]]+\\]))?\\s*");
 
   public static <D extends OpenLineage.Dataset> List<D> getDatasets(
       DatasetFactory<D> datasetFactory, SqlMeta meta, JDBCRelation relation) {
@@ -78,8 +82,7 @@ public class JdbcSparkUtils {
 
     String query =
         dbtable
-            .filter(t -> !dbtableIsASubquery(t))
-            .map(fromClause -> "select * from " + fromClause)
+            .map(fromClause -> unwrapSubquery(fromClause).orElse("select * from " + fromClause))
             .orElseGet(() -> queryStringFromJdbcOptions(relation.jdbcOptions()));
 
     String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
@@ -109,8 +112,38 @@ public class JdbcSparkUtils {
     return tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
   }
 
-  private static boolean dbtableIsASubquery(String dbtable) {
-    return dbtable.startsWith("(");
+  /**
+   * Returns the inner query if {@code dbtable} is a single parenthesized subquery with an optional
+   * alias, e.g. {@code (SELECT ...) AS t}. Returns empty for anything else, e.g. {@code (SELECT
+   * ...) a JOIN b ON ...}.
+   */
+  private static Optional<String> unwrapSubquery(String dbtable) {
+    String trimmed = dbtable.trim();
+    if (!trimmed.startsWith("(")) {
+      return Optional.empty();
+    }
+    int depth = 0;
+    char quote = 0;
+    for (int i = 0; i < trimmed.length(); i++) {
+      char c = trimmed.charAt(i);
+      if (quote != 0) {
+        if (c == quote) {
+          quote = 0;
+        }
+      } else if (c == '\'' || c == '"' || c == '`') {
+        quote = c;
+      } else if (c == OPEN_PAREN) {
+        depth++;
+      } else if (c == CLOSE_PAREN) {
+        depth--;
+        if (depth == 0) {
+          return SUBQUERY_ALIAS.matcher(trimmed.substring(i + 1)).matches()
+              ? Optional.of(trimmed.substring(1, i))
+              : Optional.empty();
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   private static boolean dbtableIsJustATableName(String dbtable) {
