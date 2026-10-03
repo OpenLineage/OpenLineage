@@ -30,6 +30,9 @@ import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
 
 @Slf4j
 public class JdbcHandler implements CatalogHandler {
+  /** Number of parts of a {@code database.schema.table} identifier. */
+  private static final int FULLY_QUALIFIED_PARTS = 3;
+
   private final OpenLineageContext context;
   private final DatasetNamespaceCombinedResolver namespaceResolver;
 
@@ -66,16 +69,19 @@ public class JdbcHandler implements CatalogHandler {
         Stream.concat(Arrays.stream(identifier.namespace()), Stream.of(identifier.name()))
             .collect(Collectors.toList());
 
-    if (parts.size() <= 3 && JdbcDefaultSchema.isEnabled(context)) {
+    boolean applyDefaultSchema = JdbcDefaultSchema.isEnabled(context);
+    // a fully qualified table keeps its database whether or not the default schema is applied
+    boolean fullyQualified = parts.size() == FULLY_QUALIFIED_PARTS;
+    if (fullyQualified || parts.size() < FULLY_QUALIFIED_PARTS && applyDefaultSchema) {
       // name the table the same way as JDBC reads and writes do, see JdbcSparkUtils
       DbTableMeta table =
           new DbTableMeta(
-              parts.size() == 3 ? parts.get(0) : null,
+              fullyQualified ? parts.get(0) : null,
               parts.size() >= 2 ? parts.get(parts.size() - 2) : null,
               identifier.name());
       return namespaceResolver.resolve(
           JdbcSparkUtils.getDatasetIdentifier(
-              options.url(), table, options.asConnectionProperties(), true));
+              options.url(), table, options.asConnectionProperties(), applyDefaultSchema));
     }
 
     return namespaceResolver.resolve(

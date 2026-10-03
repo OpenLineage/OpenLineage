@@ -92,7 +92,9 @@ class JdbcHandlerTest {
       delimiter = '|',
       value = {
         "false|jdbc:postgresql://postgreshost:5432/app||orders|app.orders",
-        "false|jdbc:postgresql://postgreshost:5432/app|app.public|orders|app.app.public.orders",
+        "false|jdbc:postgresql://postgreshost:5432/app|public|orders|app.public.orders",
+        "false|jdbc:postgresql://postgreshost:5432/app|app.public|orders|app.public.orders",
+        "false|jdbc:sqlserver://sqlhost:1433;databaseName=app|app.dbo|orders|app.dbo.orders",
         "true|jdbc:postgresql://postgreshost:5432/app||orders|app.public.orders",
         "true|jdbc:postgresql://postgreshost:5432/app|sales|orders|app.sales.orders",
         "true|jdbc:postgresql://postgreshost:5432/app|app.public|orders|app.public.orders",

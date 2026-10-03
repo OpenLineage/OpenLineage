@@ -206,20 +206,43 @@ class JdbcColumnLineageInputCollectorTest {
     verify(builder, never()).addInput(any(ExprId.class), eq(source2), eq("j1"));
   }
 
+  /** Checks that a fully qualified table keeps its database when the default schema is off. */
   @Test
   void testInputCollectionForFullyQualifiedTable() {
+    assertFullyQualifiedTableInputs();
+  }
+
+  /** Checks that a fully qualified table keeps its database when the default schema is on. */
+  @Test
+  void testInputCollectionForFullyQualifiedTableWithDefaultSchema() {
+    givenDefaultSchemaEnabled();
+    assertFullyQualifiedTableInputs();
+  }
+
+  /**
+   * Checks that the inputs of a query reading {@code test.public.jdbc_source1}, from a URL whose
+   * database is {@code test}, are named {@code test.public.jdbc_source1}, and that each column is
+   * mapped to its own expression.
+   */
+  private void assertFullyQualifiedTableInputs() {
     when(jdbcOptions.tableOrQuery())
         .thenReturn("(select k, j1 from test.public.jdbc_source1) SPARK_GEN_SUBQ_0");
-    when(builder.getMapping(any(ColumnMeta.class))).thenReturn(exprId1);
+    DbTableMeta table = new DbTableMeta("test", "public", SOURCE1_TABLE);
+    Map<ColumnMeta, ExprId> mapping = new HashMap<>();
+    mapping.put(new ColumnMeta(table, "k"), exprId1);
+    mapping.put(new ColumnMeta(table, "j1"), exprId2);
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> mapping.get(invocation.getArgument(0)));
 
     List<DatasetIdentifier> inputs =
         InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
-    assertThat(inputs).hasSize(1);
-
     visitor.collectInputs(context, logicalRelation);
 
-    verify(builder, times(1)).addInput(exprId1, inputs.get(0), "k");
-    verify(builder, times(1)).addInput(exprId1, inputs.get(0), "j1");
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
+    assertThat(inputs).containsExactly(expected);
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+    verify(builder, never()).addInput(exprId1, expected, "j1");
   }
 
   @Test

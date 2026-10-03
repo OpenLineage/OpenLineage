@@ -187,8 +187,11 @@ class SaveIntoDataSourceCommandVisitorTest {
       value = {
         "false|jdbc:postgresql://127.0.0.1/some_db|test_table|some_db.test_table",
         "false|jdbc:postgresql://127.0.0.1/some_db|public.test_table|some_db.public.test_table",
+        "false|jdbc:postgresql://127.0.0.1/some_db|some_db.public.test_table|some_db.public.test_table",
+        "false|jdbc:postgresql://127.0.0.1/some_db|some_db.public.\"Test_Table\"|some_db.public.Test_Table",
         "true|jdbc:postgresql://127.0.0.1/some_db|test_table|some_db.public.test_table",
         "true|jdbc:postgresql://127.0.0.1/some_db|public.test_table|some_db.public.test_table",
+        "true|jdbc:postgresql://127.0.0.1/some_db|some_db.public.test_table|some_db.public.test_table",
         "true|jdbc:postgresql://127.0.0.1/some_db|public.\"Test_Table\"|some_db.public.Test_Table",
         "true|jdbc:postgresql://127.0.0.1/some_db?currentSchema=sales|test_table|some_db.sales.test_table",
         "true|jdbc:mysql://127.0.0.1:3306/some_db|test_table|some_db.test_table",

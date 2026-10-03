@@ -129,11 +129,34 @@ class JdbcSparkUtilsTest {
             .expectedName("app.orders")
             .build(),
         naming(false, sqlServer).dbtable("orders").expectedName("app.orders").build(),
+        // disabled: a fully qualified table still keeps its database
+        naming(false, postgres)
+            .dbtable("app.public.orders")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(false, postgres)
+            .dbtable("app.public.\"Orders\"")
+            .expectedName("app.public.Orders")
+            .build(),
+        naming(false, postgres)
+            .query("select id from app.public.orders")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(false, postgres)
+            .dbtable("(select id from app.public.orders) t")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(false, sqlServer).dbtable("app.dbo.orders").expectedName("app.dbo.orders").build(),
+        naming(false, mysql).dbtable("orders").expectedName("app.orders").build(),
         // enabled: PostgreSQL
         naming(true, postgres).dbtable("orders").expectedName("app.public.orders").build(),
         naming(true, postgres).dbtable("public.orders").expectedName("app.public.orders").build(),
         naming(true, postgres)
             .dbtable("app.public.orders")
+            .expectedName("app.public.orders")
+            .build(),
+        naming(true, postgres)
+            .query("select id from app.public.orders")
             .expectedName("app.public.orders")
             .build(),
         naming(true, postgres)

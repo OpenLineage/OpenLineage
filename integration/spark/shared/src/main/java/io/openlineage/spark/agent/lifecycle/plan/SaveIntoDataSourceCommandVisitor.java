@@ -14,7 +14,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
 import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
@@ -244,7 +243,8 @@ public class SaveIntoDataSourceCommandVisitor
   /**
    * Builds the identifier of the table written by a JDBC write. With the default schema enabled,
    * the table is named the same way as the tables of JDBC reads, so that writers and readers of a
-   * table share one dataset name. Otherwise the {@code dbtable} option is used as it is.
+   * table share one dataset name. Otherwise the {@code dbtable} option is used as it is, except
+   * that a fully qualified table keeps its database instead of getting the URL's one prepended.
    *
    * @param command JDBC write command
    * @return dataset identifier, before namespace resolution
@@ -253,14 +253,13 @@ public class SaveIntoDataSourceCommandVisitor
     String tableName = command.options().get("dbtable").get();
     String url = command.options().get("url").get();
 
-    if (!JdbcDefaultSchema.isEnabled(context)) {
-      return JdbcDatasetUtils.getDatasetIdentifier(url, tableName, new Properties());
-    }
-
+    boolean applyDefaultSchema = JdbcDefaultSchema.isEnabled(context);
+    Properties properties =
+        applyDefaultSchema ? getJdbcConnectionProperties(command.options()) : new Properties();
     // name the table the same way as JDBC reads do, see JdbcSparkUtils.extractQueryFromSpark
-    Properties properties = getJdbcConnectionProperties(command.options());
-    DbTableMeta table = JdbcSparkUtils.parseTableName(url, tableName, properties, true);
-    return JdbcSparkUtils.getDatasetIdentifier(url, table, properties, true);
+    DbTableMeta table =
+        JdbcSparkUtils.parseTableName(url, tableName, properties, applyDefaultSchema);
+    return JdbcSparkUtils.getDatasetIdentifier(url, table, properties, applyDefaultSchema);
   }
 
   /**

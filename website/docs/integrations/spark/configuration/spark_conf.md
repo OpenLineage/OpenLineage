@@ -61,9 +61,11 @@ For PostgreSQL and SQL Server, the flag also:
 - parses a plain `dbtable` value with the SQL parser, as queries already are, so that quoted
   identifiers are named the same way in both cases (`dbtable=public."Orders"` gives
   `app.public.Orders`, like `select * from public."Orders"`),
-- applies the same naming to JDBC writes and to JDBC catalog tables,
-- keeps the database of a fully qualified table (`app.public.orders` gives `app.public.orders`
-  instead of `app.app.public.orders`).
+- applies the same naming to JDBC writes and to JDBC catalog tables.
+
+Whether or not the flag is set, a fully qualified table keeps its own database instead of getting
+the database of the URL prepended: `dbtable=app.public.orders` (or `select * from app.public.orders`)
+gives `app.public.orders`, not `app.app.public.orders`.
 
 Enabling the flag renames existing datasets: `{database}.{table}` becomes
 `{database}.{defaultSchema}.{table}`, e.g. `app.orders` becomes `app.public.orders`. Consumers that

@@ -76,15 +76,6 @@ public class JdbcSparkUtils {
   }
 
   /**
-   * Builds the dataset identifier of a table referenced by a JDBC relation. Input datasets and
-   * column-level lineage inputs must both be named through this method, so that column lineage
-   * input fields point to the same datasets as the inputs of the event.
-   *
-   * @param jdbcOptions options of the JDBC relation
-   * @param table table extracted from the relation's query
-   * @return dataset identifier, before namespace resolution
-   */
-  /**
    * Builds the dataset identifier of a table referenced by a JDBC relation, without applying the
    * database's default schema. Input datasets and column-level lineage inputs must both be named
    * through this method (or its overloads), so that column lineage input fields point to the same
@@ -118,11 +109,14 @@ public class JdbcSparkUtils {
   /**
    * Builds the dataset identifier of a table of a JDBC database.
    *
+   * <p>A table that names its database (e.g. {@code app.public.orders}) keeps it instead of getting
+   * the database of the URL prepended, so it is named {@code app.public.orders} rather than {@code
+   * app.app.public.orders}. This doesn't depend on {@code applyDefaultSchema}.
+   *
    * <p>When {@code applyDefaultSchema} is set and the database has a default schema (see {@link
-   * JdbcDefaultSchema}), the name always follows {@code {database}.{schema}.{table}}: a table
-   * without a schema gets the default one, and a table that names its database keeps it instead of
-   * getting the database of the URL prepended. Otherwise the table's qualified name is appended to
-   * the database of the URL.
+   * JdbcDefaultSchema}), a table without a schema gets the default one, so the name follows {@code
+   * {database}.{schema}.{table}}. Otherwise the table's qualified name is appended to the database
+   * of the URL.
    *
    * @param jdbcUrl JDBC URL
    * @param table table, with its name split into database, schema and table name
@@ -134,19 +128,23 @@ public class JdbcSparkUtils {
       String jdbcUrl, DbTableMeta table, Properties properties, boolean applyDefaultSchema) {
     Optional<String> defaultSchema =
         applyDefaultSchema ? JdbcDefaultSchema.resolve(jdbcUrl, properties) : Optional.empty();
-    if (!defaultSchema.isPresent()) {
+    if (table.database() == null && !defaultSchema.isPresent()) {
       return JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl, table.qualifiedName(), properties);
     }
 
-    String schema = Optional.ofNullable(table.schema()).orElse(defaultSchema.get());
-    List<String> parts = new ArrayList<>(Arrays.asList(schema, table.name()));
+    String schema = Optional.ofNullable(table.schema()).orElse(defaultSchema.orElse(null));
+    List<String> parts = new ArrayList<>();
+    if (schema != null) {
+      parts.add(schema);
+    }
+    parts.add(table.name());
     DatasetIdentifier identifier =
-        JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl, parts, properties);
+        JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl, new ArrayList<>(parts), properties);
     if (table.database() == null) {
       return identifier;
     }
-    return new DatasetIdentifier(
-        String.join(".", table.database(), schema, table.name()), identifier.getNamespace());
+    parts.add(0, table.database());
+    return new DatasetIdentifier(String.join(".", parts), identifier.getNamespace());
   }
 
   /**
@@ -154,7 +152,9 @@ public class JdbcSparkUtils {
    * database, schema and table name.
    *
    * <p>When {@code applyDefaultSchema} is set and the database has a default schema, the name is
-   * parsed with the SQL parser, the same way as the tables of JDBC reads. Otherwise, the name is
+   * parsed with the SQL parser, the same way as the tables of JDBC reads. Otherwise, only a fully
+   * qualified name ({@code database.schema.table}) is split, so that it keeps its database (see
+   * {@link #getDatasetIdentifier(String, DbTableMeta, Properties, boolean)}); any other name is
    * kept as it is.
    *
    * @param jdbcUrl JDBC URL
@@ -166,15 +166,21 @@ public class JdbcSparkUtils {
    */
   public static DbTableMeta parseTableName(
       String jdbcUrl, String tableName, Properties properties, boolean applyDefaultSchema) {
-    if (!applyDefaultSchema || !JdbcDefaultSchema.resolve(jdbcUrl, properties).isPresent()) {
-      return new DbTableMeta(null, null, tableName);
+    DbTableMeta unparsed = new DbTableMeta(null, null, tableName);
+    boolean parseAnyName =
+        applyDefaultSchema && JdbcDefaultSchema.resolve(jdbcUrl, properties).isPresent();
+    // a fully qualified name has at least two dots
+    if (!parseAnyName && tableName.indexOf('.') == tableName.lastIndexOf('.')) {
+      return unparsed;
     }
-    return OpenLineageSql.parse(
-            Collections.singletonList("select * from " + tableName),
-            extractDialectFromJdbcUrl(jdbcUrl))
-        .filter(meta -> meta.errors().isEmpty() && meta.inTables().size() == 1)
-        .map(meta -> meta.inTables().get(0))
-        .orElseGet(() -> splitTableName(tableName));
+    DbTableMeta parsed =
+        OpenLineageSql.parse(
+                Collections.singletonList("select * from " + tableName),
+                extractDialectFromJdbcUrl(jdbcUrl))
+            .filter(meta -> meta.errors().isEmpty() && meta.inTables().size() == 1)
+            .map(meta -> meta.inTables().get(0))
+            .orElseGet(() -> splitTableName(tableName));
+    return parseAnyName || parsed.database() != null ? parsed : unparsed;
   }
 
   /**
@@ -215,6 +221,8 @@ public class JdbcSparkUtils {
    * @param applyDefaultSchema whether the database's default schema is going to be applied to the
    *     dataset names. In that case, a plain table name in {@code dbtable} is parsed, so that it
    *     gets split into database, schema and table name the same way as the tables of a query.
+   *     Otherwise, only a fully qualified one is, see {@link #parseTableName(String, String,
+   *     Properties, boolean)}.
    * @return tables and column lineage, empty if the query can't be parsed
    */
   public static Optional<SqlMeta> extractQueryFromSpark(
