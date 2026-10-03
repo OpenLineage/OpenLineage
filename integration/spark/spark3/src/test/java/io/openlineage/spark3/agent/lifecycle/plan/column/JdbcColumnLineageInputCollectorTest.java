@@ -258,8 +258,7 @@ class JdbcColumnLineageInputCollectorTest {
         InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
     visitor.collectInputs(context, logicalRelation);
 
-    DatasetIdentifier expected =
-        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
     assertThat(inputs).containsExactly(expected);
     verify(builder, times(1)).addInput(exprId1, expected, "k");
     verify(builder, times(1)).addInput(exprId2, expected, "j1");
@@ -282,10 +281,7 @@ class JdbcColumnLineageInputCollectorTest {
     visitor.collectInputs(context, logicalRelation);
 
     verify(builder, times(1))
-        .addInput(
-            exprId1,
-            new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432"),
-            "k");
+        .addInput(exprId1, new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE), "k");
   }
 
   /** Checks that a plain dbtable gets the default schema in column lineage inputs. */
@@ -296,7 +292,7 @@ class JdbcColumnLineageInputCollectorTest {
         .thenReturn(
             CaseInsensitiveMap$.MODULE$.<String>apply(
                 ScalaConversionUtils.fromJavaMap(
-                    Collections.singletonMap("dbtable", "jdbc_source1"))));
+                    Collections.singletonMap("dbtable", SOURCE1_TABLE))));
     when(jdbcRelation.schema())
         .thenReturn(new StructType().add("k", IntegerType$.MODULE$).add("j1", StringType$.MODULE$));
     when(builder.getMapping(any(ColumnMeta.class)))
@@ -306,8 +302,7 @@ class JdbcColumnLineageInputCollectorTest {
         InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
     visitor.collectInputs(context, logicalRelation);
 
-    DatasetIdentifier expected =
-        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
     assertThat(inputs).containsExactly(expected);
     verify(builder, times(1)).addInput(exprId1, expected, "k");
     verify(builder, times(1)).addInput(exprId2, expected, "j1");
