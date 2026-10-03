@@ -67,13 +67,7 @@ public class DeltaHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    boolean setActiveSession = !SparkSession.getActiveSession().isDefined();
-    if (setActiveSession) {
-      // Delta catalog loading resolves the global active session, which may be absent on listener
-      // threads, most visibly while the final events are processed during application teardown.
-      SparkSession.setActiveSession(session);
-    }
-
+    boolean setActiveSession = setActiveSessionIfAbsent(Optional.ofNullable(session));
     try {
       return getDatasetIdentifierFromCatalog(session, tableCatalog, identifier);
     } catch (Exception e) {
@@ -94,6 +88,20 @@ public class DeltaHandler implements CatalogHandler {
         SparkSession.clearActiveSession();
       }
     }
+  }
+
+  /**
+   * Delta catalog loading resolves the global active session, which may be absent on listener
+   * threads, most visibly while the final events are processed during application teardown. Sets
+   * the given session as active when none is, and returns whether it did so; the caller must then
+   * clear it once the catalog lookup is done.
+   */
+  private static boolean setActiveSessionIfAbsent(Optional<SparkSession> session) {
+    if (SparkSession.getActiveSession().isDefined() || !session.isPresent()) {
+      return false;
+    }
+    SparkSession.setActiveSession(session.get());
+    return true;
   }
 
   private static boolean isMissingActiveSessionError(Throwable e) {
@@ -269,6 +277,8 @@ public class DeltaHandler implements CatalogHandler {
   @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
+    // The context session, if any, is used the same way as in getDatasetIdentifier.
+    boolean setActiveSession = setActiveSessionIfAbsent(context.getSparkSession());
     try {
       DeltaCatalog deltaCatalog = (DeltaCatalog) tableCatalog;
       return DeltaVersionUtils.getDatasetVersion(deltaCatalog.loadTable(identifier));
@@ -280,6 +290,10 @@ public class DeltaHandler implements CatalogHandler {
         return Optional.empty();
       }
       throw e;
+    } finally {
+      if (setActiveSession) {
+        SparkSession.clearActiveSession();
+      }
     }
   }
 
