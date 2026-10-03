@@ -44,6 +44,8 @@ class IcebergRelationHandlerTest {
   private static final String TABLE_LOCATION = "file:/tmp/wh/db/tbl";
   private static final String TABLE_PATH = "/tmp/wh/db/tbl";
   private static final String QUALIFIED_NAME = "c.db.tbl";
+  private static final String FILE_NAMESPACE = "file";
+  private static final Identifier TABLE_IDENTIFIER = Identifier.of(new String[] {"db"}, "tbl");
 
   private final OpenLineageContext context = mock(OpenLineageContext.class);
   private final IcebergRelationHandler handler = new IcebergRelationHandler(context);
@@ -76,7 +78,7 @@ class IcebergRelationHandlerTest {
     DatasetIdentifier di = handler.getDatasetIdentifier(relationOf(TABLE_LOCATION, QUALIFIED_NAME));
 
     assertThat(di.getName()).isEqualTo(TABLE_PATH);
-    assertThat(di.getNamespace()).isEqualTo("file");
+    assertThat(di.getNamespace()).isEqualTo(FILE_NAMESPACE);
   }
 
   /** A table loaded without a catalog is named by its location, which cannot be split up. */
@@ -137,7 +139,7 @@ class IcebergRelationHandlerTest {
   @Test
   void testGetDatasetIdentifierResolvesThroughOwningCatalog() {
     DatasetIdentifier throughCatalog =
-        new DatasetIdentifier(TABLE_PATH, "file")
+        new DatasetIdentifier(TABLE_PATH, FILE_NAMESPACE)
             .withSymlink("db.tbl", "hive://metastore", SymlinkType.TABLE);
     TableCatalog owning = mock(TableCatalog.class);
     withSessionCatalog(context, "c", owning);
@@ -150,7 +152,7 @@ class IcebergRelationHandlerTest {
                   CatalogUtils.getDatasetIdentifier(
                       Mockito.eq(context),
                       Mockito.eq(owning),
-                      Mockito.eq(Identifier.of(new String[] {"db"}, "tbl")),
+                      Mockito.eq(TABLE_IDENTIFIER),
                       Mockito.any()))
           .thenReturn(throughCatalog);
 
@@ -178,7 +180,7 @@ class IcebergRelationHandlerTest {
 
     assertThat(owner).isPresent();
     assertThat(owner.get().getCatalog()).isSameAs(owning);
-    assertThat(owner.get().getIdentifier()).isEqualTo(Identifier.of(new String[] {"db"}, "tbl"));
+    assertThat(owner.get().getIdentifier()).isEqualTo(TABLE_IDENTIFIER);
   }
 
   /** A catalog registered under a name that is not a {@link TableCatalog} cannot be resolved. */
@@ -223,14 +225,14 @@ class IcebergRelationHandlerTest {
 
     assertThat(owner).isPresent();
     assertThat(owner.get().getCatalog()).isSameAs(owning);
-    assertThat(owner.get().getIdentifier()).isEqualTo(Identifier.of(new String[] {"db"}, "tbl"));
+    assertThat(owner.get().getIdentifier()).isEqualTo(TABLE_IDENTIFIER);
   }
 
   /** A wrapper resolves to the same identifier - symlink included - as a plain Iceberg table. */
   @Test
   void testGetDatasetIdentifierForIcebergTableWrapperResolvesThroughOwningCatalog() {
     DatasetIdentifier throughCatalog =
-        new DatasetIdentifier(TABLE_PATH, "file")
+        new DatasetIdentifier(TABLE_PATH, FILE_NAMESPACE)
             .withSymlink("db.tbl", "hive://metastore", SymlinkType.TABLE);
     TableCatalog owning = mock(TableCatalog.class);
     withSessionCatalog(context, "c", owning);
@@ -243,7 +245,7 @@ class IcebergRelationHandlerTest {
                   CatalogUtils.getDatasetIdentifier(
                       Mockito.eq(context),
                       Mockito.eq(owning),
-                      Mockito.eq(Identifier.of(new String[] {"db"}, "tbl")),
+                      Mockito.eq(TABLE_IDENTIFIER),
                       Mockito.any()))
           .thenReturn(throughCatalog);
 
@@ -262,7 +264,7 @@ class IcebergRelationHandlerTest {
         handler.getDatasetIdentifier(rewriteRelationOf(TABLE_LOCATION, QUALIFIED_NAME));
 
     assertThat(di.getName()).isEqualTo(TABLE_PATH);
-    assertThat(di.getNamespace()).isEqualTo("file");
+    assertThat(di.getNamespace()).isEqualTo(FILE_NAMESPACE);
   }
 
   /** Registers {@code catalog} under {@code name} in the context's session catalog manager. */
