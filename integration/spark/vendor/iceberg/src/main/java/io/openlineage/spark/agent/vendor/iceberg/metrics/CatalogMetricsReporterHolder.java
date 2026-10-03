@@ -136,6 +136,9 @@ public class CatalogMetricsReporterHolder {
                 .findAny();
         scanReport.ifPresent(scanReportFacets::remove);
       }
+      if (scanReport.isPresent()) {
+        break;
+      }
     }
 
     if (log.isDebugEnabled()) {
@@ -180,6 +183,9 @@ public class CatalogMetricsReporterHolder {
               commitReportFacets.remove(facet);
               consumedCommitReports.put(snapshotId, facet);
             });
+      }
+      if (commitReport.isPresent()) {
+        break;
       }
     }
 
