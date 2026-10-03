@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.SparkException;
 import org.apache.spark.sql.RuntimeConfig;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -334,6 +335,34 @@ class DeltaHandlerTest {
     assertThrows(
         IllegalStateException.class,
         () -> deltaHandler.getDatasetVersion(deltaCatalog, identifier, Collections.emptyMap()));
+  }
+
+  @Test
+  void testGetIdentifierRethrowsOtherExceptionTypesMentioningMissingSession() {
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(
+            new IllegalArgumentException(
+                "bad option: No active or default Spark session found in comment"));
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            deltaHandler.getDatasetIdentifier(
+                sparkSession, deltaCatalog, identifier, Collections.emptyMap()));
+  }
+
+  @Test
+  void testGetDatasetVersionFallsBackOnWrappedSparkExceptionForMissingSession() {
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(
+            new RuntimeException(
+                new SparkException(
+                    "[INTERNAL_ERROR] No active or default Spark session found SQLSTATE: XX000")));
+
+    assertThat(deltaHandler.getDatasetVersion(deltaCatalog, identifier, Collections.emptyMap()))
+        .isEmpty();
   }
 
   @Test
