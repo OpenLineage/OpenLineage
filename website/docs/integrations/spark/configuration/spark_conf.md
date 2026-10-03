@@ -37,3 +37,32 @@ The following parameters can be specified:
 | spark.openlineage.timeout.buildDatasetsTimePercentage     | If a timeout is set within a circuit breaker, this configures a percentage of the configured timeout that can be spent on building datasets.                                                                                                                                                                                                                           | empty list                                    |
 | spark.openlineage.timeout.facetsBuildingTimePercentage    | If a timeout is set within a circuit breaker, this configures a percentage of the configured timeout that can be spent on building facets which includes job facets, run facets, and dataset facets. This timeout applies effectively on everything besides event serialization and transport.                                                                         | empty list                                    |
 | spark.openlineage.disabled                                | Turns off OpenLineage integration, similarly to `OPENLINEAGE_DISABLED` environment property. Can be used when setting env property is not doable. This setting works only within Spark Conf to prevent OpenLineage from config parsing mechanism.                                                                                                                      | false                                         |
+
+## Filtering read-only queries
+
+Every Spark SQL execution that reads a dataset is reported as its own run, including actions that
+only read data back, such as `df.where(...).collect()` or a join followed by `collect()`. Those runs
+have inputs but no outputs. If an application writes a table and then reads it back in a separate
+action, for example to validate it, the table shows up both as an output and as an input of runs
+that share the same parent application run.
+
+Some of these executions are already filtered by default, based on the root node of the optimized
+logical plan; for example, `df.count()` has an `Aggregate` root and is not reported. To skip other
+read-only actions, add their root nodes to `spark.openlineage.filter.deniedSparkNodes`:
+
+```
+spark.openlineage.filter.deniedSparkNodes=[org.apache.spark.sql.catalyst.plans.logical.Filter;org.apache.spark.sql.catalyst.plans.logical.Join]
+```
+
+This setting matches the root node only, so it also drops any other non-streaming execution with
+the same root node. It does not apply to streaming plans.
+
+:::note
+Before 1.54.0, sessions that loaded the Delta extension (`io.delta.sql.DeltaSparkSessionExtension`)
+did not report most of these read-only executions: executions running under adaptive query execution
+and executions with a `Filter`, `LocalRelation` or `SerializeFromObject` root were dropped as
+possible internal Delta queries. On Spark 3.4 and later, these filters now apply only to executions
+nested under another command (such as the queries Delta runs internally during a `MERGE`), so
+read-only queries are reported the same way as in sessions without the Delta extension. On Spark 3.3
+and earlier the behavior is unchanged.
+:::
