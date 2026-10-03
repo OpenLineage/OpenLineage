@@ -59,7 +59,6 @@ public class IcebergMetricsReporterInjectorTest {
   LogicalPlan subPlan;
   CachingCatalog cachingCatalog;
   TestingIcebergCatalog icebergCatalog;
-  MetricsReporter existingMetricsReporter;
 
   @BeforeEach
   void setup() {
@@ -184,6 +183,7 @@ public class IcebergMetricsReporterInjectorTest {
   void testApplyInjectsMetricReporterWithExistingReporter(CatalogPlugin catalog) {
     setupCatalog(catalog);
 
+    MetricsReporter existingMetricsReporter = mock(MetricsReporter.class);
     FieldUtils.writeField(icebergCatalog, "metricsReporter", existingMetricsReporter, true);
     injector.apply(plan);
     CatalogMetricsReporterHolder holder =
