@@ -74,7 +74,8 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
               .filter(ScanTask::isFileScanTask)
               .map(ScanTask::asFileScanTask)
               .map(FileScanTask::file)
-              .collect(Collectors.toMap(ContentFile::path, f -> f))
+              // the same file can appear in more than one task, e.g. when it is split
+              .collect(Collectors.toMap(f -> f.path().toString(), f -> f, (a, b) -> a))
               .values();
 
       consumer.accept(
