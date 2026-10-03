@@ -132,6 +132,9 @@ public class CatalogMetricsReporterHolder {
                 .findAny();
         scanReport.ifPresent(scanReportFacets::remove);
       }
+      if (scanReport.isPresent()) {
+        break;
+      }
     }
 
     if (log.isDebugEnabled()) {
@@ -165,6 +168,9 @@ public class CatalogMetricsReporterHolder {
             commitReportFacets.stream()
                 .filter(facet -> facet.getSnapshotId() == snapshotId)
                 .findAny();
+      }
+      if (commitReport.isPresent()) {
+        break;
       }
     }
 
