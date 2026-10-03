@@ -137,6 +137,25 @@ public class CatalogMetricsReporterHolderTest {
         .isEqualTo(1L);
   }
 
+  @Test
+  void testCommitReportNotReturnedForAnotherRun() {
+    CommitReport commitReport = mock(CommitReport.class);
+    when(commitReport.snapshotId()).thenReturn(1L);
+
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
+    getMetricsReporter(icebergCatalog).report(commitReport);
+
+    assertThat(getMetricHolder().getCommitReportFacet(1L)).isPresent();
+    // the same output can be built more than once within a run
+    assertThat(getMetricHolder().getCommitReportFacet(1L)).isPresent();
+
+    // a later run that ends at the same snapshot uses a new holder with the same reporter
+    when(context.getVendors().getVendorsContext()).thenReturn(new VendorsContext());
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
+
+    assertThat(getMetricHolder().getCommitReportFacet(1L)).isEmpty();
+  }
+
   private CatalogMetricsReporterHolder getMetricHolder() {
     return ((CatalogMetricsReporterHolder)
         context.getVendors().getVendorsContext().fromVendorsContext(VENDOR_CONTEXT_KEY).get());

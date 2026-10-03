@@ -39,6 +39,10 @@ public class CatalogMetricsReporterHolder {
 
   private final Map<String, OpenLineageMetricsReporter> catalogMetricsReporter = new HashMap<>();
 
+  // commit reports already taken from the reporters by this holder, keyed by snapshot id
+  private final Map<Long, IcebergCommitReportOutputDatasetFacet> consumedCommitReports =
+      new HashMap<>();
+
   private CatalogMetricsReporterHolder() {}
 
   public static void register(OpenLineageContext context, Catalog catalog) {
@@ -151,11 +155,17 @@ public class CatalogMetricsReporterHolder {
 
   /**
    * Get the commit report for the given snapshot id. If the report is found, it is removed from the
-   * reporter.
+   * reporter, so that it is not attached to other runs sharing the same catalog. Later lookups
+   * through this holder still return it, as the same output can be built more than once for a
+   * single event.
    *
    * @param snapshotId snapshot id
    */
   public Optional<IcebergCommitReportOutputDatasetFacet> getCommitReportFacet(long snapshotId) {
+    if (consumedCommitReports.containsKey(snapshotId)) {
+      return Optional.of(consumedCommitReports.get(snapshotId));
+    }
+
     Optional<IcebergCommitReportOutputDatasetFacet> commitReport = Optional.empty();
     for (OpenLineageMetricsReporter reporter : catalogMetricsReporter.values()) {
       List<IcebergCommitReportOutputDatasetFacet> commitReportFacets =
@@ -165,6 +175,11 @@ public class CatalogMetricsReporterHolder {
             commitReportFacets.stream()
                 .filter(facet -> facet.getSnapshotId() == snapshotId)
                 .findAny();
+        commitReport.ifPresent(
+            facet -> {
+              commitReportFacets.remove(facet);
+              consumedCommitReports.put(snapshotId, facet);
+            });
       }
     }
 
