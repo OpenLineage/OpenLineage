@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.SparkException;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
@@ -106,8 +107,12 @@ public class DeltaHandler implements CatalogHandler {
 
   private static boolean isMissingActiveSessionError(Throwable e) {
     for (Throwable t = e; t != null; t = t.getCause()) {
+      // Spark 3 throws an IllegalStateException, Spark 4 an INTERNAL_ERROR SparkException.
+      boolean sessionErrorType = t instanceof IllegalStateException || t instanceof SparkException;
       String message = t.getMessage();
-      if (message != null && message.contains("No active or default Spark session found")) {
+      if (sessionErrorType
+          && message != null
+          && message.contains("No active or default Spark session found")) {
         return true;
       }
     }
