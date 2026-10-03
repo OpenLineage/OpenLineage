@@ -102,6 +102,31 @@ class JdbcSparkUtilsTest {
             .expectedColumnLineage(columnLineage("orders.total"))
             .build(),
         TestCase.builder()
+            .dbtable("(SELECT id FROM users WHERE name <> ')') t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) u JOIN orders o ON u.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
+            .dbtable(
+                "(SELECT id FROM users) u JOIN (SELECT user_id FROM orders) o ON u.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users WHERE name <> ')') u JOIN orders o ON u.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
             .dbtable("users AS u")
             .schema(
                 new StructType().add("id", DataTypes.IntegerType).add("name", DataTypes.StringType))
