@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage.InputDatasetFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -35,6 +36,10 @@ import org.apache.spark.sql.connector.read.Scan;
 @Slf4j
 public class IcebergInputStatisticsInputDatasetFacetBuilder
     extends CustomFacetBuilder<Scan, InputDatasetFacet> {
+
+  // ContentFile.location() exists since Iceberg 1.7, while path() is deprecated and to be removed
+  private static final Method LOCATION_METHOD =
+      MethodUtils.getAccessibleMethod(ContentFile.class, "location");
 
   private final OpenLineageContext context;
 
@@ -74,7 +79,9 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
               .filter(ScanTask::isFileScanTask)
               .map(ScanTask::asFileScanTask)
               .map(FileScanTask::file)
-              .collect(Collectors.toMap(ContentFile::path, f -> f))
+              .collect(
+                  Collectors.toMap(
+                      IcebergInputStatisticsInputDatasetFacetBuilder::fileLocation, f -> f))
               .values();
 
       consumer.accept(
@@ -86,12 +93,23 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
               .size(dataFiles.stream().map(ContentFile::fileSizeInBytes).reduce(0L, Long::sum))
               .rowCount(dataFiles.stream().map(ContentFile::recordCount).reduce(0L, Long::sum))
               .build());
-    } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+    } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
       // do nothing
       log.warn(
           "Failed to extract input statistics from Iceberg scan class {}",
           scan.getClass().getCanonicalName());
       log.debug("Failed to extract input statistics from Iceberg scan", e);
     }
+  }
+
+  private static String fileLocation(ContentFile<?> file) {
+    if (LOCATION_METHOD != null) {
+      try {
+        return (String) LOCATION_METHOD.invoke(file);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        throw new IllegalStateException("Failed to get Iceberg file location", e);
+      }
+    }
+    return file.path().toString();
   }
 }
