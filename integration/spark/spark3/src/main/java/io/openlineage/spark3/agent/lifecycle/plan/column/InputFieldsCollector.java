@@ -7,10 +7,10 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.BigQueryUtils;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
@@ -71,7 +70,7 @@ public class InputFieldsCollector {
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isQueryRelationNode(node)) {
       QueryRelationColumnLineageCollector.extractExternalInputs(context, node);
-    } else if (hasJdbcSqlColumnLineage(node)) {
+    } else if (hasJdbcSqlColumnLineage(context, node)) {
       // Skip: JdbcColumnLineageVisitor handles input collection via SqlCollector, which
       // correctly resolves alias names to original column names. Using extractInternalInputs
       // here would add alias names from Spark's output attributes as phantom input fields.
@@ -96,11 +95,13 @@ public class InputFieldsCollector {
    * is available. In that case, JdbcColumnLineageVisitor/SqlCollector will handle input collection
    * with correct original column names rather than alias names.
    */
-  private static boolean hasJdbcSqlColumnLineage(LogicalPlan node) {
+  private static boolean hasJdbcSqlColumnLineage(
+      ColumnLevelLineageContext context, LogicalPlan node) {
     if (!(node instanceof LogicalRelation)) return false;
     if (!(((LogicalRelation) node).relation() instanceof JDBCRelation)) return false;
     JDBCRelation relation = (JDBCRelation) ((LogicalRelation) node).relation();
-    return JdbcSparkUtils.extractQueryFromSpark(relation)
+    return JdbcSparkUtils.extractQueryFromSpark(
+            relation, JdbcDefaultSchema.isEnabled(context.getOlContext()))
         .map(meta -> !meta.columnLineage().isEmpty())
         .orElse(false);
   }
@@ -167,11 +168,18 @@ public class InputFieldsCollector {
     return Collections.emptyList();
   }
 
+  /**
+   * Extracts the identifiers of the tables read by a JDBC relation, named the same way as the input
+   * datasets of the event.
+   *
+   * @param context column-level lineage context
+   * @param relation JDBC relation
+   * @return identifiers of the tables, empty if the query can't be parsed
+   */
   static List<DatasetIdentifier> extractDatasetIdentifier(
       ColumnLevelLineageContext context, JDBCRelation relation) {
-    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
-    String jdbcUrl = relation.jdbcOptions().url();
-    Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
+    boolean applyDefaultSchema = JdbcDefaultSchema.isEnabled(context.getOlContext());
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation, applyDefaultSchema);
     return sqlMeta
         .map(
             meta ->
@@ -181,8 +189,8 @@ public class InputFieldsCollector {
                             context
                                 .getNamespaceResolver()
                                 .resolve(
-                                    JdbcDatasetUtils.getDatasetIdentifier(
-                                        jdbcUrl, table.qualifiedName(), jdbcProperties)))
+                                    JdbcSparkUtils.getDatasetIdentifier(
+                                        relation.jdbcOptions(), table, applyDefaultSchema)))
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
   }

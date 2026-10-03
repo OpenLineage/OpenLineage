@@ -5,7 +5,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -17,6 +19,7 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombined
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -25,7 +28,12 @@ import io.openlineage.sql.DbTableMeta;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
@@ -35,11 +43,16 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
 import org.apache.spark.sql.types.StringType$;
+import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 class JdbcColumnLineageInputCollectorTest {
+  private static final String PUBLIC_SOURCE1_NAME = "test.public.jdbc_source1";
+  private static final String POSTGRES_NAMESPACE = "postgres://localhost:5432";
+  private static final String SOURCE1_TABLE = "jdbc_source1";
+
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
@@ -63,9 +76,9 @@ class JdbcColumnLineageInputCollectorTest {
   private static Map<ColumnMeta, ExprId> getMockMap() {
     Map<ColumnMeta, ExprId> map = new HashMap<>();
 
-    map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source1"), "k"), exprId1);
+    map.put(new ColumnMeta(new DbTableMeta(null, null, SOURCE1_TABLE), "k"), exprId1);
 
-    map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source1"), "j1"), exprId2);
+    map.put(new ColumnMeta(new DbTableMeta(null, null, SOURCE1_TABLE), "j1"), exprId2);
 
     map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source2"), "j2"), exprId3);
     return map;
@@ -77,6 +90,7 @@ class JdbcColumnLineageInputCollectorTest {
     when(logicalRelation.output())
         .thenReturn(ScalaConversionUtils.fromList(Collections.emptyList()));
     when(jdbcOptions.url()).thenReturn(url);
+    when(jdbcOptions.asConnectionProperties()).thenReturn(new Properties());
 
     scala.collection.immutable.Map<String, String> properties =
         ScalaConversionUtils.<String, String>asScalaMapEmpty();
@@ -155,5 +169,181 @@ class JdbcColumnLineageInputCollectorTest {
       verify(builder, times(1)).addInput(exprId1, datasetIdentifier1, "k");
       verify(builder, times(1)).addInput(exprId2, datasetIdentifier1, "j1");
     }
+  }
+
+  @Test
+  void testInputCollectionForSchemaQualifiedTable() {
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select k, j1 from public.jdbc_source1) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> schemaQualifiedMapping(invocation.getArgument(0)));
+
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  @Test
+  void testInputCollectionForJoinAcrossSchemas() {
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn(
+            "(select a.k, CONCAT(a.j1, b.j2) as j from public.jdbc_source1 a "
+                + "join sales.jdbc_source2 b on a.k = b.k) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> schemaQualifiedMapping(invocation.getArgument(0)));
+
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier source1 = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
+    DatasetIdentifier source2 =
+        new DatasetIdentifier("test.sales.jdbc_source2", POSTGRES_NAMESPACE);
+    verify(builder, times(1)).addInput(exprId1, source1, "k");
+    verify(builder, times(1)).addInput(exprId2, source1, "j1");
+    verify(builder, times(1)).addInput(exprId3, source2, "j2");
+    verify(builder, never()).addInput(any(ExprId.class), eq(source1), eq("j2"));
+    verify(builder, never()).addInput(any(ExprId.class), eq(source2), eq("j1"));
+  }
+
+  /** Checks that a fully qualified table keeps its database when the default schema is off. */
+  @Test
+  void testInputCollectionForFullyQualifiedTable() {
+    assertFullyQualifiedTableInputs();
+  }
+
+  /** Checks that a fully qualified table keeps its database when the default schema is on. */
+  @Test
+  void testInputCollectionForFullyQualifiedTableWithDefaultSchema() {
+    givenDefaultSchemaEnabled();
+    assertFullyQualifiedTableInputs();
+  }
+
+  /**
+   * Checks that the inputs of a query reading {@code test.public.jdbc_source1}, from a URL whose
+   * database is {@code test}, are named {@code test.public.jdbc_source1}, and that each column is
+   * mapped to its own expression.
+   */
+  private void assertFullyQualifiedTableInputs() {
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select k, j1 from test.public.jdbc_source1) SPARK_GEN_SUBQ_0");
+    DbTableMeta table = new DbTableMeta("test", "public", SOURCE1_TABLE);
+    Map<ColumnMeta, ExprId> mapping = new HashMap<>();
+    mapping.put(new ColumnMeta(table, "k"), exprId1);
+    mapping.put(new ColumnMeta(table, "j1"), exprId2);
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> mapping.get(invocation.getArgument(0)));
+
+    List<DatasetIdentifier> inputs =
+        InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
+    assertThat(inputs).containsExactly(expected);
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+    verify(builder, never()).addInput(exprId1, expected, "j1");
+  }
+
+  @Test
+  void testSelectWildcardFromSchemaQualifiedTableQuery() {
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select * from public.jdbc_source1 where x = 9) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> schemaQualifiedMapping(invocation.getArgument(0)));
+
+    AttributeReference expression1 =
+        new AttributeReference(
+            "k", IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId1, null);
+    AttributeReference expression2 =
+        new AttributeReference(
+            "j1", StringType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId2, null);
+    when(logicalRelation.output())
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(expression1, expression2)));
+
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  /** Checks that input fields of an unqualified table get the default schema. */
+  @Test
+  void testInputCollectionForUnqualifiedTableWithDefaultSchema() {
+    givenDefaultSchemaEnabled();
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select k, j1 from jdbc_source1) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
+
+    List<DatasetIdentifier> inputs =
+        InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
+    assertThat(inputs).containsExactly(expected);
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  /** Checks that a wildcard select from an unqualified table gets the default schema. */
+  @Test
+  void testSelectWildcardFromUnqualifiedTableWithDefaultSchema() {
+    givenDefaultSchemaEnabled();
+    when(jdbcOptions.tableOrQuery())
+        .thenReturn("(select * from jdbc_source1 where x = 9) SPARK_GEN_SUBQ_0");
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
+    AttributeReference expression1 =
+        new AttributeReference(
+            "k", IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId1, null);
+    when(logicalRelation.output())
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(expression1)));
+
+    visitor.collectInputs(context, logicalRelation);
+
+    verify(builder, times(1))
+        .addInput(exprId1, new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE), "k");
+  }
+
+  /** Checks that a plain dbtable gets the default schema in column lineage inputs. */
+  @Test
+  void testInputCollectionForDbtableWithDefaultSchema() {
+    givenDefaultSchemaEnabled();
+    when(jdbcOptions.parameters())
+        .thenReturn(
+            CaseInsensitiveMap$.MODULE$.<String>apply(
+                ScalaConversionUtils.fromJavaMap(
+                    Collections.singletonMap("dbtable", SOURCE1_TABLE))));
+    when(jdbcRelation.schema())
+        .thenReturn(new StructType().add("k", IntegerType$.MODULE$).add("j1", StringType$.MODULE$));
+    when(builder.getMapping(any(ColumnMeta.class)))
+        .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
+
+    List<DatasetIdentifier> inputs =
+        InputFieldsCollector.extractDatasetIdentifier(context, jdbcRelation);
+    visitor.collectInputs(context, logicalRelation);
+
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
+    assertThat(inputs).containsExactly(expected);
+    verify(builder, times(1)).addInput(exprId1, expected, "k");
+    verify(builder, times(1)).addInput(exprId2, expected, "j1");
+  }
+
+  /** Enables the default schema flag in the mocked Spark configuration. */
+  private void givenDefaultSchemaEnabled() {
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.conf())
+        .thenReturn(new SparkConf().set(JdbcDefaultSchema.ENABLED_CONFIG_KEY, "true"));
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+  }
+
+  private static ExprId schemaQualifiedMapping(ColumnMeta column) {
+    Map<ColumnMeta, ExprId> map = new HashMap<>();
+    map.put(new ColumnMeta(new DbTableMeta(null, "public", SOURCE1_TABLE), "k"), exprId1);
+    map.put(new ColumnMeta(new DbTableMeta(null, "public", SOURCE1_TABLE), "j1"), exprId2);
+    map.put(new ColumnMeta(new DbTableMeta(null, "sales", "jdbc_source2"), "j2"), exprId3);
+    return map.get(column);
   }
 }

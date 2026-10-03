@@ -8,8 +8,8 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector.extractDatasetIdentifier;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.SqlCollector;
 import io.openlineage.sql.ColumnMeta;
@@ -26,19 +26,27 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 public class JdbcColumnLineageVisitorDelegate {
 
   private final SqlMeta sqlMeta;
-  private final String jdbcUrl;
   private final JDBCOptions jdbcOptions;
   private final ColumnLevelLineageContext context;
   private final List<DatasetIdentifier> datasetIdentifiers;
   private final List<Attribute> attributes;
   private final SqlCollector sqlCollector;
+  private final boolean applyDefaultSchema;
 
+  /**
+   * Creates a delegate that collects column lineage of a JDBC relation, naming the input datasets
+   * with the database's default schema when it is enabled.
+   *
+   * @param context column-level lineage context
+   * @param relation JDBC relation
+   * @param attributes output attributes of the relation
+   */
   public JdbcColumnLineageVisitorDelegate(
       ColumnLevelLineageContext context, JDBCRelation relation, List<Attribute> attributes) {
     this.context = context;
     this.attributes = attributes;
-    jdbcUrl = relation.jdbcOptions().url();
-    sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation).orElse(null);
+    applyDefaultSchema = JdbcDefaultSchema.isEnabled(context.getOlContext());
+    sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation, applyDefaultSchema).orElse(null);
     jdbcOptions = relation.jdbcOptions();
     datasetIdentifiers = extractDatasetIdentifier(context, relation);
     this.sqlCollector =
@@ -49,14 +57,14 @@ public class JdbcColumnLineageVisitorDelegate {
     return sqlMeta != null;
   }
 
+  /** Adds the input fields of the relation's query to the column-level lineage. */
   public void collectInputs() {
     extractInputsFromSimpleWildcardSelect();
     sqlCollector.collectInputs(
-        dbTableMeta ->
-            JdbcDatasetUtils.getDatasetIdentifier(
-                jdbcUrl, dbTableMeta.name(), jdbcOptions.asConnectionProperties()));
+        table -> JdbcSparkUtils.getDatasetIdentifier(jdbcOptions, table, applyDefaultSchema));
   }
 
+  /** Adds the expression dependencies of the relation's query to the column-level lineage. */
   public void collectExpressionDependencies() {
     sqlCollector.collectExpressionDependencies();
   }
@@ -81,8 +89,8 @@ public class JdbcColumnLineageVisitorDelegate {
                         context
                             .getNamespaceResolver()
                             .resolve(
-                                JdbcDatasetUtils.getDatasetIdentifier(
-                                    jdbcUrl, table.name(), jdbcOptions.asConnectionProperties()))
+                                JdbcSparkUtils.getDatasetIdentifier(
+                                    jdbcOptions, table, applyDefaultSchema))
                             .getName()
                             .equals(di.getName()))
                 .forEach(

@@ -20,11 +20,34 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
 
   private final DatasetFactory<D> datasetFactory;
+  private final boolean applyDefaultSchema;
 
+  /**
+   * Creates a handler that names datasets as they are written in the query, without applying the
+   * database's default schema.
+   *
+   * @param datasetFactory factory of the datasets
+   */
   public JdbcRelationHandler(DatasetFactory<D> datasetFactory) {
-    this.datasetFactory = datasetFactory;
+    this(datasetFactory, false);
   }
 
+  /**
+   * @param datasetFactory factory of the datasets
+   * @param applyDefaultSchema whether to apply the database's default schema to dataset names, see
+   *     {@link io.openlineage.spark.agent.util.JdbcDefaultSchema}
+   */
+  public JdbcRelationHandler(DatasetFactory<D> datasetFactory, boolean applyDefaultSchema) {
+    this.datasetFactory = datasetFactory;
+    this.applyDefaultSchema = applyDefaultSchema;
+  }
+
+  /**
+   * Extracts the datasets read by a JDBC relation.
+   *
+   * @param x logical relation wrapping a {@link JDBCRelation}
+   * @return input datasets, empty if the query can't be parsed
+   */
   public List<D> handleRelation(LogicalRelation x) {
     // strip the jdbc: prefix from the url. this leaves us with a url like
     // postgresql://<hostname>:<port>/<database_name>?params
@@ -37,11 +60,17 @@ public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
     return getDatasets((JDBCRelation) x.relation());
   }
 
+  /**
+   * Extracts the datasets read by a JDBC relation.
+   *
+   * @param relation JDBC relation
+   * @return input datasets, empty if the query can't be parsed
+   */
   public List<D> getDatasets(JDBCRelation relation) {
-    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation, applyDefaultSchema);
     if (!sqlMeta.isPresent()) {
       return Collections.emptyList();
     }
-    return JdbcSparkUtils.getDatasets(datasetFactory, sqlMeta.get(), relation);
+    return JdbcSparkUtils.getDatasets(datasetFactory, sqlMeta.get(), relation, applyDefaultSchema);
   }
 }

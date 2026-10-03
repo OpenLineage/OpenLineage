@@ -10,7 +10,10 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombined
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.sql.DbTableMeta;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +30,9 @@ import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
 
 @Slf4j
 public class JdbcHandler implements CatalogHandler {
+  /** Number of parts of a {@code database.schema.table} identifier. */
+  private static final int FULLY_QUALIFIED_PARTS = 3;
+
   private final OpenLineageContext context;
   private final DatasetNamespaceCombinedResolver namespaceResolver;
 
@@ -62,6 +68,21 @@ public class JdbcHandler implements CatalogHandler {
     List<String> parts =
         Stream.concat(Arrays.stream(identifier.namespace()), Stream.of(identifier.name()))
             .collect(Collectors.toList());
+
+    boolean applyDefaultSchema = JdbcDefaultSchema.isEnabled(context);
+    // a fully qualified table keeps its database whether or not the default schema is applied
+    boolean fullyQualified = parts.size() == FULLY_QUALIFIED_PARTS;
+    if (fullyQualified || parts.size() < FULLY_QUALIFIED_PARTS && applyDefaultSchema) {
+      // name the table the same way as JDBC reads and writes do, see JdbcSparkUtils
+      DbTableMeta table =
+          new DbTableMeta(
+              fullyQualified ? parts.get(0) : null,
+              parts.size() >= 2 ? parts.get(parts.size() - 2) : null,
+              identifier.name());
+      return namespaceResolver.resolve(
+          JdbcSparkUtils.getDatasetIdentifier(
+              options.url(), table, options.asConnectionProperties(), applyDefaultSchema));
+    }
 
     return namespaceResolver.resolve(
         JdbcDatasetUtils.getDatasetIdentifier(

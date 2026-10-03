@@ -13,14 +13,18 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
+import io.openlineage.spark.agent.util.JdbcDefaultSchema;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Properties;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
@@ -28,6 +32,8 @@ import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
 import org.apache.spark.sql.util.CaseInsensitiveStringMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class JdbcHandlerTest {
 
@@ -79,6 +85,48 @@ class JdbcHandlerTest {
 
     assertEquals("database.schema.table", datasetIdentifier.getName());
     assertEquals("postgres://postgreshost:5432", datasetIdentifier.getNamespace());
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "false|jdbc:postgresql://postgreshost:5432/app||orders|app.orders",
+        "false|jdbc:postgresql://postgreshost:5432/app|public|orders|app.public.orders",
+        "false|jdbc:postgresql://postgreshost:5432/app|app.public|orders|app.public.orders",
+        "false|jdbc:sqlserver://sqlhost:1433;databaseName=app|app.dbo|orders|app.dbo.orders",
+        "true|jdbc:postgresql://postgreshost:5432/app||orders|app.public.orders",
+        "true|jdbc:postgresql://postgreshost:5432/app|sales|orders|app.sales.orders",
+        "true|jdbc:postgresql://postgreshost:5432/app|app.public|orders|app.public.orders",
+        "true|jdbc:postgresql://postgreshost:5432/app?currentSchema=sales||orders|app.sales.orders",
+        "true|jdbc:sqlserver://sqlhost:1433;databaseName=app||orders|app.dbo.orders",
+        "true|jdbc:mysql://mysqlhost:3306/app||orders|app.orders",
+      })
+  @SneakyThrows
+  void testGetDatasetIdentifierWithDefaultSchema(
+      boolean applyDefaultSchema, String url, String namespace, String table, String expected) {
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.conf())
+        .thenReturn(
+            new SparkConf()
+                .set(JdbcDefaultSchema.ENABLED_CONFIG_KEY, String.valueOf(applyDefaultSchema)));
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    JdbcHandler handler = new JdbcHandler(context);
+
+    JDBCTableCatalog tableCatalog = new JDBCTableCatalog();
+    JDBCOptions options = mock(JDBCOptions.class);
+    when(options.url()).thenReturn(url);
+    when(options.asConnectionProperties()).thenReturn(new Properties());
+    FieldUtils.writeField(tableCatalog, "options", options, true);
+
+    DatasetIdentifier datasetIdentifier =
+        handler.getDatasetIdentifier(
+            mock(SparkSession.class),
+            tableCatalog,
+            Identifier.of(namespace == null ? new String[0] : namespace.split("\\."), table),
+            new HashMap<>());
+
+    assertEquals(expected, datasetIdentifier.getName());
   }
 
   @Test

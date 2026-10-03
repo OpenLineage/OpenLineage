@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnLineage;
@@ -14,6 +15,7 @@ import io.openlineage.sql.DbTableMeta;
 import io.openlineage.sql.ExtractionError;
 import io.openlineage.sql.OpenLineageSql;
 import io.openlineage.sql.SqlMeta;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -31,22 +33,200 @@ import org.apache.spark.sql.types.StructType;
 @Slf4j
 public class JdbcSparkUtils {
 
+  /**
+   * Builds the datasets of the tables read by a JDBC relation, without applying the database's
+   * default schema.
+   *
+   * @param datasetFactory factory of the datasets
+   * @param meta tables and column lineage extracted with {@link
+   *     #extractQueryFromSpark(JDBCRelation)}
+   * @param relation JDBC relation
+   * @return input datasets
+   */
   public static <D extends OpenLineage.Dataset> List<D> getDatasets(
       DatasetFactory<D> datasetFactory, SqlMeta meta, JDBCRelation relation) {
+    return getDatasets(datasetFactory, meta, relation, false);
+  }
+
+  /**
+   * Builds the datasets of the tables read by a JDBC relation.
+   *
+   * @param datasetFactory factory of the datasets
+   * @param meta tables and column lineage extracted with {@link
+   *     #extractQueryFromSpark(JDBCRelation, boolean)}
+   * @param relation JDBC relation
+   * @param applyDefaultSchema whether to apply the database's default schema, see {@link
+   *     JdbcDefaultSchema}
+   * @return input datasets
+   */
+  public static <D extends OpenLineage.Dataset> List<D> getDatasets(
+      DatasetFactory<D> datasetFactory,
+      SqlMeta meta,
+      JDBCRelation relation,
+      boolean applyDefaultSchema) {
 
     StructType schema = relation.schema();
-    String jdbcUrl = relation.jdbcOptions().url();
-    Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
+    JDBCOptions jdbcOptions = relation.jdbcOptions();
 
     return SqlUtils.createDatasets(
         datasetFactory,
         meta,
         schema,
-        dbtm ->
-            JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl, dbtm.qualifiedName(), jdbcProperties));
+        table -> getDatasetIdentifier(jdbcOptions, table, applyDefaultSchema));
   }
 
+  /**
+   * Builds the dataset identifier of a table referenced by a JDBC relation, without applying the
+   * database's default schema. Input datasets and column-level lineage inputs must both be named
+   * through this method (or its overloads), so that column lineage input fields point to the same
+   * datasets as the inputs of the event.
+   *
+   * @param jdbcOptions options of the JDBC relation
+   * @param table table extracted from the relation's query
+   * @return dataset identifier, before namespace resolution
+   */
+  public static DatasetIdentifier getDatasetIdentifier(JDBCOptions jdbcOptions, DbTableMeta table) {
+    return getDatasetIdentifier(jdbcOptions, table, false);
+  }
+
+  /**
+   * Builds the dataset identifier of a table referenced by a JDBC relation. Input datasets and
+   * column-level lineage inputs must both be named through this method, so that column lineage
+   * input fields point to the same datasets as the inputs of the event.
+   *
+   * @param jdbcOptions options of the JDBC relation
+   * @param table table extracted with {@link #extractQueryFromSpark(JDBCRelation, boolean)}
+   * @param applyDefaultSchema whether to apply the database's default schema, see {@link
+   *     JdbcDefaultSchema}
+   * @return dataset identifier, before namespace resolution
+   */
+  public static DatasetIdentifier getDatasetIdentifier(
+      JDBCOptions jdbcOptions, DbTableMeta table, boolean applyDefaultSchema) {
+    return getDatasetIdentifier(
+        jdbcOptions.url(), table, jdbcOptions.asConnectionProperties(), applyDefaultSchema);
+  }
+
+  /**
+   * Builds the dataset identifier of a table of a JDBC database.
+   *
+   * <p>A table that names its database (e.g. {@code app.public.orders}) keeps it instead of getting
+   * the database of the URL prepended, so it is named {@code app.public.orders} rather than {@code
+   * app.app.public.orders}. This doesn't depend on {@code applyDefaultSchema}.
+   *
+   * <p>When {@code applyDefaultSchema} is set and the database has a default schema (see {@link
+   * JdbcDefaultSchema}), a table without a schema gets the default one, so the name follows {@code
+   * {database}.{schema}.{table}}. Otherwise the table's qualified name is appended to the database
+   * of the URL.
+   *
+   * @param jdbcUrl JDBC URL
+   * @param table table, with its name split into database, schema and table name
+   * @param properties JDBC connection properties
+   * @param applyDefaultSchema whether to apply the database's default schema
+   * @return dataset identifier, before namespace resolution
+   */
+  public static DatasetIdentifier getDatasetIdentifier(
+      String jdbcUrl, DbTableMeta table, Properties properties, boolean applyDefaultSchema) {
+    Optional<String> defaultSchema =
+        applyDefaultSchema ? JdbcDefaultSchema.resolve(jdbcUrl, properties) : Optional.empty();
+    if (table.database() == null && !defaultSchema.isPresent()) {
+      return JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl, table.qualifiedName(), properties);
+    }
+
+    String schema = Optional.ofNullable(table.schema()).orElse(defaultSchema.orElse(null));
+    List<String> parts = new ArrayList<>();
+    if (schema != null) {
+      parts.add(schema);
+    }
+    parts.add(table.name());
+    DatasetIdentifier identifier =
+        JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl, new ArrayList<>(parts), properties);
+    if (table.database() == null) {
+      return identifier;
+    }
+    parts.add(0, table.database());
+    return new DatasetIdentifier(String.join(".", parts), identifier.getNamespace());
+  }
+
+  /**
+   * Splits a table name written by a user, e.g. the {@code dbtable} option of a JDBC write, into
+   * database, schema and table name.
+   *
+   * <p>When {@code applyDefaultSchema} is set and the database has a default schema, the name is
+   * parsed with the SQL parser, the same way as the tables of JDBC reads. Otherwise, only a fully
+   * qualified name ({@code database.schema.table}) is split, so that it keeps its database (see
+   * {@link #getDatasetIdentifier(String, DbTableMeta, Properties, boolean)}); any other name is
+   * kept as it is.
+   *
+   * @param jdbcUrl JDBC URL
+   * @param tableName table name, optionally qualified with a schema and a database
+   * @param properties JDBC connection properties
+   * @param applyDefaultSchema whether the default schema is going to be applied
+   * @return table meta to be named with {@link #getDatasetIdentifier(String, DbTableMeta,
+   *     Properties, boolean)}
+   */
+  public static DbTableMeta parseTableName(
+      String jdbcUrl, String tableName, Properties properties, boolean applyDefaultSchema) {
+    DbTableMeta unparsed = new DbTableMeta(null, null, tableName);
+    boolean parseAnyName =
+        applyDefaultSchema && JdbcDefaultSchema.resolve(jdbcUrl, properties).isPresent();
+    // a fully qualified name has at least two dots
+    if (!parseAnyName && tableName.indexOf('.') == tableName.lastIndexOf('.')) {
+      return unparsed;
+    }
+    DbTableMeta parsed =
+        OpenLineageSql.parse(
+                Collections.singletonList("select * from " + tableName),
+                extractDialectFromJdbcUrl(jdbcUrl))
+            .filter(meta -> meta.errors().isEmpty() && meta.inTables().size() == 1)
+            .map(meta -> meta.inTables().get(0))
+            .orElseGet(() -> splitTableName(tableName));
+    return parseAnyName || parsed.database() != null ? parsed : unparsed;
+  }
+
+  /**
+   * Splits a table name into database, schema and table name when the SQL parser can't parse it.
+   * Only names with two ({@code schema.table}) or three ({@code database.schema.table}) parts are
+   * split; anything else is kept as a table name.
+   *
+   * @param tableName table name, optionally qualified with a schema and a database
+   * @return table meta with the parts of the name
+   */
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+  private static DbTableMeta splitTableName(String tableName) {
+    String[] parts = tableName.split("\\.");
+    if (parts.length == 2) {
+      return new DbTableMeta(null, parts[0], parts[1]);
+    } else if (parts.length == 3) {
+      return new DbTableMeta(parts[0], parts[1], parts[2]);
+    }
+    return new DbTableMeta(null, null, tableName);
+  }
+
+  /**
+   * Extracts the tables read by a JDBC relation, and the column lineage between them and the
+   * relation's output, without applying the database's default schema.
+   *
+   * @param relation JDBC relation
+   * @return tables and column lineage, empty if the query can't be parsed
+   */
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
+    return extractQueryFromSpark(relation, false);
+  }
+
+  /**
+   * Extracts the tables read by a JDBC relation, and the column lineage between them and the
+   * relation's output.
+   *
+   * @param relation JDBC relation
+   * @param applyDefaultSchema whether the database's default schema is going to be applied to the
+   *     dataset names. In that case, a plain table name in {@code dbtable} is parsed, so that it
+   *     gets split into database, schema and table name the same way as the tables of a query.
+   *     Otherwise, only a fully qualified one is, see {@link #parseTableName(String, String,
+   *     Properties, boolean)}.
+   * @return tables and column lineage, empty if the query can't be parsed
+   */
+  public static Optional<SqlMeta> extractQueryFromSpark(
+      JDBCRelation relation, boolean applyDefaultSchema) {
     Optional<String> dbtable =
         ScalaConversionUtils.asJavaOptional(
             relation.jdbcOptions().parameters().get(JDBCOptions$.MODULE$.JDBC_TABLE_NAME()));
@@ -61,7 +241,12 @@ public class JdbcSparkUtils {
     // `schema_name.table_name`
     // https://spark.apache.org/docs/3.5.6/sql-data-sources-jdbc.html#data-source-option
     if (dbtable.isPresent() && dbtableIsJustATableName(dbtable.get())) {
-      DbTableMeta origin = new DbTableMeta(null, null, dbtable.get());
+      DbTableMeta origin =
+          parseTableName(
+              relation.jdbcOptions().url(),
+              dbtable.get(),
+              relation.jdbcOptions().asConnectionProperties(),
+              applyDefaultSchema);
       return Optional.of(
           new SqlMeta(
               Collections.singletonList(origin),
