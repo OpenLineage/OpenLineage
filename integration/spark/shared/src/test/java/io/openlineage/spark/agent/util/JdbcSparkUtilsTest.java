@@ -36,6 +36,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class JdbcSparkUtilsTest {
   private static final String DEFAULT_URL = "jdbc:postgresql://localhost:5432/testdb";
+  private static final String SQLSERVER_URL = "jdbc:sqlserver://localhost:1433;databaseName=testdb";
   private final JDBCRelation relation = mock(JDBCRelation.class);
 
   @ParameterizedTest
@@ -43,7 +44,9 @@ class JdbcSparkUtilsTest {
   void testExtractQueryFromSpark(TestCase testCase) {
     givenJdbcOptions(
         JdbcOptions.builder()
-            .url(DEFAULT_URL)
+            .url(testCase.url)
+            // explicit driver, so URLs used only to select the SQL dialect need no driver jar
+            .driver("org.postgresql.Driver")
             .dbtable(testCase.dbtable)
             .query(testCase.query)
             .build());
@@ -115,6 +118,20 @@ class JdbcSparkUtilsTest {
             .build(),
         TestCase.builder()
             .dbtable("(SELECT id -- )\nFROM users) t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .url(SQLSERVER_URL)
+            .dbtable("(SELECT [id] FROM users WHERE [x)y] = 1) t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .url(SQLSERVER_URL)
+            .dbtable("(SELECT [id] FROM users WHERE [x]])y] = 1) t") // escaped bracket
             .schema(new StructType().add("id", DataTypes.IntegerType))
             .expectedInputTable("users")
             .expectedColumnLineage(columnLineage("users.id"))
@@ -244,6 +261,7 @@ class JdbcSparkUtilsTest {
 
   @Builder
   public static class TestCase {
+    @Builder.Default private final String url = DEFAULT_URL;
     private final String dbtable;
     private final String query;
     private final StructType schema;
@@ -260,6 +278,11 @@ class JdbcSparkUtilsTest {
 
     public JdbcOptions url(String url) {
       paramsMap.put(JDBCOptions$.MODULE$.JDBC_URL(), url);
+      return this;
+    }
+
+    public JdbcOptions driver(String driverClass) {
+      paramsMap.put(JDBCOptions$.MODULE$.JDBC_DRIVER_CLASS(), driverClass);
       return this;
     }
 
