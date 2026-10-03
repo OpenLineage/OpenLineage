@@ -41,7 +41,14 @@ public class CatalogMetricsReporterHolder {
 
   private CatalogMetricsReporterHolder() {}
 
-  public static void register(OpenLineageContext context, Catalog catalog) {
+  /**
+   * Injects an {@link OpenLineageMetricsReporter} into the catalog, unless one is already
+   * registered for the catalog name.
+   *
+   * @return the reporter registered for the catalog, or empty if the catalog type is not supported
+   */
+  public static Optional<OpenLineageMetricsReporter> register(
+      OpenLineageContext context, Catalog catalog) {
     VendorsContext vendorsContext = context.getVendors().getVendorsContext();
 
     if (!vendorsContext.contains(VENDOR_CONTEXT_KEY)) {
@@ -57,7 +64,7 @@ public class CatalogMetricsReporterHolder {
 
     if (holder.catalogMetricsReporter.containsKey(catalog.name())) {
       log.debug("Catalog already registered: {}", catalog);
-      return;
+      return Optional.of(holder.catalogMetricsReporter.get(catalog.name()));
     }
     log.debug("Registering catalog: {}", catalog);
 
@@ -69,7 +76,7 @@ public class CatalogMetricsReporterHolder {
       catalogWrapper = new RESTCatalogWrapper((RESTCatalog) catalog);
     } else {
       log.warn("Catalog type not supported: {}", catalog.getClass().getName());
-      return;
+      return Optional.empty();
     }
 
     // check if the metrics reporter is already set in the catalog
@@ -85,7 +92,7 @@ public class CatalogMetricsReporterHolder {
           "Existing OpenLineageMetricsReporter found, replacing metrics reporter map with: {} for runId {}",
           existing,
           context.getRunUuid());
-      return;
+      return Optional.of(holder.catalogMetricsReporter.get(catalog.name()));
     }
 
     if (existing != null) {
@@ -113,6 +120,7 @@ public class CatalogMetricsReporterHolder {
     } catch (IllegalAccessException e) {
       log.warn("Unable to inject metrics reporter", e);
     }
+    return Optional.of(openLineageMetricsReporter);
   }
 
   /**

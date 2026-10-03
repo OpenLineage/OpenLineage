@@ -15,10 +15,12 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.VendorsContext;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.iceberg.BaseMetastoreCatalog;
 import org.apache.iceberg.TableOperations;
+import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.metrics.CommitReport;
@@ -64,6 +66,17 @@ public class CatalogMetricsReporterHolderTest {
   }
 
   @Test
+  void testRegisterReturnsRegisteredReporter() {
+    Optional<OpenLineageMetricsReporter> registered =
+        CatalogMetricsReporterHolder.register(context, icebergCatalog);
+
+    assertThat(registered).containsSame(getMetricHolder().getReporterFor(CATALOG_NAME));
+    assertThat(CatalogMetricsReporterHolder.register(context, new TestingIcebergCatalog()))
+        .containsSame(registered.get());
+    assertThat(CatalogMetricsReporterHolder.register(context, mock(Catalog.class))).isEmpty();
+  }
+
+  @Test
   @SneakyThrows
   void testRegisterRestCatalog() {
     MetricsReporter reporter = mock(MetricsReporter.class);
@@ -99,7 +112,8 @@ public class CatalogMetricsReporterHolderTest {
     MetricsReporter existingReporter = mock(OpenLineageMetricsReporter.class);
     FieldUtils.writeField(icebergCatalog, "metricsReporter", existingReporter, true);
 
-    CatalogMetricsReporterHolder.register(context, icebergCatalog);
+    assertThat(CatalogMetricsReporterHolder.register(context, icebergCatalog))
+        .containsSame((OpenLineageMetricsReporter) existingReporter);
 
     assertThat(getMetricHolder().getReporterFor(CATALOG_NAME)).isEqualTo(existingReporter);
   }
