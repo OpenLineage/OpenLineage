@@ -32,6 +32,8 @@ import org.apache.spark.sql.types.StructType;
 public class JdbcSparkUtils {
   private static final char OPEN_PAREN = '(';
   private static final char CLOSE_PAREN = ')';
+  private static final char OPEN_BRACKET = '[';
+  private static final char CLOSE_BRACKET = ']';
   private static final String BLOCK_COMMENT_START = "/*";
   private static final String BLOCK_COMMENT_END = "*/";
   private static final String LINE_COMMENT_START = "--";
@@ -118,7 +120,8 @@ public class JdbcSparkUtils {
   /**
    * Returns the inner query if {@code dbtable} is a single parenthesized subquery with an optional
    * alias, e.g. {@code (SELECT ...) AS t}. Returns empty for anything else, e.g. {@code (SELECT
-   * ...) a JOIN b ON ...}. Parentheses inside quotes and SQL comments are ignored.
+   * ...) a JOIN b ON ...}. Parentheses inside quotes, bracket-quoted identifiers and SQL comments
+   * are ignored.
    */
   private static Optional<String> unwrapSubquery(String dbtable) {
     String trimmed = dbtable.trim();
@@ -132,7 +135,9 @@ public class JdbcSparkUtils {
       char c = trimmed.charAt(i);
       int next = i + 1;
       if (quote != 0) {
-        if (c == quote) {
+        if (c == quote && next < trimmed.length() && trimmed.charAt(next) == quote) {
+          next++; // doubled closing quote is an escaped quote, e.g. 'it''s' or [a]]b]
+        } else if (c == quote) {
           quote = 0;
         }
       } else if (trimmed.startsWith(BLOCK_COMMENT_START, i)) {
@@ -141,6 +146,8 @@ public class JdbcSparkUtils {
         next = skipPast(trimmed, "\n", i + LINE_COMMENT_START.length());
       } else if (c == '\'' || c == '"' || c == '`') {
         quote = c;
+      } else if (c == OPEN_BRACKET) {
+        quote = CLOSE_BRACKET; // bracket-quoted identifier, e.g. [a)b]
       } else if (c == OPEN_PAREN) {
         depth++;
       } else if (c == CLOSE_PAREN) {
