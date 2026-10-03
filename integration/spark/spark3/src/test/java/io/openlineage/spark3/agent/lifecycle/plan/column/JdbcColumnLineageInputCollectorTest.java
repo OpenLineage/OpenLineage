@@ -44,6 +44,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 class JdbcColumnLineageInputCollectorTest {
+  private static final String PUBLIC_SOURCE1_NAME = "test.public.jdbc_source1";
+  private static final String POSTGRES_NAMESPACE = "postgres://localhost:5432";
+  private static final String SOURCE1_TABLE = "jdbc_source1";
+
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
@@ -67,9 +71,9 @@ class JdbcColumnLineageInputCollectorTest {
   private static Map<ColumnMeta, ExprId> getMockMap() {
     Map<ColumnMeta, ExprId> map = new HashMap<>();
 
-    map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source1"), "k"), exprId1);
+    map.put(new ColumnMeta(new DbTableMeta(null, null, SOURCE1_TABLE), "k"), exprId1);
 
-    map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source1"), "j1"), exprId2);
+    map.put(new ColumnMeta(new DbTableMeta(null, null, SOURCE1_TABLE), "j1"), exprId2);
 
     map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source2"), "j2"), exprId3);
     return map;
@@ -171,8 +175,7 @@ class JdbcColumnLineageInputCollectorTest {
 
     visitor.collectInputs(context, logicalRelation);
 
-    DatasetIdentifier expected =
-        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
     verify(builder, times(1)).addInput(exprId1, expected, "k");
     verify(builder, times(1)).addInput(exprId2, expected, "j1");
   }
@@ -188,10 +191,9 @@ class JdbcColumnLineageInputCollectorTest {
 
     visitor.collectInputs(context, logicalRelation);
 
-    DatasetIdentifier source1 =
-        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    DatasetIdentifier source1 = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
     DatasetIdentifier source2 =
-        new DatasetIdentifier("test.sales.jdbc_source2", "postgres://localhost:5432");
+        new DatasetIdentifier("test.sales.jdbc_source2", POSTGRES_NAMESPACE);
     verify(builder, times(1)).addInput(exprId1, source1, "k");
     verify(builder, times(1)).addInput(exprId2, source1, "j1");
     verify(builder, times(1)).addInput(exprId3, source2, "j2");
@@ -233,16 +235,15 @@ class JdbcColumnLineageInputCollectorTest {
 
     visitor.collectInputs(context, logicalRelation);
 
-    DatasetIdentifier expected =
-        new DatasetIdentifier("test.public.jdbc_source1", "postgres://localhost:5432");
+    DatasetIdentifier expected = new DatasetIdentifier(PUBLIC_SOURCE1_NAME, POSTGRES_NAMESPACE);
     verify(builder, times(1)).addInput(exprId1, expected, "k");
     verify(builder, times(1)).addInput(exprId2, expected, "j1");
   }
 
   private static ExprId schemaQualifiedMapping(ColumnMeta column) {
     Map<ColumnMeta, ExprId> map = new HashMap<>();
-    map.put(new ColumnMeta(new DbTableMeta(null, "public", "jdbc_source1"), "k"), exprId1);
-    map.put(new ColumnMeta(new DbTableMeta(null, "public", "jdbc_source1"), "j1"), exprId2);
+    map.put(new ColumnMeta(new DbTableMeta(null, "public", SOURCE1_TABLE), "k"), exprId1);
+    map.put(new ColumnMeta(new DbTableMeta(null, "public", SOURCE1_TABLE), "j1"), exprId2);
     map.put(new ColumnMeta(new DbTableMeta(null, "sales", "jdbc_source2"), "j2"), exprId3);
     return map.get(column);
   }
