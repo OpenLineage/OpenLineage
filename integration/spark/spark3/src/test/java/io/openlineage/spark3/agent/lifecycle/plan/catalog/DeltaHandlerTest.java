@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,11 +32,13 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.connector.catalog.V1Table;
 import org.apache.spark.sql.delta.catalog.DeltaCatalog;
 import org.apache.spark.sql.delta.catalog.DeltaTableV2;
+import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -208,6 +211,69 @@ class DeltaHandlerTest {
         .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
         .hasFieldOrPropertyWithValue("name", "schema.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  void testGetIdentifierQualifiesSchemelessLocationWithDefaultFilesystem() {
+    sparkContext.hadoopConfiguration().set("fs.defaultFS", "hdfs://namenode:8020");
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("No active or default Spark session found"));
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(
+            sparkSession,
+            deltaCatalog,
+            identifier,
+            Collections.singletonMap(TableCatalog.PROP_LOCATION, "/data/t"));
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020")
+        .hasFieldOrPropertyWithValue("name", "/data/t");
+  }
+
+  @Test
+  void testGetIdentifierUsesSessionCatalogDefaultTablePathWhenSessionIsUnusable() {
+    Identifier identifier = Identifier.of(new String[] {"spark_catalog", "schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("No active or default Spark session found"));
+    SessionState sessionState = mock(SessionState.class);
+    SessionCatalog sessionCatalog = mock(SessionCatalog.class);
+    when(sparkSession.sessionState()).thenReturn(sessionState);
+    when(sessionState.catalog()).thenReturn(sessionCatalog);
+    when(sessionCatalog.defaultTablePath(new TableIdentifier("table", Option.apply("schema"))))
+        .thenReturn(URI.create("file:/custom/schema/location/table"));
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(
+            sparkSession, deltaCatalog, identifier, Collections.emptyMap());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/custom/schema/location/table");
+  }
+
+  @Test
+  void testGetIdentifierFallsBackToWarehouseLayoutWhenSessionCatalogFails() {
+    sparkContext.getConf().set("spark.sql.warehouse.dir", "/user/hive/warehouse");
+    sparkContext.hadoopConfiguration().set("fs.defaultFS", "hdfs://namenode:8020");
+    Identifier identifier = Identifier.of(new String[] {"schema"}, "table");
+    when(deltaCatalog.loadTable(identifier))
+        .thenThrow(new IllegalStateException("No active or default Spark session found"));
+    SessionState sessionState = mock(SessionState.class);
+    SessionCatalog sessionCatalog = mock(SessionCatalog.class);
+    when(sparkSession.sessionState()).thenReturn(sessionState);
+    when(sessionState.catalog()).thenReturn(sessionCatalog);
+    when(sessionCatalog.defaultTablePath(any(TableIdentifier.class)))
+        .thenThrow(new IllegalStateException("metastore is unavailable"));
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(
+            sparkSession, deltaCatalog, identifier, Collections.emptyMap());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020")
+        .hasFieldOrPropertyWithValue("name", "/user/hive/warehouse/schema.db/table");
   }
 
   @Test
