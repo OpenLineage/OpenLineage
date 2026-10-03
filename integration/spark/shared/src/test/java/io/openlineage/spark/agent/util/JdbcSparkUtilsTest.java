@@ -108,6 +108,18 @@ class JdbcSparkUtilsTest {
             .expectedColumnLineage(columnLineage("users.id"))
             .build(),
         TestCase.builder()
+            .dbtable("(SELECT id /* ) */ FROM users) t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id -- )\nFROM users) t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
             .dbtable("(SELECT id FROM users) u JOIN orders o ON u.id = o.user_id")
             .schema(new StructType().add("id", DataTypes.IntegerType))
             .expectedInputTable("users")

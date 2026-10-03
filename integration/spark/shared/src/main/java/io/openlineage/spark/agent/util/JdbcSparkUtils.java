@@ -32,6 +32,9 @@ import org.apache.spark.sql.types.StructType;
 public class JdbcSparkUtils {
   private static final char OPEN_PAREN = '(';
   private static final char CLOSE_PAREN = ')';
+  private static final String BLOCK_COMMENT_START = "/*";
+  private static final String BLOCK_COMMENT_END = "*/";
+  private static final String LINE_COMMENT_START = "--";
   private static final Pattern SUBQUERY_ALIAS =
       Pattern.compile("(?i)\\s*(?:(?:AS\\s+)?(?:\\w+|\"[^\"]+\"|`[^`]+`|\\[[^\\]]+\\]))?\\s*");
 
@@ -115,7 +118,7 @@ public class JdbcSparkUtils {
   /**
    * Returns the inner query if {@code dbtable} is a single parenthesized subquery with an optional
    * alias, e.g. {@code (SELECT ...) AS t}. Returns empty for anything else, e.g. {@code (SELECT
-   * ...) a JOIN b ON ...}.
+   * ...) a JOIN b ON ...}. Parentheses inside quotes and SQL comments are ignored.
    */
   private static Optional<String> unwrapSubquery(String dbtable) {
     String trimmed = dbtable.trim();
@@ -124,12 +127,18 @@ public class JdbcSparkUtils {
     }
     int depth = 0;
     char quote = 0;
-    for (int i = 0; i < trimmed.length(); i++) {
+    int i = 0;
+    while (i < trimmed.length()) {
       char c = trimmed.charAt(i);
+      int next = i + 1;
       if (quote != 0) {
         if (c == quote) {
           quote = 0;
         }
+      } else if (trimmed.startsWith(BLOCK_COMMENT_START, i)) {
+        next = skipPast(trimmed, BLOCK_COMMENT_END, i + BLOCK_COMMENT_START.length());
+      } else if (trimmed.startsWith(LINE_COMMENT_START, i)) {
+        next = skipPast(trimmed, "\n", i + LINE_COMMENT_START.length());
       } else if (c == '\'' || c == '"' || c == '`') {
         quote = c;
       } else if (c == OPEN_PAREN) {
@@ -142,8 +151,15 @@ public class JdbcSparkUtils {
               : Optional.empty();
         }
       }
+      i = next;
     }
     return Optional.empty();
+  }
+
+  /** Returns the index just after the next {@code end} at or after {@code from}, or the length. */
+  private static int skipPast(String s, String end, int from) {
+    int idx = s.indexOf(end, from);
+    return idx < 0 ? s.length() : idx + end.length();
   }
 
   private static boolean dbtableIsJustATableName(String dbtable) {
