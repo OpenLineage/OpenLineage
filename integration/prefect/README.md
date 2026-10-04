@@ -4,14 +4,17 @@ The `openlineage-prefect` integration collects, adapts, and emits Prefect flow a
 
 ## Features
 
-The integration converts Prefect's unique run objects to idempotent tasks and flows, enabling the analysis of both over time in OpenLineage-compatible consumers. 
+The integration collects and emits lineage metadata of Prefect tasks and flows, enabling the analysis of both over time in OpenLineage-compatible consumers. A custom facet collects deployment information, and other OpenLineage facets are leveraged to collect version information, input and output datasets, parent run information, and nominal start times of runs.
 
-**Note:** to override this default behavior and preserve unique job names, set the JOB_NAME_TYPE env variable to "full". Setting it to "base" reverts to the default idempotent names.
+**Note:** by default, the integration tracks runs of idempotent tasks and flows. If tracking unique runs is preferred, environment variables are provided to override the default behavior. 
+- To collect unique task runs, set the TASK_NAME_TYPE env variable to "full". Setting it to "base" reverts to the default idempotent names.
+- To collect unique flow runs, set the FLOW_NAME_TYPE env variable to "flow-run". Setting it to "flow" reverts to the default idempotent names.
 ```sh
-export JOB_NAME_TYPE="full"
+export TASK_NAME_TYPE="full"
+export FLOW_NAME_TYPE="flow-run"
 ```
 
-The integration supports OpenLineage Datasets, which enable the aggregation of a data source's producers and consumers across OpenLineage-compatible systems and platforms. This allows for the tracking of external upstream and downstream dependencies of Prefect data sources together with their producing and consuming tasks in Prefect flows. For more details, see "Leveraging Datasets" below.
+OpenLineage Datasets enable the aggregation of a data source's producers and consumers across OpenLineage-compatible systems and platforms. This allows for the tracking of external upstream and downstream dependencies of Prefect data sources together with their producing and consuming tasks in Prefect flows. For more details, see "Leveraging Datasets" below.
 
 All transport options offered by `openlineage-python` are available, including intelligent routing of emitted events to Datadog and GCP, async http, http, and composite.
 
