@@ -10,6 +10,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +30,8 @@ public class AwsUtils {
   private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
   private static final String SPARK_SQL_CATALOG_PREFIX = "spark.sql.catalog.";
   private static final String GLUE_CATALOG_SUFFIX = "GlueCatalog";
-  private static final String CATALOG_TYPE_SUFFIX = ".type";
+  private static final String CATALOG_TYPE_KEY = "type";
+  private static final String CATALOG_IMPL_KEY = "catalog-impl";
   private static final String GLUE_CATALOG_TYPE = "glue";
 
   public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
@@ -194,15 +197,40 @@ public class AwsUtils {
     return Optional.empty();
   }
 
-  // type=glue names no catalog-impl class; without this match the Glue ARN (and symlink) is
-  // omitted.
+  // type=glue without catalog-impl enables the Glue ARN; type=glue plus a non-Glue catalog-impl
+  // does not (Iceberg never loads that catalog as Glue).
   private static boolean isIcebergUsingGlue(SparkConf sparkConf) {
-    return Arrays.stream(sparkConf.getAllWithPrefix(SPARK_SQL_CATALOG_PREFIX))
-        .anyMatch(
-            tuple ->
-                tuple._2().endsWith(GLUE_CATALOG_SUFFIX)
-                    || (tuple._1().endsWith(CATALOG_TYPE_SUFFIX)
-                        && GLUE_CATALOG_TYPE.equalsIgnoreCase(tuple._2())));
+    Map<String, Map<String, String>> catalogProps = new HashMap<>();
+    Arrays.stream(sparkConf.getAllWithPrefix(SPARK_SQL_CATALOG_PREFIX))
+        .forEach(
+            tuple -> {
+              // getAllWithPrefix returns the key suffix after SPARK_SQL_CATALOG_PREFIX.
+              String remainder = tuple._1();
+              int dot = remainder.indexOf('.');
+              if (dot < 0) {
+                if (tuple._2().endsWith(GLUE_CATALOG_SUFFIX)) {
+                  catalogProps
+                      .computeIfAbsent(remainder, name -> new HashMap<>())
+                      .put(CATALOG_IMPL_KEY, tuple._2());
+                }
+                return;
+              }
+              String catalogName = remainder.substring(0, dot);
+              String property = remainder.substring(dot + 1);
+              catalogProps
+                  .computeIfAbsent(catalogName, name -> new HashMap<>())
+                  .put(property, tuple._2());
+            });
+    return catalogProps.values().stream().anyMatch(AwsUtils::icebergCatalogUsesGlue);
+  }
+
+  private static boolean icebergCatalogUsesGlue(Map<String, String> catalogConf) {
+    String catalogImpl = catalogConf.get(CATALOG_IMPL_KEY);
+    if (catalogImpl != null) {
+      return catalogImpl.endsWith(GLUE_CATALOG_SUFFIX);
+    }
+    String type = catalogConf.get(CATALOG_TYPE_KEY);
+    return type != null && GLUE_CATALOG_TYPE.equalsIgnoreCase(type);
   }
 
   private static boolean isHiveUsingGlue(SparkConf sparkConf, Configuration hadoopConf) {

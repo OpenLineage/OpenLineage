@@ -52,12 +52,12 @@ class GlueCatalogTypeHandler extends BaseCatalogTypeHandler {
     if (!glueImpl) {
       return false;
     }
-    // S3 Tables can be accessed through GlueCatalog federation. Those configs must be handled by
-    // S3TablesCatalogTypeHandler regardless of handler ordering.
+    // Federated S3 Tables on Glue must not get plain Glue lineage; catalog-impl configs are
+    // usually claimed by S3TablesCatalogTypeHandler first, but type=glue shorthand may not be yet.
     if (S3TablesUtils.matchesS3TablesCatalogConfig(conf)) {
       log.warn(
-          "Catalog has catalog-impl=GlueCatalog with S3 Tables federation signals. "
-              + "Treating as non-Glue so S3 Tables lineage identity is preserved.");
+          "Glue catalog (catalog-impl or type=glue) has S3 Tables federation signals; "
+              + "not handling it as Glue.");
       return false;
     }
     return true;
