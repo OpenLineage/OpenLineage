@@ -7,10 +7,12 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 
 import static io.openlineage.spark.agent.util.PathUtils.GLUE_TABLE_PREFIX;
 import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler.CATALOG_IMPL;
+import static io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler.TYPE;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.AwsUtils;
 import io.openlineage.spark.agent.util.S3TablesUtils;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -20,22 +22,39 @@ import org.apache.spark.sql.SparkSession;
 @Slf4j
 class GlueCatalogTypeHandler extends BaseCatalogTypeHandler {
 
+  private static final String GLUE_CATALOG_TYPE = "glue";
+  private static final String GLUE_CATALOG_IMPL = "org.apache.iceberg.aws.glue.GlueCatalog";
+
   @Override
   String getType() {
-    return "glue";
+    return GLUE_CATALOG_TYPE;
+  }
+
+  // Iceberg CatalogUtil resolves type=glue only when catalog-impl is absent; otherwise this conf
+  // misses Glue and falls back to Hive. Expanding on a copy lets the S3 Tables guard see glue.id.
+  private static Map<String, String> expandGlueTypeShorthand(Map<String, String> catalogConf) {
+    if (catalogConf.containsKey(CATALOG_IMPL)) {
+      return catalogConf;
+    }
+    if (GLUE_CATALOG_TYPE.equalsIgnoreCase(catalogConf.get(TYPE))) {
+      Map<String, String> expanded = new HashMap<>(catalogConf);
+      expanded.put(CATALOG_IMPL, GLUE_CATALOG_IMPL);
+      return expanded;
+    }
+    return catalogConf;
   }
 
   @Override
   boolean matchesCatalogType(Map<String, String> catalogConf) {
+    Map<String, String> conf = expandGlueTypeShorthand(catalogConf);
     boolean glueImpl =
-        catalogConf.containsKey(CATALOG_IMPL)
-            && catalogConf.get(CATALOG_IMPL).endsWith("GlueCatalog");
+        conf.containsKey(CATALOG_IMPL) && conf.get(CATALOG_IMPL).endsWith("GlueCatalog");
     if (!glueImpl) {
       return false;
     }
     // S3 Tables can be accessed through GlueCatalog federation. Those configs must be handled by
     // S3TablesCatalogTypeHandler regardless of handler ordering.
-    if (S3TablesUtils.matchesS3TablesCatalogConfig(catalogConf)) {
+    if (S3TablesUtils.matchesS3TablesCatalogConfig(conf)) {
       log.warn(
           "Catalog has catalog-impl=GlueCatalog with S3 Tables federation signals. "
               + "Treating as non-Glue so S3 Tables lineage identity is preserved.");

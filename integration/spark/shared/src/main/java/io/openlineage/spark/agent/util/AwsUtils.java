@@ -28,6 +28,8 @@ public class AwsUtils {
   private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
   private static final String SPARK_SQL_CATALOG_PREFIX = "spark.sql.catalog.";
   private static final String GLUE_CATALOG_SUFFIX = "GlueCatalog";
+  private static final String CATALOG_TYPE_SUFFIX = ".type";
+  private static final String GLUE_CATALOG_TYPE = "glue";
 
   public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
     if (isHiveUsingGlue(sparkConf, hadoopConf) || isIcebergUsingGlue(sparkConf)) {
@@ -192,9 +194,15 @@ public class AwsUtils {
     return Optional.empty();
   }
 
+  // type=glue names no catalog-impl class; without this match the Glue ARN (and symlink) is
+  // omitted.
   private static boolean isIcebergUsingGlue(SparkConf sparkConf) {
     return Arrays.stream(sparkConf.getAllWithPrefix(SPARK_SQL_CATALOG_PREFIX))
-        .anyMatch(tuple -> tuple._2().endsWith(GLUE_CATALOG_SUFFIX));
+        .anyMatch(
+            tuple ->
+                tuple._2().endsWith(GLUE_CATALOG_SUFFIX)
+                    || (tuple._1().endsWith(CATALOG_TYPE_SUFFIX)
+                        && GLUE_CATALOG_TYPE.equalsIgnoreCase(tuple._2())));
   }
 
   private static boolean isHiveUsingGlue(SparkConf sparkConf, Configuration hadoopConf) {
