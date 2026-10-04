@@ -7010,7 +7010,7 @@ __metadata:
     docusaurus-lunr-search: "npm:^3.5.0"
     lodash: "npm:^4.18.1"
     lunr: "npm:^2.3.9"
-    motion: "npm:^13.4.0"
+    motion: "npm:^13.4.4"
     postcss: "npm:^8.5.28"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
@@ -7840,11 +7840,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-motion@npm:^13.4.0":
-  version: 13.4.0
-  resolution: "framer-motion@npm:13.4.0"
+"framer-motion@npm:^13.4.4":
+  version: 13.4.4
+  resolution: "framer-motion@npm:13.4.4"
   dependencies:
-    motion-dom: "npm:^13.3.0"
+    motion-dom: "npm:^13.4.4"
     motion-utils: "npm:^13.3.0"
     tslib: "npm:^2.4.0"
   peerDependencies:
@@ -7855,7 +7855,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10c0/1cba0f674c0a3893c7803876a54fa2c2c66a1a06665668cc8145909478cc6d78944c85a8eb9bdc169c61b3163cc597a2c0ebd0bcc37c2e3410e5960950b5d40b
+  checksum: 10c0/8344f4738f0abae533d3408da261b40fbf3fbd98aa81884a55629e2234dbea2a6df7485f40e4c75c7f4b965621ed566da5063a0924765ad90c3d72f04b892fca
   languageName: node
   linkType: hard
 
@@ -10712,12 +10712,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion-dom@npm:^13.3.0":
-  version: 13.3.0
-  resolution: "motion-dom@npm:13.3.0"
+"motion-dom@npm:^13.4.4":
+  version: 13.4.4
+  resolution: "motion-dom@npm:13.4.4"
   dependencies:
     motion-utils: "npm:^13.3.0"
-  checksum: 10c0/b59ee63a4a487abb571159853d9bb47c02740d9707f01b91440b2d157af26cde16db5ebf29d1b5e19aabccc9dcb9ec763e9bbf931fdf25beae2af3e4d0f9652d
+  checksum: 10c0/559885b798739cb3a41eebfa272e691ac09531f54919bb623cf55b27ecdc9b85ef7e28809818402293507151991ef68e1b3b2ee257fdd1a368f56c868660c720
   languageName: node
   linkType: hard
 
@@ -10728,11 +10728,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion@npm:^13.4.0":
-  version: 13.4.0
-  resolution: "motion@npm:13.4.0"
+"motion@npm:^13.4.4":
+  version: 13.4.4
+  resolution: "motion@npm:13.4.4"
   dependencies:
-    framer-motion: "npm:^13.4.0"
+    framer-motion: "npm:^13.4.4"
     tslib: "npm:^2.4.0"
   peerDependencies:
     react: ^18.0.0 || ^19.0.0
@@ -10742,7 +10742,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10c0/d2fe0daa87ef102b11ae95b7c798e592a912058c8c5c64c2960b7dcf215261a0c4f696fa4cfb2656f357a4d4cf5fd864a0cc99964ba781c8daa10a22a1132304
+  checksum: 10c0/4de01d63875f625755e64f0c07515c6070e30a25ef37ab4d667377bcdb91952e4b77d05cbba584c5d9ca8183cdbc8670ac66c75b66c81561f1ae58d4bbc8cbda
   languageName: node
   linkType: hard
 
