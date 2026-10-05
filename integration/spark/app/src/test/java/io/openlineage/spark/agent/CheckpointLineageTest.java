@@ -77,6 +77,7 @@ class CheckpointLineageTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/checkpoint-test")
+            .config("spark.openlineage.checkpointLineage.enabled", true)
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();
     spark.sparkContext().setCheckpointDir(tempDir.resolve("spark-checkpoints").toString());
@@ -102,20 +103,7 @@ class CheckpointLineageTest {
   }
 
   private void runCheckpointPipeline(java.util.function.UnaryOperator<Dataset<Row>> checkpointFn) {
-    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string)");
-    spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
-
-    Dataset<Row> checkpointed = checkpointFn.apply(spark.sql("SELECT * FROM checkpoint_t1"));
-    checkpointed.createOrReplaceTempView("checkpoint_temp");
-    spark.sql("CREATE TABLE checkpoint_t3 AS SELECT * FROM checkpoint_temp");
-
-    List<RunEvent> events =
-        MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3");
-    RunEvent complete =
-        events.stream()
-            .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("No COMPLETE event found for checkpoint_t3"));
+    RunEvent complete = runCheckpointPipelineAndGetCompleteEvent(checkpointFn);
 
     assertThat(complete.getInputs())
         .as(
@@ -135,6 +123,60 @@ class CheckpointLineageTest {
     assertThat(columnLineage.getFields().getAdditionalProperties().get("a").getInputFields())
         .as("column 'a' of checkpoint_t3 should depend on checkpoint_t1.a")
         .anyMatch(f -> f.getName().contains("checkpoint_t1") && "a".equals(f.getField()));
+  }
+
+  private RunEvent runCheckpointPipelineAndGetCompleteEvent(
+      java.util.function.UnaryOperator<Dataset<Row>> checkpointFn) {
+    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string)");
+    spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
+
+    Dataset<Row> checkpointed = checkpointFn.apply(spark.sql("SELECT * FROM checkpoint_t1"));
+    checkpointed.createOrReplaceTempView("checkpoint_temp");
+    spark.sql("CREATE TABLE checkpoint_t3 AS SELECT * FROM checkpoint_temp");
+
+    List<RunEvent> events =
+        MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3");
+    return events.stream()
+        .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No COMPLETE event found for checkpoint_t3"));
+  }
+
+  /**
+   * The feature is opt-in (see {@link
+   * io.openlineage.spark.api.SparkOpenLineageConfig.CheckpointConfig}) because the lineage captured
+   * for every checkpoint is kept in memory until the checkpointed RDD is read downstream (or
+   * evicted), which can cause OOM exceptions for applications checkpointing large/many plans.
+   * Verifies that, without explicitly enabling it, checkpointed data is not bridged and the
+   * upstream table lineage is lost across the checkpoint boundary, same as before this feature
+   * existed.
+   */
+  @Test
+  void testCheckpointLineageDisabledByDefault() throws Exception {
+    spark.stop();
+    Spark4CompatUtils.cleanupAnyExistingSession();
+    spark =
+        Spark4CompatUtils.builderWithHiveSupport()
+            .master("local[*]")
+            .appName("CheckpointLineageDisabledTest")
+            .config("spark.driver.host", LOCAL_IP)
+            .config("spark.driver.bindAddress", LOCAL_IP)
+            .config("spark.ui.enabled", false)
+            .config("spark.openlineage.transport.type", "http")
+            .config(
+                "spark.openlineage.transport.url",
+                "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/checkpoint-test")
+            .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
+            .getOrCreate();
+    spark
+        .sparkContext()
+        .setCheckpointDir(java.nio.file.Files.createTempDirectory("spark-checkpoints").toString());
+
+    RunEvent complete = runCheckpointPipelineAndGetCompleteEvent(df -> df.checkpoint(true));
+
+    assertThat(complete.getInputs())
+        .as("without the feature enabled, the upstream table lineage should not be bridged")
+        .noneMatch(ds -> ds.getName().contains("checkpoint_t1"));
   }
 
   /**
