@@ -93,7 +93,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       log.debug("SparkListenerSQLExecutionStart - executionId: {}", startEvent.executionId());
     }
 
-    if (isCheckpointDescription(startEvent.description())) {
+    if (isCheckpointLineageEnabled() && isCheckpointDescription(startEvent.description())) {
       isCheckpointExecution = true;
       log.debug(
           "Not emitting OpenLineage events for checkpoint execution: {}", startEvent.description());
@@ -338,7 +338,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       log.debug("SparkListenerJobEnd - executionId: {}", executionId);
       olContext.setActiveJobId(jobEnd.jobId());
       if (isCheckpointExecution) {
-          return;
+        return;
       }
       if (!finished.compareAndSet(false, true)) {
         log.debug("Event already finished, returning");
@@ -422,6 +422,15 @@ class SparkSQLExecutionContext implements ExecutionContext {
     return description != null
         && (description.startsWith("checkpoint at")
             || description.startsWith("localCheckpoint at"));
+  }
+
+  /**
+   * Whether capturing lineage across {@code checkpoint()}/{@code localCheckpoint()} boundaries is
+   * enabled. Disabled by default - see {@link
+   * io.openlineage.spark.api.SparkOpenLineageConfig.CheckpointConfig}.
+   */
+  private boolean isCheckpointLineageEnabled() {
+    return olContext.getOpenLineageConfig().getCheckpointConfig().getEnabled();
   }
 
   /**
