@@ -34,6 +34,11 @@ public class AwsUtils {
   private static final String CATALOG_IMPL_KEY = "catalog-impl";
   private static final String GLUE_CATALOG_TYPE = "glue";
 
+  /**
+   * Glue TABLE symlink namespace. Built only when Hive uses the Glue client factory or at least one
+   * Iceberg catalog is actually Glue; otherwise PathUtils would stamp a Glue ARN on unrelated
+   * tables.
+   */
   public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
     if (isHiveUsingGlue(sparkConf, hadoopConf) || isIcebergUsingGlue(sparkConf)) {
       return awsRegion()
@@ -117,6 +122,10 @@ public class AwsUtils {
     return hadoopPropertyCatalogId;
   }
 
+  /**
+   * Region for the Glue ARN. Environment variables first; IMDS only when they are unset so YARN
+   * cluster mode still resolves a region.
+   */
   static @NotNull Optional<String> awsRegion() {
     // First, try environment variables
     Optional<String> envRegion =
@@ -197,8 +206,11 @@ public class AwsUtils {
     return Optional.empty();
   }
 
-  // type=glue without catalog-impl enables the Glue ARN; type=glue plus a non-Glue catalog-impl
-  // does not (Iceberg never loads that catalog as Glue).
+  /**
+   * True when any Iceberg catalog is Glue. Keys are grouped by catalog name so {@code type=glue}
+   * next to a non-Glue {@code catalog-impl} does not enable the app-wide ARN: Iceberg never loads
+   * that catalog as Glue.
+   */
   private static boolean isIcebergUsingGlue(SparkConf sparkConf) {
     Map<String, Map<String, String>> catalogProps = new HashMap<>();
     Arrays.stream(sparkConf.getAllWithPrefix(SPARK_SQL_CATALOG_PREFIX))
@@ -224,6 +236,10 @@ public class AwsUtils {
     return catalogProps.values().stream().anyMatch(AwsUtils::icebergCatalogUsesGlue);
   }
 
+  /**
+   * Iceberg honors {@code catalog-impl} over {@code type}. Both set is rejected at catalog
+   * creation, so a non-Glue impl with {@code type=glue} is never Glue.
+   */
   private static boolean icebergCatalogUsesGlue(Map<String, String> catalogConf) {
     String catalogImpl = catalogConf.get(CATALOG_IMPL_KEY);
     if (catalogImpl != null) {
@@ -233,6 +249,10 @@ public class AwsUtils {
     return type != null && GLUE_CATALOG_TYPE.equalsIgnoreCase(type);
   }
 
+  /**
+   * Hive-on-Glue is configured via the Glue Hive client factory on Spark or Hadoop, not via Iceberg
+   * catalog keys.
+   */
   private static boolean isHiveUsingGlue(SparkConf sparkConf, Configuration hadoopConf) {
     Optional<String> hadoopFactoryClass =
         SparkConfUtils.findHadoopConfigKey(hadoopConf, HIVE_METASTORE_CLIENT_FACTORY_CLASS);

@@ -17,6 +17,7 @@ class GlueCatalogTypeHandlerTest {
 
   private final GlueCatalogTypeHandler handler = new GlueCatalogTypeHandler();
 
+  /** Federation glue.id on type=glue is not Glue; S3 Tables identity is a follow-up. */
   @Test
   void matchesCatalogType_typeGlueWithFederatedGlueId_returnsFalse() {
     Map<String, String> catalogConf = new HashMap<>();
@@ -26,6 +27,7 @@ class GlueCatalogTypeHandlerTest {
     assertThat(handler.matchesCatalogType(catalogConf)).isFalse();
   }
 
+  /** Present catalog-impl wins over type=glue, matching Iceberg CatalogUtil. */
   @Test
   void matchesCatalogType_typeGlueWithHadoopCatalogImpl_returnsFalse() {
     Map<String, String> catalogConf = new HashMap<>();
@@ -35,6 +37,7 @@ class GlueCatalogTypeHandlerTest {
     assertThat(handler.matchesCatalogType(catalogConf)).isFalse();
   }
 
+  /** type=hive is a different Iceberg catalog and must not match Glue. */
   @Test
   void matchesCatalogType_typeHive_returnsFalse() {
     Map<String, String> catalogConf = new HashMap<>();

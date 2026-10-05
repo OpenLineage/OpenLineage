@@ -14,6 +14,7 @@ import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
 class AwsUtilsTest {
 
+  /** catalog-impl wins; a Hadoop catalog with type=glue must not enable the app-wide ARN. */
   @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
   void getGlueArn_typeGlueWithHadoopCatalogImpl_returnsEmpty() {
@@ -27,6 +28,7 @@ class AwsUtilsTest {
     assertThat(AwsUtils.getGlueArn(sparkConf, new Configuration())).isEmpty();
   }
 
+  /** type=GLUE is Iceberg's Glue shorthand and must produce the same ARN as catalog-impl. */
   @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
   void getGlueArn_typeGlueShorthandOnly_returnsArn() {
@@ -39,6 +41,7 @@ class AwsUtilsTest {
         .contains("arn:aws:glue:us-west-2:123456789012");
   }
 
+  /** A Delta spark_catalog name has no property-dot; grouping must not throw. */
   @Test
   void getGlueArn_deltaSparkCatalog_doesNotThrow() {
     SparkConf sparkConf =
@@ -50,6 +53,7 @@ class AwsUtilsTest {
     assertThat(AwsUtils.getGlueArn(sparkConf, new Configuration())).isEmpty();
   }
 
+  /** catalog-impl GlueCatalog remains the existing Glue signal. */
   @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
   void getGlueArn_glueCatalogImpl_returnsArn() {

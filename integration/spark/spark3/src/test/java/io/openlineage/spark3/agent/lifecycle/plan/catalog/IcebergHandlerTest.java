@@ -430,6 +430,7 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
+  /** End-to-end: type=GLUE yields the same Glue TABLE symlink as catalog-impl. */
   @Test
   @SneakyThrows
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
