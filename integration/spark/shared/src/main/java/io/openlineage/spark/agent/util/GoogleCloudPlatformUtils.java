@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -32,11 +33,11 @@ public class GoogleCloudPlatformUtils {
     if (conf.contains("spark.dataproc.metastore.service.short.name")
         && conf.contains("spark.dataproc.metastore.project-id")
         && conf.contains("spark.dataproc.metastore.location")) {
-      return Optional.of(
-          Map.of(
-              "gcp_project_id", conf.get("spark.dataproc.metastore.project-id"),
-              "gcp_location", conf.get("spark.dataproc.metastore.location"),
-              "gcp_instance_id", conf.get("spark.dataproc.metastore.service.short.name")));
+      Map<String, String> properties = new HashMap<>();
+      properties.put("gcp_project_id", conf.get("spark.dataproc.metastore.project-id"));
+      properties.put("gcp_location", conf.get("spark.dataproc.metastore.location"));
+      properties.put("gcp_instance_id", conf.get("spark.dataproc.metastore.service.short.name"));
+      return Optional.of(properties);
     }
     return Optional.empty();
   }

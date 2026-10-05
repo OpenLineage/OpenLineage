@@ -956,26 +956,25 @@ class IcebergHandlerTest {
   void testGetHiveCatalogDataWithDataprocMetastorePropertiesAndMatchingMetastoreUri() {
     SparkCatalog sparkCatalog = setupHiveCatalogDataTest("thrift://metastore-host:10001", true);
 
-    assertHiveCatalogData(
-        sparkCatalog,
-        "thrift://metastore-host:10001",
-        java.util.Map.of(
-            "gcp_location", "eu",
-            "gcp_project_id", "my-gcp-project",
-            "gcp_instance_id", "my-dpms"));
+    HashMap<String, String> expectedProperties = new HashMap<String, String>();
+    expectedProperties.put("gcp_location", "eu");
+    expectedProperties.put("gcp_project_id", "my-gcp-project");
+    expectedProperties.put("gcp_instance_id", "my-dpms");
+
+    assertHiveCatalogData(sparkCatalog, "thrift://metastore-host:10001", expectedProperties);
   }
 
   @Test
   void testGetHiveCatalogDataWithDataprocMetastorePropertiesAndUndefinedCatalogUri() {
     SparkCatalog sparkCatalog = setupHiveCatalogDataTest(null, true);
 
-    assertHiveCatalogData(
-        sparkCatalog,
-        null,
-        java.util.Map.of(
-            "gcp_location", "eu",
-            "gcp_project_id", "my-gcp-project",
-            "gcp_instance_id", "my-dpms"));
+    HashMap<String, String> expectedProperties = new HashMap<String, String>();
+
+    expectedProperties.put("gcp_location", "eu");
+    expectedProperties.put("gcp_project_id", "my-gcp-project");
+    expectedProperties.put("gcp_instance_id", "my-dpms");
+
+    assertHiveCatalogData(sparkCatalog, null, expectedProperties);
   }
 
   private void assertHiveCatalogData(

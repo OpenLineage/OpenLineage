@@ -11,6 +11,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -60,7 +61,9 @@ public class CatalogDatasetFacetUtils {
                     .foreach(
                         projectId ->
                             addPropertiesToFacet(
-                                context, Map.of("gcp_project_id", projectId), builder));
+                                context,
+                                Collections.singletonMap("gcp_project_id", projectId),
+                                builder));
               } else {
                 warehouseUri =
                     PathUtils.getWarehouseLocation(
