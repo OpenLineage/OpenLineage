@@ -135,6 +135,8 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
     // assume that:
     // 1. if the uri config is empty, catalog defaults to hive metastore uris
     // 2. if DPMS properties are set, hive metastore uris contain the DPMS uri
+    String confUri = catalogConf.get(CatalogProperties.URI);
+    boolean usesMetastoreDefault = confUri == null || confUri.trim().isEmpty();
     return context
         .getSparkContext()
         .flatMap(
@@ -142,8 +144,7 @@ class HiveCatalogTypeHandler extends BaseCatalogTypeHandler {
                 SparkConfUtils.getMetastoreUris(spark)
                     .filter(
                         uri ->
-                            Arrays.asList(uri.split(","))
-                                .contains(catalogConf.getOrDefault(CatalogProperties.URI, uri)))
+                            usesMetastoreDefault || Arrays.asList(uri.split(",")).contains(confUri))
                     .flatMap(
                         uri ->
                             GoogleCloudPlatformUtils.getDataprocMetastoreProperties(
