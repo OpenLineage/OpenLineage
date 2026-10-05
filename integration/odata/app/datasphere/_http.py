@@ -86,6 +86,18 @@ def get_with_retry(
                 time.sleep(min(2**attempt, 8))
                 continue
             raise ODataRequestError(f"Transport error: {exc}", url=path) from exc
+        except httpx.HTTPStatusError as exc:
+            # Raised inside an auth flow, e.g. the OAuth2 token endpoint answering 401/503.
+            resp = exc.response
+            if resp.status_code in _RETRYABLE_STATUS and attempt < _MAX_RETRIES:
+                delay = _retry_after(resp) or min(2**attempt, 8)
+                log.warning(
+                    "retryable auth response, backing off",
+                    extra={"status": resp.status_code, "delay": delay, "url": str(resp.request.url)},
+                )
+                time.sleep(delay)
+                continue
+            raise error_from_response(resp) from exc
 
         if resp.status_code in _RETRYABLE_STATUS and attempt < _MAX_RETRIES:
             delay = _retry_after(resp) or min(2**attempt, 8)

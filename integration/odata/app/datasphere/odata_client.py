@@ -147,9 +147,10 @@ class OdataClient:
             rows.extend(_value_rows(resp, body))
             seen.add(str(resp.request.url))
             next_url = body.get("@odata.nextLink")
-            if next_url and not next_url.startswith("http"):
-                next_url = f"{self._base_url}/{next_url.lstrip('/')}"
-            if next_url and str(httpx.URL(next_url)) in seen:
+            if next_url:
+                # OData v4: a relative nextLink resolves against the URL of the request that returned it.
+                next_url = str(resp.request.url.join(next_url))
+            if next_url and next_url in seen:
                 raise ODataRequestError("pagination cycle: @odata.nextLink repeats a visited page", url=next_url)
             first = False
         return rows

@@ -1,3 +1,6 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 # Cloud Foundry manifest -- long-running WORKER (embedded cron scheduler).
 #
 # Route-less process supervised by Diego (do not self-daemonize). `exec` makes Python PID 1 so it

@@ -122,3 +122,19 @@ def test_redirects_are_not_followed():
     with pytest.raises(ODataRequestError) as exc:
         _client(handler).list_spaces()
     assert exc.value.http_status == 302
+
+
+def test_relative_next_link_resolves_against_request_url():
+    import httpx
+
+    sent = []
+
+    def handler(request):
+        sent.append(str(request.url))
+        if "skiptoken" in str(request.url):
+            return httpx.Response(200, json={"value": [{"name": "T"}]})
+        return httpx.Response(200, json={"value": [{"name": "S"}], "@odata.nextLink": "spaces?$skiptoken=X"})
+
+    spaces = _client(handler).list_spaces()
+    assert [s.id for s in spaces] == ["S", "T"]
+    assert sent[1] == "https://h/dwaas-core/odata/v4/catalog/spaces?$skiptoken=X"

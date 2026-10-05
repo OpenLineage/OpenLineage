@@ -35,3 +35,26 @@ def test_error_normalizes_object_message():
 def test_unresolved_transport_placeholder_raises():
     with pytest.raises(ValueError, match="OPENLINEAGE_API_KEY"):
         _expand({"auth": {"api_key": "${OPENLINEAGE_API_KEY}"}}, {})
+
+
+def test_auth_flow_status_error_becomes_odata_request_error(monkeypatch):
+    from app.auth.oauth2_client_credentials import OAuth2ClientCredentialsAuth
+    from app.datasphere import _http
+    from app.datasphere.errors import ODataRequestError
+
+    token_calls = []
+
+    def fake_post(url, **kwargs):
+        token_calls.append(url)
+        status = 503 if len(token_calls) == 1 else 401
+        return httpx.Response(status, request=httpx.Request("POST", url), json={"error": "nope"})
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    monkeypatch.setattr(_http.time, "sleep", lambda _: None)
+    auth = OAuth2ClientCredentialsAuth("https://auth/token", "id", "secret")
+    client = httpx.Client(auth=auth, transport=httpx.MockTransport(lambda r: httpx.Response(200)))
+
+    with pytest.raises(ODataRequestError) as excinfo:
+        _http.get_with_retry(client, "https://h/x", headers={})
+    assert excinfo.value.http_status == 401
+    assert len(token_calls) == 2  # the 503 was retried
