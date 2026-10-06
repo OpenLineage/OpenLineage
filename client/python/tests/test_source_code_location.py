@@ -560,6 +560,38 @@ class TestGetCiPrNumber:
     def test_gitlab_ci_merge_request(self):
         assert get_ci_pr_number() == "123"
 
+    @patch.dict("os.environ", {"BITBUCKET_PR_ID": "7"}, clear=True)
+    def test_bitbucket_pipelines_pull_request(self):
+        assert get_ci_pr_number() == "7"
+
+    @patch.dict("os.environ", {"SYSTEM_PULLREQUEST_PULLREQUESTID": "17"}, clear=True)
+    def test_azure_repos_pull_request(self):
+        assert get_ci_pr_number() == "17"
+
+    @patch.dict(
+        "os.environ",
+        {"SYSTEM_PULLREQUEST_PULLREQUESTID": "1234567", "SYSTEM_PULLREQUEST_PULLREQUESTNUMBER": "42"},
+        clear=True,
+    )
+    def test_azure_pipelines_github_repo_prefers_pr_number(self):
+        assert get_ci_pr_number() == "42"
+
+    @patch.dict(
+        "os.environ",
+        {"CI_MERGE_REQUEST_IID": "99", "BITBUCKET_PR_ID": "7", "SYSTEM_PULLREQUEST_PULLREQUESTID": "17"},
+        clear=True,
+    )
+    def test_gitlab_takes_precedence_over_bitbucket_and_azure(self):
+        assert get_ci_pr_number() == "99"
+
+    @patch.dict(
+        "os.environ",
+        {"SYSTEM_PULLREQUEST_PULLREQUESTID": "17", "GITHUB_REF": "refs/pull/42/merge"},
+        clear=True,
+    )
+    def test_azure_takes_precedence_over_github(self):
+        assert get_ci_pr_number() == "17"
+
     @patch.dict("os.environ", {}, clear=True)
     def test_no_ci_env_vars_returns_none(self):
         assert get_ci_pr_number() is None

@@ -169,8 +169,8 @@ class DatadogTransport(Transport):
         if not job_type_facet:
             return False
 
-        integration = getattr(job_type_facet, "integration", "").lower()
-        job_type = getattr(job_type_facet, "jobType", "").lower()
+        integration = (getattr(job_type_facet, "integration", "") or "").lower()
+        job_type = (getattr(job_type_facet, "jobType", "") or "").lower()
 
         if not integration:
             return False
