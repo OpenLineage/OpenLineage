@@ -528,6 +528,11 @@ class OpenLineageRunEventBuilder {
    */
   private static <F> void applyFacetBuilder(
       CustomFacetBuilder<?, F> builder, Object event, BiConsumer<String, ? super F> consumer) {
+    // A timeout cancels the build by interrupting this thread and discards its result, so the
+    // remaining builders would only do wasted work.
+    if (Thread.currentThread().isInterrupted()) {
+      return;
+    }
     try {
       builder.accept(event, consumer);
     } catch (Exception | LinkageError e) {

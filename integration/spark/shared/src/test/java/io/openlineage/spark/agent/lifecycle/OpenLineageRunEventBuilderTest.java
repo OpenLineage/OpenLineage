@@ -242,6 +242,44 @@ class OpenLineageRunEventBuilderTest {
   }
 
   @Test
+  void testFacetBuildersAreSkippedAfterInterruption() {
+    when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.empty());
+    doReturn(
+            Arrays.asList(
+                failingFacetBuilder(
+                    () -> {
+                      Thread.currentThread().interrupt();
+                      return new IllegalStateException("interrupted");
+                    }),
+                new CustomFacetBuilder<Object, RunFacet>() {
+                  @Override
+                  public boolean isDefinedAt(Object x) {
+                    return true;
+                  }
+
+                  @Override
+                  protected void build(
+                      Object event, BiConsumer<String, ? super RunFacet> consumer) {
+                    consumer.accept(WORKING_FACET, openLineage.newRunFacet());
+                  }
+                }))
+        .when(openLineageEventHandlerFactory)
+        .createRunFacetBuilders(openLineageContext);
+
+    RunEvent event;
+    try {
+      event =
+          new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory)
+              .buildRun(runEventContext);
+    } finally {
+      Thread.interrupted();
+    }
+
+    assertThat(event.getRun().getFacets().getAdditionalProperties())
+        .doesNotContainKey(WORKING_FACET);
+  }
+
+  @Test
   void testVirtualMachineErrorFromFacetBuilderIsNotSwallowed() {
     when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.empty());
     doReturn(Collections.singletonList(failingFacetBuilder(StackOverflowError::new)))
