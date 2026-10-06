@@ -19,6 +19,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Properties;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.sql.SparkSession;
@@ -28,6 +29,8 @@ import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
 import org.apache.spark.sql.util.CaseInsensitiveStringMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class JdbcHandlerTest {
 
@@ -79,6 +82,50 @@ class JdbcHandlerTest {
 
     assertEquals("database.schema.table", datasetIdentifier.getName());
     assertEquals("postgres://postgreshost:5432", datasetIdentifier.getNamespace());
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "jdbc:postgresql://postgreshost:5432/app|app.public|orders|app.public.orders",
+        "jdbc:sqlserver://sqlhost:1433;databaseName=app|app.dbo|orders|app.dbo.orders",
+        "jdbc:sqlserver://sqlhost:1433;databaseName=app|otherdb.dbo|orders|otherdb.dbo.orders"
+      })
+  void testGetDatasetIdentifierWithFullyQualifiedTable(
+      String url, String namespace, String table, String expectedName) {
+    assertEquals(expectedName, getDatasetName(url, namespace, table));
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "jdbc:postgresql://postgreshost:5432/app||orders|app.orders",
+        "jdbc:postgresql://postgreshost:5432/app|public|orders|app.public.orders",
+        "jdbc:sqlserver://sqlhost:1433;databaseName=app|dbo|orders|app.dbo.orders"
+      })
+  void testGetDatasetIdentifierWithoutDatabase(
+      String url, String namespace, String table, String expectedName) {
+    assertEquals(expectedName, getDatasetName(url, namespace, table));
+  }
+
+  @SneakyThrows
+  private String getDatasetName(String url, String namespace, String table) {
+    JDBCTableCatalog tableCatalog = new JDBCTableCatalog();
+    JDBCOptions options = mock(JDBCOptions.class);
+    when(options.url()).thenReturn(url);
+    when(options.asConnectionProperties()).thenReturn(new Properties());
+    FieldUtils.writeField(tableCatalog, "options", options, true);
+
+    String[] namespaceParts = namespace == null ? new String[0] : namespace.split("\\.");
+    return new JdbcHandler(context)
+        .getDatasetIdentifier(
+            mock(SparkSession.class),
+            tableCatalog,
+            Identifier.of(namespaceParts, table),
+            new HashMap<>())
+        .getName();
   }
 
   @Test
