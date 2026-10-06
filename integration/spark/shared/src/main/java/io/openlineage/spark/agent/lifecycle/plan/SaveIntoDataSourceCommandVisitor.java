@@ -22,6 +22,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.JobNameSuffixProvider;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.net.URI;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -142,18 +143,17 @@ public class SaveIntoDataSourceCommandVisitor
     }
 
     StructType schema = getSchema(command);
-    LifecycleStateChange lifecycleStateChange =
-        (SaveMode.Overwrite == command.mode()) ? OVERWRITE : CREATE;
+    Optional<LifecycleStateChange> lifecycleStateChange = getLifecycleStateChange(command.mode());
 
     if (command.dataSource().getClass().getName().contains("DeltaDataSource")) {
       if (command.options().contains("path")) {
-        return Collections.singletonList(
+        SparkDatasetBuilder<OutputDataset> builder =
             outputDataset()
                 .sparkDatasetBuilder()
                 .dataset(URI.create(command.options().get("path").get()))
-                .schema(schema)
-                .lifecycleStateChange(lifecycleStateChange)
-                .build());
+                .schema(schema);
+        lifecycleStateChange.ifPresent(builder::lifecycleStateChange);
+        return Collections.singletonList(builder.build());
       }
     }
 
@@ -164,13 +164,13 @@ public class SaveIntoDataSourceCommandVisitor
         .equals(JdbcRelationProvider.class.getCanonicalName())) {
       String tableName = command.options().get("dbtable").get();
       String url = command.options().get("url").get();
-      return Collections.singletonList(
+      SparkDatasetBuilder<OutputDataset> builder =
           outputDataset()
               .sparkDatasetBuilder()
               .dataset(JdbcDatasetUtils.getDatasetIdentifier(url, tableName, new Properties()))
-              .schema(schema)
-              .lifecycleStateChange(lifecycleStateChange)
-              .build());
+              .schema(schema);
+      lifecycleStateChange.ifPresent(builder::lifecycleStateChange);
+      return Collections.singletonList(builder.build());
     }
 
     SQLContext sqlContext = context.getSparkSession().get().sqlContext();
@@ -217,6 +217,10 @@ public class SaveIntoDataSourceCommandVisitor
               }
               ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
 
+              if (!lifecycleStateChange.isPresent()) {
+                return ds;
+              }
+
               // rebuild whole dataset with a LifecycleStateChange facet added
               OpenLineage.DatasetFacets facets =
                   DatasetFacetsUtils.copyToBuilder(context, ds.getFacets())
@@ -224,9 +228,7 @@ public class SaveIntoDataSourceCommandVisitor
                           context
                               .getOpenLineage()
                               .newLifecycleStateChangeDatasetFacet(
-                                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                                      .OVERWRITE,
-                                  null))
+                                  lifecycleStateChange.get(), null))
                       .build();
 
               OpenLineage.OutputDataset newDs =
@@ -237,6 +239,19 @@ public class SaveIntoDataSourceCommandVisitor
               return newDs;
             })
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Overwrite replaces the dataset and ErrorIfExists only succeeds when it does not exist yet.
+   * Append and Ignore leave an existing dataset in place, so they are not lifecycle changes.
+   */
+  private static Optional<LifecycleStateChange> getLifecycleStateChange(SaveMode mode) {
+    if (SaveMode.Overwrite == mode) {
+      return Optional.of(OVERWRITE);
+    } else if (SaveMode.ErrorIfExists == mode) {
+      return Optional.of(CREATE);
+    }
+    return Optional.empty();
   }
 
   private StructType getSchema(SaveIntoDataSourceCommand command) {

@@ -34,9 +34,17 @@ public final class DatasetVersionDatasetFacetUtils {
         && table.catalog().isDefined()
         && table.catalog().get() instanceof TableCatalog) {
       TableCatalog tableCatalog = (TableCatalog) table.catalog().get();
-      Optional<String> version =
-          CatalogUtils.getDatasetVersion(
-              context, tableCatalog, table.identifier().get(), table.table().properties());
+      Optional<String> version;
+      try {
+        version =
+            CatalogUtils.getDatasetVersion(
+                context, tableCatalog, table.identifier().get(), table.table().properties());
+      } catch (Exception | LinkageError e) {
+        // A failing catalog call (e.g. a timeout or 5xx from a REST catalog) should only cost this
+        // dataset its version, not drop it - or every other dataset of the plan - from the event.
+        log.warn("Couldn't extract dataset version of table {}", table.identifier().get(), e);
+        return Optional.empty();
+      }
       if (version.isPresent()) {
         return version;
       }
