@@ -126,8 +126,8 @@ tasks:
           local java="$1"
           local spark="$2"
           local scala="$3"
-          printf '\033[1;34m[%s/%s] ./gradlew --console=plain shadowJar -Pscala.binary.version=%s -Pjava.compile.home=%s\033[0m\n' "$idx" "$total" "$scala" "$JAVA17_HOME"
-          ./gradlew --console=plain shadowJar -Pscala.binary.version="$scala" -Pjava.compile.home="$JAVA17_HOME"
+          printf '\033[1;34m[%s/%s] ./gradlew --console=plain shadowJar -Pspark.version=%s -Pscala.binary.version=%s -Pjava.compile.home=%s\033[0m\n' "$idx" "$total" "$spark" "$scala" "$JAVA17_HOME"
+          ./gradlew --console=plain shadowJar -Pspark.version="$spark" -Pscala.binary.version="$scala" -Pjava.compile.home="$JAVA17_HOME"
         }
         if [ "{{.FULL | default "false"}}" = "true" ]; then
           matrix='{{.CI_FULL_MATRIX}}'
@@ -149,7 +149,11 @@ tasks:
         ROOT_DIR="$(git rev-parse --show-toplevel)"
         JAVA17_HOME="$("$ROOT_DIR/dev/java-home.sh" 17)"
         JAVA_TEST_HOME="$("$ROOT_DIR/dev/java-home.sh" {{.JAVA | default .DEFAULT_JAVA}})"
-        ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}} -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$JAVA_TEST_HOME" -Pspark.docker.java.version={{.JAVA | default .DEFAULT_JAVA}} {{if .TESTS}} --tests "{{.TESTS}}"{{end}}
+        {{if .TESTS}}
+        ./gradlew --no-daemon --console=plain --stacktrace test --tests "{{.TESTS}}" -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}} -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$JAVA_TEST_HOME" -Pspark.docker.java.version={{.JAVA | default .DEFAULT_JAVA}}
+        {{else}}
+        ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}} -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$JAVA_TEST_HOME" -Pspark.docker.java.version={{.JAVA | default .DEFAULT_JAVA}}
+        {{end}}
 
   test:ci:
     desc: CI-aligned local test across multiple versions. Default runs JAVA=8/SPARK=3.2.4/SCALA=2.12 and JAVA=21/SPARK=4.2.0/SCALA=2.13. Set FULL=true for all matrix combinations. Optionally set TESTS=… to pass --tests.
@@ -169,8 +173,13 @@ tasks:
           local scala="$3"
           local java_test_home
           java_test_home="$("$ROOT_DIR/dev/java-home.sh" "$java")"
-          printf '\033[1;34m[%s/%s] ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=%s -Pscala.binary.version=%s -Pjava.compile.home=%s -Papp.java.test.home=%s -Pspark.docker.java.version=%s%s\033[0m\n' "$idx" "$total" "$spark" "$scala" "$JAVA17_HOME" "$java_test_home" "$java" "{{if .TESTS}} --tests \"{{.TESTS}}\"{{end}}"
-          ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version="$spark" -Pscala.binary.version="$scala" -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$java_test_home" -Pspark.docker.java.version="$java" {{if .TESTS}} --tests "{{.TESTS}}"{{end}}
+          {{if .TESTS}}
+          printf '\033[1;34m[%s/%s] ./gradlew --no-daemon --console=plain --stacktrace test --tests "%s" -Pspark.version=%s -Pscala.binary.version=%s -Pjava.compile.home=%s -Papp.java.test.home=%s -Pspark.docker.java.version=%s\033[0m\n' "$idx" "$total" "{{.TESTS}}" "$spark" "$scala" "$JAVA17_HOME" "$java_test_home" "$java"
+          ./gradlew --no-daemon --console=plain --stacktrace test --tests "{{.TESTS}}" -Pspark.version="$spark" -Pscala.binary.version="$scala" -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$java_test_home" -Pspark.docker.java.version="$java"
+          {{else}}
+          printf '\033[1;34m[%s/%s] ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=%s -Pscala.binary.version=%s -Pjava.compile.home=%s -Papp.java.test.home=%s -Pspark.docker.java.version=%s\033[0m\n' "$idx" "$total" "$spark" "$scala" "$JAVA17_HOME" "$java_test_home" "$java"
+          ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version="$spark" -Pscala.binary.version="$scala" -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$java_test_home" -Pspark.docker.java.version="$java"
+          {{end}}
         }
         if [ "{{.FULL | default "false"}}" = "true" ]; then
           matrix='{{.CI_FULL_MATRIX}}'
