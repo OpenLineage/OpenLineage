@@ -16,26 +16,28 @@
 #
 # Version selection: the JAVA_VERSION environment variable (explicit
 # override, e.g. `JAVA_VERSION=21 task build`), else the first argument
-# (the component's pinned version), else 17. Java 11 is the minimum —
-# the legacy 1.x version scheme (Java 8 and older) is not supported.
+# (the component's pinned version), else 17.
 
 v="${JAVA_VERSION:-${1:-17}}"
 case "$v" in
   *[!0-9]* | '')
-    echo "java-home.sh: '$v' is not a valid major Java version (integer >= 11)" >&2
+    echo "java-home.sh: '$v' is not a valid major Java version (integer >= 8)" >&2
     exit 1
     ;;
 esac
-if [ "$v" -lt 11 ]; then
-  echo "java-home.sh: Java $v is not supported, the minimum is 11" >&2
+if [ "$v" -lt 8 ]; then
+  echo "java-home.sh: Java $v is not supported, the minimum is 8" >&2
   exit 1
 fi
 
 # Print the major version of the java installation at $1, e.g. 17 for
-# "17.0.12". Java 8-style "1.8.0_392" parses as major 1 and never matches.
+# "17.0.12" and 8 for legacy "1.8.0_392".
 java_major() {
   ver=$("$1/bin/java" -version 2>&1 | awk -F'"' '/version/ {print $2; exit}')
-  echo "${ver%%[.+]*}"
+  case "$ver" in
+    1.8.*) echo 8 ;;
+    *) echo "${ver%%[.+]*}" ;;
+  esac
 }
 
 # 1) The developer's shell, profile hooks applied. Skipped in CI (no user

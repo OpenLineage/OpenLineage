@@ -12,7 +12,7 @@
 # described in https://openlineage.io/docs/development/developing/spark/setup).
 #
 # Spark/Scala default to the newest CI-tested combination (see vars below);
-# override per invocation, e.g.: task build SPARK=3.5.6 SCALA=2.12
+# override per invocation, e.g.: task test SPARK=3.5.6 SCALA=2.12 JAVA=17
 # Run `task versions` to list the supported SPARK/SCALA pairs.
 version: '3'
 
@@ -33,8 +33,28 @@ includes:
 vars:
   # The newest CI-tested Spark/Scala combination. Alternative pairs: run
   # `task versions`, or see the matrix in .circleci/workflows/openlineage-spark.yml.
-  DEFAULT_SPARK: "4.0.0"
+  DEFAULT_JAVA: "21"
+  DEFAULT_SPARK: "4.2.0"
   DEFAULT_SCALA: "2.13"
+  CI_DEFAULT_MATRIX: |
+    8 3.2.4 2.12
+    21 4.2.0 2.13
+  CI_FULL_MATRIX: |
+    8 3.2.4 2.12
+    8 3.2.4 2.13
+    8 3.3.4 2.12
+    8 3.3.4 2.13
+    17 3.3.4 2.12
+    17 3.3.4 2.13
+    8 3.4.4 2.12
+    8 3.4.4 2.13
+    8 3.5.6 2.12
+    8 3.5.6 2.13
+    17 3.5.6 2.12
+    17 3.5.6 2.13
+    17 4.0.0 2.13
+    17 4.2.0 2.13
+    21 4.2.0 2.13
 
 tasks:
   default:
@@ -82,15 +102,131 @@ tasks:
     cmds:
       - ./gradlew spotlessCheck
 
-  test:
-    desc: Run unit tests (SPARK=… SCALA=… to override versions)
-    cmds:
-      - ./gradlew test -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}}
-
   build:
-    desc: Full build with tests and quality checks, what CI runs (SPARK=… SCALA=… to override versions)
+    desc: Run CI-shaped build command for one version set (SCALA=… to override)
     cmds:
-      - ./gradlew build check -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}}
+      - |
+        ROOT_DIR="$(git rev-parse --show-toplevel)"
+        JAVA17_HOME="$("$ROOT_DIR/dev/java-home.sh" 17)"
+        ./gradlew --console=plain shadowJar -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}} -Pjava.compile.home="$JAVA17_HOME"
+
+  build:ci:
+    desc: CI-aligned local build across multiple versions. Default runs JAVA=8/SPARK=3.2.4/SCALA=2.12 and JAVA=21/SPARK=4.2.0/SCALA=2.13. Set FULL=true for all matrix combinations.
+    silent: true
+    cmds:
+      - |
+        set -euo pipefail
+        ROOT_DIR="$(git rev-parse --show-toplevel)"
+        JAVA17_HOME="$("$ROOT_DIR/dev/java-home.sh" 17)"
+        if [ -n "{{.JAVA}}" ] || [ -n "{{.SPARK}}" ] || [ -n "{{.SCALA}}" ]; then
+          echo "ERROR: build:ci does not accept JAVA/SPARK/SCALA overrides. Use build/test/integration-test for single-version runs." >&2
+          exit 1
+        fi
+        run_one() {
+          local java="$1"
+          local spark="$2"
+          local scala="$3"
+          printf '\033[1;34m[%s/%s] ./gradlew --console=plain shadowJar -Pscala.binary.version=%s -Pjava.compile.home=%s\033[0m\n' "$idx" "$total" "$scala" "$JAVA17_HOME"
+          ./gradlew --console=plain shadowJar -Pscala.binary.version="$scala" -Pjava.compile.home="$JAVA17_HOME"
+        }
+        if [ "{{.FULL | default "false"}}" = "true" ]; then
+          matrix='{{.CI_FULL_MATRIX}}'
+        else
+          matrix='{{.CI_DEFAULT_MATRIX}}'
+        fi
+        total="$(printf '%s\n' "$matrix" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')"
+        idx=0
+        while read -r java spark scala; do
+          [ -z "${java:-}" ] && continue
+          idx=$((idx + 1))
+          run_one "$java" "$spark" "$scala"
+        done <<< "$matrix"
+
+  test:
+    desc: Run CI-shaped test command for one version set (JAVA=… SPARK=… SCALA=… to override, TESTS=… to pass --tests)
+    cmds:
+      - |
+        ROOT_DIR="$(git rev-parse --show-toplevel)"
+        JAVA17_HOME="$("$ROOT_DIR/dev/java-home.sh" 17)"
+        JAVA_TEST_HOME="$("$ROOT_DIR/dev/java-home.sh" {{.JAVA | default .DEFAULT_JAVA}})"
+        ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}} -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$JAVA_TEST_HOME" -Pspark.docker.java.version={{.JAVA | default .DEFAULT_JAVA}} {{if .TESTS}} --tests "{{.TESTS}}"{{end}}
+
+  test:ci:
+    desc: CI-aligned local test across multiple versions. Default runs JAVA=8/SPARK=3.2.4/SCALA=2.12 and JAVA=21/SPARK=4.2.0/SCALA=2.13. Set FULL=true for all matrix combinations. Optionally set TESTS=… to pass --tests.
+    silent: true
+    cmds:
+      - |
+        set -euo pipefail
+        ROOT_DIR="$(git rev-parse --show-toplevel)"
+        JAVA17_HOME="$("$ROOT_DIR/dev/java-home.sh" 17)"
+        if [ -n "{{.JAVA}}" ] || [ -n "{{.SPARK}}" ] || [ -n "{{.SCALA}}" ]; then
+          echo "ERROR: test:ci does not accept JAVA/SPARK/SCALA overrides. Use test for single-version runs." >&2
+          exit 1
+        fi
+        run_one() {
+          local java="$1"
+          local spark="$2"
+          local scala="$3"
+          local java_test_home
+          java_test_home="$("$ROOT_DIR/dev/java-home.sh" "$java")"
+          printf '\033[1;34m[%s/%s] ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=%s -Pscala.binary.version=%s -Pjava.compile.home=%s -Papp.java.test.home=%s -Pspark.docker.java.version=%s%s\033[0m\n' "$idx" "$total" "$spark" "$scala" "$JAVA17_HOME" "$java_test_home" "$java" "{{if .TESTS}} --tests \"{{.TESTS}}\"{{end}}"
+          ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version="$spark" -Pscala.binary.version="$scala" -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$java_test_home" -Pspark.docker.java.version="$java" {{if .TESTS}} --tests "{{.TESTS}}"{{end}}
+        }
+        if [ "{{.FULL | default "false"}}" = "true" ]; then
+          matrix='{{.CI_FULL_MATRIX}}'
+        else
+          matrix='{{.CI_DEFAULT_MATRIX}}'
+        fi
+        total="$(printf '%s\n' "$matrix" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')"
+        idx=0
+        while read -r java spark scala; do
+          [ -z "${java:-}" ] && continue
+          idx=$((idx + 1))
+          run_one "$java" "$spark" "$scala"
+        done <<< "$matrix"
+
+  integration-test:
+    desc: Run CI-shaped integration test command for one version set (JAVA=… SPARK=… SCALA=… to override, TESTS=… to pass --tests)
+    cmds:
+      - |
+        ROOT_DIR="$(git rev-parse --show-toplevel)"
+        JAVA17_HOME="$("$ROOT_DIR/dev/java-home.sh" 17)"
+        JAVA_TEST_HOME="$("$ROOT_DIR/dev/java-home.sh" {{.JAVA | default .DEFAULT_JAVA}})"
+        ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}} -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$JAVA_TEST_HOME" -Pspark.docker.java.version={{.JAVA | default .DEFAULT_JAVA}} {{if .TESTS}} --tests "{{.TESTS}}"{{end}}
+
+  integration-test:ci:
+    desc: CI-aligned local integration test across multiple versions. Default runs JAVA=8/SPARK=3.2.4/SCALA=2.12 and JAVA=21/SPARK=4.2.0/SCALA=2.13. Set FULL=true for all matrix combinations. Optionally set TESTS=… to pass --tests.
+    silent: true
+    cmds:
+      - |
+        set -euo pipefail
+        ROOT_DIR="$(git rev-parse --show-toplevel)"
+        JAVA17_HOME="$("$ROOT_DIR/dev/java-home.sh" 17)"
+        if [ -n "{{.JAVA}}" ] || [ -n "{{.SPARK}}" ] || [ -n "{{.SCALA}}" ]; then
+          echo "ERROR: integration-test:ci does not accept JAVA/SPARK/SCALA overrides. Use integration-test for single-version runs." >&2
+          exit 1
+        fi
+        run_one() {
+          local java="$1"
+          local spark="$2"
+          local scala="$3"
+          local java_test_home
+          java_test_home="$("$ROOT_DIR/dev/java-home.sh" "$java")"
+          printf '\033[1;34m[%s/%s] ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=%s -Pscala.binary.version=%s -Pjava.compile.home=%s -Papp.java.test.home=%s -Pspark.docker.java.version=%s%s\033[0m\n' "$idx" "$total" "$spark" "$scala" "$JAVA17_HOME" "$java_test_home" "$java" "{{if .TESTS}} --tests \"{{.TESTS}}\"{{end}}"
+          ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version="$spark" -Pscala.binary.version="$scala" -Pjava.compile.home="$JAVA17_HOME" -Papp.java.test.home="$java_test_home" -Pspark.docker.java.version="$java" {{if .TESTS}} --tests "{{.TESTS}}"{{end}}
+        }
+        if [ "{{.FULL | default "false"}}" = "true" ]; then
+          matrix='{{.CI_FULL_MATRIX}}'
+        else
+          matrix='{{.CI_DEFAULT_MATRIX}}'
+        fi
+        total="$(printf '%s\n' "$matrix" | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')"
+        idx=0
+        while read -r java spark scala; do
+          [ -z "${java:-}" ] && continue
+          idx=$((idx + 1))
+          run_one "$java" "$spark" "$scala"
+        done <<< "$matrix"
 
   versions:
     desc: List the Spark/Scala pairs usable as SPARK=… SCALA=… overrides (the CI-tested matrix)
@@ -99,11 +235,6 @@ tasks:
       - 'echo "Default (newest CI-tested): SPARK={{.DEFAULT_SPARK}} SCALA={{.DEFAULT_SCALA}}"'
       - 'echo "CI-tested pairs (from .circleci/workflows/openlineage-spark.yml):"'
       - 'grep -o "spark:[0-9][0-9.]*-scala:[0-9][0-9.]*" ../../.circleci/workflows/openlineage-spark.yml | sort -u -V | sed -E "s/spark:([0-9.]+)-scala:([0-9.]+)/  SPARK=\1 SCALA=\2/"'
-
-  integration-test:
-    desc: Run integration tests — requires Docker for Testcontainers (SPARK=… SCALA=… to override versions)
-    cmds:
-      - ./gradlew integrationTest -x test -Pspark.version={{.SPARK | default .DEFAULT_SPARK}} -Pscala.binary.version={{.SCALA | default .DEFAULT_SCALA}}
 
   jar:
     desc: 'Build the OpenLineage Spark agent shadow jar, skipping tests; extra Gradle args after "--"'
