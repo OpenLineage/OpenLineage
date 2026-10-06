@@ -63,21 +63,14 @@ class PrefectOpenLineageListener:
     @dataclass
     class DeploymentInfo:
         id: str
-        start_time: datetime
         created: datetime
         updated: datetime
         name: str
         namespace: str
-        flow_name: str
+        flow_run: object
 
-    async def get_deployment_and_flow_info(self, flow_run_id: str) -> tuple:
+    async def get_deployment_info(self, flow_run_id: str) -> DeploymentInfo:
         flow_run = await self.client.read_flow_run(flow_run_id)
-        flow_id = flow_run.flow_id
-        flow = await self.client.read_flow(flow_id)
-        if FLOW_NAME_TYPE == "flow":
-            flow_name = flow.name
-        elif FLOW_NAME_TYPE == "flow-run":
-            flow_name = flow_run.name
 
         try:
             deployment = await self.client.read_deployment(flow_run.deployment_id)
@@ -85,39 +78,58 @@ class PrefectOpenLineageListener:
                 ns = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
             except KeyError:
                 ns = JOB_NAMESPACE
-                logging.info(
+                logger.info(
                     "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
                     OPENLINEAGE_NAMESPACE env variable."
                 )
                 if JOB_NAMESPACE == "default":
-                    logging.info(
+                    logger.info(
                         "OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'"
                     )
             return (
                 self.DeploymentInfo(
                     id=str(deployment.id),
-                    start_time=flow_run.start_time,
                     created=deployment.created,
                     updated=deployment.updated,
                     name=deployment.name,
                     namespace=ns,
-                    flow_name=flow_name
+                    flow_run=flow_run
                 )
             )
 
         except (AttributeError, TypeError) as error:
-            logging.info("Deployment not found for flow run: %s", flow_run_id)
+            logger.info("Deployment not found for flow run: %s", flow_run_id)
             ns = JOB_NAMESPACE
-            logging.info(
+            logger.info(
                 "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
                 OPENLINEAGE_NAMESPACE env variable for the namespace."
             )
             if JOB_NAMESPACE == "default":
-                logging.info(
+                logger.info(
                     "OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'"
                 )
 
-            return (self.DeploymentInfo(None, flow_run.start_time, None, None, None, ns, flow_name))
+            return (self.DeploymentInfo(namespace=ns, flow_run=flow_run))
+
+    @dataclass
+    class FlowInfo:
+        start_time: datetime
+        name: str
+
+    async def get_flow_info(self, flow_run) -> FlowInfo:
+        flow_id = flow_run.flow_id
+        flow = await self.client.read_flow(flow_id)
+        if FLOW_NAME_TYPE == "flow":
+            flow_name = flow.name
+        elif FLOW_NAME_TYPE == "flow-run":
+            flow_name = flow_run.name
+
+        return (
+            self.FlowInfo(
+                start_time=flow_run.start_time,
+                name=flow_name,
+            )
+        )
 
     async def get_prefect_version(self) -> str | None:
         """Retrieves the Prefect version from the Prefect API."""
@@ -126,7 +138,7 @@ class PrefectOpenLineageListener:
             response = await self.client._client.get("/admin/version")
             return response.json()
         except TypeError:
-            logging.info(
+            logger.info(
                 "Cannot get the Prefect version. Did you set the PREFECT_API_URL?"
             )
 
@@ -142,23 +154,25 @@ class PrefectOpenLineageListener:
                 ns = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
             except KeyError:
                 ns = JOB_NAMESPACE
-                logging.info(
+                logger.info(
                     "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
                     OPENLINEAGE_NAMESPACE env variable for the namespace."
                 )
                 if JOB_NAMESPACE == "default":
-                    logging.info(
+                    logger.info(
                         "OPENLINEAGE_NAMESPACE env variable not found. Namespace will be 'default.'"
                     )
             return ns
         except (AttributeError, TypeError):
-            logging.info("Deployment not found for flow run: %s", flow_run_id)
-            logging.info(
+            logger.info(
+                "Deployment not found for flow run: %s", flow_run_id
+            )
+            logger.info(
                 "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
                 OPENLINEAGE_NAMESPACE env variable."
             )
             if JOB_NAMESPACE == "default":
-                logging.info(
+                logger.info(
                     "OPENLINEAGE_NAMESPACE env variable not found. Namespace will be 'default.'"
                 )
             return JOB_NAMESPACE
@@ -181,7 +195,7 @@ class PrefectOpenLineageListener:
                         {"uri": uri, "table": table, "dataset_type": dataset_type}
                     )
             return dataset_info
-        logging.info("No datasets found for task run.")
+        logger.info("No datasets found for task run.")
         return []
 
     async def get_parent_runs(
@@ -215,7 +229,7 @@ class PrefectOpenLineageListener:
                     )
             return parent_runs
         except KeyError:
-            logging.info("No task parents found for %s", prefect_task_run_id)
+            logger.info("No task parents found for %s", prefect_task_run_id)
             return []
 
     async def collect_and_process_flow_runs(
@@ -233,19 +247,18 @@ class PrefectOpenLineageListener:
                 event_time: datetime = datetime.fromisoformat(
                     event.resource["prefect.state-timestamp"]
                 )
-                deployment_and_flow_info = await self.get_deployment_and_flow_info(
+                deployment_info = await self.get_deployment_info(
                     prefect_flow_run_id
                 )
-                start_time: datetime = deployment_and_flow_info.start_time
-                flow_namespace = deployment_and_flow_info.namespace
+                flow_info = await self.get_flow_info(deployment_info.flow_run)
                 try:
                     ol_flow_run_id: str = self.build_run_id(
-                        start_time, flow_name, flow_namespace
+                        flow_info.start_time, flow_name, deployment_info.namespace
                     )
                 except AttributeError:
                     logger.info(
-                        "No Prefect run found for %s. OpenLineage event will not be emitted.",
-                        prefect_flow_run_id,
+                        "Failed to build OpenLineage run id for Flow %s. Flow %s event will not be emitted.",
+                        prefect_flow_run_id, event_state
                     )
                     continue
 
@@ -254,9 +267,9 @@ class PrefectOpenLineageListener:
                     event_type=event_state,
                     event_time=event_time,
                     flow_name=flow_name,
-                    flow_namespace=flow_namespace,
+                    flow_namespace=deployment_info.namespace,
                     prefect_version=prefect_version,
-                    deployment=deployment_and_flow_info
+                    deployment=deployment_info,
                 )
 
     async def collect_and_process_task_runs(
@@ -298,21 +311,18 @@ class PrefectOpenLineageListener:
                 parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
 
                 # Get flow run info for ParentRunFacet
-                flow_name = ""
-                flow_start_time = ""
                 ol_flow_run_id = ""
-                deployment_and_flow_info = await self.get_deployment_and_flow_info(
+                deployment_info = await self.get_deployment_info(
                     flow_run_id
                 )
-                flow_name = deployment_and_flow_info.flow_name
-                flow_start_time = deployment_and_flow_info.start_time
+                flow_info = await self.get_flow_info(deployment_info.flow_run)
 
                 try:
                     ol_flow_run_id = self.build_run_id(
-                        flow_start_time, flow_name, namespace
+                        flow_info.start_time, flow_info.name, deployment_info.namespace
                     )
                 except AttributeError:
-                    logging.info(
+                    logger.info(
                         "No Prefect run found for flow with id %s. ParentRunFacet will not be included.",
                         flow_run_id,
                     )
@@ -327,19 +337,19 @@ class PrefectOpenLineageListener:
                     namespace=namespace,
                     job_deps=parent_runs,
                     prefect_version=prefect_version,
-                    deployment = deployment_and_flow_info,
+                    deployment = deployment_info,
                     input_datasets=input_datasets,
                     output_datasets=output_datasets,
                 )
 
             except:
-                logging.info(
+                logger.info(
                     "No start time found for task run %s. An event will not be emitted.",
                     prefect_task_run_id,
                 )
     
         except (PrefectHTTPStatusError, ObjectNotFound):
-            logging.info(
+            logger.info(
                 "No Prefect run found for %s, will not attempt to create OpenLineage event.",
                 prefect_task_run_id,
             )
@@ -350,7 +360,7 @@ class PrefectOpenLineageListener:
         try:
             os.environ.get("PREFECT_API_URL")
         except TypeError:
-            logging.warning("PREFECT_API_URL not set. Prefect events will not be received.")
+            logger.info("PREFECT_API_URL not set. Prefect events will not be received.")
             return
 
         filter_criteria = EventFilter(
@@ -391,6 +401,7 @@ class PrefectOpenLineageListener:
 
 
 async def main():
+    logger.info("Starting PrefectOpenLineageListener...")
     await PrefectOpenLineageListener().collect_and_process_runs()
 
 

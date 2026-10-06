@@ -27,7 +27,7 @@ This guide demos how to spin up a **Marquez** instance for OpenLineage visualiza
     export PREFECT_API_URL="http://localhost:4200/api"
     ```
 
-3. **Deploy the Update Customers flow in your local Prefect instance:**
+3. **Copy and deploy quickstart.py in your local Prefect instance:**
     ```sh
     prefect deploy -n prefect-test 
     ```

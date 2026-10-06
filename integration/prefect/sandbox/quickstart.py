@@ -6,14 +6,14 @@ from prefect import flow, task
 import duckdb
 from prefect.artifacts import create_table_artifact
 
-CHOICES = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
 ORG_CUSTOMERS_TABLE = [{"database_uri":"duckdb:///company_customers_db", "table":"org_customers"}]
 FIRM_CUSTOMERS_TABLE = [{"database_uri":"duckdb:///company_customers_db", "table":"firm_customers"}]
 
 @task
 def load_customers():
     """Flaky task"""
-    choice = random.choice(CHOICES)
+    choices = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
+    choice = random.choice(choices)
     if choice == 1:
         with duckdb.connect("company_customers_db.duckdb") as connector:
             customers = connector.execute("SELECT * FROM org_customers").fetchall()
@@ -21,9 +21,6 @@ def load_customers():
         with duckdb.connect("company_customers_db.duckdb") as connector:
             customers = connector.execute("SELECT * FROM org_customer").fetchall() # fails
 
-    # Artifacts inform the integration about data sources in flows.
-    # The description must consist of `ol-dataset` followed by `_input` or `_output`.
-    # The table definition must be a list of OpenLineage Datasets.
     create_table_artifact(
         key="get-org-customers",
         table=ORG_CUSTOMERS_TABLE,
