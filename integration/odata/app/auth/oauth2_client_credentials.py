@@ -17,6 +17,7 @@ from collections.abc import Generator
 import httpx
 
 from app.auth._https import require_https
+from app.datasphere.errors import ODataRequestError, bounded_body
 
 # Refresh this many seconds before the token actually expires, to avoid edge-of-expiry 401s.
 _EXPIRY_SKEW_SECONDS = 60
@@ -53,9 +54,25 @@ class OAuth2ClientCredentialsAuth(httpx.Auth):
             timeout=self._timeout,
         )
         resp.raise_for_status()
-        payload = resp.json()
-        self._token = payload["access_token"]
-        expires_in = int(payload.get("expires_in", 3600))
+        try:
+            payload = resp.json()
+            token = payload["access_token"]
+            expires_in = int(payload.get("expires_in", 3600))
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+            # A 2xx that is not a usable token response (HTML login page, missing access_token, ...).
+            # Raised as ODataRequestError so the scan records it per operation instead of aborting.
+            raise ODataRequestError(
+                f"invalid token response ({type(exc).__name__}): {bounded_body(resp.text)}",
+                url=self._token_url,
+                http_status=resp.status_code,
+            ) from exc
+        if not isinstance(token, str) or not token:
+            raise ODataRequestError(
+                "invalid token response: access_token is empty or not a string",
+                url=self._token_url,
+                http_status=resp.status_code,
+            )
+        self._token = token
         self._expires_at = time.monotonic() + max(0, expires_in - _EXPIRY_SKEW_SECONDS)
 
     def _valid_token(self) -> str:

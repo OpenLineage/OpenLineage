@@ -58,3 +58,30 @@ def test_auth_flow_status_error_becomes_odata_request_error(monkeypatch):
         _http.get_with_retry(client, "https://h/x", headers={})
     assert excinfo.value.http_status == 401
     assert len(token_calls) == 2  # the 503 was retried
+
+
+@pytest.mark.parametrize(
+    "token_response",
+    [
+        {"text": "<html>login</html>"},  # not JSON
+        {"json": {"token_type": "bearer"}},  # access_token missing
+        {"json": {"access_token": ""}},  # empty token
+        {"json": ["not", "an", "object"]},  # wrong shape
+        {"json": {"access_token": "t", "expires_in": "soon"}},  # non-integer expiry
+    ],
+)
+def test_malformed_token_response_becomes_odata_request_error(monkeypatch, token_response):
+    from app.auth.oauth2_client_credentials import OAuth2ClientCredentialsAuth
+    from app.datasphere import _http
+    from app.datasphere.errors import ODataRequestError
+
+    def fake_post(url, **kwargs):
+        return httpx.Response(200, request=httpx.Request("POST", url), **token_response)
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    auth = OAuth2ClientCredentialsAuth("https://auth/token", "id", "secret")
+    client = httpx.Client(auth=auth, transport=httpx.MockTransport(lambda r: httpx.Response(200)))
+
+    with pytest.raises(ODataRequestError, match="invalid token response") as excinfo:
+        _http.get_with_retry(client, "https://h/x", headers={})
+    assert excinfo.value.url == "https://auth/token"
