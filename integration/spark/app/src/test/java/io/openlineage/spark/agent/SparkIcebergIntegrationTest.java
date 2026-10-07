@@ -381,7 +381,7 @@ class SparkIcebergIntegrationTest {
         events.stream()
             .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
             .findFirst()
-            .get();
+            .orElseThrow(() -> new AssertionError("No COMPLETE event for metadata-only delete"));
 
     assertThat(completeEvent.getOutputs())
         .singleElement()
