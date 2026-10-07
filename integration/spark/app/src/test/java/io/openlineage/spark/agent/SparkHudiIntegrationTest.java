@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.sql.Dataset;
@@ -196,7 +197,8 @@ class SparkHudiIntegrationTest {
     Dataset<Row> transformedInput =
         spark.read().parquet(inputPath).selectExpr("id as entity_id", "name", "ts");
 
-    writeHudiDataset(tableType, outputPath, transformedInput, "hudi_" + tableType.toLowerCase());
+    writeHudiDataset(
+        tableType, outputPath, transformedInput, "hudi_" + tableType.toLowerCase(Locale.ROOT));
   }
 
   private void writeHudiDataset(
