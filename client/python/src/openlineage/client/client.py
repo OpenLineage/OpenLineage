@@ -430,6 +430,11 @@ class OpenLineageClient:
         for env_key, env_value in env_vars:
             keys = env_key[len(cls.DYNAMIC_ENV_VARS_PREFIX) :].split("__")
 
+            if cls._is_single_tag_env_var(keys):
+                # Tag values are always strings, keep the value exactly as provided
+                cls._insert_into_config(config, keys, env_value)
+                continue
+
             # Parse value (try to parse as JSON, otherwise lowercase the value)
             try:
                 env_value = json.loads(env_value)  # noqa: PLW2901
@@ -445,6 +450,12 @@ class OpenLineageClient:
             cls._insert_into_config(config, keys, env_value)
 
         return config
+
+    @staticmethod
+    def _is_single_tag_env_var(key_path: list[str]) -> bool:
+        """Check if env var sets a single tag, e.g. `OPENLINEAGE__TAGS__JOB__ENVIRONMENT`."""
+        keys = [key.lower() for key in key_path]
+        return len(keys) == 3 and keys[0] == "tags" and keys[1] in ("job", "run")  # noqa: PLR2004
 
     @staticmethod
     def _insert_into_config(config: dict[str, Any], key_path: list[str], value: str) -> None:
