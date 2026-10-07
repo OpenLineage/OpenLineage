@@ -17,7 +17,7 @@ from collections.abc import Generator
 import httpx
 
 from app.auth._https import require_https
-from app.datasphere.errors import ODataRequestError, bounded_body
+from app.datasphere.errors import ODataRequestError
 
 # Refresh this many seconds before the token actually expires, to avoid edge-of-expiry 401s.
 _EXPIRY_SKEW_SECONDS = 60
@@ -61,8 +61,11 @@ class OAuth2ClientCredentialsAuth(httpx.Auth):
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             # A 2xx that is not a usable token response (HTML login page, missing access_token, ...).
             # Raised as ODataRequestError so the scan records it per operation instead of aborting.
+            # The body is deliberately left out: it may contain the access token, and this message
+            # ends up in the emitted odataError facet.
             raise ODataRequestError(
-                f"invalid token response ({type(exc).__name__}): {bounded_body(resp.text)}",
+                f"invalid token response ({type(exc).__name__}, content-type "
+                f"{resp.headers.get('content-type', 'unknown')!r})",
                 url=self._token_url,
                 http_status=resp.status_code,
             ) from exc

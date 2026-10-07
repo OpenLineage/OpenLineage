@@ -67,7 +67,7 @@ def test_auth_flow_status_error_becomes_odata_request_error(monkeypatch):
         {"json": {"token_type": "bearer"}},  # access_token missing
         {"json": {"access_token": ""}},  # empty token
         {"json": ["not", "an", "object"]},  # wrong shape
-        {"json": {"access_token": "t", "expires_in": "soon"}},  # non-integer expiry
+        {"json": {"access_token": "s3cr3t-token", "expires_in": "soon"}},  # non-integer expiry
     ],
 )
 def test_malformed_token_response_becomes_odata_request_error(monkeypatch, token_response):
@@ -85,3 +85,4 @@ def test_malformed_token_response_becomes_odata_request_error(monkeypatch, token
     with pytest.raises(ODataRequestError, match="invalid token response") as excinfo:
         _http.get_with_retry(client, "https://h/x", headers={})
     assert excinfo.value.url == "https://auth/token"
+    assert "s3cr3t-token" not in excinfo.value.message  # the token never reaches the odataError facet
