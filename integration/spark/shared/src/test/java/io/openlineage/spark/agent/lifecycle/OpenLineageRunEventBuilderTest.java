@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
@@ -53,6 +54,7 @@ class OpenLineageRunEventBuilderTest {
 
   public static final String DEBUG = "debug";
   private static final String WORKING_FACET = "working";
+  private static final String NAMESPACE = "ns";
   SparkSession session = mock(SparkSession.class);
   OpenLineageContext openLineageContext;
   SparkOpenLineageConfig config = mock(SparkOpenLineageConfig.class, RETURNS_DEEP_STUBS);
@@ -100,10 +102,10 @@ class OpenLineageRunEventBuilderTest {
         .thenReturn(
             openLineage.newParentRunFacet(
                 openLineage.newParentRunFacetRun(UUID.randomUUID(), null),
-                openLineage.newParentRunFacetJob("ns", "jobName", null),
+                openLineage.newParentRunFacetJob(NAMESPACE, "jobName", null),
                 openLineage.newParentRunFacetRoot(
                     openLineage.newRootRun(UUID.randomUUID(), null),
-                    openLineage.newRootJob("ns", "rootJobName", null))));
+                    openLineage.newRootJob(NAMESPACE, "rootJobName", null))));
     when(runEventContext.loadNodes(anyMap(), anyMap()))
         .thenReturn(Collections.singletonList(mock(SparkListenerSQLExecutionEnd.class)));
     when(config.getCircuitBreaker()).thenReturn(circuitBreakerConfig);
@@ -194,7 +196,7 @@ class OpenLineageRunEventBuilderTest {
           @Override
           public List<InputDataset> apply(Object v1) {
             return Collections.singletonList(
-                openLineage.newInputDatasetBuilder().namespace("ns").name("table").build());
+                openLineage.newInputDatasetBuilder().namespace(NAMESPACE).name("table").build());
           }
 
           @Override
@@ -204,12 +206,35 @@ class OpenLineageRunEventBuilderTest {
         };
     when(openLineageEventHandlerFactory.createInputDatasetBuilder(openLineageContext))
         .thenReturn(Collections.singletonList(inputDatasetBuilder));
+    PartialFunction<Object, List<OutputDataset>> outputDatasetBuilder =
+        new PartialFunction<Object, List<OutputDataset>>() {
+          @Override
+          public List<OutputDataset> apply(Object v1) {
+            return Collections.singletonList(
+                openLineage
+                    .newOutputDatasetBuilder()
+                    .namespace(NAMESPACE)
+                    .name("output")
+                    .facets(openLineage.newDatasetFacetsBuilder().build())
+                    .build());
+          }
+
+          @Override
+          public boolean isDefinedAt(Object x) {
+            return true;
+          }
+        };
+    when(openLineageEventHandlerFactory.createOutputDatasetBuilder(openLineageContext))
+        .thenReturn(Collections.singletonList(outputDatasetBuilder));
     doReturn(Collections.singletonList(failingFacetBuilder(thrower)))
         .when(openLineageEventHandlerFactory)
         .createDatasetFacetBuilders(openLineageContext);
     doReturn(Collections.singletonList(failingFacetBuilder(thrower)))
         .when(openLineageEventHandlerFactory)
         .createInputDatasetFacetBuilders(openLineageContext);
+    doReturn(Collections.singletonList(failingFacetBuilder(thrower)))
+        .when(openLineageEventHandlerFactory)
+        .createOutputDatasetFacetBuilders(openLineageContext);
     doReturn(Collections.singletonList(failingFacetBuilder(thrower)))
         .when(openLineageEventHandlerFactory)
         .createJobFacetBuilders(openLineageContext);
@@ -236,6 +261,7 @@ class OpenLineageRunEventBuilderTest {
             .buildRun(runEventContext);
 
     assertThat(event.getInputs()).hasSize(1);
+    assertThat(event.getOutputs()).hasSize(1);
     assertThat(event.getJob().getFacets().getSql()).isNotNull();
     assertThat(event.getRun().getFacets().getParent()).isNotNull();
     assertThat(event.getRun().getFacets().getAdditionalProperties()).containsKey(WORKING_FACET);
