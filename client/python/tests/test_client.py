@@ -1340,6 +1340,50 @@ def test_run_tags():
         assert result == expected_tags
 
 
+@pytest.mark.parametrize("value", ["true", "false", "null", "1.0", "4521", "1e5", '"quoted"', "[1, 2]"])
+def test_tags_from_single_env_var_keep_raw_string_value(value):
+    tag_environment_variables = {
+        "OPENLINEAGE__TAGS__JOB__SOME_TAG": value,
+        "OPENLINEAGE__TAGS__RUN__SOME_TAG": value,
+    }
+
+    with patch.dict(os.environ, tag_environment_variables):
+        client = OpenLineageClient()
+        assert client.config.tags.job == {"some_tag": value}
+        assert client.config.tags.run == {"some_tag": value}
+        assert tags_job.TagsJobFacetFields("some_tag", value, "USER") in client._job_tags
+        assert tags_run.TagsRunFacetFields("some_tag", value, "USER") in client._run_tags
+
+
+def test_tags_from_json_env_var_are_converted_to_strings():
+    tag_environment_variables = {
+        "OPENLINEAGE__TAGS": json.dumps(
+            {
+                "job": {"ENVIRONMENT": "PRODUCTION", "version": 1.5, "ticket": 4521},
+                "run": {"adhoc": True, "retry": False, "owner": None},
+            }
+        )
+    }
+
+    with patch.dict(os.environ, tag_environment_variables):
+        client = OpenLineageClient()
+        assert client.config.tags.job == {"ENVIRONMENT": "PRODUCTION", "version": "1.5", "ticket": "4521"}
+        assert client.config.tags.run == {"adhoc": "true", "retry": "false"}
+
+
+def test_tags_from_config_are_converted_to_strings():
+    client = OpenLineageClient(
+        config={
+            "transport": {"type": "console"},
+            "tags": {"job": {"build": 42}, "run": {"adhoc": True, "owner": None}},
+        }
+    )
+
+    assert client._job_tags == [tags_job.TagsJobFacetFields("build", "42", "USER")]
+    assert tags_run.TagsRunFacetFields("adhoc", "true", "USER") in client._run_tags
+    assert all(tag.key != "owner" for tag in client._run_tags)
+
+
 def test_job_tags():
     tag_environment_variables = {"OPENLINEAGE__TAGS__JOB__ENVIRONMENT": "PRODUCTION"}
 
