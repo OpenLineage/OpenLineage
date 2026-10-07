@@ -236,8 +236,8 @@ public class IcebergMetricsReporterInjectorTest {
 
     long snapshotId = commitAppend(table);
 
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
     assertThat(holder().getReporterFor(HADOOP_CATALOG_NAME).getCommitReportFacets()).hasSize(1);
+    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
     // the reporter the table was created with still receives the report exactly once
     verify(catalogReporter, times(1)).report(any(CommitReport.class));
   }
@@ -314,8 +314,8 @@ public class IcebergMetricsReporterInjectorTest {
     assertThat(tableReporter(table)).isSameAs(attached);
 
     long snapshotId = commitAppend(table);
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
     assertThat(holder().getReporterFor(HADOOP_CATALOG_NAME).getCommitReportFacets()).hasSize(1);
+    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
     verify(catalogReporter, times(1)).report(any(CommitReport.class));
   }
 
@@ -335,8 +335,8 @@ public class IcebergMetricsReporterInjectorTest {
     assertThat(tableReporter(table)).isSameAs(reporter);
 
     long snapshotId = commitAppend(table);
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
     assertThat(holder().getReporterFor(HADOOP_CATALOG_NAME).getCommitReportFacets()).hasSize(1);
+    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
     verify(catalogReporter, times(1)).report(any(CommitReport.class));
   }
 
