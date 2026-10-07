@@ -37,8 +37,14 @@ public class JdbcSparkUtils {
   private static final String BLOCK_COMMENT_START = "/*";
   private static final String BLOCK_COMMENT_END = "*/";
   private static final String LINE_COMMENT_START = "--";
+  // whitespace or a SQL comment
+  private static final String TRIVIA = "(?:\\s|/\\*.*?\\*/|--[^\\n]*+)";
+  // an unquoted or quoted identifier; doubled closing quotes are escapes, e.g. "a""b" or [a]]b]
+  private static final String IDENTIFIER =
+      "(?:\\w+|\"(?:[^\"]|\"\")++\"|`(?:[^`]|``)++`|\\[(?:[^\\]]|\\]\\])++\\])";
   private static final Pattern SUBQUERY_ALIAS =
-      Pattern.compile("(?i)\\s*(?:(?:AS\\s+)?(?:\\w+|\"[^\"]+\"|`[^`]+`|\\[[^\\]]+\\]))?\\s*");
+      Pattern.compile(
+          "(?is)" + TRIVIA + "*+(?:(?:AS" + TRIVIA + "++)?" + IDENTIFIER + ")?" + TRIVIA + "*+");
 
   public static <D extends OpenLineage.Dataset> List<D> getDatasets(
       DatasetFactory<D> datasetFactory, SqlMeta meta, JDBCRelation relation) {

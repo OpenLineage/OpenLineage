@@ -137,6 +137,25 @@ class JdbcSparkUtilsTest {
             .expectedColumnLineage(columnLineage("users.id"))
             .build(),
         TestCase.builder()
+            .dbtable("(SELECT id FROM users) AS \"u\"\"x\"") // escaped quote in the alias
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .url(SQLSERVER_URL)
+            .dbtable("(SELECT [id] FROM users) AS [u]]x]") // escaped bracket in the alias
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) /* a */ AS /* b */ t /* c */ -- d")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
             .dbtable("(SELECT id FROM users) u JOIN orders o ON u.id = o.user_id")
             .schema(new StructType().add("id", DataTypes.IntegerType))
             .expectedInputTable("users")
