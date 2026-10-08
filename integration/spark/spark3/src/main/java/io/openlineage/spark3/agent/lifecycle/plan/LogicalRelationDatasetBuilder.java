@@ -15,6 +15,7 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
+import io.openlineage.spark3.agent.utils.HudiUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Collections;
@@ -23,7 +24,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -42,7 +42,6 @@ import scala.Option;
 @Slf4j
 public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     extends io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder<D> {
-  private static final String HOODIE_BASE_RELATION_CLASS = "org.apache.hudi.HoodieBaseRelation";
   private static final String HOODIE_FILE_INDEX_CLASS = "org.apache.hudi.HoodieFileIndex";
 
   public LogicalRelationDatasetBuilder(
@@ -68,7 +67,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     Object relation = logicalRelation.relation();
     return relation instanceof HadoopFsRelation
         || relation instanceof JDBCRelation
-        || isHudiBaseRelation(relation)
+        || HudiUtils.isHudiBaseRelation(relation)
         || context.getSparkExtensionVisitorWrapper().isDefinedAt(relation)
         || logicalRelation.catalogTable().isDefined();
   }
@@ -76,7 +75,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
   @Override
   public List<D> apply(SparkListenerEvent event, LogicalRelation logRel) {
     Object relation = logRel.relation();
-    if (isHudiBaseRelation(relation)) {
+    if (HudiUtils.isHudiBaseRelation(relation)) {
       return handleHudiBaseRelation(relation);
     }
     if (relation instanceof HadoopFsRelation && isHudiFileIndex(((HadoopFsRelation) relation))) {
@@ -97,39 +96,19 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   private List<D> handleHudiBaseRelation(Object relation) {
     StructType schema = hudiSchema(relation);
-    Object metaClient = hudiMetaClient(relation);
+    Object metaClient = HudiUtils.metaClient(relation);
     return Collections.singletonList(
         datasetFactory
             .sparkDatasetBuilder()
             .symlink(hudiSymlink(metaClient))
-            .dataset(resolveHudiRelationUri(relation, metaClient))
+            .dataset(HudiUtils.basePath(relation, metaClient))
             .schema(schema)
             .datasetType("TABLE", hudiTableType(metaClient))
             .build());
   }
 
-  private boolean isHudiBaseRelation(Object relation) {
-    return isInstanceOf(relation, HOODIE_BASE_RELATION_CLASS);
-  }
-
   private boolean isHudiFileIndex(HadoopFsRelation relation) {
-    return isInstanceOf(relation.location(), HOODIE_FILE_INDEX_CLASS);
-  }
-
-  private boolean isInstanceOf(Object instance, String className) {
-    try {
-      return Class.forName(className).isInstance(instance);
-    } catch (ClassNotFoundException | LinkageError e) {
-      return false;
-    }
-  }
-
-  private Object hudiMetaClient(Object relation) {
-    try {
-      return MethodUtils.invokeMethod(relation, "metaClient");
-    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw new IllegalStateException("Unable to resolve Hudi meta client", e);
-    }
+    return HudiUtils.isInstanceOf(relation.location(), HOODIE_FILE_INDEX_CLASS);
   }
 
   private Object hudiMetaClient(HadoopFsRelation relation) {
@@ -137,24 +116,6 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       return MethodUtils.invokeMethod(relation.location(), "metaClient");
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       throw new IllegalStateException("Unable to resolve Hudi file index meta client", e);
-    }
-  }
-
-  private URI resolveHudiRelationUri(Object relation, Object metaClient) {
-    try {
-      Path path = (Path) MethodUtils.invokeMethod(relation, "basePath");
-      if (path != null) {
-        return path.toUri();
-      }
-    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      log.debug("Unable to resolve Hudi relation basePath via reflection", e);
-    }
-
-    try {
-      Object storagePath = MethodUtils.invokeMethod(metaClient, "getBasePathV2");
-      return (URI) MethodUtils.invokeMethod(storagePath, "toUri");
-    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw new IllegalStateException("Unable to resolve Hudi base path", e);
     }
   }
 
