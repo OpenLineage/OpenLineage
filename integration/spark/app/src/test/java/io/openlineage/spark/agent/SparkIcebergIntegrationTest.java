@@ -360,6 +360,39 @@ class SparkIcebergIntegrationTest {
   }
 
   @Test
+  @SneakyThrows
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3\\.[4-5].*|4.*)")
+  void testMetadataOnlyDelete() {
+    clearTables("tbl_delete_metadata_only");
+    spark.sql(
+        "CREATE TABLE tbl_delete_metadata_only (a long, b long) USING iceberg PARTITIONED BY (b)");
+    spark.sql("INSERT INTO tbl_delete_metadata_only VALUES (1, 1), (2, 2)");
+    StaticExecutionContextFactory.waitForExecutionEnd();
+    MockServerUtils.clearRequests(mockServer);
+
+    // the condition covers a whole partition, so the delete is done with metadata only
+    spark.sql("DELETE FROM tbl_delete_metadata_only WHERE b = 1");
+
+    List<RunEvent> events =
+        getEventsEmittedWithJobName(
+            mockServer,
+            "iceberg_integration_test.delete_from_table.spark_catalog_default_tbl_delete_metadata_only");
+    RunEvent completeEvent =
+        events.stream()
+            .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No COMPLETE event for metadata-only delete"));
+
+    assertThat(completeEvent.getOutputs())
+        .singleElement()
+        .satisfies(
+            o -> {
+              assertThat(o.getName()).isEqualTo("/tmp/iceberg/default/tbl_delete_metadata_only");
+              assertThat(o.getFacets().getVersion()).isNotNull();
+            });
+  }
+
+  @Test
   void testUpdateCow() {
     clearTables("tbl_update_cow", "temp");
     createTempDataset(2).createOrReplaceTempView("temp");
