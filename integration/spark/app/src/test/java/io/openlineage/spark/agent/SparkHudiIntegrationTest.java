@@ -10,10 +10,16 @@ import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
+import io.openlineage.client.OpenLineage.InputField;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.File;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.sql.Dataset;
@@ -46,6 +52,12 @@ class SparkHudiIntegrationTest {
   private static final String LOCAL_IP = "127.0.0.1";
 
   private static final String HUDI_BASE_PATH = "/tmp/hudi";
+  private static final String INPUT_PATH = HUDI_BASE_PATH + "/input";
+
+  private static final Map<String, String> RENAMED_ID_LINEAGE =
+      ImmutableMap.of("entity_id", "id", "name", "name", "ts", "ts");
+  private static final Map<String, String> IDENTITY_LINEAGE =
+      ImmutableMap.of("entity_id", "entity_id", "name", "name", "ts", "ts");
 
   private static SparkSession spark;
   private static ClientAndServer mockServer;
@@ -114,6 +126,7 @@ class SparkHudiIntegrationTest {
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
   }
 
   @Test
@@ -124,6 +137,7 @@ class SparkHudiIntegrationTest {
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
   }
 
   @Test
@@ -146,6 +160,7 @@ class SparkHudiIntegrationTest {
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(targetPath, sourcePath, IDENTITY_LINEAGE);
   }
 
   @Test
@@ -168,6 +183,7 @@ class SparkHudiIntegrationTest {
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(targetPath, sourcePath, IDENTITY_LINEAGE);
   }
 
   @Test
@@ -193,6 +209,7 @@ class SparkHudiIntegrationTest {
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(targetPath, sourcePath, IDENTITY_LINEAGE);
   }
 
   @Test
@@ -205,6 +222,7 @@ class SparkHudiIntegrationTest {
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
   }
 
   @Test
@@ -217,6 +235,7 @@ class SparkHudiIntegrationTest {
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
   }
 
   private RunEvent getLatestSaveCompleteEvent() {
@@ -229,15 +248,62 @@ class SparkHudiIntegrationTest {
             () -> new AssertionError("No COMPLETE event with output datasets was emitted."));
   }
 
+  /**
+   * Asserts that a column lineage facet was emitted for the output dataset located at {@code
+   * outputPath} and that each expected output field is derived from the given field of the input
+   * dataset located at {@code inputPath}.
+   *
+   * @param expectedLineage mapping of output field name to input field name
+   */
+  private void assertColumnLineage(
+      String outputPath, String inputPath, Map<String, String> expectedLineage) {
+    ColumnLineageDatasetFacet columnLineage =
+        MockServerUtils.getEventsEmitted(mockServer).stream()
+            .filter(e -> e.getOutputs() != null)
+            .flatMap(e -> e.getOutputs().stream())
+            .filter(d -> outputPath.equals(d.getName()))
+            .map(OutputDataset::getFacets)
+            .filter(f -> f != null && f.getColumnLineage() != null)
+            .map(f -> f.getColumnLineage())
+            .reduce((previous, current) -> current)
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "No column lineage facet was emitted for output dataset " + outputPath));
+
+    expectedLineage.forEach(
+        (outputField, inputField) -> {
+          assertThat(columnLineage.getFields().getAdditionalProperties())
+              .as("column lineage for output field %s", outputField)
+              .containsKey(outputField);
+          List<String> inputFields =
+              columnLineage
+                  .getFields()
+                  .getAdditionalProperties()
+                  .get(outputField)
+                  .getInputFields()
+                  .stream()
+                  .map(SparkHudiIntegrationTest::describe)
+                  .collect(Collectors.toList());
+          assertThat(inputFields)
+              .as("input fields of output field %s", outputField)
+              .contains(describe("file", inputPath, inputField));
+        });
+  }
+
+  private static String describe(InputField inputField) {
+    return describe(inputField.getNamespace(), inputField.getName(), inputField.getField());
+  }
+
+  private static String describe(String namespace, String name, String field) {
+    return namespace + ":" + name + "#" + field;
+  }
+
   private void writeHudi(String tableType, String outputPath) {
-    String inputPath = HUDI_BASE_PATH + "/input";
-
-    createInputDataset().write().mode(SaveMode.Overwrite).format("parquet").save(inputPath);
-
-    MockServerUtils.clearRequests(mockServer);
+    writeInputParquet();
 
     Dataset<Row> transformedInput =
-        spark.read().parquet(inputPath).selectExpr("id as entity_id", "name", "ts");
+        spark.read().parquet(INPUT_PATH).selectExpr("id as entity_id", "name", "ts");
 
     writeHudiDataset(
         tableType, outputPath, transformedInput, "hudi_" + tableType.toLowerCase(Locale.ROOT));
@@ -262,7 +328,8 @@ class SparkHudiIntegrationTest {
 
   private void writeLegacyHudiTable(String tableType, String outputPath, String tableName) {
     String hudiTableType = tableType.equals("MERGE_ON_READ") ? "mor" : "cow";
-    createInputDataset().createOrReplaceTempView("legacy_hudi_input");
+    writeInputParquet();
+    spark.read().parquet(INPUT_PATH).createOrReplaceTempView("legacy_hudi_input");
 
     spark.sql("DROP TABLE IF EXISTS " + tableName);
     spark.sql(
@@ -279,6 +346,11 @@ class SparkHudiIntegrationTest {
             Locale.ROOT,
             "INSERT OVERWRITE TABLE %s SELECT id as entity_id, name, ts FROM legacy_hudi_input",
             tableName));
+  }
+
+  private void writeInputParquet() {
+    createInputDataset().write().mode(SaveMode.Overwrite).format("parquet").save(INPUT_PATH);
+    MockServerUtils.clearRequests(mockServer);
   }
 
   private Dataset<Row> createInputDataset() {
