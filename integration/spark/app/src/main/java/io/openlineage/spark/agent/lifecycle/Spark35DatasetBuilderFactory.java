@@ -26,6 +26,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnStar
 import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandInputDatasetBuilder;
@@ -46,7 +47,6 @@ import io.openlineage.spark34.agent.lifecycle.plan.WriteToMicroBatchDataSourceV1
 import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.DropTableDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder;
-import io.openlineage.spark35.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.MergeRowsColumnLineageVisitor;
 import java.util.Collection;
 import java.util.List;

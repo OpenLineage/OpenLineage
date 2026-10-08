@@ -30,6 +30,7 @@ ext {
     bigqueryVersion = "0.42.2"
     databricksVersion = "0.1.5"
     deltaVersion = "1.1.0"
+    hudiVersion = "0.15.0"
     icebergVersion = "1.4.3"
     jacksonVersion = "2.18.9"
     junit5Version = "5.14.4"
@@ -57,7 +58,8 @@ dependencies {
     compileOnly("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
     compileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
-
+    compileOnly("org.apache.hudi:hudi-spark3.5-bundle_${scalaBinaryVersion}:0.15.0")
+    testFixturesApi("org.apache.hudi:hudi-spark3.5-bundle_${scalaBinaryVersion}:0.15.0")
     // TODO: Convert this to testImplementation
     testFixturesApi(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
     testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
@@ -103,6 +105,7 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     testScala212Implementation("io.delta:delta-core_2.12:${deltaVersion}")
+    testScala212Implementation("org.apache.hudi:hudi-spark3.5-bundle_2.12:${hudiVersion}")
     testScala212Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala212Implementation('org.xerial:sqlite-jdbc:3.53.2.1')
@@ -139,6 +142,7 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     testScala213Implementation("io.delta:delta-core_2.13:${deltaVersion}")
+    testScala213Implementation("org.apache.hudi:hudi-spark3.5-bundle_2.13:${hudiVersion}")
     testScala213Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
     testScala213Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala213Implementation('org.xerial:sqlite-jdbc:3.53.2.1')
