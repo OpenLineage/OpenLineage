@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.Table;
-import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
@@ -82,10 +81,13 @@ abstract class BaseCatalogTypeHandler {
   @SneakyThrows
   protected Optional<Table> getIcebergTable(TableCatalog tableCatalog, Identifier identifier) {
     try {
-      if (tableCatalog instanceof SparkCatalog) {
-        SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
-        org.apache.spark.sql.connector.catalog.Table loadedTable =
-            sparkCatalog.loadTable(identifier);
+      if (tableCatalog instanceof SparkCatalog || tableCatalog instanceof SparkSessionCatalog) {
+        // Both use Spark's V2 loadTable(Identifier), which understands Spark's branch-qualified
+        // identifiers (e.g. "table.branch_xxx") and resolves them to the underlying Iceberg
+        // table. Going through TableIdentifier.parse(identifier.toString()) and Iceberg's raw
+        // Catalog.loadTable(TableIdentifier) instead (as SparkSessionCatalog previously did)
+        // treats the branch suffix as a literal table name segment and always fails to find it.
+        org.apache.spark.sql.connector.catalog.Table loadedTable = tableCatalog.loadTable(identifier);
 
         // Handle different table implementations safely
         if (loadedTable instanceof SparkTable) {
@@ -116,10 +118,6 @@ abstract class BaseCatalogTypeHandler {
               identifier);
           return Optional.empty();
         }
-      } else if (tableCatalog instanceof SparkSessionCatalog) {
-        TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
-        SparkSessionCatalog sparkCatalog = (SparkSessionCatalog) tableCatalog;
-        return Optional.ofNullable(sparkCatalog.icebergCatalog().loadTable(tableIdentifier));
       } else {
         log.warn(
             "Unknown catalog type: {} for identifier: {}. Expected SparkCatalog or SparkSessionCatalog.",
