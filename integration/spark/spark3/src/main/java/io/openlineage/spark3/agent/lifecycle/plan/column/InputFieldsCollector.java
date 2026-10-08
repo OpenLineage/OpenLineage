@@ -16,6 +16,7 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
+import io.openlineage.spark3.agent.utils.HudiUtils;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
 import java.util.ArrayList;
@@ -138,6 +139,10 @@ public class InputFieldsCollector {
         && (((LogicalRelation) node).relation() instanceof HadoopFsRelation)) {
       HadoopFsRelation relation = (HadoopFsRelation) ((LogicalRelation) node).relation();
       return extractDatasetIdentifier(relation);
+    } else if (node instanceof LogicalRelation
+        && HudiUtils.isHudiBaseRelation(((LogicalRelation) node).relation())) {
+      return Collections.singletonList(
+          PathUtils.fromURI(HudiUtils.basePath(((LogicalRelation) node).relation())));
     } else if (node instanceof LogicalRelation
         && BigQueryUtils.hasBigQueryClasses()
         && ((LogicalRelation) node).relation() instanceof BigQueryRelation) {
