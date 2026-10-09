@@ -27,6 +27,8 @@ The supported dialects are:
 
 Support for a `generic` dialect is also provided.
 
+SQL pipe syntax (`|>`) is not supported. Queries containing pipe operators fail lineage extraction.
+
 ## Installation
 
 ### Python

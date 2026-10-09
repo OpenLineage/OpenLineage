@@ -348,3 +348,70 @@ fn test_simple_aggregate() {
         },]
     );
 }
+
+#[test]
+fn test_inline_aggregate_filter() {
+    let output =
+        test_sql("SELECT COUNT(* WHERE status = 'paid') AS paid_orders FROM orders").unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta::new("paid_orders".to_string(), None),
+            lineage: vec![ColumnMeta::new("status".to_string(), Some(table("orders")))],
+        }],
+    );
+}
+
+#[test]
+fn test_inline_aggregate_filter_with_argument() {
+    let output = test_sql("SELECT SUM(amount WHERE status = 'paid') AS total FROM orders").unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta::new("total".to_string(), None),
+            lineage: vec![
+                ColumnMeta::new("amount".to_string(), Some(table("orders"))),
+                ColumnMeta::new("status".to_string(), Some(table("orders"))),
+            ],
+        }],
+    );
+}
+
+#[test]
+fn test_is_json() {
+    for predicate in ["IS JSON", "IS NOT JSON OBJECT WITH UNIQUE KEYS"] {
+        let output = test_sql(&format!("SELECT payload {predicate} AS valid FROM docs")).unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.column_lineage,
+            vec![ColumnLineage {
+                descendant: ColumnMeta::new("valid".to_string(), None),
+                lineage: vec![ColumnMeta::new("payload".to_string(), Some(table("docs")))],
+            }],
+        );
+    }
+}
+
+#[test]
+fn test_like_escape_expression() {
+    for operator in ["LIKE", "ILIKE", "SIMILAR TO"] {
+        let output = test_sql(&format!(
+            "SELECT text_col {operator} pattern_col ESCAPE (escape_col || '') AS matches FROM docs"
+        ))
+        .unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.column_lineage,
+            vec![ColumnLineage {
+                descendant: ColumnMeta::new("matches".to_string(), None),
+                lineage: vec![
+                    ColumnMeta::new("escape_col".to_string(), Some(table("docs"))),
+                    ColumnMeta::new("pattern_col".to_string(), Some(table("docs"))),
+                    ColumnMeta::new("text_col".to_string(), Some(table("docs"))),
+                ],
+            }],
+        );
+    }
+}
