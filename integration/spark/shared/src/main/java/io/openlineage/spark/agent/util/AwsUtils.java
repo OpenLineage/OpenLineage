@@ -10,6 +10,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +30,15 @@ public class AwsUtils {
   private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
   private static final String SPARK_SQL_CATALOG_PREFIX = "spark.sql.catalog.";
   private static final String GLUE_CATALOG_SUFFIX = "GlueCatalog";
+  private static final String CATALOG_TYPE_KEY = "type";
+  private static final String CATALOG_IMPL_KEY = "catalog-impl";
+  private static final String GLUE_CATALOG_TYPE = "glue";
 
+  /**
+   * Glue TABLE symlink namespace. Built only when Hive uses the Glue client factory or at least one
+   * Iceberg catalog is actually Glue; otherwise PathUtils would stamp a Glue ARN on unrelated
+   * tables.
+   */
   public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
     if (isHiveUsingGlue(sparkConf, hadoopConf) || isIcebergUsingGlue(sparkConf)) {
       return awsRegion()
@@ -112,6 +122,10 @@ public class AwsUtils {
     return hadoopPropertyCatalogId;
   }
 
+  /**
+   * Region for the Glue ARN. Environment variables first; IMDS only when they are unset so YARN
+   * cluster mode still resolves a region.
+   */
   static @NotNull Optional<String> awsRegion() {
     // First, try environment variables
     Optional<String> envRegion =
@@ -192,11 +206,53 @@ public class AwsUtils {
     return Optional.empty();
   }
 
+  /**
+   * True when any Iceberg catalog is Glue. Keys are grouped by catalog name so {@code type=glue}
+   * next to a non-Glue {@code catalog-impl} does not enable the app-wide ARN: Iceberg never loads
+   * that catalog as Glue.
+   */
   private static boolean isIcebergUsingGlue(SparkConf sparkConf) {
-    return Arrays.stream(sparkConf.getAllWithPrefix(SPARK_SQL_CATALOG_PREFIX))
-        .anyMatch(tuple -> tuple._2().endsWith(GLUE_CATALOG_SUFFIX));
+    Map<String, Map<String, String>> catalogProps = new HashMap<>();
+    Arrays.stream(sparkConf.getAllWithPrefix(SPARK_SQL_CATALOG_PREFIX))
+        .forEach(
+            tuple -> {
+              // getAllWithPrefix returns the key suffix after SPARK_SQL_CATALOG_PREFIX.
+              String remainder = tuple._1();
+              int dot = remainder.indexOf('.');
+              if (dot < 0) {
+                if (tuple._2().endsWith(GLUE_CATALOG_SUFFIX)) {
+                  catalogProps
+                      .computeIfAbsent(remainder, name -> new HashMap<>())
+                      .put(CATALOG_IMPL_KEY, tuple._2());
+                }
+                return;
+              }
+              String catalogName = remainder.substring(0, dot);
+              String property = remainder.substring(dot + 1);
+              catalogProps
+                  .computeIfAbsent(catalogName, name -> new HashMap<>())
+                  .put(property, tuple._2());
+            });
+    return catalogProps.values().stream().anyMatch(AwsUtils::icebergCatalogUsesGlue);
   }
 
+  /**
+   * Iceberg honors {@code catalog-impl} over {@code type}. Both set is rejected at catalog
+   * creation, so a non-Glue impl with {@code type=glue} is never Glue.
+   */
+  private static boolean icebergCatalogUsesGlue(Map<String, String> catalogConf) {
+    String catalogImpl = catalogConf.get(CATALOG_IMPL_KEY);
+    if (catalogImpl != null) {
+      return catalogImpl.endsWith(GLUE_CATALOG_SUFFIX);
+    }
+    String type = catalogConf.get(CATALOG_TYPE_KEY);
+    return type != null && GLUE_CATALOG_TYPE.equalsIgnoreCase(type);
+  }
+
+  /**
+   * Hive-on-Glue is configured via the Glue Hive client factory on Spark or Hadoop, not via Iceberg
+   * catalog keys.
+   */
   private static boolean isHiveUsingGlue(SparkConf sparkConf, Configuration hadoopConf) {
     Optional<String> hadoopFactoryClass =
         SparkConfUtils.findHadoopConfigKey(hadoopConf, HIVE_METASTORE_CLIENT_FACTORY_CLASS);
