@@ -22,7 +22,6 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,7 +70,7 @@ import org.apache.spark.sql.sources.BaseRelation;
 public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalRelation, D> {
 
-  private final DatasetFactory<D> datasetFactory;
+  protected final DatasetFactory<D> datasetFactory;
 
   public LogicalRelationDatasetBuilder(
       OpenLineageContext context, DatasetFactory<D> datasetFactory, boolean searchDependencies) {
@@ -96,7 +95,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
             || ((LogicalRelation) x).catalogTable().isDefined());
   }
 
-  private boolean isSingleNodeLogicalPlan(LogicalPlan x) {
+  protected boolean isSingleNodeLogicalPlan(LogicalPlan x) {
     return context
             .getQueryExecution()
             .map(qe -> qe.optimizedPlan())
@@ -184,7 +183,11 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     return Collections.singletonList(sparkBuilder.build());
   }
 
-  private List<D> handleHadoopFsRelation(LogicalRelation x) {
+  protected List<D> handleHadoopFsRelation(LogicalRelation logRel) {
+    return handleHadoopFsRelation(logRel, datasetFactory.sparkDatasetBuilder());
+  }
+
+  protected List<D> handleHadoopFsRelation(LogicalRelation x, SparkDatasetBuilder<D> sparkBuilder) {
     HadoopFsRelation relation = (HadoopFsRelation) x.relation();
     try {
       return context
@@ -216,19 +219,20 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
                 Collection<Path> rootPaths =
                     ScalaConversionUtils.fromSeq(relation.location().rootPaths());
-
-                if (isSingleFileRelation(rootPaths, hadoopConfig)) {
-                  return Collections.singletonList(
-                      buildHadoopDataset(
-                          rootPaths.stream().findFirst().get().toUri(),
-                          relation,
-                          datasetVersion,
-                          inputStats));
-                } else {
-                  return PlanUtils.getDirectoryPaths(rootPaths, hadoopConfig).stream()
-                      .map(p -> buildHadoopDataset(p.toUri(), relation, datasetVersion, inputStats))
-                      .collect(Collectors.toList());
-                }
+                List<Path> dirPaths =
+                    isSingleFileRelation(rootPaths, hadoopConfig)
+                        ? Collections.singletonList(rootPaths.stream().findFirst().get())
+                        : PlanUtils.getDirectoryPaths(rootPaths, hadoopConfig);
+                return dirPaths.stream()
+                    .map(
+                        p -> {
+                          sparkBuilder.dataset(p.toUri()).schema(relation.schema());
+                          datasetVersion.ifPresent(sparkBuilder::version);
+                          inputStats.ifPresent(
+                              s -> sparkBuilder.getInner().getInputFacets().inputStatistics(s));
+                          return sparkBuilder.build();
+                        })
+                    .collect(Collectors.toList());
               })
           .orElse(Collections.emptyList());
     } catch (Exception e) {
@@ -267,20 +271,8 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     }
   }
 
-  private D buildHadoopDataset(
-      URI uri,
-      HadoopFsRelation relation,
-      Optional<OpenLineage.DatasetVersionDatasetFacet> datasetVersion,
-      Optional<OpenLineage.InputStatisticsInputDatasetFacet> inputStats) {
-    SparkDatasetBuilder<D> b =
-        datasetFactory.sparkDatasetBuilder().dataset(uri).schema(relation.schema());
-    datasetVersion.ifPresent(b::version);
-    inputStats.ifPresent(s -> b.getInner().getInputFacets().inputStatistics(s));
-    return b.build();
-  }
-
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-  private boolean isSingleFileRelation(Collection<Path> paths, Configuration hadoopConfig) {
+  protected boolean isSingleFileRelation(Collection<Path> paths, Configuration hadoopConfig) {
     if (paths.size() != 1) {
       return false;
     }

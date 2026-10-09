@@ -35,6 +35,8 @@ import java.util.Optional;
 import java.util.Properties;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;
+import org.apache.hudi.HoodieBaseRelation;
+import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
@@ -240,6 +242,29 @@ class InputFieldsCollectorTest {
             exprId,
             new DatasetIdentifier("path", "abfss://tmp@storage.dfs.core.windows.net"),
             SOME_NAME);
+  }
+
+  @Test
+  void collectWhenGrandChildNodeIsHudiBaseRelation() {
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    HoodieBaseRelation relation = mock(HoodieBaseRelation.class);
+    when(relation.metaClient()).thenReturn(mock(HoodieTableMetaClient.class));
+    when(relation.basePath()).thenReturn(new Path("file:/tmp/hudi_mor"));
+    when(logicalRelation.relation()).thenReturn(relation);
+
+    LogicalPlan plan = createPlanWithGrandChild(logicalRelation);
+
+    when(logicalRelation.output())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(attributeReference))
+                .asScala()
+                .toSeq());
+
+    InputFieldsCollector.collect(context, plan);
+    verify(builder, times(1))
+        .addInput(exprId, new DatasetIdentifier("/tmp/hudi_mor", FILE), SOME_NAME);
   }
 
   @Test
