@@ -8,17 +8,17 @@ package io.openlineage.spark3.agent.lifecycle.plan.column.visitors.operator;
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.collectFromOperator;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
-import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 
 /**
- * Extracts expression dependencies from the query of a CreateTableAsSelect operator in {@link
+ * Extracts expression dependencies from the query of a ReplaceTableAsSelect operator in {@link
  * LogicalPlan} that does not expose the query as a child.
  */
-public class CreateTableAsSelectVisitor implements OperatorVisitor {
+public class ReplaceTableAsSelectVisitor implements OperatorVisitor {
   @Override
   public boolean isDefinedAt(LogicalPlan operator) {
-    return operator instanceof CreateTableAsSelect
+    return operator instanceof ReplaceTableAsSelect
         && (operator.children() == null || operator.children().isEmpty());
   }
 
@@ -26,7 +26,7 @@ public class CreateTableAsSelectVisitor implements OperatorVisitor {
   public void apply(LogicalPlan operator, ColumnLevelLineageBuilder builder) {
     // The query is not a child of this node, so the regular plan traversal never reaches it.
     // Visit every operator of the query, not only its root.
-    ((CreateTableAsSelect) operator)
+    ((ReplaceTableAsSelect) operator)
         .query()
         .foreach(
             node -> {
