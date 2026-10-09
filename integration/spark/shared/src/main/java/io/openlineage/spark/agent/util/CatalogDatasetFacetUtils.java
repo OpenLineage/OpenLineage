@@ -11,6 +11,8 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.util.Collections;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -58,17 +60,19 @@ public class CatalogDatasetFacetUtils {
                     .getOption("spark.hive.metastore.blms.project.id")
                     .foreach(
                         projectId ->
-                            builder.catalogProperties(
-                                context
-                                    .getOpenLineage()
-                                    .newCatalogDatasetFacetCatalogPropertiesBuilder()
-                                    .put("gcp_project_id", projectId)
-                                    .build()));
+                            addPropertiesToFacet(
+                                context,
+                                Collections.singletonMap("gcp_project_id", projectId),
+                                builder));
               } else {
                 warehouseUri =
                     PathUtils.getWarehouseLocation(
                         sparkContext.getConf(), sparkContext.hadoopConfiguration());
                 builder.name("default").type("hive");
+
+                GoogleCloudPlatformUtils.getDataprocMetastoreProperties(sparkContext.getConf())
+                    .ifPresent(prop -> addPropertiesToFacet(context, prop, builder));
+
                 PathUtils.getMetastoreUri(sparkContext)
                     .map(PathUtils::prepareHiveUri)
                     .ifPresent(uri -> builder.metadataUri(uri.toString()));
@@ -83,6 +87,17 @@ public class CatalogDatasetFacetUtils {
                   .map(FilesystemDatasetUtils::toLocation)
                   .map(location -> builder.warehouseUri(location.toString()).build());
             });
+  }
+
+  private static OpenLineage.CatalogDatasetFacetBuilder addPropertiesToFacet(
+      OpenLineageContext context,
+      Map<String, String> prop,
+      OpenLineage.CatalogDatasetFacetBuilder builder) {
+    OpenLineage.CatalogDatasetFacetCatalogPropertiesBuilder propertiesBuilder =
+        context.getOpenLineage().newCatalogDatasetFacetCatalogPropertiesBuilder();
+    prop.forEach(propertiesBuilder::put);
+    builder.catalogProperties(propertiesBuilder.build());
+    return builder;
   }
 
   public static boolean isHiveCatalog(SparkSession session, TableIdentifier identifier) {
