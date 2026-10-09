@@ -53,6 +53,10 @@ public class ColumnLevelLineageBuilder {
 
   private Map<ExprId, Set<Dependency>> exprDependencies = new HashMap<>();
   private List<DatasetDependency> datasetDependencies = new LinkedList<>();
+  // Dataset-level dependencies already resolved elsewhere (e.g. bridged over from a checkpointed
+  // plan, see io.openlineage.spark.api.Checkpoint) which can't be expressed as an ExprId within
+  // this builder's plan, so they bypass the exprId dependency graph entirely.
+  private List<OpenLineage.InputField> externalDatasetDependencies = new LinkedList<>();
   @Getter private Map<ExprId, Set<Input>> inputs = new HashMap<>();
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
@@ -169,6 +173,16 @@ public class ColumnLevelLineageBuilder {
   public void addDatasetDependency(ExprId outputExprId, String outputExpression) {
     datasetDependencies.add(
         new DatasetDependency(outputExprId, isDescriptionsEnabled() ? outputExpression : ""));
+  }
+
+  /**
+   * Registers an already-resolved dataset-level dependency, bypassing the exprId dependency graph.
+   * Used to bridge dataset-level lineage (filter/sort/group by/join/window columns) captured
+   * elsewhere - e.g. while a now-discarded checkpointed plan was still available - back onto the
+   * current plan being processed.
+   */
+  public void addDatasetDependency(OpenLineage.InputField inputField) {
+    externalDatasetDependencies.add(inputField);
   }
 
   public boolean hasOutputs() {
@@ -369,7 +383,8 @@ public class ColumnLevelLineageBuilder {
       boolean datasetLineageEnabled) {
     if (datasetLineageEnabled) {
       List<OpenLineage.InputField> result =
-          facetInputFields(Collections.emptyList(), datasetDependencyInputs());
+          new ArrayList<>(facetInputFields(Collections.emptyList(), datasetDependencyInputs()));
+      result.addAll(externalDatasetDependencies);
       return result.isEmpty() ? Optional.empty() : Optional.of(result);
     } else {
       return Optional.empty();

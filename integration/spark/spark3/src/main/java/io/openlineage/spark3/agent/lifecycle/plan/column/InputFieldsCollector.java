@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
@@ -15,6 +16,7 @@ import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.Checkpoint;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
 import io.openlineage.sql.SqlMeta;
@@ -22,6 +24,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -68,6 +71,13 @@ public class InputFieldsCollector {
   }
 
   private static void discoverInputsFromNode(ColumnLevelLineageContext context, LogicalPlan node) {
+    if (node instanceof LogicalRDD && ((LogicalRDD) node).rdd().isCheckpointed()) {
+      // the checkpointed RDD has no dataset identifier of its own - its lineage was captured
+      // eagerly while the checkpoint was being materialized and stashed in CheckpointContext;
+      // reattach it here instead of the usual dataset-identifier based collection.
+      collectCheckpointInputs(context, (LogicalRDD) node);
+      return;
+    }
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isQueryRelationNode(node)) {
       QueryRelationColumnLineageCollector.extractExternalInputs(context, node);
@@ -78,6 +88,72 @@ public class InputFieldsCollector {
     } else {
       extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
     }
+  }
+
+  /**
+   * Bridges the column lineage captured for a checkpoint (see {@link Checkpoint}) onto the current,
+   * downstream plan: field-level dependencies are matched to the {@link LogicalRDD} output
+   * attributes that represent the checkpointed data by name (Spark reuses the exact same output
+   * schema for a checkpointed dataset, so names line up directly - transformation details are
+   * intentionally collapsed to an identity dependency at this bridge point, same as is already done
+   * for cached ({@link InMemoryRelation}) datasets), while dataset-level dependencies are re-added
+   * as-is since they aren't tied to specific output attributes.
+   */
+  private static void collectCheckpointInputs(ColumnLevelLineageContext context, LogicalRDD node) {
+    Optional<Checkpoint> checkpoint =
+        context.getOlContext().getCheckpointContext().getCheckpoint(node.rdd().id());
+
+    if (!checkpoint.isPresent()) {
+      log.debug("No lineage recorded for checkpointed RDD id={}", node.rdd().id());
+      return;
+    }
+
+    bridgeFieldDependencies(context, node, checkpoint.get());
+    bridgeDatasetDependencies(context, checkpoint.get());
+  }
+
+  private static void bridgeFieldDependencies(
+      ColumnLevelLineageContext context, LogicalRDD node, Checkpoint checkpoint) {
+    OpenLineage.ColumnLineageDatasetFacetFields checkpointFields =
+        checkpoint.getColumnLineageFields();
+    if (checkpointFields == null) {
+      return;
+    }
+
+    Map<String, OpenLineage.ColumnLineageDatasetFacetFieldsAdditional> fieldsByName =
+        checkpointFields.getAdditionalProperties();
+
+    ScalaConversionUtils.<org.apache.spark.sql.catalyst.expressions.Attribute>fromSeq(node.output())
+        .stream()
+        .filter(attr -> attr instanceof AttributeReference)
+        .map(attr -> (AttributeReference) attr)
+        .forEach(
+            attr ->
+                Optional.ofNullable(fieldsByName.get(attr.name()))
+                    .map(OpenLineage.ColumnLineageDatasetFacetFieldsAdditional::getInputFields)
+                    .ifPresent(
+                        inputFields ->
+                            inputFields.forEach(
+                                inputField ->
+                                    context
+                                        .getBuilder()
+                                        .addInput(
+                                            attr.exprId(),
+                                            new DatasetIdentifier(
+                                                inputField.getName(), inputField.getNamespace()),
+                                            inputField.getField()))));
+  }
+
+  /**
+   * Dataset-level dependencies (filter/sort/group by/join/window columns) captured for the
+   * checkpointed plan are not tied to any specific output field - and may not even appear in the
+   * checkpoint's output schema at all - so they can't be bridged by matching output attribute names
+   * like {@link #bridgeFieldDependencies}. They are instead already fully resolved and re-added
+   * directly, bypassing the exprId dependency graph.
+   */
+  private static void bridgeDatasetDependencies(
+      ColumnLevelLineageContext context, Checkpoint checkpoint) {
+    checkpoint.getDatasetDependencyFields().forEach(context.getBuilder()::addDatasetDependency);
   }
 
   private static boolean isQueryRelationNode(LogicalPlan node) {

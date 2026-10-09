@@ -17,8 +17,10 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.Checkpoint;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.time.ZoneOffset;
@@ -36,6 +38,7 @@ import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
+import org.apache.spark.scheduler.StageInfo;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -61,6 +64,16 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
 
+  /**
+   * Set when this execution corresponds to Spark materializing a {@code checkpoint()}/{@code
+   * localCheckpoint()} call rather than a user query. Such executions run under their own {@code
+   * SQLExecution} (wrapping the plan of the dataset being checkpointed), so they must not produce
+   * OpenLineage events of their own - instead, their lineage is captured and stashed in {@link
+   * io.openlineage.spark.api.CheckpointContext} to be reattached once the checkpointed RDD is read
+   * downstream.
+   */
+  private boolean isCheckpointExecution = false;
+
   private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
 
   public SparkSQLExecutionContext(
@@ -78,6 +91,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void start(SparkListenerSQLExecutionStart startEvent) {
     if (log.isDebugEnabled()) {
       log.debug("SparkListenerSQLExecutionStart - executionId: {}", startEvent.executionId());
+    }
+
+    if (isCheckpointLineageEnabled() && isCheckpointDescription(startEvent.description())) {
+      isCheckpointExecution = true;
+      log.debug(
+          "Not emitting OpenLineage events for checkpoint execution: {}", startEvent.description());
+      return;
     }
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
@@ -120,6 +140,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void end(SparkListenerSQLExecutionEnd endEvent) {
     if (log.isDebugEnabled()) {
       log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
+    }
+    if (isCheckpointExecution) {
+      captureCheckpointLineage(endEvent);
+      return;
     }
     // TODO: can we get failed event here?
     // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
@@ -262,7 +286,15 @@ class SparkSQLExecutionContext implements ExecutionContext {
   public void start(SparkListenerJobStart jobStart) {
     log.debug("SparkListenerJobStart - executionId: {}", executionId);
     olContext.setActiveJobId(jobStart.jobId());
-
+    if (isCheckpointExecution) {
+      // the single job run to materialize the checkpoint - record which RDD it produced so it can
+      // be looked up later from LogicalRDDVisitor once the checkpointed RDD is read downstream.
+      StageInfo head = jobStart.stageInfos().head();
+      olContext
+          .getCheckpointContext()
+          .addRddToExecutionIdMapping(head.rddInfos().head().id(), executionId);
+      return;
+    }
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
       return;
@@ -305,6 +337,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
     try {
       log.debug("SparkListenerJobEnd - executionId: {}", executionId);
       olContext.setActiveJobId(jobEnd.jobId());
+      if (isCheckpointExecution) {
+        return;
+      }
       if (!finished.compareAndSet(false, true)) {
         log.debug("Event already finished, returning");
         return;
@@ -382,6 +417,60 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerApplicationEnd applicationEnd) {}
+
+  private static boolean isCheckpointDescription(String description) {
+    return description != null
+        && (description.startsWith("checkpoint at")
+            || description.startsWith("localCheckpoint at"));
+  }
+
+  /**
+   * Whether capturing lineage across {@code checkpoint()}/{@code localCheckpoint()} boundaries is
+   * enabled. Disabled by default - see {@link
+   * io.openlineage.spark.api.SparkOpenLineageConfig.CheckpointConfig}.
+   */
+  private boolean isCheckpointLineageEnabled() {
+    return olContext.getOpenLineageConfig().getCheckpointConfig().getEnabled();
+  }
+
+  /**
+   * Captures the input datasets and column lineage of the plan being checkpointed - while it is
+   * still available through {@link OpenLineageContext#getQueryExecution()} - and stashes it in
+   * {@link io.openlineage.spark.api.CheckpointContext} for later use by {@link
+   * io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor} and the column lineage collectors
+   * once the checkpointed RDD is read in a downstream query.
+   */
+  private void captureCheckpointLineage(SparkListenerSQLExecutionEnd endEvent) {
+    if (!olContext.getQueryExecution().isPresent()) {
+      log.debug(
+          "No query execution available to capture checkpoint lineage for executionId: {}",
+          endEvent.executionId());
+      return;
+    }
+    try {
+      List<OpenLineage.InputDataset> inputDatasets = runEventBuilder.buildCheckpointInputDatasets();
+      OpenLineage.SchemaDatasetFacet schemaFacet =
+          PlanUtils.schemaFacet(
+              olContext.getOpenLineage(), olContext.getQueryExecution().get().analyzed().schema());
+      Optional<OpenLineage.ColumnLineageDatasetFacet> columnLineageFacet =
+          ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(endEvent, olContext, schemaFacet);
+      OpenLineage.ColumnLineageDatasetFacetFields columnLineageFields =
+          columnLineageFacet.map(OpenLineage.ColumnLineageDatasetFacet::getFields).orElse(null);
+      // dataset-level dependencies (filter/sort/group by/join/window columns) are not tied to any
+      // specific output field - and may not even appear in the checkpoint's output schema - so they
+      // can't be bridged by matching output attribute names and must be carried over separately.
+      List<OpenLineage.InputField> datasetDependencyFields =
+          columnLineageFacet.map(OpenLineage.ColumnLineageDatasetFacet::getDataset).orElse(null);
+      olContext
+          .getCheckpointContext()
+          .addCheckpoint(
+              endEvent.executionId(),
+              new Checkpoint(inputDatasets, columnLineageFields, datasetDependencyFields));
+    } catch (RuntimeException e) {
+      log.warn(
+          "Failed to capture lineage for checkpoint executionId: {}", endEvent.executionId(), e);
+    }
+  }
 
   private OpenLineage.ParentRunFacet buildApplicationParentFacet() {
     return PlanUtils.parentRunFacet(
