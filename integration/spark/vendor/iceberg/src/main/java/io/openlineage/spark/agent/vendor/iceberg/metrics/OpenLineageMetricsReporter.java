@@ -37,6 +37,8 @@ public class OpenLineageMetricsReporter implements MetricsReporter {
   @Getter private final List<IcebergCommitReportOutputDatasetFacet> commitReportFacets;
   @Getter private final List<IcebergScanReportInputDatasetFacet> scanReportFacets;
 
+  private final MetricsReporter tableReporter = new TableReporter();
+
   public OpenLineageMetricsReporter(MetricsReporter delegate) {
     log.debug("Creating OpenLineageMetricsReporter with delegate: {}", delegate);
     this.delegate = Optional.of(delegate);
@@ -59,6 +61,24 @@ public class OpenLineageMetricsReporter implements MetricsReporter {
 
   @Override
   public void report(MetricsReport metricsReport) {
+    store(metricsReport);
+    log.debug("Reported metrics: {} to {}", metricsReport, this);
+    delegate.ifPresent(delegate -> delegate.report(metricsReport));
+  }
+
+  /**
+   * Returns a reporter that stores reports in this instance without forwarding them to the
+   * delegate. It is attached to Iceberg tables that were loaded before this reporter was injected
+   * into their catalog. Such tables keep reporting to the reporter they were created with, so
+   * forwarding would report twice to it.
+   *
+   * @return reporter storing reports in this instance
+   */
+  public MetricsReporter getTableReporter() {
+    return tableReporter;
+  }
+
+  private void store(MetricsReport metricsReport) {
     if (metricsReport instanceof CommitReport) {
       synchronized (commitReportFacets) {
         commitReportFacets.add(CommitReportsFacetBuilder.from((CommitReport) metricsReport));
@@ -78,13 +98,22 @@ public class OpenLineageMetricsReporter implements MetricsReporter {
       }
       log.debug("ScanReportFacet added to OpenLineageMetricsReporter");
     }
-
-    log.debug("Reported metrics: {} to {}", metricsReport, this);
-    delegate.ifPresent(delegate -> delegate.report(metricsReport));
   }
 
   @VisibleForTesting
   public MetricsReporter getDelegate() {
     return delegate.orElse(null);
+  }
+
+  private class TableReporter implements MetricsReporter {
+    @Override
+    public void report(MetricsReport metricsReport) {
+      store(metricsReport);
+    }
+
+    @Override
+    public String toString() {
+      return "OpenLineageMetricsReporter.TableReporter";
+    }
   }
 }

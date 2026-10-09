@@ -54,6 +54,52 @@ report metrics to it.
 In case of any issues, a spark config flag:
 `spark.openlineage.vendors.iceberg.metricsReporterDisabled=true`  can be used to disable this feature.
 
+### When reports are available
+
+Iceberg copies the catalog's metrics reporter into each table object when the object is created,
+and a table reports its scans and commits to that copy. Spark loads the tables of a query during
+analysis, before OpenLineage handles the query, and the catalog cache (`cache-enabled`, on by
+default) keeps the same table objects for later queries. OpenLineage therefore does two things when
+it handles the start of a query:
+ * it injects `OpenLineageMetricsReporter` into the catalog, so that table objects created later
+   report to it,
+ * it attaches the reporter to the Iceberg table objects referenced by the query: the tables that are
+   read and the write target of `INSERT`, `INSERT OVERWRITE`, `MERGE`, `UPDATE`, `DELETE` and
+   streaming writes. On Iceberg 1.11 and later this uses the public
+   `BaseTable.combineMetricsReporter` API; on older versions it uses reflection to update the
+   table's reporter field. The table keeps the reporters it already had.
+
+`CommitReport`s are collected for commits that happen after that point. Some commits can still be
+missed:
+ * The Spark listener handles events asynchronously. A write that commits before OpenLineage has
+   handled the start of the query, for example a very short write while the listener is busy, has
+   no `icebergCommitReport`.
+ * For a streaming query, the first micro-batch may commit before the reporter is attached.
+ * Injection currently requires the catalog cache to be enabled.
+ * On JDK 26, updating the reporter field on Iceberg versions before 1.11 prints a warning about
+   final field mutation. If final field mutation is denied (`--illegal-final-field-mutation=deny`),
+   the reporter is not attached to already loaded tables.
+
+`ScanReport`s are read directly from the scan on Iceberg's runtimes for Spark 3.5 and later, so
+they don't depend on when the reporter is injected. On older runtimes, scan planning happens before
+OpenLineage handles the query, so a scan of a table loaded before injection has no
+`icebergScanReport`.
+
+To make every table report to OpenLineage from the start, the reporter can be configured on the
+catalog, so that Iceberg creates it when the catalog is initialized:
+
+```
+spark.sql.catalog.<catalog-name>.metrics-reporter-impl=io.openlineage.spark.agent.vendor.iceberg.metrics.OpenLineageMetricsReporter
+```
+
+Keep in mind that:
+ * Iceberg loads the reporter class with the classloader that loaded Iceberg. The OpenLineage jar
+   must be visible to it, for example by adding both jars in the same way (both with
+   `--jars`/`--packages`, or both in `$SPARK_HOME/jars`). Otherwise the catalog fails to initialize.
+ * It replaces Iceberg's default reporter, which logs the reports, instead of wrapping it.
+ * The catalog cache must be enabled, and OpenLineage must see the catalog in the query plan to find
+   the reports.
+
 ```json
 "icebergScanReport": {
    "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0-SNAPSHOT/integration/spark",

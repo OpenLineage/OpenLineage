@@ -1043,6 +1043,63 @@ class SparkIcebergIntegrationTest {
         .isEqualTo(1L);
   }
 
+  @Test
+  void testCommitReportFacetForTableLoadedBeforeInjection() {
+    if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {
+      // This test will not work as Iceberg classes used are Java 11
+      assertThat(true).isTrue();
+      return;
+    }
+
+    String table = "commit_existing_target";
+    clearTables("temp", table);
+    createTempDataset(3).createOrReplaceTempView("temp");
+    spark.sql("CREATE TABLE " + table + " (a long, b long) USING iceberg");
+
+    // A catalog over the same warehouse that OpenLineage has not seen yet. Its first statement
+    // loads the existing table during analysis, before the metrics reporter is injected.
+    String catalog = "commit_report_catalog";
+    spark.conf().set("spark.sql.catalog." + catalog, "org.apache.iceberg.spark.SparkCatalog");
+    spark.conf().set("spark.sql.catalog." + catalog + ".type", "hadoop");
+    spark.conf().set("spark.sql.catalog." + catalog + ".warehouse", "/tmp/iceberg");
+    MockServerUtils.clearRequests(mockServer);
+
+    // the write target is not a child of AppendData and the source is not an Iceberg table
+    spark.sql("INSERT INTO " + catalog + ".default." + table + " SELECT * FROM temp");
+    // reuses the table object kept by the catalog cache
+    spark.sql("INSERT INTO " + catalog + ".default." + table + " VALUES (4, 5)");
+
+    List<RunEvent> completeEvents = awaitAppendCompleteEvents(table, 2);
+    List<Long> addedRecords =
+        completeEvents.stream()
+            .flatMap(e -> e.getOutputs().stream())
+            .map(OutputDataset::getOutputFacets)
+            .filter(Objects::nonNull)
+            .map(OutputDatasetOutputFacets::getIcebergCommitReport)
+            .filter(Objects::nonNull)
+            .map(report -> report.getCommitMetrics().getAddedRecords().longValue())
+            .distinct()
+            .collect(Collectors.toList());
+
+    assertThat(addedRecords).containsExactlyInAnyOrder(3L, 1L);
+  }
+
+  private List<RunEvent> awaitAppendCompleteEvents(String outputSuffix, int runs) {
+    return Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                getEventsEmitted(mockServer).stream()
+                    .filter(e -> RunEvent.EventType.COMPLETE.equals(e.getEventType()))
+                    .filter(e -> e.getJob().getName().contains("append_data"))
+                    .filter(
+                        e ->
+                            e.getOutputs().stream()
+                                .anyMatch(output -> output.getName().endsWith(outputSuffix)))
+                    .collect(Collectors.toList()),
+            events -> events.stream().map(e -> e.getRun().getRunId()).distinct().count() >= runs);
+  }
+
   private void clearTables(String... tables) {
     Arrays.asList(tables).stream()
         .filter(t -> spark.catalog().tableExists(t))

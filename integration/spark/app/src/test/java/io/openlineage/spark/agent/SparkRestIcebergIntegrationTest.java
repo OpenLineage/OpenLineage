@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static io.openlineage.spark.agent.MockServerUtils.getEventsEmittedWithJobName;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +19,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.File;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +37,7 @@ import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -200,6 +203,66 @@ class SparkRestIcebergIntegrationTest {
                 + ":"
                 + icebergRestContainer.getMappedPort(8181));
     assertThat(catalog.getSource()).isEqualTo("spark");
+  }
+
+  @Test
+  @DisabledIf("isJava8AndSpark35")
+  void testCommitReportFacetForTableLoadedBeforeInjection() {
+    String table = "commit_existing_target";
+    spark.sql("DROP TABLE IF EXISTS rest.default." + table);
+    spark.sql("CREATE TABLE rest.default." + table + " (a BIGINT, b BIGINT) USING iceberg");
+
+    // A catalog on the same REST server that OpenLineage has not seen yet. Its first statement
+    // loads the existing table during analysis, before the metrics reporter is injected.
+    String catalog = "rest_commit_report";
+    spark.conf().set("spark.sql.catalog." + catalog, "org.apache.iceberg.spark.SparkCatalog");
+    spark
+        .conf()
+        .set(
+            "spark.sql.catalog." + catalog + ".catalog-impl",
+            "org.apache.iceberg.rest.RESTCatalog");
+    spark
+        .conf()
+        .set(
+            "spark.sql.catalog." + catalog + ".uri",
+            "http://"
+                + icebergRestContainer.getHost()
+                + ":"
+                + icebergRestContainer.getMappedPort(8181));
+    MockServerUtils.clearRequests(mockServer);
+
+    // the write target is not a child of AppendData and the source is not an Iceberg table
+    spark.sql("INSERT INTO " + catalog + ".default." + table + " SELECT * FROM temp");
+    // reuses the table object kept by the catalog cache
+    spark.sql("INSERT INTO " + catalog + ".default." + table + " VALUES (4, 5)");
+
+    List<RunEvent> completeEvents =
+        Awaitility.await()
+            .atMost(Duration.ofSeconds(30))
+            .until(
+                () ->
+                    getEventsEmitted(mockServer).stream()
+                        .filter(e -> RunEvent.EventType.COMPLETE.equals(e.getEventType()))
+                        .filter(e -> e.getJob().getName().contains("append_data"))
+                        .filter(
+                            e ->
+                                e.getOutputs().stream()
+                                    .anyMatch(output -> output.getName().endsWith(table)))
+                        .collect(Collectors.toList()),
+                events -> events.stream().map(e -> e.getRun().getRunId()).distinct().count() >= 2);
+
+    List<Long> addedRecords =
+        completeEvents.stream()
+            .flatMap(e -> e.getOutputs().stream())
+            .map(OutputDataset::getOutputFacets)
+            .filter(Objects::nonNull)
+            .map(OutputDatasetOutputFacets::getIcebergCommitReport)
+            .filter(Objects::nonNull)
+            .map(report -> report.getCommitMetrics().getAddedRecords().longValue())
+            .distinct()
+            .collect(Collectors.toList());
+
+    assertThat(addedRecords).containsExactlyInAnyOrder(3L, 1L);
   }
 
   private void clearTables(String... tables) {
