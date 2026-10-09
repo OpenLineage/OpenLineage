@@ -535,4 +535,93 @@ class ColumnLevelLineageIcebergTest {
     assertColumnDependsOn(facet, "a", "file", T2_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "b", "file", T2_EXPECTED_NAME, "b");
   }
+
+  @Test
+  void testMergeIntoCowWithNonAttributeAssignments() {
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        mergeWithNonAttributeAssignments("copy-on-write", "ReplaceIcebergData", "ReplaceData");
+
+    assertColumnDependsOn(facet, "id", FILE, T2_EXPECTED_NAME, "id");
+    assertColumnDependsOn(facet, "amount", FILE, T2_EXPECTED_NAME, "amount");
+    assertColumnDependsOn(facet, "note", FILE, T2_EXPECTED_NAME, "note");
+
+    // copy-on-write carries over target rows that are not updated
+    assertColumnDependsOn(facet, "id", FILE, T1_EXPECTED_NAME, "id");
+    assertColumnDependsOn(facet, "amount", FILE, T1_EXPECTED_NAME, "amount");
+    assertColumnDependsOn(facet, "note", FILE, T1_EXPECTED_NAME, "note");
+  }
+
+  @Test
+  void testMergeIntoMorWithNonAttributeAssignments() {
+    if (System.getProperty(SPARK_VERSION).startsWith("3.4")) {
+      // This test will not work as Iceberg has unfixed bug with Spark 3.4
+      // https://github.com/apache/iceberg/issues/11821
+      assertThat(true).isTrue();
+      return;
+    }
+
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        mergeWithNonAttributeAssignments("merge-on-read", "WriteIcebergDelta", "WriteDelta");
+
+    assertColumnDependsOn(facet, "id", FILE, T2_EXPECTED_NAME, "id");
+    assertColumnDependsOn(facet, "amount", FILE, T2_EXPECTED_NAME, "amount");
+    assertColumnDependsOn(facet, "note", FILE, T2_EXPECTED_NAME, "note");
+  }
+
+  /**
+   * Runs a MERGE whose assignments are not bare column references: s.amount is implicitly cast from
+   * int to bigint, note is computed with concat and, on Spark 3.5+, the nullable s.id is wrapped in
+   * a not-null check because the target column is NOT NULL.
+   */
+  private OpenLineage.ColumnLineageDatasetFacet mergeWithNonAttributeAssignments(
+      String mergeMode, String... writeNodeSuffixes) {
+    // Iceberg's MERGE on Spark < 3.5 rejects nullable values for NOT NULL columns
+    String sourceIdType =
+        "3.5".compareTo(System.getProperty(SPARK_VERSION)) <= 0 ? "BIGINT" : "BIGINT NOT NULL";
+    spark.sql(
+        "CREATE TABLE local.db.t1 (id BIGINT NOT NULL, amount BIGINT, note STRING) USING iceberg"
+            + " TBLPROPERTIES ('write.merge.mode'='"
+            + mergeMode
+            + "')");
+    spark.sql("INSERT INTO local.db.t1 VALUES (1, 10, 'a'), (2, 20, 'b')");
+    spark.sql(
+        "CREATE TABLE local.db.t2 (id "
+            + sourceIdType
+            + ", amount INT, note STRING) USING iceberg");
+    spark.sql("INSERT INTO local.db.t2 VALUES (2, 21, 'c'), (3, 30, 'd')");
+
+    spark.sql(
+        "MERGE INTO local.db.t1 t USING local.db.t2 s ON t.id = s.id"
+            + " WHEN MATCHED THEN UPDATE SET t.amount = s.amount, t.note = concat(s.note, '!')"
+            + " WHEN NOT MATCHED THEN INSERT (id, amount, note) VALUES (s.id, s.amount, s.note)");
+
+    // executed plans are collected across tests, so take the most recent write node
+    LogicalPlan plan =
+        LastQueryExecutionSparkEventListener.getExecutedLogicalPlans().stream()
+            .filter(
+                p ->
+                    Arrays.stream(writeNodeSuffixes)
+                        .anyMatch(s -> p.getClass().getCanonicalName().endsWith(s)))
+            .reduce((first, second) -> second)
+            .get();
+
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("id").type("long").build(),
+                openLineage
+                    .newSchemaDatasetFacetFieldsBuilder()
+                    .name("amount")
+                    .type("long")
+                    .build(),
+                openLineage
+                    .newSchemaDatasetFacetFieldsBuilder()
+                    .name("note")
+                    .type("string")
+                    .build()));
+    return io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils
+        .buildColumnLineageDatasetFacet(event, context, outputSchema)
+        .get();
+  }
 }
