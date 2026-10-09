@@ -28,19 +28,29 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
  *
  * <p>This is required because Iceberg's rewrite actions ({@code rewrite_data_files}, {@code
  * rewrite_position_delete_files}, …) do not write through the table's own catalog. They stage the
- * table in {@code SparkTableCache} under a random UUID and then read and write through {@code
- * org.apache.iceberg.spark.SparkCachedTableCatalog}, which Iceberg silently registers as {@code
- * spark.sql.catalog.default_cache_iceberg}. That catalog implements {@link TableCatalog} directly -
- * it is neither a {@code SparkCatalog} nor a {@code SparkSessionCatalog} - so {@link
- * IcebergHandler#isClass(TableCatalog)} rejects it and the whole catalog-based resolution fails,
- * leaving the emitted event with no datasets at all.
+ * table in {@code SparkTableCache} under a random key and then read and write through a catalog
+ * that Iceberg silently registers for that cache:
  *
- * <p>The relation itself still carries everything needed: {@code relation.table()} is a {@link
- * SparkTable} wrapping the real Iceberg {@link Table}, whose {@code name()} is the fully qualified
- * name assigned by the catalog that originally loaded it (for example {@code
- * prod_catalog.namespace.table}). That is used to find the owning catalog and delegate to {@link
- * IcebergHandler}, so a compaction job reports exactly the same dataset identifier - symlinks
- * included - as a regular write to the same table.
+ * <ul>
+ *   <li>{@code org.apache.iceberg.spark.SparkCachedTableCatalog}, registered as {@code
+ *       spark.sql.catalog.default_cache_iceberg}, which serves {@link SparkTable}s - Iceberg's
+ *       Spark 3.x and 4.0 modules;
+ *   <li>{@code org.apache.iceberg.spark.SparkRewriteTableCatalog}, registered as {@code
+ *       spark.sql.catalog.default_rewrite_catalog}, which serves {@code SparkRewriteTable}s -
+ *       Iceberg's Spark 4.1 module, from Iceberg 1.11 on. {@code SparkRewriteTable} extends
+ *       Iceberg's package-private {@code BaseSparkTable}, not {@link SparkTable}.
+ * </ul>
+ *
+ * <p>Either catalog implements {@link TableCatalog} directly - it is neither a {@code SparkCatalog}
+ * nor a {@code SparkSessionCatalog} - so {@link IcebergHandler#isClass(TableCatalog)} rejects it
+ * and the whole catalog-based resolution fails, leaving the emitted event with no datasets at all.
+ *
+ * <p>The relation itself still carries everything needed: {@code relation.table()} is a Spark table
+ * from Iceberg's {@code org.apache.iceberg.spark.source} package wrapping the real Iceberg {@link
+ * Table}, whose {@code name()} is the fully qualified name assigned by the catalog that originally
+ * loaded it (for example {@code prod_catalog.namespace.table}). That is used to find the owning
+ * catalog and delegate to {@link IcebergHandler}, so a compaction job reports exactly the same
+ * dataset identifier - symlinks included - as a regular write to the same table.
  */
 @Slf4j
 public class IcebergRelationHandler implements RelationHandler {
@@ -68,12 +78,19 @@ public class IcebergRelationHandler implements RelationHandler {
 
   @Override
   public boolean isClass(DataSourceV2Relation relation) {
-    return relation.table() instanceof SparkTable;
+    return icebergTable(relation).isPresent();
   }
 
   @Override
   public DatasetIdentifier getDatasetIdentifier(DataSourceV2Relation relation) {
-    Table icebergTable = ((SparkTable) relation.table()).table();
+    Table icebergTable =
+        icebergTable(relation)
+            .orElseThrow(
+                () ->
+                    new UnsupportedCatalogException(
+                        String.format(
+                            "Relation over %s does not wrap an Iceberg table",
+                            relation.table().getClass().getName())));
     return getOwningCatalog(relation)
         .flatMap(owner -> resolveThroughOwningCatalog(relation, icebergTable, owner))
         .orElseGet(() -> fromTableLocation(icebergTable));
@@ -87,11 +104,12 @@ public class IcebergRelationHandler implements RelationHandler {
    */
   @Override
   public Optional<OwningCatalog> getOwningCatalog(DataSourceV2Relation relation) {
-    if (!(relation.table() instanceof SparkTable) || !context.getSparkSession().isPresent()) {
+    Optional<Table> icebergTable = icebergTable(relation);
+    if (!icebergTable.isPresent() || !context.getSparkSession().isPresent()) {
       return Optional.empty();
     }
 
-    String tableName = ((SparkTable) relation.table()).table().name();
+    String tableName = icebergTable.get().name();
     if (tableName == null || tableName.contains("/")) {
       return Optional.empty();
     }
@@ -103,14 +121,22 @@ public class IcebergRelationHandler implements RelationHandler {
 
     // Only the catalog segment is taken from the qualified name; the remaining segments are split
     // into namespace and table exactly as Spark parses a multipart identifier. The relation's own
-    // identifier is deliberately not used - for the cached-catalog writes this handler exists for,
-    // it is the SparkTableCache UUID key rather than the table's real identifier.
+    // identifier is deliberately not used - for the rewrite-catalog writes this handler exists for,
+    // it is the SparkTableCache key rather than the table's real identifier.
     Identifier identifier =
         Identifier.of(Arrays.copyOfRange(parts, 1, parts.length - 1), parts[parts.length - 1]);
 
     return SparkSessionUtils.catalog(context.getSparkSession().get(), parts[0])
         .filter(TableCatalog.class::isInstance)
         .map(catalog -> OwningCatalog.of((TableCatalog) catalog, identifier));
+  }
+
+  /**
+   * The Iceberg table behind the relation: a {@link SparkTable}, or any other Spark table from
+   * Iceberg's Spark source package that wraps one, such as {@code SparkRewriteTable}.
+   */
+  private static Optional<Table> icebergTable(DataSourceV2Relation relation) {
+    return IcebergSparkTables.fromIcebergSparkTable(relation.table());
   }
 
   /**
