@@ -156,6 +156,56 @@ class JdbcSparkUtilsTest {
             .expectedColumnLineage(columnLineage("users.id"))
             .build(),
         TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users) t$1") // $ in an unquoted alias
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users WHERE name <> $$)$$) t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users WHERE name <> $tag$)$$$tag$) t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id /* outer /* inner */ ) */ FROM users) t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users) /* outer /* inner */ ) */ t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable(
+                "(SELECT id AS user_id FROM users WHERE id IN ($1, $2)) t") // not dollar quotes
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) t$1 JOIN orders o ON t$1.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
+            .dbtable(
+                "(SELECT id FROM users WHERE name <> $$)$$) u JOIN orders o ON u.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
             .dbtable("(SELECT id FROM users) u JOIN orders o ON u.id = o.user_id")
             .schema(new StructType().add("id", DataTypes.IntegerType))
             .expectedInputTable("users")
@@ -269,13 +319,17 @@ class JdbcSparkUtilsTest {
   }
 
   private static ColumnLineage columnLineage(String columnUri) {
-    int dotIndex = columnUri.lastIndexOf('.');
-    String sourceTable = columnUri.substring(0, dotIndex);
-    String column = columnUri.substring(dotIndex + 1);
+    return columnLineage(columnUri.substring(columnUri.lastIndexOf('.') + 1), columnUri);
+  }
+
+  private static ColumnLineage columnLineage(String outputColumn, String sourceColumnUri) {
+    int dotIndex = sourceColumnUri.lastIndexOf('.');
+    String sourceTable = sourceColumnUri.substring(0, dotIndex);
+    String sourceColumn = sourceColumnUri.substring(dotIndex + 1);
     return new ColumnLineage(
-        new ColumnMeta(null, column),
+        new ColumnMeta(null, outputColumn),
         Collections.singletonList(
-            new ColumnMeta(new DbTableMeta(null, null, sourceTable), column)));
+            new ColumnMeta(new DbTableMeta(null, null, sourceTable), sourceColumn)));
   }
 
   @Builder
