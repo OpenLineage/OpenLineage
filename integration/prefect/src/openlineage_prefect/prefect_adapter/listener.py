@@ -4,10 +4,10 @@
 import ast
 import asyncio
 from dataclasses import dataclass
+from datetime import datetime
 import logging
 import os
 import re
-from datetime import datetime
 
 from . import adapter
 from openlineage.client.run import RunState
@@ -18,6 +18,7 @@ from prefect.events.clients import get_events_subscriber
 from prefect.events.filters import EventFilter, EventNameFilter
 from prefect.events.schemas.events import Event
 from prefect.exceptions import ObjectNotFound, PrefectHTTPStatusError
+
 
 JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "default")
 TASK_NAME_TYPE: str = os.environ.get("TASK_NAME_TYPE", "base") # or "full"
@@ -216,7 +217,7 @@ class PrefectOpenLineageListener:
                         parent_name = self.get_base_name(parent_run.name)
                     elif JOB_NAME_TYPE == "full" or TASK_NAME_TYPE == "full":
                         parent_name = parent_run.name
-                    parent_namespace: dict = await  self.get_flow_ns(parent_run.flow_run_id)
+                    parent_namespace: dict = await self.get_flow_ns(parent_run.flow_run_id)
                     parent_run_id = self.build_run_id(
                         parent_run.start_time, parent_name, parent_namespace
                     )
@@ -323,7 +324,7 @@ class PrefectOpenLineageListener:
                     )
                 except AttributeError:
                     logger.info(
-                        "No Prefect run found for flow with id %s. ParentRunFacet will not be included.",
+                        "Failed to build OpenLineage run id for Flow %s. ParentRunFacet will not be included.",
                         flow_run_id,
                     )
 
@@ -333,6 +334,7 @@ class PrefectOpenLineageListener:
                     event_time=event_time,
                     expected_start_time=expected_start_time,
                     flow_run_id=ol_flow_run_id,
+                    flow_name=flow_info.name,
                     task_name=task_name,
                     namespace=namespace,
                     job_deps=parent_runs,

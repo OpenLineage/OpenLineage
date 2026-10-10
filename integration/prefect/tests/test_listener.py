@@ -17,6 +17,7 @@ from prefect_adapter.listener import PrefectOpenLineageListener
 from prefect.events.schemas.events import Event
 from test_events import FLOW_START_EVENT, TASK_START_EVENT
 
+FLOW_NAME_TYPE = "flow-run"
 # ========== Fixtures ==========
 
 
@@ -91,17 +92,16 @@ def test_build_run_id_different_for_different_inputs(listener):
     assert run_id_1 != run_id_2
 
 
-# ========== Tests for get_deployment_and_flow_info ==========
+# ========== Tests for get_deployment_info ==========
 
 
 @pytest.mark.asyncio
-async def test_get_deployment_and_flow_info_success(listener, mock_prefect_client):
+async def test_get_deployment_info_success(listener, mock_prefect_client):
     """Test successful retrieval of deployment and flow info."""
     # Setup mock responses
     flow_run = MagicMock()
     flow_run.deployment_id = "dep-123"
     flow_run.flow_id = "flow-456"
-    flow_run.start_time = datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
 
     deployment = MagicMock()
     deployment.id = "dep-123"
@@ -117,14 +117,31 @@ async def test_get_deployment_and_flow_info_success(listener, mock_prefect_clien
     mock_prefect_client.read_deployment.return_value = deployment
     mock_prefect_client.read_flow.return_value = flow
 
-    result = await listener.get_deployment_and_flow_info("flow-run-123")
+    result = await listener.get_deployment_info("flow-run-123")
 
-    assert isinstance(result, tuple)
-    assert len(result) == 7
-    assert result[0] == "dep-123"  # deployment_id
-    assert result[4] == "test_deploy"  # deployment_name
-    assert result[5] == "custom_namespace"  # namespace
-    assert result[6] == "test_flow"  # flow_name
+    assert isinstance(result, PrefectOpenLineageListener.DeploymentInfo)
+    assert PrefectOpenLineageListener.DeploymentInfo(
+        id="dep-123",
+        created=datetime.fromisoformat("2026-07-05T08:05:01.001+00:00"),
+        updated=datetime.fromisoformat("2026-07-05T08:06:02.100+00:00"),
+        name="test_deploy",
+        namespace="custom_namespace",
+        flow_run=flow_run,
+    ) == result
+
+# ========== Tests for get_flow_info ==========
+
+@pytest.mark.asyncio
+async def test_get_flow_info_success(listener, mock_prefect_client):
+    """Test successful retrieval of flow info."""
+    flow_run = MagicMock()
+    flow_run.start_time = datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
+    mock_prefect_client.read_flow_run.return_value = flow_run
+ 
+    flow_info = await listener.get_flow_info(flow_run)
+
+    assert isinstance(flow_info, PrefectOpenLineageListener.FlowInfo)
+    assert flow_info.start_time == datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
 
 
 # ========== Tests for get_prefect_version ==========
@@ -171,44 +188,6 @@ async def test_get_flow_ns_from_deployment_variables(listener, mock_prefect_clie
     ns = await listener.get_flow_ns("flow-run-123")
 
     assert ns == "custom_ns"
-
-
-# ========== Tests for get_job_ns ==========
-
-
-@pytest.mark.asyncio
-async def test_get_job_ns_delegates_to_get_flow_ns(listener, mock_prefect_client):
-    """Test that get_job_ns delegates to get_flow_ns."""
-    task_run = MagicMock()
-    task_run.flow_run_id = "flow-run-123"
-
-    mock_prefect_client.read_task_run.return_value = task_run
-
-    with patch.object(
-        listener, "get_flow_ns", return_value="test_ns"
-    ) as mock_get_flow_ns:
-        ns = await listener.get_job_ns("task-run-123")
-
-    assert ns == "test_ns"
-    mock_get_flow_ns.assert_called_once_with("flow-run-123")
-
-
-# ========== Tests for get_flow_run_start_time ==========
-
-
-@pytest.mark.asyncio
-async def test_get_flow_run_start_time(listener, mock_prefect_client):
-    """Test retrieval of flow run start time."""
-    flow_run = MagicMock()
-    start_time = datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
-    flow_run.start_time = start_time
-
-    mock_prefect_client.read_flow_run.return_value = flow_run
-
-    result = await listener.get_flow_run_start_time("flow-run-123")
-
-    assert result == start_time
-    mock_prefect_client.read_flow_run.assert_called_once_with("flow-run-123")
 
 
 # ========== Tests for get_artifacts_by_task_run ==========
@@ -323,7 +302,7 @@ async def test_get_parent_runs_success(listener, mock_prefect_client):
 
     mock_prefect_client.read_task_run.return_value = parent_task_run
 
-    with patch.object(listener, "get_job_ns", return_value="default"):
+    with patch.object(listener, "get_flow_ns", return_value="default"):
         result = await listener.get_parent_runs(payload, "task-run-123")
 
     assert len(result) == 1
@@ -375,7 +354,7 @@ async def test_get_parent_runs_filters_non_task_inputs(listener, mock_prefect_cl
 
     mock_prefect_client.read_task_run.return_value = parent_task_run
 
-    with patch.object(listener, "get_job_ns", return_value="default"):
+    with patch.object(listener, "get_flow_ns", return_value="default"):
         result = await listener.get_parent_runs(payload, "task-run-123")
 
     assert len(result) == 2
@@ -391,14 +370,9 @@ async def test_collect_and_process_flow_runs_success(
     """Test successful flow event processing."""
     mock_adapter.create_and_emit_flow_event = MagicMock()
 
-    with patch.object(listener, "get_deployment_and_flow_info") as mock_get_info:
-        mock_get_info.return_value = (
-            "dep-123",  # deployment_id
+    with patch.object(listener, "get_flow_info") as mock_get_info:
+        mock_get_info.return_value = PrefectOpenLineageListener.FlowInfo(
             datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00"),  # start_time
-            "2026-07-05T08:05:01.001Z",  # deployment_created
-            "2026-07-05T08:06:02.100Z",  # deployment_updated
-            "test_deploy",  # deployment_name
-            "default",  # namespace
             "test_flow",  # flow_name
         )
 
@@ -430,22 +404,17 @@ async def test_collect_and_process_task_runs_success(
     task_run.start_time = datetime.fromisoformat("2026-07-07T13:21:07.336123+00:00")
 
     with (
-        patch.object(listener, "get_job_ns", return_value="default"),
+        patch.object(listener, "get_flow_ns", return_value="default"),
         patch.object(listener, "build_run_id", return_value="task-run-id"),
         patch.object(listener, "get_artifacts_by_task_run", return_value=[]),
         patch.object(listener, "get_parent_runs", return_value=[]),
-        patch.object(listener, "get_deployment_and_flow_info") as mock_get_info,
+        patch.object(listener, "get_flow_info") as mock_get_info,
     ):
         mock_prefect_client = listener.client
         mock_prefect_client.read_task_run.return_value = task_run
 
-        mock_get_info.return_value = (
-            "dep-123",
+        mock_get_info.return_value = PrefectOpenLineageListener.FlowInfo(
             datetime.fromisoformat("2026-07-07T13:21:07.336123+00:00"),
-            "2026-07-05T08:05:01.001Z",
-            "2026-07-05T08:06:02.100Z",
-            "test_deploy",
-            "default",
             "GitHub Stars",
         )
 
@@ -475,23 +444,18 @@ async def test_collect_and_process_task_runs_with_datasets(
     ]
 
     with (
-        patch.object(listener, "get_job_ns", return_value="default"),
+        patch.object(listener, "get_flow_ns", return_value="default"),
         patch.object(listener, "build_run_id", return_value="task-run-id"),
         patch.object(listener, "get_artifacts_by_task_run", return_value=datasets),
         patch.object(listener, "get_parent_runs", return_value=[]),
-        patch.object(listener, "get_deployment_and_flow_info") as mock_get_info,
+        patch.object(listener, "get_flow_info") as mock_get_info,
     ):
         mock_prefect_client = listener.client
         mock_prefect_client.read_task_run.return_value = task_run
 
-        mock_get_info.return_value = (
+        mock_get_info.return_value = PrefectOpenLineageListener.FlowInfo(
             "dep-123",
             datetime.fromisoformat("2026-07-07T13:21:07.336123+00:00"),
-            "2026-07-05T08:05:01.001Z",
-            "2026-07-05T08:06:02.100Z",
-            "test_deploy",
-            "default",
-            "GitHub Stars",
         )
 
         await listener.collect_and_process_task_runs(
@@ -504,53 +468,10 @@ async def test_collect_and_process_task_runs_with_datasets(
     assert call_args.kwargs["input_datasets"][0]["uri"] == "postgres://localhost"
 
 
-@pytest.mark.asyncio
-async def test_collect_and_process_task_runs_with_job_dependencies(
-    listener, sample_task_event, mock_adapter
-):
-    """Test task processing with job dependencies."""
-    mock_adapter.create_and_emit_task_event = MagicMock()
-
-    task_run = MagicMock()
-    task_run.start_time = datetime.fromisoformat("2026-07-07T13:21:07.336123+00:00")
-
-    parent_runs = [
-        {"name": "parent_task", "namespace": "default", "id": "parent-run-id"}
-    ]
-
-    with (
-        patch.object(listener, "get_job_ns", return_value="default"),
-        patch.object(listener, "build_run_id", return_value="task-run-id"),
-        patch.object(listener, "get_artifacts_by_task_run", return_value=[]),
-        patch.object(listener, "get_parent_runs", return_value=parent_runs),
-        patch.object(listener, "get_deployment_and_flow_info") as mock_get_info,
-    ):
-        mock_prefect_client = listener.client
-        mock_prefect_client.read_task_run.return_value = task_run
-
-        mock_get_info.return_value = (
-            "dep-123",
-            datetime.fromisoformat("2026-07-07T13:21:07.336123+00:00"),
-            "2026-07-05T08:05:01.001Z",
-            "2026-07-05T08:06:02.100Z",
-            "test_deploy",
-            "default",
-            "GitHub Stars",
-        )
-
-        await listener.collect_and_process_task_runs(
-            "3.7.6", sample_task_event, "START"
-        )
-
-    call_args = mock_adapter.create_and_emit_task_event.call_args
-    assert len(call_args.kwargs["job_deps"]) == 1
-    assert call_args.kwargs["job_deps"][0]["name"] == "parent_task"
-
-
 # ========== Event state mapping tests ==========
 
 
 def test_listener_initialization(listener, mock_prefect_client, mock_adapter):
     """Test listener initialization with custom client and adapter."""
     assert listener.client == mock_prefect_client
-    assert listener.ol_adapter == mock_adapter
+    assert listener.adapter == mock_adapter

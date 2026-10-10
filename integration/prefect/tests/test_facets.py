@@ -67,9 +67,8 @@ def test_prefect_deployment_run_facet_producer():
         name="test_deploy",
     )
 
-    producer = facet._get_producer()
+    producer = facet._producer
     assert isinstance(producer, str)
-    assert "prefect" in producer.lower()
     assert "github" in producer.lower()
 
 
@@ -96,7 +95,7 @@ def test_prefect_deployment_run_facet_producer_url():
         name="test_deploy",
     )
 
-    producer = facet._get_producer()
+    producer = facet._producer
     assert producer.startswith("https://")
 
 

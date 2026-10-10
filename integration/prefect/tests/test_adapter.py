@@ -13,6 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from prefect_adapter.adapter import PRODUCER, PrefectOpenLineageAdapter
+from prefect_adapter.listener import PrefectOpenLineageListener
 from openlineage.client.run import RunEvent, RunState
 
 # ========== Fixtures ==========
@@ -51,15 +52,19 @@ def test_create_and_emit_flow_event_start(adapter, sample_datetime, sample_run_i
     """Test creation and emission of a flow START event."""
     adapter.create_and_emit_flow_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
         flow_name="test_flow",
         flow_namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
     )
 
     adapter.client.emit.assert_called_once()
@@ -77,15 +82,19 @@ def test_create_and_emit_flow_event_complete(adapter, sample_datetime, sample_ru
     """Test creation and emission of a flow COMPLETE event."""
     adapter.create_and_emit_flow_event(
         run_id=sample_run_id,
-        event_type="COMPLETE",
+        event_type=RunState.COMPLETE,
         event_time=sample_datetime,
         flow_name="test_flow",
         flow_namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -96,15 +105,19 @@ def test_create_and_emit_flow_event_failed(adapter, sample_datetime, sample_run_
     """Test creation and emission of a flow FAILED event."""
     adapter.create_and_emit_flow_event(
         run_id=sample_run_id,
-        event_type="FAILED",
+        event_type=RunState.FAIL,
         event_time=sample_datetime,
         flow_name="test_flow",
         flow_namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -117,15 +130,19 @@ def test_create_and_emit_flow_event_has_processing_engine_facet(
     """Test that flow event includes processingEngine facet."""
     adapter.create_and_emit_flow_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
         flow_name="test_flow",
         flow_namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -141,15 +158,19 @@ def test_create_and_emit_flow_event_has_deployment_facet(
     """Test that flow event includes prefectDeployment facet."""
     adapter.create_and_emit_flow_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
         flow_name="test_flow",
         flow_namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -165,15 +186,19 @@ def test_create_and_emit_flow_event_has_job_type_facet(
     """Test that flow event includes jobType facet."""
     adapter.create_and_emit_flow_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
         flow_name="test_flow",
         flow_namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
     )
 
     event = adapter.client.emit.call_args[0][0]
@@ -191,19 +216,23 @@ def test_create_and_emit_task_event_start(adapter, sample_datetime, sample_run_i
     """Test creation and emission of a task START event."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         job_deps=[],
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -221,18 +250,22 @@ def test_create_and_emit_task_event_complete(adapter, sample_datetime, sample_ru
     """Test creation and emission of a task COMPLETE event."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="COMPLETE",
+        event_type=RunState.COMPLETE,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -245,18 +278,22 @@ def test_create_and_emit_task_event_failed(adapter, sample_datetime, sample_run_
     """Test creation and emission of a task FAILED event."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="FAILED",
+        event_type=RunState.FAIL,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -271,18 +308,22 @@ def test_create_and_emit_task_event_has_nominal_time_facet(
     """Test that task event includes nominalTime facet."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -299,18 +340,22 @@ def test_create_and_emit_task_event_has_parent_run_facet(
     """Test that task event includes parentRun facet."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -318,7 +363,7 @@ def test_create_and_emit_task_event_has_parent_run_facet(
     event = adapter.client.emit.call_args[0][0]
 
     assert "parentRun" in event.run.facets
-    assert event.run.facets["parentRun"].run["run_id"] == "flow-run-456"
+    assert event.run.facets["parentRun"].run["runId"] == "flow-run-456"
     assert event.run.facets["parentRun"].job["name"] == "test_flow"
 
 
@@ -333,19 +378,23 @@ def test_create_and_emit_task_event_has_job_dependencies(
 
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         job_deps=job_deps,
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -362,19 +411,23 @@ def test_create_and_emit_task_event_no_job_dependencies(
     """Test that jobDependencies facet is not included when no dependencies exist."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         job_deps=[],
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -395,18 +448,22 @@ def test_create_and_emit_task_event_has_input_datasets(
 
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=input_datasets,
         output_datasets=[],
     )
@@ -426,18 +483,22 @@ def test_create_and_emit_task_event_has_output_datasets(
 
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=output_datasets,
     )
@@ -455,18 +516,22 @@ def test_create_and_emit_task_event_has_deployment_facet(
     """Test that task event includes prefectDeployment facet."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -484,18 +549,22 @@ def test_create_and_emit_task_event_has_processing_engine_facet(
     """Test that task event includes processingEngine facet."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
@@ -513,18 +582,22 @@ def test_create_and_emit_task_event_has_job_type_facet(
     """Test that task event includes jobType facet."""
     adapter.create_and_emit_task_event(
         run_id=sample_run_id,
-        event_type="START",
+        event_type=RunState.START,
         event_time=sample_datetime,
-        expectedevent_time=sample_datetime,
+        expected_start_time=sample_datetime,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
         task_name="test_task",
         namespace="default",
         prefect_version="3.7.6",
-        deployment_id="dep-123",
-        deployment_created="2026-07-05T08:05:01.001Z",
-        deployment_updated="2026-07-05T08:06:02.100Z",
-        deployment_name="test_deploy",
+        deployment=PrefectOpenLineageListener.DeploymentInfo(
+            id="dep-123",
+            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
+            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
+            name="test_deploy",
+            namespace="default",
+            flow_run=None,
+        ),
         input_datasets=[],
         output_datasets=[],
     )
