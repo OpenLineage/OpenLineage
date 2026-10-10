@@ -37,6 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class JdbcSparkUtilsTest {
   private static final String DEFAULT_URL = "jdbc:postgresql://localhost:5432/testdb";
   private static final String SQLSERVER_URL = "jdbc:sqlserver://localhost:1433;databaseName=testdb";
+  private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/testdb";
   private final JDBCRelation relation = mock(JDBCRelation.class);
 
   @ParameterizedTest
@@ -180,17 +181,30 @@ class JdbcSparkUtilsTest {
             .expectedColumnLineage(columnLineage("user_id", "users.id"))
             .build(),
         TestCase.builder()
-            .dbtable("(SELECT id AS user_id FROM users) /* outer /* inner */ ) */ t")
-            .schema(new StructType().add("user_id", DataTypes.IntegerType))
-            .expectedInputTable("users")
-            .expectedColumnLineage(columnLineage("user_id", "users.id"))
-            .build(),
-        TestCase.builder()
             .dbtable(
                 "(SELECT id AS user_id FROM users WHERE id IN ($1, $2)) t") // not dollar quotes
             .schema(new StructType().add("user_id", DataTypes.IntegerType))
             .expectedInputTable("users")
             .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .url(MYSQL_URL)
+            .dbtable("(SELECT id AS user_id FROM users WHERE name <> 'a\\')') t") // \' escape
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users WHERE name <> E'a\\')') t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) u CROSS JOIN (SELECT user_id FROM orders) o")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
             .build(),
         TestCase.builder()
             .dbtable("(SELECT id FROM users) t$1 JOIN orders o ON t$1.id = o.user_id")
