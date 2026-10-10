@@ -76,14 +76,11 @@ public class JdbcSparkUtils {
               Collections.emptyList()));
     }
 
-    String query =
-        dbtable
-            .filter(t -> !dbtableIsASubquery(t))
-            .map(fromClause -> "select * from " + fromClause)
-            .orElseGet(() -> queryStringFromJdbcOptions(relation.jdbcOptions()));
-
     String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
-    Optional<SqlMeta> sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), dialect);
+    Optional<SqlMeta> sqlMeta =
+        dbtable
+            .map(fromClause -> parseDbtable(fromClause, dialect))
+            .orElseGet(() -> parse(queryStringFromJdbcOptions(relation.jdbcOptions()), dialect));
 
     if (!sqlMeta.isPresent()) { // missing JNI library
       return sqlMeta;
@@ -104,9 +101,37 @@ public class JdbcSparkUtils {
     return sqlMeta;
   }
 
+  /**
+   * Parses {@code dbtable} as {@code select * from <dbtable>}. That has no column lineage, so a
+   * single subquery like {@code (SELECT ...) t} is parsed on its own instead: the text between its
+   * first {@code (} and last {@code )}. A dbtable that only starts with a subquery is told apart by
+   * the parser: that text then fails to parse, e.g. for {@code (SELECT ...) a JOIN (SELECT ...) b
+   * ON ...}, or reads fewer tables than the whole dbtable, e.g. for {@code (SELECT ...) a JOIN b ON
+   * ...}. Leaving quoting and comments to the parser keeps every dialect's lexical rules.
+   */
+  private static Optional<SqlMeta> parseDbtable(String dbtable, String dialect) {
+    Optional<SqlMeta> wholeTable = parse("select * from " + dbtable, dialect);
+    if (!wholeTable.isPresent() || !dbtableIsASubquery(dbtable)) {
+      return wholeTable;
+    }
+    List<DbTableMeta> tables = wholeTable.get().inTables();
+    Optional<SqlMeta> subquery =
+        parse(unwrapParentheses(dbtable), dialect)
+            .filter(meta -> meta.errors().isEmpty() && meta.inTables().containsAll(tables));
+    return subquery.isPresent() ? subquery : wholeTable;
+  }
+
+  private static Optional<SqlMeta> parse(String query, String dialect) {
+    return OpenLineageSql.parse(Collections.singletonList(query), dialect);
+  }
+
   public static String queryStringFromJdbcOptions(JDBCOptions options) {
-    String tableOrQuery = options.tableOrQuery();
-    return tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
+    return unwrapParentheses(options.tableOrQuery());
+  }
+
+  /** Returns the text between the first {@code (} and the last {@code )}. */
+  private static String unwrapParentheses(String sql) {
+    return sql.substring(0, sql.lastIndexOf(")")).replaceFirst("\\(", "");
   }
 
   private static boolean dbtableIsASubquery(String dbtable) {
