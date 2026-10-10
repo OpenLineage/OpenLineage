@@ -1,0 +1,411 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
+import ast
+import asyncio
+from dataclasses import dataclass
+from datetime import datetime
+import logging
+import os
+import re
+
+from . import adapter
+from openlineage.client.run import RunState
+from openlineage.client.uuid import generate_static_uuid
+
+from prefect.client.orchestration import get_client
+from prefect.events.clients import get_events_subscriber
+from prefect.events.filters import EventFilter, EventNameFilter
+from prefect.events.schemas.events import Event
+from prefect.exceptions import ObjectNotFound, PrefectHTTPStatusError
+
+
+JOB_NAMESPACE: str = os.environ.get("OPENLINEAGE_NAMESPACE", "default")
+TASK_NAME_TYPE: str = os.environ.get("TASK_NAME_TYPE", "base") # or "full"
+JOB_NAME_TYPE: str = os.environ.get("JOB_NAME_TYPE", "base") # for backwards compat
+FLOW_NAME_TYPE: str = os.environ.get("FLOW_NAME_TYPE", "flow") # or "flow-run"
+
+logger: logging.Logger = logging.getLogger(__name__)
+
+class PrefectOpenLineageListener:
+    def __init__(
+        self,
+        client = None,
+        ol_adapter = None,
+    ):
+        self.client = client or get_client()
+        self.ol_adapter = ol_adapter or adapter.PrefectOpenLineageAdapter()
+
+    def build_run_id(
+        self, execution_time: datetime, run_name: str, namespace: str
+    ) -> str:
+        """
+        Builds a deterministic UUID for the OpenLineage run based on the execution
+        time, run name, and namespace.
+        """
+
+        return str(
+            generate_static_uuid(
+                instant=execution_time,
+                data=f"{namespace}.{run_name}".encode(),
+            )
+        )
+
+    def get_base_name(self, run_name: str) -> str:
+        """
+        Removes auto-generated unique suffixes from a Prefect task run name.
+        """
+
+        # Strip mapped task indices or hex hashes at the end (e.g., -0, -a1b2)
+        clean_name = re.sub(r'-[a-f0-9]+$', '', run_name)
+        
+        return clean_name
+
+    @dataclass
+    class DeploymentInfo:
+        id: str
+        created: datetime
+        updated: datetime
+        name: str
+        namespace: str
+        flow_run: object
+
+    async def get_deployment_info(self, flow_run_id: str) -> DeploymentInfo:
+        flow_run = await self.client.read_flow_run(flow_run_id)
+
+        try:
+            deployment = await self.client.read_deployment(flow_run.deployment_id)
+            try:
+                ns = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
+            except KeyError:
+                ns = JOB_NAMESPACE
+                logger.info(
+                    "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
+                    OPENLINEAGE_NAMESPACE env variable."
+                )
+                if JOB_NAMESPACE == "default":
+                    logger.info(
+                        "OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'"
+                    )
+            return (
+                self.DeploymentInfo(
+                    id=str(deployment.id),
+                    created=deployment.created,
+                    updated=deployment.updated,
+                    name=deployment.name,
+                    namespace=ns,
+                    flow_run=flow_run
+                )
+            )
+
+        except (AttributeError, TypeError) as error:
+            logger.info("Deployment not found for flow run: %s", flow_run_id)
+            ns = JOB_NAMESPACE
+            logger.info(
+                "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
+                OPENLINEAGE_NAMESPACE env variable for the namespace."
+            )
+            if JOB_NAMESPACE == "default":
+                logger.info(
+                    "OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'"
+                )
+
+            return (self.DeploymentInfo(namespace=ns, flow_run=flow_run))
+
+    @dataclass
+    class FlowInfo:
+        start_time: datetime
+        name: str
+
+    async def get_flow_info(self, flow_run) -> FlowInfo:
+        flow_id = flow_run.flow_id
+        flow = await self.client.read_flow(flow_id)
+        if FLOW_NAME_TYPE == "flow":
+            flow_name = flow.name
+        elif FLOW_NAME_TYPE == "flow-run":
+            flow_name = flow_run.name
+
+        return (
+            self.FlowInfo(
+                start_time=flow_run.start_time,
+                name=flow_name,
+            )
+        )
+
+    async def get_prefect_version(self) -> str | None:
+        """Retrieves the Prefect version from the Prefect API."""
+
+        try:
+            response = await self.client._client.get("/admin/version")
+            return response.json()
+        except TypeError:
+            logger.info(
+                "Cannot get the Prefect version. Did you set the PREFECT_API_URL?"
+            )
+
+    async def get_flow_ns(self, flow_run_id: str) -> str:
+        """
+        Looks for OPENLINEAGE_NAMESPACE job env variable in a deployment.
+        """
+
+        flow_run = await self.client.read_flow_run(flow_run_id)
+        try:
+            deployment = await self.client.read_deployment(flow_run.deployment_id)
+            try:
+                ns = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
+            except KeyError:
+                ns = JOB_NAMESPACE
+                logger.info(
+                    "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
+                    OPENLINEAGE_NAMESPACE env variable for the namespace."
+                )
+                if JOB_NAMESPACE == "default":
+                    logger.info(
+                        "OPENLINEAGE_NAMESPACE env variable not found. Namespace will be 'default.'"
+                    )
+            return ns
+        except (AttributeError, TypeError):
+            logger.info(
+                "Deployment not found for flow run: %s", flow_run_id
+            )
+            logger.info(
+                "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
+                OPENLINEAGE_NAMESPACE env variable."
+            )
+            if JOB_NAMESPACE == "default":
+                logger.info(
+                    "OPENLINEAGE_NAMESPACE env variable not found. Namespace will be 'default.'"
+                )
+            return JOB_NAMESPACE
+
+    async def get_artifacts_by_task_run(self, run_id: str) -> list[dict]:
+        """Retrieve artifacts associated with a given task run ID."""
+
+        payload = {"artifacts": {"task_run_id": {"any_": [run_id]}}}
+        response = await self.client._client.post("/artifacts/filter", json=payload)
+        if response.status_code == 200:
+            dataset_info = []
+            artifacts = response.json()
+            for artifact in artifacts:
+                if artifact["description"] and "ol-dataset" in artifact["description"]:
+                    dataset_type = artifact["description"].split("_")[-1].lower()
+                    data_list = ast.literal_eval(artifact["data"])
+                    uri = data_list[0]["database_uri"]
+                    table = data_list[0]["table"]
+                    dataset_info.append(
+                        {"uri": uri, "table": table, "dataset_type": dataset_type}
+                    )
+            return dataset_info
+        logger.info("No datasets found for task run.")
+        return []
+
+    async def get_parent_runs(
+        self, payload: dict, prefect_task_run_id: str
+    ) -> list[dict]:
+        """Retrieves the Prefect parent task runs for a given task run."""
+
+        try:
+            parent_runs = []
+            task_parents = payload["task_run"]["task_inputs"]["__parents__"]
+            for parent in task_parents:
+                task_run_id: str | None = (
+                    parent["id"] if parent["input_type"] == "task_run" else None
+                )
+                if task_run_id:
+                    parent_run = await self.client.read_task_run(task_run_id)
+                    if JOB_NAME_TYPE == "base" or TASK_NAME_TYPE == "base":
+                        parent_name = self.get_base_name(parent_run.name)
+                    elif JOB_NAME_TYPE == "full" or TASK_NAME_TYPE == "full":
+                        parent_name = parent_run.name
+                    parent_namespace: dict = await self.get_flow_ns(parent_run.flow_run_id)
+                    parent_run_id = self.build_run_id(
+                        parent_run.start_time, parent_name, parent_namespace
+                    )
+                    parent_runs.append(
+                        {
+                            "name": parent_name,
+                            "namespace": parent_namespace,
+                            "id": parent_run_id,
+                        }
+                    )
+            return parent_runs
+        except KeyError:
+            logger.info("No task parents found for %s", prefect_task_run_id)
+            return []
+
+    async def collect_and_process_flow_runs(
+        self, prefect_version: str, event: Event, event_state: RunState
+    ) -> None:
+        """Retrieve the flow runs for a given event and emit OpenLineage events."""
+
+        for res in event.related:
+            if res["prefect.resource.role"] == "flow":
+                if FLOW_NAME_TYPE == "flow-run":
+                    flow_name = event.resource.name
+                elif FLOW_NAME_TYPE == "flow":
+                    flow_name = res["prefect.resource.name"]
+                prefect_flow_run_id = event.resource.id.split(".")[-1]
+                event_time: datetime = datetime.fromisoformat(
+                    event.resource["prefect.state-timestamp"]
+                )
+                deployment_info = await self.get_deployment_info(
+                    prefect_flow_run_id
+                )
+                flow_info = await self.get_flow_info(deployment_info.flow_run)
+                try:
+                    ol_flow_run_id: str = self.build_run_id(
+                        flow_info.start_time, flow_name, deployment_info.namespace
+                    )
+                except AttributeError:
+                    logger.info(
+                        "Failed to build OpenLineage run id for Flow %s. Flow %s event will not be emitted.",
+                        prefect_flow_run_id, event_state
+                    )
+                    continue
+
+                self.ol_adapter.create_and_emit_flow_event(
+                    run_id=ol_flow_run_id,
+                    event_type=event_state,
+                    event_time=event_time,
+                    flow_name=flow_name,
+                    flow_namespace=deployment_info.namespace,
+                    prefect_version=prefect_version,
+                    deployment=deployment_info,
+                )
+
+    async def collect_and_process_task_runs(
+        self, prefect_version: str, event: Event, event_state: RunState
+    ) -> None:
+        """Retrieves the task runs for a given event and emit OpenLineage events."""
+
+        event_time = event.occurred
+        expected_start_time = event.payload["task_run"]["expected_start_time"]
+        parsed_start_timestamp = event.payload["task_run"]["start_time"][:-1] + "+00:00"
+        start_time = datetime.fromisoformat(parsed_start_timestamp)
+        prefect_task_run_id = event.resource.id.split(".")[-1]
+        if JOB_NAME_TYPE == "base" or TASK_NAME_TYPE == "base":
+            task_name = self.get_base_name(event.resource.name)
+        elif JOB_NAME_TYPE == "full" or TASK_NAME_TYPE == "full":
+            task_name = event.resource.name
+        try:
+            for res in event.related:
+                if res["prefect.resource.id"].split(".")[1] == "flow-run":
+                    flow_run_id = res["prefect.resource.id"].split(".")[-1]
+            namespace = await self.get_flow_ns(flow_run_id)
+
+            # Skip task runs without a start time
+            try:
+                ol_task_run_id: str = self.build_run_id(
+                    start_time, task_name, namespace
+                )
+
+                # Get datasets from Prefect Artifacts
+                datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
+                input_datasets = [
+                    dataset for dataset in datasets if dataset["dataset_type"] == "input"
+                ]
+                output_datasets = [
+                    dataset for dataset in datasets if dataset["dataset_type"] == "output"
+                ]
+
+                # Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
+                parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
+
+                # Get flow run info for ParentRunFacet
+                ol_flow_run_id = ""
+                deployment_info = await self.get_deployment_info(
+                    flow_run_id
+                )
+                flow_info = await self.get_flow_info(deployment_info.flow_run)
+
+                try:
+                    ol_flow_run_id = self.build_run_id(
+                        flow_info.start_time, flow_info.name, deployment_info.namespace
+                    )
+                except AttributeError:
+                    logger.info(
+                        "Failed to build OpenLineage run id for Flow %s. ParentRunFacet will not be included.",
+                        flow_run_id,
+                    )
+
+                self.ol_adapter.create_and_emit_task_event(
+                    run_id=ol_task_run_id,
+                    event_type=event_state,
+                    event_time=event_time,
+                    expected_start_time=expected_start_time,
+                    flow_run_id=ol_flow_run_id,
+                    flow_name=flow_info.name,
+                    task_name=task_name,
+                    namespace=namespace,
+                    job_deps=parent_runs,
+                    prefect_version=prefect_version,
+                    deployment = deployment_info,
+                    input_datasets=input_datasets,
+                    output_datasets=output_datasets,
+                )
+
+            except:
+                logger.info(
+                    "No start time found for task run %s. An event will not be emitted.",
+                    prefect_task_run_id,
+                )
+    
+        except (PrefectHTTPStatusError, ObjectNotFound):
+            logger.info(
+                "No Prefect run found for %s, will not attempt to create OpenLineage event.",
+                prefect_task_run_id,
+            )
+
+    async def collect_and_process_runs(self) -> None:
+        """Collects and processes Prefect events."""
+
+        try:
+            os.environ.get("PREFECT_API_URL")
+        except TypeError:
+            logger.info("PREFECT_API_URL not set. Prefect events will not be received.")
+            return
+
+        filter_criteria = EventFilter(
+            event=EventNameFilter(
+                prefix=[
+                    "prefect.task-run.",
+                    "prefect.flow-run.",
+                    "prefect.asset.materialization.",
+                ]
+            )
+        )
+
+        async with get_events_subscriber(filter=filter_criteria) as subscriber, self.client:
+            prefect_version = await self.get_prefect_version()
+
+            async for event in subscriber:
+                entity_type = event.event.split(".")[1]
+                prefect_state = event.event.split(".")[-1]                
+
+                if prefect_state in ["Running", "Completed", "Failed"]:
+                    match prefect_state:
+                        case "Running":
+                            event_state = RunState.START
+                        case "Completed":
+                            event_state = RunState.COMPLETE
+                        case "Failed":
+                            event_state = RunState.FAIL
+
+                    if entity_type == "flow-run":
+                        await self.collect_and_process_flow_runs(
+                            prefect_version, event, event_state
+                        )
+
+                    if entity_type == "task-run":
+                        await self.collect_and_process_task_runs(
+                            prefect_version, event, event_state
+                        )
+
+
+async def main():
+    logger.info("Starting PrefectOpenLineageListener...")
+    await PrefectOpenLineageListener().collect_and_process_runs()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
