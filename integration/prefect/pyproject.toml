@@ -29,7 +29,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "mypy",
-    "openlineage-python",
     "pillow",
     "pre-commit",
     "pytest>=8.3",
