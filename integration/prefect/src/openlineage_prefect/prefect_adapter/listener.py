@@ -143,41 +143,6 @@ class PrefectOpenLineageListener:
                 "Cannot get the Prefect version. Did you set the PREFECT_API_URL?"
             )
 
-    async def get_flow_ns(self, flow_run_id: str) -> str:
-        """
-        Looks for OPENLINEAGE_NAMESPACE job env variable in a deployment.
-        """
-
-        flow_run = await self.client.read_flow_run(flow_run_id)
-        try:
-            deployment = await self.client.read_deployment(flow_run.deployment_id)
-            try:
-                ns = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
-            except KeyError:
-                ns = JOB_NAMESPACE
-                logger.info(
-                    "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
-                    OPENLINEAGE_NAMESPACE env variable for the namespace."
-                )
-                if JOB_NAMESPACE == "default":
-                    logger.info(
-                        "OPENLINEAGE_NAMESPACE env variable not found. Namespace will be 'default.'"
-                    )
-            return ns
-        except (AttributeError, TypeError):
-            logger.info(
-                "Deployment not found for flow run: %s", flow_run_id
-            )
-            logger.info(
-                "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
-                OPENLINEAGE_NAMESPACE env variable."
-            )
-            if JOB_NAMESPACE == "default":
-                logger.info(
-                    "OPENLINEAGE_NAMESPACE env variable not found. Namespace will be 'default.'"
-                )
-            return JOB_NAMESPACE
-
     async def get_artifacts_by_task_run(self, run_id: str) -> list[dict]:
         """Retrieve artifacts associated with a given task run ID."""
 
@@ -217,14 +182,14 @@ class PrefectOpenLineageListener:
                         parent_name = self.get_base_name(parent_run.name)
                     elif JOB_NAME_TYPE == "full" or TASK_NAME_TYPE == "full":
                         parent_name = parent_run.name
-                    parent_namespace: dict = await self.get_flow_ns(parent_run.flow_run_id)
+                    parent_deployment_info = await self.get_deployment_info(parent_run.flow_run_id)
                     parent_run_id = self.build_run_id(
-                        parent_run.start_time, parent_name, parent_namespace
+                        parent_run.start_time, parent_name, parent_deployment_info.namespace
                     )
                     parent_runs.append(
                         {
                             "name": parent_name,
-                            "namespace": parent_namespace,
+                            "namespace": parent_deployment_info.namespace,
                             "id": parent_run_id,
                         }
                     )
@@ -291,12 +256,12 @@ class PrefectOpenLineageListener:
             for res in event.related:
                 if res["prefect.resource.id"].split(".")[1] == "flow-run":
                     flow_run_id = res["prefect.resource.id"].split(".")[-1]
-            namespace = await self.get_flow_ns(flow_run_id)
+            related_deployment_info = await self.get_deployment_info(flow_run_id)
 
             # Skip task runs without a start time
             try:
                 ol_task_run_id: str = self.build_run_id(
-                    start_time, task_name, namespace
+                    start_time, task_name, related_deployment_info.namespace
                 )
 
                 # Get datasets from Prefect Artifacts
@@ -336,7 +301,7 @@ class PrefectOpenLineageListener:
                     flow_run_id=ol_flow_run_id,
                     flow_name=flow_info.name,
                     task_name=task_name,
-                    namespace=namespace,
+                    namespace=related_deployment_info.namespace,
                     job_deps=parent_runs,
                     prefect_version=prefect_version,
                     deployment = deployment_info,
