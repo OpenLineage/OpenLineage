@@ -127,9 +127,7 @@ class SparkPropertyFacetBuilderTest {
             new SparkConf()
                 .setAppName("SparkPropertyFacetBuilderTest")
                 .setMaster("local")
-                .set(
-                    "spark.openlineage.capturedProperties",
-                    "test.key.present,test.key.absent"));
+                .set("spark.openlineage.capturedProperties", "test.key.present,test.key.absent"));
 
     Consumer<OpenLineage.RunFacet> runFacetConsumer =
         facet -> {
@@ -138,7 +136,12 @@ class SparkPropertyFacetBuilderTest {
               .containsEntry("test.key.present", "test-value")
               .doesNotContainKey("test.key.absent");
         };
-    checkBuild(sparkContext, runFacetConsumer);
+    try {
+      checkBuild(sparkContext, runFacetConsumer);
+    } finally {
+      // getOrCreate may return a session shared with other tests in this JVM
+      session.conf().unset("test.key.present");
+    }
   }
 
   private static void checkBuild(
