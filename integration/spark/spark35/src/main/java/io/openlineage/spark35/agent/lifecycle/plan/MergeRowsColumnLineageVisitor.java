@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.Expression;
-import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.MergeRows;
 import org.apache.spark.sql.catalyst.plans.logical.MergeRows.Instruction;
@@ -64,8 +63,9 @@ public class MergeRowsColumnLineageVisitor implements ColumnLevelLineageVisitor 
                         ScalaConversionUtils.fromSeq(instruction.outputs()).stream()
                             .map(s -> ScalaConversionUtils.<Expression>fromSeq((Seq<Expression>) s))
                             .filter(l -> l.size() > position)
+                            // assignment values are not wrapped in aliases here, so casts,
+                            // not-null checks and computed values must be traversed as well
                             .map(l -> l.get(position))
-                            .filter(expr -> expr instanceof NamedExpression)
                             .forEach(
                                 expr ->
                                     ExpressionTraverser.of(
