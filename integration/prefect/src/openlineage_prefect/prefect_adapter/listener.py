@@ -110,7 +110,7 @@ class PrefectOpenLineageListener:
                     "OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'"
                 )
 
-            return (self.DeploymentInfo(namespace=ns, flow_run=flow_run))
+            return None
 
     @dataclass
     class FlowInfo:
