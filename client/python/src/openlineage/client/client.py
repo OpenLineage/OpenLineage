@@ -430,18 +430,26 @@ class OpenLineageClient:
         for env_key, env_value in env_vars:
             keys = env_key[len(cls.DYNAMIC_ENV_VARS_PREFIX) :].split("__")
 
-            # Parse value (try to parse as JSON, otherwise lowercase the value)
-            try:
-                env_value = json.loads(env_value)  # noqa: PLW2901
-            except json.JSONDecodeError as err:
-                if any(c in env_value for c in "{}[]"):
-                    log.warning(
-                        "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "
-                        "Treating as plain string. Error: %s",
-                        env_key,
-                        env_value,
-                        err,
-                    )
+            # Tag values (OPENLINEAGE__TAGS__<JOB|RUN>__<key>) must be strings.
+            # Skip JSON decoding for individual tag-leaf entries so that "true",
+            # "1.0", "4521", and "null" are preserved as their literal string
+            # forms rather than being decoded to bool/float/int/None.
+            # A whole-block override (OPENLINEAGE__TAGS='{...}') keeps the
+            # existing JSON path so the entire object can be decoded at once.
+            is_tags_leaf = len(keys) >= 3 and keys[0].upper() == "TAGS"  # noqa: PLR2004
+            if not is_tags_leaf:
+                # Parse value (try to parse as JSON, otherwise lowercase the value)
+                try:
+                    env_value = json.loads(env_value)  # noqa: PLW2901
+                except json.JSONDecodeError as err:
+                    if any(c in env_value for c in "{}[]"):
+                        log.warning(
+                            "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "
+                            "Treating as plain string. Error: %s",
+                            env_key,
+                            env_value,
+                            err,
+                        )
             cls._insert_into_config(config, keys, env_value)
 
         return config
