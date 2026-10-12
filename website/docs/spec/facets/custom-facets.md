@@ -539,3 +539,56 @@ And the `_schemaURL` of the OpenLineage event would now reflect the change as su
         "name": "user_1"
       },
 ```
+
+## Facets that carry a digest or a signature
+
+A custom facet sometimes carries a hash of something, or a signature over it, so
+that a consumer can tell whether the referenced object has changed. Three things
+have to be written down for that to work, and none of them are visible from the
+JSON Schema alone.
+
+### State the canonicalization, and what it covers
+
+Two producers can serialize the same object differently and still both be
+correct: key order, whitespace and number formatting are all free. If a digest
+is computed over the serialized bytes, those differences produce different
+digests, and a consumer comparing them concludes the object was altered when
+nothing was.
+
+So the facet's documentation has to name the canonicalization, for example
+[RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785)
+with SHA-256, and name exactly what it is applied to. "The facet", "the
+`covenantInEffect` sub-object" and "a payload defined elsewhere and referenced by
+digest" are three different contracts, and a consumer cannot tell them apart
+from the field name.
+
+Declaring the algorithm in the value, as `sha256:abc...`, or in a sibling field
+such as `digestAlgorithm`, lets the algorithm change later without a facet
+version bump.
+
+### Publish test vectors, including one that must be rejected
+
+A vector is an input together with the digest a conformant producer computes
+from it. Publish at least one.
+
+Also publish at least one input that a verifier must **reject**. Without it, a
+vector set cannot distinguish a verifier that checks the digest from one that
+returns success unconditionally, because both pass every positive case. A
+negative vector is the only part of the set that demonstrates the check runs at
+all.
+
+### State what the digest does not establish
+
+A digest is evidence about bytes, and it is read as evidence about behavior
+unless the documentation says otherwise.
+
+A hash computed after a run evidences what the output was. It does not evidence
+that the producer followed any particular rule while producing it. A hash of a
+policy evaluated before the run evidences which policy was in force. It does not
+evidence that the run stayed inside it. If the facet carries one and a consumer
+needs the other, the documentation should say so plainly, because the field name
+will not.
+
+This matters most when a facet is emitted by one party and read by another who
+has to decide something on the strength of it. Write the limits for a reader who
+will find the facet without this page in front of them.
