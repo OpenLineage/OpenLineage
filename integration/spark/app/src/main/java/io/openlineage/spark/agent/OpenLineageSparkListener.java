@@ -145,6 +145,15 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (checkIfDisabled()) {
       return;
     }
+    if (isSparkContextStopped()) {
+      // The Spark context was explicitly stopped (e.g. spark.stop() called while listener events
+      // are still being processed). Touching the stopped context can make YARN request new
+      // containers that crash, marking the whole application as failed. Skip the event instead.
+      log.warn(
+          "Spark context is stopped, skipping event of type {} to avoid accessing the stopped context",
+          event.getClass().getSimpleName());
+      return;
+    }
     if (event instanceof SparkListenerSQLExecutionStart) {
       initializeContextFactoryIfNotInitialized();
       log.debug("onOtherEvent called with event type SparkListenerSQLExecutionStart: [{}].", event);
@@ -153,6 +162,24 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       initializeContextFactoryIfNotInitialized();
       log.debug("onOtherEvent called with event type SparkListenerSQLExecutionEnd: [{}].", event);
       sparkSQLExecEnd((SparkListenerSQLExecutionEnd) event);
+    }
+  }
+
+  /**
+   * Returns true if the Spark context is known to be stopped. Returns false when the context
+   * state cannot be determined, preserving the existing behavior in that case.
+   */
+  private boolean isSparkContextStopped() {
+    try {
+      return asJavaOptional(
+              SparkSession.getDefaultSession()
+                  .map(sparkContextFromSession)
+                  .orElse(activeSparkContext))
+          .map(SparkContext::isStopped)
+          .orElse(false);
+    } catch (Exception e) {
+      log.debug("Unable to determine whether the Spark context is stopped", e);
+      return false;
     }
   }
 
