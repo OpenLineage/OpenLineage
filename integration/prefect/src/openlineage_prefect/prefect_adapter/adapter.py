@@ -88,7 +88,7 @@ class PrefectOpenLineageAdapter:
         namespace: str | None  = None,
         job_deps: list | None = None,
         prefect_version: str | None = None,
-        deployment: Any = None,
+        deployment: DeploymentInfo | None = None,
         input_datasets: list | None = None,
         output_datasets: list | None = None,
     ) -> RunEvent:
