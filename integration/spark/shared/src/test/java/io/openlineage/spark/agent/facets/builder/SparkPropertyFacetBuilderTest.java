@@ -29,6 +29,7 @@ import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.Test;
@@ -109,6 +110,33 @@ class SparkPropertyFacetBuilderTest {
           assertThat(((SparkPropertyFacet) facet).getProperties())
               .containsOnlyKeys("test.key.1")
               .containsEntry("test.key.1", "test");
+        };
+    checkBuild(sparkContext, runFacetConsumer);
+  }
+
+  @Test
+  void testCustomPropertiesBuildSkipsOnlyTheAbsentKey() {
+    // A key absent from the run-time config must not prevent the remaining keys from
+    // being captured, and must not make the result depend on Set iteration order.
+    SparkSession session = SparkSession.builder().master("local").getOrCreate();
+    session.conf().set("test.key.present", "test-value");
+
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf())
+        .thenReturn(
+            new SparkConf()
+                .setAppName("SparkPropertyFacetBuilderTest")
+                .setMaster("local")
+                .set(
+                    "spark.openlineage.capturedProperties",
+                    "test.key.present,test.key.absent"));
+
+    Consumer<OpenLineage.RunFacet> runFacetConsumer =
+        facet -> {
+          assertThat(facet).isInstanceOf(SparkPropertyFacet.class);
+          assertThat(((SparkPropertyFacet) facet).getProperties())
+              .containsEntry("test.key.present", "test-value")
+              .doesNotContainKey("test.key.absent");
         };
     checkBuild(sparkContext, runFacetConsumer);
   }
