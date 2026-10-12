@@ -7,12 +7,12 @@ use crate::lineage::*;
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
-    Function, FunctionArg, FunctionArgExpr, FunctionArguments, Ident, Join, JoinConstraint,
-    JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select, SelectItem,
-    SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
+    Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
+    JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
+    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
     UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
 };
-use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
+use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, MySqlDialect, SnowflakeDialect};
 
 pub trait Visit {
     fn visit(&self, context: &mut Context) -> Result<()>;
@@ -181,6 +181,7 @@ impl Visit for TableFactor {
                 }
                 Ok(())
             }
+            TableFactor::UnpivotExpr { expression, .. } => expression.visit(context),
             _ => Err(anyhow!(
                 "TableFactor other than table or subquery not implemented: {self}"
             )),
@@ -267,7 +268,8 @@ impl Visit for Expr {
             | Expr::IsNull(expr)
             | Expr::IsNotNull(expr)
             | Expr::IsUnknown(expr)
-            | Expr::IsNotUnknown(expr) => {
+            | Expr::IsNotUnknown(expr)
+            | Expr::IsJson { expr, .. } => {
                 expr.visit(context)?;
             }
             Expr::AnyOp {
@@ -304,22 +306,28 @@ impl Visit for Expr {
                 negated: _,
                 expr,
                 pattern,
+                escape_char,
                 ..
             }
             | Expr::ILike {
                 negated: _,
                 expr,
                 pattern,
+                escape_char,
                 ..
             }
             | Expr::SimilarTo {
                 negated: _,
                 expr,
                 pattern,
+                escape_char,
                 ..
             } => {
                 expr.visit(context)?;
                 pattern.visit(context)?;
+                if let Some(escape) = escape_char {
+                    escape.visit(context)?;
+                }
             }
             Expr::Cast { expr, .. } => {
                 expr.visit(context)?;
@@ -455,6 +463,11 @@ impl Visit for Function {
             FunctionArguments::List(arguments) => {
                 for arg in &arguments.args {
                     arg.visit(context)?;
+                }
+                for clause in &arguments.clauses {
+                    if let FunctionArgumentClause::Where(predicate) = clause {
+                        predicate.visit(context)?;
+                    }
                 }
             }
         }
@@ -645,7 +658,22 @@ impl Visit for Select {
         }
 
         if let Some(into) = &self.into {
-            context.add_output(convert_to_idents(&into.name))
+            // MySQL SELECT INTO assigns variables rather than creating tables.
+            if !context.dialect().as_base().is::<MySqlDialect>() {
+                for target in &into.targets {
+                    match target {
+                        Expr::Identifier(ident)
+                            if ident.quote_style.is_none() && ident.value.starts_with('@') => {}
+                        Expr::Identifier(ident) => context.add_output(vec![ident.clone()]),
+                        Expr::CompoundIdentifier(idents) => context.add_output(idents.clone()),
+                        Expr::Value(ValueWithSpan {
+                            value: Value::Placeholder(_),
+                            ..
+                        }) => {}
+                        _ => return Err(anyhow!("SELECT INTO target not implemented: {target}")),
+                    }
+                }
+            }
         }
 
         context.set_table_context(None);
@@ -689,6 +717,10 @@ impl Visit for SetExpr {
 
 impl Visit for Query {
     fn visit(&self, context: &mut Context) -> Result<()> {
+        if !self.pipe_operators.is_empty() {
+            return Err(anyhow!("SQL pipe operators are not supported"));
+        }
+
         context.push_frame();
         if self.with.is_some() {
             context.unset_frame_to_main_body();

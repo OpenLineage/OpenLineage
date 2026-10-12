@@ -28,6 +28,7 @@ import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpConfig.Compression;
+import io.openlineage.client.transports.HttpProxyConfig;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.TransformTransport;
@@ -72,6 +73,41 @@ class ConfigTest {
   void testLoadConfigFromYaml() throws URISyntaxException {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/http.yaml"));
     assertThat(client.transport).isInstanceOf(HttpTransport.class);
+  }
+
+  @Test
+  void testExplicitProxyConfigDeserializedFromYaml() {
+    // Verifies that the `proxy:` block in a YAML config is fully deserialized into
+    // HttpConfig.proxyConfig and that all three fields (host, port, nonProxyHosts) survive
+    // the Jackson round-trip through OpenLineageClientUtils.loadOpenLineageConfigYaml.
+    OpenLineageConfig config =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new TestConfigPathProvider("config/http-proxy.yaml"),
+            new com.fasterxml.jackson.core.type.TypeReference<OpenLineageConfig>() {});
+
+    assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
+    HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
+    HttpProxyConfig proxy = httpConfig.getProxyConfig();
+
+    assertThat(proxy).isNotNull();
+    assertThat(proxy.getHost()).isEqualTo("squid.internal");
+    assertThat(proxy.getPort()).isEqualTo(3128);
+    assertThat(proxy.getNonProxyHosts()).isEqualTo("localhost,*.internal");
+  }
+
+  @Test
+  void testMissingProxyConfigDeserializedFromYaml() {
+    // When no `proxy:` block is present the field must be null so that the transport
+    // falls back to the SystemDefaultRoutePlanner (JVM system-property path).
+    OpenLineageConfig config =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new TestConfigPathProvider("config/http-proxy-system.yaml"),
+            new com.fasterxml.jackson.core.type.TypeReference<OpenLineageConfig>() {});
+
+    assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
+    HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
+
+    assertThat(httpConfig.getProxyConfig()).isNull();
   }
 
   @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})

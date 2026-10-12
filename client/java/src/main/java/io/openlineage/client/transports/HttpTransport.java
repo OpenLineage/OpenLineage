@@ -45,12 +45,15 @@ import org.apache.hc.client5.http.impl.io.DefaultHttpClientConnectionOperator;
 import org.apache.hc.client5.http.impl.io.ManagedHttpClientConnectionFactory;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.impl.routing.DefaultProxyRoutePlanner;
+import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
 import org.apache.hc.client5.http.io.DetachedSocketFactory;
 import org.apache.hc.client5.http.io.HttpClientConnectionOperator;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
@@ -130,11 +133,28 @@ public final class HttpTransport extends Transport {
             .setResponseTimeout(timeout)
             .build();
 
-    return HttpClientBuilder.create()
-        .setDefaultRequestConfig(requestConfig)
-        .setConnectionManager(connectionManagerBuilder.build())
-        .setDefaultRequestConfig(requestConfig)
-        .build();
+    HttpClientBuilder builder =
+        HttpClientBuilder.create()
+            .setDefaultRequestConfig(requestConfig)
+            .setConnectionManager(connectionManagerBuilder.build());
+
+    // Proxy routing: explicit config takes precedence over JVM system properties
+    // (-Dhttps.proxyHost / -Dhttps.proxyPort / -Dhttp.proxyHost / -Dhttp.proxyPort).
+    HttpProxyConfig proxyConfig = httpConfig.getProxyConfig();
+    if (proxyConfig != null && proxyConfig.getHost() != null) {
+      int port = proxyConfig.getPort() != null ? proxyConfig.getPort() : 8080;
+      HttpHost proxyHost = new HttpHost(proxyConfig.getHost(), port);
+      log.info("HTTP transport using explicit proxy {}:{}", proxyConfig.getHost(), port);
+      // Build a route planner that enforces the nonProxyHosts bypass list (if set).
+      // Hosts matching any comma-separated pattern route directly; others go through the proxy.
+      String nonProxyHosts = proxyConfig.getNonProxyHosts();
+      builder.setRoutePlanner(new NonProxyHostsAwareRoutePlanner(proxyHost, nonProxyHosts));
+    } else {
+      // Honour -Dhttps.proxyHost / -Dhttp.proxyHost etc. set on the JVM.
+      builder.setRoutePlanner(new SystemDefaultRoutePlanner(null));
+    }
+
+    return builder.build();
   }
 
   private static boolean isUnixSocket(HttpConfig httpConfig) {
@@ -460,6 +480,48 @@ public final class HttpTransport extends Transport {
         return new HttpTransport(httpClient, httpConfig);
       }
       return new HttpTransport(httpConfig);
+    }
+  }
+
+  /**
+   * A {@link DefaultProxyRoutePlanner} that skips the proxy for hosts matching a comma-separated
+   * bypass list (e.g. {@code "localhost,*.internal"}).
+   *
+   * <p>Each pattern in the list is matched as a glob: a leading {@code *} matches any prefix. Host
+   * comparison is case-insensitive. When {@code nonProxyHosts} is {@code null} or empty every
+   * request is routed through the proxy.
+   */
+  private static final class NonProxyHostsAwareRoutePlanner extends DefaultProxyRoutePlanner {
+    private final String[] nonProxyPatterns;
+
+    NonProxyHostsAwareRoutePlanner(HttpHost proxy, @Nullable String nonProxyHosts) {
+      super(proxy);
+      if (nonProxyHosts != null && !nonProxyHosts.trim().isEmpty()) {
+        String[] parts = nonProxyHosts.split(",");
+        this.nonProxyPatterns = new String[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+          this.nonProxyPatterns[i] = parts[i].trim().toLowerCase(java.util.Locale.ROOT);
+        }
+      } else {
+        this.nonProxyPatterns = new String[0];
+      }
+    }
+
+    @Override
+    protected HttpHost determineProxy(
+        HttpHost target, org.apache.hc.core5.http.protocol.HttpContext context)
+        throws org.apache.hc.core5.http.HttpException {
+      String host = target.getHostName().toLowerCase(java.util.Locale.ROOT);
+      for (String pattern : nonProxyPatterns) {
+        if (pattern.startsWith("*")) {
+          if (host.endsWith(pattern.substring(1))) {
+            return null; // direct connection
+          }
+        } else if (host.equals(pattern)) {
+          return null; // direct connection
+        }
+      }
+      return super.determineProxy(target, context);
     }
   }
 }

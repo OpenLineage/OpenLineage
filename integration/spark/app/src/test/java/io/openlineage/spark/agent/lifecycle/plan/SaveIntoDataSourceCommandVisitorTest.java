@@ -5,15 +5,18 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE;
 import static io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -24,14 +27,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider;
+import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.sources.CreatableRelationProvider;
 import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.types.DataTypes;
@@ -40,7 +46,11 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
+import scala.PartialFunction;
 import scala.collection.immutable.Map;
 
 class SaveIntoDataSourceCommandVisitorTest {
@@ -173,6 +183,83 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertEquals("string", result.get(0).getFacets().getSchema().getFields().get(1).getType());
     assertEquals("postgres://127.0.0.1:5432", result.get(0).getNamespace());
     assertEquals("some_db.public.test_table", result.get(0).getName());
+  }
+
+  @ParameterizedTest
+  @MethodSource("lifecycleStateChangeBySaveMode")
+  void testJdbcLifecycleStateChange(SaveMode mode, LifecycleStateChange expected) {
+    java.util.Map<String, String> options = new java.util.HashMap<>();
+    options.put("dbtable", "public.test_table");
+    options.put("url", "postgres://127.0.0.1/some_db");
+    when(command.options()).thenReturn(ScalaConversionUtils.fromJavaMap(options));
+    when(command.schema()).thenReturn(schema);
+    when(command.mode()).thenReturn(mode);
+    when(command.dataSource()).thenReturn(mock(JdbcRelationProvider.class));
+
+    assertLifecycleStateChange(visitor.apply(event, command), expected);
+  }
+
+  @ParameterizedTest
+  @MethodSource("lifecycleStateChangeBySaveMode")
+  void testDeltaPathLifecycleStateChange(SaveMode mode, LifecycleStateChange expected) {
+    when(command.schema()).thenReturn(schema);
+    when(command.mode()).thenReturn(mode);
+    when(command.dataSource()).thenReturn(mock(DeltaDataSource.class));
+
+    assertLifecycleStateChange(visitor.apply(event, command), expected);
+  }
+
+  @ParameterizedTest
+  @MethodSource("lifecycleStateChangeBySaveMode")
+  @SuppressWarnings("unchecked")
+  void testRelationProviderLifecycleStateChange(SaveMode mode, LifecycleStateChange expected) {
+    CreatableRelationProvider provider =
+        mock(
+            CreatableRelationProvider.class,
+            withSettings().extraInterfaces(RelationProvider.class));
+    when(((RelationProvider) provider).createRelation(sqlContext, options))
+        .thenReturn(mock(BaseRelation.class));
+    when(command.schema()).thenReturn(schema);
+    when(command.mode()).thenReturn(mode);
+    when(command.dataSource()).thenReturn(provider);
+
+    OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+    OpenLineage.OutputDataset relationDataset =
+        openLineage
+            .newOutputDatasetBuilder()
+            .namespace("namespace")
+            .name("name")
+            .facets(openLineage.newDatasetFacetsBuilder().build())
+            .build();
+    PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> relationVisitor =
+        mock(PartialFunction.class);
+    when(relationVisitor.isDefinedAt(any())).thenReturn(true);
+    when(relationVisitor.apply(any())).thenReturn(Collections.singletonList(relationDataset));
+    when(context.getOutputDatasetQueryPlanVisitors())
+        .thenReturn(Collections.singletonList(relationVisitor));
+    when(context.getOutputDatasetBuilders()).thenReturn(Collections.emptyList());
+
+    assertLifecycleStateChange(visitor.apply(event, command), expected);
+  }
+
+  private static Stream<Arguments> lifecycleStateChangeBySaveMode() {
+    return Stream.of(
+        Arguments.of(SaveMode.Overwrite, OVERWRITE),
+        Arguments.of(SaveMode.ErrorIfExists, CREATE),
+        Arguments.of(SaveMode.Append, null),
+        Arguments.of(SaveMode.Ignore, null));
+  }
+
+  private static void assertLifecycleStateChange(
+      List<OpenLineage.OutputDataset> datasets, LifecycleStateChange expected) {
+    assertThat(datasets).hasSize(1);
+    OpenLineage.LifecycleStateChangeDatasetFacet facet =
+        datasets.get(0).getFacets().getLifecycleStateChange();
+    if (expected == null) {
+      assertThat(facet).isNull();
+    } else {
+      assertThat(facet.getLifecycleStateChange()).isEqualTo(expected);
+    }
   }
 
   @Test

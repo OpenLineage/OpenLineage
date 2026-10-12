@@ -56,6 +56,11 @@ public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig
   @Setter
   private @Nullable HttpSslContextConfig sslContextConfig;
 
+  @JsonProperty("proxy")
+  @Getter
+  @Setter
+  private @Nullable HttpProxyConfig proxyConfig;
+
   @Override
   public HttpConfig mergeWithNonNull(HttpConfig other) {
     return new HttpConfig(
@@ -66,6 +71,7 @@ public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig
         mergePropertyWith(urlParams, other.urlParams),
         mergePropertyWith(headers, other.headers),
         mergePropertyWith(compression, other.compression),
-        mergePropertyWith(sslContextConfig, other.sslContextConfig));
+        mergePropertyWith(sslContextConfig, other.sslContextConfig),
+        mergePropertyWith(proxyConfig, other.proxyConfig));
   }
 }

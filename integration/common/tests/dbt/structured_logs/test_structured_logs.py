@@ -2393,6 +2393,20 @@ def test_command_completed_no_longer_carries_exposures():
     assert "dbt_exposures" not in failed_event.run.facets
 
 
+@pytest.mark.parametrize(
+    ("event_name", "node_status"),
+    [("NodeStart", "started"), ("NodeFinished", "no-op"), ("NodeFinished", "skipped")],
+)
+def test_exposure_lifecycle_logs_do_not_emit_job_events(event_name, node_status):
+    processor = node_finished_processor()
+    event = node_finished_event(
+        unique_id="exposure.jaffle_shop.dash", resource_type="exposure", node_status=node_status
+    )
+    event["info"]["name"] = event_name
+
+    assert processor._parse_structured_log_event(json.dumps(event)) is None
+
+
 def test_node_finished_attaches_exposures_on_success_only():
     """The dbt_exposures dataset facet is attached to a model's output dataset when the
     model builds successfully (COMPLETE), and omitted when it fails (FAIL)."""
@@ -2406,9 +2420,16 @@ def test_node_finished_attaches_exposures_on_success_only():
         },
     }
 
-    success_event = processor.parse_node_finished_event(
-        node_finished_event(
-            unique_id="model.jaffle_shop.orders", resource_type="model", node_status="success"
+    exposure_event = node_finished_event(
+        unique_id="exposure.jaffle_shop.dash", resource_type="exposure", node_status="no-op"
+    )
+    assert processor._parse_structured_log_event(json.dumps(exposure_event)) is None
+
+    success_event = processor._parse_structured_log_event(
+        json.dumps(
+            node_finished_event(
+                unique_id="model.jaffle_shop.orders", resource_type="model", node_status="success"
+            )
         )
     )
     success_output_facets = ol_event_to_dict(success_event)["outputs"][0]["facets"]
