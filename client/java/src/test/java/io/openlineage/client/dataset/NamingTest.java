@@ -5,12 +5,25 @@
 
 package io.openlineage.client.dataset;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
+import io.openlineage.client.naming.NameConfig;
+import io.openlineage.client.naming.NameEscaping;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class NamingTest {
+
+  @AfterEach
+  void resetEscapingOverride() {
+    // Prevent any NameConfig-based escaping test from leaking global state into
+    // subsequent tests. The escapeSegment(String, NameConfig) overload does NOT
+    // touch the global override, so this is only a precaution — but it keeps the
+    // suite safe if a future test ever calls NameEscaping.configure() directly.
+    NameEscaping.configure((Boolean) null);
+  }
 
   @Test
   void testBigQueryNaming() {
@@ -97,6 +110,34 @@ class NamingTest {
             .build();
     assertEquals("cassandra://localhost:9042", naming.getNamespace());
     assertEquals("my_keyspace.my_table", naming.getName());
+  }
+
+  @Test
+  void testHiveNaming() {
+    Naming.Hive naming =
+        Naming.Hive.builder()
+            .host("localhost")
+            .port("10000")
+            .database("my_db")
+            .table("my_table")
+            .build();
+    assertEquals("hive://localhost:10000", naming.getNamespace());
+    assertEquals("my_db.my_table", naming.getName());
+  }
+
+  @Test
+  void testMssqlNaming() {
+    Naming.MSSQL naming =
+        Naming.MSSQL
+            .builder()
+            .host("localhost")
+            .port("1433")
+            .database("my_db")
+            .schema("dbo")
+            .table("my_table")
+            .build();
+    assertEquals("mssql://localhost:1433", naming.getNamespace());
+    assertEquals("my_db.dbo.my_table", naming.getName());
   }
 
   @Test
@@ -327,5 +368,78 @@ class NamingTest {
     assertThrowsExactly(
         IllegalArgumentException.class,
         () -> Naming.Athena.builder().catalog("some-catalog").build());
+  }
+
+  // -----------------------------------------------------------------------
+  // Escaping tests via Naming helpers (env-var default: escaping enabled)
+  // Full env-var toggle tests live in NameEscapingTest.
+  // -----------------------------------------------------------------------
+
+  @Test
+  void oracleNamingWithPlainSegmentsProducesExpectedName() {
+    Naming.Oracle naming =
+        Naming.Oracle.builder()
+            .host("localhost")
+            .port("1521")
+            .serviceName("ORCLCDB")
+            .schema("myschema")
+            .table("my_table")
+            .build();
+    // No dots in any segment — output is the same regardless of escaping.
+    assertThat(naming.getName()).isEqualTo("ORCLCDB.myschema.my_table");
+  }
+
+  @Test
+  void oracleNamingWithConfiguredEscaping() {
+    NameConfig cfg = new NameConfig();
+    cfg.setEscaping(true);
+
+    Naming.Oracle naming =
+        Naming.Oracle.builder()
+            .host("localhost")
+            .port("1521")
+            .serviceName("mydb.example.com")
+            .schema("myschema")
+            .table("my_table")
+            .nameConfig(cfg)
+            .build();
+
+    assertThat(naming.getName()).isEqualTo("mydb\\.example\\.com.myschema.my_table");
+  }
+
+  @Test
+  void hiveNamingWithConfiguredEscaping() {
+    NameConfig cfg = new NameConfig();
+    cfg.setEscaping(true);
+
+    Naming.Hive naming =
+        Naming.Hive.builder()
+            .host("localhost")
+            .port("10000")
+            .database("my.db")
+            .table("my_table")
+            .nameConfig(cfg)
+            .build();
+
+    assertThat(naming.getName()).isEqualTo("my\\.db.my_table");
+  }
+
+  @Test
+  void mssqlNamingWithConfiguredEscaping() {
+    NameConfig cfg = new NameConfig();
+    cfg.setEscaping(true);
+
+    Naming.MSSQL naming =
+        Naming.MSSQL
+            .builder()
+            .host("localhost")
+            .port("1433")
+            .database("my.db")
+            .schema("dbo")
+            .table("my_table")
+            .nameConfig(cfg)
+            .build();
+
+    assertThat(naming.getName()).isEqualTo("my\\.db.dbo.my_table");
   }
 }
