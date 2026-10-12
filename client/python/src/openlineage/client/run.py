@@ -100,7 +100,7 @@ class Run(RedactMixin):
 
 @attr.s
 class RunEvent(RedactMixin):
-    eventType: RunState = attr.ib(validator=attr.validators.in_(RunState))  # noqa:  N815
+    eventType: RunState = attr.ib(validator=attr.validators.in_(list(RunState)))  # noqa:  N815
     eventTime: str = attr.ib()  # noqa:  N815
     run: Run = attr.ib()
     job: Job = attr.ib()

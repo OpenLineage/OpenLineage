@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.53.0...HEAD)
 
+### Added
+
+* **Python: Detect PR number in Bitbucket Pipelines and Azure Pipelines** [`#5041`](https://github.com/OpenLineage/OpenLineage/pull/5041) [@himakolavennu](https://github.com/himakolavennu)
+  *Fills `pullRequestNumber` in the sourceCodeLocation facet from `BITBUCKET_PR_ID` and Azure's `SYSTEM_PULLREQUEST_PULLREQUESTNUMBER` / `SYSTEM_PULLREQUEST_PULLREQUESTID`.*
+
 ## [1.53.0](https://github.com/OpenLineage/OpenLineage/compare/1.52.0...1.53.0)
 
 ### Added

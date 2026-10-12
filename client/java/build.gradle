@@ -17,7 +17,7 @@ plugins {
     id "org.openapi.generator" version "6.6.0"
     id "com.gradleup.shadow" version "9.6.1"
     id "pmd"
-    id "io.freefair.lombok" version "9.5.0"
+    id "io.freefair.lombok" version "9.7.0"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
@@ -56,8 +56,8 @@ ext {
     assertjVersion = '3.27.7'
     jacksonVersion = "2.18.9"
     junit5Version = '5.13.4'
-    lombokVersion = '1.18.46'
-    mockitoVersion = '5.23.0'
+    lombokVersion = '1.18.48'
+    mockitoVersion = '5.24.0'
     micrometerVersion = '1.17.1'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     guavaVersion = '33.7.1-jre'
