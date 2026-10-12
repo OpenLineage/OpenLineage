@@ -42,7 +42,9 @@ import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
+import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.types.IntegerType$;
@@ -180,6 +182,54 @@ class ColumnLevelLineageIcebergTest {
     assertThat(local.exists(new Path(T1_EXPECTED_NAME))).isTrue();
     assertThat(local.listStatus(new Path(T1_EXPECTED_NAME)).length).isGreaterThan(0);
     assertThat(local.listStatus(new Path(T2_EXPECTED_NAME)).length).isGreaterThan(0);
+  }
+
+  @Test
+  @SneakyThrows
+  void testCreateTableAsSelectWithOperatorsBelowQueryRoot() {
+    spark.sql(CREATE_T1_FROM_TEMP);
+    spark.sql("CREATE TABLE local.db.t USING iceberg AS " + QUERY_WITH_OPERATORS_BELOW_ROOT);
+
+    assertColumnsDependOnT1ThroughAggregate(CreateTableAsSelect.class);
+  }
+
+  @Test
+  @SneakyThrows
+  void testReplaceTableAsSelectWithOperatorsBelowQueryRoot() {
+    spark.sql(CREATE_T1_FROM_TEMP);
+    spark.sql("CREATE TABLE local.db.t USING iceberg AS SELECT * FROM temp");
+    spark.sql(
+        "CREATE OR REPLACE TABLE local.db.t USING iceberg AS " + QUERY_WITH_OPERATORS_BELOW_ROOT);
+
+    assertColumnsDependOnT1ThroughAggregate(ReplaceTableAsSelect.class);
+  }
+
+  /**
+   * The filter on the aggregated value keeps the optimizer from collapsing the root Project into
+   * the Aggregate, so column {@code b} depends on {@code t1.b} only through an operator below the
+   * query root: Project -> Filter -> Aggregate -> t1.
+   */
+  private static final String QUERY_WITH_OPERATORS_BELOW_ROOT =
+      "SELECT a, s * 2 AS b FROM "
+          + "(SELECT a, sum(b) AS s FROM local.db.t1 GROUP BY a) "
+          + "WHERE s > 0";
+
+  private void assertColumnsDependOnT1ThroughAggregate(Class<? extends LogicalPlan> commandClass) {
+    // Spark 3.5+ runs the actual write as a nested AppendData/OverwriteByExpression execution.
+    // Use the outer CTAS/RTAS execution, whose plan does not expose the query as a child.
+    List<LogicalPlan> plans = LastQueryExecutionSparkEventListener.getExecutedLogicalPlans();
+    LogicalPlan plan =
+        plans.stream()
+            .filter(commandClass::isInstance)
+            .reduce((first, second) -> second)
+            .orElseThrow(() -> new AssertionError("No " + commandClass.getSimpleName() + " plan"));
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
+            .get();
+
+    assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
   }
 
   @Test
