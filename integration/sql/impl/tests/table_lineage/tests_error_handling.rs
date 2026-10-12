@@ -59,3 +59,26 @@ fn test_failing_statement_tokenizer_failes() {
         },],
     )
 }
+
+#[test]
+fn test_unsupported_pipe_queries() {
+    for dialect in ["databricks", "bigquery", "generic"] {
+        for sql in [
+            "FROM orders |> JOIN customers ON orders.customer_id = customers.id |> SELECT orders.id",
+            "SELECT * FROM (FROM orders |> SELECT id) AS piped",
+            "CREATE TABLE result AS FROM orders |> SELECT id",
+        ] {
+            let error = test_sql_dialect(sql, dialect).unwrap_err();
+            assert_eq!(error.to_string(), "SQL pipe operators are not supported");
+        }
+    }
+}
+
+#[test]
+fn test_unsupported_select_into_target() {
+    let error = test_sql("SELECT a INTO (1 + 2) FROM source").unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "SELECT INTO target not implemented: (1 + 2)"
+    );
+}

@@ -216,6 +216,150 @@ fn select_into() {
 }
 
 #[test]
+fn select_into_qualified_quoted_table() {
+    for (sql, dialect, target) in [
+        (
+            "SELECT * INTO \"my_schema\".\"my_table\" FROM source",
+            "postgres",
+            "\"my_schema\".\"my_table\"",
+        ),
+        (
+            "SELECT * INTO [my_db].[my_schema].[my_table] FROM source",
+            "mssql",
+            "[my_db].[my_schema].[my_table]",
+        ),
+        (
+            "SELECT * INTO \"@my_table\" FROM source",
+            "postgres",
+            "\"@my_table\"",
+        ),
+    ] {
+        let output = test_sql_dialect(sql, dialect).unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["source"]),
+                out_tables: tables(vec![target]),
+            },
+        );
+    }
+}
+
+#[test]
+fn select_into_multiple_targets() {
+    let output = test_sql_dialect(
+        "SELECT a, b INTO schema0.table0, table1 FROM source",
+        "generic",
+    )
+    .unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["source"]),
+            out_tables: tables(vec!["table1", "schema0.table0"]),
+        },
+    );
+}
+
+#[test]
+fn select_into_variables() {
+    for (sql, dialect) in [
+        ("SELECT a, b INTO @x, @y FROM source", "mysql"),
+        ("SELECT a, b INTO @x, @y FROM source", "generic"),
+        ("SELECT a, b INTO x, y FROM source", "mysql"),
+        ("SELECT a, b INTO :x, :y FROM source", "generic"),
+    ] {
+        let output = test_sql_dialect(sql, dialect).unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["source"]),
+                out_tables: vec![],
+            },
+        );
+    }
+}
+
+#[test]
+fn select_inline_aggregate_filter_subquery() {
+    let output =
+        test_sql("SELECT COUNT(* WHERE id IN (SELECT id FROM paid_orders)) FROM orders").unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["orders", "paid_orders"]),
+            out_tables: vec![],
+        },
+    );
+}
+
+#[test]
+fn select_like_escape_subquery() {
+    for operator in ["LIKE", "ILIKE", "SIMILAR TO"] {
+        let output = test_sql(&format!(
+            "SELECT 'a' {operator} 'a' ESCAPE (SELECT escape_char FROM escape_rules)"
+        ))
+        .unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["escape_rules"]),
+                out_tables: vec![],
+            },
+        );
+    }
+}
+
+#[test]
+fn select_is_json_subquery() {
+    let output = test_sql("SELECT (SELECT payload FROM docs) IS JSON AS valid").unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["docs"]),
+            out_tables: vec![],
+        },
+    );
+}
+
+#[test]
+fn select_redshift_unpivot_expression() {
+    for sql in [
+        "SELECT * FROM orders o, UNPIVOT o.payload AS val AT attr",
+        "SELECT * FROM UNPIVOT (SELECT payload FROM orders) AS val",
+    ] {
+        let output = test_sql_dialect(sql, "redshift").unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["orders"]),
+                out_tables: vec![],
+            },
+        );
+    }
+}
+
+#[test]
+fn select_databricks_from_first() {
+    let output = test_sql_dialect("FROM orders SELECT id", "databricks").unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["orders"]),
+            out_tables: vec![],
+        },
+    );
+}
+
+#[test]
 fn select_redshift() {
     assert_eq!(
         test_sql_dialect("SELECT [col1] FROM [test_schema].[test_table]", "redshift")

@@ -135,25 +135,26 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
       return Collections.emptyList();
     }
 
-    Catalog icebergCatalog = catalog.get();
-    if (icebergCatalog instanceof CachingCatalog) {
+    Catalog rootCatalog = catalog.get();
+    // SparkCatalog wraps the Iceberg catalog in a CachingCatalog only when caching is enabled
+    if (rootCatalog instanceof CachingCatalog) {
       // get root catalog of a caching catalog
-      Field catalogField = FieldUtils.getField(icebergCatalog.getClass(), "catalog", true);
+      Field catalogField = FieldUtils.getField(rootCatalog.getClass(), "catalog", true);
       try {
-        Catalog rootCatalog = (Catalog) catalogField.get(icebergCatalog);
-        if (rootCatalog == null) {
-          log.info("Could not inject metrics reporter");
-          return Collections.emptyList();
-        }
-
-        CatalogMetricsReporterHolder.register(context, rootCatalog);
-        return Collections.emptyList();
+        rootCatalog = (Catalog) catalogField.get(rootCatalog);
       } catch (IllegalAccessException e) {
         // do nothing
         log.info("Could not inject metrics reporter", e);
+        return Collections.emptyList();
       }
     }
 
+    if (rootCatalog == null) {
+      log.info("Could not inject metrics reporter");
+      return Collections.emptyList();
+    }
+
+    CatalogMetricsReporterHolder.register(context, rootCatalog);
     return Collections.emptyList();
   }
 

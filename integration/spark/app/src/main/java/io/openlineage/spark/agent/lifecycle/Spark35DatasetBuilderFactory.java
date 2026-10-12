@@ -40,6 +40,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandInputDatasetBuild
 import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.WriteToDataSourceV2DatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
+import io.openlineage.spark33.agent.lifecycle.plan.DeleteFromTableWithFiltersDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.WriteIcebergDeltaDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.WriteToMicroBatchDataSourceV1DatasetBuilder;
@@ -96,6 +97,7 @@ public class Spark35DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new WriteToDataSourceV2DatasetBuilder(context))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
+            .add(new DeleteFromTableWithFiltersDatasetBuilder(context))
             .add(new CopyIntoCommandOutputDatasetBuilder(context))
             .add(new DeleteCommandOutputDatasetBuilder(context))
             .add(new UpdateCommandOutputDatasetBuilder(context))
