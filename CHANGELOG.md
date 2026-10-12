@@ -7,6 +7,11 @@
 * **Python: Detect PR number in Bitbucket Pipelines and Azure Pipelines** [`#5041`](https://github.com/OpenLineage/OpenLineage/pull/5041) [@himakolavennu](https://github.com/himakolavennu)
   *Fills `pullRequestNumber` in the sourceCodeLocation facet from `BITBUCKET_PR_ID` and Azure's `SYSTEM_PULLREQUEST_PULLREQUESTNUMBER` / `SYSTEM_PULLREQUEST_PULLREQUESTID`.*
 
+### Fixed
+
+* **Spark: Keep Delta jobStart/jobEnd events for top-level executions** [`#5059`](https://github.com/OpenLineage/OpenLineage/pull/5059) [@sg0709](https://github.com/sg0709)
+  *Drops these events only for executions nested under a root command, so `spark_jobDetails` and `capturedProperties` survive on top-level queries in a Delta-enabled session.*
+
 ## [1.53.0](https://github.com/OpenLineage/OpenLineage/compare/1.52.0...1.53.0)
 
 ### Added
