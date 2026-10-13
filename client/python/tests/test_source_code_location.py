@@ -197,6 +197,55 @@ class TestGetGitBranch:
 _TAG_OBJ_SHA = "deadbeef" * 5
 
 
+class TestLinkedWorktreeMetadata:
+    @pytest.mark.parametrize("packed", [False, True])
+    @pytest.mark.parametrize("detached", [False, True])
+    @pytest.mark.parametrize("absolute_common_dir", [False, True])
+    def test_source_code_location_uses_shared_metadata(
+        self, tmp_path, monkeypatch, packed, detached, absolute_common_dir
+    ):
+        common = tmp_path / "repo" / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (common / "config").write_text(_GIT_CONFIG)
+        (common / "HEAD").write_text("deadbeef" * 5 + "\n")
+        (git_dir / "commondir").write_text(str(common) if absolute_common_dir else "../..\n")
+        (git_dir / "HEAD").write_text(_FAKE_SHA if detached else "ref: refs/heads/linked\n")
+        if packed:
+            (common / "packed-refs").write_text(
+                f"{_FAKE_SHA} refs/heads/linked\n{_TAG_OBJ_SHA} refs/tags/v1\n^{_FAKE_SHA}\n"
+            )
+        else:
+            for ref in ["refs/heads/linked", "refs/tags/v1"]:
+                path = common / ref
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(_FAKE_SHA + "\n")
+        worktree = tmp_path / "linked"
+        worktree.mkdir()
+        (worktree / ".git").write_text(f"gitdir: {git_dir}\n")
+        monkeypatch.chdir(worktree)
+        monkeypatch.setattr("openlineage.client.client.get_ci_pr_number", lambda: None)
+
+        event = _make_client().add_source_code_location_facet(_make_run_event())
+        facet = event.job.facets["sourceCodeLocation"]
+        assert facet.repoUrl == "https://github.com/org/repo.git"
+        assert facet.version == _FAKE_SHA
+        assert facet.branch == (None if detached else "linked")
+        assert facet.tag == "v1"
+
+    @pytest.mark.parametrize("ref", ["refs/bisect/good", "refs/worktree/test", "refs/rewritten/test"])
+    def test_private_refs_remain_in_worktree(self, tmp_path, ref):
+        common = tmp_path / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (git_dir / "commondir").write_text("../..\n")
+        for directory, sha in [(common, "deadbeef" * 5), (git_dir, _FAKE_SHA)]:
+            path = directory / ref
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(sha + "\n")
+        assert _resolve_ref(git_dir, ref) == _FAKE_SHA
+
+
 class TestFindTagInPackedRefs:
     def test_lightweight_tag(self, tmp_path):
         git_dir = tmp_path / ".git"
