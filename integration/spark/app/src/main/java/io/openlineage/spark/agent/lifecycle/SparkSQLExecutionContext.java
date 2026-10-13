@@ -25,6 +25,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Stack;
@@ -448,7 +449,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
       return;
     }
     try {
-      List<OpenLineage.InputDataset> inputDatasets = runEventBuilder.buildCheckpointInputDatasets();
+      List<OpenLineage.InputDataset> inputDatasets =
+          runEventBuilder.buildCheckpointInputDatasets(Collections.singletonList(endEvent));
       OpenLineage.SchemaDatasetFacet schemaFacet =
           PlanUtils.schemaFacet(
               olContext.getOpenLineage(), olContext.getQueryExecution().get().analyzed().schema());

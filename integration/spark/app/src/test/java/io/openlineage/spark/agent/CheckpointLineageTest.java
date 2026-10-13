@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.spark.agent.util.DerbyUtils;
 import java.nio.file.Path;
 import java.util.List;
 import lombok.SneakyThrows;
@@ -32,6 +31,10 @@ import org.mockserver.integration.ClientAndServer;
  * Spark {@code checkpoint()}/{@code localCheckpoint()} boundary, instead of being lost once the
  * checkpointed data is read back downstream as a {@link org.apache.spark.sql.execution.LogicalRDD}.
  *
+ * <p>Tables are created with the in-memory catalog and a per-test warehouse directory, so no
+ * embedded Hive metastore (Derby) is started. This lets each test build its own Spark session
+ * without the metastore being booted twice in the same JVM.
+ *
  * @see io.openlineage.spark.api.CheckpointContext
  */
 @Slf4j
@@ -46,10 +49,11 @@ class CheckpointLineageTest {
   private static ClientAndServer mockServer;
   private SparkSession spark;
 
+  @TempDir Path tempDir;
+
   @BeforeAll
   @SneakyThrows
   static void beforeAll() {
-    DerbyUtils.loadSystemProperty(CheckpointLineageTest.class.getName());
     Spark4CompatUtils.cleanupAnyExistingSession();
     mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
   }
@@ -57,47 +61,55 @@ class CheckpointLineageTest {
   @AfterAll
   @SneakyThrows
   static void afterAll() {
-    DerbyUtils.clearDerbyProperty();
     Spark4CompatUtils.cleanupAnyExistingSession();
     MockServerUtils.stopMockServer(mockServer);
   }
 
   @BeforeEach
   @SneakyThrows
-  void beforeEach(@TempDir Path tempDir) {
+  void beforeEach() {
     MockServerUtils.clearRequests(mockServer);
-    spark =
-        Spark4CompatUtils.builderWithHiveSupport()
-            .master("local[*]")
-            .appName("CheckpointLineageTest")
-            .config("spark.driver.host", LOCAL_IP)
-            .config("spark.driver.bindAddress", LOCAL_IP)
-            .config("spark.ui.enabled", false)
-            .config("spark.openlineage.transport.type", "http")
-            .config(
-                "spark.openlineage.transport.url",
-                "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/checkpoint-test")
-            .config("spark.openlineage.checkpointLineage.enabled", true)
-            .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
-            .getOrCreate();
-    spark.sparkContext().setCheckpointDir(tempDir.resolve("spark-checkpoints").toString());
-    spark.sql("DROP TABLE IF EXISTS checkpoint_t1");
-    spark.sql("DROP TABLE IF EXISTS checkpoint_t3");
+    spark = createSession(true);
   }
 
   @AfterEach
   @SneakyThrows
   void afterEach() {
-    spark.sql("DROP TABLE IF EXISTS checkpoint_t1");
-    spark.sql("DROP TABLE IF EXISTS checkpoint_t3");
+    spark.stop();
+    Spark4CompatUtils.cleanupAnyExistingSession();
+  }
+
+  private SparkSession createSession(boolean checkpointLineageEnabled) {
+    SparkSession.Builder builder =
+        SparkSession.builder()
+            .master("local[*]")
+            .appName("CheckpointLineageTest")
+            .config("spark.driver.host", LOCAL_IP)
+            .config("spark.driver.bindAddress", LOCAL_IP)
+            .config("spark.ui.enabled", false)
+            .config("spark.sql.catalogImplementation", "in-memory")
+            .config("spark.sql.warehouse.dir", tempDir.resolve("warehouse").toString())
+            .config("spark.openlineage.transport.type", "http")
+            .config(
+                "spark.openlineage.transport.url",
+                "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/checkpoint-test")
+            .config("spark.extraListeners", OpenLineageSparkListener.class.getName());
+    if (checkpointLineageEnabled) {
+      builder.config("spark.openlineage.checkpointLineage.enabled", true);
+    }
+    SparkSession session = builder.getOrCreate();
+    session.sparkContext().setCheckpointDir(tempDir.resolve("spark-checkpoints").toString());
+    return session;
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testReliableCheckpointPreservesLineage() {
     runCheckpointPipeline(df -> df.checkpoint(true));
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testLocalCheckpointPreservesLineage() {
     runCheckpointPipeline(df -> df.localCheckpoint(true));
   }
@@ -127,12 +139,13 @@ class CheckpointLineageTest {
 
   private RunEvent runCheckpointPipelineAndGetCompleteEvent(
       java.util.function.UnaryOperator<Dataset<Row>> checkpointFn) {
-    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string)");
+    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string) USING parquet");
     spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
 
-    Dataset<Row> checkpointed = checkpointFn.apply(spark.sql("SELECT * FROM checkpoint_t1"));
+    Dataset<Row> checkpointed =
+        checkpointFn.apply(spark.sql("SELECT a, upper(b) AS b FROM checkpoint_t1 WHERE a = 'x'"));
     checkpointed.createOrReplaceTempView("checkpoint_temp");
-    spark.sql("CREATE TABLE checkpoint_t3 AS SELECT * FROM checkpoint_temp");
+    spark.sql("CREATE TABLE checkpoint_t3 USING parquet AS SELECT a, b FROM checkpoint_temp");
 
     List<RunEvent> events =
         MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3");
@@ -152,25 +165,10 @@ class CheckpointLineageTest {
    * existed.
    */
   @Test
-  void testCheckpointLineageDisabledByDefault() throws Exception {
+  void testCheckpointLineageDisabledByDefault() {
     spark.stop();
     Spark4CompatUtils.cleanupAnyExistingSession();
-    spark =
-        Spark4CompatUtils.builderWithHiveSupport()
-            .master("local[*]")
-            .appName("CheckpointLineageDisabledTest")
-            .config("spark.driver.host", LOCAL_IP)
-            .config("spark.driver.bindAddress", LOCAL_IP)
-            .config("spark.ui.enabled", false)
-            .config("spark.openlineage.transport.type", "http")
-            .config(
-                "spark.openlineage.transport.url",
-                "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/checkpoint-test")
-            .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
-            .getOrCreate();
-    spark
-        .sparkContext()
-        .setCheckpointDir(java.nio.file.Files.createTempDirectory("spark-checkpoints").toString());
+    spark = createSession(false);
 
     RunEvent complete = runCheckpointPipelineAndGetCompleteEvent(df -> df.checkpoint(true));
 
@@ -187,13 +185,13 @@ class CheckpointLineageTest {
    */
   @Test
   void testCheckpointPreservesDatasetLevelDependencies() {
-    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string)");
+    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string) USING parquet");
     spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
 
     Dataset<Row> checkpointed =
         spark.sql("SELECT b FROM checkpoint_t1 WHERE a = 'x'").checkpoint(true);
     checkpointed.createOrReplaceTempView("checkpoint_temp");
-    spark.sql("CREATE TABLE checkpoint_t3 AS SELECT * FROM checkpoint_temp");
+    spark.sql("CREATE TABLE checkpoint_t3 USING parquet AS SELECT b FROM checkpoint_temp");
 
     List<RunEvent> events =
         MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3");
