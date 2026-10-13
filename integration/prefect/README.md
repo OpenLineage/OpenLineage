@@ -32,6 +32,17 @@ export OPENLINEAGE__TRANSPORT__ENDPOINT="/api/v1/lineage" &&
 export PREFECT_API_URL="http://prefecthost.com:4200/api"
 ```
 
+The integration also looks for the namespace in `prefect.yaml`:
+
+```yaml
+work_pool:
+    name: example
+    work_queue_name:
+    job_variables:
+      env:
+        OPENLINEAGE_NAMESPACE: prefect_test
+```
+
 For more details of OpenLineage transport options and how to configure them, consult the [OpenLineage Python Client Documentation](https://openlineage.io/docs/client/python/).
 
 ## Leveraging Datasets
