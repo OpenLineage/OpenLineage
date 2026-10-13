@@ -14,11 +14,12 @@
 #   3. macOS /usr/libexec/java_home.
 #   4. The inherited JAVA_HOME (what CI provides via setup-java / CI image).
 #
-# Version selection: the JAVA_VERSION environment variable (explicit
-# override, e.g. `JAVA_VERSION=21 task build`), else the first argument
-# (the component's pinned version), else 17.
+# Version selection: the first argument, else the JAVA_VERSION environment
+# variable, else 17. An explicit argument always wins; components that allow
+# overriding their pinned JDK (e.g. `JAVA_VERSION=21 task build`) pass
+# "${JAVA_VERSION:-<pinned>}" as the argument themselves.
 
-v="${JAVA_VERSION:-${1:-17}}"
+v="${1:-${JAVA_VERSION:-17}}"
 case "$v" in
   *[!0-9]* | '')
     echo "java-home.sh: '$v' is not a valid major Java version (integer >= 8)" >&2
@@ -75,4 +76,7 @@ for d in "$HOME/.sdkman/candidates/java/$v."*; do
 done
 
 # 3) macOS java_home, then 4) inherited JAVA_HOME.
-/usr/libexec/java_home -v "$v" 2>/dev/null || echo "${JAVA_HOME:-}"
+# macOS java_home treats "-v 8" as "newest JDK"; Java 8 is spelled 1.8.
+jv="$v"
+[ "$v" = 8 ] && jv=1.8
+/usr/libexec/java_home -v "$jv" 2>/dev/null || echo "${JAVA_HOME:-}"
