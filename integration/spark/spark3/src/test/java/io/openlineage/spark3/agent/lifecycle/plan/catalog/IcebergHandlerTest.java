@@ -430,6 +430,51 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
+  /** End-to-end: type=GLUE yields the same Glue TABLE symlink as catalog-impl. */
+  @Test
+  @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
+  void testGetDatasetIdentifierForIcebergGlueCatalogTypeShorthand() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    sparkConf.set("spark.glue.accountId", "1122334455");
+    sparkConf.set("spark.sql.catalog.iceberg.type", "GLUE");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.iceberg.type",
+                "GLUE",
+                "spark.sql.catalog.iceberg.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("iceberg");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"database"}, "table"),
+            new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-west-2:1122334455")
+        .hasFieldOrPropertyWithValue("name", "table/database/table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
   @Test
   @SneakyThrows
   void testGetDatasetIdentifierForGlueWithoutArnOmitsSymlink() {
