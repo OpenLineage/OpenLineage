@@ -172,7 +172,7 @@ tasks:
         printf '%s\n' "$matrix" | "$(git rev-parse --show-toplevel)/dev/spark-gradle.sh" integration-test --matrix{{if .TESTS}} "{{.TESTS}}"{{end}}
 
   rerun-ci-step:
-    desc: 'Rerun one CI step locally for a single version set. STEP=<ci-job>-java:J-spark:S-scala:C[-full-tests], e.g. STEP=test-integration-spark-java:8-spark:3.2.4-scala:2.12; TESTS=… to pass --tests'
+    desc: 'Rerun one CI step locally for a single version set. STEP=<ci-job>-java:J-spark:S-scala:C[-full-tests], e.g. STEP=test-integration-spark-java:8-spark:3.2.4-scala:2.12. Always runs the full suite; to filter tests use `task test:ci` / `task integration-test:ci` with JAVA=… SPARK=… SCALA=… TESTS=… (and MODULE=… for test)'
     silent: true
     preconditions:
       - sh: test -n "{{.STEP}}"
@@ -197,7 +197,7 @@ tasks:
             ;;
         esac
         echo "Rerunning CI step '$step' as: task $target JAVA=$java SPARK=$spark SCALA=$scala"
-        task "$target" JAVA="$java" SPARK="$spark" SCALA="$scala" {{if .TESTS}}TESTS="{{.TESTS}}"{{end}}
+        task "$target" JAVA="$java" SPARK="$spark" SCALA="$scala"
 
   versions:
     desc: List the Spark/Scala pairs usable as SPARK=… SCALA=… overrides (the CI-tested matrix)

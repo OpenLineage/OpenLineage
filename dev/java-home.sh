@@ -14,10 +14,20 @@
 #   3. macOS /usr/libexec/java_home.
 #   4. The inherited JAVA_HOME (what CI provides via setup-java / CI image).
 #
+# With --strict as the first argument the result is verified: the script
+# fails unless the resolved home is a JDK of the requested major version,
+# instead of falling back to whatever JAVA_HOME happens to hold.
+#
 # Version selection: the first argument, else the JAVA_VERSION environment
 # variable, else 17. An explicit argument always wins; components that allow
 # overriding their pinned JDK (e.g. `JAVA_VERSION=21 task build`) pass
 # "${JAVA_VERSION:-<pinned>}" as the argument themselves.
+
+strict=0
+if [ "${1:-}" = "--strict" ]; then
+  strict=1
+  shift
+fi
 
 v="${1:-${JAVA_VERSION:-17}}"
 case "$v" in
@@ -79,4 +89,11 @@ done
 # macOS java_home treats "-v 8" as "newest JDK"; Java 8 is spelled 1.8.
 jv="$v"
 [ "$v" = 8 ] && jv=1.8
-/usr/libexec/java_home -v "$jv" 2>/dev/null || echo "${JAVA_HOME:-}"
+home=$(/usr/libexec/java_home -v "$jv" 2>/dev/null || echo "${JAVA_HOME:-}")
+if [ "$strict" = 1 ]; then
+  if [ -z "$home" ] || [ ! -x "$home/bin/java" ] || [ "$(java_major "$home")" != "$v" ]; then
+    echo "java-home.sh: no JDK $v found (resolved '${home}'); install one or set JAVA_HOME to it" >&2
+    exit 1
+  fi
+fi
+echo "$home"

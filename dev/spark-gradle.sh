@@ -42,7 +42,8 @@ case "$mode" in
 esac
 
 root_dir="$(cd "$(dirname "$0")/.." && pwd)"
-java_home_for() { "$root_dir/dev/java-home.sh" "$1"; }
+# --strict: fail instead of silently using a JDK of another version.
+java_home_for() { "$root_dir/dev/java-home.sh" --strict "$1"; }
 
 # gradle <java_home> <progress> <args...>
 gradle() {
