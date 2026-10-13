@@ -36,6 +36,14 @@ def _find_git_dir(cwd: str | None = None) -> Path | None:
     return None
 
 
+def _get_common_git_dir(git_dir: Path) -> Path:
+    """Locate shared metadata while keeping HEAD in the worktree's git directory."""
+    common_dir_file = git_dir / "commondir"
+    if common_dir_file.exists():
+        return (git_dir / common_dir_file.read_text().strip()).resolve()
+    return git_dir
+
+
 def _read_head_content(git_dir: Path) -> str | None:
     """Return the raw content of HEAD, or ``None`` if HEAD does not exist."""
     head_file = git_dir / "HEAD"
@@ -57,6 +65,8 @@ def _resolve_ref(git_dir: Path, ref: str) -> str | None:
 
     Checks loose ref files first, then falls back to ``packed-refs``.
     """
+    if ref.startswith("refs/") and not ref.startswith(("refs/bisect/", "refs/worktree/", "refs/rewritten/")):
+        git_dir = _get_common_git_dir(git_dir)
     loose = git_dir / ref
     if loose.exists():
         return loose.read_text().strip()
@@ -77,7 +87,7 @@ def _find_tag_in_packed_refs(git_dir: Path, head_sha: str) -> str | None:
     Handles both lightweight tags (SHA matches directly) and annotated tags
     (tag-object SHA followed by a ``^<commit-sha>`` dereference line).
     """
-    packed = git_dir / "packed-refs"
+    packed = _get_common_git_dir(git_dir) / "packed-refs"
     if not packed.exists():
         return None
     prev_tag_name: str | None = None
@@ -115,7 +125,7 @@ def get_git_repo_url(repo_url: str | None = None, git_dir: Path | None = None) -
         git_dir = _find_git_dir()
     if git_dir is None:
         return None
-    config_file = git_dir / "config"
+    config_file = _get_common_git_dir(git_dir) / "config"
     if not config_file.exists():
         return None
     # RawConfigParser disables %-interpolation so URLs like
@@ -189,7 +199,7 @@ def get_git_tag(git_dir: Path) -> str | None:
     # Note: loose annotated tag files store a tag-object SHA, not a commit SHA,
     # so they won't match here. They are nearly always packed by git gc, so
     # _find_tag_in_packed_refs handles the annotated case in practice.
-    tags_dir = git_dir / "refs" / "tags"
+    tags_dir = _get_common_git_dir(git_dir) / "refs" / "tags"
     if tags_dir.exists():
         for tag_file in tags_dir.rglob("*"):
             if tag_file.is_file() and tag_file.read_text().strip() == head_sha:
