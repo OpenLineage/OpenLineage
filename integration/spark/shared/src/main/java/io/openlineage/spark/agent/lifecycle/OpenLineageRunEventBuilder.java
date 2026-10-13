@@ -269,9 +269,12 @@ class OpenLineageRunEventBuilder {
    *
    * @see io.openlineage.spark.api.CheckpointContext
    */
-  List<InputDataset> buildCheckpointInputDatasets() {
-    return buildInputDatasets(Collections.emptyList());
+  List<InputDataset> buildCheckpointInputDatasets(List<Object> nodes) {
+    return buildInputDatasets(nodes);
   }
+  //  List<InputDataset> buildCheckpointInputDatasets(List<Object> nodes) {
+  //    return buildInputDatasets(nodes);
+  //  }
 
   private List<InputDataset> buildInputDatasets(List<Object> nodes) {
     openLineageContext
