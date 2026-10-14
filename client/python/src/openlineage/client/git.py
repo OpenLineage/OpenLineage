@@ -6,6 +6,7 @@ import configparser
 import logging
 import os
 import re
+import zlib
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -111,6 +112,25 @@ def _find_tag_in_packed_refs(git_dir: Path, head_sha: str) -> str | None:
     return None
 
 
+def _read_loose_tag_target(git_dir: Path, object_sha: str) -> str | None:
+    """Return the object SHA targeted by a loose annotated tag object."""
+    if len(object_sha) != 40:
+        return None
+    try:
+        object_path = _get_common_git_dir(git_dir) / "objects" / object_sha[:2] / object_sha[2:]
+        raw = zlib.decompress(object_path.read_bytes())
+        header, body = raw.split(b"\0", 1)
+        if header != b"tag " + str(len(body)).encode("ascii"):
+            return None
+        object_line, _, _ = body.partition(b"\n")
+        target = object_line.removeprefix(b"object ")
+        if target == object_line:
+            return None
+        return target.decode("ascii")
+    except (OSError, ValueError, UnicodeDecodeError, zlib.error):
+        return None
+
+
 def get_git_repo_url(repo_url: str | None = None, git_dir: Path | None = None) -> str | None:
     """Return a repo URL suitable for SourceCodeLocationJobFacet.
 
@@ -198,13 +218,21 @@ def get_git_tag(git_dir: Path) -> str | None:
         return None
 
     # rglob covers nested tag namespaces like refs/tags/release/v1.2.3.
-    # Note: loose annotated tag files store a tag-object SHA, not a commit SHA,
-    # so they won't match here. They are nearly always packed by git gc, so
-    # _find_tag_in_packed_refs handles the annotated case in practice.
     tags_dir = _get_common_git_dir(git_dir) / "refs" / "tags"
     if tags_dir.exists():
         for tag_file in tags_dir.rglob("*"):
-            if tag_file.is_file() and tag_file.read_text().strip() == head_sha:
+            if not tag_file.is_file():
+                continue
+            tag_sha = tag_file.read_text().strip()
+            if tag_sha == head_sha:
                 return tag_file.relative_to(tags_dir).as_posix()
+            seen: set[str] = set()
+            while tag_sha not in seen:
+                seen.add(tag_sha)
+                tag_sha = _read_loose_tag_target(git_dir, tag_sha)
+                if tag_sha is None:
+                    break
+                if tag_sha == head_sha:
+                    return tag_file.relative_to(tags_dir).as_posix()
 
     return _find_tag_in_packed_refs(git_dir, head_sha)
