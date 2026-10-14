@@ -559,3 +559,27 @@ class TestDbtMetadataExceptions:
         processor.load_metadata["args"]["profiles_dir"] = "./non_existent_dir/dbt/test"
         processor.get_dbt_metadata = self.simple_get_dbt_metadata(processor)
         assert processor.get_dbt_metadata is FileNotFoundError
+
+
+def test_dbt_local_invocation_events_opt_in():
+    path = CURRENT_DIR + "/small"
+    processor = DbtLocalArtifactProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        project_dir=path,
+        dbt_command_line=["dbt-ol", "run", "--profiles-dir", path],
+        job_namespace="ol-namespace",
+        emit_dbt_invocation_event=True,
+    )
+    events = processor.parse()
+    assert len(events.starts) > 0
+    assert len(events.completes) > 0
+    invocation_start = events.starts[0]
+    # Distinct from the dbt-ol wrapper's own job name (dbt-run-{project}) so the
+    # invocation event never collides with it if this flag is ever wired into dbt-ol.
+    assert invocation_start.job.name == "dbt-invocation-dbt_small_test"
+    assert invocation_start.job.facets["jobType"].jobType == "JOB"
+
+    # Check child model run parent facet
+    model_start = events.starts[1]
+    assert model_start.run.facets["parent"].run.runId == invocation_start.run.runId
+    assert model_start.run.facets["parent"].job.name == "dbt-invocation-dbt_small_test"
