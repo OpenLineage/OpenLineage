@@ -1,0 +1,9 @@
+# Small DuckDB project for the dbt Core v2 telemetry fixtures; see ../generate_fixtures.py.
+name: otel_jaffle
+version: "1.0"
+config-version: 2
+profile: otel_jaffle
+
+models:
+  otel_jaffle:
+    +materialized: view

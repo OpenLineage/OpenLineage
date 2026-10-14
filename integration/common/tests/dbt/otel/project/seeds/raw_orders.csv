@@ -1,0 +1,5 @@
+id,customer_id,amount,status
+1,1,10,placed
+2,1,20,shipped
+3,2,5,returned
+4,3,7,placed
