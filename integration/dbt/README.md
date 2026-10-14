@@ -74,6 +74,29 @@ Additional table and column level metadata will be available if `catalog.json`, 
 
 If you need to send events without running the job you can use the command `dbt-ol send-events`, it will send the metadata of your last run without running the job.
 
+### dbt Core v2
+
+With dbt Core v2, `dbt-ol` always sends events while the models run. `--consume-structured-logs` isn't
+needed and changes nothing. `dbt-ol` points dbt's OpenTelemetry output (`DBT_OTEL_FILE_NAME`) at a
+temporary directory and reads it as dbt writes it.
+
+dbt Core v2 writes `manifest.json` only after every node has run, and its telemetry doesn't say which
+tables a node reads. So `dbt-ol` runs `dbt parse` before the command, into the same temporary directory,
+and takes node inputs from that manifest. The parse doesn't connect to the warehouse and doesn't touch
+your `target/` directory.
+
+* `--ol-skip-parse` (or `OPENLINEAGE_DBT_SKIP_PARSE=true`) skips the parse. Node start events then carry
+  only the node's own output, and final node events are sent with inputs once dbt writes `manifest.json`
+  at the end of the run.
+* `OPENLINEAGE_DBT_TEMP_DIR` sets where the temporary directory is created; by default it's the system
+  temporary directory (`TMPDIR`). On large projects the telemetry file is about 23 KB per node, and the
+  directory is removed when the run ends.
+* `OPENLINEAGE_DBT_ENGINE=v1|v2` skips detecting which dbt engine the `dbt` on `PATH` runs.
+
+On dbt Core v2, node jobs are named by their `unique_id` (for example `model.jaffle_shop.orders`), as with
+`--consume-structured-logs` on dbt Core v1. Jobs from the default dbt Core v1 mode are named
+`{database}.{schema}.{model}`, so their history doesn't continue under the new names.
+
 ## Development
 
 For development setup instructions, see the [Python development setup guide](https://openlineage.io/docs/client/python/development/setup).
