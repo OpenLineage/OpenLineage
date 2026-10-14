@@ -13,7 +13,6 @@ keywords = ["openlineage"]
 dependencies = [
     "tqdm>=4.62.0",
     "openlineage-integration-common==1.55.0",
-    "dbt-core>=1.0.0",
 ]
 
 [project.optional-dependencies]
