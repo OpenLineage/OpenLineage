@@ -233,6 +233,27 @@ class TestLinkedWorktreeMetadata:
         assert facet.branch == (None if detached else "linked")
         assert facet.tag == "v1"
 
+    @pytest.mark.parametrize("enabled", [None, "false", "true", "yes", "1"])
+    def test_worktree_config_respects_extension(self, tmp_path, enabled):
+        common = tmp_path / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (git_dir / "commondir").write_text("../..\n")
+        extension = "" if enabled is None else f"[extensions]\nworktreeConfig = {enabled}\n"
+        (common / "config").write_text(_GIT_CONFIG + extension)
+        url = "https://github.com/org/worktree%2Frepo.git"
+        (git_dir / "config.worktree").write_text(f'[remote "origin"]\nurl = {url}\n')
+        expected = url if enabled in {"true", "yes", "1"} else "https://github.com/org/repo.git"
+        assert get_git_repo_url(git_dir=git_dir) == expected
+
+    def test_enabled_worktree_config_may_be_absent(self, tmp_path):
+        common = tmp_path / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (git_dir / "commondir").write_text("../..\n")
+        (common / "config").write_text(_GIT_CONFIG + "[extensions]\nworktreeConfig = true\n")
+        assert get_git_repo_url(git_dir=git_dir) == "https://github.com/org/repo.git"
+
     @pytest.mark.parametrize("ref", ["refs/bisect/good", "refs/worktree/test", "refs/rewritten/test"])
     def test_private_refs_remain_in_worktree(self, tmp_path, ref):
         common = tmp_path / ".git"
