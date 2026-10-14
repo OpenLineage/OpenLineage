@@ -236,6 +236,27 @@ class TestLinkedWorktreeMetadata:
         assert facet.branch == (None if detached else "linked")
         assert facet.tag == "v1"
 
+    def test_annotated_tag_object_uses_common_objects(self, tmp_path):
+        common = tmp_path / "repo" / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (git_dir / "commondir").write_text("../..\n")
+        (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
+
+        body = f"object {_FAKE_SHA}\ntype commit\ntag v1\n\nrelease\n".encode()
+        raw = b"tag " + str(len(body)).encode() + b"\0" + body
+        tag_sha = hashlib.sha1(raw).hexdigest()
+        object_path = common / "objects" / tag_sha[:2] / tag_sha[2:]
+        object_path.parent.mkdir(parents=True)
+        object_path.write_bytes(zlib.compress(raw))
+
+        tag_ref = common / "refs" / "tags" / "v1"
+        tag_ref.parent.mkdir(parents=True)
+        tag_ref.write_text(tag_sha + "\n")
+
+        assert not (git_dir / "objects" / tag_sha[:2] / tag_sha[2:]).exists()
+        assert get_git_tag(git_dir) == "v1"
+
     @pytest.mark.parametrize("enabled", [None, "false", "true", "yes", "1"])
     def test_worktree_config_respects_extension(self, tmp_path, enabled):
         common = tmp_path / ".git"
