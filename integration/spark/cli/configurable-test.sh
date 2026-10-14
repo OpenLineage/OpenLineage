@@ -146,7 +146,23 @@ fi
 
 # (9) Run docker
 prefix="./integration/spark/"
+datadog_args=()
+if [[ -n "${DD_TEST_JAVA_AGENT:-}" && -n "${DD_API_KEY:-}" ]]; then
+  # The Gradle test runner is inside this container, so it needs the tracer JAR
+  # as well as CI metadata. Do not send credentials to docker build or Spark jobs.
+  datadog_args+=(
+    --mount "type=bind,source=$DD_TEST_JAVA_AGENT,target=/opt/datadog/dd-java-agent.jar,readonly"
+    --env "JAVA_TOOL_OPTIONS=-javaagent:/opt/datadog/dd-java-agent.jar"
+  )
+  for variable in \
+    DD_CIVISIBILITY_ENABLED DD_CIVISIBILITY_AGENTLESS_ENABLED DD_SITE DD_API_KEY DD_SERVICE DD_ENV DD_TAGS \
+    CIRCLECI CIRCLE_WORKFLOW_ID CIRCLE_BUILD_NUM CIRCLE_BUILD_URL CIRCLE_JOB CIRCLE_PROJECT_REPONAME \
+    CIRCLE_REPOSITORY_URL CIRCLE_SHA1 CIRCLE_BRANCH CIRCLE_TAG CIRCLE_WORKING_DIRECTORY; do
+    datadog_args+=(--env "$variable")
+  done
+fi
 docker run --name "$CONTAINER_NAME" \
+ "${datadog_args[@]}" \
  --mount=type=bind,source=./integration/spark,target=/usr/lib/openlineage/integration/spark \
  -v gradle-cache:/root/.gradle \
  -v cargo:/root/.cargo \
