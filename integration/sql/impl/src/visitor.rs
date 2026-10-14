@@ -822,6 +822,10 @@ impl Visit for Statement {
                     context.add_output(name);
                 }
 
+                for join in &update.table.joins {
+                    join.visit(context)?;
+                }
+
                 if let Some(from) = &update.from {
                     match from {
                         UpdateTableFromKind::BeforeSet(tables)

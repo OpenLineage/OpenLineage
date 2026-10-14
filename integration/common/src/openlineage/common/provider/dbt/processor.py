@@ -858,7 +858,7 @@ class DbtArtifactProcessor:
             if dbt_model_facet := self._create_dbt_model_dataset_facet(node):
                 facets["dbt_model"] = dbt_model_facet
         if node.type == "source":
-            table = node.metadata_node["name"]
+            table = node.metadata_node.get("identifier") or node.metadata_node["name"]
         else:
             table = node.metadata_node["alias"]
         return (
@@ -886,7 +886,11 @@ class DbtArtifactProcessor:
             return None
 
         database = node.metadata_node.get("schema")
-        table = node.metadata_node.get("name" if node.type == "source" else "alias")
+        table = (
+            node.metadata_node.get("identifier") or node.metadata_node.get("name")
+            if node.type == "source"
+            else node.metadata_node.get("alias")
+        )
         if not database or not table:
             return None
 

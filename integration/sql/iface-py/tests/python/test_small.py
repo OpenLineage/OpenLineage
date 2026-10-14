@@ -12,6 +12,19 @@ def test_parse_small():
     assert len(metadata.out_tables) == 0
 
 
+def test_mysql_update_join():
+    metadata = parse(
+        [
+            "UPDATE inventory i JOIN new_arrivals n ON i.product = n.product "
+            "SET i.quantity = i.quantity + n.quantity"
+        ],
+        dialect="mysql",
+    )
+    assert metadata.errors == []
+    assert [table.name for table in metadata.in_tables] == ["new_arrivals"]
+    assert [table.name for table in metadata.out_tables] == ["inventory"]
+
+
 @pytest.mark.parametrize(
     ("sql", "columns"),
     [
