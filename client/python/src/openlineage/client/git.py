@@ -239,9 +239,10 @@ def get_git_tag(git_dir: Path) -> str | None:
             seen: set[str] = set()
             while tag_sha not in seen:
                 seen.add(tag_sha)
-                tag_sha = _read_loose_tag_target(git_dir, tag_sha)
-                if tag_sha is None:
+                target_sha = _read_loose_tag_target(git_dir, tag_sha)
+                if target_sha is None:
                     break
+                tag_sha = target_sha
                 if tag_sha == head_sha:
                     return tag_file.relative_to(tags_dir).as_posix()
 
