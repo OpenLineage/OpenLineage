@@ -6,6 +6,7 @@ import configparser
 import logging
 import os
 import re
+import subprocess
 import zlib
 from pathlib import Path
 
@@ -118,16 +119,25 @@ def _read_loose_tag_target(git_dir: Path, object_sha: str) -> str | None:
         return None
     try:
         object_path = _get_common_git_dir(git_dir) / "objects" / object_sha[:2] / object_sha[2:]
-        raw = zlib.decompress(object_path.read_bytes())
-        header, body = raw.split(b"\0", 1)
-        if header != b"tag " + str(len(body)).encode("ascii"):
-            return None
+        if object_path.exists():
+            raw = zlib.decompress(object_path.read_bytes())
+            header, body = raw.split(b"\0", 1)
+            if header != b"tag " + str(len(body)).encode("ascii"):
+                return None
+        else:
+            body = subprocess.run(
+                ["git", "--git-dir", str(_get_common_git_dir(git_dir)), "cat-file", "tag", object_sha],
+                check=True,
+                capture_output=True,
+            ).stdout
         object_line, _, _ = body.partition(b"\n")
+        if not body.startswith(b"object "):
+            return None
         target = object_line.removeprefix(b"object ")
         if target == object_line:
             return None
         return target.decode("ascii")
-    except (OSError, ValueError, UnicodeDecodeError, zlib.error):
+    except (OSError, ValueError, UnicodeDecodeError, subprocess.CalledProcessError, zlib.error):
         return None
 
 

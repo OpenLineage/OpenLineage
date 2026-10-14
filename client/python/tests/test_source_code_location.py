@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
 import zlib
 from pathlib import Path
 from unittest.mock import patch
@@ -334,6 +335,63 @@ class TestGetGitTag:
         (objects / tag_sha[:2]).mkdir(parents=True)
         (objects / tag_sha[:2] / tag_sha[2:]).write_bytes(zlib.compress(raw))
         (tag_dir / "v1.0.0").write_text(tag_sha + "\n")
+        assert get_git_tag(git_dir) == "v1.0.0"
+
+    def test_loose_annotated_tag_with_packed_object(self, tmp_path):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        (repo / "file").write_text("content\n")
+        subprocess.run(["git", "-C", str(repo), "add", "file"], check=True)
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "commit",
+                "-qm",
+                "initial",
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "tag",
+                "-a",
+                "v1.0.0",
+                "-m",
+                "release",
+            ],
+            check=True,
+        )
+        git_dir = repo / ".git"
+        head = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        tag_sha = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "refs/tags/v1.0.0"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        subprocess.run(["git", "-C", str(repo), "repack", "-ad"], check=True)
+        (git_dir / "refs" / "tags" / "v1.0.0").write_text(tag_sha + "\n")
+        assert (git_dir / "objects" / tag_sha[:2] / tag_sha[2:]).exists() is False
+        (git_dir / "HEAD").write_text(head + "\n")
         assert get_git_tag(git_dir) == "v1.0.0"
 
     def test_packed_tag(self, tmp_path):
