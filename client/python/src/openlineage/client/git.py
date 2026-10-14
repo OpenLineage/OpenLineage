@@ -132,6 +132,8 @@ def get_git_repo_url(repo_url: str | None = None, git_dir: Path | None = None) -
     # https://host/repo%2Fname.git don't raise InterpolationSyntaxError.
     config = configparser.RawConfigParser(strict=False)
     config.read(config_file)
+    if config.getboolean("extensions", "worktreeConfig", fallback=False):
+        config.read(git_dir / "config.worktree")
     return config.get('remote "origin"', "url", fallback=None)
 
 
