@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import hashlib
+import zlib
 from pathlib import Path
 from unittest.mock import patch
 
@@ -319,6 +321,20 @@ class TestGetGitTag:
         (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
         (git_dir / "refs" / "tags" / "release" / "v1.2.3").write_text(_FAKE_SHA + "\n")
         assert get_git_tag(git_dir) == "release/v1.2.3"
+
+    def test_loose_annotated_tag(self, tmp_path):
+        git_dir = tmp_path / ".git"
+        objects = git_dir / "objects"
+        tag_dir = git_dir / "refs" / "tags"
+        tag_dir.mkdir(parents=True)
+        (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
+        body = f"object {_FAKE_SHA}\ntype commit\ntag v1.0.0\n\nrelease\n".encode()
+        raw = b"tag " + str(len(body)).encode() + b"\0" + body
+        tag_sha = hashlib.sha1(raw).hexdigest()
+        (objects / tag_sha[:2]).mkdir(parents=True)
+        (objects / tag_sha[:2] / tag_sha[2:]).write_bytes(zlib.compress(raw))
+        (tag_dir / "v1.0.0").write_text(tag_sha + "\n")
+        assert get_git_tag(git_dir) == "v1.0.0"
 
     def test_packed_tag(self, tmp_path):
         git_dir = tmp_path / ".git"
