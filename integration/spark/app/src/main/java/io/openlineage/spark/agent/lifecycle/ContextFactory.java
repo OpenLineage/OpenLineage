@@ -36,7 +36,7 @@ public class ContextFactory {
   @Getter private final MeterRegistry meterRegistry;
   @Getter private final SparkOpenLineageConfig config;
   private final OpenLineageEventHandlerFactory handlerFactory;
-  private final CheckpointContext checkpointContext = new CheckpointContext();
+  @Getter private final CheckpointContext checkpointContext = new CheckpointContext();
 
   public ContextFactory(
       EventEmitter openLineageEventEmitter,

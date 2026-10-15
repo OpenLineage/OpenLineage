@@ -27,6 +27,8 @@ import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrap
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.Checkpoint;
+import io.openlineage.spark.api.CheckpointContext;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
@@ -42,6 +44,7 @@ import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerTaskEnd;
+import org.apache.spark.scheduler.SparkListenerUnpersistRDD;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -256,6 +259,25 @@ class OpenLineageSparkListenerTest {
     assertThat(holder.getJobStagesSize()).isZero();
     assertThat(holder.getStageMetricsSize()).isZero();
     assertThat(holder.getJobMetricsSize()).isZero();
+  }
+
+  @Test
+  void testUnpersistRddDropsCheckpointLineage() {
+    CheckpointContext checkpointContext = new CheckpointContext();
+    checkpointContext.addCheckpoint(65L, new Checkpoint(null, null));
+    checkpointContext.addRddToExecutionIdMapping(650, 65L);
+    ContextFactory contextFactory = mock(ContextFactory.class);
+    when(contextFactory.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(contextFactory.getCheckpointContext()).thenReturn(checkpointContext);
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    listener.skipInitializationForTests(contextFactory);
+
+    listener.onUnpersistRDD(new SparkListenerUnpersistRDD(651));
+    assertThat(checkpointContext.getCheckpoint(650)).isPresent();
+
+    listener.onUnpersistRDD(new SparkListenerUnpersistRDD(650));
+    assertThat(checkpointContext.getCheckpoint(650)).isEmpty();
+    assertThat(checkpointContext.isRddMapped(650)).isFalse();
   }
 
   @Test
