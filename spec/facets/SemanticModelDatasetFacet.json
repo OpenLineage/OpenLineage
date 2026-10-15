@@ -11,74 +11,33 @@
           "type": "object",
           "properties": {
             "spec": {
-              "description": "Identifier of the semantic specification this model conforms to.",
+              "description": "Identifier of the semantic specification the model conforms to.",
               "type": "string",
-              "example": "osi"
+              "example": "ossie"
             },
             "specVersion": {
-              "description": "Version of the semantic specification the model conforms to.",
+              "description": "Version of the semantic specification the model conforms to, as declared in the model document.",
               "type": "string",
-              "example": "0.1.0"
+              "example": "0.2.0.dev0"
             },
             "modelUri": {
-              "description": "Reference to the source semantic model document. Full-fidelity definitions (including multi-dialect expressions) live here; the inline fields below are lightweight hints for consumers that do not resolve the model.",
+              "description": "Reference to the semantic model document. Full definitions, including metrics and multi-dialect expressions, live there.",
               "type": "string",
-              "example": "https://github.com/apache/ossie/blob/main/examples/tpcds/tpcds.osi.yaml"
+              "format": "uri",
+              "example": "https://github.com/apache/ossie/blob/main/examples/tpcds_semantic_model.yaml"
             },
-            "entity": {
-              "description": "Name of the logical entity/dataset in the semantic model that this physical dataset backs.",
+            "modelName": {
+              "description": "Name of the semantic model, unique within its document.",
+              "type": "string",
+              "example": "tpcds_retail_model"
+            },
+            "datasetName": {
+              "description": "Name of the logical dataset in the semantic model that this physical dataset backs.",
               "type": "string",
               "example": "store_sales"
-            },
-            "metrics": {
-              "description": "Metrics defined on this entity. A lightweight projection of the semantic model for inline display; see modelUri for authoritative, dialect-aware definitions.",
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "example": "total_sales"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "expression": {
-                    "description": "Display-only expression. Not dialect-qualified; resolve modelUri for the full expression set.",
-                    "type": "string",
-                    "example": "SUM(ss_sales_price)"
-                  }
-                },
-                "required": ["name"]
-              }
-            },
-            "dimensions": {
-              "description": "Dimensions defined on this entity. A lightweight projection of the semantic model for inline display; see modelUri for authoritative, dialect-aware definitions.",
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "example": "sold_date"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "isTime": {
-                    "description": "Whether this dimension is a time dimension.",
-                    "type": "boolean"
-                  },
-                  "expression": {
-                    "description": "Display-only expression. Not dialect-qualified; resolve modelUri for the full expression set.",
-                    "type": "string"
-                  }
-                },
-                "required": ["name"]
-              }
             }
           },
-          "required": ["spec", "entity"]
+          "required": ["spec", "modelName", "datasetName"]
         }
       ],
       "type": "object"
