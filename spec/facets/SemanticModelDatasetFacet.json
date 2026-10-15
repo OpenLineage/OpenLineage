@@ -27,7 +27,7 @@
               "example": "https://github.com/apache/ossie/blob/main/examples/tpcds_semantic_model.yaml"
             },
             "modelName": {
-              "description": "Name of the semantic model, unique within its document.",
+              "description": "The name declared in the Ossie model document, which identifies the model.",
               "type": "string",
               "example": "tpcds_retail_model"
             },
