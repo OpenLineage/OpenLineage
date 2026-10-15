@@ -123,29 +123,50 @@ class CheckpointLineageTest {
                 + "temporary checkpoint path (or no input at all)")
         .anyMatch(ds -> ds.getName().contains("checkpoint_t1"));
 
-    OutputDataset output =
-        complete.getOutputs().stream()
-            .filter(ds -> ds.getName().contains("checkpoint_t3"))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("No output dataset for checkpoint_t3"));
-
-    OpenLineage.ColumnLineageDatasetFacet columnLineage = output.getFacets().getColumnLineage();
-    assertThat(columnLineage).as("columnLineage facet should be present").isNotNull();
+    OpenLineage.ColumnLineageDatasetFacet columnLineage = columnLineageOfOutput(complete);
     assertThat(columnLineage.getFields().getAdditionalProperties().get("a")).isNotNull();
     assertThat(columnLineage.getFields().getAdditionalProperties().get("a").getInputFields())
         .as("column 'a' of checkpoint_t3 should depend on checkpoint_t1.a")
         .anyMatch(f -> f.getName().contains("checkpoint_t1") && "a".equals(f.getField()));
+
+    assertThat(columnLineage.getFields().getAdditionalProperties().get("b")).isNotNull();
+    assertThat(columnLineage.getFields().getAdditionalProperties().get("b").getInputFields())
+        .as(
+            "column 'b' of checkpoint_t3 should depend on checkpoint_t1.b through the upper() "
+                + "transformation applied before the checkpoint, not an identity")
+        .anyMatch(
+            f ->
+                f.getName().contains("checkpoint_t1")
+                    && "b".equals(f.getField())
+                    && f.getTransformations().stream()
+                        .anyMatch(
+                            t ->
+                                "DIRECT".equals(t.getType())
+                                    && "TRANSFORMATION".equals(t.getSubtype())));
   }
 
   private RunEvent runCheckpointPipelineAndGetCompleteEvent(
       java.util.function.UnaryOperator<Dataset<Row>> checkpointFn) {
+    return runCheckpointPipelineAndGetCompleteEvent(
+        "SELECT a, upper(b) AS b FROM checkpoint_t1 WHERE a = 'x'", checkpointFn);
+  }
+
+  private RunEvent runCheckpointPipelineAndGetCompleteEvent(
+      String checkpointedQuery, java.util.function.UnaryOperator<Dataset<Row>> checkpointFn) {
+    return runCheckpointPipelineAndGetCompleteEvent(
+        checkpointedQuery, "SELECT * FROM checkpoint_temp", checkpointFn);
+  }
+
+  private RunEvent runCheckpointPipelineAndGetCompleteEvent(
+      String checkpointedQuery,
+      String downstreamQuery,
+      java.util.function.UnaryOperator<Dataset<Row>> checkpointFn) {
     spark.sql("CREATE TABLE checkpoint_t1 (a string, b string) USING parquet");
     spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
 
-    Dataset<Row> checkpointed =
-        checkpointFn.apply(spark.sql("SELECT a, upper(b) AS b FROM checkpoint_t1 WHERE a = 'x'"));
+    Dataset<Row> checkpointed = checkpointFn.apply(spark.sql(checkpointedQuery));
     checkpointed.createOrReplaceTempView("checkpoint_temp");
-    spark.sql("CREATE TABLE checkpoint_t3 USING parquet AS SELECT a, b FROM checkpoint_temp");
+    spark.sql("CREATE TABLE checkpoint_t3 USING parquet AS " + downstreamQuery);
 
     List<RunEvent> events =
         MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3");
@@ -155,14 +176,24 @@ class CheckpointLineageTest {
         .orElseThrow(() -> new AssertionError("No COMPLETE event found for checkpoint_t3"));
   }
 
+  private static OpenLineage.ColumnLineageDatasetFacet columnLineageOfOutput(RunEvent complete) {
+    OutputDataset output =
+        complete.getOutputs().stream()
+            .filter(ds -> ds.getName().contains("checkpoint_t3"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No output dataset for checkpoint_t3"));
+    OpenLineage.ColumnLineageDatasetFacet columnLineage = output.getFacets().getColumnLineage();
+    assertThat(columnLineage).as("columnLineage facet should be present").isNotNull();
+    return columnLineage;
+  }
+
   /**
    * The feature is opt-in (see {@link
    * io.openlineage.spark.api.SparkOpenLineageConfig.CheckpointConfig}) because the lineage captured
-   * for every checkpoint is kept in memory until the checkpointed RDD is read downstream (or
-   * evicted), which can cause OOM exceptions for applications checkpointing large/many plans.
-   * Verifies that, without explicitly enabling it, checkpointed data is not bridged and the
-   * upstream table lineage is lost across the checkpoint boundary, same as before this feature
-   * existed.
+   * for every checkpoint is kept in memory until evicted, regardless of whether it has been read,
+   * which can cause OOM exceptions for applications checkpointing large plans. Verifies that,
+   * without explicitly enabling it, checkpointed data is not bridged and the upstream table lineage
+   * is lost across the checkpoint boundary, same as before this feature existed.
    */
   @Test
   void testCheckpointLineageDisabledByDefault() {
@@ -181,38 +212,115 @@ class CheckpointLineageTest {
    * Dataset-level dependencies (e.g. a column only referenced in a {@code WHERE} clause, dropped
    * from the output afterwards) aren't tied to any specific output field, so they can't be bridged
    * by matching output attribute names like regular column lineage is. This verifies they're still
-   * preserved via {@link io.openlineage.spark.api.Checkpoint#getDatasetDependencyFields()}.
+   * preserved via {@link
+   * io.openlineage.spark.agent.lifecycle.plan.column.CheckpointColumnLineage#getDatasetDependencyInputs()}.
    */
   @Test
   void testCheckpointPreservesDatasetLevelDependencies() {
-    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string) USING parquet");
-    spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
-
-    Dataset<Row> checkpointed =
-        spark.sql("SELECT b FROM checkpoint_t1 WHERE a = 'x'").checkpoint(true);
-    checkpointed.createOrReplaceTempView("checkpoint_temp");
-    spark.sql("CREATE TABLE checkpoint_t3 USING parquet AS SELECT b FROM checkpoint_temp");
-
-    List<RunEvent> events =
-        MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3");
     RunEvent complete =
-        events.stream()
-            .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("No COMPLETE event found for checkpoint_t3"));
+        runCheckpointPipelineAndGetCompleteEvent(
+            "SELECT b FROM checkpoint_t1 WHERE a = 'x'", df -> df.checkpoint(true));
 
-    OutputDataset output =
-        complete.getOutputs().stream()
-            .filter(ds -> ds.getName().contains("checkpoint_t3"))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("No output dataset for checkpoint_t3"));
-
-    OpenLineage.ColumnLineageDatasetFacet columnLineage = output.getFacets().getColumnLineage();
-    assertThat(columnLineage).as("columnLineage facet should be present").isNotNull();
-    assertThat(columnLineage.getDataset())
+    assertThat(columnLineageOfOutput(complete).getDataset())
         .as(
             "dataset-level dependency on checkpoint_t1.a (used only in the checkpointed query's "
                 + "WHERE clause, not part of its output) should be preserved")
         .anyMatch(f -> f.getName().contains("checkpoint_t1") && "a".equals(f.getField()));
+  }
+
+  /**
+   * A checkpointed plan without any field-level lineage (e.g. a global count) can still have
+   * dataset-level dependencies, which must not be dropped along with the empty field lineage. The
+   * downstream query joins back to {@code checkpoint_t1.b} only so that it has field-level lineage
+   * of its own - otherwise its column lineage facet would be skipped altogether.
+   */
+  @Test
+  void testCheckpointPreservesDatasetLevelDependenciesWithoutFieldLineage() {
+    RunEvent complete =
+        runCheckpointPipelineAndGetCompleteEvent(
+            "SELECT count(*) AS c FROM checkpoint_t1 WHERE a = 'x'",
+            "SELECT c.c, t.b FROM checkpoint_temp c CROSS JOIN checkpoint_t1 t",
+            df -> df.checkpoint(true));
+
+    assertThat(columnLineageOfOutput(complete).getDataset())
+        .as("dataset-level dependency on checkpoint_t1.a should be preserved")
+        .anyMatch(f -> f.getName().contains("checkpoint_t1") && "a".equals(f.getField()));
+  }
+
+  /**
+   * A checkpointed plan with a shuffle runs as a job with multiple stages, only one of which (the
+   * result stage) computes the checkpointed RDD.
+   */
+  @Test
+  void testMultiStageCheckpointPreservesLineage() {
+    spark.conf().set("spark.sql.adaptive.enabled", "false");
+
+    RunEvent complete =
+        runCheckpointPipelineAndGetCompleteEvent(
+            "SELECT a, max(b) AS b FROM checkpoint_t1 GROUP BY a", df -> df.checkpoint(true));
+
+    assertThat(complete.getInputs())
+        .as("checkpoint should preserve the real upstream table as an input")
+        .anyMatch(ds -> ds.getName().contains("checkpoint_t1"));
+    assertThat(columnLineageOfOutput(complete).getFields().getAdditionalProperties().get("b"))
+        .isNotNull()
+        .satisfies(
+            field ->
+                assertThat(field.getInputFields())
+                    .anyMatch(
+                        f -> f.getName().contains("checkpoint_t1") && "b".equals(f.getField())));
+  }
+
+  /**
+   * A lazy local checkpoint persists the checkpointed RDD right away, so it can be found among the
+   * persisted RDDs even though no job computes it within the checkpoint's own execution.
+   */
+  @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  void testLazyLocalCheckpointPreservesLineage() {
+    runCheckpointPipeline(df -> df.localCheckpoint(false));
+  }
+
+  /**
+   * A lazy checkpoint is only materialized by the first job reading it, so the checkpointed RDD
+   * isn't reported as checkpointed yet while that job runs. Its lineage should still be attached to
+   * all events of the job, not only to the ones emitted after it completes.
+   */
+  @Test
+  void testLazyLocalCheckpointFirstReadEventsHaveLineage() {
+    runCheckpointPipelineAndGetCompleteEvent(df -> df.localCheckpoint(false));
+
+    List<RunEvent> events =
+        MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3");
+    assertThat(events)
+        .filteredOn(e -> e.getEventType() == RunEvent.EventType.START)
+        .isNotEmpty()
+        .allSatisfy(
+            start -> {
+              assertThat(start.getInputs()).anyMatch(ds -> ds.getName().contains("checkpoint_t1"));
+              assertThat(
+                      columnLineageOfOutput(start)
+                          .getFields()
+                          .getAdditionalProperties()
+                          .get("b")
+                          .getInputFields())
+                  .anyMatch(f -> f.getName().contains("checkpoint_t1") && "b".equals(f.getField()));
+            });
+  }
+
+  /**
+   * Lazy reliable checkpoints aren't materialized within their own execution and the checkpointed
+   * RDD can't be reached otherwise, so their lineage can't be captured - they should behave the
+   * same as with the feature disabled.
+   */
+  @Test
+  void testLazyCheckpointIsNotBridged() {
+    RunEvent complete = runCheckpointPipelineAndGetCompleteEvent(df -> df.checkpoint(false));
+
+    assertThat(complete.getInputs())
+        .as(
+            "lazy reliable checkpoints are not supported, so upstream table lineage should not be "
+                + "bridged")
+        .noneMatch(ds -> ds.getName().contains("checkpoint_t1"));
   }
 }
