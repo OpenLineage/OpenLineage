@@ -272,9 +272,6 @@ class OpenLineageRunEventBuilder {
   List<InputDataset> buildCheckpointInputDatasets(List<Object> nodes) {
     return buildInputDatasets(nodes);
   }
-  //  List<InputDataset> buildCheckpointInputDatasets(List<Object> nodes) {
-  //    return buildInputDatasets(nodes);
-  //  }
 
   private List<InputDataset> buildInputDatasets(List<Object> nodes) {
     openLineageContext

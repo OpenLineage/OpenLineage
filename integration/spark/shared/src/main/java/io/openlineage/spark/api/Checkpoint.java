@@ -6,6 +6,7 @@
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.column.CheckpointColumnLineage;
 import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
@@ -21,29 +22,21 @@ import lombok.Getter;
  * handling the checkpoint's own {@code SparkListenerSQLExecutionEnd}), and reuse them later when a
  * {@link org.apache.spark.sql.execution.LogicalRDD} wrapping the checkpointed RDD is found in a
  * downstream query's plan.
+ *
+ * <p>The lineage is resolved all the way down to the datasets read by the checkpointed plan, also
+ * when they're read through other checkpoints. Each checkpoint is therefore self-contained, the
+ * same way Spark truncates the RDD lineage at a checkpoint, and lineage of any other checkpoint can
+ * be dropped without affecting it.
  */
 @Getter
 public class Checkpoint {
 
   private final List<OpenLineage.InputDataset> inputDatasets;
-  private final OpenLineage.ColumnLineageDatasetFacetFields columnLineageFields;
-
-  /**
-   * Dataset-level column lineage dependencies captured for the plan being checkpointed - i.e.
-   * columns used for filtering, sorting, grouping, joining, window functions, etc., which are not
-   * necessarily tied to any specific output field (and may not even appear in the checkpoint's
-   * output schema at all). These are kept separate from {@link #columnLineageFields} because they
-   * cannot be bridged by matching output attribute names downstream.
-   */
-  private final List<OpenLineage.InputField> datasetDependencyFields;
+  private final CheckpointColumnLineage columnLineage;
 
   public Checkpoint(
-      List<OpenLineage.InputDataset> inputDatasets,
-      OpenLineage.ColumnLineageDatasetFacetFields columnLineageFields,
-      List<OpenLineage.InputField> datasetDependencyFields) {
+      List<OpenLineage.InputDataset> inputDatasets, CheckpointColumnLineage columnLineage) {
     this.inputDatasets = inputDatasets == null ? Collections.emptyList() : inputDatasets;
-    this.columnLineageFields = columnLineageFields;
-    this.datasetDependencyFields =
-        datasetDependencyFields == null ? Collections.emptyList() : datasetDependencyFields;
+    this.columnLineage = columnLineage == null ? CheckpointColumnLineage.empty() : columnLineage;
   }
 }
