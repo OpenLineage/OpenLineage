@@ -313,6 +313,11 @@ class DbtArtifactProcessor:
             output_node = nodes[name]
             started_at, completed_at = self.get_timings(run["timing"])
 
+            # dbt v2 reports a node that finished with a warning, such as an unchanged
+            # dynamic table that was skipped, as "warn". It did not fail, so treat it
+            # as a success rather than rejecting the status.
+            run_status = "success" if run["status"] == "warn" else run["status"]
+
             # (node_id, node) so exposures depending on an input can be looked up below.
             inputs: list[tuple[str, ModelNode]] = []
             for node in context.manifest["parent_map"][run["unique_id"]]:
@@ -400,7 +405,7 @@ class DbtArtifactProcessor:
 
             # Attach exposures only for successful builds (FAIL emits no outputs, skipped
             # nodes are filtered above).
-            succeeded = run["status"] == "success"
+            succeeded = run_status == "success"
             input_datasets = []
             for node_id, input_node in inputs:
                 input_dataset = self.node_to_dataset(input_node, has_facets=True)
@@ -413,7 +418,7 @@ class DbtArtifactProcessor:
 
             events.add(
                 self.to_openlineage_events(
-                    run["status"],
+                    run_status,
                     started_at,
                     completed_at,
                     self.get_run(run_id=run_id, query_id=query_id, run_facets=run_facets),
