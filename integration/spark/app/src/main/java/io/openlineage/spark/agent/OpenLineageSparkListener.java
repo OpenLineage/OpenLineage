@@ -52,6 +52,7 @@ import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerTaskEnd;
+import org.apache.spark.scheduler.SparkListenerUnpersistRDD;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.Command;
 import org.apache.spark.sql.execution.QueryExecution;
@@ -337,6 +338,19 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       }
       jobMetricsLifecycle.completeJob(jobEnd.jobId());
     }
+  }
+
+  /**
+   * Locally checkpointed RDDs are persisted, so they get unpersisted - either explicitly or by
+   * Spark's {@code ContextCleaner} once the RDD is garbage collected - after which the checkpoint
+   * can't be read anymore and the lineage captured for it can be dropped.
+   */
+  @Override
+  public void onUnpersistRDD(SparkListenerUnpersistRDD unpersistRDD) {
+    if (checkIfDisabled() || contextFactory == null) {
+      return;
+    }
+    contextFactory.getCheckpointContext().removeRdd(unpersistRDD.rddId());
   }
 
   @Override
