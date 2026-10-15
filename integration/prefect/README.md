@@ -85,6 +85,7 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
 **Required**: an active local Prefect instance. This guide assumes the server and API are using port 4200.
 
 1. **Spin up Marquez:**
+
     ```sh
     mkdir prefect-test
     cd prefect-test
@@ -96,6 +97,7 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
     * **Marquez Lineage UI:** [http://localhost:3000](http://localhost:3000)
 
 2. **Install local environment requirements:**
+
     ```sh
     python3 -m venv .venv
     source .venv/bin/activate
@@ -103,6 +105,7 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
     ```
 
 3. **Configure the integration:**
+
     ```sh
     export OPENLINEAGE_NAMESPACE="prefect_test" &&
     export OPENLINEAGE__TRANSPORT__TYPE="http" &&
