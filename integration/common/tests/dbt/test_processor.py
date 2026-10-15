@@ -1049,6 +1049,7 @@ class TestModelRunStatus:
 
     @pytest.fixture
     def processor(self):
+        """Processor configured for a ``dbt run`` against Snowflake."""
         p = DbtArtifactProcessor(
             producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
             job_namespace="ns",
@@ -1061,6 +1062,7 @@ class TestModelRunStatus:
 
     @staticmethod
     def _ctx(status):
+        """Run context with one model whose run result has the given status."""
         manifest = {
             "nodes": {
                 "model.project.my_model": {
@@ -1090,6 +1092,7 @@ class TestModelRunStatus:
 
     @pytest.mark.parametrize("status", ["success", "warn"])
     def test_succeeded_model_emits_complete(self, processor, status):
+        """``success`` and ``warn`` both emit START and COMPLETE, with no FAIL."""
         context = self._ctx(status)
         processor.manifest = context.manifest
         events = processor.parse_execution(context, context.manifest["nodes"])
@@ -1099,6 +1102,7 @@ class TestModelRunStatus:
         assert not events.fails
 
     def test_error_model_emits_fail(self, processor):
+        """``error`` still emits FAIL, so the warn mapping does not hide real failures."""
         context = self._ctx("error")
         processor.manifest = context.manifest
         events = processor.parse_execution(context, context.manifest["nodes"])

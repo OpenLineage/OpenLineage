@@ -298,6 +298,7 @@ class DbtArtifactProcessor:
         return int(file.split(".")[0][1:])
 
     def parse_execution(self, context: DbtRunContext, nodes: dict) -> DbtEvents:
+        """Build START and COMPLETE/FAIL events for each model, source and snapshot run result."""
         events = DbtEvents()
         for run in context.run_results["results"]:
             name = run["unique_id"]
