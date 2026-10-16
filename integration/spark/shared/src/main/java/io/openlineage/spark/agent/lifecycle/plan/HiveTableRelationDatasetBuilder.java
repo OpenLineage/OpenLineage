@@ -39,7 +39,7 @@ public class HiveTableRelationDatasetBuilder<D extends Dataset>
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    return x instanceof HiveTableRelation;
+    return x instanceof HiveTableRelation && !isReadOnlyOutput(x);
   }
 
   @Override

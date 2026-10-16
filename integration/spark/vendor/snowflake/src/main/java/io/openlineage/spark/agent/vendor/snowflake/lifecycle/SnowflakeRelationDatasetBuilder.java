@@ -57,7 +57,7 @@ public class SnowflakeRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
-    return isSnowflakeClass(plan);
+    return isSnowflakeClass(plan) && !isReadOnlyOutput(plan);
   }
 
   @Override

@@ -45,7 +45,7 @@ public class LogicalRDDDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    return x instanceof LogicalRDD;
+    return x instanceof LogicalRDD && !isReadOnlyOutput(x);
   }
 
   @Override

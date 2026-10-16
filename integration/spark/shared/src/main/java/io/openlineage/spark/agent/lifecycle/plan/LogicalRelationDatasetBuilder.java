@@ -84,38 +84,21 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    if (x instanceof LogicalRelation && isConnectorRelation(((LogicalRelation) x).relation())) {
-      return true;
-    }
-
-    // if a LogicalPlan is a single node plan like `select * from temp`,
-    // then it's leaf node and should not be considered output node
-    if (x instanceof LogicalRelation && isSingleNodeLogicalPlan(x) && !searchDependencies) {
+    if (!(x instanceof LogicalRelation) || isReadOnlyOutput(x)) {
       return false;
     }
 
-    return x instanceof LogicalRelation
-        && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
-            || ((LogicalRelation) x).relation() instanceof JDBCRelation
-            || context
-                .getSparkExtensionVisitorWrapper()
-                .isDefinedAt(((LogicalRelation) x).relation())
-            || ((LogicalRelation) x).catalogTable().isDefined());
+    return isConnectorRelation(((LogicalRelation) x).relation())
+        || ((LogicalRelation) x).relation() instanceof HadoopFsRelation
+        || ((LogicalRelation) x).relation() instanceof JDBCRelation
+        || context.getSparkExtensionVisitorWrapper().isDefinedAt(((LogicalRelation) x).relation())
+        || ((LogicalRelation) x).catalogTable().isDefined();
   }
 
   private static boolean isConnectorRelation(BaseRelation relation) {
     return KafkaRelationHandler.isKafkaRelation(relation)
         || KustoRelationHandler.isKustoRelation(relation)
         || SqlDWRelationHandler.isSqlDWRelation(relation);
-  }
-
-  private boolean isSingleNodeLogicalPlan(LogicalPlan x) {
-    return context
-            .getQueryExecution()
-            .map(qe -> qe.optimizedPlan())
-            .filter(p -> p.equals(x))
-            .isPresent()
-        && (x.children() == null || x.children().isEmpty());
   }
 
   @Override
