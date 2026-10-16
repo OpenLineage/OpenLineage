@@ -29,12 +29,12 @@ import scala.Option;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-class AlterTableRenameCommandVisitorTest {
+class AlterTableRenameCommandDatasetBuilderTest {
 
   private static final String OLD_TABLE = "old_table";
   private static final String NEW_TABLE = "new_table";
   SparkSession session;
-  AlterTableRenameCommandVisitor visitor;
+  AlterTableRenameCommandDatasetBuilder visitor;
   String database;
 
   @AfterEach
@@ -77,7 +77,8 @@ class AlterTableRenameCommandVisitorTest {
             });
 
     session.catalog().createTable(OLD_TABLE, "csv", schema, ScalaConversionUtils.asScalaMapEmpty());
-    visitor = new AlterTableRenameCommandVisitor(SparkAgentTestExtension.newContext(session));
+    visitor =
+        new AlterTableRenameCommandDatasetBuilder(SparkAgentTestExtension.newContext(session));
   }
 
   @Test
@@ -89,7 +90,7 @@ class AlterTableRenameCommandVisitorTest {
             false);
     command.run(session);
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
@@ -112,7 +113,7 @@ class AlterTableRenameCommandVisitorTest {
             false);
 
     // command is not run
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets).isEmpty();
   }

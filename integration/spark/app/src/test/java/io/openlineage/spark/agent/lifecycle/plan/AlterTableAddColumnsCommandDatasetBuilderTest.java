@@ -28,11 +28,11 @@ import scala.Option;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-class AlterTableAddColumnsCommandVisitorTest {
+class AlterTableAddColumnsCommandDatasetBuilderTest {
 
   private static final String TABLE_1 = "table1";
   SparkSession session;
-  AlterTableAddColumnsCommandVisitor visitor;
+  AlterTableAddColumnsCommandDatasetBuilder visitor;
   String database;
 
   @AfterEach
@@ -65,7 +65,8 @@ class AlterTableAddColumnsCommandVisitorTest {
 
     session.catalog().createTable(TABLE_1, "csv", schema, ScalaConversionUtils.asScalaMapEmpty());
     database = session.catalog().currentDatabase();
-    visitor = new AlterTableAddColumnsCommandVisitor(SparkAgentTestExtension.newContext(session));
+    visitor =
+        new AlterTableAddColumnsCommandDatasetBuilder(SparkAgentTestExtension.newContext(session));
   }
 
   @Test
@@ -83,7 +84,7 @@ class AlterTableAddColumnsCommandVisitorTest {
 
     command.run(session);
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertEquals(3, datasets.get(0).getFacets().getSchema().getFields().size());
     assertThat(datasets)
@@ -104,7 +105,7 @@ class AlterTableAddColumnsCommandVisitorTest {
                 .toSeq());
 
     // command is not run
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets).isEmpty();
   }

@@ -7,8 +7,8 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -20,18 +20,23 @@ import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 /**
- * {@link LogicalPlan} visitor that matches an {@link CreateDataSourceTableAsSelectCommand} and
- * extracts the output {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link CreateDataSourceTableAsSelectCommand} and extracts the
+ * output {@link OpenLineage.Dataset} being written.
  */
-public class CreateDataSourceTableAsSelectCommandVisitor
-    extends QueryPlanVisitor<CreateDataSourceTableAsSelectCommand, OpenLineage.OutputDataset> {
+public class CreateDataSourceTableAsSelectCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<CreateDataSourceTableAsSelectCommand> {
 
-  public CreateDataSourceTableAsSelectCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public CreateDataSourceTableAsSelectCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof CreateDataSourceTableAsSelectCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(CreateDataSourceTableAsSelectCommand x) {
     return context
         .getSparkSession()
         .map(

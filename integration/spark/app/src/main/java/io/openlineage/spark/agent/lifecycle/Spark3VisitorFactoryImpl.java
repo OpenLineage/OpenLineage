@@ -14,7 +14,6 @@ import io.openlineage.spark.agent.lifecycle.plan.StreamingDataSourceV2RelationVi
 import io.openlineage.spark.agent.lifecycle.plan.WriteToDataSourceV2Visitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.DropTableVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.RefreshTableCommandVisitor;
 import java.util.List;
@@ -28,7 +27,6 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
       OpenLineageContext context) {
     return ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()
         .addAll(super.getOutputVisitors(context))
-        .add(new CreateTableLikeCommandVisitor(context))
         .add(new DropTableVisitor(context))
         .add(new WriteToDataSourceV2Visitor(context))
         .build();

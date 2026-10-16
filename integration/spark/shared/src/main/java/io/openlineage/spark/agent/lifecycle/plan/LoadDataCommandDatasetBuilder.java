@@ -6,8 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -16,24 +16,27 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.LoadDataCommand;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link LoadDataCommandVisitor} and extracts the
- * output {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link LoadDataCommandDatasetBuilder} and extracts the output
+ * {@link OpenLineage.Dataset} being written.
  */
 @Slf4j
-public class LoadDataCommandVisitor
-    extends QueryPlanVisitor<LoadDataCommand, OpenLineage.OutputDataset> {
+public class LoadDataCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<LoadDataCommand> {
 
-  public LoadDataCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public LoadDataCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof LoadDataCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(LoadDataCommand command) {
     if (!context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
-
-    LoadDataCommand command = (LoadDataCommand) x;
     return catalogTableFor(command.table())
         .map(
             table ->

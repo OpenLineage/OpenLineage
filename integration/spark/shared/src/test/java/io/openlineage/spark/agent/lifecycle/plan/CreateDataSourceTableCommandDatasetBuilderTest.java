@@ -20,28 +20,23 @@ import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrap
 import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
 import io.openlineage.spark.agent.util.GoogleCloudPlatformUtils;
 import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
-import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.execution.command.CreateDataSourceTableAsSelectCommand;
-import org.apache.spark.sql.types.StructType;
+import org.apache.spark.sql.execution.command.CreateDataSourceTableCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
 
-class CreateDataSourceTableAsSelectCommandVisitorTest {
+class CreateDataSourceTableCommandDatasetBuilderTest {
 
   private static final String DATABASE = "test_db";
   private static final String TABLE = "test_table";
@@ -54,9 +49,9 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
 
   private SparkSession session;
   private OpenLineageContext context;
-  private CreateDataSourceTableAsSelectCommandVisitor visitor;
+  private CreateDataSourceTableCommandDatasetBuilder visitor;
   private CatalogTable catalogTable;
-  private CreateDataSourceTableAsSelectCommand command;
+  private CreateDataSourceTableCommand command;
 
   @BeforeEach
   void setup() {
@@ -77,19 +72,11 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
 
-    visitor = new CreateDataSourceTableAsSelectCommandVisitor(context);
+    visitor = new CreateDataSourceTableCommandDatasetBuilder(context);
 
     TableIdentifier tableId = new TableIdentifier(TABLE, Option.apply(DATABASE));
     catalogTable = CatalogTableTestUtils.getCatalogTable(tableId);
-
-    LogicalPlan query = mock(LogicalPlan.class);
-    when(query.schema()).thenReturn(catalogTable.schema());
-    command =
-        new CreateDataSourceTableAsSelectCommand(
-            catalogTable,
-            SaveMode.Overwrite,
-            query,
-            ScalaConversionUtils.<String>fromList(Collections.emptyList()));
+    command = new CreateDataSourceTableCommand(catalogTable, false);
   }
 
   @Test
@@ -171,56 +158,10 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
   }
 
   @Test
-  void testApplyWithHiveCatalogIncludesSymlinkFacet() {
-    OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-    OpenLineage.CatalogDatasetFacet hiveFacet =
-        ol.newCatalogDatasetFacetBuilder()
-            .framework(HIVE_FRAMEWORK)
-            .source("spark")
-            .name("default")
-            .type(HIVE_FRAMEWORK)
-            .metadataUri(HIVE_METASTORE_URI)
-            .warehouseUri("file:/tmp/warehouse")
-            .build();
-
-    // DatasetIdentifier with a TABLE symlink representing the Hive metastore logical name
-    DatasetIdentifier diWithSymlink = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
-    diWithSymlink.withSymlink(
-        HIVE_SYMLINK_NAME, HIVE_METASTORE_URI, DatasetIdentifier.SymlinkType.TABLE);
-
-    try (MockedStatic<PathUtils> pathUtils = mockStatic(PathUtils.class);
-        MockedStatic<CatalogDatasetFacetUtils> catalogUtils =
-            mockStatic(CatalogDatasetFacetUtils.class)) {
-
-      pathUtils
-          .when(() -> PathUtils.fromCatalogTable(catalogTable, session))
-          .thenReturn(diWithSymlink);
-      catalogUtils
-          .when(() -> CatalogDatasetFacetUtils.isHiveCatalog(session, catalogTable.identifier()))
-          .thenReturn(true);
-      catalogUtils
-          .when(() -> CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context))
-          .thenReturn(Optional.of(hiveFacet));
-
-      List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
-
-      assertThat(datasets).hasSize(1);
-      OpenLineage.SymlinksDatasetFacet symlinks = datasets.get(0).getFacets().getSymlinks();
-      assertThat(symlinks).isNotNull();
-      assertThat(symlinks.getIdentifiers()).hasSize(1);
-      assertThat(symlinks.getIdentifiers().get(0).getName()).isEqualTo(HIVE_SYMLINK_NAME);
-      assertThat(symlinks.getIdentifiers().get(0).getNamespace()).isEqualTo(HIVE_METASTORE_URI);
-      assertThat(symlinks.getIdentifiers().get(0).getType())
-          .isEqualTo(DatasetIdentifier.SymlinkType.TABLE.toString());
-    }
-  }
-
-  @Test
   void testApplyWithBigLakeCatalogIncludesBigLakeFacetAndSymlink() {
     OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-    // Catalog facet as returned by getCatalogDatasetFacetForHive when BigLake is detected —
-    // mocking HiveConf.ConfVars.valueOf via mockStatic(GoogleCloudPlatformUtils.class) so
-    // the BigLake-specific HiveConf enum is not required on the test classpath.
+    // Facet returned by getCatalogDatasetFacetForHive when BigLake is active —
+    // GoogleCloudPlatformUtils is mocked so BigLake-extended HiveConf is not needed on classpath.
     OpenLineage.CatalogDatasetFacet bigLakeFacet =
         ol.newCatalogDatasetFacetBuilder()
             .framework(HIVE_FRAMEWORK)
@@ -234,7 +175,6 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
                     .build())
             .build();
 
-    // DatasetIdentifier with gcp_lakehouse symlink, as PathUtils produces for BigLake tables
     DatasetIdentifier diWithBigLakeSymlink = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
     diWithBigLakeSymlink.withSymlink(
         HIVE_SYMLINK_NAME, GCP_LAKEHOUSE, DatasetIdentifier.SymlinkType.TABLE);
@@ -242,9 +182,6 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
     try (MockedStatic<PathUtils> pathUtils = mockStatic(PathUtils.class);
         MockedStatic<CatalogDatasetFacetUtils> catalogUtils =
             mockStatic(CatalogDatasetFacetUtils.class);
-        // Mock GoogleCloudPlatformUtils so that BigLake detection does not require the
-        // BigLake-extended HiveConf (with SPARK_HIVE_METASTORE_CLIENT_FACTORY_CLASS ConfVar)
-        // to be present on the test classpath.
         MockedStatic<GoogleCloudPlatformUtils> gcpUtils =
             mockStatic(GoogleCloudPlatformUtils.class)) {
 
@@ -283,42 +220,50 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
   }
 
   @Test
-  void testApplyWithSchemaFallbackToQuerySchema() {
-    // CatalogTable with empty schema — visitor should fall back to query schema
-    TableIdentifier tableId = new TableIdentifier(TABLE, Option.apply(DATABASE));
-    CatalogTable emptySchemaTable = CatalogTableTestUtils.getCatalogTable(tableId);
+  void testApplyWithHiveCatalogIncludesSymlinkFacet() {
+    OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+    OpenLineage.CatalogDatasetFacet hiveFacet =
+        ol.newCatalogDatasetFacetBuilder()
+            .framework(HIVE_FRAMEWORK)
+            .source("spark")
+            .name("default")
+            .type(HIVE_FRAMEWORK)
+            .metadataUri(HIVE_METASTORE_URI)
+            .warehouseUri("file:/tmp/warehouse")
+            .build();
 
-    StructType querySchema = catalogTable.schema(); // non-empty
-    LogicalPlan query = mock(LogicalPlan.class);
-    when(query.schema()).thenReturn(querySchema);
-    CreateDataSourceTableAsSelectCommand cmd =
-        new CreateDataSourceTableAsSelectCommand(
-            emptySchemaTable,
-            SaveMode.Overwrite,
-            query,
-            ScalaConversionUtils.<String>fromList(Collections.emptyList()));
+    DatasetIdentifier diWithSymlink = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
+    diWithSymlink.withSymlink(
+        HIVE_SYMLINK_NAME, HIVE_METASTORE_URI, DatasetIdentifier.SymlinkType.TABLE);
 
     try (MockedStatic<PathUtils> pathUtils = mockStatic(PathUtils.class);
         MockedStatic<CatalogDatasetFacetUtils> catalogUtils =
             mockStatic(CatalogDatasetFacetUtils.class)) {
 
-      DatasetIdentifier di = new DatasetIdentifier(WAREHOUSE_PATH, FILE_SCHEME);
-      pathUtils.when(() -> PathUtils.fromCatalogTable(emptySchemaTable, session)).thenReturn(di);
+      pathUtils
+          .when(() -> PathUtils.fromCatalogTable(catalogTable, session))
+          .thenReturn(diWithSymlink);
       catalogUtils
-          .when(
-              () -> CatalogDatasetFacetUtils.isHiveCatalog(session, emptySchemaTable.identifier()))
-          .thenReturn(false);
+          .when(() -> CatalogDatasetFacetUtils.isHiveCatalog(session, catalogTable.identifier()))
+          .thenReturn(true);
+      catalogUtils
+          .when(() -> CatalogDatasetFacetUtils.getCatalogDatasetFacetForHive(context))
+          .thenReturn(Optional.of(hiveFacet));
 
-      List<OpenLineage.OutputDataset> datasets = visitor.apply(cmd);
+      List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
       assertThat(datasets).hasSize(1);
-      assertThat(datasets.get(0).getFacets().getSchema().getFields()).isNotEmpty();
+      OpenLineage.SymlinksDatasetFacet symlinks = datasets.get(0).getFacets().getSymlinks();
+      assertThat(symlinks).isNotNull();
+      assertThat(symlinks.getIdentifiers()).hasSize(1);
+      assertThat(symlinks.getIdentifiers().get(0).getName()).isEqualTo(HIVE_SYMLINK_NAME);
+      assertThat(symlinks.getIdentifiers().get(0).getNamespace()).isEqualTo(HIVE_METASTORE_URI);
     }
   }
 
   @Test
   void testJobNameSuffix() {
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     assertThat(visitor.jobNameSuffix(command))
         .isPresent()
         .hasValueSatisfying(suffix -> assertThat(suffix).contains(TABLE));

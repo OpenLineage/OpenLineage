@@ -20,7 +20,7 @@ import org.apache.spark.sql.execution.command.LoadDataCommand;
 /**
  * {@link LogicalPlan} visitor that matches a {@link LoadDataCommand} and extracts the source
  * location being read as an input {@link OpenLineage.Dataset}. The target table is emitted as the
- * output by {@link LoadDataCommandVisitor}.
+ * output by {@link LoadDataCommandDatasetBuilder}.
  */
 @Slf4j
 public class LoadDataCommandInputVisitor

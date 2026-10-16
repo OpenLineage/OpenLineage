@@ -9,8 +9,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -23,20 +23,20 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link OptimizedCreateHiveTableAsSelectCommand} and
- * extracts the output {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link OptimizedCreateHiveTableAsSelectCommand} and extracts the
+ * output {@link OpenLineage.Dataset} being written.
  */
-public class OptimizedCreateHiveTableAsSelectCommandVisitor
-    extends QueryPlanVisitor<OptimizedCreateHiveTableAsSelectCommand, OpenLineage.OutputDataset> {
+public class OptimizedCreateHiveTableAsSelectCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<OptimizedCreateHiveTableAsSelectCommand> {
 
-  public OptimizedCreateHiveTableAsSelectCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public OptimizedCreateHiveTableAsSelectCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   // OptimizedCreateHiveTableAsSelectCommand has been added in Spark 2.4.8
   public static boolean hasClasses() {
     try {
-      OptimizedCreateHiveTableAsSelectCommandVisitor.class
+      OptimizedCreateHiveTableAsSelectCommandDatasetBuilder.class
           .getClassLoader()
           .loadClass("org.apache.spark.sql.hive.execution.OptimizedCreateHiveTableAsSelectCommand");
       return true;
@@ -48,17 +48,15 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
     return (plan instanceof OptimizedCreateHiveTableAsSelectCommand);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  public List<OpenLineage.OutputDataset> apply(OptimizedCreateHiveTableAsSelectCommand command) {
     if (!context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
-
-    OptimizedCreateHiveTableAsSelectCommand command = (OptimizedCreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
     DatasetIdentifier datasetIdentifier =
         PathUtils.fromCatalogTable(table, context.getSparkSession().get());

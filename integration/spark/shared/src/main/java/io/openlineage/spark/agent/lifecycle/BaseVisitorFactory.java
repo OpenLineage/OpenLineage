@@ -8,32 +8,16 @@ package io.openlineage.spark.agent.lifecycle;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddPartitionCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.AlterTableSetLocationCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeInputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.CreateTableCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.ExternalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.HiveTableRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.KustoRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandInputVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -54,7 +38,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     if (SqlDWDatabricksVisitor.hasSqlDWDatabricksClasses()) {
       list.add(new SqlDWDatabricksVisitor(context, factory));
     }
-    if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
+    if (InsertIntoHiveTableDatasetBuilder.hasHiveClasses()) {
       list.add(new HiveTableRelationVisitor<>(context, factory));
     }
     if (KustoRelationVisitor.hasKustoClasses()) {
@@ -95,28 +79,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     if (BigQueryUtils.hasBigQueryClasses()) {
       list.add(new BigQueryNodeOutputVisitor(context, factory));
     }
-
-    list.add(new InsertIntoDataSourceDirVisitor(context));
-    list.add(new InsertIntoHadoopFsRelationVisitor(context));
-    list.add(new CreateDataSourceTableAsSelectCommandVisitor(context));
-    list.add(new InsertIntoDirVisitor(context));
-    if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
-      list.add(new InsertIntoHiveTableVisitor(context));
-      list.add(new InsertIntoHiveDirVisitor(context));
-      list.add(new CreateHiveTableAsSelectCommandVisitor(context));
-    }
-    if (OptimizedCreateHiveTableAsSelectCommandVisitor.hasClasses()) {
-      list.add(new OptimizedCreateHiveTableAsSelectCommandVisitor(context));
-    }
-    list.add(new CreateDataSourceTableCommandVisitor(context));
-    list.add(new LoadDataCommandVisitor(context));
-    list.add(new AlterTableRenameCommandVisitor(context));
-    list.add(new AlterTableAddColumnsCommandVisitor(context));
-    list.add(new CreateTableCommandVisitor(context));
-    list.add(new DropTableCommandVisitor(context));
-    list.add(new TruncateTableCommandVisitor(context));
-    list.add(new AlterTableSetLocationCommandVisitor(context));
-    list.add(new AlterTableAddPartitionCommandVisitor(context));
     return list;
   }
 }

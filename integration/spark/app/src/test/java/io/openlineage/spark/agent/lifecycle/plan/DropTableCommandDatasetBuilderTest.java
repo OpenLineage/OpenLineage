@@ -26,10 +26,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-class DropTableCommandVisitorTest {
+class DropTableCommandDatasetBuilderTest {
 
   SparkSession session;
-  DropTableCommandVisitor visitor;
+  DropTableCommandDatasetBuilder visitor;
   DropTableCommand command;
   String database;
   TableIdentifier table = new TableIdentifier("drop_table");
@@ -44,7 +44,7 @@ class DropTableCommandVisitorTest {
 
     database = session.catalog().currentDatabase();
     command = new DropTableCommand(table, true, false, true);
-    visitor = new DropTableCommandVisitor(SparkAgentTestExtension.newContext(session));
+    visitor = new DropTableCommandDatasetBuilder(SparkAgentTestExtension.newContext(session));
   }
 
   @AfterEach
@@ -58,7 +58,7 @@ class DropTableCommandVisitorTest {
     session.sessionState().catalog().dropTable(table, true, true);
     command.run(session);
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets).isEmpty();
   }

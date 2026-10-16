@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import scala.Option;
 import scala.collection.immutable.HashMap;
 
-class LoadDataCommandVisitorTest {
+class LoadDataCommandDatasetBuilderTest {
   @Test
   void testLoadDataCommand() {
     SparkSession session =
@@ -42,8 +42,8 @@ class LoadDataCommandVisitorTest {
 
     session.catalog().createTable("table", "csv", schema, ScalaConversionUtils.asScalaMapEmpty());
 
-    LoadDataCommandVisitor visitor =
-        new LoadDataCommandVisitor(SparkAgentTestExtension.newContext(session));
+    LoadDataCommandDatasetBuilder visitor =
+        new LoadDataCommandDatasetBuilder(SparkAgentTestExtension.newContext(session));
 
     LoadDataCommand command =
         new LoadDataCommand(
@@ -53,7 +53,7 @@ class LoadDataCommandVisitorTest {
             false,
             Option.empty());
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()

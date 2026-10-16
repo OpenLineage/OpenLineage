@@ -39,7 +39,7 @@ import scala.Option;
 import scala.Option$;
 import scala.collection.immutable.HashMap;
 
-class CreateTableLikeCommandVisitorTest {
+class CreateTableLikeCommandDatasetBuilderTest {
 
   private SparkSession sparkSession = mock(SparkSession.class);
   private SessionState sessionState = mock(SessionState.class);
@@ -73,8 +73,8 @@ class CreateTableLikeCommandVisitorTest {
     when(sourceCatalogTable.schema()).thenReturn(schema);
     when(sourceCatalogTable.identifier()).thenReturn(sourceTableIdentifier);
 
-    CreateTableLikeCommandVisitor visitor =
-        new CreateTableLikeCommandVisitor(
+    CreateTableLikeCommandDatasetBuilder visitor =
+        new CreateTableLikeCommandDatasetBuilder(
             OpenLineageContext.builder()
                 .sparkSession(sparkSession)
                 .sparkContext(sparkSession.sparkContext())
@@ -92,7 +92,7 @@ class CreateTableLikeCommandVisitorTest {
             ScalaConversionUtils.asScalaMapEmpty(),
             false);
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
     assertEquals(1, datasets.size());
@@ -108,8 +108,8 @@ class CreateTableLikeCommandVisitorTest {
   @Test
   void testJobNameSuffix() {
     CreateTableLikeCommand command = mock(CreateTableLikeCommand.class);
-    CreateTableLikeCommandVisitor visitor =
-        new CreateTableLikeCommandVisitor(mock(OpenLineageContext.class));
+    CreateTableLikeCommandDatasetBuilder visitor =
+        new CreateTableLikeCommandDatasetBuilder(mock(OpenLineageContext.class));
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(command.targetTable()).thenReturn(tableIdentifier);
     when(tableIdentifier.identifier()).thenReturn("db_t");

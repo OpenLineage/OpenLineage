@@ -7,8 +7,8 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.net.URI;
 import java.util.Collections;
@@ -18,19 +18,23 @@ import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link InsertIntoDir} and extracts the output {@link
+ * Dataset builder that matches an {@link InsertIntoDir} and extracts the output {@link
  * OpenLineage.Dataset} being written.
  */
-public class InsertIntoDirVisitor
-    extends QueryPlanVisitor<InsertIntoDir, OpenLineage.OutputDataset> {
+public class InsertIntoDirDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<InsertIntoDir> {
 
-  public InsertIntoDirVisitor(OpenLineageContext context) {
-    super(context);
+  public InsertIntoDirDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    InsertIntoDir cmd = (InsertIntoDir) x;
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof InsertIntoDir;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(InsertIntoDir cmd) {
     Optional<URI> optionalUri = ScalaConversionUtils.asJavaOptional(cmd.storage().locationUri());
 
     return optionalUri

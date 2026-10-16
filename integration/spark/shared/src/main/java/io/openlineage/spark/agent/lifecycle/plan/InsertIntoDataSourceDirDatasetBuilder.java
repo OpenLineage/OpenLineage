@@ -6,8 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -15,19 +15,23 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link InsertIntoDataSourceDirCommand} and extracts
- * the output {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link InsertIntoDataSourceDirCommand} and extracts the output
+ * {@link OpenLineage.Dataset} being written.
  */
-public class InsertIntoDataSourceDirVisitor
-    extends QueryPlanVisitor<InsertIntoDataSourceDirCommand, OpenLineage.OutputDataset> {
+public class InsertIntoDataSourceDirDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<InsertIntoDataSourceDirCommand> {
 
-  public InsertIntoDataSourceDirVisitor(OpenLineageContext context) {
-    super(context);
+  public InsertIntoDataSourceDirDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    InsertIntoDataSourceDirCommand command = (InsertIntoDataSourceDirCommand) x;
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof InsertIntoDataSourceDirCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(InsertIntoDataSourceDirCommand command) {
     // URI is required by the InsertIntoDataSourceDirCommand
     SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
         outputDataset()

@@ -6,11 +6,10 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -20,20 +19,24 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.TruncateTableCommand;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link TruncateTableCommand} and extracts the output
- * {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link TruncateTableCommand} and extracts the output {@link
+ * OpenLineage.Dataset} being written.
  */
 @Slf4j
-public class TruncateTableCommandVisitor
-    extends QueryPlanVisitor<TruncateTableCommand, OutputDataset> {
+public class TruncateTableCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<TruncateTableCommand> {
 
-  public TruncateTableCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public TruncateTableCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OutputDataset> apply(LogicalPlan x) {
-    TruncateTableCommand command = (TruncateTableCommand) x;
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof TruncateTableCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(TruncateTableCommand command) {
 
     Optional<CatalogTable> tableOpt = catalogTableFor(command.tableName());
     if (!tableOpt.isPresent() || !context.getSparkSession().isPresent()) {

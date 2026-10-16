@@ -7,16 +7,35 @@ package io.openlineage.spark.agent.lifecycle;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddPartitionCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableSetLocationCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.CreateTableCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandDatasetBuilder;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandDatasetBuilder;
 import java.util.List;
 import org.apache.spark.scheduler.SparkListenerEvent;
 
 /**
  * Dataset builders registered for every Spark version. Each {@link DatasetBuilderFactory} appends
  * them after its version specific builders, so builders listed here resolve a plan node or a job
- * name suffix only when no version specific builder does.
+ * name suffix only when no version specific builder does. The order within the list is the order of
+ * the query plan visitors they were migrated from.
  */
 final class CommonDatasetBuilders {
 
@@ -24,6 +43,35 @@ final class CommonDatasetBuilders {
 
   static List<AbstractQueryPlanDatasetBuilder<SparkListenerEvent, ?, OpenLineage.OutputDataset>>
       outputs(OpenLineageContext context) {
-    return ImmutableList.of(new InsertIntoDataSourceDatasetBuilder(context));
+    ImmutableList.Builder<
+            AbstractQueryPlanDatasetBuilder<SparkListenerEvent, ?, OpenLineage.OutputDataset>>
+        builders = ImmutableList.builder();
+    builders.add(
+        new InsertIntoDataSourceDirDatasetBuilder(context),
+        new InsertIntoDataSourceDatasetBuilder(context),
+        new InsertIntoHadoopFsRelationDatasetBuilder(context),
+        new CreateDataSourceTableAsSelectCommandDatasetBuilder(context),
+        new InsertIntoDirDatasetBuilder(context));
+    if (InsertIntoHiveTableDatasetBuilder.hasHiveClasses()) {
+      builders.add(
+          new InsertIntoHiveTableDatasetBuilder(context),
+          new InsertIntoHiveDirDatasetBuilder(context),
+          new CreateHiveTableAsSelectCommandDatasetBuilder(context));
+    }
+    if (OptimizedCreateHiveTableAsSelectCommandDatasetBuilder.hasClasses()) {
+      builders.add(new OptimizedCreateHiveTableAsSelectCommandDatasetBuilder(context));
+    }
+    builders.add(
+        new CreateDataSourceTableCommandDatasetBuilder(context),
+        new LoadDataCommandDatasetBuilder(context),
+        new AlterTableRenameCommandDatasetBuilder(context),
+        new AlterTableAddColumnsCommandDatasetBuilder(context),
+        new CreateTableCommandDatasetBuilder(context),
+        new DropTableCommandDatasetBuilder(context),
+        new TruncateTableCommandDatasetBuilder(context),
+        new AlterTableSetLocationCommandDatasetBuilder(context),
+        new AlterTableAddPartitionCommandDatasetBuilder(context),
+        new CreateTableLikeCommandDatasetBuilder(context));
+    return builders.build();
   }
 }

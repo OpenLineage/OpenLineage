@@ -9,42 +9,38 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractOnCompleteOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateTableLikeCommand;
-import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link CreateTableLikeCommand} and extracts the
- * output {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link CreateTableLikeCommand} and extracts the output {@link
+ * OpenLineage.Dataset} being written.
  */
 @Slf4j
-public class CreateTableLikeCommandVisitor
-    extends QueryPlanVisitor<CreateTableLikeCommand, OpenLineage.OutputDataset> {
+public class CreateTableLikeCommandDatasetBuilder
+    extends AbstractOnCompleteOutputDatasetBuilder<CreateTableLikeCommand> {
 
-  public CreateTableLikeCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public CreateTableLikeCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public boolean isDefinedAt(SparkListenerEvent event) {
-    return (event instanceof SparkListenerSQLExecutionEnd || event instanceof SparkListenerJobEnd);
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof CreateTableLikeCommand;
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    CreateTableLikeCommand command = (CreateTableLikeCommand) x;
+  public List<OpenLineage.OutputDataset> apply(CreateTableLikeCommand command) {
 
     return context
         .getSparkSession()

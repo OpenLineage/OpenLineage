@@ -29,10 +29,10 @@ import scala.Option;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-class TruncateTableCommandVisitorTest {
+class TruncateTableCommandDatasetBuilderTest {
 
   SparkSession session;
-  TruncateTableCommandVisitor visitor;
+  TruncateTableCommandDatasetBuilder visitor;
   TruncateTableCommand command;
   String database;
   TableIdentifier table = new TableIdentifier("truncate_table");
@@ -47,7 +47,7 @@ class TruncateTableCommandVisitorTest {
 
     database = session.catalog().currentDatabase();
     command = new TruncateTableCommand(table, Option.empty());
-    visitor = new TruncateTableCommandVisitor(SparkAgentTestExtension.newContext(session));
+    visitor = new TruncateTableCommandDatasetBuilder(SparkAgentTestExtension.newContext(session));
   }
 
   @AfterEach
@@ -67,7 +67,7 @@ class TruncateTableCommandVisitorTest {
       // do nothing, Scala NoSuchTableException thrown
     }
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets).isEmpty();
   }

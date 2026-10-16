@@ -6,8 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -16,23 +16,26 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateDataSourceTableCommand;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link CreateDataSourceTableCommand} and extracts the
- * output {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link CreateDataSourceTableCommand} and extracts the output
+ * {@link OpenLineage.Dataset} being written.
  */
-public class CreateDataSourceTableCommandVisitor
-    extends QueryPlanVisitor<CreateDataSourceTableCommand, OpenLineage.OutputDataset> {
+public class CreateDataSourceTableCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<CreateDataSourceTableCommand> {
 
-  public CreateDataSourceTableCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public CreateDataSourceTableCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof CreateDataSourceTableCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(CreateDataSourceTableCommand command) {
     if (!context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
-
-    CreateDataSourceTableCommand command = (CreateDataSourceTableCommand) x;
     CatalogTable catalogTable = command.table();
     return Collections.singletonList(
         outputDataset()

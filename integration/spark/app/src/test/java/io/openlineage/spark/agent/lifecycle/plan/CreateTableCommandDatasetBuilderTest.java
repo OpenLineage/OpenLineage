@@ -27,10 +27,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 
-class CreateTableCommandVisitorTest {
+class CreateTableCommandDatasetBuilderTest {
 
   SparkSession session = mock(SparkSession.class);
-  CreateTableCommandVisitor visitor;
+  CreateTableCommandDatasetBuilder visitor;
   String database = "default";
   CreateTableCommand command;
   TableIdentifier table = new TableIdentifier("create_table", Option.apply(database));
@@ -42,14 +42,14 @@ class CreateTableCommandVisitorTest {
     when(sparkContext.hadoopConfiguration()).thenReturn(new Configuration());
     when(session.sparkContext()).thenReturn(sparkContext);
     command = new CreateTableCommand(CatalogTableTestUtils.getCatalogTable(table), true);
-    visitor = new CreateTableCommandVisitor(SparkAgentTestExtension.newContext(session));
+    visitor = new CreateTableCommandDatasetBuilder(SparkAgentTestExtension.newContext(session));
   }
 
   @Test
-  void testCreateTableCommandVisitorTest() {
+  void testCreateTableCommandDatasetBuilderTest() {
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     OpenLineage.OutputDataset outputDataset = datasets.get(0);
     assertEquals(1, outputDataset.getFacets().getSchema().getFields().size());
 

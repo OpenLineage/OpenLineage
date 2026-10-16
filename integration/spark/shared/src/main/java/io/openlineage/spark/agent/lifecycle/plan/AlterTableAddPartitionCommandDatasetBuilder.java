@@ -6,8 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -17,17 +17,21 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.AlterTableAddPartitionCommand;
 
 @Slf4j
-public class AlterTableAddPartitionCommandVisitor
-    extends QueryPlanVisitor<AlterTableAddPartitionCommand, OpenLineage.OutputDataset> {
+public class AlterTableAddPartitionCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<AlterTableAddPartitionCommand> {
 
-  public AlterTableAddPartitionCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public AlterTableAddPartitionCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    Optional<CatalogTable> tableOption =
-        catalogTableFor(((AlterTableAddPartitionCommand) x).tableName());
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof AlterTableAddPartitionCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(AlterTableAddPartitionCommand x) {
+    Optional<CatalogTable> tableOption = catalogTableFor(x.tableName());
 
     if (!tableOption.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();

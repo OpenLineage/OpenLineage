@@ -26,11 +26,11 @@ import scala.Option;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-class AlterTableSetLocationCommandVisitorTest {
+class AlterTableSetLocationCommandDatasetBuilderTest {
 
   private static final String TABLE_1 = "table1";
   SparkSession session;
-  AlterTableSetLocationCommandVisitor visitor;
+  AlterTableSetLocationCommandDatasetBuilder visitor;
   String database;
 
   @AfterEach
@@ -63,7 +63,8 @@ class AlterTableSetLocationCommandVisitorTest {
 
     session.catalog().createTable(TABLE_1, "csv", schema, ScalaConversionUtils.asScalaMapEmpty());
     database = session.catalog().currentDatabase();
-    visitor = new AlterTableSetLocationCommandVisitor(SparkAgentTestExtension.newContext(session));
+    visitor =
+        new AlterTableSetLocationCommandDatasetBuilder(SparkAgentTestExtension.newContext(session));
   }
 
   @Test
@@ -76,7 +77,7 @@ class AlterTableSetLocationCommandVisitorTest {
 
     command.run(session);
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()

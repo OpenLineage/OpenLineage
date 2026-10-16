@@ -9,8 +9,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import java.net.URI;
 import java.util.Collections;
@@ -20,19 +20,23 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link InsertIntoHiveDirCommand} and extracts the
- * output {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link InsertIntoHiveDirCommand} and extracts the output {@link
+ * OpenLineage.Dataset} being written.
  */
-public class InsertIntoHiveDirVisitor
-    extends QueryPlanVisitor<InsertIntoHiveDirCommand, OpenLineage.OutputDataset> {
+public class InsertIntoHiveDirDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<InsertIntoHiveDirCommand> {
 
-  public InsertIntoHiveDirVisitor(OpenLineageContext context) {
-    super(context);
+  public InsertIntoHiveDirDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    InsertIntoHiveDirCommand cmd = (InsertIntoHiveDirCommand) x;
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof InsertIntoHiveDirCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(InsertIntoHiveDirCommand cmd) {
     Optional<URI> optionalUri = ScalaConversionUtils.asJavaOptional(cmd.storage().locationUri());
 
     return optionalUri

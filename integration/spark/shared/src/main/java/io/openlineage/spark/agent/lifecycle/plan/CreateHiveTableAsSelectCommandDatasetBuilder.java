@@ -9,8 +9,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,23 +24,26 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link CreateHiveTableAsSelectCommand} and extracts
- * the output {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link CreateHiveTableAsSelectCommand} and extracts the output
+ * {@link OpenLineage.Dataset} being written.
  */
-public class CreateHiveTableAsSelectCommandVisitor
-    extends QueryPlanVisitor<CreateHiveTableAsSelectCommand, OpenLineage.OutputDataset> {
+public class CreateHiveTableAsSelectCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<CreateHiveTableAsSelectCommand> {
 
-  public CreateHiveTableAsSelectCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public CreateHiveTableAsSelectCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof CreateHiveTableAsSelectCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(CreateHiveTableAsSelectCommand command) {
     if (!context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
-
-    CreateHiveTableAsSelectCommand command = (CreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
     DatasetIdentifier di = PathUtils.fromCatalogTable(table, context.getSparkSession().get());
     // zip query outputs with attribute names

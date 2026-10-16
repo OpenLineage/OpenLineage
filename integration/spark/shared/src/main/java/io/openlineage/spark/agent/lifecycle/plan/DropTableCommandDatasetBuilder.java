@@ -6,8 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -17,20 +17,24 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.DropTableCommand;
 
 /**
- * {@link LogicalPlan} visitor that matches an {@link DropTableCommand} and extracts the output
- * {@link OpenLineage.Dataset} being written.
+ * Dataset builder that matches an {@link DropTableCommand} and extracts the output {@link
+ * OpenLineage.Dataset} being written.
  */
 @Slf4j
-public class DropTableCommandVisitor
-    extends QueryPlanVisitor<DropTableCommand, OpenLineage.OutputDataset> {
+public class DropTableCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<DropTableCommand> {
 
-  public DropTableCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public DropTableCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    DropTableCommand command = (DropTableCommand) x;
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof DropTableCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(DropTableCommand command) {
     Optional<CatalogTable> table = catalogTableFor(command.tableName());
     if (!table.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();

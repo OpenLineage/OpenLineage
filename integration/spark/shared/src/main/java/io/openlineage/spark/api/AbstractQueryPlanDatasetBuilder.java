@@ -17,11 +17,14 @@ import java.lang.reflect.TypeVariable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.sql.catalyst.TableIdentifier;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
@@ -58,6 +61,20 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
   protected DatasetFactory<OpenLineage.InputDataset> inputDataset() {
     return DatasetFactory.input(context);
+  }
+
+  protected Optional<CatalogTable> catalogTableFor(TableIdentifier tableId) {
+    return context
+        .getSparkSession()
+        .flatMap(
+            session -> {
+              try {
+                return Optional.of(session.sessionState().catalog().getTableMetadata(tableId));
+              } catch (Exception e) {
+                log.warn("Unable to find table by identifier {} - {}", tableId, e.getMessage());
+                return Optional.empty();
+              }
+            });
   }
 
   public abstract List<D> apply(P p);

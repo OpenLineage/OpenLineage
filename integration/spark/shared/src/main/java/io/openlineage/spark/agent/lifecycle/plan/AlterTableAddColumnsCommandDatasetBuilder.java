@@ -7,8 +7,8 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -18,24 +18,28 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.AlterTableAddColumnsCommand;
 import org.apache.spark.sql.types.StructField;
 
-public class AlterTableAddColumnsCommandVisitor
-    extends QueryPlanVisitor<AlterTableAddColumnsCommand, OpenLineage.OutputDataset> {
+public class AlterTableAddColumnsCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<AlterTableAddColumnsCommand> {
 
-  public AlterTableAddColumnsCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public AlterTableAddColumnsCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    Optional<CatalogTable> tableOption = catalogTableFor(((AlterTableAddColumnsCommand) x).table());
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof AlterTableAddColumnsCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(AlterTableAddColumnsCommand x) {
+    Optional<CatalogTable> tableOption = catalogTableFor(x.table());
     if (!tableOption.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
     CatalogTable catalogTable = tableOption.get();
 
     List<StructField> tableColumns = Arrays.asList(catalogTable.schema().fields());
-    List<StructField> addedColumns =
-        ScalaConversionUtils.fromSeq(((AlterTableAddColumnsCommand) x).colsToAdd());
+    List<StructField> addedColumns = ScalaConversionUtils.fromSeq(x.colsToAdd());
 
     if (tableColumns.containsAll(addedColumns)) {
       return Collections.singletonList(

@@ -33,11 +33,11 @@ import scala.collection.immutable.Map;
 // TODO: fix the test to work with Spark 4.x ->
 // https://github.com/OpenLineage/OpenLineage/issues/3885
 @EnabledIfSystemProperty(named = "spark.version", matches = "([3].*)")
-class AlterTableAddPartitionCommandVisitorTest {
+class AlterTableAddPartitionCommandDatasetBuilderTest {
 
   private static final String TABLE_5 = "table5";
   private static SparkSession session;
-  AlterTableAddPartitionCommandVisitor visitor;
+  AlterTableAddPartitionCommandDatasetBuilder visitor;
   String database;
 
   @AfterEach
@@ -61,7 +61,7 @@ class AlterTableAddPartitionCommandVisitorTest {
     System.setProperty(
         "derby.system.home",
         derbyHomeBase
-            .resolve(AlterTableAddPartitionCommandVisitorTest.class.getSimpleName())
+            .resolve(AlterTableAddPartitionCommandDatasetBuilderTest.class.getSimpleName())
             .toString());
 
     session =
@@ -87,7 +87,9 @@ class AlterTableAddPartitionCommandVisitorTest {
         "CREATE TABLE `table5` (col2 varchar(31)) PARTITIONED BY (\n"
             + "  `col1` string)\n"
             + "STORED AS PARQUET");
-    visitor = new AlterTableAddPartitionCommandVisitor(SparkAgentTestExtension.newContext(session));
+    visitor =
+        new AlterTableAddPartitionCommandDatasetBuilder(
+            SparkAgentTestExtension.newContext(session));
   }
 
   @Test
@@ -107,7 +109,7 @@ class AlterTableAddPartitionCommandVisitorTest {
 
     command.run(session);
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertEquals(2, datasets.get(0).getFacets().getSchema().getFields().size());
     assertThat(datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName())

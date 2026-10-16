@@ -25,7 +25,7 @@ import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
-import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationDatasetBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -61,6 +61,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import scala.Option;
+import scala.PartialFunction;
 
 class OpenLineageSparkListenerTest {
 
@@ -134,8 +135,8 @@ class OpenLineageSparkListenerTest {
     when(qe.executedPlan()).thenReturn(plan);
 
     olContext
-        .getOutputDatasetQueryPlanVisitors()
-        .add(new InsertIntoHadoopFsRelationVisitor(olContext));
+        .getOutputDatasetBuilders()
+        .add((PartialFunction) new InsertIntoHadoopFsRelationDatasetBuilder(olContext));
     ExecutionContext executionContext =
         new StaticExecutionContextFactory(
                 emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig())
