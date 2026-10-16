@@ -104,7 +104,7 @@ class CheckpointLineageTest {
 
   @Test
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
-  void testReliableCheckpointPreservesLineage() {
+  void testNonLocalCheckpointPreservesLineage() {
     runCheckpointPipeline(df -> df.checkpoint(true));
   }
 
@@ -309,7 +309,7 @@ class CheckpointLineageTest {
   }
 
   /**
-   * Lazy reliable checkpoints aren't materialized within their own execution and the checkpointed
+   * Lazy non-local checkpoints aren't materialized within their own execution and the checkpointed
    * RDD can't be reached otherwise, so their lineage can't be captured - they should behave the
    * same as with the feature disabled.
    */
@@ -319,7 +319,7 @@ class CheckpointLineageTest {
 
     assertThat(complete.getInputs())
         .as(
-            "lazy reliable checkpoints are not supported, so upstream table lineage should not be "
+            "lazy non-local checkpoints are not supported, so upstream table lineage should not be "
                 + "bridged")
         .noneMatch(ds -> ds.getName().contains("checkpoint_t1"));
   }
