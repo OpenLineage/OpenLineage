@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.extension.OpenLineageExtensionProvider;
+import io.openlineage.spark.extension.TestOpenLineageExtensionProvider;
 import io.openlineage.spark.shade.client.utils.DatasetIdentifier;
 import io.openlineage.spark.shade.extension.v1.InputDatasetWithDelegate;
 import io.openlineage.spark.shade.extension.v1.InputDatasetWithIdentifier;
@@ -20,6 +22,10 @@ import io.openlineage.spark.shade.extension.v1.LineageRelationProvider;
 import io.openlineage.spark.shade.extension.v1.OutputDatasetWithDelegate;
 import io.openlineage.spark.shade.extension.v1.OutputDatasetWithIdentifier;
 import io.openlineage.spark.shade.extension.v1.OutputLineageNode;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +36,7 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("PMD")
 class SparkOpenLineageExtensionVisitorWrapperTest {
@@ -37,6 +44,8 @@ class SparkOpenLineageExtensionVisitorWrapperTest {
   static SparkListenerEvent event = mock(SparkListenerEvent.class);
   static Map<String, String> options = Collections.singletonMap("path", "some-path");
   static SQLContext sqlContext = mock(SQLContext.class);
+  static final String SERVICES_FILE =
+      "META-INF/services/" + OpenLineageExtensionProvider.class.getName();
 
   SparkOpenLineageExtensionVisitorWrapper wrapper =
       new SparkOpenLineageExtensionVisitorWrapper(sparkOpenLineageConfig);
@@ -237,5 +246,48 @@ class SparkOpenLineageExtensionVisitorWrapperTest {
 
     // then
     assertThat(inputs.getRight()).isNotEmpty().isEqualTo(Collections.singletonList(delegate));
+  }
+
+  @Test
+  void testLoadProvidersPrefersOwnClassloaderOverIsolatedCopy() throws Exception {
+    // a loader with its own copy of the extension interface, like Hive's isolated client loader
+    URL[] urls = {
+      location(OpenLineageExtensionProvider.class),
+      location(TestOpenLineageExtensionProvider.class),
+      getClass().getClassLoader().getResource(SERVICES_FILE).toURI().resolve("../..").toURL()
+    };
+    try (URLClassLoader isolated = new URLClassLoader(urls, null)) {
+      assertThat(isolated.loadClass(OpenLineageExtensionProvider.class.getName()))
+          .isNotSameAs(OpenLineageExtensionProvider.class);
+
+      List<OpenLineageExtensionProvider> providers =
+          SparkOpenLineageExtensionVisitorWrapper.loadProviders(
+              Collections.singletonList(isolated));
+
+      assertThat(providers)
+          .extracting(Object::getClass)
+          .contains(TestOpenLineageExtensionProvider.class);
+    }
+  }
+
+  @Test
+  void testLoadProvidersSkipsProviderWhichFailsToLoad(@TempDir Path dir) throws Exception {
+    Path services = dir.resolve(SERVICES_FILE);
+    Files.createDirectories(services.getParent());
+    Files.write(services, Collections.singletonList("com.example.MissingExtensionProvider"));
+
+    try (URLClassLoader loader =
+        new URLClassLoader(new URL[] {dir.toUri().toURL()}, getClass().getClassLoader())) {
+      List<OpenLineageExtensionProvider> providers =
+          SparkOpenLineageExtensionVisitorWrapper.loadProviders(Collections.singletonList(loader));
+
+      assertThat(providers)
+          .extracting(Object::getClass)
+          .contains(TestOpenLineageExtensionProvider.class);
+    }
+  }
+
+  private static URL location(Class<?> clazz) {
+    return clazz.getProtectionDomain().getCodeSource().getLocation();
   }
 }
