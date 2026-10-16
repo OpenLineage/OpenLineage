@@ -141,6 +141,7 @@ deps =
     pytest-cov
     pytest-mock
     {toxinidir}/../../client/python
+    {toxinidir}/../sql/iface-py
 commands =
     pytest -vv --cov=src/openlineage --junitxml=test-results/junit.xml {posargs}
     coverage xml
