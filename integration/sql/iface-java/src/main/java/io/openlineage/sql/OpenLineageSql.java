@@ -15,13 +15,13 @@ import java.util.Optional;
 import org.apache.commons.lang3.SystemUtils;
 
 /**
- * Main class for OpenLineage SQL parsing and lineage extraction.
- * Provides static methods to parse SQL statements and extract metadata.
+ * Main class for OpenLineage SQL parsing and lineage extraction. Provides static methods to parse
+ * SQL statements and extract metadata.
  */
 public final class OpenLineageSql {
 
-  // TODO: wrap defaultSchema
-  private static native SqlMeta parse(List<String> sql, String dialect, String defaultSchema)
+  private static native SqlMeta parseNative(
+      List<String> sql, String dialect, String defaultSchema, String defaultDatabase)
       throws RuntimeException;
 
   /**
@@ -32,12 +32,26 @@ public final class OpenLineageSql {
    * @return optional SqlMeta containing parsed metadata, empty if parsing fails
    */
   public static Optional<SqlMeta> parse(List<String> sql, String dialect) {
+    return parse(sql, dialect, null, null);
+  }
+
+  /**
+   * Parses SQL statements with defaults for unqualified table names.
+   *
+   * @param sql list of SQL statements to parse
+   * @param dialect the SQL dialect to use for parsing, or null for automatic detection
+   * @param defaultSchema schema for tables without an explicit schema, or null
+   * @param defaultDatabase database for tables without an explicit database, or null
+   * @return optional SqlMeta containing parsed metadata, empty if parsing fails
+   */
+  public static Optional<SqlMeta> parse(
+      List<String> sql, String dialect, String defaultSchema, String defaultDatabase) {
     if (loadError.isPresent()) {
       // TODO: pass error
       return Optional.empty();
     }
     try {
-      return Optional.of(parse(sql, dialect, null));
+      return Optional.of(parseNative(sql, dialect, defaultSchema, defaultDatabase));
     } catch (RuntimeException e) {
       return Optional.empty();
     }
@@ -50,16 +64,7 @@ public final class OpenLineageSql {
    * @return optional SqlMeta containing parsed metadata, empty if parsing fails
    */
   public static Optional<SqlMeta> parse(List<String> sql) {
-    if (loadError.isPresent()) {
-      // TODO: pass error
-      return Optional.empty();
-    }
-    try {
-      SqlMeta x = parse(sql, null, null);
-      return Optional.ofNullable(x);
-    } catch (RuntimeException e) {
-      return Optional.empty();
-    }
+    return parse(sql, null);
   }
 
   /**
@@ -70,8 +75,8 @@ public final class OpenLineageSql {
   public static native String provider();
 
   /**
-   * Contains any error that occurred during native library loading.
-   * Empty if the library loaded successfully.
+   * Contains any error that occurred during native library loading. Empty if the library loaded
+   * successfully.
    */
   public static Optional<String> loadError = Optional.empty();
 
