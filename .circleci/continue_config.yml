@@ -695,9 +695,14 @@ jobs:
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
           path: app/build/test-results/integrationTest
+      - store_test_results:
+          path: app/build/test-results/hudiIntegrationTest
       - store_artifacts:
           path: app/build/reports/tests/integrationTest
           destination: test-report
+      - store_artifacts:
+          path: app/build/reports/tests/hudiIntegrationTest
+          destination: hudi-test-report
       - save_cache:
           key: v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
           paths:
