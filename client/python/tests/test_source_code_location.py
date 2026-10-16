@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import hashlib
+import subprocess
+import zlib
 from pathlib import Path
 from unittest.mock import patch
 
@@ -197,6 +200,97 @@ class TestGetGitBranch:
 _TAG_OBJ_SHA = "deadbeef" * 5
 
 
+class TestLinkedWorktreeMetadata:
+    @pytest.mark.parametrize("packed", [False, True])
+    @pytest.mark.parametrize("detached", [False, True])
+    @pytest.mark.parametrize("absolute_common_dir", [False, True])
+    def test_source_code_location_uses_shared_metadata(
+        self, tmp_path, monkeypatch, packed, detached, absolute_common_dir
+    ):
+        common = tmp_path / "repo" / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (common / "config").write_text(_GIT_CONFIG)
+        (common / "HEAD").write_text("deadbeef" * 5 + "\n")
+        (git_dir / "commondir").write_text(str(common) if absolute_common_dir else "../..\n")
+        (git_dir / "HEAD").write_text(_FAKE_SHA if detached else "ref: refs/heads/linked\n")
+        if packed:
+            (common / "packed-refs").write_text(
+                f"{_FAKE_SHA} refs/heads/linked\n{_TAG_OBJ_SHA} refs/tags/v1\n^{_FAKE_SHA}\n"
+            )
+        else:
+            for ref in ["refs/heads/linked", "refs/tags/v1"]:
+                path = common / ref
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(_FAKE_SHA + "\n")
+        worktree = tmp_path / "linked"
+        worktree.mkdir()
+        (worktree / ".git").write_text(f"gitdir: {git_dir}\n")
+        monkeypatch.chdir(worktree)
+        monkeypatch.setattr("openlineage.client.client.get_ci_pr_number", lambda: None)
+
+        event = _make_client().add_source_code_location_facet(_make_run_event())
+        facet = event.job.facets["sourceCodeLocation"]
+        assert facet.repoUrl == "https://github.com/org/repo.git"
+        assert facet.version == _FAKE_SHA
+        assert facet.branch == (None if detached else "linked")
+        assert facet.tag == "v1"
+
+    def test_annotated_tag_object_uses_common_objects(self, tmp_path):
+        common = tmp_path / "repo" / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (git_dir / "commondir").write_text("../..\n")
+        (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
+
+        body = f"object {_FAKE_SHA}\ntype commit\ntag v1\n\nrelease\n".encode()
+        raw = b"tag " + str(len(body)).encode() + b"\0" + body
+        tag_sha = hashlib.sha1(raw).hexdigest()
+        object_path = common / "objects" / tag_sha[:2] / tag_sha[2:]
+        object_path.parent.mkdir(parents=True)
+        object_path.write_bytes(zlib.compress(raw))
+
+        tag_ref = common / "refs" / "tags" / "v1"
+        tag_ref.parent.mkdir(parents=True)
+        tag_ref.write_text(tag_sha + "\n")
+
+        assert not (git_dir / "objects" / tag_sha[:2] / tag_sha[2:]).exists()
+        assert get_git_tag(git_dir) == "v1"
+
+    @pytest.mark.parametrize("enabled", [None, "false", "true", "yes", "1"])
+    def test_worktree_config_respects_extension(self, tmp_path, enabled):
+        common = tmp_path / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (git_dir / "commondir").write_text("../..\n")
+        extension = "" if enabled is None else f"[extensions]\nworktreeConfig = {enabled}\n"
+        (common / "config").write_text(_GIT_CONFIG + extension)
+        url = "https://github.com/org/worktree%2Frepo.git"
+        (git_dir / "config.worktree").write_text(f'[remote "origin"]\nurl = {url}\n')
+        expected = url if enabled in {"true", "yes", "1"} else "https://github.com/org/repo.git"
+        assert get_git_repo_url(git_dir=git_dir) == expected
+
+    def test_enabled_worktree_config_may_be_absent(self, tmp_path):
+        common = tmp_path / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (git_dir / "commondir").write_text("../..\n")
+        (common / "config").write_text(_GIT_CONFIG + "[extensions]\nworktreeConfig = true\n")
+        assert get_git_repo_url(git_dir=git_dir) == "https://github.com/org/repo.git"
+
+    @pytest.mark.parametrize("ref", ["refs/bisect/good", "refs/worktree/test", "refs/rewritten/test"])
+    def test_private_refs_remain_in_worktree(self, tmp_path, ref):
+        common = tmp_path / ".git"
+        git_dir = common / "worktrees" / "linked"
+        git_dir.mkdir(parents=True)
+        (git_dir / "commondir").write_text("../..\n")
+        for directory, sha in [(common, "deadbeef" * 5), (git_dir, _FAKE_SHA)]:
+            path = directory / ref
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(sha + "\n")
+        assert _resolve_ref(git_dir, ref) == _FAKE_SHA
+
+
 class TestFindTagInPackedRefs:
     def test_lightweight_tag(self, tmp_path):
         git_dir = tmp_path / ".git"
@@ -249,6 +343,77 @@ class TestGetGitTag:
         (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
         (git_dir / "refs" / "tags" / "release" / "v1.2.3").write_text(_FAKE_SHA + "\n")
         assert get_git_tag(git_dir) == "release/v1.2.3"
+
+    def test_loose_annotated_tag(self, tmp_path):
+        git_dir = tmp_path / ".git"
+        objects = git_dir / "objects"
+        tag_dir = git_dir / "refs" / "tags"
+        tag_dir.mkdir(parents=True)
+        (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
+        body = f"object {_FAKE_SHA}\ntype commit\ntag v1.0.0\n\nrelease\n".encode()
+        raw = b"tag " + str(len(body)).encode() + b"\0" + body
+        tag_sha = hashlib.sha1(raw).hexdigest()
+        (objects / tag_sha[:2]).mkdir(parents=True)
+        (objects / tag_sha[:2] / tag_sha[2:]).write_bytes(zlib.compress(raw))
+        (tag_dir / "v1.0.0").write_text(tag_sha + "\n")
+        assert get_git_tag(git_dir) == "v1.0.0"
+
+    def test_loose_annotated_tag_with_packed_object(self, tmp_path):
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        (repo / "file").write_text("content\n")
+        subprocess.run(["git", "-C", str(repo), "add", "file"], check=True)
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "commit",
+                "-qm",
+                "initial",
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.com",
+                "tag",
+                "-a",
+                "v1.0.0",
+                "-m",
+                "release",
+            ],
+            check=True,
+        )
+        git_dir = repo / ".git"
+        head = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        tag_sha = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "refs/tags/v1.0.0"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        subprocess.run(["git", "-C", str(repo), "repack", "-ad"], check=True)
+        (git_dir / "refs" / "tags" / "v1.0.0").write_text(tag_sha + "\n")
+        assert (git_dir / "objects" / tag_sha[:2] / tag_sha[2:]).exists() is False
+        (git_dir / "HEAD").write_text(head + "\n")
+        assert get_git_tag(git_dir) == "v1.0.0"
 
     def test_packed_tag(self, tmp_path):
         git_dir = tmp_path / ".git"
