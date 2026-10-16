@@ -93,11 +93,21 @@ tasks:
       - task: sql:publish-local
 
   format:
+    # Spotless output depends on the JDK (google-java-format), so pin it like
+    # the spotless pre-commit hook does. `JAVA_VERSION=… task …` overrides.
+    env:
+      JAVA_HOME:
+        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" --strict "${JAVA_VERSION:-17}"'
     desc: Apply Spotless formatting to all modules
     cmds:
       - ./gradlew spotlessApply
 
   lint:
+    # Spotless output depends on the JDK (google-java-format), so pin it like
+    # the spotless pre-commit hook does. `JAVA_VERSION=… task …` overrides.
+    env:
+      JAVA_HOME:
+        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" --strict "${JAVA_VERSION:-17}"'
     desc: Verify formatting without building (Spotless check)
     cmds:
       - ./gradlew spotlessCheck

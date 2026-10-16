@@ -27,6 +27,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnStar
 import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.InsertIntoHoodieTableCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.InsertIntoHoodieTableCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeOutputDatasetBuilder;
@@ -75,6 +77,7 @@ public class Spark34DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new DeleteCommandInputDatasetBuilder(context))
             .add(new UpdateCommandInputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
+            .add(new InsertIntoHoodieTableCommandInputDatasetBuilder(context))
             .add(new CopyIntoCommandInputDatasetBuilder(context))
             .add(new SparkExtensionV1InputDatasetBuilder(context))
             .add(new ViewInputDatasetBuilder(context))
@@ -108,6 +111,7 @@ public class Spark34DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new DropTableDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
+            .add(new InsertIntoHoodieTableCommandOutputDatasetBuilder(context))
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context))
             .add(new WriteToMicroBatchDataSourceV1DatasetBuilder(context, datasetFactory));
