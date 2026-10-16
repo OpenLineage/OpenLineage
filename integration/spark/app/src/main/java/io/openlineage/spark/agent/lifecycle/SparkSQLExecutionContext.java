@@ -90,12 +90,12 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private String checkpointDescription;
 
   /**
-   * Highest id of an RDD computed by a job run within a reliable checkpoint execution. The
+   * Highest id of an RDD computed by a job run within a non-local checkpoint execution. The
    * checkpointed RDD is created after all the RDDs of the plan being checkpointed, so for an eager
    * checkpoint it's the one with the highest id. A lazy checkpoint runs no job computing it - see
    * {@link #resolveCheckpointRddId()}.
    */
-  private Optional<Integer> reliableCheckpointRddId = Optional.empty();
+  private Optional<Integer> nonLocalCheckpointRddId = Optional.empty();
 
   private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
 
@@ -457,7 +457,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   /**
-   * Records the RDD computed by a job run within a reliable checkpoint execution - that's the RDD
+   * Records the RDD computed by a job run within a non-local checkpoint execution - that's the RDD
    * of the job's result stage, which has the highest stage id, as its parent stages are created
    * before it. Local checkpoints don't need it, see {@link #findLocalCheckpointRddId()}.
    */
@@ -471,9 +471,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
         .map(stage -> stage.rddInfos().head().id())
         .ifPresent(
             rddId ->
-                reliableCheckpointRddId =
+                nonLocalCheckpointRddId =
                     Optional.of(
-                        reliableCheckpointRddId.map(id -> Math.max(id, rddId)).orElse(rddId)));
+                        nonLocalCheckpointRddId.map(id -> Math.max(id, rddId)).orElse(rddId)));
   }
 
   /**
@@ -483,7 +483,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
    * <ul>
    *   <li>local checkpoints (eager or lazy) persist the checkpointed RDD as soon as {@code
    *       localCheckpoint()} is called, so it's found among the persisted RDDs.
-   *   <li>reliable checkpoints are only resolved when eager, from the jobs materializing them. A
+   *   <li>non-local checkpoints are only resolved when eager, from the jobs materializing them. A
    *       lazy one runs no job computing the checkpointed RDD and there's no other way to reach it,
    *       so it's not supported. If the lazy checkpoint's execution still runs jobs (e.g.
    *       broadcasts, adaptive query execution stages) the resolved id is of one of the plan's RDDs
@@ -491,7 +491,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
    * </ul>
    */
   private Optional<Integer> resolveCheckpointRddId() {
-    return isLocalCheckpoint() ? findLocalCheckpointRddId() : reliableCheckpointRddId;
+    return isLocalCheckpoint() ? findLocalCheckpointRddId() : nonLocalCheckpointRddId;
   }
 
   /**
