@@ -19,6 +19,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark3.agent.lifecycle.plan.DropTableDatasetBuilder;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,7 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-class DropTableDatasetBuilderTest {
+class DropTableDatasetBuilderResolvedIdentifierTest {
 
   private static final String TABLE = "my_table";
 

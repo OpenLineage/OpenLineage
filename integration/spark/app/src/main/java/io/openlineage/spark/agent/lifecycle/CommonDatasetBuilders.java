@@ -26,6 +26,7 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.KafkaStreamingWriteDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandInputDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDDatasetBuilder;
@@ -37,6 +38,7 @@ import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DropTableDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.RefreshTableCommandDatasetBuilder;
 import java.util.List;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -110,7 +112,9 @@ final class CommonDatasetBuilders {
         new TruncateTableCommandDatasetBuilder(context),
         new AlterTableSetLocationCommandDatasetBuilder(context),
         new AlterTableAddPartitionCommandDatasetBuilder(context),
-        new CreateTableLikeCommandDatasetBuilder(context));
+        new CreateTableLikeCommandDatasetBuilder(context),
+        new DropTableDatasetBuilder(context),
+        new KafkaStreamingWriteDatasetBuilder(context));
     return builders.build();
   }
 }

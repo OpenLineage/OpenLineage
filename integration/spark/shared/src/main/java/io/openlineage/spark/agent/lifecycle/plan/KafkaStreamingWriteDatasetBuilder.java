@@ -7,8 +7,8 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -25,66 +25,38 @@ import org.apache.spark.sql.types.StructType;
 import org.jetbrains.annotations.NotNull;
 import scala.Option;
 
+/**
+ * Extracts the Kafka topic written by a streaming query as an output dataset. Other streaming
+ * writes are handled by the builders of their target relations.
+ */
 @Slf4j
-public final class WriteToDataSourceV2Visitor
-    extends QueryPlanVisitor<WriteToDataSourceV2, OutputDataset> {
+public final class KafkaStreamingWriteDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<WriteToDataSourceV2> {
   private static final String KAFKA_STREAMING_WRITE_CLASS_NAME =
       "org.apache.spark.sql.kafka010.KafkaStreamingWrite";
-  private static final boolean RELATION_ACCESSOR_AVAILABLE = hasRelationAccessor();
 
-  public WriteToDataSourceV2Visitor(@NonNull OpenLineageContext context) {
-    super(context);
+  public KafkaStreamingWriteDatasetBuilder(@NonNull OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
-    boolean result = plan instanceof WriteToDataSourceV2;
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "The supplied logical plan {} {} an instance of {}",
-          plan.getClass().getCanonicalName(),
-          result ? "IS" : "IS NOT",
-          WriteToDataSourceV2.class.getCanonicalName());
-    }
-    return result;
-  }
-
-  @Override
-  public List<OutputDataset> apply(LogicalPlan plan) {
-    List<OutputDataset> result = Collections.emptyList();
-    WriteToDataSourceV2 write = (WriteToDataSourceV2) plan;
-    BatchWrite batchWrite = write.batchWrite();
-    if (batchWrite instanceof MicroBatchWrite) {
-      MicroBatchWrite microBatchWrite = (MicroBatchWrite) batchWrite;
-      StreamingWrite streamingWrite = microBatchWrite.writeSupport();
-      Class<? extends StreamingWrite> streamingWriteClass = streamingWrite.getClass();
-      String streamingWriteClassName = streamingWriteClass.getCanonicalName();
-      if (KAFKA_STREAMING_WRITE_CLASS_NAME.equals(streamingWriteClassName)) {
-        result = handleKafkaStreamingWrite(streamingWrite);
-      } else if (RELATION_ACCESSOR_AVAILABLE) {
-        log.debug(
-            "Deferring streaming write class '{}' to the relation-backed output dataset builder",
-            streamingWriteClass);
-      } else {
-        log.warn(
-            "The streaming write class '{}' for '{}' is not supported",
-            streamingWriteClass,
-            MicroBatchWrite.class.getCanonicalName());
-      }
-    } else {
-      log.warn("Unsupported batch write class: {}", batchWrite.getClass().getCanonicalName());
-    }
-
-    return result;
-  }
-
-  private static boolean hasRelationAccessor() {
-    try {
-      WriteToDataSourceV2.class.getMethod("relation");
-      return true;
-    } catch (NoSuchMethodException | SecurityException | LinkageError e) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
+    if (!(plan instanceof WriteToDataSourceV2)) {
       return false;
     }
+    BatchWrite batchWrite = ((WriteToDataSourceV2) plan).batchWrite();
+    if (!(batchWrite instanceof MicroBatchWrite)) {
+      return false;
+    }
+    StreamingWrite streamingWrite = ((MicroBatchWrite) batchWrite).writeSupport();
+    return streamingWrite != null
+        && KAFKA_STREAMING_WRITE_CLASS_NAME.equals(streamingWrite.getClass().getCanonicalName());
+  }
+
+  @Override
+  public List<OutputDataset> apply(WriteToDataSourceV2 write) {
+    StreamingWrite streamingWrite = ((MicroBatchWrite) write.batchWrite()).writeSupport();
+    return handleKafkaStreamingWrite(streamingWrite);
   }
 
   private @NotNull List<OutputDataset> handleKafkaStreamingWrite(StreamingWrite streamingWrite) {

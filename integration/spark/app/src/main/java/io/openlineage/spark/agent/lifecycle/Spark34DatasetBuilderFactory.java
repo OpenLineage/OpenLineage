@@ -46,7 +46,6 @@ import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuil
 import io.openlineage.spark34.agent.lifecycle.plan.WriteIcebergDeltaDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.WriteToMicroBatchDataSourceV1DatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputDatasetBuilder;
-import io.openlineage.spark34.agent.lifecycle.plan.column.DropTableDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder;
 import java.util.Collection;
 import java.util.List;
@@ -107,7 +106,6 @@ public class Spark34DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new UpdateCommandOutputDatasetBuilder(context))
             .add(getCreateReplaceDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
-            .add(new DropTableDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context))

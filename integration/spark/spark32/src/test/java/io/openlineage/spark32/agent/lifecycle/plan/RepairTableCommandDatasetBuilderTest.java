@@ -44,7 +44,7 @@ import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.immutable.HashMap;
 
-class RepairTableCommandVisitorTest {
+class RepairTableCommandDatasetBuilderTest {
 
   private static final String DATABASE = "default";
   private static final String CATALOG = "catalog";
@@ -108,13 +108,14 @@ class RepairTableCommandVisitorTest {
               .openLineageConfig(config)
               .build();
 
-      RepairTableCommandVisitor visitor = new RepairTableCommandVisitor(openLinegeContext);
+      RepairTableCommandDatasetBuilder builder =
+          new RepairTableCommandDatasetBuilder(openLinegeContext);
 
       RepairTableCommand command =
           RepairTableCommand$.MODULE$.apply(tableIdentifier, true, true, "MSCK REPAIR TABLE");
 
-      assertThat(visitor.isDefinedAt(command)).isTrue();
-      List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
+      assertThat(builder.isDefinedAtLogicalPlan(command)).isTrue();
+      List<OpenLineage.OutputDataset> datasets = builder.apply(command);
 
       assertEquals(1, datasets.size());
       OpenLineage.OutputDataset outputDataset = datasets.get(0);

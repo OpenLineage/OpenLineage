@@ -45,6 +45,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandOutputDatasetBuil
 import io.openlineage.spark3.agent.lifecycle.plan.WriteToDataSourceV2DatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.column.JdbcColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.RepairTableCommandDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoIceberg013ColumnLineageVisitor;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoCommandEdgeColumnLineageBuilder;
@@ -113,6 +114,8 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
     }
 
     builder.addAll(CommonDatasetBuilders.outputs(context));
+    // only registered for Spark 3.2, as it was a visitor of the Spark 3.2 visitor factory
+    builder.add(new RepairTableCommandDatasetBuilder(context));
     return builder.build();
   }
 
