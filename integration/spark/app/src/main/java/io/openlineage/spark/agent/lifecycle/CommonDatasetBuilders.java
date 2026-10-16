@@ -34,12 +34,14 @@ import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelec
 import io.openlineage.spark.agent.lifecycle.plan.StreamingDataSourceV2RelationDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandDatasetBuilder;
 import io.openlineage.spark.agent.util.BigQueryUtils;
+import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DropTableDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.RefreshTableCommandDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.RepairTableCommandDatasetBuilder;
 import java.util.List;
 import org.apache.spark.scheduler.SparkListenerEvent;
 
@@ -115,6 +117,10 @@ final class CommonDatasetBuilders {
         new CreateTableLikeCommandDatasetBuilder(context),
         new DropTableDatasetBuilder(context),
         new KafkaStreamingWriteDatasetBuilder(context));
+    // RepairTableCommand replaced AlterTableRecoverPartitionsCommand in Spark 3.2
+    if (ReflectionUtils.hasClass("org.apache.spark.sql.execution.command.RepairTableCommand")) {
+      builders.add(new RepairTableCommandDatasetBuilder(context));
+    }
     return builders.build();
   }
 }

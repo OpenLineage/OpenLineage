@@ -119,16 +119,11 @@ class SqlCommandLineageTest {
             "COMPLETE datasource_table_commands.execute_alter_table_add_partition_command OUT file:<wh>/p1 ALTER schema=a,p facets=dataSource,lifecycleStateChange,schema,symlinks",
             "START datasource_table_commands.execute_alter_table_add_partition_command OUT file:<wh>/p1 ALTER schema=a,p facets=dataSource,lifecycleStateChange,schema,symlinks");
 
-    if (lineage.isSparkAtLeast(3, 3)) {
-      // RepairTableCommandDatasetBuilder is registered for Spark 3.2 only
-      softly.assertThat(lineage.run("MSCK REPAIR TABLE p1")).isEmpty();
-    } else {
-      softly
-          .assertThat(lineage.run("MSCK REPAIR TABLE p1"))
-          .containsExactlyInAnyOrder(
-              "COMPLETE datasource_table_commands.execute_repair_table_command OUT file:<wh>/p1 ALTER schema=a,p facets=dataSource,lifecycleStateChange,schema,symlinks",
-              "START datasource_table_commands.execute_repair_table_command OUT file:<wh>/p1 ALTER schema=a,p facets=dataSource,lifecycleStateChange,schema,symlinks");
-    }
+    softly
+        .assertThat(lineage.run("MSCK REPAIR TABLE p1"))
+        .containsExactlyInAnyOrder(
+            "COMPLETE datasource_table_commands.execute_repair_table_command OUT file:<wh>/p1 ALTER schema=a,p facets=dataSource,lifecycleStateChange,schema,symlinks",
+            "START datasource_table_commands.execute_repair_table_command OUT file:<wh>/p1 ALTER schema=a,p facets=dataSource,lifecycleStateChange,schema,symlinks");
     softly.assertAll();
   }
 
