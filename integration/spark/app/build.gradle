@@ -697,8 +697,14 @@ List<Dependency> hudiDependencies(String spark, String scala) {
     if (hudi == null) {
         return []
     }
+    // Hudi bundles are built per Spark minor version and must match the runtime Spark version.
+    // Scala 2.13 bundles are only published for Spark 3.5.
+    def sparkMinor = spark.tokenize(".").take(2).join(".")
+    if (scala == "2.13" && sparkMinor != "3.5") {
+        return []
+    }
     return [
-            dependencies.create("org.apache.hudi:hudi-spark3.5-bundle_${scala}:${hudi}")
+            dependencies.create("org.apache.hudi:hudi-spark${sparkMinor}-bundle_${scala}:${hudi}")
     ]
 }
 

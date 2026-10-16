@@ -13,12 +13,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
 import io.openlineage.client.OpenLineage.InputField;
+import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.File;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
@@ -223,6 +225,7 @@ class SparkHudiIntegrationTest {
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
     assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    assertOverwriteLifecycleStateChange(outputPath);
   }
 
   @Test
@@ -236,6 +239,7 @@ class SparkHudiIntegrationTest {
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
     assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    assertOverwriteLifecycleStateChange(outputPath);
   }
 
   private RunEvent getLatestSaveCompleteEvent() {
@@ -246,6 +250,20 @@ class SparkHudiIntegrationTest {
         .reduce((previous, current) -> current)
         .orElseThrow(
             () -> new AssertionError("No COMPLETE event with output datasets was emitted."));
+  }
+
+  private void assertOverwriteLifecycleStateChange(String outputPath) {
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+                .filter(e -> e.getOutputs() != null)
+                .flatMap(e -> e.getOutputs().stream())
+                .filter(d -> outputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getLifecycleStateChange())
+                .filter(Objects::nonNull)
+                .map(LifecycleStateChangeDatasetFacet::getLifecycleStateChange))
+        .as("lifecycle state change of output %s", outputPath)
+        .contains(LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   /**
@@ -327,7 +345,7 @@ class SparkHudiIntegrationTest {
   }
 
   private void writeLegacyHudiTable(String tableType, String outputPath, String tableName) {
-    String hudiTableType = tableType.equals("MERGE_ON_READ") ? "mor" : "cow";
+    String hudiTableType = "MERGE_ON_READ".equals(tableType) ? "mor" : "cow";
     writeInputParquet();
     spark.read().parquet(INPUT_PATH).createOrReplaceTempView("legacy_hudi_input");
 
