@@ -10,8 +10,6 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Spark4CompatUtils;
@@ -21,7 +19,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageRunStatus;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -31,13 +28,11 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SQLExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.slf4j.LoggerFactory;
-import scala.PartialFunction;
 
 /** Returns deterministic fields for contexts */
 public class StaticExecutionContextFactory extends ContextFactory {
@@ -139,15 +134,6 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory());
-
-              VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance();
-
-              List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
-                  visitorFactory.getInputVisitors(olContext);
-              olContext.getInputDatasetQueryPlanVisitors().addAll(inputDatasets);
-              List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
-                  visitorFactory.getOutputVisitors(olContext);
-              olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
               return new SparkSQLExecutionContext(
                   executionId, openLineageEventEmitter, olContext, runEventBuilder) {
                 @Override

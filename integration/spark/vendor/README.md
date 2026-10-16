@@ -11,7 +11,7 @@ Instead, it is advised to consider the proposed solution outlined in [[SPARK] li
 ## How
 Follow a common pattern for vendor integration projects:
 1. Implement the `io.openlineage.spark.api.Vendor` interface, this interface will work as gateway to other vendor specific implementation.
-2. These are the interface that can be implemented: `io.openlineage.spark.agent.lifecycle.VisitorFactory` and the `io.openlineage.spark.api.OpenLineageEventHandlerFactory`.
+2. Return an `io.openlineage.spark.api.OpenLineageEventHandlerFactory` from `getEventHandlerFactory` to add dataset builders, facet builders and column lineage visitors.
 3. Additionally, implement the `isVendorAvailable` method to check if the vendor can be loaded.
 
 In the resources folder, add a `META-INF.services` file with the fully qualified class name of the `io.openlineage.spark.api.Vendor` implementation class for auto-discovery.
