@@ -22,7 +22,6 @@ import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.ExternalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.HiveTableRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
@@ -98,7 +97,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     }
 
     list.add(new InsertIntoDataSourceDirVisitor(context));
-    list.add(new InsertIntoDataSourceVisitor(context));
     list.add(new InsertIntoHadoopFsRelationVisitor(context));
     list.add(new CreateDataSourceTableAsSelectCommandVisitor(context));
     list.add(new InsertIntoDirVisitor(context));

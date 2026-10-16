@@ -154,13 +154,22 @@ class SqlCommandLineageTest {
             + driver
             + "', dbtable 'target')");
 
-    // InsertIntoDataSourceVisitor delegates to query plan visitors only, none of which
-    // handles JDBC relations, so no output is emitted
+    // the target relation is resolved by delegating to LogicalRelationDatasetBuilder
     softly
         .assertThat(lineage.run("INSERT INTO jdbc_target SELECT * FROM src"))
         .containsExactlyInAnyOrder(
             "COMPLETE insert_into_jdbc_relation.execute_insert_into_data_source_command IN file:<wh>/src schema=a facets=dataSource,schema,symlinks",
-            "START insert_into_jdbc_relation.execute_insert_into_data_source_command IN file:<wh>/src schema=a facets=dataSource,schema,symlinks");
+            "COMPLETE insert_into_jdbc_relation.execute_insert_into_data_source_command OUT file:<derby>/metastore_db:target schema=a facets=dataSource,schema",
+            "START insert_into_jdbc_relation.execute_insert_into_data_source_command IN file:<wh>/src schema=a facets=dataSource,schema,symlinks",
+            "START insert_into_jdbc_relation.execute_insert_into_data_source_command OUT file:<derby>/metastore_db:target schema=a facets=dataSource,schema");
+
+    softly
+        .assertThat(lineage.run("INSERT OVERWRITE TABLE jdbc_target SELECT * FROM src"))
+        .containsExactlyInAnyOrder(
+            "COMPLETE insert_into_jdbc_relation.execute_insert_into_data_source_command IN file:<wh>/src schema=a facets=dataSource,schema,symlinks",
+            "COMPLETE insert_into_jdbc_relation.execute_insert_into_data_source_command OUT file:<derby>/metastore_db:target OVERWRITE schema=a facets=dataSource,lifecycleStateChange,schema",
+            "START insert_into_jdbc_relation.execute_insert_into_data_source_command IN file:<wh>/src schema=a facets=dataSource,schema,symlinks",
+            "START insert_into_jdbc_relation.execute_insert_into_data_source_command OUT file:<derby>/metastore_db:target OVERWRITE schema=a facets=dataSource,lifecycleStateChange,schema");
     softly.assertAll();
   }
 

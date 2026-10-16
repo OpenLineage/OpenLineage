@@ -13,20 +13,23 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import scala.runtime.AbstractPartialFunction;
+import scala.PartialFunction;
 
-class InsertIntoDataSourceVisitorTest {
+class InsertIntoDataSourceDatasetBuilderTest {
 
   private static final String NAMESPACE = "namespace";
   private static final String NAME = "table";
@@ -42,6 +45,7 @@ class InsertIntoDataSourceVisitorTest {
           .build();
   private final LogicalRelation relation = mock(LogicalRelation.class);
   private final InsertIntoDataSourceCommand command = mock(InsertIntoDataSourceCommand.class);
+  private final SparkListenerEvent event = mock(SparkListenerEvent.class);
   private final OpenLineage.OutputDataset relationDataset =
       openLineage
           .newOutputDatasetBuilder()
@@ -60,22 +64,27 @@ class InsertIntoDataSourceVisitorTest {
           .build();
 
   @BeforeEach
+  @SuppressWarnings("unchecked")
   void setUp() {
     when(command.logicalRelation()).thenReturn(relation);
-    context
-        .getOutputDatasetQueryPlanVisitors()
-        .add(
-            new AbstractPartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>() {
-              @Override
-              public boolean isDefinedAt(LogicalPlan plan) {
-                return relation.equals(plan);
-              }
+    AbstractQueryPlanOutputDatasetBuilder<LogicalRelation> relationBuilder =
+        new AbstractQueryPlanOutputDatasetBuilder<LogicalRelation>(context, false) {
+          @Override
+          public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
+            return relation.equals(plan);
+          }
 
-              @Override
-              public List<OpenLineage.OutputDataset> apply(LogicalPlan plan) {
-                return Collections.singletonList(relationDataset);
-              }
-            });
+          @Override
+          protected List<OpenLineage.OutputDataset> apply(
+              SparkListenerEvent event, LogicalRelation plan) {
+            return Collections.singletonList(relationDataset);
+          }
+        };
+    context
+        .getOutputDatasetBuilders()
+        .add(
+            (PartialFunction<Object, Collection<OpenLineage.OutputDataset>>)
+                (PartialFunction<?, ?>) relationBuilder);
   }
 
   @Test
@@ -83,7 +92,7 @@ class InsertIntoDataSourceVisitorTest {
     when(command.overwrite()).thenReturn(false);
 
     List<OpenLineage.OutputDataset> datasets =
-        new InsertIntoDataSourceVisitor(context).apply(command);
+        new InsertIntoDataSourceDatasetBuilder(context).apply(event, command);
 
     assertThat(datasets).containsExactly(relationDataset);
   }
@@ -93,7 +102,7 @@ class InsertIntoDataSourceVisitorTest {
     when(command.overwrite()).thenReturn(true);
 
     List<OpenLineage.OutputDataset> datasets =
-        new InsertIntoDataSourceVisitor(context).apply(command);
+        new InsertIntoDataSourceDatasetBuilder(context).apply(event, command);
 
     assertThat(datasets).hasSize(1);
     OpenLineage.OutputDataset dataset = datasets.get(0);

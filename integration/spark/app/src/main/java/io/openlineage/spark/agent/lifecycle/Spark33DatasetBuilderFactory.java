@@ -66,6 +66,7 @@ public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
       builder.add(new ReplaceIcebergDataDatasetBuilder(context));
     }
 
+    builder.addAll(CommonDatasetBuilders.outputs(context));
     return builder.build();
   }
 }
