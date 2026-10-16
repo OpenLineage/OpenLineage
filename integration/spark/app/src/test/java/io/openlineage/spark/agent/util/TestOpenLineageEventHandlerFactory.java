@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateDataSourceTableAsSelectCommand;
@@ -90,6 +92,42 @@ public class TestOpenLineageEventHandlerFactory implements OpenLineageEventHandl
   public Collection<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>>
       createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
     return Collections.singletonList(failingCreateDataSourceTableAsSelectVisitor);
+  }
+
+  @Override
+  public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>>
+      createInputDatasetBuilder(OpenLineageContext context) {
+    return Collections.singletonList((PartialFunction) new NeverMatchingDatasetBuilder<>(context));
+  }
+
+  @Override
+  public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>>
+      createOutputDatasetBuilder(OpenLineageContext context) {
+    return Collections.singletonList((PartialFunction) new NeverMatchingDatasetBuilder<>(context));
+  }
+
+  /** Dataset builder which matches no plan node, to check where vendor builders are placed. */
+  public static class NeverMatchingDatasetBuilder<D extends OpenLineage.Dataset>
+      extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalPlan, D> {
+
+    public NeverMatchingDatasetBuilder(OpenLineageContext context) {
+      super(context, true);
+    }
+
+    @Override
+    public boolean isDefinedAt(SparkListenerEvent event) {
+      return true;
+    }
+
+    @Override
+    public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
+      return false;
+    }
+
+    @Override
+    public List<D> apply(LogicalPlan plan) {
+      return Collections.emptyList();
+    }
   }
 
   public static class TestRunFacetBuilder

@@ -16,7 +16,6 @@ import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
 public class IcebergEventHandlerFactory implements OpenLineageEventHandlerFactory {
@@ -36,14 +35,14 @@ public class IcebergEventHandlerFactory implements OpenLineageEventHandlerFactor
   }
 
   @Override
-  public Collection<PartialFunction<LogicalPlan, List<OutputDataset>>>
-      createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
-    return Arrays.asList(new IcebergMetricsReporterInjector(context));
+  public Collection<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(
+      OpenLineageContext context) {
+    return Arrays.asList((PartialFunction) new IcebergMetricsReporterInjector<>(context, false));
   }
 
   @Override
-  public Collection<PartialFunction<LogicalPlan, List<InputDataset>>>
-      createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
-    return Arrays.asList(new IcebergMetricsReporterInjector(context));
+  public Collection<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(
+      OpenLineageContext context) {
+    return Arrays.asList((PartialFunction) new IcebergMetricsReporterInjector<>(context, true));
   }
 }

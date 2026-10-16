@@ -7,8 +7,8 @@ package io.openlineage.spark.agent.vendor.iceberg.metrics;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig.VendorsConfig;
 import java.lang.reflect.Field;
@@ -23,6 +23,7 @@ import org.apache.iceberg.CachingCatalog;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.SparkSessionCatalog;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.BinaryCommand;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryCommand;
@@ -31,22 +32,27 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 
 /**
- * Declared as a QueryPlanVisitor to be able to inject the InMemoryMetricsReporter into the Iceberg
- * catalog. Registering metric reporter allows enriching OpenLineage events with ScanReport and
- * CommitReport metrics.
+ * Declared as a dataset builder, which never returns any datasets, to be able to inject the
+ * InMemoryMetricsReporter into the Iceberg catalog. Registering metric reporter allows enriching
+ * OpenLineage events with ScanReport and CommitReport metrics.
  *
  * @param <D>
  */
 @Slf4j
 public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
-    extends QueryPlanVisitor<LogicalPlan, D> {
+    extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalPlan, D> {
 
-  public IcebergMetricsReporterInjector(OpenLineageContext context) {
-    super(context);
+  public IcebergMetricsReporterInjector(OpenLineageContext context, boolean searchDependencies) {
+    super(context, searchDependencies);
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
+  public boolean isDefinedAt(SparkListenerEvent event) {
+    return true;
+  }
+
+  @Override
+  public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
     // if this is called, then Iceberg classes are on the classpath
     if (Optional.ofNullable(context.getOpenLineageConfig())
         .map(SparkOpenLineageConfig::getVendors)

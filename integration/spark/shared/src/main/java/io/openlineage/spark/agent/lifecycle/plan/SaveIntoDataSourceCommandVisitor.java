@@ -15,6 +15,8 @@ import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.Lifecy
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.KafkaRelationHandler;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.KustoRelationHandler;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
 import io.openlineage.spark.agent.util.LogicalRelationFactory;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -126,8 +128,8 @@ public class SaveIntoDataSourceCommandVisitor
     // directly.
     // TODO- it may be the case that we need to extend this pattern to support arbitrary relations,
     // as other impls of CreatableRelationProvider may not be able to be handled in the generic way.
-    if (KafkaRelationVisitor.isKafkaSource(command.dataSource())) {
-      return KafkaRelationVisitor.createKafkaDatasets(
+    if (KafkaRelationHandler.isKafkaSource(command.dataSource())) {
+      return KafkaRelationHandler.createKafkaDatasets(
           outputDataset(),
           command.dataSource(),
           command.options(),
@@ -137,8 +139,8 @@ public class SaveIntoDataSourceCommandVisitor
 
     // Similar to Kafka, Azure Kusto also has some special handling. So we use the method
     // below for extracting the dataset from Kusto write operations.
-    if (KustoRelationVisitor.isKustoSource(command.dataSource())) {
-      return KustoRelationVisitor.createKustoDatasets(
+    if (KustoRelationHandler.isKustoSource(command.dataSource())) {
+      return KustoRelationHandler.createKustoDatasets(
           outputDataset(), command.options(), command.schema());
     }
 
@@ -282,7 +284,7 @@ public class SaveIntoDataSourceCommandVisitor
     if (command.dataSource().getClass().getName().contains("DeltaDataSource")
         && command.options().contains("path")) {
       return Optional.of(trimPath(context, command.options().get("path").get()));
-    } else if (KustoRelationVisitor.isKustoSource(command.dataSource())) {
+    } else if (KustoRelationHandler.isKustoSource(command.dataSource())) {
       return Optional.ofNullable(command.options().get("kustotable"))
           .filter(Option::isDefined)
           .map(Option::get);

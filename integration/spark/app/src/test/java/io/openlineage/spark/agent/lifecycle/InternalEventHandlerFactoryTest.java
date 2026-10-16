@@ -11,16 +11,20 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.NeverMatchingDatasetBuilder;
 import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.TestRunFacetBuilder;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import scala.PartialFunction;
 
 class InternalEventHandlerFactoryTest {
 
@@ -55,5 +59,25 @@ class InternalEventHandlerFactoryTest {
     assertThat(runFacetBuilders)
         .isNotEmpty()
         .anyMatch(builder -> builder instanceof TestRunFacetBuilder);
+  }
+
+  @Test
+  void testVendorDatasetBuildersPrecedeBuiltInOnes() {
+    // vendor builders, e.g. for Snowflake relations, rely on resolving their nodes before the
+    // generic LogicalRelationDatasetBuilder does
+    InternalEventHandlerFactory factory = new InternalEventHandlerFactory();
+    assertVendorBuilderPrecedesLogicalRelationBuilder(factory.createInputDatasetBuilder(context));
+    assertVendorBuilderPrecedesLogicalRelationBuilder(factory.createOutputDatasetBuilder(context));
+  }
+
+  private static void assertVendorBuilderPrecedesLogicalRelationBuilder(
+      Collection<? extends PartialFunction<Object, ?>> builders) {
+    List<Class<?>> classes = new ArrayList<>();
+    builders.forEach(builder -> classes.add(builder.getClass()));
+    int vendor = classes.indexOf(NeverMatchingDatasetBuilder.class);
+    int logicalRelation =
+        classes.indexOf(
+            io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder.class);
+    assertThat(vendor).isNotNegative().isLessThan(logicalRelation);
   }
 }

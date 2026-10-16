@@ -9,34 +9,39 @@ import static io.openlineage.spark.agent.vendor.snowflake.Constants.SNOWFLAKE_CL
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.agent.vendor.snowflake.lifecycle.plan.SnowflakeSaveIntoDataSourceCommandDatasetBuilder;
+import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import net.snowflake.spark.snowflake.Parameters.MergedParameters;
 import net.snowflake.spark.snowflake.SnowflakeRelation;
 import net.snowflake.spark.snowflake.TableName;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 
 /**
- * {@link LogicalPlan} visitor that matches the SnowflakeRelation that comes from Snowflake The
- * SnowflakeRelation is used to extract the table name and database name to populate the {@link
- * OpenLineage.Dataset} during Snowflake read operations. Writes are routed here from {@link
- * SnowflakeSaveIntoDataSourceCommandDatasetBuilder}.
+ * Extracts {@link OpenLineage.Dataset}s from a {@link LogicalRelation} over the SnowflakeRelation
+ * that comes from Snowflake. The SnowflakeRelation is used to extract the table name and database
+ * name to populate the {@link OpenLineage.Dataset} during Snowflake read operations.
  */
 @Slf4j
-public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
-    extends QueryPlanVisitor<LogicalRelation, D> {
+public class SnowflakeRelationDatasetBuilder<D extends OpenLineage.Dataset>
+    extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalRelation, D> {
 
   private final DatasetFactory<D> factory;
 
-  public SnowflakeRelationVisitor(OpenLineageContext context, DatasetFactory<D> factory) {
-    super(context);
+  public SnowflakeRelationDatasetBuilder(
+      OpenLineageContext context, DatasetFactory<D> factory, boolean searchDependencies) {
+    super(context, searchDependencies);
     this.factory = factory;
+  }
+
+  @Override
+  public boolean isDefinedAt(SparkListenerEvent event) {
+    return true;
   }
 
   protected boolean isSnowflakeClass(LogicalPlan plan) {
@@ -51,13 +56,13 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
     return isSnowflakeClass(plan);
   }
 
   @Override
-  public List<D> apply(LogicalPlan x) {
-    SnowflakeRelation relation = (SnowflakeRelation) ((LogicalRelation) x).relation();
+  public List<D> apply(LogicalRelation logicalRelation) {
+    SnowflakeRelation relation = (SnowflakeRelation) logicalRelation.relation();
 
     MergedParameters params = relation.params();
     String sfDatabase = params.sfDatabase();

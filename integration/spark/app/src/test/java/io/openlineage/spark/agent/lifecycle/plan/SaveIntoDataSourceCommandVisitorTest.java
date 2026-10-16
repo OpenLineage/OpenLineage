@@ -19,6 +19,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.KustoRelationHandler;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -137,8 +138,8 @@ class SaveIntoDataSourceCommandVisitorTest {
         mock(
             DeltaDataSource.class, withSettings().extraInterfaces(CreatableRelationProvider.class));
     when(command.dataSource()).thenReturn(dataSource);
-    try (MockedStatic mock = mockStatic(KustoRelationVisitor.class)) {
-      when(KustoRelationVisitor.isKustoSource(dataSource)).thenReturn(true);
+    try (MockedStatic mock = mockStatic(KustoRelationHandler.class)) {
+      when(KustoRelationHandler.isKustoSource(dataSource)).thenReturn(true);
       when(command.options())
           .thenReturn(
               (Map<String, String>)

@@ -62,7 +62,7 @@ public class IcebergMetricsReporterInjectorTest {
 
   @BeforeEach
   void setup() {
-    injector = new IcebergMetricsReporterInjector(context);
+    injector = new IcebergMetricsReporterInjector(context, true);
     icebergCatalog = new TestingIcebergCatalog();
 
     plan = mock(LogicalPlan.class, withSettings().extraInterfaces(UnaryCommand.class));
@@ -86,28 +86,28 @@ public class IcebergMetricsReporterInjectorTest {
   void testIsDefinedForIcebergCatalog(CatalogPlugin catalog) {
     setupCatalog(catalog);
 
-    assertThat(injector.isDefinedAt(mock(LogicalPlan.class))).isFalse();
-    assertThat(injector.isDefinedAt(plan)).isTrue();
+    assertThat(injector.isDefinedAtLogicalPlan(mock(LogicalPlan.class))).isFalse();
+    assertThat(injector.isDefinedAtLogicalPlan(plan)).isTrue();
 
     LogicalPlan planWithCatalogMethod =
         mock(
             LogicalPlan.class, withSettings().extraInterfaces(TestingLogicalPlanWithCatalog.class));
     when(((TestingLogicalPlanWithCatalog) planWithCatalogMethod).catalog()).thenReturn(catalog);
-    assertThat(injector.isDefinedAt(planWithCatalogMethod)).isTrue();
+    assertThat(injector.isDefinedAtLogicalPlan(planWithCatalogMethod)).isTrue();
 
     LogicalPlan binaryCommand =
         mock(LogicalPlan.class, withSettings().extraInterfaces(BinaryCommand.class));
     when(((BinaryCommand) binaryCommand).left()).thenReturn(subPlan);
-    assertThat(injector.isDefinedAt(binaryCommand)).isTrue();
+    assertThat(injector.isDefinedAtLogicalPlan(binaryCommand)).isTrue();
 
     DataSourceV2ScanRelation v2ScanRelation =
         mock(DataSourceV2ScanRelation.class, RETURNS_DEEP_STUBS);
     when(v2ScanRelation.relation().catalog().get()).thenReturn(catalog);
-    assertThat(injector.isDefinedAt(v2ScanRelation)).isTrue();
+    assertThat(injector.isDefinedAtLogicalPlan(v2ScanRelation)).isTrue();
 
     DataSourceV2Relation v2Relation = mock(DataSourceV2Relation.class, RETURNS_DEEP_STUBS);
     when(v2Relation.catalog().get()).thenReturn(catalog);
-    assertThat(injector.isDefinedAt(v2Relation)).isTrue();
+    assertThat(injector.isDefinedAtLogicalPlan(v2Relation)).isTrue();
   }
 
   @Test
@@ -122,7 +122,7 @@ public class IcebergMetricsReporterInjectorTest {
     when(relation.catalog()).thenReturn(Option.apply(catalog));
 
     assertThat(injector.apply(relation)).isEmpty();
-    assertThat(injector.isDefinedAt(relation)).isFalse();
+    assertThat(injector.isDefinedAtLogicalPlan(relation)).isFalse();
     assertThat(vendorsContext.fromVendorsContext(VENDOR_CONTEXT_KEY)).isEmpty();
   }
 
@@ -131,7 +131,7 @@ public class IcebergMetricsReporterInjectorTest {
     DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
     when(relation.catalog()).thenReturn(Option.empty());
 
-    assertThat(injector.isDefinedAt(relation)).isFalse();
+    assertThat(injector.isDefinedAtLogicalPlan(relation)).isFalse();
     assertThat(injector.apply(relation)).isEmpty();
     assertThat(injector.apply(mock(LogicalPlan.class))).isEmpty();
     assertThat(vendorsContext.fromVendorsContext(VENDOR_CONTEXT_KEY)).isEmpty();
@@ -143,7 +143,7 @@ public class IcebergMetricsReporterInjectorTest {
     DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
     when(relation.catalog()).thenReturn(Option.apply(catalog));
 
-    assertThat(injector.isDefinedAt(relation)).isTrue();
+    assertThat(injector.isDefinedAtLogicalPlan(relation)).isTrue();
     verify((HasIcebergCatalog) catalog, never()).icebergCatalog();
     assertThat(injector.apply(relation)).isEmpty();
     assertThat(vendorsContext.fromVendorsContext(VENDOR_CONTEXT_KEY)).isEmpty();
@@ -158,7 +158,7 @@ public class IcebergMetricsReporterInjectorTest {
         .thenReturn(
             Collections.singletonMap(
                 "iceberg", new SparkOpenLineageConfig.VendorsConfig.VendorConfig(true)));
-    assertThat(injector.isDefinedAt(plan)).isFalse();
+    assertThat(injector.isDefinedAtLogicalPlan(plan)).isFalse();
   }
 
   @ParameterizedTest

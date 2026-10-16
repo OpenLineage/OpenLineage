@@ -3,17 +3,16 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle.plan.handlers;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.KafkaBootstrapServerResolver;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
-import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -26,7 +25,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SaveMode;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.kafka010.KafkaRelation;
 import org.apache.spark.sql.sources.BaseRelation;
@@ -37,12 +35,11 @@ import scala.collection.immutable.Map;
 import scala.collection.immutable.Map$;
 
 /**
- * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
- * LogicalRelation}. {@link KafkaRelation} is used to extract topic and bootstrap servers for Kafka
+ * Extracts {@link OpenLineage.Dataset}s from a {@link LogicalRelation} over a {@link
+ * KafkaRelation}, using its topic and bootstrap servers.
  */
 @Slf4j
-public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
-    extends QueryPlanVisitor<LogicalRelation, D> {
+public class KafkaRelationHandler<D extends OpenLineage.Dataset> {
   private static final String KAFKA_SOURCE_PROVIDER_CLASS_NAME =
       "org.apache.spark.sql.kafka010.KafkaSourceProvider";
   private static final String KAFKA_RELATION_CLASS_NAME =
@@ -54,14 +51,13 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
 
   private final DatasetFactory<D> datasetFactory;
 
-  public KafkaRelationVisitor(OpenLineageContext context, DatasetFactory<D> datasetFactory) {
-    super(context);
+  public KafkaRelationHandler(DatasetFactory<D> datasetFactory) {
     this.datasetFactory = datasetFactory;
   }
 
   /**
    * Checking the KafkaSourceProvider class with both
-   * KafkaRelationVisitor.class.getClassLoader.loadClass and
+   * KafkaRelationHandler.class.getClassLoader.loadClass and
    * Thread.currentThread().getContextClassLoader().loadClass. The first checks if the class is
    * present on the classpath, and the second one is a catchall which captures if the class has been
    * installed. When job submission happens via '--packages' the first check fails, and we revert to
@@ -71,7 +67,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
     log.debug("Checking if Kafka classes are available");
     if (!KAFKA_PROVIDER_CHECKED.get()) {
       log.debug("Kafka classes have not been checked yet");
-      synchronized (KafkaRelationVisitor.class) {
+      synchronized (KafkaRelationHandler.class) {
         if (!KAFKA_PROVIDER_CHECKED.get()) {
           boolean available =
               checkWithCurrentClassClassLoader(KAFKA_SOURCE_PROVIDER_CLASS_NAME)
@@ -89,7 +85,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
     log.debug("Checking if KafkaRelation class is available");
     if (!KAFKA_RELATION_CHECKED.get()) {
       log.debug("KafkaRelation class has not been checked yet");
-      synchronized (KafkaRelationVisitor.class) {
+      synchronized (KafkaRelationHandler.class) {
         if (!KAFKA_RELATION_CHECKED.get()) {
           boolean available =
               checkWithCurrentClassClassLoader(KAFKA_RELATION_CLASS_NAME)
@@ -105,7 +101,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
 
   private static boolean checkWithCurrentClassClassLoader(String className) {
     try {
-      KafkaRelationVisitor.class.getClassLoader().loadClass(className);
+      KafkaRelationHandler.class.getClassLoader().loadClass(className);
       return true;
     } catch (Exception e) {
       return false;
@@ -150,13 +146,8 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
     return createDatasetsFromOptions(datasetFactory, options, schema);
   }
 
-  @Override
-  public boolean isDefinedAt(LogicalPlan x) {
-    if (!hasKafkaRelationClass()) {
-      return false;
-    }
-
-    if (!(x instanceof LogicalRelation)) {
+  public static boolean isKafkaRelation(BaseRelation baseRelation) {
+    if (baseRelation == null || !hasKafkaClasses() || !hasKafkaRelationClass()) {
       return false;
     }
 
@@ -165,8 +156,6 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
       return false;
     }
 
-    LogicalRelation logicalRelation = ((LogicalRelation) x);
-    BaseRelation baseRelation = logicalRelation.relation();
     if (log.isDebugEnabled()) {
       log.debug(
           "Checking if {} is assignable from {}",
@@ -176,10 +165,8 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
     return c.isAssignableFrom(baseRelation.getClass());
   }
 
-  @Override
   @SuppressWarnings("PMD") // we need to make sourceOptionsField accessible
-  public List<D> apply(LogicalPlan x) {
-    LogicalRelation logicalRelation = (LogicalRelation) x;
+  public List<D> handleRelation(LogicalRelation logicalRelation) {
     BaseRelation relation = logicalRelation.relation();
     Map<String, String> sourceOptions;
     try {

@@ -2,47 +2,57 @@
 /* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
-
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.Dataset;
+import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import lombok.NonNull;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
- * Simple visitor to support {@link HiveTableRelation}s in the plan. Both input and output {@link
- * Dataset}s are supported.
+ * Supports {@link HiveTableRelation}s in the plan. Both input and output {@link Dataset}s are
+ * supported.
  *
  * @param <D>
  */
-public class HiveTableRelationVisitor<D extends Dataset>
-    extends QueryPlanVisitor<HiveTableRelation, D> {
+public class HiveTableRelationDatasetBuilder<D extends Dataset>
+    extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, HiveTableRelation, D> {
 
   private final DatasetFactory<D> factory;
 
-  public HiveTableRelationVisitor(@NonNull OpenLineageContext context, DatasetFactory<D> factory) {
-    super(context);
+  public HiveTableRelationDatasetBuilder(
+      @NonNull OpenLineageContext context, DatasetFactory<D> factory, boolean searchDependencies) {
+    super(context, searchDependencies);
     this.factory = factory;
   }
 
   @Override
-  public List<D> apply(LogicalPlan x) {
+  public boolean isDefinedAt(SparkListenerEvent event) {
+    return true;
+  }
+
+  @Override
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof HiveTableRelation;
+  }
+
+  @Override
+  public List<D> apply(HiveTableRelation hiveTable) {
     if (!context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
 
-    HiveTableRelation hiveTable = (HiveTableRelation) x;
     return Collections.singletonList(
         factory
             .sparkDatasetBuilder()
             .dataset(hiveTable.tableMeta())
-            .schema(x.schema())
+            .schema(hiveTable.schema())
             .catalog()
             .build());
   }

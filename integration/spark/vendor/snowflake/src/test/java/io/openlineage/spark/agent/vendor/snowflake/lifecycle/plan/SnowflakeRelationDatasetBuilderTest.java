@@ -17,7 +17,7 @@ import io.openlineage.client.utils.SnowflakeUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeDataset;
-import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeRelationVisitor;
+import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeRelationDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -44,7 +44,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import scala.Option;
 
 @Slf4j
-public class SnowflakeRelationVisitorTest {
+public class SnowflakeRelationDatasetBuilderTest {
 
   private static final String FIELD_NAME = "name";
 
@@ -95,8 +95,9 @@ public class SnowflakeRelationVisitorTest {
             .openLineageConfig(new SparkOpenLineageConfig())
             .build();
 
-    SnowflakeRelationVisitor visitor =
-        new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
+    SnowflakeRelationDatasetBuilder builder =
+        new SnowflakeRelationDatasetBuilder<>(
+            openLineageContext, DatasetFactory.output(context), false);
 
     LogicalRelation lr =
         new LogicalRelation(
@@ -113,7 +114,7 @@ public class SnowflakeRelationVisitorTest {
             Option.empty(),
             false);
 
-    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+    List<OpenLineage.Dataset> datasets = builder.apply(lr);
 
     OpenLineage.Dataset ds = datasets.get(0);
 
@@ -144,8 +145,9 @@ public class SnowflakeRelationVisitorTest {
             .openLineageConfig(new SparkOpenLineageConfig())
             .build();
 
-    SnowflakeRelationVisitor visitor =
-        new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
+    SnowflakeRelationDatasetBuilder builder =
+        new SnowflakeRelationDatasetBuilder<>(
+            openLineageContext, DatasetFactory.output(context), false);
 
     LogicalRelation lr =
         new LogicalRelation(
@@ -162,7 +164,7 @@ public class SnowflakeRelationVisitorTest {
             Option.empty(),
             false);
 
-    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+    List<OpenLineage.Dataset> datasets = builder.apply(lr);
 
     OpenLineage.Dataset ds = datasets.get(0);
 
@@ -193,8 +195,9 @@ public class SnowflakeRelationVisitorTest {
             .openLineageConfig(new SparkOpenLineageConfig())
             .build();
 
-    SnowflakeRelationVisitor visitor =
-        new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
+    SnowflakeRelationDatasetBuilder builder =
+        new SnowflakeRelationDatasetBuilder<>(
+            openLineageContext, DatasetFactory.output(context), false);
 
     LogicalRelation lr =
         new LogicalRelation(
@@ -211,7 +214,7 @@ public class SnowflakeRelationVisitorTest {
             Option.empty(),
             false);
 
-    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+    List<OpenLineage.Dataset> datasets = builder.apply(lr);
 
     OpenLineage.Dataset ds = datasets.get(0);
 

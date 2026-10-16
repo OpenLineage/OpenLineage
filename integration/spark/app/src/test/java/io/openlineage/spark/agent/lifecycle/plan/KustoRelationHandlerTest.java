@@ -10,8 +10,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.KustoRelationHandler;
 import io.openlineage.spark.agent.util.LogicalRelationFactory;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -26,7 +26,6 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.types.StringType$;
@@ -39,8 +38,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import scala.Option;
 
 /**
- * This unit test tests the apply method of KustoRelationVisitor. Therefore it only tests Kusto read
- * operations. It does not cover Kusto writes, as those are routed to the visitor from the
+ * This unit test tests the handleRelation method of KustoRelationHandler. Therefore it only tests
+ * Kusto read operations. It does not cover Kusto writes, as those are handled by
  * SaveIntoDataSourceCommandVisitor
  */
 @Slf4j
@@ -92,18 +91,7 @@ class MockKustoRelation extends BaseRelation {
   }
 }
 
-class TestKustoRelationVisitor extends KustoRelationVisitor {
-  public TestKustoRelationVisitor(OpenLineageContext context, DatasetFactory factory) {
-    super(context, factory);
-  }
-
-  @Override
-  protected boolean isKustoClass(LogicalPlan plan) {
-    return true;
-  }
-}
-
-class KustoRelationVisitorTest {
+class KustoRelationHandlerTest {
   private static final String FIELD_NAME = "name";
   SparkSession session = mock(SparkSession.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
@@ -142,11 +130,10 @@ class KustoRelationVisitorTest {
                 false)
             .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
 
-    TestKustoRelationVisitor visitor =
-        new TestKustoRelationVisitor(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
+    KustoRelationHandler<OpenLineage.OutputDataset> handler =
+        new KustoRelationHandler<>(DatasetFactory.output(context));
 
-    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+    List<OpenLineage.OutputDataset> datasets = handler.handleRelation(lr);
 
     assertEquals(expectedNumOfDatasets, datasets.size());
     OpenLineage.Dataset ds = datasets.get(0);

@@ -41,7 +41,7 @@ import org.junit.jupiter.api.io.TempDir;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-class LogicalRDDVisitorTest {
+class LogicalRDDDatasetBuilderTest {
 
   JobConf jobConf;
   OpenLineageContext context = mock(OpenLineageContext.class);
@@ -59,9 +59,9 @@ class LogicalRDDVisitorTest {
   @Test
   void testApply(@TempDir Path tmpDir) {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    LogicalRDDVisitor visitor =
-        new LogicalRDDVisitor(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
+    LogicalRDDDatasetBuilder<OpenLineage.OutputDataset> builder =
+        new LogicalRDDDatasetBuilder<>(
+            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context), false);
     StructType schema =
         new StructType(
             new StructField[] {
@@ -86,8 +86,8 @@ class LogicalRDDVisitorTest {
     when(logicalRDD.rdd()).thenReturn(hadoopRdd);
     when(logicalRDD.schema()).thenReturn(schema);
 
-    assertThat(visitor.isDefinedAt(logicalRDD)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(logicalRDD);
+    assertThat(builder.isDefinedAtLogicalPlan(logicalRDD)).isTrue();
+    List<OpenLineage.OutputDataset> datasets = builder.apply(logicalRDD);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", tmpDir.toString())

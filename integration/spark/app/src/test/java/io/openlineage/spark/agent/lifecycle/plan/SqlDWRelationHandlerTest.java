@@ -10,8 +10,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.SqlDWRelationHandler;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -24,7 +24,6 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.types.StringType$;
@@ -86,21 +85,10 @@ class MockSqlDWBaseRelation extends BaseRelation {
   }
 }
 
-class TestSqlDWDatabricksVisitor extends SqlDWDatabricksVisitor {
-  public TestSqlDWDatabricksVisitor(OpenLineageContext context, DatasetFactory factory) {
-    super(context, factory);
-  }
-
-  @Override
-  protected boolean isSqlDwRelationClass(LogicalPlan plan) {
-    return true;
-  }
-}
-
 @EnabledIfSystemProperty(
     named = "spark.version",
     matches = "([3].*)") // doesn't work for Spark 4 which has different LogicalRelation constructor
-class SQLDWDatabricksVisitorTest {
+class SqlDWRelationHandlerTest {
   private static final String FIELD_NAME = "name";
   SparkSession session = mock(SparkSession.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
@@ -156,10 +144,9 @@ class SQLDWDatabricksVisitorTest {
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
 
-    TestSqlDWDatabricksVisitor visitor =
-        new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
-    List<OpenLineage.Dataset> datasets = visitor.apply(instance);
+    SqlDWRelationHandler<OpenLineage.OutputDataset> handler =
+        new SqlDWRelationHandler<>(DatasetFactory.output(context));
+    List<OpenLineage.OutputDataset> datasets = handler.handleRelation(instance);
 
     assertEquals(1, datasets.size());
     OpenLineage.Dataset ds = datasets.get(0);
@@ -211,10 +198,9 @@ class SQLDWDatabricksVisitorTest {
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
 
-    TestSqlDWDatabricksVisitor visitor =
-        new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
-    List<OpenLineage.Dataset> datasets = visitor.apply(instance);
+    SqlDWRelationHandler<OpenLineage.OutputDataset> handler =
+        new SqlDWRelationHandler<>(DatasetFactory.output(context));
+    List<OpenLineage.OutputDataset> datasets = handler.handleRelation(instance);
 
     assertEquals(1, datasets.size());
     OpenLineage.Dataset ds = datasets.get(0);
@@ -261,10 +247,9 @@ class SQLDWDatabricksVisitorTest {
     }
     // Instantiate a MockSQLDWRelation
 
-    TestSqlDWDatabricksVisitor visitor =
-        new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
-    List<OpenLineage.Dataset> datasets = visitor.apply(instance);
+    SqlDWRelationHandler<OpenLineage.OutputDataset> handler =
+        new SqlDWRelationHandler<>(DatasetFactory.output(context));
+    List<OpenLineage.OutputDataset> datasets = handler.handleRelation(instance);
 
     assertEquals(1, datasets.size());
     OpenLineage.Dataset ds = datasets.get(0);
@@ -307,10 +292,9 @@ class SQLDWDatabricksVisitorTest {
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
 
-    TestSqlDWDatabricksVisitor visitor =
-        new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
-    List<OpenLineage.Dataset> datasets = visitor.apply(instance);
+    SqlDWRelationHandler<OpenLineage.OutputDataset> handler =
+        new SqlDWRelationHandler<>(DatasetFactory.output(context));
+    List<OpenLineage.OutputDataset> datasets = handler.handleRelation(instance);
 
     assertEquals(0, datasets.size());
   }

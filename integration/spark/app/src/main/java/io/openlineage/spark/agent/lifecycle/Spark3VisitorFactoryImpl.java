@@ -7,10 +7,8 @@ package io.openlineage.spark.agent.lifecycle;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.WriteToDataSourceV2Visitor;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.DropTableVisitor;
 import java.util.List;
@@ -27,11 +25,5 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
         .add(new DropTableVisitor(context))
         .add(new WriteToDataSourceV2Visitor(context))
         .build();
-  }
-
-  @Override
-  public <D extends Dataset> List<PartialFunction<LogicalPlan, List<D>>> getCommonVisitors(
-      OpenLineageContext context, DatasetFactory<D> factory) {
-    return super.getBaseCommonVisitors(context, factory);
   }
 }
