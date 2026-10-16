@@ -117,8 +117,17 @@ public class SparkAgentTestExtension
   public Object resolveParameter(
       ParameterContext parameterContext, ExtensionContext extensionContext)
       throws ParameterResolutionException {
+    return sessionBuilder(
+            SparkSession.builder(), parameterContext.getDeclaringExecutable().getName())
+        .getOrCreate();
+  }
+
+  /**
+   * Configures a session builder the same way as sessions injected as test parameters, so that a
+   * test needing extra settings (e.g. Hive support) still gets OpenLineage events captured.
+   */
+  public static SparkSession.Builder sessionBuilder(SparkSession.Builder builder, String testName) {
     Spark4CompatUtils.cleanupAnyExistingSession();
-    String testName = parameterContext.getDeclaringExecutable().getName();
     String warehouseDir =
         Paths.get(System.getProperty("spark.sql.warehouse.dir"))
             .toAbsolutePath()
@@ -133,7 +142,7 @@ public class SparkAgentTestExtension
             .toString();
     System.setProperty("derby.system.home", derbyHome);
 
-    return SparkSession.builder()
+    return builder
         .master("local[*]")
         .appName(testName)
         .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
@@ -143,8 +152,7 @@ public class SparkAgentTestExtension
         .config("spark.openlineage.facets.custom_environment_variables", "[TEST_VAR;]")
         .config("spark.openlineage.facets.spark.logicalPlan.disabled", "false")
         .config("spark.openlineage.facets.debug.disabled", "false")
-        .config("spark.ui.enabled", false)
-        .getOrCreate();
+        .config("spark.ui.enabled", false);
   }
 
   public static OpenLineageContext newContext(SparkSession sparkSession) {
