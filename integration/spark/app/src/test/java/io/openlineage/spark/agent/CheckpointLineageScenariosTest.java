@@ -110,10 +110,7 @@ class CheckpointLineageScenariosTest {
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.openlineage.checkpointLineage.enabled", true)
             .getOrCreate();
-    spark
-        .sparkContext()
-        .setCheckpointDir(
-            "/Users/tomasznazarewicz/projects/OpenLineage/integration/spark/app/tmp/spark-checkpoints");
+    spark.sparkContext().setCheckpointDir(tempDir.resolve("spark-checkpoints").toString());
 
     spark.sql("CREATE TABLE sc_t1 (a string, b string) USING parquet");
     spark.sql("INSERT INTO sc_t1 VALUES ('x', 'y'), ('z', 'w')");

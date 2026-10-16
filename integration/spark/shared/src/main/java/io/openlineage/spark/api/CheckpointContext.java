@@ -21,6 +21,10 @@ import java.util.Optional;
  * {@link #MAX_ENTRIES} is exceeded. This keeps memory usage bounded for long-running applications
  * (e.g. structured streaming) at the cost of losing lineage for checkpoints created long before
  * they are read - which is no worse than the lineage-less behavior prior to this feature.
+ *
+ * <p>Entries are added and removed on the listener thread, but read while building input datasets,
+ * which may run on {@code OpenLineageRunEventTimeoutExecutor}'s thread (and keep running after a
+ * timeout), so access is synchronized.
  */
 public class CheckpointContext {
 
@@ -38,11 +42,11 @@ public class CheckpointContext {
     };
   }
 
-  public void addCheckpoint(long executionId, Checkpoint checkpoint) {
+  public synchronized void addCheckpoint(long executionId, Checkpoint checkpoint) {
     checkpoints.put(executionId, checkpoint);
   }
 
-  public void addRddToExecutionIdMapping(int rddId, long executionId) {
+  public synchronized void addRddToExecutionIdMapping(int rddId, long executionId) {
     rddToExecutionIdMapping.put(rddId, executionId);
   }
 
@@ -50,7 +54,7 @@ public class CheckpointContext {
    * Drops the lineage captured for the checkpoint materialized into the RDD with the given id, if
    * any. Called once the RDD is unpersisted, as a checkpoint can't be read anymore afterwards.
    */
-  public void removeRdd(int rddId) {
+  public synchronized void removeRdd(int rddId) {
     Long executionId = rddToExecutionIdMapping.remove(rddId);
     if (executionId != null) {
       checkpoints.remove(executionId);
@@ -58,7 +62,7 @@ public class CheckpointContext {
   }
 
   /** Whether the RDD with the given id has already been mapped to a checkpoint execution. */
-  public boolean isRddMapped(int rddId) {
+  public synchronized boolean isRddMapped(int rddId) {
     return rddToExecutionIdMapping.containsKey(rddId);
   }
 
@@ -69,7 +73,7 @@ public class CheckpointContext {
    * @param rddId id of the (checkpointed) {@link org.apache.spark.rdd.RDD} as reported by {@link
    *     org.apache.spark.sql.execution.LogicalRDD#rdd()}.
    */
-  public Optional<Checkpoint> getCheckpoint(int rddId) {
+  public synchronized Optional<Checkpoint> getCheckpoint(int rddId) {
     return Optional.ofNullable(rddToExecutionIdMapping.get(rddId)).map(checkpoints::get);
   }
 }
