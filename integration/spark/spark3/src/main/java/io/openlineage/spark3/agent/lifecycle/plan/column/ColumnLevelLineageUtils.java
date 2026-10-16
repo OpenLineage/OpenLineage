@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
+import io.openlineage.spark.agent.lifecycle.plan.column.CheckpointColumnLineage;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -42,24 +43,12 @@ public class ColumnLevelLineageUtils {
       SparkListenerEvent event,
       OpenLineageContext olContext,
       OpenLineage.SchemaDatasetFacet schemaFacet) {
-    if (!olContext.getQueryExecution().isPresent()
-        || olContext.getQueryExecution().get().optimizedPlan() == null
-        || schemaFacet == null
-        || isSchemaExceedsLimit(olContext, schemaFacet)) {
+    Optional<ColumnLevelLineageContext> collected =
+        collectColumnLineage(event, olContext, schemaFacet);
+    if (!collected.isPresent()) {
       return Optional.empty();
     }
-
-    ColumnLevelLineageContext context =
-        new ColumnLevelLineageContext(
-            event,
-            olContext,
-            new ColumnLevelLineageBuilder(schemaFacet, olContext),
-            new DatasetNamespaceCombinedResolver(olContext.getOpenLineageConfig()));
-
-    LogicalPlan plan = getAdjustedPlan(olContext);
-
-    OutputFieldsCollector.collect(context, plan);
-    collectInputsAndExpressionDependencies(context, plan);
+    ColumnLevelLineageContext context = collected.get();
 
     OpenLineage.ColumnLineageDatasetFacetBuilder facetBuilder =
         olContext.getOpenLineage().newColumnLineageDatasetFacetBuilder();
@@ -81,6 +70,45 @@ public class ColumnLevelLineageUtils {
     } else {
       return Optional.of(facet);
     }
+  }
+
+  /**
+   * Captures column lineage of a checkpointed plan, see {@link
+   * io.openlineage.spark.api.Checkpoint}. Unlike {@link #buildColumnLineageDatasetFacet}, it's
+   * returned even if no field level lineage was found, so that dataset-level dependencies alone
+   * (e.g. columns used only for filtering) aren't lost.
+   */
+  public static Optional<CheckpointColumnLineage> buildCheckpointColumnLineage(
+      SparkListenerEvent event,
+      OpenLineageContext olContext,
+      OpenLineage.SchemaDatasetFacet schemaFacet) {
+    return collectColumnLineage(event, olContext, schemaFacet)
+        .map(context -> context.getBuilder().buildCheckpointColumnLineage());
+  }
+
+  private static Optional<ColumnLevelLineageContext> collectColumnLineage(
+      SparkListenerEvent event,
+      OpenLineageContext olContext,
+      OpenLineage.SchemaDatasetFacet schemaFacet) {
+    if (!olContext.getQueryExecution().isPresent()
+        || olContext.getQueryExecution().get().optimizedPlan() == null
+        || schemaFacet == null
+        || isSchemaExceedsLimit(olContext, schemaFacet)) {
+      return Optional.empty();
+    }
+
+    ColumnLevelLineageContext context =
+        new ColumnLevelLineageContext(
+            event,
+            olContext,
+            new ColumnLevelLineageBuilder(schemaFacet, olContext),
+            new DatasetNamespaceCombinedResolver(olContext.getOpenLineageConfig()));
+
+    LogicalPlan plan = getAdjustedPlan(olContext);
+
+    OutputFieldsCollector.collect(context, plan);
+    collectInputsAndExpressionDependencies(context, plan);
+    return Optional.of(context);
   }
 
   /**

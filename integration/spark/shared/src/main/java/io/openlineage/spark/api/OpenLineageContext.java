@@ -60,6 +60,10 @@ public class OpenLineageContext {
   @Default @NonNull @Getter
   DatasetBuilderFactory datasetBuilderFactory = DatasetBuilderFactory.EMPTY;
 
+  // Defaults to a fresh, empty context when not built via the agent's ContextFactory (e.g. some
+  // unit tests), so checkpoint lookups are always safe to call rather than requiring null checks.
+  @Default @NonNull @Getter CheckpointContext checkpointContext = new CheckpointContext();
+
   // filled up for SparkListener non-application events
   @Default @NonNull @Getter final UUID runUuid = UUIDUtils.generateNewUUID();
 
