@@ -74,6 +74,7 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
       builder.add(new MergeIntoCommandInputDatasetBuilder(context));
     }
 
+    builder.addAll(CommonDatasetBuilders.inputs(context));
     return builder.build();
   }
 

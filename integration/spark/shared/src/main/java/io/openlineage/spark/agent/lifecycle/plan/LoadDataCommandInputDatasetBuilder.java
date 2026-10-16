@@ -7,8 +7,8 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -18,21 +18,26 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.LoadDataCommand;
 
 /**
- * {@link LogicalPlan} visitor that matches a {@link LoadDataCommand} and extracts the source
- * location being read as an input {@link OpenLineage.Dataset}. The target table is emitted as the
- * output by {@link LoadDataCommandDatasetBuilder}.
+ * Extracts the source location read by a {@link LoadDataCommand} as an input {@link
+ * OpenLineage.Dataset}. The target table is emitted as the output by {@link
+ * LoadDataCommandDatasetBuilder}.
  */
 @Slf4j
-public class LoadDataCommandInputVisitor
-    extends QueryPlanVisitor<LoadDataCommand, OpenLineage.InputDataset> {
+public class LoadDataCommandInputDatasetBuilder
+    extends AbstractQueryPlanInputDatasetBuilder<LoadDataCommand> {
 
-  public LoadDataCommandInputVisitor(OpenLineageContext context) {
-    super(context);
+  public LoadDataCommandInputDatasetBuilder(OpenLineageContext context) {
+    super(context, true);
   }
 
   @Override
-  public List<OpenLineage.InputDataset> apply(LogicalPlan x) {
-    String path = ((LoadDataCommand) x).path();
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof LoadDataCommand;
+  }
+
+  @Override
+  public List<OpenLineage.InputDataset> apply(LoadDataCommand command) {
+    String path = command.path();
     if (StringUtils.isBlank(path)) {
       return Collections.emptyList();
     }

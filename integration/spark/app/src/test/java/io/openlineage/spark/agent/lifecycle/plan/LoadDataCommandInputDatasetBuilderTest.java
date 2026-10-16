@@ -16,7 +16,7 @@ import org.apache.spark.sql.execution.command.LoadDataCommand;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 
-class LoadDataCommandInputVisitorTest {
+class LoadDataCommandInputDatasetBuilderTest {
 
   @Test
   void testLoadDataCommandSourcePathIsAnInput() {
@@ -27,8 +27,8 @@ class LoadDataCommandInputVisitorTest {
             .getOrCreate();
     String database = session.catalog().currentDatabase();
 
-    LoadDataCommandInputVisitor visitor =
-        new LoadDataCommandInputVisitor(SparkAgentTestExtension.newContext(session));
+    LoadDataCommandInputDatasetBuilder builder =
+        new LoadDataCommandInputDatasetBuilder(SparkAgentTestExtension.newContext(session));
 
     LoadDataCommand command =
         new LoadDataCommand(
@@ -38,9 +38,9 @@ class LoadDataCommandInputVisitorTest {
             false,
             Option.empty());
 
-    assertThat(visitor.isDefinedAt(command)).isTrue();
+    assertThat(builder.isDefinedAtLogicalPlan(command)).isTrue();
 
-    List<OpenLineage.InputDataset> datasets = visitor.apply(command);
+    List<OpenLineage.InputDataset> datasets = builder.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/path/to/data")

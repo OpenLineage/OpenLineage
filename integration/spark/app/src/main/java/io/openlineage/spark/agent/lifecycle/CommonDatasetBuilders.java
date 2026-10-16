@@ -11,11 +11,14 @@ import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandData
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddPartitionCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableSetLocationCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.BigQueryInputDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.BigQueryOutputDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.CreateTableCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.ExternalRDDDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirDatasetBuilder;
@@ -23,11 +26,15 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationDatas
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandInputDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.StreamingDataSourceV2RelationDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandDatasetBuilder;
+import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.RefreshTableCommandDatasetBuilder;
 import java.util.List;
 import org.apache.spark.scheduler.SparkListenerEvent;
 
@@ -41,11 +48,30 @@ final class CommonDatasetBuilders {
 
   private CommonDatasetBuilders() {}
 
+  static List<AbstractQueryPlanDatasetBuilder<SparkListenerEvent, ?, OpenLineage.InputDataset>>
+      inputs(OpenLineageContext context) {
+    ImmutableList.Builder<
+            AbstractQueryPlanDatasetBuilder<SparkListenerEvent, ?, OpenLineage.InputDataset>>
+        builders = ImmutableList.builder();
+    if (BigQueryUtils.hasBigQueryClasses()) {
+      builders.add(new BigQueryInputDatasetBuilder(context));
+    }
+    builders.add(
+        new ExternalRDDDatasetBuilder(context),
+        new LoadDataCommandInputDatasetBuilder(context),
+        new StreamingDataSourceV2RelationDatasetBuilder(context),
+        new RefreshTableCommandDatasetBuilder(context));
+    return builders.build();
+  }
+
   static List<AbstractQueryPlanDatasetBuilder<SparkListenerEvent, ?, OpenLineage.OutputDataset>>
       outputs(OpenLineageContext context) {
     ImmutableList.Builder<
             AbstractQueryPlanDatasetBuilder<SparkListenerEvent, ?, OpenLineage.OutputDataset>>
         builders = ImmutableList.builder();
+    if (BigQueryUtils.hasBigQueryClasses()) {
+      builders.add(new BigQueryOutputDatasetBuilder(context));
+    }
     builders.add(
         new InsertIntoDataSourceDirDatasetBuilder(context),
         new InsertIntoDataSourceDatasetBuilder(context),

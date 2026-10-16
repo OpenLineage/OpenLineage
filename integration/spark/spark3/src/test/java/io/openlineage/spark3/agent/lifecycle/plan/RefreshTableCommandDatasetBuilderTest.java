@@ -44,7 +44,7 @@ import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.immutable.HashMap;
 
-class RefreshTableCommandVisitorTest {
+class RefreshTableCommandDatasetBuilderTest {
 
   private static final String DATABASE = "default";
   private static final String CATALOG = "catalog";
@@ -108,12 +108,13 @@ class RefreshTableCommandVisitorTest {
               .openLineageConfig(config)
               .build();
 
-      RefreshTableCommandVisitor visitor = new RefreshTableCommandVisitor(openLinegeContext);
+      RefreshTableCommandDatasetBuilder builder =
+          new RefreshTableCommandDatasetBuilder(openLinegeContext);
 
       RefreshTableCommand command = RefreshTableCommand$.MODULE$.apply(tableIdentifier);
 
-      assertThat(visitor.isDefinedAt(command)).isTrue();
-      List<OpenLineage.InputDataset> datasets = visitor.apply(command);
+      assertThat(builder.isDefinedAtLogicalPlan(command)).isTrue();
+      List<OpenLineage.InputDataset> datasets = builder.apply(command);
 
       assertEquals(1, datasets.size());
       OpenLineage.InputDataset inputDataset = datasets.get(0);

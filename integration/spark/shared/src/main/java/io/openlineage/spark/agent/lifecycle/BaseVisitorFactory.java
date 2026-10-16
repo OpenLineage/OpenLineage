@@ -8,17 +8,12 @@ package io.openlineage.spark.agent.lifecycle;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeInputVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.ExternalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.HiveTableRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.KustoRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandInputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
-import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.ArrayList;
@@ -54,16 +49,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
   public List<PartialFunction<LogicalPlan, List<InputDataset>>> getInputVisitors(
       OpenLineageContext context) {
     DatasetFactory<InputDataset> factory = DatasetFactory.input(context);
-    List<PartialFunction<LogicalPlan, List<InputDataset>>> inputVisitors =
-        new ArrayList<>(getCommonVisitors(context, factory));
-
-    if (BigQueryUtils.hasBigQueryClasses()) {
-      inputVisitors.add(new BigQueryNodeInputVisitor(context, factory));
-    }
-
-    inputVisitors.add(new ExternalRDDVisitor(context));
-    inputVisitors.add(new LoadDataCommandInputVisitor(context));
-    return inputVisitors;
+    return new ArrayList<>(getCommonVisitors(context, factory));
   }
 
   @Override
@@ -71,14 +57,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
       OpenLineageContext context) {
     DatasetFactory<OpenLineage.OutputDataset> factory = DatasetFactory.output(context);
 
-    List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputCommonVisitors =
-        getCommonVisitors(context, factory);
-    List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list =
-        new ArrayList<>(outputCommonVisitors);
-
-    if (BigQueryUtils.hasBigQueryClasses()) {
-      list.add(new BigQueryNodeOutputVisitor(context, factory));
-    }
-    return list;
+    return new ArrayList<>(getCommonVisitors(context, factory));
   }
 }

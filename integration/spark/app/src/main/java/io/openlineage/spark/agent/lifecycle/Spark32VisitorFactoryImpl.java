@@ -8,14 +8,11 @@ package io.openlineage.spark.agent.lifecycle;
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
-import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.spark.agent.lifecycle.plan.StreamingDataSourceV2RelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.WriteToDataSourceV2Visitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.DropTableVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.RefreshTableCommandVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.RepairTableCommandVisitor;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -31,16 +28,6 @@ class Spark32VisitorFactoryImpl extends BaseVisitorFactory {
         .add(new DropTableVisitor(context))
         .add(new WriteToDataSourceV2Visitor(context))
         .add(new RepairTableCommandVisitor(context))
-        .build();
-  }
-
-  @Override
-  public List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> getInputVisitors(
-      OpenLineageContext context) {
-    return ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
-        .addAll(super.getInputVisitors(context))
-        .add(new StreamingDataSourceV2RelationVisitor(context))
-        .add(new RefreshTableCommandVisitor(context))
         .build();
   }
 

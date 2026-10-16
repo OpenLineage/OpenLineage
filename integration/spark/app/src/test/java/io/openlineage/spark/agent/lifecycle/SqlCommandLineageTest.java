@@ -93,7 +93,8 @@ class SqlCommandLineageTest {
             "COMPLETE datasource_table_commands.execute_truncate_table_command.WH_t2 OUT file:<wh>/t2 TRUNCATE facets=dataSource,lifecycleStateChange,symlinks",
             "START datasource_table_commands.execute_truncate_table_command.WH_t2 OUT file:<wh>/t2 TRUNCATE facets=dataSource,lifecycleStateChange,symlinks");
 
-    // SparkNodesFilter drops RefreshTableCommand events before RefreshTableCommandVisitor applies
+    // SparkNodesFilter drops RefreshTableCommand events before RefreshTableCommandDatasetBuilder
+    // applies
     softly.assertThat(lineage.run("REFRESH TABLE t2")).isEmpty();
 
     if (lineage.isSparkAtLeast(3, 4)) {

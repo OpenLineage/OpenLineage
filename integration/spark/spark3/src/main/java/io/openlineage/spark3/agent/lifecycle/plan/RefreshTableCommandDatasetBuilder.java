@@ -6,8 +6,8 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -15,16 +15,22 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.RefreshTableCommand;
 
-public class RefreshTableCommandVisitor
-    extends QueryPlanVisitor<RefreshTableCommand, OpenLineage.InputDataset> {
+/** Extracts the table refreshed by a {@link RefreshTableCommand} as an altered input dataset. */
+public class RefreshTableCommandDatasetBuilder
+    extends AbstractQueryPlanInputDatasetBuilder<RefreshTableCommand> {
 
-  public RefreshTableCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public RefreshTableCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, true);
   }
 
   @Override
-  public List<OpenLineage.InputDataset> apply(LogicalPlan x) {
-    Optional<CatalogTable> tableOption = catalogTableFor(((RefreshTableCommand) x).tableIdent());
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof RefreshTableCommand;
+  }
+
+  @Override
+  public List<OpenLineage.InputDataset> apply(RefreshTableCommand command) {
+    Optional<CatalogTable> tableOption = catalogTableFor(command.tableIdent());
     return tableOption
         .map(
             catalogTable ->

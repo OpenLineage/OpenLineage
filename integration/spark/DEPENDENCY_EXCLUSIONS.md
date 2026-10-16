@@ -46,8 +46,8 @@ JDK 17 in local verification).
 **Why excluded:** This bump is unrelated to the Java-8 constraint but still breaks
 compilation: `com.google.cloud.spark.bigquery.BigQueryRelationProvider` was removed from
 the artifact between 0.42.2 and 0.44.2, and it's referenced directly from
-`integration/spark/shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryNodeOutputVisitor.java`,
-`BigQueryNodeInputVisitor.java`, and `SaveIntoDataSourceCommandVisitor.java`
+`integration/spark/shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryOutputDatasetBuilder.java`,
+`BigQueryInputDatasetBuilder.java`, and `SaveIntoDataSourceCommandVisitor.java`
 (`cannot find symbol ... BigQueryRelationProvider`).
 
 **How to make it compatible:** Check the 0.44.x release notes/source for the

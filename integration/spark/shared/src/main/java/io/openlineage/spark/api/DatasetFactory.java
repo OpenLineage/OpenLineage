@@ -12,17 +12,15 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
-import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark.agent.util.DatasetVersionUtils;
 
 /**
  * Defines factories for creating either {@link OpenLineage.InputDataset}s or {@link
- * OpenLineage.OutputDataset}s. This allows {@link QueryPlanVisitor}s that may identify input or
- * output datasets (e.g., a {@link BigQueryNodeOutputVisitor} or {@link
- * LogicalRelationDatasetBuilder}) to be reused in the construction of both input and output
- * datasets, allowing each to focus on extracting the identifier and general {@link DatasetFacet}s,
- * while delegating to the factory to construct the correct instance.
+ * OpenLineage.OutputDataset}s. This allows dataset builders that may identify input or output
+ * datasets (e.g., a {@link LogicalRelationDatasetBuilder}) to be reused in the construction of both
+ * input and output datasets, allowing each to focus on extracting the identifier and general {@link
+ * DatasetFacet}s, while delegating to the factory to construct the correct instance.
  *
  * <p>Ideally, this would be a sealed class. We emulate that by using a private constructor and
  * provide two static factory methods - {@link #input(OpenLineageContext)} and {@link

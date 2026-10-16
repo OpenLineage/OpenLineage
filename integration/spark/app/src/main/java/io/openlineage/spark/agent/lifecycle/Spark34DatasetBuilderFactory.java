@@ -85,6 +85,7 @@ public class Spark34DatasetBuilderFactory extends Spark32DatasetBuilderFactory
       builder.add(new MergeIntoCommandInputDatasetBuilder(context));
     }
 
+    builder.addAll(CommonDatasetBuilders.inputs(context));
     return builder.build();
   }
 

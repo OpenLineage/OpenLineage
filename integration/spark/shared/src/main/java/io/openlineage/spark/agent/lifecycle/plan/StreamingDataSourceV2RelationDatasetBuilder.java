@@ -7,17 +7,21 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2Relation;
 
+/**
+ * Extracts the input datasets of a {@link StreamingDataSourceV2Relation} with a {@link
+ * StreamStrategy} selected by the class of its stream.
+ */
 @Slf4j
-public class StreamingDataSourceV2RelationVisitor
-    extends QueryPlanVisitor<StreamingDataSourceV2Relation, InputDataset> {
+public class StreamingDataSourceV2RelationDatasetBuilder
+    extends AbstractQueryPlanInputDatasetBuilder<StreamingDataSourceV2Relation> {
   private static final String KAFKA_MICRO_BATCH_STREAM_CLASS_NAME =
       "org.apache.spark.sql.kafka010.KafkaMicroBatchStream";
   private static final String KINESIS_MICRO_BATCH_STREAM_CLASS_NAME =
@@ -25,23 +29,22 @@ public class StreamingDataSourceV2RelationVisitor
   private static final String MONGO_MICRO_BATCH_STREAM_CLASS_NAME =
       "com.mongodb.spark.sql.connector.read.MongoMicroBatchStream";
 
-  public StreamingDataSourceV2RelationVisitor(@NonNull OpenLineageContext context) {
-    super(context);
+  public StreamingDataSourceV2RelationDatasetBuilder(@NonNull OpenLineageContext context) {
+    super(context, true);
   }
 
   @Override
-  public List<InputDataset> apply(LogicalPlan x) {
+  public List<InputDataset> apply(StreamingDataSourceV2Relation relation) {
     log.info(
         "Applying {} to a logical plan with type {}",
         this.getClass().getSimpleName(),
-        x.getClass().getCanonicalName());
-    final StreamingDataSourceV2Relation relation = (StreamingDataSourceV2Relation) x;
+        relation.getClass().getCanonicalName());
     final StreamStrategy streamStrategy = selectStrategy(relation);
     return streamStrategy.getInputDatasets();
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
     boolean result = x instanceof StreamingDataSourceV2Relation;
     if (log.isDebugEnabled()) {
       log.debug(
