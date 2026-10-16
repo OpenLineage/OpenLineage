@@ -33,6 +33,8 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
 
   private static final OpenLineage OPEN_LINEAGE =
       new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+  private static final String NAMESPACE = "file";
+  private static final String TARGET_NAME = "/tmp/hudi/target";
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   InsertIntoHoodieTableCommandOutputDatasetBuilder outputBuilder =
@@ -65,8 +67,8 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
                     p ->
                         OPEN_LINEAGE
                             .newOutputDatasetBuilder()
-                            .namespace("file")
-                            .name("/tmp/hudi/target")
+                            .namespace(NAMESPACE)
+                            .name(TARGET_NAME)
                             .build())));
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.emptyList());
 
@@ -74,8 +76,8 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
 
     assertThat(outputs)
         .singleElement()
-        .hasFieldOrPropertyWithValue("namespace", "file")
-        .hasFieldOrPropertyWithValue("name", "/tmp/hudi/target");
+        .hasFieldOrPropertyWithValue("namespace", NAMESPACE)
+        .hasFieldOrPropertyWithValue("name", TARGET_NAME);
   }
 
   @Test
@@ -94,8 +96,8 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
                     p ->
                         OPEN_LINEAGE
                             .newOutputDatasetBuilder()
-                            .namespace("file")
-                            .name("/tmp/hudi/target")
+                            .namespace(NAMESPACE)
+                            .name(TARGET_NAME)
                             .facets(
                                 OPEN_LINEAGE
                                     .newDatasetFacetsBuilder()
@@ -108,8 +110,8 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
 
     assertThat(outputs).hasSize(1);
     OutputDataset output = outputs.get(0);
-    assertThat(output.getNamespace()).isEqualTo("file");
-    assertThat(output.getName()).isEqualTo("/tmp/hudi/target");
+    assertThat(output.getNamespace()).isEqualTo(NAMESPACE);
+    assertThat(output.getName()).isEqualTo(TARGET_NAME);
     assertThat(output.getFacets().getSchema()).isNotNull();
     assertThat(output.getFacets().getLifecycleStateChange().getLifecycleStateChange())
         .isEqualTo(LifecycleStateChange.OVERWRITE);
@@ -128,7 +130,7 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
                     p ->
                         OPEN_LINEAGE
                             .newInputDatasetBuilder()
-                            .namespace("file")
+                            .namespace(NAMESPACE)
                             .name("/tmp/hudi/input")
                             .build())));
     when(context.getInputDatasetBuilders()).thenReturn(Collections.emptyList());
@@ -137,7 +139,7 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
 
     assertThat(inputs)
         .singleElement()
-        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("namespace", NAMESPACE)
         .hasFieldOrPropertyWithValue("name", "/tmp/hudi/input");
   }
 

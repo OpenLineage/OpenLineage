@@ -54,6 +54,9 @@ configurations.configureEach {
 
 final String additionalJarsConfigurationName = "additionalJars"
 final String integrationTestFixturesConfigurationName = "integrationTestFixtures"
+// Hudi bundles shade (and partially break) common libraries such as Jackson, so they are kept off the
+// regular test classpath and only used by the dedicated hudiIntegrationTest task.
+final String hudiTestRuntimeConfigurationName = "hudiTestRuntime"
 
 configurations {
     create(additionalJarsConfigurationName) {
@@ -61,6 +64,10 @@ configurations {
         canBeConsumed = false
     }
     create(integrationTestFixturesConfigurationName) {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    create(hudiTestRuntimeConfigurationName) {
         canBeResolved = true
         canBeConsumed = false
     }
@@ -80,7 +87,7 @@ addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, sp
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&bigqueryDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&gcsDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hadoopClientDependencies)
-addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hudiDependencies)
+addDependenciesToConfiguration(hudiTestRuntimeConfigurationName, spark, scala, this.&hudiDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&icebergDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&clickhouseDependencies)
 addDependenciesToConfiguration(testSourceSet.runtimeOnlyConfigurationName, spark, scala, this.&runtimeOnlyDependencies)
@@ -241,9 +248,8 @@ tasks.named("test", Test.class) {
         if (!hasClickHouseDependencies(spark, scala)) {
             excludeTags "clickhouse"
         }
-        if (!hasHudiDependencies(spark, scala)) {
-            excludeTags "hudi"
-        }
+        // Hudi tests need the Hudi bundle and run in the hudiIntegrationTest task
+        excludeTags "hudi"
     }
     systemProperties = testSystemProperties(spark, scala)
 }
@@ -445,14 +451,47 @@ tasks.register("integrationTest", Test.class) {
             logger.warn("[IntegrationTest] Excluding clickhouse tests")
             excludeTags("clickhouse")
         }
-        logger.warn("[IntegrationTest] hasHudiDependencies: ${hasHudiDependencies(spark, scala)}")
-        if (!hasHudiDependencies(spark, scala)) {
-            logger.warn("[IntegrationTest] Excluding hudi tests")
-            excludeTags("hudi")
-        }
+        // Hudi tests need the Hudi bundle and run in the hudiIntegrationTest task
+        excludeTags("hudi")
     }
     systemProperties.put("test.output.dir", buildDirectory.dir("test-output/${name}").get().asFile.toString())
     systemProperties.put("test.results.dir", buildDirectory.dir("test-results/${name}/o").get().asFile.toString())
+    finalizedBy("hudiIntegrationTest")
+    doFirst {
+        // A --tests filter may only match tests of hudiIntegrationTest
+        if (!filter.commandLineIncludePatterns.isEmpty()) {
+            filter.failOnNoMatchingTests = false
+        }
+    }
+}
+
+tasks.register("hudiIntegrationTest", Test.class) {
+    group = "verification"
+    description = "Runs the Hudi integration tests with the Hudi bundle on the classpath"
+    dependsOn(integrationTestDependencies)
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = files(
+            tasks.shadowJar.outputs.files.singleFile,
+            sourceSets.test.runtimeClasspath,
+            configurations.named(hudiTestRuntimeConfigurationName))
+    logger.warn("[HudiIntegrationTest] hasHudiDependencies: ${hasHudiDependencies(spark, scala)}")
+    onlyIf { hasHudiDependencies(spark, scala) }
+    useJUnitPlatform {
+        includeTags("hudi")
+        excludeTags("aws")
+        excludeTags("databricks")
+        excludeTags("configurable-integration-test")
+    }
+    systemProperties.put("test.output.dir", buildDirectory.dir("test-output/${name}").get().asFile.toString())
+    systemProperties.put("test.results.dir", buildDirectory.dir("test-results/${name}/o").get().asFile.toString())
+    doFirst {
+        // Apply the --tests filter given to integrationTest, so filtered local runs work the same way
+        def integrationTestFilter = tasks.named("integrationTest", Test.class).get().filter
+        if (!integrationTestFilter.commandLineIncludePatterns.isEmpty()) {
+            filter.includePatterns = integrationTestFilter.commandLineIncludePatterns
+            filter.failOnNoMatchingTests = false
+        }
+    }
 }
 
 tasks.register("databricksIntegrationTest", Test) {
