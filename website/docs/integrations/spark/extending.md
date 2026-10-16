@@ -9,10 +9,10 @@ of interfaces. Nearly every extension interface extends or mimics Scala's `Parti
 A default implementation of `isDefinedAt(Object x)` is provided, which checks the generic type
 arguments of the concrete class, if concrete type arguments are given, and determines if the input
 argument matches the generic type. For example, the following class is automatically defined for an
-input argument of type `MyDataset`.
+input argument of type `SparkListenerJobEnd`.
 
 ```
-class MyDatasetDetector extends QueryPlanVisitor<MyDataset, OutputDataset> {
+class MyRunFacetBuilder extends CustomFacetBuilder<SparkListenerJobEnd, MyRunFacet> {
 }
 ```
 
@@ -33,13 +33,17 @@ The `OpenLineageEventHandlerFactory` interface makes heavy use of default method
 may override any or all of the following methods
 ```java
 /**
+ * Deprecated: return a query plan dataset builder from createInputDatasetBuilder instead.
  * Return a collection of QueryPlanVisitors that can generate InputDatasets from a LogicalPlan node
  */
+@Deprecated
 Collection<PartialFunction<LogicalPlan, List<InputDataset>>> createInputDatasetQueryPlanVisitors(OpenLineageContext context);
 
 /**
+ * Deprecated: return a query plan dataset builder from createOutputDatasetBuilder instead.
  * Return a collection of QueryPlanVisitors that can generate OutputDatasets from a LogicalPlan node
  */
+@Deprecated
 Collection<PartialFunction<LogicalPlan, List<OutputDataset>>> createOutputDatasetQueryPlanVisitors(OpenLineageContext context);
 
 /**
@@ -89,37 +93,76 @@ See the [`OpenLineageEventHandlerFactory` javadocs](https://github.com/OpenLinea
 for specifics on each method.
 
 
-### [`QueryPlanVisitor`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/QueryPlanVisitor.java)
-QueryPlanVisitors evaluate nodes of a Spark `LogicalPlan` and attempt to generate `InputDataset`s or
-`OutputDataset`s from the information found in the `LogicalPlan` nodes. This is the most common
-abstraction present in the OpenLineage Spark library, and many examples can be found in the
-`io.openlineage.spark.agent.lifecycle.plan` package - examples include the
-[`BigQueryNodeVisitor`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryNodeVisitor.java),
-the [`KafkaRelationVisitor`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/KafkaRelationVisitor.java)
-and the [`InsertIntoHiveTableVisitor`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/InsertIntoHiveTableVisitor.java).
+### Query plan dataset builders
+Query plan dataset builders evaluate nodes of a Spark `LogicalPlan` and attempt to generate
+`InputDataset`s or `OutputDataset`s from the information found in the `LogicalPlan` nodes. This is
+the most common abstraction present in the OpenLineage Spark library, and many examples can be
+found in the `io.openlineage.spark.agent.lifecycle.plan` package - examples include the
+[`InsertIntoHiveTableDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/InsertIntoHiveTableDatasetBuilder.java),
+the [`HiveTableRelationDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/HiveTableRelationDatasetBuilder.java)
+and the [`LogicalRelationDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/LogicalRelationDatasetBuilder.java).
 
-`QueryPlanVisitor`s implement Scala's `PartialFunction` interface and are tested against every node
-of a Spark query's optimized `LogicalPlan`. Each invocation will expect either an `InputDataset`
-or an `OutputDataset`. If a node can be either an `InputDataset` or an `OutputDataset`, the
-constructor should accept a `DatasetFactory` so that the correct dataset type is generated at
-runtime.
+Builders of input datasets extend
+[`AbstractQueryPlanInputDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/AbstractQueryPlanInputDatasetBuilder.java)
+and builders of output datasets extend
+[`AbstractQueryPlanOutputDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/AbstractQueryPlanOutputDatasetBuilder.java).
+They are returned from `createInputDatasetBuilder` and `createOutputDatasetBuilder` of an
+`OpenLineageEventHandlerFactory`. The `searchDependencies` constructor argument decides which
+nodes of the query's optimized `LogicalPlan` are tested: input datasets are usually leaves of the
+plan, so input builders pass `true` to test every node, while a Spark query writes to a single
+output at the root of the plan, so output builders pass `false` to test the root node only.
+Builders should override `isDefinedAtLogicalPlan` to match the nodes they handle, and implement
+`apply` for the matched node type.
 
-`QueryPlanVisitor`s can attach facets to the Datasets created, e.g., `SchemaDatasetFacet` and
+```java
+class MyCommandDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<MyCommand> {
+  MyCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
+  }
+
+  @Override
+  public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
+    return plan instanceof MyCommand;
+  }
+
+  @Override
+  public List<OutputDataset> apply(MyCommand command) {
+    return Collections.singletonList(
+        outputDataset().sparkDatasetBuilder().dataset(command.table(), "my-namespace").build());
+  }
+}
+```
+
+If a node can be either an `InputDataset` or an `OutputDataset`, the builder can extend
+`AbstractQueryPlanDatasetBuilder` directly and accept a
+[`DatasetFactory`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/DatasetFactory.java) so that the correct dataset
+type is generated at runtime, like the `HiveTableRelationDatasetBuilder` does.
+
+Builders can attach facets to the Datasets created, e.g., `SchemaDatasetFacet` and
 `DatasourceDatasetFacet` are typically attached to the dataset when it is created. Custom facets
 can also be attached, though `CustomFacetBuilder`s _may_ override facets attached directly to the
 dataset.
 
-Spark job's naming logic appends output dataset's identifier as job suffix. In order to provide a job suffix, a `QueryPlanVisitor` 
-needs to implement [`JobNameSuffixProvider`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/JobNameSuffixProvider.java)
-interface. Otherwise no suffix will be appended. Job suffix should contain human-readable name
-of the dataset so that consumers of OpenLineage events can correlate events with particular
-Spark actions within their code. The logic to extract dataset name should not depend on the existence
-of the dataset as in case of creating new dataset it may not exist at the moment of assigning job suffix.
-In most cases, the suffix should contain spark catalog, database and table separated by `.` which shall be
-extracted from LogicalPlan nodes properties.
+Spark job's naming logic appends output dataset's identifier as job suffix. In order to provide a
+job suffix, an output builder overrides `jobNameSuffix(P plan)` of
+[`JobNameSuffixProvider`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/JobNameSuffixProvider.java),
+which `AbstractQueryPlanOutputDatasetBuilder` implements. Otherwise no suffix will be appended. Job
+suffix should contain human-readable name of the dataset so that consumers of OpenLineage events can
+correlate events with particular Spark actions within their code. The logic to extract dataset name
+should not depend on the existence of the dataset as in case of creating new dataset it may not
+exist at the moment of assigning job suffix. In most cases, the suffix should contain spark catalog,
+database and table separated by `.` which shall be extracted from LogicalPlan nodes properties.
 
-### [`InputDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java) and [`OutputDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
-Similar to the `QueryPlanVisitor`s, `InputDatasetBuilder`s and `OutputDatasetBuilder`s are
+#### [`QueryPlanVisitor`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/QueryPlanVisitor.java) (deprecated)
+`QueryPlanVisitor`s, returned from `createInputDatasetQueryPlanVisitors` and
+`createOutputDatasetQueryPlanVisitors`, are the older way of extracting datasets from `LogicalPlan`
+nodes. They are deprecated and will be removed in a future release; the OpenLineage Spark library
+itself no longer uses them. A visitor can be migrated by extending one of the query plan dataset
+builders above, moving its `isDefinedAt(LogicalPlan)` to `isDefinedAtLogicalPlan` and its
+`apply(LogicalPlan)` to `apply` of the matched node type.
+
+### [`InputDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java) and [`OutputDatasetBuilder`](https://github.com/OpenLineage/OpenLineage/blob/main/integration/spark/shared/src/main/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
+Similar to the query plan dataset builders, `InputDatasetBuilder`s and `OutputDatasetBuilder`s are
 `PartialFunction`s defined for a specific input (see below for the list of Spark listener events and
 scheduler objects that can be passed to a builder) that can generate either an `InputDataset` or an
 `OutputDataset`. Though not strictly necessary, the abstract base classes
