@@ -93,7 +93,7 @@ public class RddDatasetInfoExtractor {
 
     @Override
     public Stream<DatasetIdentifier> extract(RDD<?> rdd) {
-      log.warn("Unknown RDD class {}", rdd);
+      log.debug("Unknown RDD class {}", rdd);
       return Stream.empty();
     }
   }
@@ -173,10 +173,10 @@ public class RddDatasetInfoExtractor {
                 if ("3.4".compareTo(package$.MODULE$.SPARK_VERSION()) <= 0) {
                   // filePath returns SparkPath for Spark 3.4
                   return tryExecuteMethod(f, "filePath")
-                      .map(o -> tryExecuteMethod(o, "toPath"))
-                      .map(o -> (Path) o.get())
-                      .get()
-                      .getParent();
+                      .flatMap(o -> tryExecuteMethod(o, "toPath"))
+                      .map(Path.class::cast)
+                      .map(Path::getParent)
+                      .orElse(null);
                 } else {
                   return parentOf(f.filePath());
                 }
@@ -227,10 +227,10 @@ public class RddDatasetInfoExtractor {
               .filter(Objects::nonNull)
               .map(PathUtils::fromPath);
         } else {
-          log.warn("Cannot extract path from ParallelCollectionRDD {}", data);
+          log.debug("Cannot extract path from ParallelCollectionRDD {}", data);
         }
       } catch (IllegalAccessException | IllegalArgumentException e) {
-        log.warn("Cannot read data field from ParallelCollectionRDD {}", rdd);
+        log.debug("Cannot read data field from ParallelCollectionRDD {}", rdd);
       }
       return Stream.empty();
     }
