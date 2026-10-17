@@ -19,7 +19,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -29,6 +28,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
@@ -307,7 +307,15 @@ class GoogleCloudIntegrationTest {
       named = SPARK_VERSION_PROPERTY,
       matches = SPARK_3) // Spark version >= 3.*
   void testRddWriteToBucket() throws IOException {
-    URI baseUri = createRddTestBaseUri();
+    String sparkVersion = String.format("spark-%s", SparkContainerProperties.SPARK_VERSION);
+    String scalaVersion = String.format("scala-%s", SparkContainerProperties.SCALA_BINARY_VERSION);
+    String javaVersion = String.format("java-%s", JAVA_VERSION);
+    URI baseUri =
+        BUCKET_URI
+            .resolve("rdd-test/")
+            .resolve(sparkVersion + "/")
+            .resolve(scalaVersion + "/")
+            .resolve(javaVersion + "/");
 
     log.info("This path will be used for this test: {}", baseUri);
 
@@ -315,53 +323,43 @@ class GoogleCloudIntegrationTest {
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
     JavaRDD<String> textFile = sc.textFile(url.getPath());
 
-    org.apache.hadoop.fs.Path testPath = new org.apache.hadoop.fs.Path(baseUri);
-    org.apache.hadoop.fs.FileSystem fileSystem =
-        testPath.getFileSystem(spark.sparkContext().hadoopConfiguration());
-    try {
-      // prepare some file in GS
-      URI inputUri = baseUri.resolve("input/data.csv");
-      textFile.saveAsTextFile(inputUri.toString());
+    // clear used locations - workaround save dataset to overwrite location
+    spark
+        .createDataFrame(
+            ImmutableList.of(RowFactory.create(1L)),
+            new StructType(
+                new StructField[] {
+                  new StructField("a", LongType$.MODULE$, false, Metadata.empty())
+                }))
+        .repartition(1)
+        .write()
+        .mode(SaveMode.Overwrite)
+        .save(baseUri.toString());
 
-      // read from GS and write to another location in GS
-      URI outputUri = baseUri.resolve("output/data.csv");
-      spark
-          .sparkContext()
-          .textFile(inputUri.toString(), 1)
-          .toJavaRDD()
-          .map(t -> t + t) // RDD operation to make sure code goes through RDDExecutionContext
-          .saveAsTextFile(outputUri.toString());
+    // prepare some file in GS
+    URI inputUri = baseUri.resolve("input/data.csv");
+    textFile.saveAsTextFile(inputUri.toString());
 
-      List<RunEvent> eventsEmitted = MockServerUtils.getEventsEmitted(mockServer);
+    // read from GS and write to another location in GS
+    URI outputUri = baseUri.resolve("output/data.csv");
+    spark
+        .sparkContext()
+        .textFile(inputUri.toString(), 1)
+        .toJavaRDD()
+        .map(t -> t + t) // RDD operation to make sure code goes through RDDExecutionContext
+        .saveAsTextFile(outputUri.toString());
 
-      assertThat(eventsEmitted.get(eventsEmitted.size() - 1).getOutputs().get(0))
-          .hasFieldOrPropertyWithValue("name", outputUri.getPath().replaceFirst("^/", ""))
-          .hasFieldOrPropertyWithValue(
-              "namespace", BUCKET_URI.getScheme() + "://" + BUCKET_URI.getHost());
+    List<RunEvent> eventsEmitted = MockServerUtils.getEventsEmitted(mockServer);
 
-      assertThat(eventsEmitted.get(eventsEmitted.size() - 2).getInputs().get(0))
-          .hasFieldOrPropertyWithValue("name", inputUri.getPath().replaceFirst("^/", ""))
-          .hasFieldOrPropertyWithValue(
-              "namespace", BUCKET_URI.getScheme() + "://" + BUCKET_URI.getHost());
-    } finally {
-      try {
-        fileSystem.delete(testPath, true);
-      } catch (IOException e) {
-        log.warn("Could not clean up GCS RDD test data at {}", testPath, e);
-      }
-    }
-  }
+    assertThat(eventsEmitted.get(eventsEmitted.size() - 1).getOutputs().get(0))
+        .hasFieldOrPropertyWithValue("name", outputUri.getPath().replaceFirst("^/", ""))
+        .hasFieldOrPropertyWithValue(
+            "namespace", BUCKET_URI.getScheme() + "://" + BUCKET_URI.getHost());
 
-  static URI createRddTestBaseUri() {
-    String sparkVersion = String.format("spark-%s", SparkContainerProperties.SPARK_VERSION);
-    String scalaVersion = String.format("scala-%s", SparkContainerProperties.SCALA_BINARY_VERSION);
-    String javaVersion = String.format("java-%s", JAVA_VERSION);
-    return BUCKET_URI
-        .resolve("rdd-test/")
-        .resolve(sparkVersion + "/")
-        .resolve(scalaVersion + "/")
-        .resolve(javaVersion + "/")
-        .resolve(UUID.randomUUID() + "/");
+    assertThat(eventsEmitted.get(eventsEmitted.size() - 2).getInputs().get(0))
+        .hasFieldOrPropertyWithValue("name", inputUri.getPath().replaceFirst("^/", ""))
+        .hasFieldOrPropertyWithValue(
+            "namespace", BUCKET_URI.getScheme() + "://" + BUCKET_URI.getHost());
   }
 
   private static Dataset<Row> getTestDataset() {
