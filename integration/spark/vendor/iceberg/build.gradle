@@ -34,7 +34,7 @@ ext {
     scala = project.findProperty('scala.binary.version').toString()
     scalaFmt = scala.replace(".", "")
 
-    icebergVersion = icebergLookup[series]
+    icebergVersion = project.findProperty('iceberg.version') ?: icebergLookup[series]
 
     activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 }

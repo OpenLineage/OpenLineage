@@ -37,7 +37,7 @@ public class OpenLineageMetricsReporter implements MetricsReporter {
   @Getter private final List<IcebergCommitReportOutputDatasetFacet> commitReportFacets;
   @Getter private final List<IcebergScanReportInputDatasetFacet> scanReportFacets;
 
-  private final MetricsReporter tableReporter = new TableReporter();
+  private final MetricsReporter tableReporter = this::store;
 
   public OpenLineageMetricsReporter(MetricsReporter delegate) {
     log.debug("Creating OpenLineageMetricsReporter with delegate: {}", delegate);
@@ -103,17 +103,5 @@ public class OpenLineageMetricsReporter implements MetricsReporter {
   @VisibleForTesting
   public MetricsReporter getDelegate() {
     return delegate.orElse(null);
-  }
-
-  private class TableReporter implements MetricsReporter {
-    @Override
-    public void report(MetricsReport metricsReport) {
-      store(metricsReport);
-    }
-
-    @Override
-    public String toString() {
-      return "OpenLineageMetricsReporter.TableReporter";
-    }
   }
 }

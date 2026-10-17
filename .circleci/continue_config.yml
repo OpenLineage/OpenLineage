@@ -665,6 +665,23 @@ jobs:
       - store_artifacts:
           path: build/reports/tests/pmd
           destination: pmd-report
+      - when:
+          # Exercise the new public API once per PR alongside the legacy runtime matrix.
+          condition:
+            equal: ["java:8-spark:3.2.4-scala:2.12", << parameters.env-variant >>]
+          steps:
+            - run:
+                name: Test loaded-table metrics with Iceberg 1.11
+                command: |
+                  JAVA_HOME="${JAVA17_HOME}" ./gradlew --no-daemon --console=plain \
+                    :iceberg:test :app:integrationTest \
+                    --tests 'io.openlineage.spark.agent.SparkIcebergIntegrationTest.testStreamingWriteProducesOneCatalogAwareOutput' \
+                    -Pspark.version=3.5.6 -Pscala.binary.version=2.12 -Piceberg.version=1.11.0 \
+                    -Pjava.compile.home="${JAVA17_HOME}" -Papp.java.test.home="${JAVA17_HOME}"
+            - store_test_results:
+                path: vendor/iceberg/build/test-results/test
+            - store_test_results:
+                path: app/build/test-results/integrationTest
 
   integration-test-integration-spark:
     parameters:

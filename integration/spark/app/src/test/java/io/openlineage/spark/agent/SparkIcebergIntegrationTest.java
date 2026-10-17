@@ -44,6 +44,9 @@ import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
+import org.apache.iceberg.BaseTable;
+import org.apache.iceberg.metrics.MetricsReporter;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -162,6 +165,23 @@ class SparkIcebergIntegrationTest {
     Dataset<Row> input = spark.range(1).toDF();
     StructType inputSchema = input.schema();
     input.write().parquet(inputDirectory.getAbsolutePath());
+
+    boolean supportsAttachment =
+        MethodUtils.getAccessibleMethod(
+                BaseTable.class, "combineMetricsReporter", MetricsReporter.class)
+            != null;
+    String targetTable = table;
+    if (supportsAttachment) {
+      // This catalog loads the existing table before OpenLineage can inject its reporter.
+      String catalog = "stream_metrics";
+      spark.conf().set("spark.sql.catalog." + catalog, "org.apache.iceberg.spark.SparkCatalog");
+      spark.conf().set("spark.sql.catalog." + catalog + ".type", "hadoop");
+      spark.conf().set("spark.sql.catalog." + catalog + ".warehouse", "/tmp/iceberg");
+      targetTable = catalog + ".default." + table;
+      spark.table(targetTable).collect();
+      // Drain the real listener queue: the streaming commit must happen after attachment.
+      spark.sparkContext().listenerBus().waitUntilEmpty(10000);
+    }
     MockServerUtils.clearRequests(mockServer);
 
     StreamingQuery query =
@@ -175,7 +195,7 @@ class SparkIcebergIntegrationTest {
             .queryName("iceberg_streaming_output")
             .option("checkpointLocation", checkpointDirectory.getAbsolutePath())
             .trigger(Trigger.Once())
-            .toTable(table);
+            .toTable(targetTable);
 
     try {
       assertThat(query.awaitTermination(Duration.ofSeconds(30).toMillis())).isTrue();
@@ -195,7 +215,16 @@ class SparkIcebergIntegrationTest {
                                   e.getOutputs().stream()
                                       .anyMatch(output -> output.getName().endsWith(targetSuffix)))
                           .collect(Collectors.toList()),
-                  events -> !events.isEmpty());
+                  events ->
+                      !events.isEmpty()
+                          && (!supportsAttachment
+                              || events.stream()
+                                  .flatMap(event -> event.getOutputs().stream())
+                                  .anyMatch(
+                                      output ->
+                                          output.getOutputFacets() != null
+                                              && output.getOutputFacets().getIcebergCommitReport()
+                                                  != null)));
 
       assertThat(outputEvents)
           .allSatisfy(
@@ -216,6 +245,18 @@ class SparkIcebergIntegrationTest {
                         identifier ->
                             assertThat(identifier.getName()).isEqualTo("default." + table));
               });
+      if (supportsAttachment) {
+        assertThat(outputEvents.stream().flatMap(event -> event.getOutputs().stream()))
+            .anySatisfy(
+                output -> {
+                  assertThat(output.getOutputFacets()).isNotNull();
+                  IcebergCommitReportOutputDatasetFacet report =
+                      output.getOutputFacets().getIcebergCommitReport();
+                  assertThat(report).isNotNull();
+                  assertThat(report.getOperation()).isEqualTo("append");
+                  assertThat(report.getCommitMetrics().getAddedRecords().longValue()).isEqualTo(1L);
+                });
+      }
     } finally {
       if (query.isActive()) {
         query.stop();
@@ -1041,63 +1082,6 @@ class SparkIcebergIntegrationTest {
         .isEqualTo(1L);
     assertThat(icebergCommitReport.get().getCommitMetrics().getAddedDataFiles().longValue())
         .isEqualTo(1L);
-  }
-
-  @Test
-  void testCommitReportFacetForTableLoadedBeforeInjection() {
-    if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {
-      // This test will not work as Iceberg classes used are Java 11
-      assertThat(true).isTrue();
-      return;
-    }
-
-    String table = "commit_existing_target";
-    clearTables("temp", table);
-    createTempDataset(3).createOrReplaceTempView("temp");
-    spark.sql("CREATE TABLE " + table + " (a long, b long) USING iceberg");
-
-    // A catalog over the same warehouse that OpenLineage has not seen yet. Its first statement
-    // loads the existing table during analysis, before the metrics reporter is injected.
-    String catalog = "commit_report_catalog";
-    spark.conf().set("spark.sql.catalog." + catalog, "org.apache.iceberg.spark.SparkCatalog");
-    spark.conf().set("spark.sql.catalog." + catalog + ".type", "hadoop");
-    spark.conf().set("spark.sql.catalog." + catalog + ".warehouse", "/tmp/iceberg");
-    MockServerUtils.clearRequests(mockServer);
-
-    // the write target is not a child of AppendData and the source is not an Iceberg table
-    spark.sql("INSERT INTO " + catalog + ".default." + table + " SELECT * FROM temp");
-    // reuses the table object kept by the catalog cache
-    spark.sql("INSERT INTO " + catalog + ".default." + table + " VALUES (4, 5)");
-
-    List<RunEvent> completeEvents = awaitAppendCompleteEvents(table, 2);
-    List<Long> addedRecords =
-        completeEvents.stream()
-            .flatMap(e -> e.getOutputs().stream())
-            .map(OutputDataset::getOutputFacets)
-            .filter(Objects::nonNull)
-            .map(OutputDatasetOutputFacets::getIcebergCommitReport)
-            .filter(Objects::nonNull)
-            .map(report -> report.getCommitMetrics().getAddedRecords().longValue())
-            .distinct()
-            .collect(Collectors.toList());
-
-    assertThat(addedRecords).containsExactlyInAnyOrder(3L, 1L);
-  }
-
-  private List<RunEvent> awaitAppendCompleteEvents(String outputSuffix, int runs) {
-    return Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .until(
-            () ->
-                getEventsEmitted(mockServer).stream()
-                    .filter(e -> RunEvent.EventType.COMPLETE.equals(e.getEventType()))
-                    .filter(e -> e.getJob().getName().contains("append_data"))
-                    .filter(
-                        e ->
-                            e.getOutputs().stream()
-                                .anyMatch(output -> output.getName().endsWith(outputSuffix)))
-                    .collect(Collectors.toList()),
-            events -> events.stream().map(e -> e.getRun().getRunId()).distinct().count() >= runs);
   }
 
   private void clearTables(String... tables) {

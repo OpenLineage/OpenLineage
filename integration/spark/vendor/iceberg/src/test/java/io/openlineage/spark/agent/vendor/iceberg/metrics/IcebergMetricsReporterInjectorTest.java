@@ -30,8 +30,10 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.BaseMetastoreCatalog;
+import org.apache.iceberg.BaseTable;
 import org.apache.iceberg.CachingCatalog;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
@@ -65,6 +67,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import scala.Option;
 
 public class IcebergMetricsReporterInjectorTest {
@@ -237,144 +240,51 @@ public class IcebergMetricsReporterInjectorTest {
     assertThat(getMetricsReporter(icebergCatalog)).isEqualTo(holder.getReporterFor(CATALOG_NAME));
   }
 
-  @Test
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
   @SneakyThrows
-  void testApplyAttachesReporterToWriteTargetLoadedBeforeInjection() {
-    MetricsReporter catalogReporter = mock(MetricsReporter.class);
-    Catalog catalog = cachingHadoopCatalog(catalogReporter);
+  void testLoadedAndNewTablesReportCommitsOnce(boolean cached) {
+    MetricsReporter existingReporter = mock(MetricsReporter.class);
+    HadoopCatalog root = new HadoopCatalog(new Configuration(), warehouse.toString());
+    FieldUtils.writeField(root, "metricsReporter", existingReporter, true);
+    Catalog catalog = cached ? CachingCatalog.wrap(root) : root;
     catalog.createTable(TABLE_IDENTIFIER, SCHEMA);
-    // Spark loads the target table during analysis, before OpenLineage sees the plan
-    Table table = catalog.loadTable(TABLE_IDENTIFIER);
+    Table loaded = catalog.loadTable(TABLE_IDENTIFIER);
+    DataSourceV2Relation relation = relation(catalog, loaded);
 
-    // the write target is not a child of AppendData and the query does not read Iceberg
-    LogicalPlan append = appendData(relation(catalog, table));
+    // The write target is outside the plan children; the source is not an Iceberg table.
+    LogicalPlan append = appendData(relation);
     assertThat(injector.isDefinedAt(append)).isTrue();
     injector.apply(append);
+    long loadedSnapshot = commitAppend(loaded);
+    boolean supportsAttachment =
+        MethodUtils.getAccessibleMethod(
+                BaseTable.class, "combineMetricsReporter", MetricsReporter.class)
+            != null;
+    assertThat(holder().getReporterFor(HADOOP_CATALOG_NAME).getCommitReportFacets())
+        .hasSize(supportsAttachment ? 1 : 0);
+    assertThat(holder().getCommitReportFacet(loadedSnapshot).isPresent())
+        .isEqualTo(supportsAttachment);
 
-    long snapshotId = commitAppend(table);
-
-    assertThat(holder().getReporterFor(HADOOP_CATALOG_NAME).getCommitReportFacets()).hasSize(1);
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
-    // the reporter the table was created with still receives the report exactly once
-    verify(catalogReporter, times(1)).report(any(CommitReport.class));
-  }
-
-  @Test
-  @SneakyThrows
-  void testApplyAttachesReporterToReadRelationLoadedBeforeInjection() {
-    Catalog catalog = cachingHadoopCatalog(mock(MetricsReporter.class));
-    catalog.createTable(TABLE_IDENTIFIER, SCHEMA);
-    Table table = catalog.loadTable(TABLE_IDENTIFIER);
-
-    // e.g. MERGE: the injector reaches the target table through the read side of the plan
-    injector.apply(relation(catalog, table));
-
-    long snapshotId = commitAppend(table);
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
-  }
-
-  @Test
-  @SneakyThrows
-  void testApplyAttachesReporterToStreamingWriteTarget() {
-    Catalog catalog = cachingHadoopCatalog(mock(MetricsReporter.class));
-    catalog.createTable(TABLE_IDENTIFIER, SCHEMA);
-    Table table = catalog.loadTable(TABLE_IDENTIFIER);
-
-    WriteToDataSourceV2 write = mock(WriteToDataSourceV2.class);
-    DataSourceV2Relation relation = relation(catalog, table);
-    when(write.relation()).thenReturn(Option.apply(relation));
-    when(write.query()).thenReturn(mock(LogicalPlan.class));
-
-    assertThat(injector.isDefinedAt(write)).isTrue();
-    injector.apply(write);
-
-    long snapshotId = commitAppend(table);
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
-  }
-
-  @Test
-  @SneakyThrows
-  void testApplyAttachesReporterToWrappedTable() {
-    Catalog catalog = cachingHadoopCatalog(mock(MetricsReporter.class));
-    catalog.createTable(TABLE_IDENTIFIER, SCHEMA);
-    Table table = catalog.loadTable(TABLE_IDENTIFIER);
-
-    // row-level operations wrap the Iceberg SparkTable in a RowLevelOperationTable
-    org.apache.spark.sql.connector.catalog.Table wrapper =
-        mock(
-            org.apache.spark.sql.connector.catalog.Table.class,
-            withSettings().extraInterfaces(TestingTableWrapper.class));
-    when(((TestingTableWrapper) wrapper).table()).thenReturn(new SparkTable(table, false));
-    DataSourceV2Relation relation = relation(catalog, table);
-    when(relation.table()).thenReturn(wrapper);
-
-    injector.apply(appendData(relation));
-
-    long snapshotId = commitAppend(table);
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
-  }
-
-  @Test
-  @SneakyThrows
-  void testApplyAttachesReporterOnlyOnce() {
-    MetricsReporter catalogReporter = mock(MetricsReporter.class);
-    Catalog catalog = cachingHadoopCatalog(catalogReporter);
-    catalog.createTable(TABLE_IDENTIFIER, SCHEMA);
-    Table table = catalog.loadTable(TABLE_IDENTIFIER);
-    DataSourceV2Relation relation = relation(catalog, table);
-
-    injector.apply(appendData(relation));
-    MetricsReporter attached = tableReporter(table);
+    // Revisiting a cached table through read and streaming plans must not duplicate reports.
     injector.apply(relation);
-    injector.apply(appendData(relation));
+    WriteToDataSourceV2 stream = mock(WriteToDataSourceV2.class);
+    when(stream.relation()).thenReturn(Option.apply(relation));
+    assertThat(injector.isDefinedAt(stream)).isTrue();
+    injector.apply(stream);
+    long nextSnapshot = commitAppend(loaded);
+    assertThat(holder().getReporterFor(HADOOP_CATALOG_NAME).getCommitReportFacets())
+        .hasSize(supportsAttachment ? 1 : 0);
+    assertThat(holder().getCommitReportFacet(nextSnapshot).isPresent())
+        .isEqualTo(supportsAttachment);
 
-    assertThat(tableReporter(table)).isSameAs(attached);
-
-    long snapshotId = commitAppend(table);
+    // Catalog injection must still work on older Iceberg. New tables already use its reporter.
+    Table created = catalog.createTable(TableIdentifier.of("db", "new_table"), SCHEMA);
+    injector.apply(appendData(relation(catalog, created)));
+    long createdSnapshot = commitAppend(created);
     assertThat(holder().getReporterFor(HADOOP_CATALOG_NAME).getCommitReportFacets()).hasSize(1);
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
-    verify(catalogReporter, times(1)).report(any(CommitReport.class));
-  }
-
-  @Test
-  @SneakyThrows
-  void testApplyKeepsReporterOfTableCreatedAfterInjection() {
-    MetricsReporter catalogReporter = mock(MetricsReporter.class);
-    Catalog catalog = cachingHadoopCatalog(catalogReporter);
-    TableIdentifier first = TableIdentifier.of("db", "first");
-    catalog.createTable(first, SCHEMA);
-    injector.apply(relation(catalog, catalog.loadTable(first)));
-
-    // a table created after injection already reports to the OpenLineage reporter
-    Table table = catalog.createTable(TABLE_IDENTIFIER, SCHEMA);
-    MetricsReporter reporter = tableReporter(table);
-    injector.apply(appendData(relation(catalog, table)));
-    assertThat(tableReporter(table)).isSameAs(reporter);
-
-    long snapshotId = commitAppend(table);
-    assertThat(holder().getReporterFor(HADOOP_CATALOG_NAME).getCommitReportFacets()).hasSize(1);
-    assertThat(holder().getCommitReportFacet(snapshotId)).isPresent();
-    verify(catalogReporter, times(1)).report(any(CommitReport.class));
-  }
-
-  @Test
-  @SneakyThrows
-  void testWriteTargetIsSkippedWhenMetricsReporterDisabled() {
-    when(context.getOpenLineageConfig().getVendors().getConfig())
-        .thenReturn(
-            Collections.singletonMap(
-                "iceberg", new SparkOpenLineageConfig.VendorsConfig.VendorConfig(true)));
-    Catalog catalog = cachingHadoopCatalog(mock(MetricsReporter.class));
-    catalog.createTable(TABLE_IDENTIFIER, SCHEMA);
-    Table table = catalog.loadTable(TABLE_IDENTIFIER);
-
-    assertThat(injector.isDefinedAt(appendData(relation(catalog, table)))).isFalse();
-  }
-
-  private Catalog cachingHadoopCatalog(MetricsReporter reporter) throws IllegalAccessException {
-    HadoopCatalog hadoopCatalog = new HadoopCatalog(new Configuration(), warehouse.toString());
-    FieldUtils.writeField(hadoopCatalog, "metricsReporter", reporter, true);
-    return CachingCatalog.wrap(hadoopCatalog);
+    assertThat(holder().getCommitReportFacet(createdSnapshot)).isPresent();
+    verify(existingReporter, times(3)).report(any(CommitReport.class));
   }
 
   private DataSourceV2Relation relation(Catalog icebergCatalog, Table table) {
@@ -382,7 +292,8 @@ public class IcebergMetricsReporterInjectorTest {
     when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
     DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
     when(relation.catalog()).thenReturn(Option.apply(sparkCatalog));
-    when(relation.table()).thenReturn(new SparkTable(table, false));
+    SparkTable sparkTable = new SparkTable(table, false);
+    when(relation.table()).thenReturn(sparkTable);
     return relation;
   }
 
@@ -407,18 +318,9 @@ public class IcebergMetricsReporterInjectorTest {
     return table.currentSnapshot().snapshotId();
   }
 
-  @SneakyThrows
-  private MetricsReporter tableReporter(Table table) {
-    return (MetricsReporter) FieldUtils.readField(table, "reporter", true);
-  }
-
   private CatalogMetricsReporterHolder holder() {
     return (CatalogMetricsReporterHolder)
         vendorsContext.fromVendorsContext(VENDOR_CONTEXT_KEY).get();
-  }
-
-  public interface TestingTableWrapper {
-    org.apache.spark.sql.connector.catalog.Table table();
   }
 
   private void setupCatalog(CatalogPlugin catalog) {

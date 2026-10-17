@@ -556,29 +556,30 @@ List<Dependency> bigqueryDependencies(String spark, String scala) {
 }
 
 List<Dependency> icebergDependencies(String spark, String scala) {
+    def icebergVersion = project.findProperty("iceberg.version") ?: (spark == "3.2.4" ? "1.4.3" : "1.6.0")
     def scalaVersion = scala == "2.12" ? "2.12.15" : "2.13.10"
 
     final def registry = [
             "3.2.4": [
-                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.2_${scala}:1.4.3"),
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.2_${scala}:${icebergVersion}"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
             "3.3.4": [
-                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.3_${scala}:1.6.0"),
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.3_${scala}:${icebergVersion}"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
             "3.4.4": [
-                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.6.0"),
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:${icebergVersion}"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
             "3.5.6": [
-                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.5_${scala}:1.6.0"),
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.5_${scala}:${icebergVersion}"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.12.0"),
@@ -676,6 +677,7 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
 }
 
 List<Dependency> additionalJars(String spark, String scala) {
+    def icebergVersion = project.findProperty("iceberg.version") ?: (spark == "3.2.4" ? "1.4.3" : "1.6.0")
     final def registry = [
             "2.4.8": [
                     dependencies.create("org.slf4j:slf4j-api:1.7.16"),
@@ -704,19 +706,19 @@ List<Dependency> additionalJars(String spark, String scala) {
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
-                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.2_${scala}:1.4.3")
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.2_${scala}:${icebergVersion}")
             ],
             "3.3.4": [
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
-                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.3_${scala}:1.6.0")
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.3_${scala}:${icebergVersion}")
             ],
             "3.4.4": [
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
-                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.6.0")
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:${icebergVersion}")
             ],
             "3.5.6": [
                     dependencies.create("org.slf4j:slf4j-api:2.0.10"),
@@ -724,7 +726,7 @@ List<Dependency> additionalJars(String spark, String scala) {
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
-                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.5_${scala}:1.6.0")
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.5_${scala}:${icebergVersion}")
             ],
     ]
 

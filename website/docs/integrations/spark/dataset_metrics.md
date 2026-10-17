@@ -65,9 +65,12 @@ it handles the start of a query:
    report to it,
  * it attaches the reporter to the Iceberg table objects referenced by the query: the tables that are
    read and the write target of `INSERT`, `INSERT OVERWRITE`, `MERGE`, `UPDATE`, `DELETE` and
-   streaming writes. On Iceberg 1.11 and later this uses the public
-   `BaseTable.combineMetricsReporter` API; on older versions it uses reflection to update the
-   table's reporter field. The table keeps the reporters it already had.
+   streaming writes. This requires Iceberg 1.11 or later and uses the public
+   `BaseTable.reporter()` and `BaseTable.combineMetricsReporter(...)` methods. The table keeps
+   the reporters it already had, and repeated attachment does not duplicate reports.
+
+On older Iceberg versions, only catalog injection is performed. Tables loaded before injection
+keep their original reporter, including tables retained in the catalog cache.
 
 `CommitReport`s are collected for commits that happen after that point. Some commits can still be
 missed:
@@ -75,9 +78,6 @@ missed:
    handled the start of the query, for example a very short write while the listener is busy, has
    no `icebergCommitReport`.
  * For a streaming query, the first micro-batch may commit before the reporter is attached.
- * On JDK 26, updating the reporter field on Iceberg versions before 1.11 prints a warning about
-   final field mutation. If final field mutation is denied (`--illegal-final-field-mutation=deny`),
-   the reporter is not attached to already loaded tables.
 
 `ScanReport`s are read directly from the scan on Iceberg's runtimes for Spark 3.5 and later, so
 they don't depend on when the reporter is injected. On older runtimes, scan planning happens before
