@@ -448,23 +448,23 @@ class SparkDeltaIntegrationTest {
     spark.conf().set("spark.databricks.delta.snapshotPartitions", 1);
     String root = "/tmp/delta/merge-" + shape;
     String source = root + "/a";
-    String second = root + "/b";
     String target = root + "/target";
     String parquet = root + "/parquet";
     spark.sql("SELECT 1 AS id, 'new' AS v").write().format("delta").save(source);
-    spark.sql("SELECT 1 AS id, 'joined' AS v").write().format("delta").save(second);
     spark.sql("SELECT 1 AS id, 'old' AS v").write().format("delta").save(target);
     String sourceSql = "delta.`" + source + "`";
     List<String> expected = new ArrayList<>(Arrays.asList(source, target));
     switch (shape) {
       case "join":
+        String joinSource = root + "/b";
+        spark.sql("SELECT 1 AS id, 'joined' AS v").write().format("delta").save(joinSource);
         sourceSql =
             "(SELECT a.id, b.v FROM delta.`"
                 + source
                 + "` a JOIN delta.`"
-                + second
+                + joinSource
                 + "` b ON a.id = b.id)";
-        expected.add(second);
+        expected.add(joinSource);
         break;
       case "filter":
         sourceSql = "(SELECT * FROM delta.`" + source + "` WHERE id > 0)";
