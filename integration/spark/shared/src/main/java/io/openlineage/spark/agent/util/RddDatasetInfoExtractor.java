@@ -230,7 +230,7 @@ public class RddDatasetInfoExtractor {
           log.debug("Cannot extract path from ParallelCollectionRDD {}", data);
         }
       } catch (IllegalAccessException | IllegalArgumentException e) {
-        log.debug("Cannot read data field from ParallelCollectionRDD {}", rdd);
+        log.warn("Cannot read data field from ParallelCollectionRDD {}", rdd);
       }
       return Stream.empty();
     }
