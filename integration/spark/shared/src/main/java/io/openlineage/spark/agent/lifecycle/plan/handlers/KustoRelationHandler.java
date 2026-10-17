@@ -3,12 +3,10 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle.plan.handlers;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
-import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,20 +14,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.api.java.Optional;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.sources.CreatableRelationProvider;
 import org.apache.spark.sql.types.StructType;
 
 /**
- * {@link LogicalPlan} visitor that matches the KustoRelation that comes from the Azure Kusto (Azure
- * Data Factory). The KustoRelation is used to extract the table name and database name to populate
- * the {@link OpenLineage.Dataset} during Kusto read operations.
+ * Extracts an {@link OpenLineage.Dataset} from a {@link LogicalRelation} over the KustoRelation
+ * that comes from the Azure Kusto (Azure Data Factory). The KustoRelation is used to extract the
+ * table name and database name to populate the {@link OpenLineage.Dataset} during Kusto read
+ * operations.
  */
 @Slf4j
-public class KustoRelationVisitor<D extends OpenLineage.Dataset>
-    extends QueryPlanVisitor<LogicalRelation, D> {
+public class KustoRelationHandler<D extends OpenLineage.Dataset> {
 
   private final DatasetFactory<D> factory;
   private static final String KUSTO_CLASS_NAME =
@@ -42,16 +39,17 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
 
   private static final String KUSTO_PREFIX = "azurekusto://";
 
-  public KustoRelationVisitor(OpenLineageContext context, DatasetFactory<D> factory) {
-    super(context);
+  public KustoRelationHandler(DatasetFactory<D> factory) {
     this.factory = factory;
   }
 
-  protected boolean isKustoClass(LogicalPlan plan) {
+  public static boolean isKustoRelation(BaseRelation relation) {
+    if (relation == null) {
+      return false;
+    }
     try {
       Class c = Thread.currentThread().getContextClassLoader().loadClass(KUSTO_CLASS_NAME);
-      return (plan instanceof LogicalRelation
-          && c.isAssignableFrom(((LogicalRelation) plan).relation().getClass()));
+      return c.isAssignableFrom(relation.getClass()) && hasKustoClasses();
     } catch (Exception e) {
       // swallow - not a kusto class
     }
@@ -70,14 +68,14 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
 
   public static boolean hasKustoClasses() {
     /**
-     * Checking the Kusto class with both KustoRelationVisitor.class.getClassLoader.loadClass and
+     * Checking the Kusto class with both KustoRelationHandler.class.getClassLoader.loadClass and
      * Thread.currentThread().getContextClassLoader().loadClass. The first checks if the class is
      * present on the classpath, and the second one is a catchall which captures if the class has
      * been installed. This is relevant for Azure Databricks where jars can be installed and
      * accessible to the user, even if they are not present on the classpath.
      */
     try {
-      KustoRelationVisitor.class.getClassLoader().loadClass(KUSTO_PROVIDER_CLASS_NAME);
+      KustoRelationHandler.class.getClassLoader().loadClass(KUSTO_PROVIDER_CLASS_NAME);
       return true;
     } catch (Exception e) {
       // swallow - we don't care
@@ -90,11 +88,6 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
     }
 
     return false;
-  }
-
-  @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
-    return isKustoClass(plan);
   }
 
   private static Optional<String> getName(BaseRelation relation) {
@@ -165,9 +158,8 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
     return output;
   }
 
-  @Override
-  public List<D> apply(LogicalPlan x) {
-    BaseRelation relation = ((LogicalRelation) x).relation();
+  public List<D> handleRelation(LogicalRelation logicalRelation) {
+    BaseRelation relation = logicalRelation.relation();
     Optional<String> name = getName(relation);
     Optional<String> namespace = getNamespace(relation);
     if (name.isPresent() && namespace.isPresent()) {

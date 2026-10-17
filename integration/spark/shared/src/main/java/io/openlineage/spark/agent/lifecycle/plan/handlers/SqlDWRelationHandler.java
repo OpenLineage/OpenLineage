@@ -3,14 +3,12 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle.plan.handlers;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.api.DatasetFactory;
-import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
@@ -20,14 +18,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.api.java.Optional;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.sources.BaseRelation;
 
 /**
- * {@link LogicalPlan} visitor that matches SqlDWRelation that comes from an Azure Databricks
- * environment. This function extracts a {@link OpenLineage.Dataset} from the SQL DW/ Synapse table
- * referenced by the relation. The convention used for a namespace is a URI of <code>
+ * Extracts an {@link OpenLineage.Dataset} from a {@link LogicalRelation} over the SqlDWRelation
+ * that comes from an Azure Databricks environment. This function extracts a {@link
+ * OpenLineage.Dataset} from the SQL DW/ Synapse table referenced by the relation. The convention
+ * used for a namespace is a URI of <code>
  * sqlserver://&lt;server&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code> . The name for Sql Dw
  * tables may be table name (e.g. "exampleInputA") or a multi-part name (e.g.
  * "[dbo].[exampleInputA]"). If the data source is a query (e.g. <code>
@@ -35,20 +33,18 @@ import org.apache.spark.sql.sources.BaseRelation;
  * be <code>COMPLEX</code>.
  */
 @Slf4j
-public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
-    extends QueryPlanVisitor<LogicalPlan, D> {
+public class SqlDWRelationHandler<D extends OpenLineage.Dataset> {
   private final DatasetFactory<D> factory;
   private static final String DATABRICKS_CLASS_NAME = "com.databricks.spark.sqldw.SqlDWRelation";
   private static final String TABLE_FIELD_NAME = "tableNameOrSubquery";
 
-  public SqlDWDatabricksVisitor(OpenLineageContext context, DatasetFactory<D> factory) {
-    super(context);
+  public SqlDWRelationHandler(DatasetFactory<D> factory) {
     this.factory = factory;
   }
 
   public static boolean hasSqlDWDatabricksClasses() {
     try {
-      SqlDWDatabricksVisitor.class.getClassLoader().loadClass(DATABRICKS_CLASS_NAME);
+      SqlDWRelationHandler.class.getClassLoader().loadClass(DATABRICKS_CLASS_NAME);
       return true;
     } catch (NoClassDefFoundError | Exception e) {
       // If class does not exist or it's loading fails for some reason, we handle that failure by
@@ -57,14 +53,10 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
     return false;
   }
 
-  protected boolean isSqlDwRelationClass(LogicalPlan plan) {
-    return plan instanceof LogicalRelation
-        && DATABRICKS_CLASS_NAME.equals(((LogicalRelation) plan).relation().getClass().getName());
-  }
-
-  @Override
-  public boolean isDefinedAt(LogicalPlan plan) {
-    return isSqlDwRelationClass(plan);
+  public static boolean isSqlDWRelation(BaseRelation relation) {
+    return relation != null
+        && DATABRICKS_CLASS_NAME.equals(relation.getClass().getName())
+        && hasSqlDWDatabricksClasses();
   }
 
   private Optional<String> getName(BaseRelation relation) {
@@ -116,9 +108,8 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
     return Optional.empty();
   }
 
-  @Override
-  public List<D> apply(LogicalPlan x) {
-    BaseRelation relation = ((LogicalRelation) x).relation();
+  public List<D> handleRelation(LogicalRelation logicalRelation) {
+    BaseRelation relation = logicalRelation.relation();
     Optional<String> name = getName(relation);
     Optional<String> jdbcUrl = getJdbcUrl(relation);
     if (!name.isPresent() || !jdbcUrl.isPresent()) {

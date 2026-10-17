@@ -13,6 +13,9 @@ import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.ExtensionLineageRelationHandler;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.KafkaRelationHandler;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.KustoRelationHandler;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.SqlDWRelationHandler;
 import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -81,28 +84,21 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    // if a LogicalPlan is a single node plan like `select * from temp`,
-    // then it's leaf node and should not be considered output node
-    if (x instanceof LogicalRelation && isSingleNodeLogicalPlan(x) && !searchDependencies) {
+    if (!(x instanceof LogicalRelation) || isReadOnlyOutput(x)) {
       return false;
     }
 
-    return x instanceof LogicalRelation
-        && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
-            || ((LogicalRelation) x).relation() instanceof JDBCRelation
-            || context
-                .getSparkExtensionVisitorWrapper()
-                .isDefinedAt(((LogicalRelation) x).relation())
-            || ((LogicalRelation) x).catalogTable().isDefined());
+    return isConnectorRelation(((LogicalRelation) x).relation())
+        || ((LogicalRelation) x).relation() instanceof HadoopFsRelation
+        || ((LogicalRelation) x).relation() instanceof JDBCRelation
+        || context.getSparkExtensionVisitorWrapper().isDefinedAt(((LogicalRelation) x).relation())
+        || ((LogicalRelation) x).catalogTable().isDefined();
   }
 
-  private boolean isSingleNodeLogicalPlan(LogicalPlan x) {
-    return context
-            .getQueryExecution()
-            .map(qe -> qe.optimizedPlan())
-            .filter(p -> p.equals(x))
-            .isPresent()
-        && (x.children() == null || x.children().isEmpty());
+  private static boolean isConnectorRelation(BaseRelation relation) {
+    return KafkaRelationHandler.isKafkaRelation(relation)
+        || KustoRelationHandler.isKustoRelation(relation)
+        || SqlDWRelationHandler.isSqlDWRelation(relation);
   }
 
   @Override
@@ -116,6 +112,12 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     if (context.getSparkExtensionVisitorWrapper().isDefinedAt(logRel.relation())) {
       return new ExtensionLineageRelationHandler<>(context, datasetFactory)
           .handleRelation(event, logRel);
+    } else if (KafkaRelationHandler.isKafkaRelation(logRel.relation())) {
+      return new KafkaRelationHandler<>(datasetFactory).handleRelation(logRel);
+    } else if (KustoRelationHandler.isKustoRelation(logRel.relation())) {
+      return new KustoRelationHandler<>(datasetFactory).handleRelation(logRel);
+    } else if (SqlDWRelationHandler.isSqlDWRelation(logRel.relation())) {
+      return new SqlDWRelationHandler<>(datasetFactory).handleRelation(logRel);
     } else if (logRel.catalogTable() != null && logRel.catalogTable().isDefined()) {
       return handleCatalogTable(logRel);
     } else if (logRel.relation() instanceof HadoopFsRelation) {

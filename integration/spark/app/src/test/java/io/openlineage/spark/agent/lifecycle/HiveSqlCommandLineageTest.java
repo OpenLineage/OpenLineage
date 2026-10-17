@@ -116,7 +116,7 @@ class HiveSqlCommandLineageTest {
             "COMPLETE hive_commands.execute_insert_into_hadoop_fs_relation_command.WH_t5 OUT file:<wh>/t5 schema=a,b facets=columnLineage,dataSource,schema,symlinks",
             "START hive_commands.execute_insert_into_hadoop_fs_relation_command.WH_t5 IN file:<wh>/h1 schema=a,b facets=catalog,dataSource,schema,symlinks",
             "START hive_commands.execute_insert_into_hadoop_fs_relation_command.WH_t5 OUT file:<wh>/t5 schema=a,b facets=columnLineage,dataSource,schema,symlinks");
-    // A query whose plan is a single Hive relation reports it as an output as well
+    // A query whose plan is a single relation only reads it
     String scanH1 =
         lineage.isSparkAtLeast(3, 4)
             ? "hive_commands.scan_hive_spark_catalog_default_h1"
@@ -127,15 +127,9 @@ class HiveSqlCommandLineageTest {
             "COMPLETE "
                 + scanH1
                 + " IN file:<wh>/h1 schema=a,b facets=catalog,dataSource,schema,symlinks",
-            "COMPLETE "
-                + scanH1
-                + " OUT file:<wh>/h1 schema=a,b facets=catalog,columnLineage,dataSource,schema,symlinks",
             "START "
                 + scanH1
-                + " IN file:<wh>/h1 schema=a,b facets=catalog,dataSource,schema,symlinks",
-            "START "
-                + scanH1
-                + " OUT file:<wh>/h1 schema=a,b facets=catalog,columnLineage,dataSource,schema,symlinks");
+                + " IN file:<wh>/h1 schema=a,b facets=catalog,dataSource,schema,symlinks");
 
     softly
         .assertThat(lineage.run("SELECT * FROM t5"))

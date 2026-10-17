@@ -9,7 +9,7 @@ import java.net.URI;
 import java.util.Optional;
 
 public class KafkaBootstrapServerResolver {
-  static String resolve(Optional<String> bootstrapServersOpt) {
+  public static String resolve(Optional<String> bootstrapServersOpt) {
     String server =
         bootstrapServersOpt
             .map(

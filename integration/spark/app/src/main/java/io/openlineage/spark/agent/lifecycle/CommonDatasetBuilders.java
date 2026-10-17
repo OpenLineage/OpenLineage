@@ -19,6 +19,7 @@ import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandD
 import io.openlineage.spark.agent.lifecycle.plan.CreateTableCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.ExternalRDDDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.HiveTableRelationDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirDatasetBuilder;
@@ -27,11 +28,13 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirDatasetBuilder
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandInputDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.StreamingDataSourceV2RelationDatasetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandDatasetBuilder;
 import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
+import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.RefreshTableCommandDatasetBuilder;
@@ -53,6 +56,11 @@ final class CommonDatasetBuilders {
     ImmutableList.Builder<
             AbstractQueryPlanDatasetBuilder<SparkListenerEvent, ?, OpenLineage.InputDataset>>
         builders = ImmutableList.builder();
+    DatasetFactory<OpenLineage.InputDataset> factory = DatasetFactory.input(context);
+    builders.add(new LogicalRDDDatasetBuilder<>(context, factory, true));
+    if (InsertIntoHiveTableDatasetBuilder.hasHiveClasses()) {
+      builders.add(new HiveTableRelationDatasetBuilder<>(context, factory, true));
+    }
     if (BigQueryUtils.hasBigQueryClasses()) {
       builders.add(new BigQueryInputDatasetBuilder(context));
     }
@@ -69,6 +77,11 @@ final class CommonDatasetBuilders {
     ImmutableList.Builder<
             AbstractQueryPlanDatasetBuilder<SparkListenerEvent, ?, OpenLineage.OutputDataset>>
         builders = ImmutableList.builder();
+    DatasetFactory<OpenLineage.OutputDataset> factory = DatasetFactory.output(context);
+    builders.add(new LogicalRDDDatasetBuilder<>(context, factory, false));
+    if (InsertIntoHiveTableDatasetBuilder.hasHiveClasses()) {
+      builders.add(new HiveTableRelationDatasetBuilder<>(context, factory, false));
+    }
     if (BigQueryUtils.hasBigQueryClasses()) {
       builders.add(new BigQueryOutputDatasetBuilder(context));
     }

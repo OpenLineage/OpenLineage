@@ -10,6 +10,7 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptiona
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.naming.NameNormalizer;
 import java.io.IOException;
 import java.net.URI;
@@ -347,6 +348,23 @@ public class PlanUtils {
    * @param rdds the list of RDDs to extract schema from
    * @return an Optional containing the schema if available, empty otherwise
    */
+  /**
+   * Builds a dataset for each location read by the given file-like {@link RDD}s, with the given
+   * schema when it is not {@code null}.
+   */
+  public static <D extends OpenLineage.Dataset> List<D> findDatasets(
+      DatasetFactory<D> datasetFactory, List<RDD<?>> fileRdds, StructType schema) {
+    return findDatasetIdentifiers(fileRdds).stream()
+        // TODO- refactor this to return a single partitioned dataset based on static
+        // static partitions in the relation
+        .map(
+            di ->
+                schema != null
+                    ? datasetFactory.sparkDatasetBuilder().dataset(di).schema(schema).build()
+                    : datasetFactory.sparkDatasetBuilder().dataset(di).build())
+        .collect(Collectors.toList());
+  }
+
   public static Optional<StructType> findSchema(List<RDD<?>> rdds) {
     return rdds.stream()
         .map(RddDatasetInfoExtractor::findSchema)

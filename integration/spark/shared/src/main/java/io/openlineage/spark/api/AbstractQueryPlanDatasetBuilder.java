@@ -26,6 +26,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.QueryExecution;
 import scala.PartialFunction;
 
 /**
@@ -155,6 +156,20 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
                             ((AbstractQueryPlanDatasetBuilder<Object, LogicalPlan, D>) builder)
                                 .asQueryPlanVisitor(event)))
             .collect(Collectors.toList()));
+  }
+
+  /**
+   * Whether a builder looking for outputs is offered a relation which is the whole optimized plan,
+   * like in {@code SELECT * FROM t}. Such a plan only reads the relation, so it isn't an output.
+   */
+  protected boolean isReadOnlyOutput(LogicalPlan relation) {
+    return !searchDependencies
+        && context
+            .getQueryExecution()
+            .map(QueryExecution::optimizedPlan)
+            .filter(plan -> plan.equals(relation))
+            .isPresent()
+        && (relation.children() == null || relation.children().isEmpty());
   }
 
   protected boolean isQueryPlanRoot(LogicalPlan logicalPlan) {
