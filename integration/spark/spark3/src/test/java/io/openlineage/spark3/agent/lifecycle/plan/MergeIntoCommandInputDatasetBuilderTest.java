@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import scala.runtime.AbstractPartialFunction;
 
 class MergeIntoCommandInputDatasetBuilderTest {
+  private static final String TARGET = "target";
+  private static final String SOURCE = "source";
   private static final OpenLineage OL = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   private final OpenLineageContext context = mock(OpenLineageContext.class);
   private final SparkListenerEvent event = new SparkListenerSQLExecutionEnd(1L, 1L);
@@ -41,7 +43,7 @@ class MergeIntoCommandInputDatasetBuilderTest {
 
   @BeforeEach
   void setup() {
-    resolved.put(target, Collections.singletonList(dataset("target")));
+    resolved.put(target, Collections.singletonList(dataset(TARGET)));
     when(context.getInputDatasetBuilders()).thenReturn(Collections.emptyList());
     when(context.getInputDatasetQueryPlanVisitors())
         .thenReturn(
@@ -63,35 +65,35 @@ class MergeIntoCommandInputDatasetBuilderTest {
   void collectsBothJoinBranchesThroughWrappers() {
     LogicalPlan left = node(Filter.class, node(Aggregate.class, relation("left")));
     LogicalPlan right = node(Project.class, relation("right"));
-    assertInputs(node(Join.class, left, right), "target", "left", "right");
+    assertInputs(node(Join.class, left, right), TARGET, "left", "right");
   }
 
   @Test
   void keepsPlainSource() {
-    assertInputs(relation("source"), "target", "source");
+    assertInputs(relation(SOURCE), TARGET, SOURCE);
   }
 
   @Test
   void stopsAtResolvedParent() {
-    LogicalPlan parent = node(Project.class, relation("source"));
-    resolved.put(parent, Collections.singletonList(dataset("source")));
-    assertInputs(parent, "target", "source");
+    LogicalPlan parent = node(Project.class, relation(SOURCE));
+    resolved.put(parent, Collections.singletonList(dataset(SOURCE)));
+    assertInputs(parent, TARGET, SOURCE);
   }
 
   @Test
   void ignoresUnresolvedSource() {
-    assertInputs(node(LogicalPlan.class), "target");
+    assertInputs(node(LogicalPlan.class), TARGET);
   }
 
   @Test
   void edgeUsesTheSameTraversal() {
-    LogicalPlan source = node(Filter.class, relation("source"));
+    LogicalPlan source = node(Filter.class, relation(SOURCE));
     EdgeCommand command = mock(EdgeCommand.class);
     when(command.target()).thenReturn(target);
     when(command.source()).thenReturn(source);
     assertThat(new MergeIntoCommandEdgeInputDatasetBuilder(context).apply(event, command))
         .extracting(InputDataset::getName)
-        .containsExactly("target", "source");
+        .containsExactly(TARGET, SOURCE);
   }
 
   private void assertInputs(LogicalPlan source, String... names) {
