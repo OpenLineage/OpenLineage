@@ -21,6 +21,7 @@ import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.JobNameSuffixProvider;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
@@ -123,6 +124,46 @@ class JobNameBuilderTest {
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(datasetBuilder));
     assertThat(JobNameBuilder.build(context))
         .isEqualTo("databricks_shell.append_data_exec_v1.air_companies_db_air_companies");
+  }
+
+  @Test
+  void testDatasetBuilderSuffixTakesPrecedenceOverQueryPlanVisitorSuffix() {
+    PartialFunction visitor =
+        mock(PartialFunction.class, withSettings().extraInterfaces(JobNameSuffixProvider.class));
+    when(((JobNameSuffixProvider) datasetBuilder).jobNameSuffix(context))
+        .thenReturn(Optional.of("builder_suffix"));
+    when(((JobNameSuffixProvider) visitor).jobNameSuffix(context))
+        .thenReturn(Optional.of("visitor_suffix"));
+
+    when(context.getQueryExecution().get().executedPlan().nodeName()).thenReturn("node");
+    when(sparkContext.appName()).thenReturn("app");
+    when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(datasetBuilder));
+    when(context.getOutputDatasetQueryPlanVisitors())
+        .thenReturn(Collections.singletonList(visitor));
+    assertThat(JobNameBuilder.build(context)).isEqualTo("app.node.builder_suffix");
+  }
+
+  @Test
+  void testFirstPresentSuffixInRegistrationOrderIsUsed() {
+    PartialFunction emptyBuilder =
+        mock(PartialFunction.class, withSettings().extraInterfaces(JobNameSuffixProvider.class));
+    PartialFunction firstVisitor =
+        mock(PartialFunction.class, withSettings().extraInterfaces(JobNameSuffixProvider.class));
+    PartialFunction secondVisitor =
+        mock(PartialFunction.class, withSettings().extraInterfaces(JobNameSuffixProvider.class));
+    when(((JobNameSuffixProvider) emptyBuilder).jobNameSuffix(context))
+        .thenReturn(Optional.empty());
+    when(((JobNameSuffixProvider) firstVisitor).jobNameSuffix(context))
+        .thenReturn(Optional.of("first_visitor"));
+    when(((JobNameSuffixProvider) secondVisitor).jobNameSuffix(context))
+        .thenReturn(Optional.of("second_visitor"));
+
+    when(context.getQueryExecution().get().executedPlan().nodeName()).thenReturn("node");
+    when(sparkContext.appName()).thenReturn("app");
+    when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(emptyBuilder));
+    when(context.getOutputDatasetQueryPlanVisitors())
+        .thenReturn(Arrays.asList(firstVisitor, secondVisitor));
+    assertThat(JobNameBuilder.build(context)).isEqualTo("app.node.first_visitor");
   }
 
   @Test
