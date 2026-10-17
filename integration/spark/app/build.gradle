@@ -597,7 +597,8 @@ List<Dependency> deltaDependencies(String spark, String scala) {
             "4.0.0": "4.0.0"
     ]
 
-    def delta = registry.get(spark)
+    // Override only the app test dependency to reproduce regressions in older Delta releases.
+    def delta = project.findProperty("app.delta.version") ?: registry.get(spark)
     if (delta == null) {
         return []
     } else if (delta.startsWith("1.") || delta.startsWith("2.")) {

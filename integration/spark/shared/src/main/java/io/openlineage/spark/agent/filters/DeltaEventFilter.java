@@ -8,24 +8,31 @@ package io.openlineage.spark.agent.filters;
 import static io.openlineage.spark.agent.filters.EventFilterUtils.getLogicalPlan;
 import static io.openlineage.spark.agent.filters.EventFilterUtils.isDeltaPlan;
 
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
+import org.apache.spark.sql.catalyst.plans.logical.Union;
 import org.apache.spark.sql.catalyst.trees.TreeNode;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SparkPlanInfo;
+import org.apache.spark.sql.execution.datasources.FileIndex;
+import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
+import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.collection.JavaConverters;
@@ -61,7 +68,8 @@ public class DeltaEventFilter implements EventFilter {
             && (isFilterRoot() || isLocalRelationOnly() || isSerializeFromObject()))
         || isLogicalRDDWithInternalDataColumns()
         || isStagedDeltaTable(event)
-        || isDeltaLogProjection();
+        || isDeltaLogProjection()
+        || isDeltaMetadataReconstruction();
   }
 
   /**
@@ -104,6 +112,67 @@ public class DeltaEventFilter implements EventFilter {
   /** Returns true if Filter is a root node of LogicalPlan */
   private boolean isFilterRoot() {
     return getLogicalPlan(context).filter(plan -> plan instanceof Filter).isPresent();
+  }
+
+  /**
+   * Delta 3.1 reconstructs protocol/metadata by unioning checkpoint and commit-log reads. The
+   * Delta-owned index distinguishes this from deliberate user inspection of the same log files.
+   */
+  private boolean isDeltaMetadataReconstruction() {
+    return getLogicalPlan(context)
+        .filter(plan -> plan instanceof Union)
+        .filter(this::hasMetadataColumns)
+        .map(plan -> ScalaConversionUtils.fromSeq(plan.children()))
+        .filter(children -> !children.isEmpty())
+        .map(children -> children.stream().allMatch(this::isDeltaMetadataBranch))
+        .orElse(false);
+  }
+
+  private boolean hasMetadataColumns(LogicalPlan plan) {
+    return ScalaConversionUtils.fromSeq(plan.output()).stream()
+        .map(NamedExpression::name)
+        .collect(Collectors.toList())
+        .equals(Arrays.asList("protocol", "metaData", "version"));
+  }
+
+  private boolean isDeltaMetadataBranch(LogicalPlan plan) {
+    if (!(plan instanceof Project) || !hasMetadataColumns(plan)) {
+      return false;
+    }
+    LogicalPlan child = ((Project) plan).child();
+    if (!(child instanceof Filter)) {
+      return false;
+    }
+    LogicalPlan leaf = ((Filter) child).child();
+    if (!(leaf instanceof LogicalRelation)
+        || !(((LogicalRelation) leaf).relation() instanceof HadoopFsRelation)) {
+      return false;
+    }
+    FileIndex index = ((HadoopFsRelation) ((LogicalRelation) leaf).relation()).location();
+    if (!isDeltaLogFileIndex(index)) {
+      return false;
+    }
+    List<Path> roots = ScalaConversionUtils.fromSeq(index.rootPaths());
+    return !roots.isEmpty() && roots.stream().allMatch(DeltaEventFilter::isDeltaLogPath);
+  }
+
+  private static boolean isDeltaLogFileIndex(FileIndex index) {
+    // Delta is an optional dependency; avoid loading its classes for other Spark applications.
+    for (Class<?> type = index.getClass(); type != null; type = type.getSuperclass()) {
+      if ("org.apache.spark.sql.delta.DeltaLogFileIndex".equals(type.getName())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean isDeltaLogPath(Path path) {
+    for (Path current = path; current != null; current = current.getParent()) {
+      if ("_delta_log".equals(current.getName())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private boolean isDeltaLogProjection() {

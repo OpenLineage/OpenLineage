@@ -30,12 +30,19 @@ import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
+import org.apache.spark.sql.catalyst.plans.logical.Union;
+import org.apache.spark.sql.delta.DeltaLogFileIndex;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.datasources.FileIndex;
+import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
+import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 import scala.collection.immutable.Seq;
 
@@ -248,6 +255,84 @@ class DeltaEventFilterTest {
               "AppendDataExecV1 org.apache.spark.sql.delta.catalog.DeltaCatalog$StagedDeltaTableV2...");
       assertTrue(filter.isDisabled(sparkListenerSQLExecutionStart));
     }
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "/table/_delta_log,true,true",
+    "/table/_delta_log/00000000000000000010.checkpoint.parquet,true,true",
+    "/table/_delta_log,false,false",
+    "/table/user_data,true,false",
+    "/table/prefix_delta_log,true,false",
+    "/table/_delta_log_suffix/file.json,true,false"
+  })
+  void testMetadataUnion(String path, boolean internal, boolean disabled) {
+    Union union = metadataUnion(metadataBranch(path, internal), metadataBranch(path, internal));
+    givenDeltaRoot(union);
+    org.junit.jupiter.api.Assertions.assertEquals(disabled, filter.isDisabled(sparkListenerEvent));
+  }
+
+  @Test
+  void testMixedUserAndInternalUnionIsPreserved() {
+    givenDeltaRoot(
+        metadataUnion(
+            metadataBranch("/table/_delta_log", true), metadataBranch("/table/_delta_log", false)));
+    assertFalse(filter.isDisabled(sparkListenerEvent));
+  }
+
+  @Test
+  void testOrdinaryUnionIsPreserved() {
+    Union union =
+        metadataUnion(
+            metadataBranch("/table/_delta_log", true), metadataBranch("/table/_delta_log", true));
+    Attribute userColumn = attributeWithName("user_column");
+    when(union.output())
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(userColumn)));
+    givenDeltaRoot(union);
+    assertFalse(filter.isDisabled(sparkListenerEvent));
+  }
+
+  private void givenDeltaRoot(LogicalPlan plan) {
+    when(sparkConf.get("spark.sql.extensions", ""))
+        .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+    when(context.getCommandChildExecution()).thenReturn(Optional.of(false));
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+  }
+
+  private Union metadataUnion(LogicalPlan... branches) {
+    Union union = mock(Union.class);
+    when(union.children()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(branches)));
+    when(union.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+    Seq<Attribute> attributes = metadataAttributes();
+    when(union.output()).thenReturn(attributes);
+    return union;
+  }
+
+  private Seq<Attribute> metadataAttributes() {
+    return ScalaConversionUtils.fromList(
+        Arrays.asList(
+            attributeWithName("protocol"),
+            attributeWithName("metaData"),
+            attributeWithName("version")));
+  }
+
+  private LogicalPlan metadataBranch(String path, boolean internal) {
+    FileIndex index = internal ? mock(DeltaLogFileIndex.class) : mock(FileIndex.class);
+    when(index.rootPaths())
+        .thenReturn(
+            ScalaConversionUtils.fromList(
+                Collections.singletonList(new org.apache.hadoop.fs.Path(path))));
+    HadoopFsRelation relation = mock(HadoopFsRelation.class);
+    when(relation.location()).thenReturn(index);
+    LogicalRelation leaf = mock(LogicalRelation.class);
+    when(leaf.relation()).thenReturn(relation);
+    Filter branchFilter = mock(Filter.class);
+    when(branchFilter.child()).thenReturn(leaf);
+    Project project = mock(Project.class);
+    when(project.child()).thenReturn(branchFilter);
+    Seq<Attribute> attributes = metadataAttributes();
+    when(project.output()).thenReturn(attributes);
+    return project;
   }
 
   private Attribute attributeWithName(String name) {

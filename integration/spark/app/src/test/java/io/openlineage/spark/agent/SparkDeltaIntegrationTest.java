@@ -20,6 +20,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -27,15 +28,18 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.SparkConf;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.delta.DeltaLog;
 import org.apache.spark.sql.functions;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
@@ -437,6 +441,89 @@ class SparkDeltaIntegrationTest {
     assertThat(events.get(1).getInputs())
         .extracting(InputDataset::getName)
         .containsExactly("/tmp/delta/aqe_read_source");
+  }
+
+  /** Also run with -Pspark.version=3.5.6 -Papp.delta.version=3.1.0 for the affected release. */
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = "3\\.5\\..*")
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+  void testCheckpointMetadataReconstruction() throws Exception {
+    spark.conf().set("spark.databricks.delta.snapshotPartitions", 1);
+    String source = "/tmp/delta/checkpoint-source";
+    String target = "/tmp/delta/checkpoint-target";
+    spark.sql("SELECT 1 AS id, 'new' AS v").write().format("delta").save(source);
+    spark.sql(
+        "CREATE TABLE delta.`"
+            + target
+            + "` (id INT, v STRING) USING delta "
+            + "TBLPROPERTIES ('delta.checkpointInterval' = '2')");
+    spark.sql("INSERT INTO delta.`" + target + "` VALUES (1, 'old')");
+    spark.sql("INSERT INTO delta.`" + target + "` VALUES (2, 'old')");
+    java.nio.file.Path logDirectory = java.nio.file.Paths.get(target, "_delta_log");
+    try (Stream<java.nio.file.Path> files = Files.list(logDirectory)) {
+      assertThat(files.anyMatch(path -> path.toString().endsWith(".checkpoint.parquet"))).isTrue();
+    }
+    // A commit after the checkpoint forces reconstruction to union parquet and JSON.
+    spark.sql("INSERT INTO delta.`" + target + "` VALUES (3, 'after checkpoint')");
+    SparkConf conf = spark.sparkContext().getConf();
+    Spark4CompatUtils.cleanupAnyExistingSession();
+    DeltaLog.clearCache();
+    MockServerUtils.clearRequests(mockServer);
+    spark = SparkSession.builder().config(conf).getOrCreate();
+    spark.sql(
+        "MERGE INTO delta.`"
+            + target
+            + "` t USING delta.`"
+            + source
+            + "` s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.v = s.v");
+    spark.sparkContext().listenerBus().waitUntilEmpty(10000);
+    List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+    assertThat(events).noneMatch(event -> event.getJob().getName().endsWith(".union"));
+    assertThat(events)
+        .allSatisfy(
+            event ->
+                assertThat(event.getInputs())
+                    .noneMatch(input -> input.getName().contains("/_delta_log")));
+    List<RunEvent> mergeEvents =
+        events.stream()
+            .filter(event -> event.getJob().getName().contains("merge_into_command"))
+            .collect(Collectors.toList());
+    assertThat(mergeEvents)
+        .extracting(event -> event.getEventType().toString())
+        .containsExactlyInAnyOrder("START", "COMPLETE");
+    assertThat(mergeEvents)
+        .allSatisfy(
+            event -> {
+              assertThat(event.getInputs())
+                  .extracting(InputDataset::getNamespace)
+                  .containsOnly("file");
+              assertThat(event.getInputs())
+                  .extracting(InputDataset::getName)
+                  .containsExactlyInAnyOrder(source, target);
+              assertThat(event.getOutputs())
+                  .singleElement()
+                  .satisfies(
+                      output -> {
+                        assertThat(output.getNamespace()).isEqualTo("file");
+                        assertThat(output.getName()).isEqualTo(target);
+                      });
+            });
+
+    // Direct inspection has the same metadata columns and paths, but uses a user file index.
+    MockServerUtils.clearRequests(mockServer);
+    Dataset<Row> log =
+        spark
+            .read()
+            .json(logDirectory.resolve("*.json").toString())
+            .where("protocol.minReaderVersion IS NOT NULL OR metaData.id IS NOT NULL")
+            .selectExpr("protocol", "metaData", "1L AS version");
+    log.union(log).collectAsList();
+    spark.sparkContext().listenerBus().waitUntilEmpty(10000);
+    assertThat(MockServerUtils.getEventsEmitted(mockServer))
+        .anySatisfy(
+            event ->
+                assertThat(event.getInputs())
+                    .anyMatch(input -> input.getName().contains("/_delta_log")));
   }
 
   @Test
