@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.api;
 
-import io.openlineage.spark.agent.lifecycle.VisitorFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -63,11 +62,6 @@ public interface Vendors {
     return new Vendors() {
 
       @Override
-      public Collection<VisitorFactory> getVisitorFactories() {
-        return Collections.emptyList();
-      }
-
-      @Override
       public Collection<OpenLineageEventHandlerFactory> getEventHandlerFactories() {
         return Collections.emptyList();
       }
@@ -78,8 +72,6 @@ public interface Vendors {
       }
     };
   }
-
-  Collection<VisitorFactory> getVisitorFactories();
 
   Collection<OpenLineageEventHandlerFactory> getEventHandlerFactories();
 

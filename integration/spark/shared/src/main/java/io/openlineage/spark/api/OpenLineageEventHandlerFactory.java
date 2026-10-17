@@ -58,7 +58,11 @@ public interface OpenLineageEventHandlerFactory {
    *
    * @param context
    * @return
+   * @deprecated Return an {@link AbstractQueryPlanInputDatasetBuilder} from {@link
+   *     #createInputDatasetBuilder(OpenLineageContext)} instead. Query plan visitors will be
+   *     removed in a future release.
    */
+  @Deprecated
   default Collection<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>>
       createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
     return Collections.emptyList();
@@ -71,7 +75,11 @@ public interface OpenLineageEventHandlerFactory {
    *
    * @param context
    * @return
+   * @deprecated Return an {@link AbstractQueryPlanOutputDatasetBuilder} from {@link
+   *     #createOutputDatasetBuilder(OpenLineageContext)} instead. Query plan visitors will be
+   *     removed in a future release.
    */
+  @Deprecated
   default Collection<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>>
       createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
     return Collections.emptyList();

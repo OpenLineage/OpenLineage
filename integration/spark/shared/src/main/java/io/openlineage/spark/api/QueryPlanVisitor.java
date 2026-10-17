@@ -54,7 +54,13 @@ import scala.runtime.AbstractPartialFunction;
  * scala.PartialFunction#isDefinedAt(Object)} method.
  *
  * @param <T>
+ * @deprecated Extend {@link AbstractQueryPlanInputDatasetBuilder} or {@link
+ *     AbstractQueryPlanOutputDatasetBuilder} and return it from {@link
+ *     OpenLineageEventHandlerFactory#createInputDatasetBuilder(OpenLineageContext)} or {@link
+ *     OpenLineageEventHandlerFactory#createOutputDatasetBuilder(OpenLineageContext)} instead. Query
+ *     plan visitors will be removed in a future release.
  */
+@Deprecated
 public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLineage.Dataset>
     extends AbstractPartialFunction<LogicalPlan, List<D>> implements JobNameSuffixProvider<T> {
   @NonNull protected final OpenLineageContext context;

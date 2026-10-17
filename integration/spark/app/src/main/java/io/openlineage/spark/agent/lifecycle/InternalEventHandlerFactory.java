@@ -46,7 +46,6 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
 
   public static final String SPARK_VERSION_3 = "3";
   private final List<OpenLineageEventHandlerFactory> eventHandlerFactories;
-  private final List<VisitorFactory> visitorFactory;
 
   public InternalEventHandlerFactory() {
     ServiceLoader<OpenLineageEventHandlerFactory> loader =
@@ -59,12 +58,6 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                     false),
                 Vendors.getVendors().getEventHandlerFactories().stream())
             .collect(Collectors.toList());
-
-    visitorFactory =
-        ImmutableList.<VisitorFactory>builder()
-            .add(VisitorFactoryProvider.getInstance())
-            .addAll(Vendors.getVendors().getVisitorFactories())
-            .build();
   }
 
   /**
@@ -88,18 +81,12 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   @Override
   public Collection<PartialFunction<LogicalPlan, List<InputDataset>>>
       createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
-    List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
-        visitorFactory.stream()
-            .flatMap(v -> v.getInputVisitors(context).stream())
-            .collect(Collectors.toList());
-
     ImmutableList<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetVisitors =
         ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
             .addAll(
                 generate(
                     eventHandlerFactories,
                     factory -> factory.createInputDatasetQueryPlanVisitors(context)))
-            .addAll(inputDatasets)
             .build();
     context.getInputDatasetQueryPlanVisitors().addAll(inputDatasetVisitors);
     return inputDatasetVisitors;
@@ -108,18 +95,12 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   @Override
   public Collection<PartialFunction<LogicalPlan, List<OutputDataset>>>
       createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
-    List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
-        visitorFactory.stream()
-            .flatMap(v -> v.getOutputVisitors(context).stream())
-            .collect(Collectors.toList());
-
     ImmutableList<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasetBuilders =
         ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()
             .addAll(
                 generate(
                     eventHandlerFactories,
                     factory -> factory.createOutputDatasetQueryPlanVisitors(context)))
-            .addAll(outputDatasets)
             .build();
 
     context.getOutputDatasetQueryPlanVisitors().addAll(outputDatasetBuilders);
