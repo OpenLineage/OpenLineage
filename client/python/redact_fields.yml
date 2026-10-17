@@ -1,356 +1,364 @@
 - module: base
   classes:
-    - class_name: BaseEvent
-      redact_fields: []
-    - class_name: BaseFacet
-      redact_fields: []
-    - class_name: Dataset
-      redact_fields:
-        - namespace
-        - name
-    - class_name: DatasetEvent
-      redact_fields: []
-    - class_name: DatasetFacet
-      redact_fields: []
-    - class_name: EventType
-      redact_fields: []
-    - class_name: InputDataset
-      redact_fields:
-        - namespace
-        - name
-    - class_name: InputDatasetFacet
-      redact_fields: []
-    - class_name: Job
-      redact_fields:
-        - namespace
-        - name
-    - class_name: JobEvent
-      redact_fields: []
-    - class_name: JobFacet
-      redact_fields: []
-    - class_name: OutputDataset
-      redact_fields:
-        - namespace
-        - name
-    - class_name: OutputDatasetFacet
-      redact_fields: []
-    - class_name: Run
-      redact_fields:
-        - runId
-    - class_name: RunEvent
-      redact_fields:
-        - eventType
-        - eventTime
-    - class_name: RunFacet
-      redact_fields: []
-    - class_name: StaticDataset
-      redact_fields: []
+  - class_name: BaseEvent
+    redact_fields: []
+  - class_name: BaseFacet
+    redact_fields: []
+  - class_name: Dataset
+    redact_fields:
+    - namespace
+    - name
+  - class_name: DatasetEvent
+    redact_fields: []
+  - class_name: DatasetFacet
+    redact_fields: []
+  - class_name: EventType
+    redact_fields: []
+  - class_name: InputDataset
+    redact_fields:
+    - namespace
+    - name
+  - class_name: InputDatasetFacet
+    redact_fields: []
+  - class_name: Job
+    redact_fields:
+    - namespace
+    - name
+  - class_name: JobEvent
+    redact_fields: []
+  - class_name: JobFacet
+    redact_fields: []
+  - class_name: OutputDataset
+    redact_fields:
+    - namespace
+    - name
+  - class_name: OutputDatasetFacet
+    redact_fields: []
+  - class_name: Run
+    redact_fields:
+    - runId
+  - class_name: RunEvent
+    redact_fields:
+    - eventType
+    - eventTime
+  - class_name: RunFacet
+    redact_fields: []
+  - class_name: StaticDataset
+    redact_fields: []
 - module: column_lineage_dataset
   classes:
-    - class_name: ColumnLineageDatasetFacet
-      redact_fields: []
-    - class_name: Fields
-      redact_fields: []
-    - class_name: InputField
-      redact_fields:
-        - namespace
-        - name
-        - field
-    - class_name: Transformation
-      redact_fields:
-        - type
-        - subtype
-        - masking
+  - class_name: ColumnLineageDatasetFacet
+    redact_fields: []
+  - class_name: Fields
+    redact_fields: []
+  - class_name: InputField
+    redact_fields:
+    - namespace
+    - name
+    - field
+  - class_name: Transformation
+    redact_fields:
+    - type
+    - subtype
+    - masking
 - module: data_quality_assertions_dataset
   classes:
-    - class_name: Assertion
-      redact_fields:
-        - column
-    - class_name: DataQualityAssertionsDatasetFacet
-      redact_fields: []
+  - class_name: Assertion
+    redact_fields:
+    - column
+  - class_name: DataQualityAssertionsDatasetFacet
+    redact_fields: []
 - module: data_quality_metrics_dataset
   classes:
-    - class_name: ColumnMetrics
-      redact_fields: []
-    - class_name: DataQualityMetricsDatasetFacet
-      redact_fields: []
+  - class_name: ColumnMetrics
+    redact_fields: []
+  - class_name: DataQualityMetricsDatasetFacet
+    redact_fields: []
 - module: data_quality_metrics_input_dataset
   classes:
-    - class_name: ColumnMetrics
-      redact_fields: []
-    - class_name: DataQualityMetricsInputDatasetFacet
-      redact_fields: []
+  - class_name: ColumnMetrics
+    redact_fields: []
+  - class_name: DataQualityMetricsInputDatasetFacet
+    redact_fields: []
 - module: dataset_type_dataset
   classes:
-    - class_name: DatasetTypeDatasetFacet
-      redact_fields:
-        - datasetType
-        - subType
+  - class_name: DatasetTypeDatasetFacet
+    redact_fields:
+    - datasetType
+    - subType
 - module: dataset_version_dataset
   classes:
-    - class_name: DatasetVersionDatasetFacet
-      redact_fields: []
+  - class_name: DatasetVersionDatasetFacet
+    redact_fields: []
 - module: datasource_dataset
   classes:
-    - class_name: DatasourceDatasetFacet
-      redact_fields:
-        - name
-        - uri
+  - class_name: DatasourceDatasetFacet
+    redact_fields:
+    - name
+    - uri
 - module: documentation_dataset
   classes:
-    - class_name: DocumentationDatasetFacet
-      redact_fields: []
+  - class_name: DocumentationDatasetFacet
+    redact_fields: []
 - module: documentation_job
   classes:
-    - class_name: DocumentationJobFacet
-      redact_fields: []
+  - class_name: DocumentationJobFacet
+    redact_fields: []
 - module: environment_variables_run
   classes:
-    - class_name: EnvironmentVariable
-      redact_fields:
-        - name
-    - class_name: EnvironmentVariablesRunFacet
-      redact_fields: []
+  - class_name: EnvironmentVariable
+    redact_fields:
+    - name
+  - class_name: EnvironmentVariablesRunFacet
+    redact_fields: []
 - module: error_message_run
   classes:
-    - class_name: ErrorMessageRunFacet
-      redact_fields:
-        - programmingLanguage
+  - class_name: ErrorMessageRunFacet
+    redact_fields:
+    - programmingLanguage
 - module: external_query_run
   classes:
-    - class_name: ExternalQueryRunFacet
-      redact_fields: []
+  - class_name: ExternalQueryRunFacet
+    redact_fields: []
 - module: extraction_error_run
   classes:
-    - class_name: Error
-      redact_fields: []
-    - class_name: ExtractionErrorRunFacet
-      redact_fields: []
+  - class_name: Error
+    redact_fields: []
+  - class_name: ExtractionErrorRunFacet
+    redact_fields: []
 - module: job_dependencies_run
   classes:
-    - class_name: JobDependenciesRunFacet
-      redact_fields: []
-    - class_name: JobIdentifier
-      redact_fields:
-        - namespace
-        - name
-    - class_name: RunIdentifier
-      redact_fields:
-        - runId
-    - class_name: JobDependency
-      redact_fields: []
+  - class_name: JobDependenciesRunFacet
+    redact_fields: []
+  - class_name: JobIdentifier
+    redact_fields:
+    - namespace
+    - name
+  - class_name: RunIdentifier
+    redact_fields:
+    - runId
+  - class_name: JobDependency
+    redact_fields: []
 - module: job_type_job
   classes:
-    - class_name: JobTypeJobFacet
-      redact_fields: []
-    - class_name: EmissionPattern
-      redact_fields: []
-    - class_name: EventCompleteness
-      redact_fields: []
-    - class_name: EventTrigger
-      redact_fields: []
+  - class_name: JobTypeJobFacet
+    redact_fields: []
+  - class_name: EmissionPattern
+    redact_fields: []
+  - class_name: EventCompleteness
+    redact_fields: []
+  - class_name: EventTrigger
+    redact_fields: []
 - module: lifecycle_state_change_dataset
   classes:
-    - class_name: LifecycleStateChange
-      redact_fields: []
-    - class_name: LifecycleStateChangeDatasetFacet
-      redact_fields: []
-    - class_name: PreviousIdentifier
-      redact_fields: []
+  - class_name: LifecycleStateChange
+    redact_fields: []
+  - class_name: LifecycleStateChangeDatasetFacet
+    redact_fields: []
+  - class_name: PreviousIdentifier
+    redact_fields: []
 - module: lineage
   classes:
-    - class_name: LineageDatasetFacet
-      redact_fields: []
-    - class_name: LineageJobFacet
-      redact_fields: []
-    - class_name: LineageDatasetEntry
-      redact_fields:
-        - namespace
-        - name
-        - type
-    - class_name: LineageJobEntry
-      redact_fields:
-        - namespace
-        - name
-        - type
-        - runId
-    - class_name: LineageDatasetInput
-      redact_fields:
-        - namespace
-        - name
-        - type
-        - field
-    - class_name: LineageJobInput
-      redact_fields:
-        - namespace
-        - name
-        - type
-        - runId
-    - class_name: LineageFieldEntry
-      redact_fields: []
-    - class_name: LineageTransformation
-      redact_fields:
-        - type
-        - subtype
-        - masking
-    - class_name: Type
-      redact_fields: []
-    - class_name: Type1
-      redact_fields: []
-    - class_name: Type2
-      redact_fields: []
-    - class_name: Type3
-      redact_fields: []
+  - class_name: LineageDatasetFacet
+    redact_fields: []
+  - class_name: LineageJobFacet
+    redact_fields: []
+  - class_name: LineageDatasetEntry
+    redact_fields:
+    - namespace
+    - name
+    - type
+  - class_name: LineageJobEntry
+    redact_fields:
+    - namespace
+    - name
+    - type
+    - runId
+  - class_name: LineageDatasetInput
+    redact_fields:
+    - namespace
+    - name
+    - type
+    - field
+  - class_name: LineageJobInput
+    redact_fields:
+    - namespace
+    - name
+    - type
+    - runId
+  - class_name: LineageFieldEntry
+    redact_fields: []
+  - class_name: LineageTransformation
+    redact_fields:
+    - type
+    - subtype
+    - masking
+  - class_name: Type
+    redact_fields: []
+  - class_name: Type1
+    redact_fields: []
+  - class_name: Type2
+    redact_fields: []
+  - class_name: Type3
+    redact_fields: []
 - module: nominal_time_run
   classes:
-    - class_name: NominalTimeRunFacet
-      redact_fields:
-        - nominalStartTime
-        - nominalEndTime
+  - class_name: NominalTimeRunFacet
+    redact_fields:
+    - nominalStartTime
+    - nominalEndTime
 - module: output_statistics_output_dataset
   classes:
-    - class_name: OutputStatisticsOutputDatasetFacet
-      redact_fields:
-        - rowCount
-        - size
+  - class_name: OutputStatisticsOutputDatasetFacet
+    redact_fields:
+    - rowCount
+    - size
 - module: input_statistics_input_dataset
   classes:
-    - class_name: InputStatisticsInputDatasetFacet
-      redact_fields:
-        - rowCount
-        - size
+  - class_name: InputStatisticsInputDatasetFacet
+    redact_fields:
+    - rowCount
+    - size
 - module: ownership_dataset
   classes:
-    - class_name: Owner
-      redact_fields: []
-    - class_name: OwnershipDatasetFacet
-      redact_fields: []
+  - class_name: Owner
+    redact_fields: []
+  - class_name: OwnershipDatasetFacet
+    redact_fields: []
 - module: ownership_job
   classes:
-    - class_name: Owner
-      redact_fields: []
-    - class_name: OwnershipJobFacet
-      redact_fields: []
+  - class_name: Owner
+    redact_fields: []
+  - class_name: OwnershipJobFacet
+    redact_fields: []
 - module: parent_run
   classes:
-    - class_name: Job
-      redact_fields:
-        - namespace
-        - name
-    - class_name: ParentRunFacet
-      redact_fields:
-        - job
-        - run
-    - class_name: Run
-      redact_fields:
-        - runId
-    - class_name: RootRun
-      redact_fields:
-        - runId
-    - class_name: RootJob
-      redact_fields:
-        - namespace
-        - name
-    - class_name: Root
-      redact_fields:
-        - run
-        - job
+  - class_name: Job
+    redact_fields:
+    - namespace
+    - name
+  - class_name: ParentRunFacet
+    redact_fields:
+    - job
+    - run
+  - class_name: Run
+    redact_fields:
+    - runId
+  - class_name: RootRun
+    redact_fields:
+    - runId
+  - class_name: RootJob
+    redact_fields:
+    - namespace
+    - name
+  - class_name: Root
+    redact_fields:
+    - run
+    - job
 - module: processing_engine_run
   classes:
-    - class_name: ProcessingEngineRunFacet
-      redact_fields: []
+  - class_name: ProcessingEngineRunFacet
+    redact_fields: []
 - module: schema_dataset
   classes:
-    - class_name: SchemaDatasetFacet
-      redact_fields: []
-    - class_name: SchemaDatasetFacetFields
-      redact_fields: []
+  - class_name: SchemaDatasetFacet
+    redact_fields: []
+  - class_name: SchemaDatasetFacetFields
+    redact_fields: []
 - module: source_code_job
   classes:
-    - class_name: SourceCodeJobFacet
-      redact_fields:
-        - language
+  - class_name: SourceCodeJobFacet
+    redact_fields:
+    - language
 - module: source_code_location_job
   classes:
-    - class_name: SourceCodeLocationJobFacet
-      redact_fields:
-        - type
-        - url
+  - class_name: SourceCodeLocationJobFacet
+    redact_fields:
+    - type
+    - url
 - module: sql_job
   classes:
-    - class_name: SQLJobFacet
-      redact_fields: []
+  - class_name: SQLJobFacet
+    redact_fields: []
 - module: storage_dataset
   classes:
-    - class_name: StorageDatasetFacet
-      redact_fields: []
+  - class_name: StorageDatasetFacet
+    redact_fields: []
 - module: symlinks_dataset
   classes:
-    - class_name: Identifier
-      redact_fields: []
-    - class_name: SymlinksDatasetFacet
-      redact_fields: []
+  - class_name: Identifier
+    redact_fields: []
+  - class_name: SymlinksDatasetFacet
+    redact_fields: []
 - module: tags_dataset
   classes:
-    - class_name: TagsDatasetFacetFields
-      redact_fields: []
-    - class_name: TagsDatasetFacet
-      redact_fields: []
+  - class_name: TagsDatasetFacetFields
+    redact_fields: []
+  - class_name: TagsDatasetFacet
+    redact_fields: []
 - module: tags_job
   classes:
-    - class_name: TagsJobFacetFields
-      redact_fields: []
-    - class_name: TagsJobFacet
-      redact_fields: []
+  - class_name: TagsJobFacetFields
+    redact_fields: []
+  - class_name: TagsJobFacet
+    redact_fields: []
 - module: tags_run
   classes:
-    - class_name: TagsRunFacetFields
-      redact_fields: []
-    - class_name: TagsRunFacet
-      redact_fields: []
+  - class_name: TagsRunFacetFields
+    redact_fields: []
+  - class_name: TagsRunFacet
+    redact_fields: []
 - module: execution_parameters_run
   classes:
-    - class_name: ExecutionParameter
-      redact_fields: []
-    - class_name: ExecutionParametersRunFacet
-      redact_fields: []
+  - class_name: ExecutionParameter
+    redact_fields: []
+  - class_name: ExecutionParametersRunFacet
+    redact_fields: []
 - module: catalog_dataset
   classes:
-    - class_name: CatalogDatasetFacet
-      redact_fields: []
+  - class_name: CatalogDatasetFacet
+    redact_fields: []
 - module: base_subset_dataset
   classes:
-    - class_name: BaseSubsetDatasetFacet
-      redact_fields: [ ]
-    - class_name: BinarySubsetCondition
-      redact_fields: [ ]
-    - class_name: CompareSubsetCondition
-      redact_fields: [ ]
-    - class_name: FieldBaseCompareExpression
-      redact_fields: []
-    - class_name: InputSubsetInputDatasetFacet
-      redact_fields: [ ]
-    - class_name: LiteralCompareExpression
-      redact_fields: [ ]
-    - class_name: LocationSubsetCondition
-      redact_fields: [ ]
-    - class_name: OutputSubsetOutputDatasetFacet
-      redact_fields: []
-    - class_name: Partition
-      redact_fields: [ ]
-    - class_name: PartitionSubsetCondition
-      redact_fields: [ ]
-    - class_name: Subset
-      redact_fields: [ ]
+  - class_name: BaseSubsetDatasetFacet
+    redact_fields: []
+  - class_name: BinarySubsetCondition
+    redact_fields: []
+  - class_name: CompareSubsetCondition
+    redact_fields: []
+  - class_name: FieldBaseCompareExpression
+    redact_fields: []
+  - class_name: InputSubsetInputDatasetFacet
+    redact_fields: []
+  - class_name: LiteralCompareExpression
+    redact_fields: []
+  - class_name: LocationSubsetCondition
+    redact_fields: []
+  - class_name: OutputSubsetOutputDatasetFacet
+    redact_fields: []
+  - class_name: Partition
+    redact_fields: []
+  - class_name: PartitionSubsetCondition
+    redact_fields: []
+  - class_name: Subset
+    redact_fields: []
 - module: test_run
   classes:
-    - class_name: TestExecution
-      redact_fields: []
-    - class_name: TestRunFacet
-      redact_fields: []
+  - class_name: TestExecution
+    redact_fields: []
+  - class_name: TestRunFacet
+    redact_fields: []
 - module: hierarchy_dataset
   classes:
-    - class_name: HierarchyDatasetFacet
-      redact_fields: []
-    - class_name: HierarchyDatasetFacetLevel
-      redact_fields: []
+  - class_name: HierarchyDatasetFacet
+    redact_fields: []
+  - class_name: HierarchyDatasetFacetLevel
+    redact_fields: []
+- module: data_mesh_governance_dataset
+  classes:
+  - class_name: DataClassification
+    redact_fields: []
+  - class_name: PolicyCheck
+    redact_fields: []
+  - class_name: Severity
+    redact_fields: []
