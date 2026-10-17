@@ -32,7 +32,8 @@ public class MergeIntoCommandInputDatasetBuilder
   protected List<OpenLineage.InputDataset> apply(SparkListenerEvent event, MergeIntoCommand x) {
     List<OpenLineage.InputDataset> datasets = new ArrayList<>();
     datasets.addAll(delegate(x.target(), event));
-    datasets.addAll(delegate(x.source(), event));
+    datasets.addAll(
+        MergeSourceDatasetTraversal.collect(x.source(), source -> delegate(source, event)));
 
     return datasets;
   }
