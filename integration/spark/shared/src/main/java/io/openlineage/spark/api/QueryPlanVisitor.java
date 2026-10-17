@@ -6,7 +6,6 @@
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -46,9 +45,9 @@ import scala.runtime.AbstractPartialFunction;
  * implementation function's generic type parameter.
  *
  * <p>This works for classes that are compiled with a concrete generic type parameter and whose only
- * requirement is that the plan node matches a specified type. E.g., see the {@link
- * InsertIntoDirVisitor} implementation which matches on a {@link LogicalPlan} node that is an
- * instance of {@link org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir}.
+ * requirement is that the plan node matches a specified type. E.g., a visitor extending {@code
+ * QueryPlanVisitor<LoadDataCommand, InputDataset>} matches on a {@link LogicalPlan} node that is an
+ * instance of {@link org.apache.spark.sql.execution.command.LoadDataCommand}.
  *
  * <p>Nodes that need more complicated inspection of the {@link LogicalPlan} node to determine if
  * the function is defined at that node will need to implement their own {@link

@@ -9,7 +9,7 @@ import static io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.BigQueryOutputDatasetBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +19,7 @@ public class BigQueryUtils {
 
   public static boolean hasBigQueryClasses() {
     try {
-      BigQueryNodeOutputVisitor.class
+      BigQueryOutputDatasetBuilder.class
           .getClassLoader()
           .loadClass("com.google.cloud.spark.bigquery.BigQueryRelation");
       return true;

@@ -1,0 +1,75 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+package io.openlineage.spark.agent.lifecycle.plan;
+
+import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkDatasetBuilder;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import org.apache.spark.sql.SaveMode;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
+
+/**
+ * Dataset builder that matches an {@link InsertIntoHadoopFsRelationCommand} and extracts the output
+ * {@link OpenLineage.Dataset} being written.
+ */
+public class InsertIntoHadoopFsRelationDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<InsertIntoHadoopFsRelationCommand> {
+
+  public InsertIntoHadoopFsRelationDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
+  }
+
+  @Override
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof InsertIntoHadoopFsRelationCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(InsertIntoHadoopFsRelationCommand command) {
+
+    return getDatasetIdentifier(command)
+        .map(
+            di -> {
+              SparkDatasetBuilder<OpenLineage.OutputDataset> builder =
+                  outputDataset()
+                      .sparkDatasetBuilder()
+                      .dataset(di)
+                      .schema(command.query().schema());
+              if (SaveMode.Overwrite == command.mode()) {
+                builder.lifecycleStateChange(
+                    OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+              }
+              return Collections.singletonList(builder.build());
+            })
+        .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(InsertIntoHadoopFsRelationCommand command) {
+    return getDatasetIdentifier(command).map(di -> trimPath(context, di.getName()));
+  }
+
+  private Optional<DatasetIdentifier> getDatasetIdentifier(
+      InsertIntoHadoopFsRelationCommand command) {
+    if (!context.getSparkSession().isPresent()) {
+      return Optional.empty();
+    }
+
+    if (command.catalogTable().isDefined()) {
+      return Optional.of(
+          PathUtils.fromCatalogTable(
+              command.catalogTable().get(), context.getSparkSession().get(), command.outputPath()));
+    }
+    return Optional.of(PathUtils.fromPath(command.outputPath()));
+  }
+}

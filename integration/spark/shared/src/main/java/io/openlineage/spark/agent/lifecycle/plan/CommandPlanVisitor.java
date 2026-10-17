@@ -6,9 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
+import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,7 +22,6 @@ import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
 import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.hive.execution.CreateHiveTableAsSelectCommand;
-import scala.Function1;
 import scala.PartialFunction;
 
 /**
@@ -32,11 +30,7 @@ import scala.PartialFunction;
  * normally by calling {@link LogicalPlan#collect(PartialFunction)}, but children that aren't
  * exposed get skipped in the collect call, so we need to root them out here.
  */
-public class CommandPlanVisitor
-    extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalPlan, InputDataset> {
-
-  public static final Function1<LogicalPlan, List<InputDataset>> EMPTY_COLLECTION_FN =
-      ScalaConversionUtils.toScalaFn(lp -> Collections.emptyList());
+public class CommandPlanVisitor extends AbstractQueryPlanInputDatasetBuilder<LogicalPlan> {
 
   public CommandPlanVisitor(OpenLineageContext context) {
     super(context, true);
@@ -59,20 +53,6 @@ public class CommandPlanVisitor
             .getQueryExecution()
             .filter(qe -> isDefinedAtLogicalPlan(qe.optimizedPlan()))
             .isPresent();
-  }
-
-  @Override
-  public List<InputDataset> apply(LogicalPlan x) {
-    Optional<LogicalPlan> input = getInput(x);
-    return input
-        .map(
-            in ->
-                ScalaConversionUtils.fromSeq(
-                        in.collect(PlanUtils.merge(context.getInputDatasetQueryPlanVisitors())))
-                    .stream()
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toList()))
-        .orElseGet(Collections::emptyList);
   }
 
   @Override

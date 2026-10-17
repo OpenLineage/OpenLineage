@@ -211,7 +211,7 @@ public class InputFieldsCollector {
     }
   }
 
-  /* Similar to the InsertIntoHadoopFsRelationVisitor and LogicalRelationDatasetBuilder
+  /* Similar to the InsertIntoHadoopFsRelationDatasetBuilder and LogicalRelationDatasetBuilder
    * We need to handle a HadoopFsRelation by extracting that paths it traverses
    * to identify the datasets being used.
    */

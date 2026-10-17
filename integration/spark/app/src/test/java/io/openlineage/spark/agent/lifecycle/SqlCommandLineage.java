@@ -49,8 +49,9 @@ import org.mockito.ArgumentCaptor;
  *
  * <p>Each line has the format {@code <eventType> <jobName> <IN|OUT> <namespace>:<name>
  * [lifecycleStateChange] [schema=<fields>] facets=<facet names>}. Per-run directories are replaced
- * with {@code <wh>} (warehouse) and {@code <tmp>} placeholders, and with {@code WH} and {@code TMP}
- * in job names, which are built from the last two path segments.
+ * with {@code <wh>} (warehouse), {@code <tmp>} and {@code <derby>} (Derby system home)
+ * placeholders, and with {@code WH} and {@code TMP} in job names, which are built from the last two
+ * path segments.
  */
 class SqlCommandLineage {
   private final SparkSession spark;
@@ -150,7 +151,9 @@ class SqlCommandLineage {
 
   @SneakyThrows
   private String normalize(String value) {
-    return value
+    String derbyHome = System.getProperty("derby.system.home");
+    String result = derbyHome == null ? value : value.replace(derbyHome, "<derby>");
+    return result
         .replace(tmp.toRealPath().toString(), "<tmp>")
         .replace(tmp.toString(), "<tmp>")
         .replace(warehouse, "<wh>")
