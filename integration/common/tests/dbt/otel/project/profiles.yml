@@ -1,0 +1,8 @@
+otel_jaffle:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('OTEL_FIXTURE_DUCKDB', 'otel_jaffle.duckdb') }}"
+      schema: main
+      threads: 1

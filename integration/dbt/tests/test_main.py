@@ -8,6 +8,13 @@ from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAN
 from openlineage.dbt import consume_structured_logs, main
 
 
+@pytest.fixture(autouse=True)
+def dbt_core_v1(monkeypatch):
+    # main() detects the engine of the `dbt` on PATH; keep these tests independent of the machine.
+    monkeypatch.setenv("OPENLINEAGE_DBT_ENGINE", "v1")
+    monkeypatch.delenv("OPENLINEAGE_DBT_SKIP_PARSE", raising=False)
+
+
 @pytest.mark.parametrize(
     "command_line, number_of_calls",
     [
@@ -344,3 +351,59 @@ def test_consume_local_artifacts_partial_root_falls_back_to_parent(monkeypatch):
     assert md.root_parent_run_id == parent_run_id
     assert md.root_parent_job_name == parent_job
     assert md.root_parent_job_namespace == parent_namespace
+
+
+@pytest.mark.parametrize(
+    "argv, skip_parse_env, expected_args, expected_skip_parse",
+    [
+        (["dbt-ol", "build", "--select", "orders"], None, ["build", "--select", "orders"], False),
+        # --consume-structured-logs changes nothing on dbt Core v2 and is not passed to dbt
+        (["dbt-ol", CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, "build"], None, ["build"], False),
+        (
+            ["dbt-ol", "build", "--ol-skip-parse", "--select", "orders"],
+            None,
+            ["build", "--select", "orders"],
+            True,
+        ),
+        (["dbt-ol", "build"], "true", ["build"], True),
+    ],
+)
+def test_dbt_core_v2_always_consumes_otel(
+    argv, skip_parse_env, expected_args, expected_skip_parse, monkeypatch
+):
+    monkeypatch.setenv("OPENLINEAGE_DBT_ENGINE", "v2")
+    if skip_parse_env:
+        monkeypatch.setenv("OPENLINEAGE_DBT_SKIP_PARSE", skip_parse_env)
+    consume_otel = mock.MagicMock(return_value=0)
+    monkeypatch.setattr("openlineage.dbt.consume_otel", consume_otel)
+    monkeypatch.setattr("openlineage.dbt.consume_structured_logs", mock.MagicMock(side_effect=AssertionError))
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", mock.MagicMock(side_effect=AssertionError))
+    monkeypatch.setattr("sys.argv", argv)
+
+    assert main() == 0
+
+    kwargs = consume_otel.call_args.kwargs
+    assert kwargs["args"] == expected_args
+    assert kwargs["skip_parse"] is expected_skip_parse
+
+
+def test_skip_parse_flag_is_removed_on_dbt_core_v1(monkeypatch):
+    consume_local_artifacts = mock.MagicMock(return_value=0)
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", consume_local_artifacts)
+    monkeypatch.setattr("sys.argv", ["dbt-ol", "run", "--ol-skip-parse"])
+
+    main()
+
+    assert consume_local_artifacts.call_args.kwargs["args"] == ["run"]
+
+
+def test_send_events_does_not_detect_the_engine(monkeypatch):
+    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE")
+    monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", mock.MagicMock(side_effect=AssertionError))
+    consume_local_artifacts = mock.MagicMock(return_value=0)
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", consume_local_artifacts)
+    monkeypatch.setattr("sys.argv", ["dbt-ol", "send-events"])
+
+    main()
+
+    assert consume_local_artifacts.called
