@@ -37,7 +37,7 @@ import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-class DropTableVisitorTest {
+class DropTableDatasetBuilderTest {
 
   private static final String TABLE = "table";
   OpenLineageContext openLineageContext =
@@ -49,7 +49,7 @@ class DropTableVisitorTest {
           .meterRegistry(new SimpleMeterRegistry())
           .build();
 
-  DropTableVisitor visitor = new DropTableVisitor(openLineageContext);
+  DropTableDatasetBuilder builder = new DropTableDatasetBuilder(openLineageContext);
 
   DropTable dropTable = mock(DropTable.class);
   ResolvedTable resolvedTable = mock(ResolvedTable.class);
@@ -73,13 +73,13 @@ class DropTableVisitorTest {
 
   @Test
   void testIsDefinedAtWithResolvedTable() {
-    assertTrue(visitor.isDefinedAt(dropTable));
+    assertTrue(builder.isDefinedAtLogicalPlan(dropTable));
   }
 
   @Test
   void testIsDefinedAtWithNonDropTable() {
     LogicalPlan nonDropTable = mock(LogicalPlan.class);
-    assertFalse(visitor.isDefinedAt(nonDropTable));
+    assertFalse(builder.isDefinedAtLogicalPlan(nonDropTable));
   }
 
   @Test
@@ -87,7 +87,7 @@ class DropTableVisitorTest {
     DropTable dropTableWithUnknownChild = mock(DropTable.class);
     LogicalPlan unknownChild = mock(LogicalPlan.class);
     when(dropTableWithUnknownChild.child()).thenReturn(unknownChild);
-    assertFalse(visitor.isDefinedAt(dropTableWithUnknownChild));
+    assertFalse(builder.isDefinedAtLogicalPlan(dropTableWithUnknownChild));
   }
 
   @Test
@@ -100,7 +100,7 @@ class DropTableVisitorTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(dropTable);
+      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(dropTable);
 
       assertEquals(1, outputDatasets.size());
       assertEquals(
@@ -121,7 +121,7 @@ class DropTableVisitorTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.empty());
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(dropTable);
+      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(dropTable);
 
       assertEquals(0, outputDatasets.size());
     }
@@ -140,7 +140,7 @@ class DropTableVisitorTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(dropTable);
+      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(dropTable);
 
       // Verify the output contains schema facet
       assertEquals(1, outputDatasets.size());
@@ -169,7 +169,7 @@ class DropTableVisitorTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(dropTable);
+      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(dropTable);
 
       // Verify the output
       assertEquals(1, outputDatasets.size());
@@ -197,7 +197,7 @@ class DropTableVisitorTest {
               ScalaConversionUtils.<String, String>fromMap(emptyProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(dropTable);
+      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(dropTable);
 
       // Verify the output
       assertEquals(1, outputDatasets.size());

@@ -6,8 +6,8 @@
 package io.openlineage.spark32.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -15,16 +15,21 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.RepairTableCommand;
 
-public class RepairTableCommandVisitor
-    extends QueryPlanVisitor<RepairTableCommand, OpenLineage.OutputDataset> {
+/** Extracts the table repaired by a {@link RepairTableCommand} as an altered output dataset. */
+public class RepairTableCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<RepairTableCommand> {
 
-  public RepairTableCommandVisitor(OpenLineageContext context) {
-    super(context);
+  public RepairTableCommandDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    RepairTableCommand cmd = (RepairTableCommand) x;
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof RepairTableCommand;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(RepairTableCommand cmd) {
     Optional<CatalogTable> tableOption = catalogTableFor(cmd.tableName());
 
     return tableOption

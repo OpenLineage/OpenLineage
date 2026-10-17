@@ -8,8 +8,8 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.lang.reflect.InvocationTargetException;
@@ -28,14 +28,19 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.types.StructType;
 
+/**
+ * Extracts the table dropped by a {@link DropTable} as an output dataset with a DROP lifecycle
+ * state change. The table is resolved to a {@link ResolvedTable} up to Spark 3.3 and to a {@code
+ * ResolvedIdentifier} since Spark 3.4.
+ */
 @Slf4j
-public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.OutputDataset> {
+public class DropTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<DropTable> {
 
   private static final String RESOLVED_IDENTIFIER_CLASS_NAME =
       "org.apache.spark.sql.catalyst.analysis.ResolvedIdentifier";
 
-  public DropTableVisitor(@NonNull OpenLineageContext context) {
-    super(context);
+  public DropTableDatasetBuilder(@NonNull OpenLineageContext context) {
+    super(context, false);
   }
 
   /**
@@ -65,7 +70,7 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
     if (!(x instanceof DropTable)) {
       return false;
     }
@@ -76,8 +81,7 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    DropTable dropTable = (DropTable) x;
+  public List<OpenLineage.OutputDataset> apply(DropTable dropTable) {
     LogicalPlan child = dropTable.child();
 
     if (child instanceof ResolvedTable) {

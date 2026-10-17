@@ -25,8 +25,9 @@ import org.apache.spark.sql.execution.streaming.sources.MicroBatchWrite;
  * Extracts relation-backed output datasets from non-Kafka V2 streaming writes on Spark 3.2 and
  * newer.
  *
- * <p>Kafka remains handled by {@code WriteToDataSourceV2Visitor}. Spark 3.1 does not expose {@link
- * WriteToDataSourceV2#relation()} and therefore does not register this builder.
+ * <p>Kafka is handled by {@link
+ * io.openlineage.spark.agent.lifecycle.plan.KafkaStreamingWriteDatasetBuilder}. Spark 3.1 does not
+ * expose {@link WriteToDataSourceV2#relation()} and therefore does not register this builder.
  */
 @Slf4j
 public class WriteToDataSourceV2DatasetBuilder
