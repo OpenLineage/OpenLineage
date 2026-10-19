@@ -11,7 +11,7 @@ from openlineage.dbt import consume_otel, consume_structured_logs, emit_live_eve
 @pytest.fixture(autouse=True)
 def dbt_core_v1(monkeypatch):
     # main() detects the engine of the `dbt` on PATH; keep these tests independent of the machine.
-    monkeypatch.setenv("OPENLINEAGE_DBT_ENGINE", "v1")
+    monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", lambda: (1, None))
     monkeypatch.delenv("OPENLINEAGE_DBT_SKIP_PARSE", raising=False)
 
 
@@ -371,7 +371,7 @@ def test_consume_local_artifacts_partial_root_falls_back_to_parent(monkeypatch):
 def test_dbt_core_v2_always_consumes_otel(
     argv, skip_parse_env, expected_args, expected_skip_parse, monkeypatch
 ):
-    monkeypatch.setenv("OPENLINEAGE_DBT_ENGINE", "v2")
+    monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", lambda: (2, "2.0.8"))
     if skip_parse_env:
         monkeypatch.setenv("OPENLINEAGE_DBT_SKIP_PARSE", skip_parse_env)
     consume_otel = mock.MagicMock(return_value=0)
@@ -398,7 +398,6 @@ def test_skip_parse_flag_is_removed_on_dbt_core_v1(monkeypatch):
 
 
 def test_send_events_does_not_detect_the_engine(monkeypatch):
-    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE")
     monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", mock.MagicMock(side_effect=AssertionError))
     consume_local_artifacts = mock.MagicMock(return_value=0)
     monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", consume_local_artifacts)

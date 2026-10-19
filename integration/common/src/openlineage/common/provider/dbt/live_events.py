@@ -9,7 +9,6 @@ output. Both resolve nodes, inputs and test assertions from the manifest in the 
 import os
 from collections import defaultdict
 from functools import cached_property, wraps
-from typing import NamedTuple
 
 from openlineage.client.event_v2 import Dataset, InputDataset, OutputDataset, RunState
 from openlineage.client.facet_v2 import (
@@ -18,6 +17,7 @@ from openlineage.client.facet_v2 import (
 from openlineage.client.facet_v2 import (
     extraction_error_run,
     processing_engine_run,
+    test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -35,28 +35,6 @@ from openlineage.common.provider.dbt.utils import (
     get_parent_run_metadata,
 )
 from openlineage.common.utils import get_from_nullable_chain
-
-
-class ManifestIntegrityResult(NamedTuple):
-    """Result of manifest integrity validation.
-
-    Attributes:
-        is_valid: bool indicating if manifest is valid
-        missing_nodes: list of node IDs that are missing
-        missing_parents: list of parent node IDs that are missing
-        missing_children: list of child node IDs that are missing
-        total_missing: total count of missing nodes
-        parent_map_size: total number of entries in parent_map
-        available_nodes: total number of available nodes (nodes + sources)
-    """
-
-    is_valid: bool
-    missing_nodes: list[str]
-    missing_parents: list[str]
-    missing_children: list[str]
-    total_missing: int
-    parent_map_size: int
-    available_nodes: int
 
 
 def handle_keyerror(func):
@@ -248,6 +226,49 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
             expected=expected,
         )
 
+    def _test_datasets_with_assertion(
+        self, test_node_id: str, success: bool, num_failures: int | None
+    ) -> list[InputDataset] | None:
+        """The datasets a data test checks, each with the test's assertion; None when it has no assertion."""
+        assertion = self._get_assertion(test_node_id, success, num_failures)
+        if assertion is None:
+            return None
+        assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
+        return [
+            Dataset(  # type: ignore[misc]
+                name=attached.name,
+                namespace=attached.namespace,
+                facets={**attached.facets, "dataQualityAssertions": assertion_facet},  # type: ignore[dict-item]
+            )
+            for attached in self._get_attached_datasets(test_node_id) or []
+        ]
+
+    def _singular_test_facet(
+        self, test_node_id: str, success: bool, num_failures: int | None
+    ) -> test_run.TestRunFacet | None:
+        """The test facet of a singular test (a plain SQL file).
+
+        Generic tests (not_null, unique, etc.) have test_metadata and are covered by the dataQualityAssertions
+        facet on the dataset they check.
+        """
+        test_node = self._node_metadata(test_node_id)
+        if test_node.get("test_metadata") is not None:
+            return None
+        config = test_node.get("config") or {}
+        severity = (config.get("severity") or "error").lower()
+        test_execution = test_run.TestExecution(
+            name=test_node_id, status="pass" if success else "fail", severity=severity
+        )
+        test_execution.type = "singular"
+        test_execution.content = test_node.get("compiled_code") or test_node.get("raw_code")
+        test_execution.contentType = "sql"
+        if description := test_node.get("description"):
+            test_execution.description = description
+        if num_failures is not None:
+            test_execution.actual = str(num_failures)
+            test_execution.expected = expected_from_test_config(config, severity)
+        return test_run.TestRunFacet(tests=[test_execution])
+
     def _setup_dbt_run_metadata(self, start_event):
         """
         The dbt command defines the parent run metadata of
@@ -416,70 +437,6 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
                 node_id,
             )
         return []
-
-    def _validate_manifest_integrity(self) -> ManifestIntegrityResult:
-        """
-        Performs metadata integrity checks on the compiled manifest.
-
-        Validates that all nodes referenced in parent_map exist in the manifest's
-        node definitions (either in 'nodes' or 'sources' sections).
-
-        Returns:
-            ManifestIntegrityResult: Validation results with integrity check information.
-        """
-        if not self._compiled_manifest:
-            return ManifestIntegrityResult(
-                is_valid=True,
-                missing_nodes=[],
-                missing_parents=[],
-                missing_children=[],
-                total_missing=0,
-                parent_map_size=0,
-                available_nodes=0,
-            )
-
-        parent_map = self._compiled_manifest.get("parent_map", {})
-        all_nodes = {**self._compiled_manifest.get("nodes", {}), **self._compiled_manifest.get("sources", {})}
-
-        missing_nodes = []
-        missing_parents = []
-        missing_children = []
-
-        for parent_node_id, child_node_ids in parent_map.items():
-            # Check that the parent node exists
-            if parent_node_id not in all_nodes:
-                missing_nodes.append(parent_node_id)
-                missing_parents.append(parent_node_id)
-
-            # Check that all child nodes exist
-            for child_node_id in child_node_ids:
-                if child_node_id not in all_nodes:
-                    missing_nodes.append(child_node_id)
-                    missing_children.append(child_node_id)
-
-        # Remove duplicates while preserving order
-        missing_nodes = list(dict.fromkeys(missing_nodes))
-        missing_parents = list(dict.fromkeys(missing_parents))
-        missing_children = list(dict.fromkeys(missing_children))
-
-        if missing_nodes:
-            self.logger.warning(
-                "Manifest integrity check failed: Found %d nodes in parent_map that don't exist "
-                "in manifest node definitions, printing first %d of them: %s",
-                len(missing_nodes),
-                min(10, len(missing_nodes)),
-                missing_nodes[: min(10, len(missing_nodes))],  # Log first 10 to avoid overwhelming logs
-            )
-
-        return ManifestIntegrityResult(
-            is_valid=len(missing_nodes) == 0,
-            missing_nodes=missing_nodes,
-            missing_parents=missing_parents,
-            missing_children=missing_children,
-            total_missing=len(missing_nodes),
-            parent_map_size=len(parent_map),
-            available_nodes=len(all_nodes),
-        )
 
     def get_dbt_metadata(
         self,
