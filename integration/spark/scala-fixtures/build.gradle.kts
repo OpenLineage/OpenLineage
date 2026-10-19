@@ -9,7 +9,7 @@ repositories {
 
 configureScalaVariant("2.11", "2.4.8")
 configureScalaVariant("2.12", "3.5.6")
-configureScalaVariant("2.13", "3.5.6")
+configureScalaVariant("2.13", "4.0.0")
 
 dependencies {
     compileOnly("org.apache.spark:spark-sql_2.12:3.5.6")
