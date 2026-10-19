@@ -186,6 +186,34 @@ class OpenLineageSparkListenerTest {
     }
   }
 
+  @Test
+  void testOnOtherEventSkippedWhenSparkContextStopped() {
+    // Simulates spark.stop() called while listener events are still being processed: the
+    // stopped context must not be touched, otherwise YARN requests new containers that crash.
+    try (MockedStatic<SparkSession> mockedSession = mockStatic(SparkSession.class)) {
+      SparkSession stoppedSession = mock(SparkSession.class);
+      SparkContext stoppedContext = mock(SparkContext.class);
+      when(stoppedContext.isStopped()).thenReturn(true);
+      when(stoppedSession.sparkContext()).thenReturn(stoppedContext);
+      mockedSession
+          .when(SparkSession::getDefaultSession)
+          .thenReturn(Option.apply(stoppedSession));
+
+      ContextFactory contextFactory = mock(ContextFactory.class);
+      when(contextFactory.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+
+      OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+      listener.skipInitializationForTests(contextFactory);
+
+      listener.onOtherEvent(mock(SparkListenerSQLExecutionStart.class));
+      listener.onOtherEvent(mock(SparkListenerSQLExecutionEnd.class));
+
+      // No execution context is created from the stopped context.
+      verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
+      verify(contextFactory, never()).createSparkSQLExecutionContext(any());
+    }
+  }
+
   // Disabled bcz of no such method in Spark 4.x:
   // org.apache.spark.sql.SparkSession org.apache.spark.sql.execution.QueryExecution.sparkSession()
   @Test
