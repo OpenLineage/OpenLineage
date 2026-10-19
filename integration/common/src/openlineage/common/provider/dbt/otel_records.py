@@ -51,7 +51,6 @@ class OtelRecord:
     name: str
     trace_id: str | None
     span_id: str | None
-    parent_span_id: str | None
     attributes: dict[str, Any]
     start_time_unix_nano: int | None = None
     end_time_unix_nano: int | None = None
@@ -113,7 +112,6 @@ def parse_record(line: str) -> OtelRecord | None:
         name=event_type.rsplit(".", 1)[-1],
         trace_id=raw.get("trace_id"),
         span_id=raw.get("span_id"),
-        parent_span_id=raw.get("parent_span_id"),
         attributes=raw.get("attributes") or {},
         start_time_unix_nano=raw.get("start_time_unix_nano"),
         end_time_unix_nano=raw.get("end_time_unix_nano"),

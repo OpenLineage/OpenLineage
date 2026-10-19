@@ -69,10 +69,14 @@ def fake_parse(on_wait):
 
 
 def replay(processor, lines, return_code=1, manifest="parse_manifest.json") -> list[dict]:
-    """Run the processor over recorded telemetry instead of a dbt process."""
+    """Run the processor over recorded telemetry instead of a dbt process.
+
+    The pre-parse loads ``manifest``: a fixture name, a manifest, or None for a pre-parse that failed.
+    """
 
     def pre_parse():
-        processor._compiled_manifest = load_manifest(manifest)
+        if manifest is not None:
+            processor._compiled_manifest = load_manifest(manifest) if isinstance(manifest, str) else manifest
 
     def run_dbt():
         yield from lines
@@ -401,34 +405,21 @@ def _node_lines(unique_id="model.shop.orders", queries=(), error_log=None, outco
     return lines
 
 
-def _replay_without_manifest(lines, return_code=1):
-    processor = make_processor()
-    processor.adapter_type = None
-    manifest = {
-        "metadata": {},
-        "nodes": {
-            "model.shop.orders": {
-                "database": "PROD",
-                "schema": "ANALYTICS",
-                "alias": "orders",
-                "unique_id": "model.shop.orders",
-                "columns": {},
-                "config": {},
-            }
-        },
-        "sources": {},
-        "parent_map": {"model.shop.orders": []},
-    }
-    with mock.patch.object(
-        processor, "_run_pre_parse", lambda: setattr(processor, "_compiled_manifest", manifest)
-    ):
-
-        def run_dbt():
-            yield from lines
-            processor.dbt_command_return_code = return_code
-
-        with mock.patch.object(processor, "_run_dbt_command", run_dbt):
-            return by_job([as_dict(e) for e in processor.parse()])
+SHOP_MANIFEST = {
+    "metadata": {},
+    "nodes": {
+        "model.shop.orders": {
+            "database": "PROD",
+            "schema": "ANALYTICS",
+            "alias": "orders",
+            "unique_id": "model.shop.orders",
+            "columns": {},
+            "config": {},
+        }
+    },
+    "sources": {},
+    "parent_map": {"model.shop.orders": []},
+}
 
 
 def test_snowflake_query_id_and_adapter_error():
@@ -448,7 +439,8 @@ def test_snowflake_query_id_and_adapter_error():
             {"code": 2, "message": "NotFound"},
         ),
     ]
-    jobs = _replay_without_manifest(invocation() + _node_lines(queries=queries) + [invocation_end(code=2)])
+    lines = invocation() + _node_lines(queries=queries) + [invocation_end(code=2)]
+    jobs = by_job(replay(make_processor(), lines, manifest=SHOP_MANIFEST))
     first = jobs["model.shop.orders.sql.1"][-1]
     assert (
         first["run"]["facets"]["externalQuery"]["externalQueryId"] == "01c7afd1-0818-fcb0-0006-f74b0fa685d6"
@@ -471,9 +463,8 @@ def test_databricks_error_detail_comes_from_the_error_log_record():
         )
     ]
     body = "Database Error in model orders\n  [DIVIDE_BY_ZERO] Division by zero. SQLSTATE: 22012"
-    jobs = _replay_without_manifest(
-        invocation() + _node_lines(queries=queries, error_log=body) + [invocation_end(code=2)]
-    )
+    lines = invocation() + _node_lines(queries=queries, error_log=body) + [invocation_end(code=2)]
+    jobs = by_job(replay(make_processor(), lines, manifest=SHOP_MANIFEST))
     assert "errorMessage" not in jobs["model.shop.orders.sql.1"][-1]["run"]["facets"]
     assert jobs["model.shop.orders"][-1]["run"]["facets"]["errorMessage"]["message"] == body
 
@@ -497,7 +488,7 @@ def test_shared_otel_file_reads_only_this_invocation():
     processor = make_processor()
     processor.owns_otel_file = False
     with mock.patch.object(processor, "_resolve_otel_file", lambda: ("/shared/otel.jsonl", False)):
-        jobs = _replay_with(processor, lines)
+        jobs = by_job(replay(processor, lines, return_code=0, manifest=None))
     assert "model.shop.other" not in jobs
     assert [e["eventType"] for e in jobs["model.shop.orders"]] == ["START", "COMPLETE"]
     assert jobs["dbt-run-otel_jaffle"][0]["run"]["facets"]["dbt_run"]["invocation_id"] == TRACE_ID
@@ -507,24 +498,12 @@ def test_shared_otel_file_without_this_invocation_warns(caplog):
     lines = invocation(trace_id="fedcba9876543210fedcba9876543210", raw_command="/venv/bin/dbt run")
     processor = make_processor()
     with mock.patch.object(processor, "_resolve_otel_file", lambda: ("/shared/otel.jsonl", False)):
-        assert _replay_with(processor, lines) == {}
+        assert replay(processor, lines, return_code=0, manifest=None) == []
     assert "Found no telemetry for this dbt run in /shared/otel.jsonl" in caplog.text
 
 
-def _replay_with(processor, lines, return_code=0):
-    def run_dbt():
-        yield from lines
-        processor.dbt_command_return_code = return_code
-
-    with (
-        mock.patch.object(processor, "_run_pre_parse", lambda: None),
-        mock.patch.object(processor, "_run_dbt_command", run_dbt),
-    ):
-        return by_job([as_dict(e) for e in processor.parse()])
-
-
 def test_no_telemetry_and_failing_dbt_reports_a_failed_wrapper():
-    jobs = _replay_with(make_processor(), [], return_code=2)
+    jobs = by_job(replay(make_processor(), [], return_code=2, manifest=None))
     events = jobs["dbt-run-otel_jaffle"]
     assert [e["eventType"] for e in events] == ["START", "FAIL"]
     assert events[1]["run"]["facets"]["errorMessage"]["message"] == "dbt exited with code 2"
@@ -645,7 +624,7 @@ def test_temp_dir_is_removed(monkeypatch, tmp_path):
         seen.append(processor.temp_dir)
 
     with mock.patch.object(processor, "_prepare", prepare):
-        _replay_with(processor, fixture_lines())
+        replay(processor, fixture_lines())
     assert seen[0].startswith(str(tmp_path / "openlineage-dbt-"))
     assert not os.path.exists(seen[0])
     assert processor.temp_dir is None
@@ -736,15 +715,6 @@ def test_run_dbt_untouched_reports_a_missing_dbt_like_a_shell(tmp_path, caplog):
     assert "Could not run" in caplog.text
 
 
-def test_commands_without_lineage_run_dbt_untouched():
-    processor = make_processor(command=["dbt", "compile", "--profiles-dir", PROJECT_DIR])
-    with mock.patch("openlineage.common.provider.dbt.otel_processor.subprocess.Popen") as popen:
-        popen.return_value.__enter__.return_value.wait.return_value = 3
-        assert list(processor.parse()) == []
-    assert processor.dbt_command_return_code == 3
-    assert popen.call_args.args[0] == ["dbt", "compile", "--profiles-dir", PROJECT_DIR]
-
-
 def test_dbt_that_cannot_start_fails_the_run(tmp_path):
     missing_dbt = str(tmp_path / "missing" / "dbt")
     processor = make_processor(command=[missing_dbt, *BUILD_COMMAND[1:]])
@@ -754,11 +724,6 @@ def test_dbt_that_cannot_start_fails_the_run(tmp_path):
     events = jobs["dbt-run-otel_jaffle"]
     assert [e["eventType"] for e in events] == ["START", "FAIL"]
     assert events[1]["run"]["facets"]["errorMessage"]["message"] == "dbt exited with code 127"
-
-    untouched = make_processor(command=[missing_dbt, "compile"])
-    with pytest.raises(FileNotFoundError):
-        list(untouched.parse())
-    assert untouched.dbt_command_return_code == 127
 
 
 def test_dbt_still_runs_when_preparing_fails(tmp_path):
@@ -787,12 +752,6 @@ def test_nanos_to_iso():
     assert nanos_to_iso(1791833392710809493) == "2026-10-12T19:29:52.710809+00:00"
 
 
-@pytest.mark.parametrize("value, expected", [("v1", (1, None)), ("v2", (2, None)), ("2", (2, None))])
-def test_detect_engine_override(monkeypatch, value, expected):
-    monkeypatch.setenv("OPENLINEAGE_DBT_ENGINE", value)
-    assert detect_dbt_engine() == expected
-
-
 def _fake_dbt(tmp_path, content: bytes) -> str:
     path = tmp_path / "dbt"
     path.write_bytes(content)
@@ -801,7 +760,6 @@ def _fake_dbt(tmp_path, content: bytes) -> str:
 
 
 def test_detect_engine_native_binary(monkeypatch, tmp_path):
-    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE", raising=False)
     path = _fake_dbt(tmp_path, b"\x7fELF\x02\x01\x01" + b"\x00" * 64)
     with mock.patch("openlineage.common.provider.dbt.utils.shutil.which", return_value=path):
         assert detect_dbt_engine() == (2, None)
@@ -820,7 +778,6 @@ def test_detect_engine_native_binary(monkeypatch, tmp_path):
 )
 @pytest.mark.parametrize("probe_output, expected", [("2 2.0.8\n", (2, "2.0.8")), ("1\n", (1, None))])
 def test_detect_engine_python_script(monkeypatch, tmp_path, script, interpreter, probe_output, expected):
-    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE", raising=False)
     path = _fake_dbt(tmp_path, script)
     with (
         mock.patch("openlineage.common.provider.dbt.utils.shutil.which", return_value=path),
@@ -838,7 +795,6 @@ def test_detect_engine_python_script(monkeypatch, tmp_path, script, interpreter,
     [("dbt 2.0.8\n", (2, "2.0.8")), ("Core:\n  - installed: 1.11.2\n", (1, None))],
 )
 def test_detect_engine_falls_back_to_version_output(monkeypatch, tmp_path, output, expected):
-    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE", raising=False)
     path = _fake_dbt(tmp_path, b"MZ\x90\x00")  # neither a native Unix binary nor a script
     with (
         mock.patch("openlineage.common.provider.dbt.utils.shutil.which", return_value=path),
@@ -859,7 +815,6 @@ def test_detect_engine_falls_back_to_version_output(monkeypatch, tmp_path, outpu
     ],
 )
 def test_detect_engine_never_runs_the_probe_with_a_non_python_interpreter(monkeypatch, tmp_path, script):
-    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE", raising=False)
     path = _fake_dbt(tmp_path, script)
     with (
         mock.patch("openlineage.common.provider.dbt.utils.shutil.which", return_value=path),
@@ -887,7 +842,6 @@ def _dbt_in_this_environment(monkeypatch, tmp_path, *, importable=True, with_cor
     spec = importlib.machinery.ModuleSpec("dbt", None, is_package=True)
     spec.submodule_search_locations = [str(package)]
     utils = "openlineage.common.provider.dbt.utils"
-    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE", raising=False)
     monkeypatch.setattr(f"{utils}.shutil.which", lambda _: path)
     monkeypatch.setattr(f"{utils}.sysconfig.get_path", lambda name: str(scripts))
     monkeypatch.setattr(f"{utils}.importlib.util.find_spec", lambda name: spec if importable else None)
@@ -914,6 +868,5 @@ def test_detect_engine_inspects_dbt_when_this_environment_cannot_import_it(monke
 
 
 def test_detect_engine_without_dbt(monkeypatch):
-    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE", raising=False)
     with mock.patch("openlineage.common.provider.dbt.utils.shutil.which", return_value=None):
         assert detect_dbt_engine() == (1, None)

@@ -29,8 +29,6 @@ DBT_LOG_FILE_MAX_BYTES = str(5 * 1024 * 1024 * 1024)
 # dbt Core v2: skip the `dbt parse` that runs before the command (the flag is removed before dbt runs)
 OL_SKIP_PARSE_OPTION = "--ol-skip-parse"
 OL_SKIP_PARSE_ENV = "OPENLINEAGE_DBT_SKIP_PARSE"
-# "v1" or "v2": skips detecting which dbt engine the `dbt` executable runs
-DBT_ENGINE_ENV = "OPENLINEAGE_DBT_ENGINE"
 # where dbt Core v2 runs create their temporary directory; defaults to the system temp directory
 TEMP_DIR_ENV = "OPENLINEAGE_DBT_TEMP_DIR"
 
@@ -298,15 +296,8 @@ def detect_dbt_engine(executable: str = "dbt") -> tuple[int, str | None]:
 
     dbt Core v1's `dbt --version` looks up the latest releases on PyPI with a 1 s timeout per installed
     package and can't be told not to. So a `dbt` installed next to dbt-ol is read in this interpreter, any
-    other one is inspected, and `dbt --version` is only the fallback. ``OPENLINEAGE_DBT_ENGINE`` skips
-    detection.
+    other one is inspected, and `dbt --version` is only the fallback.
     """
-    override = os.getenv(DBT_ENGINE_ENV, "").strip().lower()
-    if override in ("v1", "1"):
-        return 1, None
-    if override in ("v2", "2"):
-        return 2, None
-
     path = shutil.which(executable)
     if path is None:
         return 1, None

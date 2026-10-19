@@ -20,16 +20,12 @@ import time
 from collections.abc import Generator, Iterator
 
 import attr
-from openlineage.client.event_v2 import Dataset, InputDataset, OutputDataset, RunEvent, RunState
-from openlineage.client.facet_v2 import (
-    data_quality_assertions_dataset as dq,
-)
+from openlineage.client.event_v2 import InputDataset, OutputDataset, RunEvent, RunState
 from openlineage.client.facet_v2 import (
     error_message_run,
     external_query_run,
     job_type_job,
     sql_job,
-    test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtNodeJobFacet, ParentRunMetadata
@@ -60,9 +56,8 @@ from openlineage.common.provider.dbt.otel_records import (
     nanos_to_iso,
     parse_record,
 )
-from openlineage.common.provider.dbt.processor import ModelNode, expected_from_test_config
+from openlineage.common.provider.dbt.processor import ModelNode
 from openlineage.common.provider.dbt.utils import (
-    HANDLED_COMMANDS,
     TEMP_DIR_ENV,
     generate_run_event,
     get_dbt_profiles_dir,
@@ -166,15 +161,9 @@ class DbtOtelProcessor(DbtLiveProcessor):
     def parse(self) -> Generator[RunEvent, None, None]:  # type: ignore[override]
         """Run dbt and yield OpenLineage events while it runs.
 
-        dbt always runs: when the command produces no lineage, or preparing fails, it runs untouched. Only a
-        Ctrl-C or SIGTERM during the preparation stops dbt-ol before dbt starts.
+        dbt always runs: when preparing fails, it runs untouched. Only a Ctrl-C or SIGTERM during the
+        preparation stops dbt-ol before dbt starts.
         """
-        if self.dbt_command not in HANDLED_COMMANDS:
-            self.logger.info(
-                "dbt command %s produces no lineage; running it without OpenLineage events", self.dbt_command
-            )
-            self.dbt_command_return_code = self._run_dbt_untouched()
-            return
         try:
             try:
                 with self._stop_on_sigterm():
@@ -193,7 +182,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
                     "OpenLineage could not prepare for this dbt run; running dbt without OpenLineage events"
                 )
                 self._remove_temp_dir()
-                self.dbt_command_return_code = self._run_dbt_untouched()
+                self.dbt_command_return_code = run_dbt_untouched(self.dbt_command_line, self.logger)
                 return
 
             lines = self._run_dbt_command()
@@ -307,18 +296,6 @@ class DbtOtelProcessor(DbtLiveProcessor):
         )
         self.logger.info("Parsed the dbt project in %.1f s", time.time() - started)
 
-    def _launch_dbt(self, env: dict[str, str] | None = None) -> subprocess.Popen:
-        try:
-            return subprocess.Popen(self.dbt_command_line, env=env, stdout=sys.stdout, stderr=sys.stderr)
-        except OSError as e:
-            # Exit like a shell would: 127 when dbt isn't found, 126 when it can't be executed.
-            self.dbt_command_return_code = 127 if isinstance(e, FileNotFoundError) else 126
-            raise
-
-    def _run_dbt_untouched(self) -> int:
-        with self._launch_dbt() as process:
-            return process.wait()
-
     def _run_dbt_command(self) -> Generator[str, None, None]:
         """Run dbt with telemetry going to the OTel file and yield the file's lines as dbt writes them."""
         assert self.otel_file_path is not None
@@ -329,7 +306,12 @@ class DbtOtelProcessor(DbtLiveProcessor):
         start_offset = os.path.getsize(self.otel_file_path) if os.path.exists(self.otel_file_path) else 0
 
         self._dbt_started_at = time.time()
-        process = self._launch_dbt(env)
+        try:
+            process = subprocess.Popen(self.dbt_command_line, env=env, stdout=sys.stdout, stderr=sys.stderr)
+        except OSError as e:
+            # Exit like a shell would: 127 when dbt isn't found, 126 when it can't be executed.
+            self.dbt_command_return_code = 127 if isinstance(e, FileNotFoundError) else 126
+            raise
         try:
             with self._forward_signals(process):
                 yield from self._tail(process, start_offset)
@@ -441,7 +423,9 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 and self._is_this_invocation(record)
             ):
                 self._trace_id = record.trace_id
-                yield self._wrapper_start_event(record)
+                yield self._wrapper_start_event(
+                    record.event_time(), record.attributes.get("invocation_id") or record.trace_id
+                )
             return
         if record.trace_id != self._trace_id:
             return
@@ -517,11 +501,11 @@ class DbtOtelProcessor(DbtLiveProcessor):
             run_facets["parent"] = self.parent_run_metadata.to_openlineage()
         return run_facets
 
-    def _wrapper_start_event(self, record: OtelRecord) -> RunEvent:
-        self._dbt_invocation_id = record.attributes.get("invocation_id") or record.trace_id
+    def _wrapper_start_event(self, event_time: str, invocation_id: str | None) -> RunEvent:
+        self._dbt_invocation_id = invocation_id
         start_event = generate_run_event(
             event_type=RunState.START,
-            event_time=record.event_time(),
+            event_time=event_time,
             run_id=str(generate_new_uuid()),
             job_name=self.job_name,
             job_namespace=self.job_namespace,
@@ -535,15 +519,17 @@ class DbtOtelProcessor(DbtLiveProcessor):
     def _wrapper_end_event(self) -> RunEvent:
         return_code = self.dbt_command_return_code
         run_facets = self._wrapper_run_facets()
-        if self._invocation_end is None:
+        end = self._invocation_end
+        if end is None and self._trace_id is not None:
+            # The invocation started but never ended: dbt was killed.
             event_type = RunState.ABORT
             event_time = nanos_to_iso(None)
         else:
-            event_time = self._invocation_end.event_time()
-            failed = self._invocation_end.status_code == STATUS_CODE_ERROR or return_code != 0
+            event_time = end.event_time() if end else nanos_to_iso(None)
+            failed = return_code != 0 or (end is not None and end.status_code == STATUS_CODE_ERROR)
             event_type = RunState.FAIL if failed else RunState.COMPLETE
             if failed:
-                message = self._invocation_end.status_message or f"dbt exited with code {return_code}"
+                message = (end.status_message if end else None) or f"dbt exited with code {return_code}"
                 run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                     message=message, programmingLanguage="sql"
                 )
@@ -754,7 +740,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 TEST_OUTCOME_WARNED,
             )
             if self._has_manifest_entry(unique_id):
-                inputs = self._test_inputs(unique_id, success, failing_rows) or inputs
+                inputs = self._test_datasets_with_assertion(unique_id, success, failing_rows) or inputs
                 if test_facet := self._singular_test_facet(unique_id, success, failing_rows):
                     run_facets["test"] = test_facet
 
@@ -780,42 +766,6 @@ class DbtOtelProcessor(DbtLiveProcessor):
         config = self._node_metadata(unique_id).get("config") or {}
         threshold = config.get("error_if") or "!= 0"
         return f"Got {_pluralize(failing_rows or 0, 'result')}, configured to fail if {threshold}"
-
-    def _test_inputs(self, unique_id: str, success: bool, failing_rows: int | None) -> list[InputDataset]:
-        assertion = self._get_assertion(unique_id, success, failing_rows)
-        if assertion is None:
-            return []
-        assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
-        return [
-            Dataset(  # type: ignore[misc]
-                name=attached.name,
-                namespace=attached.namespace,
-                facets={**attached.facets, "dataQualityAssertions": assertion_facet},  # type: ignore[dict-item]
-            )
-            for attached in self._get_attached_datasets(unique_id) or []
-        ]
-
-    def _singular_test_facet(
-        self, unique_id: str, success: bool, failing_rows: int | None
-    ) -> test_run.TestRunFacet | None:
-        # Generic tests are covered by the dataQualityAssertions facet on their dataset.
-        test_node = self._node_metadata(unique_id)
-        if test_node.get("test_metadata") is not None:
-            return None
-        config = test_node.get("config") or {}
-        severity = (config.get("severity") or "error").lower()
-        test_execution = test_run.TestExecution(
-            name=unique_id, status="pass" if success else "fail", severity=severity
-        )
-        test_execution.type = "singular"
-        test_execution.content = test_node.get("compiled_code") or test_node.get("raw_code")
-        test_execution.contentType = "sql"
-        if description := test_node.get("description"):
-            test_execution.description = description
-        if failing_rows is not None:
-            test_execution.actual = str(failing_rows)
-            test_execution.expected = expected_from_test_config(config, severity)
-        return test_run.TestRunFacet(tests=[test_execution])
 
     # ---------------------------------------------------------------- query events
 
@@ -926,22 +876,5 @@ class DbtOtelProcessor(DbtLiveProcessor):
                     self.otel_file_path,
                 )
                 return
-            self._invocation_end = OtelRecord(
-                record_type=SPAN_END,
-                name=INVOCATION,
-                trace_id=None,
-                span_id=None,
-                parent_span_id=None,
-                attributes={},
-                status={"code": STATUS_CODE_ERROR, "message": None},
-            )
-            start = OtelRecord(
-                record_type=SPAN_START,
-                name=INVOCATION,
-                trace_id=None,
-                span_id=None,
-                parent_span_id=None,
-                attributes={},
-            )
-            yield self._wrapper_start_event(start)
+            yield self._wrapper_start_event(nanos_to_iso(None), invocation_id=None)
         yield self._wrapper_end_event()

@@ -98,7 +98,6 @@ your `target/` directory.
 * `OPENLINEAGE_DBT_TEMP_DIR` sets where the temporary directory is created; by default it's the system
   temporary directory (`TMPDIR`). On large projects the telemetry file is about 23 KB per node, and the
   directory is removed when the run ends.
-* `OPENLINEAGE_DBT_ENGINE=v1|v2` skips detecting which dbt engine the `dbt` on `PATH` runs.
 
 Commands that produce no lineage, like `dbt deps` or `dbt debug`, run without OpenLineage events, and so
 does any command when `dbt-ol` can't read the project or profile. On Ctrl-C, dbt stops as usual and `dbt-ol`

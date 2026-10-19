@@ -10,19 +10,15 @@ import time
 from collections import defaultdict
 from collections.abc import Generator
 from functools import cached_property
-from typing import TextIO
+from typing import NamedTuple, TextIO
 
-from openlineage.client.event_v2 import Dataset, RunEvent, RunState
-from openlineage.client.facet_v2 import (
-    data_quality_assertions_dataset as dq,
-)
+from openlineage.client.event_v2 import RunEvent, RunState
 from openlineage.client.facet_v2 import (
     error_message_run,
     external_query_run,
     extraction_error_run,
     job_type_job,
     sql_job,
-    test_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import (
@@ -31,13 +27,11 @@ from openlineage.common.provider.dbt.facets import (
 )
 from openlineage.common.provider.dbt.live_events import (  # noqa: F401 - re-exported for compatibility
     DbtLiveProcessor,
-    ManifestIntegrityResult,
     handle_keyerror,
 )
 from openlineage.common.provider.dbt.processor import (
     ModelNode,
     UnsupportedDbtCommand,
-    expected_from_test_config,
 )
 from openlineage.common.provider.dbt.utils import (
     DBT_LOG_FILE_MAX_BYTES,
@@ -57,6 +51,28 @@ from openlineage.common.utils import (
     add_or_replace_command_line_option,
     get_from_nullable_chain,
 )
+
+
+class ManifestIntegrityResult(NamedTuple):
+    """Result of manifest integrity validation.
+
+    Attributes:
+        is_valid: bool indicating if manifest is valid
+        missing_nodes: list of node IDs that are missing
+        missing_parents: list of parent node IDs that are missing
+        missing_children: list of child node IDs that are missing
+        total_missing: total count of missing nodes
+        parent_map_size: total number of entries in parent_map
+        available_nodes: total number of available nodes (nodes + sources)
+    """
+
+    is_valid: bool
+    missing_nodes: list[str]
+    missing_parents: list[str]
+    missing_children: list[str]
+    total_missing: int
+    parent_map_size: int
+    available_nodes: int
 
 
 class DbtStructuredLogsProcessor(DbtLiveProcessor):
@@ -485,45 +501,15 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
 
         if resource_type == "test":
             success = node_status == "pass"
-            test_node = self.compiled_manifest.get("nodes", {}).get(node_unique_id, {})
-            config = test_node.get("config", {})
-            severity = (config.get("severity") or "error").lower()
-
             # Structured-log NodeFinished events name the count `num_failures`
             # (run_results.json calls the same value `failures`).
             num_failures = (event["data"].get("run_result") or {}).get("num_failures")
-
-            if assertion := self._get_assertion(node_unique_id, success, num_failures):
-                assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
-                inputs = []
-                for attached_dataset in self._get_attached_datasets(node_unique_id):
-                    inputs.append(
-                        Dataset(
-                            name=attached_dataset.name,
-                            namespace=attached_dataset.namespace,
-                            facets={**attached_dataset.facets, "dataQualityAssertions": assertion_facet},  # type: ignore[dict-item]
-                        )
-                    )
-
-            # Singular tests have no test_metadata (plain SQL files).
-            # Generic tests (not_null, unique, etc.) have test_metadata with a name and
-            # are covered by the DataQualityAssertions facet on the dataset above.
-            test_metadata = test_node.get("test_metadata")
-            if test_metadata is None:
-                test_obj = test_run.TestExecution(
-                    name=node_unique_id,
-                    status="pass" if success else "fail",
-                    severity=severity,
-                )
-                test_obj.type = "singular"
-                test_obj.content = test_node.get("compiled_code") or test_node.get("raw_code")
-                test_obj.contentType = "sql"
-                if desc := test_node.get("description"):
-                    test_obj.description = desc
-                if num_failures is not None:
-                    test_obj.actual = str(num_failures)
-                    test_obj.expected = expected_from_test_config(config, severity)
-                run_facets["test"] = test_run.TestRunFacet(tests=[test_obj])
+            if (
+                test_inputs := self._test_datasets_with_assertion(node_unique_id, success, num_failures)
+            ) is not None:
+                inputs = test_inputs
+            if test_facet := self._singular_test_facet(node_unique_id, success, num_failures):
+                run_facets["test"] = test_facet
 
         if extraction_error := self._get_extraction_error_facet(node_unique_id):
             run_facets["extractionError"] = extraction_error
@@ -806,3 +792,67 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
         self._dbt_log_file = open(self.dbt_log_file_path, encoding="utf-8")
         while self._dbt_log_file.readlines():
             pass
+
+    def _validate_manifest_integrity(self) -> ManifestIntegrityResult:
+        """
+        Performs metadata integrity checks on the compiled manifest.
+
+        Validates that all nodes referenced in parent_map exist in the manifest's
+        node definitions (either in 'nodes' or 'sources' sections).
+
+        Returns:
+            ManifestIntegrityResult: Validation results with integrity check information.
+        """
+        if not self._compiled_manifest:
+            return ManifestIntegrityResult(
+                is_valid=True,
+                missing_nodes=[],
+                missing_parents=[],
+                missing_children=[],
+                total_missing=0,
+                parent_map_size=0,
+                available_nodes=0,
+            )
+
+        parent_map = self._compiled_manifest.get("parent_map", {})
+        all_nodes = {**self._compiled_manifest.get("nodes", {}), **self._compiled_manifest.get("sources", {})}
+
+        missing_nodes = []
+        missing_parents = []
+        missing_children = []
+
+        for parent_node_id, child_node_ids in parent_map.items():
+            # Check that the parent node exists
+            if parent_node_id not in all_nodes:
+                missing_nodes.append(parent_node_id)
+                missing_parents.append(parent_node_id)
+
+            # Check that all child nodes exist
+            for child_node_id in child_node_ids:
+                if child_node_id not in all_nodes:
+                    missing_nodes.append(child_node_id)
+                    missing_children.append(child_node_id)
+
+        # Remove duplicates while preserving order
+        missing_nodes = list(dict.fromkeys(missing_nodes))
+        missing_parents = list(dict.fromkeys(missing_parents))
+        missing_children = list(dict.fromkeys(missing_children))
+
+        if missing_nodes:
+            self.logger.warning(
+                "Manifest integrity check failed: Found %d nodes in parent_map that don't exist "
+                "in manifest node definitions, printing first %d of them: %s",
+                len(missing_nodes),
+                min(10, len(missing_nodes)),
+                missing_nodes[: min(10, len(missing_nodes))],  # Log first 10 to avoid overwhelming logs
+            )
+
+        return ManifestIntegrityResult(
+            is_valid=len(missing_nodes) == 0,
+            missing_nodes=missing_nodes,
+            missing_parents=missing_parents,
+            missing_children=missing_children,
+            total_missing=len(missing_nodes),
+            parent_map_size=len(parent_map),
+            available_nodes=len(all_nodes),
+        )
