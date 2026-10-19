@@ -58,6 +58,36 @@ facets:
 
 Please be aware that this syntax is not working anymore.
 
+## Lineage compatibility
+
+The client can translate automatically between explicit lineage facets and the legacy
+`inputs`, `outputs` and `ColumnLineageDatasetFacet` representation. The default mode is `none`.
+
+Enable translation in both directions with:
+
+```yaml
+lineage:
+  compatibility: both
+```
+
+The available modes are:
+
+| Mode | Behaviour |
+|------|-----------|
+| `none` | Do not translate lineage. |
+| `legacy` | Generate missing legacy lineage from an explicit lineage facet. |
+| `modern` | Generate an explicit lineage facet from legacy lineage when outputs exist. |
+| `both` | Generate the missing representation without replacing producer-provided data. |
+
+Set the same option with `OPENLINEAGE__LINEAGE__COMPATIBILITY`, or override it when building a
+client:
+
+```java
+OpenLineageClient client = OpenLineageClient.builder()
+    .lineageCompatibility(LineageCompatibility.LEGACY)
+    .build();
+```
+
 ## Transports
 
 import Transports from './partials/java_transport.md';
