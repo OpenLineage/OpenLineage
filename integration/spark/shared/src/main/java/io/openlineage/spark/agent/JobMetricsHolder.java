@@ -40,6 +40,7 @@ public class JobMetricsHolder {
       "openlineage.spark.state.job_metrics.completed_jobs";
 
   private final Map<Integer, Set<Integer>> jobStages = new ConcurrentHashMap<>();
+  private final Map<Integer, Set<Integer>> stageOwners = new ConcurrentHashMap<>();
   private final Map<Integer, TaskMetricsAggregate> stageMetrics = new ConcurrentHashMap<>();
 
   /**
@@ -51,18 +52,27 @@ public class JobMetricsHolder {
   // Use singleton instance
   JobMetricsHolder() {}
 
-  public void addJobStages(int jobId, Set<Integer> stages) {
+  public synchronized void addJobStages(int jobId, Set<Integer> stages) {
     if (log.isDebugEnabled()) {
       log.debug(
           "JobMetricsHolder addStage for jobId {} stages {}", jobId, StringUtils.join(stages, ","));
     }
     if (stages != null) {
-      jobStages.put(jobId, stages);
+      Set<Integer> newStages = new HashSet<>(stages);
+      Set<Integer> previousStages = jobStages.put(jobId, newStages);
+      if (previousStages != null) {
+        previousStages.stream()
+            .filter(stage -> !newStages.contains(stage))
+            .forEach(stage -> removeStageOwner(jobId, stage));
+      }
+      newStages.forEach(
+          stage -> stageOwners.computeIfAbsent(stage, ignored -> new HashSet<>()).add(jobId));
     }
   }
 
-  public void addMetrics(int stage, TaskMetrics taskMetrics) {
-    if (taskMetrics != null) {
+  /** Adds task metrics only while at least one active job owns the stage. */
+  public synchronized void addMetrics(int stage, TaskMetrics taskMetrics) {
+    if (taskMetrics != null && stageOwners.containsKey(stage)) {
       if (stageMetrics.containsKey(stage)) {
         stageMetrics.get(stage).add(taskMetrics);
       } else {
@@ -74,7 +84,7 @@ public class JobMetricsHolder {
   /**
    * Aggregates a job's stage metrics and keeps the result available until {@link #cleanUp(int)}.
    */
-  public Map<Metric, Number> pollMetrics(int jobId) {
+  public synchronized Map<Metric, Number> pollMetrics(int jobId) {
     return completeJob(jobId);
   }
 
@@ -82,7 +92,7 @@ public class JobMetricsHolder {
    * Marks a job complete by releasing its stage state and retaining only its compact aggregate.
    * This supports the Spark ordering where JobEnd is followed by the final SQLExecutionEnd event.
    */
-  public Map<Metric, Number> completeJob(int jobId) {
+  public synchronized Map<Metric, Number> completeJob(int jobId) {
     Map<Metric, Number> completedMetrics =
         jobMetrics.computeIfAbsent(
             jobId,
@@ -112,27 +122,44 @@ public class JobMetricsHolder {
   private Map<Metric, Number> computeJobMetricsAndClearTemporaryResults(int jobId) {
     return Optional.ofNullable(jobStages.remove(jobId))
         .map(
-            stages ->
-                stages.stream()
-                    .map(stageMetrics::remove)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList()))
+            stages -> {
+              List<TaskMetricsAggregate> metrics =
+                  stages.stream()
+                      .map(stageMetrics::get)
+                      .filter(Objects::nonNull)
+                      .collect(Collectors.toList());
+              stages.forEach(stage -> removeStageOwner(jobId, stage));
+              return metrics;
+            })
         .filter(l -> !l.isEmpty())
         .map(this::mapMetrics)
         .orElse(Collections.emptyMap());
   }
 
-  public void cleanUp(int jobId) {
+  public synchronized void cleanUp(int jobId) {
     jobMetrics.remove(jobId);
     Set<Integer> stages = jobStages.remove(jobId);
     stages = stages == null ? Collections.emptySet() : stages;
-    stages.forEach(stageMetrics::remove);
+    stages.forEach(stage -> removeStageOwner(jobId, stage));
   }
 
-  public void cleanUpAll() {
+  public synchronized void cleanUpAll() {
     jobMetrics.clear();
     jobStages.clear();
+    stageOwners.clear();
     stageMetrics.clear();
+  }
+
+  private void removeStageOwner(int jobId, int stage) {
+    Set<Integer> owners = stageOwners.get(stage);
+    if (owners == null) {
+      return;
+    }
+    owners.remove(jobId);
+    if (owners.isEmpty()) {
+      stageOwners.remove(stage);
+      stageMetrics.remove(stage);
+    }
   }
 
   /** Registers low-cardinality gauges for every retained metrics map. */
@@ -199,6 +226,13 @@ public class JobMetricsHolder {
   @VisibleForTesting
   Map<Integer, Set<Integer>> getJobStages() {
     return jobStages.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> new HashSet<>(e.getValue())));
+  }
+
+  /** Visible for testing. Creates a deep copy of the active stage owners map. */
+  @VisibleForTesting
+  synchronized Map<Integer, Set<Integer>> getStageOwners() {
+    return stageOwners.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> new HashSet<>(e.getValue())));
   }
 

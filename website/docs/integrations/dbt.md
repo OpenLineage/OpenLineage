@@ -266,6 +266,8 @@ Right now, `openlineage-dbt` supports these dbt adapters:
 * `postgres`
 * `clickhouse`
 * `trino`
+* `presto`
+* `watsonx_presto` (IBM watsonx.data Presto)
 * `databricks`
 * `sqlserver`
 * `fabric`

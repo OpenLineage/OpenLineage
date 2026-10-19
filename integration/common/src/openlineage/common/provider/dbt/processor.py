@@ -67,6 +67,8 @@ class Adapter(Enum):
     ATHENA = "athena"
     DUCKDB = "duckdb"
     TRINO = "trino"
+    PRESTO = "presto"
+    WATSONX_PRESTO = "watsonx_presto"
     GLUE = "glue"
     CLICKHOUSE = "clickhouse"
     FABRIC = "fabric"
@@ -296,6 +298,7 @@ class DbtArtifactProcessor:
         return int(file.split(".")[0][1:])
 
     def parse_execution(self, context: DbtRunContext, nodes: dict) -> DbtEvents:
+        """Build START and COMPLETE/FAIL events for each model, source and snapshot run result."""
         events = DbtEvents()
         for run in context.run_results["results"]:
             name = run["unique_id"]
@@ -310,6 +313,11 @@ class DbtArtifactProcessor:
 
             output_node = nodes[name]
             started_at, completed_at = self.get_timings(run["timing"])
+
+            # dbt v2 reports a node that finished with a warning, such as an unchanged
+            # dynamic table that was skipped, as "warn". It did not fail, so treat it
+            # as a success rather than rejecting the status.
+            run_status = "success" if run["status"] == "warn" else run["status"]
 
             # (node_id, node) so exposures depending on an input can be looked up below.
             inputs: list[tuple[str, ModelNode]] = []
@@ -398,7 +406,7 @@ class DbtArtifactProcessor:
 
             # Attach exposures only for successful builds (FAIL emits no outputs, skipped
             # nodes are filtered above).
-            succeeded = run["status"] == "success"
+            succeeded = run_status == "success"
             input_datasets = []
             for node_id, input_node in inputs:
                 input_dataset = self.node_to_dataset(input_node, has_facets=True)
@@ -411,7 +419,7 @@ class DbtArtifactProcessor:
 
             events.add(
                 self.to_openlineage_events(
-                    run["status"],
+                    run_status,
                     started_at,
                     completed_at,
                     self.get_run(run_id=run_id, query_id=query_id, run_facets=run_facets),
@@ -1167,6 +1175,9 @@ class DbtArtifactProcessor:
             return f"clickhouse://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.TRINO:
             return f"trino://{profile['host']}:{profile['port']}"
+        elif self.adapter_type in (Adapter.PRESTO, Adapter.WATSONX_PRESTO):
+            # watsonx_presto is IBM's fork of dbt-presto: same prestodb client, same namespace
+            return f"presto://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.DATABRICKS:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:

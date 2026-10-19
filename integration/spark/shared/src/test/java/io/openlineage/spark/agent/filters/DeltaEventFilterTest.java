@@ -55,6 +55,8 @@ class DeltaEventFilterTest {
   public void setup() {
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.conf()).thenReturn(sparkConf);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(context.getCommandChildExecution()).thenReturn(Optional.empty());
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
   }
 
@@ -111,6 +113,32 @@ class DeltaEventFilterTest {
       when(SparkSession.active()).thenReturn(sparkSession);
       when(sparkConf.get("spark.sql.extensions", ""))
           .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+      when(queryExecution.optimizedPlan()).thenReturn(mock(Filter.class));
+
+      assertTrue(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testTopLevelFilterRootIsNotDisabledWhenRootIsKnown() {
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      when(sparkConf.get("spark.sql.extensions", ""))
+          .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+      when(context.getCommandChildExecution()).thenReturn(Optional.of(false));
+      Filter plan = mock(Filter.class);
+      when(plan.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+      when(queryExecution.optimizedPlan()).thenReturn(plan);
+
+      assertFalse(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testCommandChildFilterRootIsDisabled() {
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      when(sparkConf.get("spark.sql.extensions", ""))
+          .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+      when(context.getCommandChildExecution()).thenReturn(Optional.of(true));
       when(queryExecution.optimizedPlan()).thenReturn(mock(Filter.class));
 
       assertTrue(filter.isDisabled(sparkListenerEvent));

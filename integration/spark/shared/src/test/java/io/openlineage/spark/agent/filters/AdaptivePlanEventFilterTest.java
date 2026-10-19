@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -31,13 +32,14 @@ class AdaptivePlanEventFilterTest {
   @BeforeEach
   public void setup() {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
+    when(context.getCommandChildExecution()).thenReturn(Optional.empty());
     when(queryExecution.executedPlan()).thenReturn(sparkPlan);
   }
 
   @Test
   void testAdaptivePlanIsFiltered() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
       when(sparkPlan.nodeName()).thenReturn("AdaptiveSparkPlan");
       assertTrue(filter.isDisabled(sparkListenerEvent));
     }
@@ -46,7 +48,7 @@ class AdaptivePlanEventFilterTest {
   @Test
   void testWhenQueryExecutionIsNull() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
       when(context.getQueryExecution()).thenReturn(Optional.ofNullable(null));
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }
@@ -55,7 +57,7 @@ class AdaptivePlanEventFilterTest {
   @Test
   void testWhenSparkPlanIsNull() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
       when(queryExecution.executedPlan()).thenReturn(null);
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }
@@ -64,7 +66,7 @@ class AdaptivePlanEventFilterTest {
   @Test
   void testOtherSparkPlan() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(true);
+      when(EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
       when(sparkPlan.nodeName()).thenReturn("OtherSparkPlan");
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }
@@ -73,9 +75,39 @@ class AdaptivePlanEventFilterTest {
   @Test
   void testNonDeltaPlan() {
     try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDeltaPlan()).thenReturn(false);
+      when(EventFilterUtils.isDeltaPlan(context)).thenReturn(false);
       when(sparkPlan.nodeName()).thenReturn("AdaptiveSparkPlan");
       assertFalse(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testCommandChildIsFiltered() {
+    when(context.getCommandChildExecution()).thenReturn(Optional.of(true));
+    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
+      assertTrue(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testTopLevelAdaptivePlanIsNotFilteredWhenRootIsKnown() {
+    when(context.getCommandChildExecution()).thenReturn(Optional.of(false));
+    when(sparkPlan.nodeName()).thenReturn("AdaptiveSparkPlan");
+    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDeltaPlan(context)).thenReturn(true);
+      assertFalse(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testCommandChildIsFilteredOnDatabricksWithoutDeltaExtension() {
+    when(context.getCommandChildExecution()).thenReturn(Optional.of(true));
+    try (MockedStatic<EventFilterUtils> eventFilters = mockStatic(EventFilterUtils.class);
+        MockedStatic<DatabricksUtils> databricks = mockStatic(DatabricksUtils.class)) {
+      when(EventFilterUtils.isDeltaPlan(context)).thenReturn(false);
+      databricks.when(() -> DatabricksUtils.isRunOnDatabricksPlatform(context)).thenReturn(true);
+      assertTrue(filter.isDisabled(sparkListenerEvent));
     }
   }
 }

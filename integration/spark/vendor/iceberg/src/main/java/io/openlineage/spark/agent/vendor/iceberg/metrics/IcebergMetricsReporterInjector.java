@@ -58,15 +58,10 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
       return false;
     }
 
-    Optional<CatalogPlugin> catalog = getCatalog(plan);
-
-    // check if plan has a catalog field
-    if (!catalog.isPresent()) {
-      return false;
-    }
-
-    // check catalog class starts with org.apache.iceberg
-    return catalog.get().getClass().getCanonicalName().startsWith("org.apache.iceberg");
+    return getCatalog(plan)
+        .filter(
+            catalog -> catalog instanceof SparkCatalog || catalog instanceof SparkSessionCatalog)
+        .isPresent();
   }
 
   /**
@@ -135,30 +130,35 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
   @Override
   public List<D> apply(LogicalPlan x) {
     // hack catalog to inject OpenLineageMetricsReporter
-    Catalog icebergCatalog = getIcebergCatalog(x).get();
-    if (icebergCatalog instanceof CachingCatalog) {
-      // get root catalog of a caching catalog
-      Field catalogField = FieldUtils.getField(icebergCatalog.getClass(), "catalog", true);
-      try {
-        Catalog rootCatalog = (Catalog) catalogField.get(icebergCatalog);
-        if (rootCatalog == null) {
-          log.info("Could not inject metrics reporter");
-          return Collections.emptyList();
-        }
+    Optional<Catalog> catalog = getCatalog(x).flatMap(this::getIcebergCatalog);
+    if (!catalog.isPresent()) {
+      return Collections.emptyList();
+    }
 
-        CatalogMetricsReporterHolder.register(context, rootCatalog);
-        return Collections.emptyList();
+    Catalog rootCatalog = catalog.get();
+    // SparkCatalog wraps the Iceberg catalog in a CachingCatalog only when caching is enabled
+    if (rootCatalog instanceof CachingCatalog) {
+      // get root catalog of a caching catalog
+      Field catalogField = FieldUtils.getField(rootCatalog.getClass(), "catalog", true);
+      try {
+        rootCatalog = (Catalog) catalogField.get(rootCatalog);
       } catch (IllegalAccessException e) {
         // do nothing
         log.info("Could not inject metrics reporter", e);
+        return Collections.emptyList();
       }
     }
 
+    if (rootCatalog == null) {
+      log.info("Could not inject metrics reporter");
+      return Collections.emptyList();
+    }
+
+    CatalogMetricsReporterHolder.register(context, rootCatalog);
     return Collections.emptyList();
   }
 
-  private Optional<Catalog> getIcebergCatalog(LogicalPlan x) {
-    CatalogPlugin catalog = getCatalog(x).get();
+  private Optional<Catalog> getIcebergCatalog(CatalogPlugin catalog) {
     if (catalog instanceof SparkCatalog) {
       return Optional.ofNullable(((SparkCatalog) catalog).icebergCatalog());
     }

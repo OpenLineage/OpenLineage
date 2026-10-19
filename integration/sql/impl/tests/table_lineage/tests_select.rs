@@ -216,6 +216,150 @@ fn select_into() {
 }
 
 #[test]
+fn select_into_qualified_quoted_table() {
+    for (sql, dialect, target) in [
+        (
+            "SELECT * INTO \"my_schema\".\"my_table\" FROM source",
+            "postgres",
+            "\"my_schema\".\"my_table\"",
+        ),
+        (
+            "SELECT * INTO [my_db].[my_schema].[my_table] FROM source",
+            "mssql",
+            "[my_db].[my_schema].[my_table]",
+        ),
+        (
+            "SELECT * INTO \"@my_table\" FROM source",
+            "postgres",
+            "\"@my_table\"",
+        ),
+    ] {
+        let output = test_sql_dialect(sql, dialect).unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["source"]),
+                out_tables: tables(vec![target]),
+            },
+        );
+    }
+}
+
+#[test]
+fn select_into_multiple_targets() {
+    let output = test_sql_dialect(
+        "SELECT a, b INTO schema0.table0, table1 FROM source",
+        "generic",
+    )
+    .unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["source"]),
+            out_tables: tables(vec!["table1", "schema0.table0"]),
+        },
+    );
+}
+
+#[test]
+fn select_into_variables() {
+    for (sql, dialect) in [
+        ("SELECT a, b INTO @x, @y FROM source", "mysql"),
+        ("SELECT a, b INTO @x, @y FROM source", "generic"),
+        ("SELECT a, b INTO x, y FROM source", "mysql"),
+        ("SELECT a, b INTO :x, :y FROM source", "generic"),
+    ] {
+        let output = test_sql_dialect(sql, dialect).unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["source"]),
+                out_tables: vec![],
+            },
+        );
+    }
+}
+
+#[test]
+fn select_inline_aggregate_filter_subquery() {
+    let output =
+        test_sql("SELECT COUNT(* WHERE id IN (SELECT id FROM paid_orders)) FROM orders").unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["orders", "paid_orders"]),
+            out_tables: vec![],
+        },
+    );
+}
+
+#[test]
+fn select_like_escape_subquery() {
+    for operator in ["LIKE", "ILIKE", "SIMILAR TO"] {
+        let output = test_sql(&format!(
+            "SELECT 'a' {operator} 'a' ESCAPE (SELECT escape_char FROM escape_rules)"
+        ))
+        .unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["escape_rules"]),
+                out_tables: vec![],
+            },
+        );
+    }
+}
+
+#[test]
+fn select_is_json_subquery() {
+    let output = test_sql("SELECT (SELECT payload FROM docs) IS JSON AS valid").unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["docs"]),
+            out_tables: vec![],
+        },
+    );
+}
+
+#[test]
+fn select_redshift_unpivot_expression() {
+    for sql in [
+        "SELECT * FROM orders o, UNPIVOT o.payload AS val AT attr",
+        "SELECT * FROM UNPIVOT (SELECT payload FROM orders) AS val",
+    ] {
+        let output = test_sql_dialect(sql, "redshift").unwrap();
+        assert!(output.errors.is_empty());
+        assert_eq!(
+            output.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["orders"]),
+                out_tables: vec![],
+            },
+        );
+    }
+}
+
+#[test]
+fn select_databricks_from_first() {
+    let output = test_sql_dialect("FROM orders SELECT id", "databricks").unwrap();
+    assert!(output.errors.is_empty());
+    assert_eq!(
+        output.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["orders"]),
+            out_tables: vec![],
+        },
+    );
+}
+
+#[test]
 fn select_redshift() {
     assert_eq!(
         test_sql_dialect("SELECT [col1] FROM [test_schema].[test_table]", "redshift")
@@ -250,6 +394,124 @@ fn select_with_table_generator() {
             FROM TABLE(GENERATOR(ROWCOUNT => (12 * 6)))
             JOIN test_schema.test_table ON test_table.d = row_number()
             "
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_generate_array() {
+    // Regression test for the panic reported at
+    // https://github.com/OpenLineage/OpenLineage/issues/1358 for Snowflake's
+    // TABLE(GENERATOR(...)), applied to BigQuery's UNNEST(GENERATE_ARRAY(...))
+    // table factor, which was still unhandled: `TableFactor::UNNEST` fell
+    // through to the catch-all `Err` arm in `Visit for TableFactor`.
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT test_table.col0, n
+            FROM test_schema.test_table
+            CROSS JOIN UNNEST(GENERATE_ARRAY(1, 1000)) AS n
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_literal_array() {
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM UNNEST([1, 2, 3]) AS n", "bigquery")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![],
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_with_offset() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT test_table.col0, n, offset
+            FROM test_schema.test_table
+            CROSS JOIN UNNEST(GENERATE_ARRAY(1, 1000)) AS n WITH OFFSET AS offset
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unnest_array_subquery() {
+    // UNNEST's own array expression can reference a real table (e.g. a subquery
+    // wrapped in ARRAY(...)) - that shouldn't be silently discarded.
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT n FROM UNNEST(ARRAY(SELECT id FROM source_table)) AS n",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["source_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unpivot() {
+    // Regression test for the same TableFactor::Unpivot gap as UNNEST above -
+    // this variant had no arm and fell through to the catch-all `Err`.
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT *
+            FROM test_schema.test_table
+            UNPIVOT(sales FOR quarter IN (q1_sales, q2_sales, q3_sales))
+            ",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_bigquery_unpivot_with_alias() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+            SELECT unpivoted.quarter, unpivoted.sales
+            FROM test_schema.test_table
+            UNPIVOT(sales FOR quarter IN (q1_sales AS 'Q1', q2_sales AS 'Q2')) AS unpivoted
+            ",
+            "bigquery"
         )
         .unwrap()
         .table_lineage,

@@ -28,6 +28,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.write.BatchWrite;
 import org.apache.spark.sql.connector.write.streaming.StreamingWrite;
+import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.WriteToDataSourceV2;
 import org.apache.spark.sql.execution.streaming.sources.MicroBatchWrite;
@@ -41,8 +42,10 @@ class WriteToDataSourceV2DatasetBuilderTest {
 
   private final SparkOpenLineageExtensionVisitorWrapper extensionVisitor =
       mock(SparkOpenLineageExtensionVisitorWrapper.class);
+  private final QueryExecution queryExecution = mock(QueryExecution.class);
   private final OpenLineageContext context =
       OpenLineageContext.builder()
+          .queryExecution(queryExecution)
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
           .meterRegistry(new SimpleMeterRegistry())
           .openLineageConfig(new SparkOpenLineageConfig())
@@ -58,6 +61,9 @@ class WriteToDataSourceV2DatasetBuilderTest {
   @BeforeEach
   void setUp() {
     write = mock(WriteToDataSourceV2.class);
+    // The delegated relation is a write target, not the read-only query root.
+    when(queryExecution.optimizedPlan()).thenReturn(write);
+    when(queryExecution.analyzed()).thenReturn(write);
     microBatchWrite = mock(MicroBatchWrite.class);
     when(write.batchWrite()).thenReturn(microBatchWrite);
     when(microBatchWrite.writeSupport()).thenReturn(mock(StreamingWrite.class));

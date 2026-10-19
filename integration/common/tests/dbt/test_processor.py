@@ -163,6 +163,22 @@ def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
     )
 
 
+def test_presto_namespace(dbt_artifact_processor):
+    dbt_artifact_processor.adapter_type = Adapter.PRESTO
+    dbt_artifact_processor.extract_dataset_namespace({"host": "presto.example.com", "port": 8443})
+
+    assert dbt_artifact_processor.dataset_namespace == "presto://presto.example.com:8443"
+
+
+def test_watsonx_presto_namespace(dbt_artifact_processor):
+    # IBM's dbt-watsonx-presto is a fork of dbt-presto over the same prestodb client,
+    # so it shares presto's namespace scheme.
+    dbt_artifact_processor.adapter_type = Adapter.WATSONX_PRESTO
+    dbt_artifact_processor.extract_dataset_namespace({"host": "watsonx.example.com", "port": 443})
+
+    assert dbt_artifact_processor.dataset_namespace == "presto://watsonx.example.com:443"
+
+
 @pytest.mark.parametrize(
     "profile, expected",
     [
@@ -331,6 +347,23 @@ def test_extract_adapter_type_fabric(dbt_artifact_processor):
     # `Adapter[type.upper()]` resolves it without NotImplementedError.
     dbt_artifact_processor.extract_adapter_type({"type": "fabric"})
     assert dbt_artifact_processor.adapter_type == Adapter.FABRIC
+
+
+@pytest.mark.parametrize(
+    "profile_type, expected",
+    [
+        ("presto", Adapter.PRESTO),
+        # dbt-watsonx-presto registers itself as `watsonx_presto`, not `presto`.
+        ("watsonx_presto", Adapter.WATSONX_PRESTO),
+    ],
+)
+def test_extract_adapter_type_presto_family(dbt_artifact_processor, profile_type, expected):
+    profile = {"type": profile_type, "host": "presto.example.com", "port": 443}
+    dbt_artifact_processor.extract_adapter_type(profile)
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    assert dbt_artifact_processor.adapter_type == expected
+    assert dbt_artifact_processor.dataset_namespace == "presto://presto.example.com:443"
 
 
 class TestParseSeverity:
@@ -1005,3 +1038,74 @@ class TestDbtMetaTags:
     def test_tags_and_meta_combined(self, dbt_artifact_processor):
         facet = dbt_artifact_processor._build_tags_run_facet(["core"], {"tier": "gold"})
         assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "DBT_META")]
+
+
+class TestModelRunStatus:
+    """Model runs reported as ``warn`` emit COMPLETE, matching the structured-logs path.
+
+    Regression: dbt v2 reports an unchanged Snowflake dynamic table (a no-op with
+    adapter code ``skip``) as ``warn``, which ``to_openlineage_events`` rejected with
+    ValueError."""
+
+    @pytest.fixture
+    def processor(self):
+        """Processor configured for a ``dbt run`` against Snowflake."""
+        p = DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="ns",
+        )
+        p.manifest_version = 12
+        p.command = "run"
+        p.dataset_namespace = "snowflake://acct"
+        p.dbt_run_run_facet = MagicMock(return_value={})
+        return p
+
+    @staticmethod
+    def _ctx(status):
+        """Run context with one model whose run result has the given status."""
+        manifest = {
+            "nodes": {
+                "model.project.my_model": {
+                    "database": "DB",
+                    "schema": "SCH",
+                    "alias": "my_model",
+                    "unique_id": "model.project.my_model",
+                    "resource_type": "model",
+                    "columns": {},
+                },
+            },
+            "sources": {},
+            "exposures": {},
+            "parent_map": {"model.project.my_model": []},
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "model.project.my_model",
+                    "status": status,
+                    "timing": [],
+                    "adapter_response": {"code": "skip", "rows_affected": -1},
+                }
+            ]
+        }
+        return DbtRunContext(manifest=manifest, run_results=run_results, catalog={})
+
+    @pytest.mark.parametrize("status", ["success", "warn"])
+    def test_succeeded_model_emits_complete(self, processor, status):
+        """``success`` and ``warn`` both emit START and COMPLETE, with no FAIL."""
+        context = self._ctx(status)
+        processor.manifest = context.manifest
+        events = processor.parse_execution(context, context.manifest["nodes"])
+
+        assert len(events.starts) == 1
+        assert len(events.completes) == 1
+        assert not events.fails
+
+    def test_error_model_emits_fail(self, processor):
+        """``error`` still emits FAIL, so the warn mapping does not hide real failures."""
+        context = self._ctx("error")
+        processor.manifest = context.manifest
+        events = processor.parse_execution(context, context.manifest["nodes"])
+
+        assert len(events.fails) == 1
+        assert not events.completes

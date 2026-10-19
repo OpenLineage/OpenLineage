@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-1/DataQualityMetricsDatasetFacet.json",
   "$defs": {
     "DataQualityMetricsDatasetFacet": {
       "allOf": [
@@ -27,6 +27,12 @@
               "description": "The last time the dataset was changed",
               "type": "string",
               "format": "date-time"
+            },
+            "captureDate": {
+              "description": "An ISO-8601 timestamp representing the point in time at which these metrics were captured. All metrics in this facet (e.g. rowCount, columnMetrics) reflect the dataset state as of this time.",
+              "type": "string",
+              "format": "date-time",
+              "example": "2020-12-17T03:00:00.000Z"
             },
             "columnMetrics": {
               "description": "The property key is the column name",

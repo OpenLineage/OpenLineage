@@ -25,6 +25,8 @@ Right now, `openlineage-dbt` supports only these dbt adapters:
 * `postgres`
 * `clickhouse`
 * `trino`
+* `presto`
+* `watsonx_presto` (IBM watsonx.data Presto)
 * `databricks`
 * `sqlserver`
 * `fabric` (Microsoft Fabric Warehouse)
@@ -35,6 +37,13 @@ Right now, `openlineage-dbt` supports only these dbt adapters:
 
 ```bash
 $ pip3 install openlineage-dbt
+```
+
+`openlineage-dbt` doesn't install dbt. It runs the `dbt` executable it finds on `PATH`, so install dbt the way
+you normally would, for example an adapter package for dbt Core v1:
+
+```bash
+$ pip3 install dbt-snowflake openlineage-dbt
 ```
 
 To install from source, run:

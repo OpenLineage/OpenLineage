@@ -631,59 +631,89 @@ class SparkReadWriteIntegTest {
     String sparkVersion = System.getProperty(SPARK_VERSION);
     String scalaBinaryVersion = System.getProperty("scala.binary.version");
 
-    String aDatasetName =
-        String.format("rdd_a_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
-    String bDatasetName =
-        String.format("rdd_b_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
-    String cDatasetName =
-        String.format("rdd_c_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
-
+    List<String> datasetNames = createExternalRDDDatasetNames(sparkVersion, scalaBinaryVersion);
+    String aDatasetName = datasetNames.get(0);
+    String bDatasetName = datasetNames.get(1);
+    String cDatasetName = datasetNames.get(2);
     String bucketUrl = System.getenv("S3_BUCKET");
+    URI bucketUri = new URI(bucketUrl);
 
-    Dataset<Row> dataset =
-        spark.createDataFrame(
-            ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
-            new StructType(
-                new StructField[] {
-                  new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
-                  new StructField("b", LongType$.MODULE$, false, Metadata.empty())
-                }));
+    try {
+      Dataset<Row> dataset =
+          spark.createDataFrame(
+              ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
+              new StructType(
+                  new StructField[] {
+                    new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                    new StructField("b", LongType$.MODULE$, false, Metadata.empty())
+                  }));
 
-    dataset.write().mode("overwrite").parquet(bucketUrl + "/" + aDatasetName);
-    dataset.write().mode("overwrite").parquet(bucketUrl + "/" + bDatasetName);
+      dataset.write().mode("overwrite").parquet(bucketUrl + "/" + aDatasetName);
+      dataset.write().mode("overwrite").parquet(bucketUrl + "/" + bDatasetName);
 
-    JavaRDD<Row> rddA = spark.read().parquet(bucketUrl + "/" + aDatasetName).toJavaRDD();
-    JavaRDD<Row> rddB = spark.read().parquet(bucketUrl + "/" + bDatasetName).toJavaRDD();
+      JavaRDD<Row> rddA = spark.read().parquet(bucketUrl + "/" + aDatasetName).toJavaRDD();
+      JavaRDD<Row> rddB = spark.read().parquet(bucketUrl + "/" + bDatasetName).toJavaRDD();
 
-    FileSystem.get(new URI(bucketUrl), spark.sparkContext().hadoopConfiguration())
-        .delete(new org.apache.hadoop.fs.Path(bucketUrl + "/" + cDatasetName), true);
+      rddA.union(rddB)
+          .map(f -> f.getLong(0) + f.getLong(1))
+          .saveAsTextFile(bucketUrl + "/" + cDatasetName);
 
-    rddA.union(rddB)
-        .map(f -> f.getLong(0) + f.getLong(1))
-        .saveAsTextFile(bucketUrl + "/" + cDatasetName);
+      // wait for event processing to complete
+      StaticExecutionContextFactory.waitForExecutionEnd();
+      ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+          ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    // wait for event processing to complete
-    StaticExecutionContextFactory.waitForExecutionEnd();
-    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
-        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+      Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1))
+          .emit(lineageEvent.capture());
+      List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+      OpenLineage.RunEvent lastEvent = events.get(events.size() - 1);
 
-    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
-    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
-    OpenLineage.RunEvent lastEvent = events.get(events.size() - 1);
+      String namespace = bucketUrl.replaceFirst("^s3a://", "s3://");
 
-    String namespace = bucketUrl.replaceFirst("^s3a://", "s3://");
+      assertThat(lastEvent.getOutputs())
+          .hasSize(1)
+          .first()
+          .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
+          .hasFieldOrPropertyWithValue(NAME, cDatasetName);
 
-    assertThat(lastEvent.getOutputs())
-        .hasSize(1)
-        .first()
-        .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
-        .hasFieldOrPropertyWithValue(NAME, cDatasetName);
+      assertThat(
+              lastEvent.getInputs().stream().filter(d -> d.getName().contains("rdd_b")).findAny())
+          .isPresent()
+          .get()
+          .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
+          .hasFieldOrPropertyWithValue(NAME, bDatasetName);
+    } finally {
+      try {
+        cleanupExternalRDDTestData(
+            FileSystem.get(bucketUri, spark.sparkContext().hadoopConfiguration()),
+            bucketUrl,
+            datasetNames);
+      } catch (IOException e) {
+        log.warn("Could not open the filesystem to clean up external RDD test data", e);
+      }
+    }
+  }
 
-    assertThat(lastEvent.getInputs().stream().filter(d -> d.getName().contains("rdd_b")).findAny())
-        .isPresent()
-        .get()
-        .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
-        .hasFieldOrPropertyWithValue(NAME, bDatasetName);
+  static List<String> createExternalRDDDatasetNames(
+      String sparkVersion, String scalaBinaryVersion) {
+    // Each invocation, including retries, must own its paths in the shared CI bucket.
+    String suffix =
+        String.format("%s_%s_%s", sparkVersion, scalaBinaryVersion, UUID.randomUUID())
+            .replace(".", "_");
+    return Arrays.asList("rdd_a_" + suffix, "rdd_b_" + suffix, "rdd_c_" + suffix);
+  }
+
+  static void cleanupExternalRDDTestData(
+      FileSystem fileSystem, String bucketUrl, List<String> datasetNames) {
+    for (String datasetName : datasetNames) {
+      org.apache.hadoop.fs.Path path = new org.apache.hadoop.fs.Path(bucketUrl + "/" + datasetName);
+      try {
+        fileSystem.delete(path, true);
+      } catch (IOException e) {
+        // Cleanup must not hide a failed write, read, or lineage assertion.
+        log.warn("Could not clean up external RDD test data at {}", path, e);
+      }
+    }
   }
 
   @Test

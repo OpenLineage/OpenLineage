@@ -301,6 +301,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if get_node_unique_id(dbt_event) is None:
             return None
 
+        # Exposures describe downstream consumers, not executable jobs. Their metadata
+        # is attached to datasets through the dbt_exposures facet instead.
+        if get_from_nullable_chain(dbt_event, ["data", "node_info", "resource_type"]) == "exposure":
+            return None
+
         ol_event = None
 
         if dbt_event_name == "NodeStart":

@@ -140,13 +140,30 @@ def get_git_branch(git_dir: Path) -> str | None:
 def get_ci_pr_number() -> str | None:
     """Detect the PR/MR number from CI platform environment variables.
 
-    Supports GitHub Actions (GITHUB_REF) and GitLab CI (CI_MERGE_REQUEST_IID).
+    Supports GitHub Actions (GITHUB_REF), GitLab CI (CI_MERGE_REQUEST_IID),
+    Bitbucket Pipelines (BITBUCKET_PR_ID) and Azure Pipelines
+    (SYSTEM_PULLREQUEST_PULLREQUESTNUMBER / SYSTEM_PULLREQUEST_PULLREQUESTID).
     Returns None if not running in a CI context or no PR is associated.
     """
     # GitLab CI: set automatically for merge request pipelines
     gitlab_mr_iid = os.getenv("CI_MERGE_REQUEST_IID")
     if gitlab_mr_iid:
         return gitlab_mr_iid
+
+    # Bitbucket Pipelines: set only for pull request pipelines
+    bitbucket_pr_id = os.getenv("BITBUCKET_PR_ID")
+    if bitbucket_pr_id:
+        return bitbucket_pr_id
+
+    # Azure Pipelines, GitHub-hosted repo: the visible number differs from the ID
+    azure_pr_number = os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTNUMBER")
+    if azure_pr_number:
+        return azure_pr_number
+
+    # Azure Pipelines, Azure Repos: the ID is the visible number
+    azure_pr_id = os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTID")
+    if azure_pr_id:
+        return azure_pr_id
 
     # GitHub Actions: GITHUB_REF can be "refs/pull/{number}/merge" or
     # "refs/pull/{number}/head" for pull request refs.

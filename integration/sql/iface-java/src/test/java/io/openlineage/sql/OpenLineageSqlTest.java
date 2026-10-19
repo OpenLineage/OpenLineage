@@ -6,6 +6,7 @@
 package io.openlineage.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +17,27 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 class OpenLineageSqlTest {
+  @Test
+  void inlineAggregateFilter() {
+    SqlMeta output =
+        OpenLineageSql.parse(
+                Arrays.asList("SELECT COUNT(* WHERE status = 'paid') AS paid_orders FROM orders"))
+            .get();
+    assertEquals(
+        Arrays.asList(columnLineage("paid_orders", "orders", "status")), output.columnLineage());
+    assertEquals(Collections.emptyList(), output.errors());
+  }
+
+  @Test
+  void unsupportedPipeQuery() {
+    assertFalse(
+        OpenLineageSql.parse(
+                Arrays.asList(
+                    "FROM orders |> JOIN customers ON orders.customer_id = customers.id |> SELECT orders.id"),
+                "databricks")
+            .isPresent());
+  }
+
   @Test
   void basicParse() {
     SqlMeta output = OpenLineageSql.parse(Arrays.asList("SELECT * FROM test")).get();
@@ -167,7 +189,10 @@ class OpenLineageSqlTest {
     assertEquals(1, output.errors().size());
     assertEquals(
         Collections.singletonList(
-            new ExtractionError(0, "Expected: an SQL statement, found: NOT at Line: 1, Column: 1", "NOT A STATEMENT")),
+            new ExtractionError(
+                0,
+                "Expected: an SQL statement, found: NOT at Line: 1, Column: 1",
+                "NOT A STATEMENT")),
         output.errors());
   }
 
@@ -182,9 +207,14 @@ class OpenLineageSqlTest {
     assertEquals(2, output.errors().size());
     assertEquals(
         Arrays.asList(
-            new ExtractionError(0, "Expected: an SQL statement, found: NOT at Line: 1, Column: 1", "NOT A STATEMENT"),
             new ExtractionError(
-                2, "Expected: an SQL statement, found: ANOTHER at Line: 1, Column: 1", "ANOTHER NON STATEMENT")),
+                0,
+                "Expected: an SQL statement, found: NOT at Line: 1, Column: 1",
+                "NOT A STATEMENT"),
+            new ExtractionError(
+                2,
+                "Expected: an SQL statement, found: ANOTHER at Line: 1, Column: 1",
+                "ANOTHER NON STATEMENT")),
         output.errors());
   }
 
