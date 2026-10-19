@@ -22,12 +22,17 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -227,20 +232,13 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     // As a result, there is no reliable way to bypass the entire mechanism, even if
     // no OpenLineageExtensionProvider implementations are present.
 
-    List<ClassLoader> availableClassloaders =
+    List<ClassLoader> contextClassloaders =
         Thread.getAllStackTraces().keySet().stream()
             .map(Thread::getContextClassLoader)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
-    // Mutates the state of available classloader(s)
-    loadProviderToAvailableClassloaders(availableClassloaders);
-    ExtensionClassloader classLoader = new ExtensionClassloader(availableClassloaders);
-
-    ServiceLoader<OpenLineageExtensionProvider> serviceLoader =
-        ServiceLoader.load(OpenLineageExtensionProvider.class, classLoader);
-
-    for (OpenLineageExtensionProvider service : serviceLoader) {
+    for (OpenLineageExtensionProvider service : loadProviders(contextClassloaders)) {
       String className = service.getVisitorClassName();
       if (testExtensionProvider == null) {
         final Object classInstance = getClassInstance(className);
@@ -252,6 +250,48 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
       }
     }
     return objects;
+  }
+
+  /**
+   * Loads extension providers visible to the classloader of this class or to any of the given
+   * context classloaders.
+   *
+   * <p>The classloader of this class is tried first, so a provider it can see always implements its
+   * {@link OpenLineageExtensionProvider}. Another classloader may hold its own copy of the
+   * interface (for example Hive's isolated metastore client loader), and a provider defined there
+   * would not be a subtype of it. Such providers are skipped instead of failing all of them.
+   */
+  static List<OpenLineageExtensionProvider> loadProviders(
+      Collection<ClassLoader> contextClassloaders) throws IOException {
+    Set<ClassLoader> orderedClassloaders = new LinkedHashSet<>();
+    orderedClassloaders.add(OpenLineageExtensionProvider.class.getClassLoader());
+    orderedClassloaders.addAll(contextClassloaders);
+    List<ClassLoader> availableClassloaders = new ArrayList<>(orderedClassloaders);
+
+    // Mutates the state of available classloader(s)
+    loadProviderToAvailableClassloaders(availableClassloaders);
+    ExtensionClassloader classLoader = new ExtensionClassloader(availableClassloaders);
+
+    Iterator<OpenLineageExtensionProvider> iterator =
+        ServiceLoader.load(OpenLineageExtensionProvider.class, classLoader).iterator();
+    List<OpenLineageExtensionProvider> providers = new ArrayList<>();
+    while (hasNextProvider(iterator)) {
+      try {
+        providers.add(iterator.next());
+      } catch (ServiceConfigurationError e) {
+        log.warn("Skipping OpenLineageExtensionProvider which failed to load", e);
+      }
+    }
+    return providers;
+  }
+
+  private static boolean hasNextProvider(Iterator<OpenLineageExtensionProvider> iterator) {
+    try {
+      return iterator.hasNext();
+    } catch (ServiceConfigurationError e) {
+      log.warn("Failed to look up further OpenLineageExtensionProvider implementations", e);
+      return false;
+    }
   }
 
   private static void loadProviderToAvailableClassloaders(List<ClassLoader> classloaders)
