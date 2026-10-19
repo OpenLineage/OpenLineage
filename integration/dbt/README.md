@@ -100,6 +100,11 @@ your `target/` directory.
   directory is removed when the run ends.
 * `OPENLINEAGE_DBT_ENGINE=v1|v2` skips detecting which dbt engine the `dbt` on `PATH` runs.
 
+Commands that produce no lineage, like `dbt deps` or `dbt debug`, run without OpenLineage events, and so
+does any command when `dbt-ol` can't read the project or profile. On Ctrl-C, dbt stops as usual and `dbt-ol`
+keeps sending events until dbt exits, so the runs still open are closed. A second Ctrl-C kills dbt and
+stops `dbt-ol` without waiting. SIGTERM is passed on to dbt.
+
 On dbt Core v2, node jobs are named by their `unique_id` (for example `model.jaffle_shop.orders`), as with
 `--consume-structured-logs` on dbt Core v1. Jobs from the default dbt Core v1 mode are named
 `{database}.{schema}.{model}`, so their history doesn't continue under the new names.

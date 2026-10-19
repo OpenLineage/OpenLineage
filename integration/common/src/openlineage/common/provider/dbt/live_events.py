@@ -11,7 +11,7 @@ from collections import defaultdict
 from functools import cached_property, wraps
 from typing import NamedTuple
 
-from openlineage.client.event_v2 import Dataset
+from openlineage.client.event_v2 import Dataset, InputDataset, OutputDataset, RunState
 from openlineage.client.facet_v2 import (
     data_quality_assertions_dataset as dq,
 )
@@ -353,6 +353,49 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
         """
         manifest_node = self._manifest_entry(node_id)
         return manifest_node.get("meta", {})
+
+    def _node_inputs(self, node_id: str) -> list[ModelNode]:
+        """The upstream inputs a node's events report."""
+        return self._get_model_inputs(node_id)
+
+    def _node_end_datasets(
+        self,
+        node_id: str,
+        output_node: ModelNode | None,
+        event_type: RunState,
+        compiled_sql: str | None = None,
+    ) -> tuple[list[InputDataset], list[OutputDataset]]:
+        """The inputs and output of a node's final event.
+
+        Exposures are attached only when the node succeeded. A model or snapshot that ran gets column
+        lineage from ``compiled_sql``, or else from the compiled code in its output node's manifest entry.
+        """
+        succeeded = event_type == RunState.COMPLETE
+        inputs = []
+        for model_input in self._node_inputs(node_id):
+            input_dataset = self.node_to_dataset(node=model_input, has_facets=True)
+            if succeeded:
+                input_dataset.facets.update(  # type: ignore[union-attr]
+                    self._exposures_facets(model_input.metadata_node.get("unique_id"))
+                )
+            inputs.append(input_dataset)
+        if output_node is None:
+            return inputs, []  # type: ignore[return-value]
+        output_dataset = self.node_to_output_dataset(node=output_node, has_facets=True)
+        if node_id.startswith(("model.", "snapshot.")):
+            if event_type in (RunState.COMPLETE, RunState.FAIL):
+                compiled_sql = (
+                    compiled_sql
+                    or output_node.metadata_node.get("compiled_code")
+                    or output_node.metadata_node.get("compiled_sql")
+                )
+                if compiled_sql and (
+                    column_lineage := self.get_column_lineage(output_dataset.namespace, compiled_sql)
+                ):
+                    output_dataset.facets["columnLineage"] = column_lineage  # type: ignore[index]
+            if succeeded:
+                output_dataset.facets.update(self._exposures_facets(node_id))  # type: ignore[union-attr]
+        return inputs, [output_dataset]  # type: ignore[return-value]
 
     def _get_model_inputs(self, node_id) -> list[ModelNode]:
         """

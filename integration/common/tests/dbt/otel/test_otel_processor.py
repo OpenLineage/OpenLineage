@@ -1,8 +1,14 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import importlib.machinery
 import json
+import logging
 import os
+import signal
 import subprocess
+import sys
+import threading
+import time
 from collections import defaultdict
 from enum import Enum
 from pathlib import Path
@@ -10,7 +16,7 @@ from unittest import mock
 
 import attr
 import pytest
-from openlineage.common.provider.dbt.otel_processor import DbtOtelProcessor
+from openlineage.common.provider.dbt.otel_processor import DbtOtelProcessor, run_dbt_untouched
 from openlineage.common.provider.dbt.otel_records import nanos_to_iso, parse_record
 from openlineage.common.provider.dbt.utils import detect_dbt_engine
 
@@ -42,6 +48,24 @@ def make_processor(command=None, **kwargs) -> DbtOtelProcessor:
         dbt_version="2.0.8",
         **kwargs,
     )
+
+
+def fake_parse(on_wait):
+    """A stand-in for the `dbt parse` process: wait() returns on_wait(process, timeout), until killed."""
+    parses = []
+
+    class Parse:
+        def __init__(self, cmd, env, stdout, stderr):
+            self.cmd, self.env, self.killed = cmd, env, False
+            parses.append(self)
+
+        def wait(self, timeout=None):
+            return -9 if self.killed else on_wait(self, timeout)
+
+        def kill(self):
+            self.killed = True
+
+    return Parse, parses
 
 
 def replay(processor, lines, return_code=1, manifest="parse_manifest.json") -> list[dict]:
@@ -112,7 +136,10 @@ def no_ambient_dbt_env(monkeypatch):
     for name in (
         "DBT_OTEL_FILE_NAME",
         "DBT_ENGINE_OTEL_FILE_NAME",
+        "DBT_LOG_PATH",
+        "DBT_ENGINE_LOG_PATH",
         "DBT_INVOCATION_ID",
+        "DBT_ENGINE_INVOCATION_ID",
         "OPENLINEAGE_DBT_TEMP_DIR",
     ):
         monkeypatch.delenv(name, raising=False)
@@ -524,19 +551,19 @@ def test_pre_parse_command(monkeypatch, tmp_path):
     ]
     processor = make_processor(command=command)
     processor.temp_dir = str(tmp_path)
-    calls = []
 
-    def fake_run(cmd, env, stdout, stderr):
-        calls.append((cmd, env))
-        target = Path(cmd[cmd.index("--target-path") + 1])
+    def write_manifest(parse, timeout):
+        assert timeout == 600
+        target = Path(parse.cmd[parse.cmd.index("--target-path") + 1])
         target.mkdir()
         (target / "manifest.json").write_text((FIXTURES / "parse_manifest.json").read_text())
-        return subprocess.CompletedProcess(cmd, 0)
+        return 0
 
-    with mock.patch("openlineage.common.provider.dbt.otel_processor.subprocess.run", fake_run):
+    popen, parses = fake_parse(write_manifest)
+    with mock.patch("openlineage.common.provider.dbt.otel_processor.subprocess.Popen", popen):
         processor._run_pre_parse()
 
-    cmd, env = calls[0]
+    cmd, env = parses[0].cmd, parses[0].env
     assert cmd[:6] == [
         "dbt",
         "parse",
@@ -554,13 +581,57 @@ def test_pre_parse_command(monkeypatch, tmp_path):
 def test_failed_pre_parse_leaves_no_manifest(tmp_path, caplog):
     processor = make_processor()
     processor.temp_dir = str(tmp_path)
-    with mock.patch(
-        "openlineage.common.provider.dbt.otel_processor.subprocess.run",
-        lambda cmd, env, stdout, stderr: subprocess.CompletedProcess(cmd, 1),
-    ):
+    popen, _ = fake_parse(lambda parse, timeout: 1)
+    with mock.patch("openlineage.common.provider.dbt.otel_processor.subprocess.Popen", popen):
         processor._run_pre_parse()
     assert processor.compiled_manifest == {}
     assert "`dbt parse` before the run failed" in caplog.text
+
+
+def test_hung_pre_parse_is_stopped_and_the_run_goes_ahead(tmp_path, caplog):
+    processor = make_processor()
+    processor.temp_dir = str(tmp_path)
+
+    def hang(parse, timeout):
+        raise subprocess.TimeoutExpired(parse.cmd, timeout)
+
+    popen, parses = fake_parse(hang)
+    with mock.patch("openlineage.common.provider.dbt.otel_processor.subprocess.Popen", popen):
+        processor._run_pre_parse()
+    assert parses[0].killed
+    assert processor.compiled_manifest == {}
+    assert "took longer than 600 s and was stopped" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "stop, return_code",
+    [
+        (lambda: (_ for _ in ()).throw(KeyboardInterrupt), 130),  # Ctrl-C
+        (lambda: os.kill(os.getpid(), signal.SIGTERM), 143),
+    ],
+    ids=["sigint", "sigterm"],
+)
+def test_stop_during_pre_parse_kills_it_cleans_up_and_skips_dbt(monkeypatch, tmp_path, stop, return_code):
+    monkeypatch.setenv("OPENLINEAGE_DBT_TEMP_DIR", str(tmp_path))
+    processor = make_processor()
+
+    def stopped(parse, timeout):
+        stop()
+        time.sleep(1)  # a SIGTERM's handler runs here
+        return 0
+
+    popen, parses = fake_parse(stopped)
+    previous = signal.getsignal(signal.SIGTERM)
+    with (
+        mock.patch("openlineage.common.provider.dbt.otel_processor.subprocess.Popen", popen),
+        mock.patch.object(processor, "_run_dbt_command") as run_dbt,
+    ):
+        assert list(processor.parse()) == []
+    assert parses[0].killed
+    assert not run_dbt.called
+    assert processor.dbt_command_return_code == return_code
+    assert list(tmp_path.iterdir()) == []
+    assert signal.getsignal(signal.SIGTERM) is previous
 
 
 def test_temp_dir_is_removed(monkeypatch, tmp_path):
@@ -593,6 +664,76 @@ def test_otel_file_chosen_by_the_user(monkeypatch, tmp_path):
     assert processor._resolve_otel_file() == (str(tmp_path / "otel.jsonl"), False)
     monkeypatch.setenv("DBT_OTEL_FILE_NAME", str(tmp_path / "abs.jsonl"))
     assert make_processor()._resolve_otel_file() == (str(tmp_path / "abs.jsonl"), False)
+    # dbt 2.0.8 writes to DBT_ENGINE_OTEL_FILE_NAME when both are set.
+    monkeypatch.setenv("DBT_ENGINE_OTEL_FILE_NAME", str(tmp_path / "engine.jsonl"))
+    assert make_processor()._resolve_otel_file() == (str(tmp_path / "engine.jsonl"), False)
+
+
+@pytest.mark.parametrize(
+    "log_paths, used",
+    [
+        ({"DBT_LOG_PATH": "legacy"}, "legacy"),
+        ({"DBT_ENGINE_LOG_PATH": "engine"}, "engine"),
+        # dbt 2.0.8 writes to DBT_ENGINE_LOG_PATH when both are set.
+        ({"DBT_LOG_PATH": "legacy", "DBT_ENGINE_LOG_PATH": "engine"}, "engine"),
+    ],
+)
+def test_relative_otel_file_resolves_against_the_log_path_dbt_uses(monkeypatch, tmp_path, log_paths, used):
+    monkeypatch.setenv("DBT_ENGINE_OTEL_FILE_NAME", "otel.jsonl")
+    for name, directory in log_paths.items():
+        monkeypatch.setenv(name, str(tmp_path / directory))
+    assert make_processor()._resolve_otel_file() == (str(tmp_path / used / "otel.jsonl"), False)
+    flag = make_processor(command=[*BUILD_COMMAND, "--log-path", str(tmp_path / "flag")])
+    assert flag._resolve_otel_file() == (str(tmp_path / "flag" / "otel.jsonl"), False)
+
+
+def test_first_interrupt_waits_for_dbt_and_sigterm_is_passed_on():
+    processor = make_processor()
+    process = mock.Mock()
+    with processor._forward_signals(process):
+        os.kill(os.getpid(), signal.SIGINT)
+        time.sleep(0.2)
+        assert not process.kill.called  # dbt got the Ctrl-C itself and stops gracefully
+        os.kill(os.getpid(), signal.SIGTERM)
+        time.sleep(0.2)
+        process.send_signal.assert_called_once_with(signal.SIGTERM)
+
+
+def test_second_interrupt_kills_dbt_and_stops_without_waiting(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENLINEAGE_DBT_TEMP_DIR", str(tmp_path))
+    started = tmp_path / "started"
+    fake_dbt = tmp_path / "dbt"
+    fake_dbt.write_text(
+        f"#!{sys.executable}\n"
+        "import pathlib, signal, time\n"
+        "signal.signal(signal.SIGINT, signal.SIG_IGN)\n"  # a dbt that hangs on its way out
+        f"pathlib.Path({str(started)!r}).touch()\n"
+        "time.sleep(60)\n"
+    )
+    fake_dbt.chmod(0o755)
+    processor = make_processor(command=[str(fake_dbt), *BUILD_COMMAND[1:]], skip_parse=True)
+    default_handler = signal.getsignal(signal.SIGINT)
+
+    def press_ctrl_c_twice():
+        while not started.exists() or signal.getsignal(signal.SIGINT) is default_handler:
+            time.sleep(0.01)
+        for _ in range(2):
+            os.kill(os.getpid(), signal.SIGINT)
+            time.sleep(0.2)
+
+    threading.Thread(target=press_ctrl_c_twice, daemon=True).start()
+    began = time.monotonic()
+    with pytest.raises(KeyboardInterrupt):
+        list(processor.parse())
+    assert time.monotonic() - began < 10
+    assert processor.dbt_command_return_code == -signal.SIGKILL
+    assert not list(tmp_path.glob("openlineage-dbt-*"))
+    assert signal.getsignal(signal.SIGINT) is default_handler
+
+
+def test_run_dbt_untouched_reports_a_missing_dbt_like_a_shell(tmp_path, caplog):
+    assert run_dbt_untouched([str(tmp_path / "missing" / "dbt"), "init"], logging.getLogger("t")) == 127
+    assert "Could not run" in caplog.text
 
 
 def test_commands_without_lineage_run_dbt_untouched():
@@ -670,6 +811,7 @@ def test_detect_engine_native_binary(monkeypatch, tmp_path):
     "script, interpreter",
     [
         (b"#!/opt/venv/bin/python\nfrom dbt.cli.main import cli\n", ["/opt/venv/bin/python"]),
+        (b"#!/usr/bin/env python3\nfrom dbt.cli.main import cli\n", ["/usr/bin/env", "python3"]),
         (
             b"#!/bin/sh\n'''exec' \"/very/long/venv/bin/python\" \"$0\" \"$@\"\n' '''\n",
             ["/very/long/venv/bin/python"],
@@ -706,6 +848,69 @@ def test_detect_engine_falls_back_to_version_output(monkeypatch, tmp_path, outpu
         ),
     ):
         assert detect_dbt_engine() == expected
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        b'#!/usr/bin/env bash\nexec pyenv exec dbt "$@"\n',  # pyenv and asdf shims
+        b'#!/bin/bash\nexec /opt/dbt/bin/dbt "$@"\n',
+        b"#!/usr/bin/env -S node --no-warnings\n",
+    ],
+)
+def test_detect_engine_never_runs_the_probe_with_a_non_python_interpreter(monkeypatch, tmp_path, script):
+    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE", raising=False)
+    path = _fake_dbt(tmp_path, script)
+    with (
+        mock.patch("openlineage.common.provider.dbt.utils.shutil.which", return_value=path),
+        mock.patch(
+            "openlineage.common.provider.dbt.utils.subprocess.run",
+            return_value=subprocess.CompletedProcess([], 0, stdout="dbt 2.0.8\n"),
+        ) as run,
+    ):
+        assert detect_dbt_engine() == (2, "2.0.8")
+    run.assert_called_once()
+    assert run.call_args.args[0] == [path, "--version"]
+    assert "env" not in run.call_args.kwargs
+
+
+def _dbt_in_this_environment(monkeypatch, tmp_path, *, importable=True, with_core=True):
+    """A `dbt` console script in this environment's scripts directory, and the dbt package it runs."""
+    scripts = tmp_path / "bin"
+    scripts.mkdir()
+    path = _fake_dbt(scripts, b"#!/opt/venv/bin/python\nfrom dbt.cli.main import cli\n")
+    package = tmp_path / "site-packages" / "dbt"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("raise AssertionError('dbt must not be imported')\n")
+    if with_core:
+        (package / f"_core{importlib.machinery.EXTENSION_SUFFIXES[0]}").write_bytes(b"")
+    spec = importlib.machinery.ModuleSpec("dbt", None, is_package=True)
+    spec.submodule_search_locations = [str(package)]
+    utils = "openlineage.common.provider.dbt.utils"
+    monkeypatch.delenv("OPENLINEAGE_DBT_ENGINE", raising=False)
+    monkeypatch.setattr(f"{utils}.shutil.which", lambda _: path)
+    monkeypatch.setattr(f"{utils}.sysconfig.get_path", lambda name: str(scripts))
+    monkeypatch.setattr(f"{utils}.importlib.util.find_spec", lambda name: spec if importable else None)
+    monkeypatch.setattr(f"{utils}.importlib.metadata.version", lambda name: "2.0.8")
+
+
+@pytest.mark.parametrize("with_core, expected", [(True, (2, "2.0.8")), (False, (1, None))])
+def test_detect_engine_reads_a_dbt_in_this_environment_without_a_process(
+    monkeypatch, tmp_path, with_core, expected
+):
+    _dbt_in_this_environment(monkeypatch, tmp_path, with_core=with_core)
+    with mock.patch("openlineage.common.provider.dbt.utils.subprocess.run", side_effect=AssertionError):
+        assert detect_dbt_engine() == expected
+
+
+def test_detect_engine_inspects_dbt_when_this_environment_cannot_import_it(monkeypatch, tmp_path):
+    _dbt_in_this_environment(monkeypatch, tmp_path, importable=False)
+    with mock.patch(
+        "openlineage.common.provider.dbt.utils.subprocess.run",
+        return_value=subprocess.CompletedProcess([], 0, stdout="2 2.0.8\n"),
+    ) as run:
+        assert detect_dbt_engine() == (2, "2.0.8")
+    assert run.call_args.args[0][0] == "/opt/venv/bin/python"
 
 
 def test_detect_engine_without_dbt(monkeypatch):

@@ -476,32 +476,12 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
         else:
             self.logger.info("Node %s has an unknown node status %s", node_unique_id, node_status)
 
-        # Attach exposures only on a successful (COMPLETE) build.
-        succeeded = event_type == RunState.COMPLETE
-        inputs = []
-        model_inputs = self._get_model_inputs(node_unique_id) if resource_type != "unit_test" else []
-        for model_input in model_inputs:
-            input_dataset = self.node_to_dataset(node=model_input, has_facets=True)
-            if succeeded:
-                input_dataset.facets.update(  # type: ignore
-                    self._exposures_facets(model_input.metadata_node.get("unique_id"))
-                )
-            inputs.append(input_dataset)
-        outputs = []
-        if resource_type != "unit_test" and (node := self._get_model_node(node_unique_id)):
-            output_dataset = self.node_to_output_dataset(node=node, has_facets=True)
-            if resource_type in ("model", "snapshot") and event_type in (RunState.COMPLETE, RunState.FAIL):
-                compiled_sql = node.metadata_node.get("compiled_code") or node.metadata_node.get(
-                    "compiled_sql"
-                )
-                if compiled_sql:
-                    column_lineage = self.get_column_lineage(output_dataset.namespace, compiled_sql)
-                    if column_lineage:
-                        output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
-
-                if succeeded:
-                    output_dataset.facets.update(self._exposures_facets(node_unique_id))  # type: ignore
-            outputs = [output_dataset]
+        inputs: list = []
+        outputs: list = []
+        if resource_type != "unit_test":
+            inputs, outputs = self._node_end_datasets(
+                node_unique_id, self._get_model_node(node_unique_id), event_type
+            )
 
         if resource_type == "test":
             success = node_status == "pass"

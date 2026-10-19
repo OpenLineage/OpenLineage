@@ -66,13 +66,20 @@ from openlineage.common.provider.dbt.utils import (
     TEMP_DIR_ENV,
     generate_run_event,
     get_dbt_profiles_dir,
+    job_type_for_unique_id,
 )
 from openlineage.common.utils import IncrementalFileReader, parse_single_arg
 
 OTEL_FILE_ENV = "DBT_OTEL_FILE_NAME"
-# dbt Core v2 maps every DBT_ENGINE_<X> environment variable to DBT_<X>.
-_OTEL_FILE_ENVS = (OTEL_FILE_ENV, "DBT_ENGINE_OTEL_FILE_NAME")
-_INVOCATION_ID_ENVS = ("DBT_INVOCATION_ID", "DBT_ENGINE_INVOCATION_ID")
+# dbt Core v2 reads each DBT_ENGINE_<X> environment variable as DBT_<X>, and prefers it when both are set.
+_OTEL_FILE_ENVS = ("DBT_ENGINE_OTEL_FILE_NAME", OTEL_FILE_ENV)
+_LOG_PATH_ENVS = ("DBT_ENGINE_LOG_PATH", "DBT_LOG_PATH")
+_INVOCATION_ID_ENVS = ("DBT_ENGINE_INVOCATION_ID", "DBT_INVOCATION_ID")
+# A parse of a 10k-model project takes about 20 s; past this, the run goes ahead without it.
+_PRE_PARSE_TIMEOUT_S = 600
+# Exit codes a shell reports for a process stopped by SIGINT and SIGTERM.
+_EXIT_INTERRUPTED = 128 + signal.SIGINT
+_EXIT_TERMINATED = 128 + signal.SIGTERM
 # Flags that change what the project compiles to, copied from the dbt command onto the pre-parse.
 _PARSE_FLAGS = (
     (["--project-dir"], "--project-dir"),
@@ -81,13 +88,6 @@ _PARSE_FLAGS = (
     (["-t", "--target"], "--target"),
     (["--vars"], "--vars"),
 )
-_JOB_TYPES = {
-    "model.": "MODEL",
-    "snapshot.": "SNAPSHOT",
-    "seed.": "SEED",
-    "test.": "TEST",
-    "unit_test.": "UNIT_TEST",
-}
 _POLL_INTERVAL_S = 0.05
 # Empty polls after dbt exits before giving up on a missing Invocation end record.
 _DRAIN_POLLS = 20
@@ -114,11 +114,18 @@ class _QueryState:
     start_event: RunEvent
 
 
-def _job_type(unique_id: str) -> str | None:
-    for prefix, job_type in _JOB_TYPES.items():
-        if unique_id.startswith(prefix):
-            return job_type
-    return None
+class _TerminatedBeforeRun(Exception):
+    """SIGTERM arrived while dbt-ol was preparing, before dbt started."""
+
+
+def run_dbt_untouched(dbt_command_line: list[str], logger) -> int:
+    """Run dbt without OpenLineage and return its exit code; 127 or 126, like a shell, if it can't start."""
+    try:
+        with subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr) as process:
+            return process.wait()
+    except OSError as e:
+        logger.error("Could not run %s: %s", dbt_command_line[0], e)
+        return 127 if isinstance(e, FileNotFoundError) else 126
 
 
 def _pluralize(count: int, noun: str) -> str:
@@ -159,7 +166,8 @@ class DbtOtelProcessor(DbtLiveProcessor):
     def parse(self) -> Generator[RunEvent, None, None]:  # type: ignore[override]
         """Run dbt and yield OpenLineage events while it runs.
 
-        dbt always runs: when the command produces no lineage, or preparing fails, it runs untouched.
+        dbt always runs: when the command produces no lineage, or preparing fails, it runs untouched. Only a
+        Ctrl-C or SIGTERM during the preparation stops dbt-ol before dbt starts.
         """
         if self.dbt_command not in HANDLED_COMMANDS:
             self.logger.info(
@@ -168,16 +176,26 @@ class DbtOtelProcessor(DbtLiveProcessor):
             self.dbt_command_return_code = self._run_dbt_untouched()
             return
         try:
-            self._prepare()
-        except Exception:
-            self.logger.exception(
-                "OpenLineage could not prepare for this dbt run; running dbt without OpenLineage events"
-            )
-            self._remove_temp_dir()
-            self.dbt_command_return_code = self._run_dbt_untouched()
-            return
+            try:
+                with self._stop_on_sigterm():
+                    self._prepare()
+            except (KeyboardInterrupt, _TerminatedBeforeRun) as e:
+                # The user or a scheduler stopped dbt-ol during the pre-parse: dbt must not start after it.
+                interrupted = isinstance(e, KeyboardInterrupt)
+                self.logger.warning(
+                    "dbt-ol was %s before dbt started; not running dbt",
+                    "interrupted" if interrupted else "terminated",
+                )
+                self.dbt_command_return_code = _EXIT_INTERRUPTED if interrupted else _EXIT_TERMINATED
+                return
+            except Exception:
+                self.logger.exception(
+                    "OpenLineage could not prepare for this dbt run; running dbt without OpenLineage events"
+                )
+                self._remove_temp_dir()
+                self.dbt_command_return_code = self._run_dbt_untouched()
+                return
 
-        try:
             lines = self._run_dbt_command()
             try:
                 for line in lines:
@@ -219,7 +237,9 @@ class DbtOtelProcessor(DbtLiveProcessor):
         )
         if configured:
             if not os.path.isabs(configured):
-                log_path = parse_single_arg(args, ["--log-path"]) or os.environ.get("DBT_LOG_PATH")
+                log_path = parse_single_arg(args, ["--log-path"]) or next(
+                    (os.environ[name] for name in _LOG_PATH_ENVS if os.environ.get(name)), None
+                )
                 project_dir = parse_single_arg(args, ["--project-dir"]) or "."
                 configured = os.path.join(log_path or os.path.join(project_dir, "logs"), configured)
             return os.path.abspath(configured), False
@@ -247,6 +267,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
             value = parse_single_arg(self.dbt_command_line[1:], names)
             if value is not None:
                 command += [flag, value]
+        # dbt Core v2 checks online for a newer release before a command unless this is set.
         env = {**os.environ, "DBT_DISABLE_VERSION_CHECK": "1"}
         for name in _OTEL_FILE_ENVS + _INVOCATION_ID_ENVS:
             env.pop(name, None)
@@ -254,7 +275,23 @@ class DbtOtelProcessor(DbtLiveProcessor):
         output_path = os.path.join(self.temp_dir, "parse-output.log")
         started = time.time()
         with open(output_path, "w", encoding="utf-8") as output:
-            return_code = subprocess.run(command, env=env, stdout=output, stderr=subprocess.STDOUT).returncode
+            process = subprocess.Popen(command, env=env, stdout=output, stderr=subprocess.STDOUT)
+            try:
+                return_code = process.wait(timeout=_PRE_PARSE_TIMEOUT_S)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+                self.logger.warning(
+                    "`dbt parse` before the run took longer than %d s and was stopped; node inputs will come "
+                    "from the manifest dbt writes at the end of the run.",
+                    _PRE_PARSE_TIMEOUT_S,
+                )
+                return
+            except BaseException:
+                # Ctrl-C or SIGTERM: don't leave the parse running on its own.
+                process.kill()
+                process.wait()
+                raise
         if return_code != 0:
             with open(output_path, encoding="utf-8", errors="replace") as output:
                 tail = output.read()[-2000:]
@@ -334,21 +371,53 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 otel_file.close()
 
     @contextlib.contextmanager
+    def _stop_on_sigterm(self) -> Iterator[None]:
+        """Until dbt starts, make SIGTERM unwind the preparation, so its cleanup runs."""
+        if threading.current_thread() is not threading.main_thread():
+            yield
+            return
+
+        def stop(signum, _frame):
+            raise _TerminatedBeforeRun(f"signal {signum}")
+
+        previous = signal.signal(signal.SIGTERM, stop)
+        try:
+            yield
+        finally:
+            signal.signal(signal.SIGTERM, previous)
+
+    @contextlib.contextmanager
     def _forward_signals(self, process: subprocess.Popen) -> Iterator[None]:
         """Keep reading until dbt exits after SIGINT or SIGTERM, so the runs still open can be closed.
 
-        SIGTERM is passed on to dbt. SIGINT is not: Ctrl-C already reaches dbt through the shared process
-        group, and a second SIGINT could turn dbt's graceful stop into a forced one.
+        SIGTERM is passed on to dbt. SIGINT is not: a Ctrl-C in a terminal reaches dbt through the shared
+        process group, and passing it on would make dbt see it twice. So a `kill -INT` sent to dbt-ol alone
+        doesn't reach dbt. A second SIGINT kills dbt and stops dbt-ol without waiting; the runs still open
+        then get no final event.
         """
         if threading.current_thread() is not threading.main_thread():
             yield
             return
 
+        interrupts = 0
+
         def forward(signum, _frame):
-            self.logger.info("Received signal %d; waiting for dbt to exit", signum)
-            if signum == signal.SIGTERM:
+            nonlocal interrupts
+            if signum == signal.SIGINT:
+                interrupts += 1
+                if interrupts == 1:
+                    self.logger.info(
+                        "Interrupted; waiting for dbt to exit. Press Ctrl-C again to stop without waiting"
+                    )
+                    return
+                self.logger.warning("Interrupted again; killing dbt")
+                # Killed first, so waiting for dbt on the way out doesn't block again.
                 with contextlib.suppress(ProcessLookupError):
-                    process.send_signal(signum)
+                    process.kill()
+                raise KeyboardInterrupt
+            self.logger.info("Received signal %d; waiting for dbt to exit", signum)
+            with contextlib.suppress(ProcessLookupError):
+                process.send_signal(signum)
 
         previous = {sig: signal.signal(sig, forward) for sig in (signal.SIGINT, signal.SIGTERM)}
         try:
@@ -386,7 +455,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 yield self._node_start_event(record)
             elif record.record_type == SPAN_END:
                 yield from self._on_node_end(record)
-        elif record.name == QUERY_EXECUTED and record.unique_id and _job_type(record.unique_id):
+        elif record.name == QUERY_EXECUTED and record.unique_id and job_type_for_unique_id(record.unique_id):
             if record.record_type == SPAN_START:
                 yield self._query_start_event(record)
             elif record.record_type == SPAN_END and record.span_id in self._queries:
@@ -410,7 +479,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
         return raw_command.endswith(" ".join(self.dbt_command_line[1:]))
 
     def _emits_events(self, record: OtelRecord) -> bool:
-        return bool(record.unique_id and _job_type(record.unique_id))
+        return bool(record.unique_id and job_type_for_unique_id(record.unique_id))
 
     def _node(self, unique_id: str) -> _NodeState:
         if unique_id not in self._nodes:
@@ -513,7 +582,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
             test_type = "generic" if metadata.get("test_metadata") else "singular"
         job_facets: dict = {
             "jobType": job_type_job.JobTypeJobFacet(
-                jobType=_job_type(node.unique_id),
+                jobType=job_type_for_unique_id(node.unique_id),
                 integration="DBT",
                 processingType="BATCH",
                 producer=self.producer,
@@ -675,7 +744,9 @@ class DbtOtelProcessor(DbtLiveProcessor):
         inputs: list[InputDataset] = []
         outputs: list[OutputDataset] = []
         if not unique_id.startswith("unit_test."):
-            inputs, outputs = self._node_end_datasets(node, event_type)
+            inputs, outputs = self._node_end_datasets(
+                unique_id, self._output_node(node), event_type, self._compiled_sql(node)
+            )
         # Assertions only for tests that ran; a passing test has an empty node_test_detail.
         if unique_id.startswith("test.") and outcome in (NODE_OUTCOME_SUCCESS, NODE_OUTCOME_ERROR):
             success = outcome == NODE_OUTCOME_SUCCESS and test_outcome not in (
@@ -701,33 +772,6 @@ class DbtOtelProcessor(DbtLiveProcessor):
             inputs=inputs,
             outputs=outputs,
         )
-
-    def _node_end_datasets(
-        self, node: _NodeState, event_type: RunState
-    ) -> tuple[list[InputDataset], list[OutputDataset]]:
-        succeeded = event_type == RunState.COMPLETE
-        inputs = []
-        for model_input in self._node_inputs(node.unique_id):
-            input_dataset = self.node_to_dataset(node=model_input, has_facets=True)
-            if succeeded:
-                input_dataset.facets.update(  # type: ignore[union-attr]
-                    self._exposures_facets(model_input.metadata_node.get("unique_id"))
-                )
-            inputs.append(input_dataset)
-        outputs = []
-        if output_node := self._output_node(node):
-            output_dataset = self.node_to_output_dataset(node=output_node, has_facets=True)
-            is_model = node.unique_id.startswith(("model.", "snapshot."))
-            if is_model and event_type in (RunState.COMPLETE, RunState.FAIL):
-                compiled_sql = self._compiled_sql(node)
-                if compiled_sql and (
-                    column_lineage := self.get_column_lineage(output_dataset.namespace, compiled_sql)
-                ):
-                    output_dataset.facets["columnLineage"] = column_lineage  # type: ignore[index]
-            if is_model and succeeded:
-                output_dataset.facets.update(self._exposures_facets(node.unique_id))  # type: ignore[union-attr]
-            outputs = [output_dataset]
-        return inputs, outputs  # type: ignore[return-value]
 
     def _test_failure_message(self, unique_id: str, failing_rows: int | None, test_detail: dict) -> str:
         """The message dbt Core v1 gives a failed test, which dbt Core v2 telemetry doesn't carry."""

@@ -1,5 +1,8 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import importlib.machinery
+import importlib.metadata
+import importlib.util
 import json
 import logging
 import os
@@ -7,6 +10,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sysconfig
 import uuid
 from datetime import datetime
 
@@ -243,17 +247,23 @@ def get_job_type(event) -> str | None:
         return "JOB"
     elif node_unique_id is None:
         return None
-    elif node_unique_id.startswith("model."):
-        return "MODEL"
-    elif node_unique_id.startswith("snapshot."):
-        return "SNAPSHOT"
-    elif node_unique_id.startswith("seed."):
-        return "SEED"
-    elif node_unique_id.startswith("test."):
-        return "TEST"
-    elif node_unique_id.startswith("unit_test."):
-        return "UNIT_TEST"
+    return job_type_for_unique_id(node_unique_id)
 
+
+_JOB_TYPES_BY_UNIQUE_ID_PREFIX = (
+    ("model.", "MODEL"),
+    ("snapshot.", "SNAPSHOT"),
+    ("seed.", "SEED"),
+    ("test.", "TEST"),
+    ("unit_test.", "UNIT_TEST"),
+)
+
+
+def job_type_for_unique_id(unique_id: str) -> str | None:
+    """The job type of a dbt node, from its unique_id; None for resources that get no job, like sources."""
+    for prefix, job_type in _JOB_TYPES_BY_UNIQUE_ID_PREFIX:
+        if unique_id.startswith(prefix):
+            return job_type
     return None
 
 
@@ -267,6 +277,7 @@ _NATIVE_EXECUTABLE_MAGICS = (
     b"\xca\xfe\xba\xbe",
 )
 _PIP_SH_LAUNCHER = re.compile(r"exec' \"([^\"]+)\"")
+_PYTHON_INTERPRETER = re.compile(r"^(python|pypy)[0-9.]*$")
 _DBT_VERSION_LINE = re.compile(r"^dbt (\d+)\.(\d+)\.(\d+)\S*")
 # Run with the interpreter of a Python `dbt` script: dbt Core v2 ships the native extension `dbt._core`.
 _ENGINE_PROBE = (
@@ -286,8 +297,9 @@ def detect_dbt_engine(executable: str = "dbt") -> tuple[int, str | None]:
     """Which dbt engine the `dbt` on PATH runs: (major version, full version when known).
 
     dbt Core v1's `dbt --version` looks up the latest releases on PyPI with a 1 s timeout per installed
-    package and can't be told not to, so the executable is inspected first and `dbt --version` is only
-    the fallback. ``OPENLINEAGE_DBT_ENGINE`` skips detection.
+    package and can't be told not to. So a `dbt` installed next to dbt-ol is read in this interpreter, any
+    other one is inspected, and `dbt --version` is only the fallback. ``OPENLINEAGE_DBT_ENGINE`` skips
+    detection.
     """
     override = os.getenv(DBT_ENGINE_ENV, "").strip().lower()
     if override in ("v1", "1"):
@@ -298,10 +310,32 @@ def detect_dbt_engine(executable: str = "dbt") -> tuple[int, str | None]:
     path = shutil.which(executable)
     if path is None:
         return 1, None
-    detected = _inspect_dbt_executable(path)
+    detected = _engine_in_this_environment(path) or _inspect_dbt_executable(path)
     if detected is not None:
         return detected
     return _dbt_engine_from_version_output(path)
+
+
+def _engine_in_this_environment(path: str) -> tuple[int, str | None] | None:
+    """The engine of a `dbt` installed in dbt-ol's own environment, found without importing dbt.
+
+    Only a console script in this environment's scripts directory runs the `dbt` package this interpreter
+    sees; for any other `dbt`, what's importable here says nothing.
+    """
+    try:
+        if not os.path.samefile(os.path.dirname(path), sysconfig.get_path("scripts")):
+            return None
+        dbt_package = importlib.util.find_spec("dbt")
+        if dbt_package is None or not dbt_package.submodule_search_locations:
+            return None
+        # dbt Core v2 ships the native extension `dbt._core`.
+        if importlib.machinery.PathFinder.find_spec(
+            "dbt._core", list(dbt_package.submodule_search_locations)
+        ):
+            return 2, importlib.metadata.version("dbt")
+        return 1, None
+    except (OSError, ImportError, ValueError):
+        return None
 
 
 def _inspect_dbt_executable(path: str) -> tuple[int, str | None] | None:
@@ -334,6 +368,7 @@ def _inspect_dbt_executable(path: str) -> tuple[int, str | None] | None:
 
 
 def _console_script_interpreter(head: bytes) -> list[str] | None:
+    """The command running a Python `dbt` script, or None when the script isn't Python, like a pyenv shim."""
     lines = head.decode("utf-8", errors="replace").splitlines()
     try:
         shebang = shlex.split(lines[0][2:])
@@ -341,19 +376,23 @@ def _console_script_interpreter(head: bytes) -> list[str] | None:
         return None
     if not shebang:
         return None
+    interpreter = shebang[0]
+    if os.path.basename(interpreter) == "env":
+        # `#!/usr/bin/env [-S] python3`: the first word that isn't an option or a variable assignment.
+        interpreter = next((word for word in shebang[1:] if not word.startswith("-") and "=" not in word), "")
+    name = os.path.basename(interpreter)
     # pip writes a /bin/sh launcher when the interpreter path is too long for a shebang line.
-    if os.path.basename(shebang[0]) in ("sh", "bash") and len(lines) > 1:
+    if name in ("sh", "bash") and len(lines) > 1:
         match = _PIP_SH_LAUNCHER.search(lines[1])
         return [match.group(1)] if match else None
+    if not _PYTHON_INTERPRETER.match(name):
+        return None
     return shebang
 
 
 def _dbt_engine_from_version_output(path: str) -> tuple[int, str | None]:
-    env = {**os.environ, "DBT_DISABLE_VERSION_CHECK": "1"}
     try:
-        result = subprocess.run(
-            [path, "--version"], capture_output=True, text=True, timeout=60, env=env, check=False
-        )
+        result = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=60, check=False)
     except (OSError, subprocess.SubprocessError):
         log.debug("Running `%s --version` failed; assuming dbt Core v1", path, exc_info=True)
         return 1, None
