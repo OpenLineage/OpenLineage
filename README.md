@@ -90,7 +90,7 @@ If you discover a vulnerability in the project, please [open an issue](https://g
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=OpenLineage/OpenLineage&type=Date)](https://www.star-history.com/#OpenLineage/OpenLineage&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=OpenLineage/OpenLineage&type=Date)](https://star-history.dera.page/#OpenLineage/OpenLineage&Date)
 
 ----
 SPDX-License-Identifier: Apache-2.0\
