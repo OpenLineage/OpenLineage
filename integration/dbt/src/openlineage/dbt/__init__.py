@@ -6,6 +6,7 @@
 import logging
 import logging.config
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -21,16 +22,18 @@ from openlineage.common.provider.dbt import (
     UnsupportedDbtCommand,
 )
 from openlineage.common.provider.dbt.live_events import DbtLiveProcessor
-from openlineage.common.provider.dbt.otel_processor import DbtOtelProcessor
+from openlineage.common.provider.dbt.otel_processor import DbtOtelProcessor, run_dbt_untouched
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
 from openlineage.common.provider.dbt.utils import (
     CONSUME_STRUCTURED_LOGS_COMMAND_OPTION,
+    HANDLED_COMMANDS,
     OL_SKIP_PARSE_ENV,
     OL_SKIP_PARSE_OPTION,
     OPENLINEAGE_DBT_JOB_NAME_OPTION,
     PRODUCER,
     __version__,
     detect_dbt_engine,
+    get_dbt_command,
     get_parent_run_metadata,
     is_truthy,
 )
@@ -275,30 +278,47 @@ def consume_otel(
         "dbt Core %s detected: will send OpenLineage events while the models are executing.",
         dbt_version or "v2",
     )
-    processor = DbtOtelProcessor(
-        project_dir=project_dir,
-        dbt_command_line=["dbt", *args],
-        producer=PRODUCER,
-        target=target,
-        target_path=target_path,
-        job_namespace=os.environ.get("OPENLINEAGE_NAMESPACE", "dbt"),
-        openlineage_job_name=openlineage_job_name,
-        profile_name=profile_name,
-        logger=logger,
-        models=models,
-        selector=model_selector,
-        skip_parse=skip_parse,
-        dbt_version=dbt_version,
-    )
-    return emit_live_events(processor, logger)
+    dbt_command_line = ["dbt", *args]
+    dbt_command = get_dbt_command(dbt_command_line)
+    if dbt_command not in HANDLED_COMMANDS:
+        # Commands like init, deps or debug may run outside a project, so the project isn't read at all.
+        logger.info("dbt command %s produces no lineage; running it without OpenLineage events", dbt_command)
+        return run_dbt_untouched(dbt_command_line, logger)
+    try:
+        processor = DbtOtelProcessor(
+            project_dir=project_dir,
+            dbt_command_line=dbt_command_line,
+            producer=PRODUCER,
+            target=target,
+            target_path=target_path,
+            job_namespace=os.environ.get("OPENLINEAGE_NAMESPACE", "dbt"),
+            openlineage_job_name=openlineage_job_name,
+            profile_name=profile_name,
+            logger=logger,
+            models=models,
+            selector=model_selector,
+            skip_parse=skip_parse,
+            dbt_version=dbt_version,
+        )
+    except Exception:
+        # A missing or unreadable dbt_project.yml, or one without a profile, must not keep dbt from running.
+        logger.exception("OpenLineage could not read the dbt project; running dbt without OpenLineage events")
+        return run_dbt_untouched(dbt_command_line, logger)
+    try:
+        return emit_live_events(processor, logger)
+    except KeyboardInterrupt:
+        # A second Ctrl-C: dbt was killed, and the runs still open get no final event.
+        logger.warning("dbt-ol stopped without waiting for dbt to exit")
+        return 128 + signal.SIGINT
 
 
 def emit_live_events(processor: DbtLiveProcessor, logger: logging.Logger) -> int:
     """Run dbt through the processor, emit each event as it comes, and return dbt's exit code."""
     client = OpenLineageClient()
     emitted_events = 0
+    events = processor.parse()
     try:
-        for event in processor.parse():
+        for event in events:
             try:
                 client.emit(event)
                 emitted_events += 1
@@ -320,9 +340,13 @@ def emit_live_events(processor: DbtLiveProcessor, logger: logging.Logger) -> int
             "fail, however, data might not end up in your configured lineage backend."
         )
     finally:
-        # Will wait for async events to be sent if async config is enabled
-        logger.debug("Waiting for events to be sent.")
-        client.close(timeout=30)
+        try:
+            # Runs the processor's cleanup now, also when an interrupt arrives while an event is being sent.
+            events.close()
+        finally:
+            # Will wait for async events to be sent if async config is enabled
+            logger.debug("Waiting for events to be sent.")
+            client.close(timeout=30)
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
     return_code = processor.dbt_command_return_code if processor.dbt_command_return_code is not None else -1
