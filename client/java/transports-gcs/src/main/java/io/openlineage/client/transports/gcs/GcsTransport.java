@@ -13,16 +13,19 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -85,13 +88,26 @@ public class GcsTransport extends Transport {
 
   @SuppressWarnings("PMD.UnusedPrivateMethod")
   private <T extends OpenLineage.BaseEvent> void emitEvent(T event) {
-    // eventTime alone is not unique: several events can share the same millisecond, so a random
-    // suffix is appended. Names still sort by eventTime.
+    // eventTime alone is not unique: several events can share the same millisecond, so a hash of
+    // the event content is appended. Only identical events share a name. Names still sort by
+    // eventTime.
+    String json = OpenLineageClientUtils.toJson(event);
     String baseName =
         String.format(
-            "%d-%s.json", event.getEventTime().toInstant().toEpochMilli(), UUID.randomUUID());
+            "%d-%s.json", event.getEventTime().toInstant().toEpochMilli(), contentHash(json));
     String fileName = fileNamePrefix.map(getFileName(baseName)).orElse(baseName);
-    uploadObject(fileName, OpenLineageClientUtils.toJson(event));
+    uploadObject(fileName, json);
+  }
+
+  /** Returns the first 64 bits of the SHA-256 of {@code contents} as 16 hex characters. */
+  private static String contentHash(String contents) {
+    try {
+      byte[] digest =
+          MessageDigest.getInstance("SHA-256").digest(contents.getBytes(StandardCharsets.UTF_8));
+      return String.format("%016x", ByteBuffer.wrap(digest).getLong());
+    } catch (NoSuchAlgorithmException e) {
+      throw new OpenLineageClientException(e);
+    }
   }
 
   private static Function<String, String> getFileName(String baseName) {

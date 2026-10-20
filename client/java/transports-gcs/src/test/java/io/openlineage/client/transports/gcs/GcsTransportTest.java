@@ -28,8 +28,7 @@ import org.junit.jupiter.api.Test;
 class GcsTransportTest {
 
   private static final Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
-  private static final String UUID_REGEX =
-      "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+  private static final String HASH_REGEX = "[0-9a-f]{16}";
 
   @Test
   void shouldWriteEventToGcsWithNamePrefix() {
@@ -39,7 +38,7 @@ class GcsTransportTest {
 
     Blob blob = singleBlob(localStorage);
     assertTrue(
-        blob.getName().matches("some_prefix_" + epochMillis() + "-" + UUID_REGEX + "\\.json"));
+        blob.getName().matches("some_prefix_" + epochMillis() + "-" + HASH_REGEX + "\\.json"));
     assertEquals(new String(blob.getContent()), OpenLineageClientUtils.toJson(event));
   }
 
@@ -51,7 +50,7 @@ class GcsTransportTest {
 
     Blob blob = singleBlob(localStorage);
     assertTrue(
-        blob.getName().matches("some/prefix/" + epochMillis() + "-" + UUID_REGEX + "\\.json"));
+        blob.getName().matches("some/prefix/" + epochMillis() + "-" + HASH_REGEX + "\\.json"));
     assertEquals(new String(blob.getContent()), OpenLineageClientUtils.toJson(event));
   }
 
@@ -62,7 +61,7 @@ class GcsTransportTest {
     emit(localStorage, null, event);
 
     Blob blob = singleBlob(localStorage);
-    assertTrue(blob.getName().matches(epochMillis() + "-" + UUID_REGEX + "\\.json"));
+    assertTrue(blob.getName().matches(epochMillis() + "-" + HASH_REGEX + "\\.json"));
     assertEquals(new String(blob.getContent()), OpenLineageClientUtils.toJson(event));
   }
 
@@ -80,6 +79,16 @@ class GcsTransportTest {
     assertEquals(2, contents.size());
     assertTrue(contents.contains(OpenLineageClientUtils.toJson(start)));
     assertTrue(contents.contains(OpenLineageClientUtils.toJson(complete)));
+  }
+
+  @Test
+  void shouldStoreIdenticalEventOnce() {
+    Storage localStorage = LocalStorageHelper.getOptions().getService();
+    OpenLineage.RunEvent event = runEvent(clock);
+    emit(localStorage, "some/prefix/", event, event);
+
+    Blob blob = singleBlob(localStorage);
+    assertEquals(new String(blob.getContent()), OpenLineageClientUtils.toJson(event));
   }
 
   @Test
