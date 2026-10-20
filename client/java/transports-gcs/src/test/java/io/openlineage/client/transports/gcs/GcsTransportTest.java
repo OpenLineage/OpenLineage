@@ -9,86 +9,77 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
-import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 
 class GcsTransportTest {
 
   private static final Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+  private static final String UUID_REGEX =
+      "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
   @Test
   void shouldWriteEventToGcsWithNamePrefix() {
     Storage localStorage = LocalStorageHelper.getOptions().getService();
-    GcsTransportConfig config =
-        new GcsTransportConfig("test_project", "test_bucket", null, "some_prefix", null, null);
-    GcsTransport transport = new GcsTransport(localStorage, config);
-    OpenLineageClient client = new OpenLineageClient(transport);
-
     OpenLineage.RunEvent event = runEvent(clock);
-    client.emit(event);
+    emit(localStorage, "some_prefix", event);
 
-    Blob blob =
-        localStorage.get(
-            BlobId.of(
-                "test_bucket",
-                String.format(
-                    "some_prefix_%s.json", ZonedDateTime.now(clock).toInstant().toEpochMilli())));
-    assertNotNull(blob);
+    Blob blob = singleBlob(localStorage);
+    assertTrue(
+        blob.getName().matches("some_prefix_" + epochMillis() + "-" + UUID_REGEX + "\\.json"));
     assertEquals(new String(blob.getContent()), OpenLineageClientUtils.toJson(event));
   }
 
   @Test
   void shouldWriteEventToGcsWithPathPrefix() {
     Storage localStorage = LocalStorageHelper.getOptions().getService();
-    GcsTransportConfig config =
-        new GcsTransportConfig("test_project", "test_bucket", null, "some/prefix/", null, null);
-    GcsTransport transport = new GcsTransport(localStorage, config);
-    OpenLineageClient client = new OpenLineageClient(transport);
-
     OpenLineage.RunEvent event = runEvent(clock);
-    client.emit(event);
+    emit(localStorage, "some/prefix/", event);
 
-    Blob blob =
-        localStorage.get(
-            BlobId.of(
-                "test_bucket",
-                String.format(
-                    "some/prefix/%s.json", ZonedDateTime.now(clock).toInstant().toEpochMilli())));
-    assertNotNull(blob);
+    Blob blob = singleBlob(localStorage);
+    assertTrue(
+        blob.getName().matches("some/prefix/" + epochMillis() + "-" + UUID_REGEX + "\\.json"));
     assertEquals(new String(blob.getContent()), OpenLineageClientUtils.toJson(event));
   }
 
   @Test
-  void shouldThrowIfObjectAlreadyExists() {
+  void shouldWriteEventToGcsWithoutPrefix() {
     Storage localStorage = LocalStorageHelper.getOptions().getService();
-    GcsTransportConfig config =
-        new GcsTransportConfig("test_project", "test_bucket", null, "some/prefix/", null, null);
-    GcsTransport transport = new GcsTransport(localStorage, config);
-    OpenLineageClient client = new OpenLineageClient(transport);
-
     OpenLineage.RunEvent event = runEvent(clock);
-    localStorage.create(
-        BlobInfo.newBuilder(
-                BlobId.of(
-                    "test_bucket",
-                    String.format(
-                        "some/prefix/%s.json",
-                        ZonedDateTime.now(clock).toInstant().toEpochMilli())))
-            .build());
-    assertThrows(OpenLineageClientException.class, () -> client.emit(event));
+    emit(localStorage, null, event);
+
+    Blob blob = singleBlob(localStorage);
+    assertTrue(blob.getName().matches(epochMillis() + "-" + UUID_REGEX + "\\.json"));
+    assertEquals(new String(blob.getContent()), OpenLineageClientUtils.toJson(event));
+  }
+
+  @Test
+  void shouldStoreAllEventsWithTheSameEventTime() {
+    Storage localStorage = LocalStorageHelper.getOptions().getService();
+    OpenLineage.RunEvent start = runEvent(clock, OpenLineage.RunEvent.EventType.START);
+    OpenLineage.RunEvent complete = runEvent(clock, OpenLineage.RunEvent.EventType.COMPLETE);
+    emit(localStorage, "some/prefix/", start, complete);
+
+    List<String> contents =
+        StreamSupport.stream(localStorage.list("test_bucket").iterateAll().spliterator(), false)
+            .map(blob -> new String(blob.getContent()))
+            .collect(Collectors.toList());
+    assertEquals(2, contents.size());
+    assertTrue(contents.contains(OpenLineageClientUtils.toJson(start)));
+    assertTrue(contents.contains(OpenLineageClientUtils.toJson(complete)));
   }
 
   @Test
@@ -107,7 +98,33 @@ class GcsTransportTest {
     assertEquals(2500L, retrySettings.getMaxRetryDelayDuration().toMillis());
   }
 
+  private static void emit(Storage storage, String prefix, OpenLineage.RunEvent... events) {
+    GcsTransportConfig config =
+        new GcsTransportConfig("test_project", "test_bucket", null, prefix, null, null);
+    OpenLineageClient client = new OpenLineageClient(new GcsTransport(storage, config));
+    for (OpenLineage.RunEvent event : events) {
+      client.emit(event);
+    }
+  }
+
+  private static Blob singleBlob(Storage storage) {
+    List<Blob> blobs =
+        StreamSupport.stream(storage.list("test_bucket").iterateAll().spliterator(), false)
+            .collect(Collectors.toList());
+    assertEquals(1, blobs.size());
+    return storage.get(blobs.get(0).getBlobId());
+  }
+
+  private static long epochMillis() {
+    return ZonedDateTime.now(clock).toInstant().toEpochMilli();
+  }
+
   public static OpenLineage.RunEvent runEvent(Clock clock) {
+    return runEvent(clock, OpenLineage.RunEvent.EventType.START);
+  }
+
+  public static OpenLineage.RunEvent runEvent(
+      Clock clock, OpenLineage.RunEvent.EventType eventType) {
     OpenLineage.Job job =
         new OpenLineage.JobBuilder().namespace("test-namespace").name("test-job").build();
     OpenLineage.Run run =
@@ -117,6 +134,7 @@ class GcsTransportTest {
     return new OpenLineage(URI.create("http://test.producer"))
         .newRunEventBuilder()
         .eventTime(ZonedDateTime.now(clock))
+        .eventType(eventType)
         .job(job)
         .run(run)
         .build();

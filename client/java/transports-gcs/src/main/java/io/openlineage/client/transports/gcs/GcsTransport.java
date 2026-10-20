@@ -13,7 +13,6 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
 import java.io.File;
@@ -23,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -85,16 +85,20 @@ public class GcsTransport extends Transport {
 
   @SuppressWarnings("PMD.UnusedPrivateMethod")
   private <T extends OpenLineage.BaseEvent> void emitEvent(T event) {
-    Long timestamp = event.getEventTime().toInstant().toEpochMilli();
-    String fileName = fileNamePrefix.map(getFileName(timestamp)).orElse(timestamp + ".json");
+    // eventTime alone is not unique: several events can share the same millisecond, so a random
+    // suffix is appended. Names still sort by eventTime.
+    String baseName =
+        String.format(
+            "%d-%s.json", event.getEventTime().toInstant().toEpochMilli(), UUID.randomUUID());
+    String fileName = fileNamePrefix.map(getFileName(baseName)).orElse(baseName);
     uploadObject(fileName, OpenLineageClientUtils.toJson(event));
   }
 
-  private static Function<String, String> getFileName(Long timestamp) {
+  private static Function<String, String> getFileName(String baseName) {
     return prefix ->
         prefix.endsWith("/")
-            ? String.format("%s%s.json", prefix, timestamp)
-            : String.format("%s_%s.json", prefix, timestamp);
+            ? String.format("%s%s", prefix, baseName)
+            : String.format("%s_%s", prefix, baseName);
   }
 
   private void uploadObject(String objectName, String contents) {
@@ -102,11 +106,6 @@ public class GcsTransport extends Transport {
     BlobId blobId = BlobId.of(bucketName, objectName);
     BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
     byte[] content = contents.getBytes(StandardCharsets.UTF_8);
-    if (storage.get(bucketName, objectName) != null) {
-      String error =
-          String.format("File with given name %s, already exists!", blobId.toGsUtilUri());
-      throw new OpenLineageClientException(error);
-    }
     Blob blob = storage.create(blobInfo, content);
     log.debug("Stored event: {}", blob.asBlobInfo().getBlobId().toGsUtilUri());
   }
