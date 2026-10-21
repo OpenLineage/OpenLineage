@@ -14,6 +14,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark3.agent.utils.HudiUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Map;
 import java.util.Optional;
@@ -116,6 +117,8 @@ public class ColumnLevelLineageUtils {
       plan = ((CreateDataSourceTableAsSelectCommand) logicalPlan).query();
     } else if (PlanUtils.safeIsInstanceOf(logicalPlan, CREATE_HIVE_TABLE_AS_SELECT_COMMAND)) {
       plan = ((CreateHiveTableAsSelectCommand) logicalPlan).query();
+    } else if (HudiUtils.isInsertIntoHoodieTableCommand(logicalPlan)) {
+      plan = HudiUtils.insertQuery(logicalPlan).orElse(logicalPlan);
     } else {
       plan = logicalPlan;
     }
