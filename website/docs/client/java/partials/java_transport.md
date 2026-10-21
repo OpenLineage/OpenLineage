@@ -1272,7 +1272,10 @@ the classpath for lineage events to be emitted correctly.
 #### Behavior
 
 - Events are serialized to JSON and stored in the specified GCS bucket.
-- Each event file is named based on its `eventTime`, converted to epoch milliseconds, with an optional prefix if configured.
+- Each event file is named `<eventTime in epoch milliseconds>-<content hash>.json`, with an optional prefix if configured.
+  The content hash is the first 16 hex characters of the SHA-256 of the serialized event. It keeps different events with
+  the same `eventTime` from overwriting each other, while an identical event emitted twice is stored once. Names still
+  sort by `eventTime`.
 - Two constructors are available: one accepting both `Storage` and `GcsTransportConfig` and another solely accepting
   `GcsTransportConfig`.
 

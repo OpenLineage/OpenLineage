@@ -19,8 +19,11 @@ import io.openlineage.client.transports.Transport;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Function;
@@ -85,16 +88,33 @@ public class GcsTransport extends Transport {
 
   @SuppressWarnings("PMD.UnusedPrivateMethod")
   private <T extends OpenLineage.BaseEvent> void emitEvent(T event) {
-    Long timestamp = event.getEventTime().toInstant().toEpochMilli();
-    String fileName = fileNamePrefix.map(getFileName(timestamp)).orElse(timestamp + ".json");
-    uploadObject(fileName, OpenLineageClientUtils.toJson(event));
+    // eventTime alone is not unique: several events can share the same millisecond, so a hash of
+    // the event content is appended. Only identical events share a name. Names still sort by
+    // eventTime.
+    String json = OpenLineageClientUtils.toJson(event);
+    String baseName =
+        String.format(
+            "%d-%s.json", event.getEventTime().toInstant().toEpochMilli(), contentHash(json));
+    String fileName = fileNamePrefix.map(getFileName(baseName)).orElse(baseName);
+    uploadObject(fileName, json);
   }
 
-  private static Function<String, String> getFileName(Long timestamp) {
+  /** Returns the first 64 bits of the SHA-256 of {@code contents} as 16 hex characters. */
+  private static String contentHash(String contents) {
+    try {
+      byte[] digest =
+          MessageDigest.getInstance("SHA-256").digest(contents.getBytes(StandardCharsets.UTF_8));
+      return String.format("%016x", ByteBuffer.wrap(digest).getLong());
+    } catch (NoSuchAlgorithmException e) {
+      throw new OpenLineageClientException(e);
+    }
+  }
+
+  private static Function<String, String> getFileName(String baseName) {
     return prefix ->
         prefix.endsWith("/")
-            ? String.format("%s%s.json", prefix, timestamp)
-            : String.format("%s_%s.json", prefix, timestamp);
+            ? String.format("%s%s", prefix, baseName)
+            : String.format("%s_%s", prefix, baseName);
   }
 
   private void uploadObject(String objectName, String contents) {
@@ -102,11 +122,6 @@ public class GcsTransport extends Transport {
     BlobId blobId = BlobId.of(bucketName, objectName);
     BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
     byte[] content = contents.getBytes(StandardCharsets.UTF_8);
-    if (storage.get(bucketName, objectName) != null) {
-      String error =
-          String.format("File with given name %s, already exists!", blobId.toGsUtilUri());
-      throw new OpenLineageClientException(error);
-    }
     Blob blob = storage.create(blobInfo, content);
     log.debug("Stored event: {}", blob.asBlobInfo().getBlobId().toGsUtilUri());
   }
