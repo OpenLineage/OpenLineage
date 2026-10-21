@@ -9,7 +9,14 @@ repositories {
 
 configureScalaVariant("2.11", "2.4.8")
 configureScalaVariant("2.12", "3.5.6")
-configureScalaVariant("2.13", "4.0.0")
+// Spark 4 changed binary signatures (e.g. SparkSession.implicits, DataStreamWriter.option),
+// so the 2.13 fixtures must be compiled against the Spark major version they run on.
+val scala213SparkVersion =
+    if (project.findProperty("spark.version").toString().startsWith("4"))
+        project.findProperty("spark40.spark.version").toString()
+    else
+        project.findProperty("spark35.spark.version").toString()
+configureScalaVariant("2.13", scala213SparkVersion)
 
 dependencies {
     compileOnly("org.apache.spark:spark-sql_2.12:3.5.6")
