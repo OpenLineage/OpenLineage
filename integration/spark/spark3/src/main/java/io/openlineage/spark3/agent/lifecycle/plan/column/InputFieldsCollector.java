@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.lifecycle.plan.column.CheckpointColumnLineage;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.BigQueryUtils;
@@ -14,6 +15,7 @@ import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.Checkpoint;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
 import io.openlineage.sql.SqlMeta;
@@ -21,6 +23,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +73,13 @@ public class InputFieldsCollector {
   }
 
   private static void discoverInputsFromNode(ColumnLevelLineageContext context, LogicalPlan node) {
+    if (node instanceof LogicalRDD && isCheckpoint(context, (LogicalRDD) node)) {
+      // the checkpointed RDD has no dataset identifier of its own - its lineage was captured
+      // eagerly while the checkpoint was being materialized and stashed in CheckpointContext;
+      // reattach it here instead of the usual dataset-identifier based collection.
+      collectCheckpointInputs(context, (LogicalRDD) node);
+      return;
+    }
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isQueryRelationNode(node)) {
       QueryRelationColumnLineageCollector.extractExternalInputs(context, node);
@@ -80,6 +90,64 @@ public class InputFieldsCollector {
     } else {
       extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
     }
+  }
+
+  /**
+   * Lineage is looked up regardless of {@link org.apache.spark.rdd.RDD#isCheckpointed()}, which
+   * stays false for a lazy checkpoint until the first job reading it materializes it.
+   */
+  private static boolean isCheckpoint(ColumnLevelLineageContext context, LogicalRDD node) {
+    return node.rdd().isCheckpointed()
+        || context.getOlContext().getCheckpointContext().getCheckpoint(node.rdd().id()).isPresent();
+  }
+
+  /**
+   * Attaches the column lineage captured for a checkpoint (see {@link Checkpoint}) to the current,
+   * downstream plan: the {@link LogicalRDD} output attributes representing the checkpointed data
+   * are matched to the checkpoint's output fields by name (Spark reuses the exact same output
+   * schema for a checkpointed dataset, so names line up directly) and registered as references,
+   * which are resolved - and merged with the downstream plan's transformations - only once an
+   * output field depends on them. Dataset-level dependencies apply to the downstream plan as a
+   * whole.
+   */
+  private static void collectCheckpointInputs(ColumnLevelLineageContext context, LogicalRDD node) {
+    Optional<Checkpoint> checkpoint =
+        context.getOlContext().getCheckpointContext().getCheckpoint(node.rdd().id());
+
+    if (!checkpoint.isPresent()) {
+      log.debug("No lineage recorded for checkpointed RDD id={}", node.rdd().id());
+      return;
+    }
+
+    CheckpointColumnLineage lineage = checkpoint.get().getColumnLineage();
+    List<AttributeReference> attributes =
+        ScalaConversionUtils.<org.apache.spark.sql.catalyst.expressions.Attribute>fromSeq(
+                node.output())
+            .stream()
+            .filter(attr -> attr instanceof AttributeReference)
+            .map(attr -> (AttributeReference) attr)
+            .collect(Collectors.toList());
+
+    // the captured lineage is keyed by output field name only, so it can't be told apart for
+    // duplicated names (e.g. `SELECT a, upper(a) AS a`) - skip those rather than guess.
+    Map<String, Long> nameCounts =
+        attributes.stream()
+            .collect(Collectors.groupingBy(AttributeReference::name, Collectors.counting()));
+
+    attributes.stream()
+        .filter(
+            attr -> {
+              boolean unique = nameCounts.get(attr.name()) == 1;
+              if (!unique) {
+                log.debug(
+                    "Not bridging checkpoint lineage for ambiguous output field: {}", attr.name());
+              }
+              return unique;
+            })
+        .filter(attr -> lineage.hasField(attr.name()))
+        .forEach(
+            attr -> context.getBuilder().addCheckpointInput(attr.exprId(), attr.name(), lineage));
+    context.getBuilder().addCheckpointDatasetDependencies(lineage);
   }
 
   private static boolean isQueryRelationNode(LogicalPlan node) {
