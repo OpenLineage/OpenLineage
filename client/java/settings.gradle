@@ -9,6 +9,7 @@ include('generator')
 include('transports-gcplineage')
 include('transports-gcs')
 include('transports-kinesis')
+include('transports-nats')
 include('transports-s3')
 include('transports-datazone')
 

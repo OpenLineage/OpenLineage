@@ -47,6 +47,12 @@ For AWS MSK with IAM authentication:
 pip install openlineage-python[msk-iam]
 ```
 
+#### NATS Support
+For NATS transport:
+```bash
+pip install openlineage-python[nats]
+```
+
 #### DataZone Support
 For AWS DataZone integration:
 ```bash
@@ -56,5 +62,5 @@ pip install openlineage-python[datazone]
 #### All Optional Dependencies
 To install all optional dependencies:
 ```bash
-pip install openlineage-python[fsspec,kafka,msk-iam,datazone]
+pip install openlineage-python[fsspec,kafka,msk-iam,nats,datazone]
 ```
