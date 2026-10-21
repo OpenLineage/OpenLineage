@@ -1943,3 +1943,60 @@ def test_dataset_config_from_user_config():
         "my.custom.trimmers.KeyValueTrimmer",
         "my.custom.trimmers.MultiDirDateTrimmer",
     ]
+
+
+# ---- Tests for issue #5042: tag values from env vars must always be strings ----
+
+
+@pytest.mark.parametrize(
+    "env_value",
+    ["true", "false", "null", "1.0", "4521", "PRODUCTION"],
+)
+def test_tags_env_var_values_are_strings(env_value):
+    """Tag leaf values from env vars must remain plain strings (issue #5042).
+
+    json.loads("true") → True, json.loads("1.0") → 1.0, etc.  These decoded
+    values violate the Tags facet schema which requires value to be a string.
+    The fix skips JSON decoding for individual OPENLINEAGE__TAGS__* leaf vars,
+    so every env var value is preserved as its literal string form.
+    """
+    env = {"OPENLINEAGE__TRANSPORT__TYPE": "console", "OPENLINEAGE__TAGS__JOB__VAL": env_value}
+    with patch.dict(os.environ, env, clear=False):
+        config = OpenLineageClient._load_config_from_env_variables()  # noqa: SLF001
+    job_tags = config.get("tags", {}).get("job", {})
+    assert job_tags.get("val") == env_value
+    assert isinstance(job_tags.get("val"), str), f"Expected str, got {type(job_tags.get('val'))}"
+
+
+def test_tags_env_var_whole_block_json_still_decoded():
+    """OPENLINEAGE__TAGS='{...}' (whole-block JSON override) must still decode."""
+    env = {
+        "OPENLINEAGE__TRANSPORT__TYPE": "console",
+        "OPENLINEAGE__TAGS": '{"job": {"env": "prod"}, "run": {"owner": "alice"}}',
+    }
+    with patch.dict(os.environ, env, clear=False):
+        config = OpenLineageClient._load_config_from_env_variables()  # noqa: SLF001
+    assert config["tags"]["job"]["env"] == "prod"
+    assert config["tags"]["run"]["owner"] == "alice"
+
+
+def test_tags_config_coerces_non_string_values():
+    """TagsConfig converter normalises non-string values to str (covers YAML path)."""
+    from openlineage.client.tags import TagsConfig
+
+    cfg = TagsConfig(
+        job={"boolean_key": True, "int_key": 42, "float_key": 1.5, "str_key": "ok"},
+        run={"another": False},
+    )
+    assert cfg.job == {"boolean_key": "True", "int_key": "42", "float_key": "1.5", "str_key": "ok"}
+    assert cfg.run == {"another": "False"}
+
+
+def test_tags_config_drops_none_values():
+    """TagsConfig converter drops keys whose value is None (null in YAML)."""
+    from openlineage.client.tags import TagsConfig
+
+    cfg = TagsConfig(job={"present": "yes", "absent": None}, run={"also_absent": None})
+    assert "absent" not in cfg.job
+    assert cfg.job == {"present": "yes"}
+    assert cfg.run == {}
