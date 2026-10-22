@@ -13,6 +13,45 @@ For Python there is Python object with two lists.
 The tables can be in different database schemas or even databases, so we return `DbTableMeta` object that contains up to three-level nested names.
 This object carries three language-specific Strings carrying this information.
 
+## Default database and schema
+
+The parser accepts optional database and schema defaults for table names that do not
+explicitly include those components. For example, in Python:
+
+```python
+from openlineage_sql import parse
+
+metadata = parse(
+    ["INSERT INTO target SELECT id FROM source"],
+    dialect="postgres",
+    default_schema="public",
+    default_database="mydb",
+)
+```
+
+Both input and output tables, and the input column lineage origins, use
+the database `mydb` and schema `public`. An explicit database or schema in SQL takes
+precedence over its default. Defaults initialize the parsing context; `USE`
+statements can change that context according to the selected dialect. Each parse
+call has an independent context.
+
+Java callers can supply the same defaults through the four-argument overload:
+
+```java
+OpenLineageSql.parse(
+    Collections.singletonList("INSERT INTO target SELECT id FROM source"),
+    "postgres",
+    "public",
+    "mydb");
+```
+
+The existing one- and two-argument Java methods retain their behavior. Passing
+`null` for a default leaves that component unspecified.
+
+Omitting `default_database` or passing `None` preserves the existing behavior.
+Rust callers can use `parse_multiple_statements_with_default_database`; the existing
+`parse_multiple_statements` and `parse_sql` functions retain their signatures.
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2026 contributors to the OpenLineage project
