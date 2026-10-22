@@ -38,6 +38,10 @@ jobs:
     needs: check-label
     if: needs.check-label.outputs.visual-comparison-required-label-found == 'true'
     runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_SERVICE: openlineage-website
+      DD_ENV: ci
     defaults:
       run:
         working-directory: ./website
@@ -47,6 +51,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+      - name: Record the main checkout for Datadog
+        run: |
+          echo "DD_GIT_BRANCH=main" >> "$GITHUB_ENV"
+          echo "DD_GIT_COMMIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
@@ -59,8 +67,19 @@ jobs:
         run: yarn playwright install --with-deps chromium
       - name: Build the website
         run: yarn docusaurus build
+      - name: Configure Datadog Test Optimization
+        if: env.DD_API_KEY != ''
+        uses: datadog/test-visibility-github-action@v3
+        with:
+          languages: js
+          api_key: ${{ secrets.DD_API_KEY }}
+          site: us5.datadoghq.com
       - name: Take screenshots with Playwright
-        run: yarn workspace argos screenshot
+        run: |
+          if [ -n "${DD_TRACE_PACKAGE:-}" ]; then
+            export NODE_OPTIONS="${NODE_OPTIONS:-} -r ${DD_TRACE_PACKAGE}"
+          fi
+          yarn workspace argos screenshot
       # Argos needs two extra pieces of information to associate screenshots with the branch.
       # - We have to set the ARGOS_BRANCH variable to main, so that it could be labelled properly in the UI
       # - We have to set the ARGOS_COMMIT variable to the main branch commit sha. It is necessary, because Argos
@@ -81,6 +100,10 @@ jobs:
     needs: [check-label, take-screenshots-main]
     if: needs.check-label.outputs.visual-comparison-required-label-found == 'true'
     runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_SERVICE: openlineage-website
+      DD_ENV: ci
     defaults:
       run:
         working-directory: ./website
@@ -99,7 +122,18 @@ jobs:
         run: yarn playwright install --with-deps chromium
       - name: Build the website
         run: yarn docusaurus build
+      - name: Configure Datadog Test Optimization
+        if: env.DD_API_KEY != ''
+        uses: datadog/test-visibility-github-action@v3
+        with:
+          languages: js
+          api_key: ${{ secrets.DD_API_KEY }}
+          site: us5.datadoghq.com
       - name: Take screenshots with Playwright
-        run: yarn workspace argos screenshot
+        run: |
+          if [ -n "${DD_TRACE_PACKAGE:-}" ]; then
+            export NODE_OPTIONS="${NODE_OPTIONS:-} -r ${DD_TRACE_PACKAGE}"
+          fi
+          yarn workspace argos screenshot
       - name: Upload screenshots to Argos
         run: yarn workspace argos upload
