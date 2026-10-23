@@ -63,6 +63,10 @@ class DbtRunRunFacet(BaseFacet):
     account_id: str | None = attr.field(default=None)
     # Run-wide --full-refresh flag for the invocation; None when it wasn't set.
     full_refresh: bool | None = attr.field(default=None)
+    # dbt Core v2 only, on the wrapper run: how the `dbt parse` before the command went (succeeded, failed,
+    # timed_out or skipped), and whether dbt writes manifest.json at the end of the run.
+    pre_parse: str | None = attr.field(default=None)
+    write_json: bool | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:

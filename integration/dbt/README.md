@@ -99,6 +99,9 @@ your `target/` directory.
   temporary directory (`TMPDIR`). On large projects the telemetry file is about 23 KB per node, and the
   directory is removed when the run ends.
 
+`dbt-ol` keeps the parsed manifest in memory while dbt runs, which takes about 7 to 8 times the size of
+`manifest.json`: about 1.2–1.4 GB for a 10,000-model project, on which dbt itself peaked at about 12 GB.
+
 Commands that produce no lineage, like `dbt deps` or `dbt debug`, run without OpenLineage events, and so
 does any command when `dbt-ol` can't read the project or profile. On Ctrl-C, dbt stops as usual and `dbt-ol`
 keeps sending events until dbt exits, so the runs still open are closed. A second Ctrl-C kills dbt and
