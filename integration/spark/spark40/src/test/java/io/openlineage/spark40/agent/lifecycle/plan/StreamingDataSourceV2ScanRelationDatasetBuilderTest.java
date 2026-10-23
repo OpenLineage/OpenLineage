@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collections;
@@ -32,6 +31,8 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import scala.Option;
+import scala.collection.immutable.Map$;
+import scala.jdk.javaapi.CollectionConverters;
 
 class StreamingDataSourceV2ScanRelationDatasetBuilderTest {
 
@@ -57,10 +58,13 @@ class StreamingDataSourceV2ScanRelationDatasetBuilderTest {
     partitionOffsets.put(topicPartition("orders", 1, shaded), 20L);
     partitionOffsets.put(topicPartition("payments", 0, shaded), 30L);
 
-    KafkaSourceOffset offset = new KafkaSourceOffset(ScalaConversionUtils.asScalaMapEmpty());
+    KafkaSourceOffset offset = new KafkaSourceOffset(Map$.MODULE$.empty());
     // Model the relocated runtime field without asking the unshaded Kafka JSON codec to read it.
     FieldUtils.writeDeclaredField(
-        offset, "partitionToOffsets", ScalaConversionUtils.fromJavaMap(partitionOffsets), true);
+        offset,
+        "partitionToOffsets",
+        Map$.MODULE$.from(CollectionConverters.asScala(partitionOffsets)),
+        true);
 
     StructType schema =
         new StructType().add("key", DataTypes.BinaryType).add("value", DataTypes.BinaryType);
