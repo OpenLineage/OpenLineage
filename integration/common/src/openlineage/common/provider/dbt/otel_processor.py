@@ -186,9 +186,23 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 return
 
             lines = self._run_dbt_command()
+            failed_records = 0
             try:
                 for line in lines:
-                    yield from self._handle_line(line)
+                    # A record that fails is skipped, so it costs only its own node's events.
+                    try:
+                        yield from self._handle_line(line)
+                    except Exception:
+                        failed_records += 1
+                        if failed_records == 1:
+                            self.logger.exception(
+                                "OpenLineage failed to process a dbt telemetry record and skipped it; some "
+                                "events might be missing. This does not make dbt execution fail."
+                            )
+                        else:
+                            self.logger.debug(
+                                "OpenLineage failed to process a dbt telemetry record", exc_info=True
+                            )
             except Exception:
                 self.logger.exception(
                     "OpenLineage failed to process dbt telemetry. This does not make dbt execution fail, "
@@ -197,6 +211,10 @@ class DbtOtelProcessor(DbtLiveProcessor):
             finally:
                 # Waits for dbt to exit and records its exit code, also after a processing error.
                 lines.close()
+            if failed_records:
+                self.logger.warning(
+                    "OpenLineage failed to process %s", _pluralize(failed_records, "dbt telemetry record")
+                )
             yield from self._finalize()
         finally:
             self._remove_temp_dir()
@@ -520,8 +538,9 @@ class DbtOtelProcessor(DbtLiveProcessor):
         return_code = self.dbt_command_return_code
         run_facets = self._wrapper_run_facets()
         end = self._invocation_end
-        if end is None and self._trace_id is not None:
-            # The invocation started but never ended: dbt was killed.
+        if end is None and self._trace_id is not None and return_code != 0:
+            # The invocation started but never ended, and dbt didn't exit cleanly: it was killed. With exit
+            # code 0, dbt finished and only the Invocation end record went unread.
             event_type = RunState.ABORT
             event_time = nanos_to_iso(None)
         else:

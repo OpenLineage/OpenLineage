@@ -340,6 +340,44 @@ def test_killed_dbt_aborts_open_runs():
     assert [e["eventType"] for e in jobs["dbt-run-otel_jaffle"]] == ["START", "ABORT"]
 
 
+def test_a_record_that_fails_to_process_costs_only_its_own_node(caplog):
+    broken = "test.otel_jaffle.not_null_stg_customers_customer_id.e2cfb1f9aa"
+    lines = fixture_lines()
+    corrupted = []
+    for line in lines:
+        data = json.loads(line)
+        attributes = data.get("attributes") or {}
+        if (
+            data["record_type"] == "SpanEnd"
+            and attributes.get("unique_id") == broken
+            and attributes.get("phase") == "EXECUTION_PHASE_RUN"
+        ):
+            attributes["node_test_detail"] = {"test_outcome": "TEST_OUTCOME_PASSED", "failing_rows": "n/a"}
+            line = json.dumps(data)
+        corrupted.append(line)
+
+    expected = {
+        job: [e["eventType"] for e in events]
+        for job, events in by_job(replay(make_processor(), lines)).items()
+    }
+    with caplog.at_level(logging.WARNING):
+        jobs = by_job(replay(make_processor(), corrupted))
+    expected[broken] = ["START", "ABORT"]
+    assert {job: [e["eventType"] for e in events] for job, events in jobs.items()} == expected
+    assert "OpenLineage failed to process 1 dbt telemetry record" in caplog.text
+
+
+def test_unread_invocation_end_with_exit_code_zero_completes_the_wrapper():
+    lines = [
+        line
+        for line in fixture_lines()
+        if not ('"SpanEnd"' in line and "fusion.invocation.Invocation" in line)
+    ]
+    assert len(lines) == len(fixture_lines()) - 1
+    jobs = by_job(replay(make_processor(), lines, return_code=0))
+    assert [e["eventType"] for e in jobs["dbt-run-otel_jaffle"]] == ["START", "COMPLETE"]
+
+
 ##########################
 # adapter shapes (Snowflake, Databricks)
 ##########################
