@@ -16,7 +16,7 @@ from openlineage.common.provider.dbt.structured_logs import (
     DbtStructuredLogsProcessor,
     ManifestIntegrityResult,
 )
-from openlineage.common.provider.dbt.utils import DBT_LOG_FILE_MAX_BYTES
+from openlineage.common.provider.dbt.utils import DBT_LOG_FILE_MAX_BYTES, get_job_type
 from openlineage.common.test import match
 from openlineage.common.utils import get_from_nullable_chain
 
@@ -2515,3 +2515,51 @@ def test_node_finished_attaches_source_backed_exposure_to_input_on_success_only(
         node_finished_event(unique_id="model.jaffle_shop.orders", resource_type="model", node_status="fail")
     )
     assert "dbt_exposures" not in fail_event.inputs[0].facets
+
+
+def test_unit_test_job_type():
+    assert get_job_type(
+        {"info": {"name": "NodeStart"}, "data": {"node_info": {"unique_id": "unit_test.p.m.t"}}}
+    ) == ("UNIT_TEST")
+
+
+def test_unit_test_events_have_no_datasets_or_extraction_errors():
+    processor = node_finished_processor()
+    unit_test_id = "unit_test.jaffle_shop.orders.ut_orders"
+    processor._compiled_manifest["unit_tests"] = {
+        unit_test_id: {"unique_id": unit_test_id, "model": "orders", "tags": ["unit"], "meta": {}}
+    }
+    processor._compiled_manifest["parent_map"][unit_test_id] = ["model.jaffle_shop.orders"]
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(unique_id=unit_test_id, resource_type="unit_test", node_status="pass")
+    )
+
+    assert event.eventType.value == "COMPLETE"
+    assert event.job.facets["jobType"].jobType == "UNIT_TEST"
+    assert event.inputs == [] and event.outputs == []
+    assert "extractionError" not in event.run.facets
+    assert event.job.facets["dbt_node"].unique_id == unit_test_id
+
+
+def test_random_log_directory_is_removed(monkeypatch, tmp_path):
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir=CURRENT_DIR,
+        target="postgres",
+        dbt_command_line=["dbt", "run", "--project-dir", str(tmp_path)],
+    )
+    assert processor.is_random_logfile
+    process_mock = mock.Mock(returncode=0)
+    process_mock.poll.return_value = 0
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.subprocess.Popen",
+        mock.Mock(return_value=process_mock),
+    )
+    processor.received_dbt_command_completed = True
+
+    list(processor._run_dbt_command())
+
+    assert processor.dbt_log_dirname.startswith(str(tmp_path))
+    assert not Path(processor.dbt_log_dirname).exists()
