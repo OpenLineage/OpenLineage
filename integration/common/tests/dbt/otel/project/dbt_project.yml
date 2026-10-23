@@ -1,3 +1,5 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 # Small DuckDB project for the dbt Core v2 telemetry fixtures; see ../generate_fixtures.py.
 name: otel_jaffle
 version: "1.0"

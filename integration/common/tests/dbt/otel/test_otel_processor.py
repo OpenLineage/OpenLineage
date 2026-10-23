@@ -340,30 +340,57 @@ def test_killed_dbt_aborts_open_runs():
     assert [e["eventType"] for e in jobs["dbt-run-otel_jaffle"]] == ["START", "ABORT"]
 
 
-def test_a_record_that_fails_to_process_costs_only_its_own_node(caplog):
-    broken = "test.otel_jaffle.not_null_stg_customers_customer_id.e2cfb1f9aa"
-    lines = fixture_lines()
+BROKEN_TEST = "test.otel_jaffle.not_null_stg_customers_customer_id.e2cfb1f9aa"
+
+
+def _with_broken_test_end(lines: list[str]) -> list[str]:
+    """The lines with the RUN-phase end of BROKEN_TEST made unprocessable."""
     corrupted = []
     for line in lines:
         data = json.loads(line)
         attributes = data.get("attributes") or {}
         if (
             data["record_type"] == "SpanEnd"
-            and attributes.get("unique_id") == broken
+            and attributes.get("unique_id") == BROKEN_TEST
             and attributes.get("phase") == "EXECUTION_PHASE_RUN"
         ):
             attributes["node_test_detail"] = {"test_outcome": "TEST_OUTCOME_PASSED", "failing_rows": "n/a"}
             line = json.dumps(data)
         corrupted.append(line)
+    return corrupted
 
-    expected = {
-        job: [e["eventType"] for e in events]
-        for job, events in by_job(replay(make_processor(), lines)).items()
-    }
+
+def _event_types(events: list[dict]) -> dict[str, list[str]]:
+    return {job: [e["eventType"] for e in job_events] for job, job_events in by_job(events).items()}
+
+
+def test_a_record_that_fails_to_process_costs_only_its_own_node(caplog):
+    lines = fixture_lines()
+    expected = _event_types(replay(make_processor(), lines))
     with caplog.at_level(logging.WARNING):
-        jobs = by_job(replay(make_processor(), corrupted))
-    expected[broken] = ["START", "ABORT"]
-    assert {job: [e["eventType"] for e in events] for job, events in jobs.items()} == expected
+        events = replay(make_processor(), _with_broken_test_end(lines))
+    expected[BROKEN_TEST] = ["START", "ABORT"]
+    assert _event_types(events) == expected
+    assert "OpenLineage failed to process 1 dbt telemetry record" in caplog.text
+
+
+@pytest.mark.parametrize("end_of_run_manifest", [True, False], ids=["manifest-record", "at-exit"])
+def test_a_held_node_end_that_fails_costs_only_its_own_node(end_of_run_manifest, caplog):
+    # With --ol-skip-parse every node end is held, and they're all released together.
+    lines = fixture_lines()
+    if not end_of_run_manifest:
+        lines = [line for line in lines if "ArtifactWritten" not in line]
+
+    def held_replay(lines):
+        processor = make_processor(skip_parse=True)
+        processor.manifest_path = str(FIXTURES / "end_of_run_manifest.json")
+        return replay(processor, lines, manifest=None)
+
+    expected = _event_types(held_replay(lines))
+    with caplog.at_level(logging.WARNING):
+        events = held_replay(_with_broken_test_end(lines))
+    expected[BROKEN_TEST] = ["START", "ABORT"]
+    assert _event_types(events) == expected
     assert "OpenLineage failed to process 1 dbt telemetry record" in caplog.text
 
 
@@ -507,37 +534,36 @@ def test_databricks_error_detail_comes_from_the_error_log_record():
     assert jobs["model.shop.orders"][-1]["run"]["facets"]["errorMessage"]["message"] == body
 
 
-def test_shared_otel_file_reads_only_this_invocation():
-    other = "fedcba9876543210fedcba9876543210"
+def test_user_otel_file_run_is_found_whatever_command_dbt_records():
+    # A wrapper script on PATH that adds flags changes the command line dbt records.
     lines = (
-        invocation(trace_id=other, raw_command="/venv/bin/dbt run --select other")
-        + [
-            record(
-                "SpanStart",
-                "NodeEvaluated",
-                trace_id=other,
-                attributes={"unique_id": "model.shop.other", "phase": "EXECUTION_PHASE_RUN"},
-            )
-        ]
-        + invocation(raw_command=f"/venv/bin/python /venv/bin/dbt {' '.join(BUILD_COMMAND[1:])}")
+        invocation(raw_command="/opt/dbt/bin/dbt build --profiles-dir /etc/dbt")
         + _node_lines(outcome="NODE_OUTCOME_SUCCESS")
         + [invocation_end(code=1)]
     )
     processor = make_processor()
-    processor.owns_otel_file = False
-    with mock.patch.object(processor, "_resolve_otel_file", lambda: ("/shared/otel.jsonl", False)):
+    with mock.patch.object(processor, "_resolve_otel_file", lambda: ("/var/log/dbt/otel.jsonl", False)):
         jobs = by_job(replay(processor, lines, return_code=0, manifest=None))
-    assert "model.shop.other" not in jobs
     assert [e["eventType"] for e in jobs["model.shop.orders"]] == ["START", "COMPLETE"]
     assert jobs["dbt-run-otel_jaffle"][0]["run"]["facets"]["dbt_run"]["invocation_id"] == TRACE_ID
 
 
-def test_shared_otel_file_without_this_invocation_warns(caplog):
-    lines = invocation(trace_id="fedcba9876543210fedcba9876543210", raw_command="/venv/bin/dbt run")
+def test_user_otel_file_without_telemetry_warns(caplog):
     processor = make_processor()
-    with mock.patch.object(processor, "_resolve_otel_file", lambda: ("/shared/otel.jsonl", False)):
-        assert replay(processor, lines, return_code=0, manifest=None) == []
-    assert "Found no telemetry for this dbt run in /shared/otel.jsonl" in caplog.text
+    with mock.patch.object(processor, "_resolve_otel_file", lambda: ("/var/log/dbt/otel.jsonl", False)):
+        assert replay(processor, [], return_code=0, manifest=None) == []
+    assert "Found no telemetry for this dbt run in /var/log/dbt/otel.jsonl" in caplog.text
+
+
+def test_wrapper_records_why_node_events_could_lack_inputs():
+    processor = make_processor(skip_parse=True)
+    processor.manifest_path = str(FIXTURES / "end_of_run_manifest.json")
+    jobs = by_job(replay(processor, fixture_lines(), manifest=None))
+    for event in jobs["dbt-run-otel_jaffle"]:
+        dbt_run = event["run"]["facets"]["dbt_run"]
+        assert (dbt_run["pre_parse"], dbt_run["write_json"]) == ("skipped", True)
+    # Node events don't repeat them.
+    assert jobs["model.otel_jaffle.customer_totals"][0]["run"]["facets"]["dbt_run"]["pre_parse"] is None
 
 
 def test_no_telemetry_and_failing_dbt_reports_a_failed_wrapper():
@@ -593,6 +619,7 @@ def test_pre_parse_command(monkeypatch, tmp_path):
     assert env["DBT_DISABLE_VERSION_CHECK"] == "1"
     assert "DBT_OTEL_FILE_NAME" not in env and "DBT_INVOCATION_ID" not in env
     assert "model.otel_jaffle.customer_totals" in processor.compiled_manifest["nodes"]
+    assert processor._pre_parse == "succeeded"
 
 
 def test_failed_pre_parse_leaves_no_manifest(tmp_path, caplog):
@@ -602,6 +629,7 @@ def test_failed_pre_parse_leaves_no_manifest(tmp_path, caplog):
     with mock.patch("openlineage.common.provider.dbt.otel_processor.subprocess.Popen", popen):
         processor._run_pre_parse()
     assert processor.compiled_manifest == {}
+    assert processor._pre_parse == "failed"
     assert "`dbt parse` before the run failed" in caplog.text
 
 
@@ -617,6 +645,7 @@ def test_hung_pre_parse_is_stopped_and_the_run_goes_ahead(tmp_path, caplog):
         processor._run_pre_parse()
     assert parses[0].killed
     assert processor.compiled_manifest == {}
+    assert processor._pre_parse == "timed_out"
     assert "took longer than 600 s and was stopped" in caplog.text
 
 

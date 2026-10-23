@@ -144,9 +144,15 @@ class DbtOtelProcessor(DbtLiveProcessor):
 
         self.temp_dir: str | None = None
         self.otel_file_path: str | None = None
-        # False when the user chose the OTel file: it's read in place, never deleted, and may be shared.
+        # False when the user chose the OTel file: it's read in place and never deleted. Only one dbt
+        # invocation writes to it at a time.
         self.owns_otel_file = True
         self._dbt_started_at: float | None = None
+        # How the pre-parse went: succeeded, failed, timed_out or skipped.
+        self._pre_parse: str | None = None
+        # Whether dbt writes manifest.json at the end of the run, from its Invocation record.
+        self._write_json: bool | None = None
+        self._failed_records = 0
 
         self._trace_id: str | None = None
         self._nodes: dict[str, _NodeState] = {}
@@ -186,23 +192,13 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 return
 
             lines = self._run_dbt_command()
-            failed_records = 0
             try:
                 for line in lines:
                     # A record that fails is skipped, so it costs only its own node's events.
                     try:
                         yield from self._handle_line(line)
                     except Exception:
-                        failed_records += 1
-                        if failed_records == 1:
-                            self.logger.exception(
-                                "OpenLineage failed to process a dbt telemetry record and skipped it; some "
-                                "events might be missing. This does not make dbt execution fail."
-                            )
-                        else:
-                            self.logger.debug(
-                                "OpenLineage failed to process a dbt telemetry record", exc_info=True
-                            )
+                        self._skip_failed_record()
             except Exception:
                 self.logger.exception(
                     "OpenLineage failed to process dbt telemetry. This does not make dbt execution fail, "
@@ -211,13 +207,25 @@ class DbtOtelProcessor(DbtLiveProcessor):
             finally:
                 # Waits for dbt to exit and records its exit code, also after a processing error.
                 lines.close()
-            if failed_records:
-                self.logger.warning(
-                    "OpenLineage failed to process %s", _pluralize(failed_records, "dbt telemetry record")
-                )
             yield from self._finalize()
+            if self._failed_records:
+                self.logger.warning(
+                    "OpenLineage failed to process %s",
+                    _pluralize(self._failed_records, "dbt telemetry record"),
+                )
         finally:
             self._remove_temp_dir()
+
+    def _skip_failed_record(self) -> None:
+        """Log a telemetry record that failed to process, from inside its except block."""
+        self._failed_records += 1
+        if self._failed_records == 1:
+            self.logger.exception(
+                "OpenLineage failed to process a dbt telemetry record and skipped it; some events might be "
+                "missing. This does not make dbt execution fail."
+            )
+        else:
+            self.logger.debug("OpenLineage failed to process a dbt telemetry record", exc_info=True)
 
     def _prepare(self) -> None:
         self.extract_adapter_type(self.profile)
@@ -225,7 +233,9 @@ class DbtOtelProcessor(DbtLiveProcessor):
         self.temp_dir = tempfile.mkdtemp(prefix="openlineage-dbt-", dir=os.environ.get(TEMP_DIR_ENV) or None)
         self.logger.info("dbt-ol temporary directory: %s", self.temp_dir)
         self.otel_file_path, self.owns_otel_file = self._resolve_otel_file()
-        if not self.skip_parse:
+        if self.skip_parse:
+            self._pre_parse = "skipped"
+        else:
             self._run_pre_parse()
 
     def _remove_temp_dir(self) -> None:
@@ -288,6 +298,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
+                self._pre_parse = "timed_out"
                 self.logger.warning(
                     "`dbt parse` before the run took longer than %d s and was stopped; node inputs will come "
                     "from the manifest dbt writes at the end of the run.",
@@ -300,6 +311,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 process.wait()
                 raise
         if return_code != 0:
+            self._pre_parse = "failed"
             with open(output_path, encoding="utf-8", errors="replace") as output:
                 tail = output.read()[-2000:]
             self.logger.warning(
@@ -312,6 +324,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
         self._compiled_manifest = self.load_metadata(
             os.path.join(target_path, "manifest.json"), list(range(2, 13)), self.logger
         )
+        self._pre_parse = "succeeded"
         self.logger.info("Parsed the dbt project in %.1f s", time.time() - started)
 
     def _run_dbt_command(self) -> Generator[str, None, None]:
@@ -435,12 +448,12 @@ class DbtOtelProcessor(DbtLiveProcessor):
         if self._trace_id is None:
             if record.record_type == SPAN_START and record.name == PROCESS:
                 self._dbt_version = self._dbt_version or record.attributes.get("version")
-            elif (
-                record.record_type == SPAN_START
-                and record.name == INVOCATION
-                and self._is_this_invocation(record)
-            ):
+            elif record.record_type == SPAN_START and record.name == INVOCATION:
+                # Reading starts where this run starts, so the first invocation is this run's.
                 self._trace_id = record.trace_id
+                eval_args = record.attributes.get("eval_args")
+                if isinstance(eval_args, dict):
+                    self._write_json = eval_args.get("write_json")
                 yield self._wrapper_start_event(
                     record.event_time(), record.attributes.get("invocation_id") or record.trace_id
                 )
@@ -473,13 +486,6 @@ class DbtOtelProcessor(DbtLiveProcessor):
         elif record.name == INVOCATION and record.record_type == SPAN_END:
             self._invocation_end = record
 
-    def _is_this_invocation(self, record: OtelRecord) -> bool:
-        if self.owns_otel_file:
-            return True
-        # Several runs may append to a file the user chose; recognize this one by its command line.
-        raw_command = str(record.attributes.get("raw_command") or "")
-        return raw_command.endswith(" ".join(self.dbt_command_line[1:]))
-
     def _emits_events(self, record: OtelRecord) -> bool:
         return bool(record.unique_id and job_type_for_unique_id(record.unique_id))
 
@@ -510,10 +516,15 @@ class DbtOtelProcessor(DbtLiveProcessor):
         }
 
     def _wrapper_run_facets(self) -> dict:
+        dbt_run_facet = self.dbt_run_run_facet()
+        if dbt_run := dbt_run_facet.get("dbt_run"):
+            # What explains node events without inputs: no pre-parse manifest, and no manifest at the end.
+            dbt_run.pre_parse = self._pre_parse
+            dbt_run.write_json = self._write_json
         run_facets = {
             **self.dbt_version_facet(),
             **self.processing_engine_facet(),
-            **self.dbt_run_run_facet(),
+            **dbt_run_facet,
         }
         if self.parent_run_metadata:
             run_facets["parent"] = self.parent_run_metadata.to_openlineage()
@@ -705,7 +716,13 @@ class DbtOtelProcessor(DbtLiveProcessor):
     def _release_held_node_ends(self) -> Iterator[RunEvent]:
         held, self._held_node_ends = self._held_node_ends, []
         for node_end in held:
-            yield self._node_end_event(node_end)
+            # Each held end is a record of its own: one that fails mustn't drop the ones after it.
+            try:
+                event = self._node_end_event(node_end)
+            except Exception:
+                self._skip_failed_record()
+                continue
+            yield event
 
     def _node_end_event(self, record: OtelRecord) -> RunEvent:
         unique_id = record.unique_id
