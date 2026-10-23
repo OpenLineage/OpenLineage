@@ -50,6 +50,10 @@ ext {
 }
 
 dependencies {
+    testImplementation(testFixtures(project(":test-commons")))
+    testScala212Implementation(testFixtures(project(":test-commons")))
+    testScala213Implementation(testFixtures(project(":test-commons")))
+
     // Design time dependencies
     api("io.openlineage:openlineage-java:${project.version}")
     api("io.openlineage:openlineage-sql-java:${project.version}")
