@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.streaming.FileStreamSink;
 import org.apache.spark.sql.execution.streaming.sources.WriteToMicroBatchDataSourceV1;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 
@@ -70,7 +71,8 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
               .build());
     }
 
-    if (isDeltaSink(writeToMicroBatchV1.sink())) {
+    if (writeToMicroBatchV1.sink() instanceof FileStreamSink
+        || isDeltaSink(writeToMicroBatchV1.sink())) {
       Optional<String> path = pathWriteOption(writeToMicroBatchV1);
       if (path.isPresent()) {
         return Collections.singletonList(
@@ -80,7 +82,7 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
                 .schema(writeToMicroBatchV1.schema())
                 .build());
       }
-      log.warn("Delta sink write has no path option; cannot extract output dataset");
+      log.warn("Path-based sink write has no path option; cannot extract output dataset");
       return Collections.emptyList();
     }
 
