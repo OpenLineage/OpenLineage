@@ -11,8 +11,9 @@ client = await Client.connect("localhost:7233")
 example_worker = Worker(
     client,
     task_queue="my-task-queue",
-    workflows=[ExampleWorkflow],
-    activities=[OpenLineagePlugin()],
+    activities=[greet, leave],
+    workflows=[SayHelloWorkflow, SayByeWorkflow, ParentWorkflow, ChildWorkflow],
+    plugins=[OpenLineagePlugin()]
 )
 ```
 
