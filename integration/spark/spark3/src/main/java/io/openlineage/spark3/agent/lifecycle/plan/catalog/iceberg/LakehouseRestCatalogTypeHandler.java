@@ -8,8 +8,11 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
@@ -55,6 +58,20 @@ class LakehouseRestCatalogTypeHandler extends RestCatalogTypeHandler {
       }
     }
     return defaultTableLocation(new Path(warehouseLocation), identifier);
+  }
+
+  /**
+   * BigLake keeps the unqualified table name: it does not inherit the catalog-qualified symlink
+   * that {@link RestCatalogTypeHandler} attaches in {@code getPrimaryIdentifier}.
+   */
+  @Override
+  @SneakyThrows
+  Optional<DatasetIdentifier.Symlink> getSymlinkIdentifiers(
+      SparkSession session, Map<String, String> catalogConf, String table) {
+    String confUri = catalogConf.get(CatalogProperties.URI);
+    String uri = new URI(confUri).toString();
+    return Optional.of(
+        new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE));
   }
 
   @Override

@@ -168,6 +168,7 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
+  /** Verifies that a REST catalog emits a TABLE symlink qualified with the catalog name. */
   @Test
   @SneakyThrows
   void testGetDatasetIdentifierForRestCatalog() {
@@ -205,7 +206,74 @@ class IcebergHandlerTest {
     assertThat(datasetIdentifier.getSymlinks())
         .singleElement()
         .hasFieldOrPropertyWithValue("namespace", "http://rest-host:8080")
-        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("name", "test.database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  /**
+   * Verifies that two REST catalogs sharing one URI emit distinguishable, catalog-qualified
+   * symlinks.
+   */
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForRestCatalogsSharingUriDoNotCollapse() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    // two catalogs sharing one REST URI and warehouse, like multiple Polaris catalogs
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.bronze.type",
+                "rest",
+                "spark.sql.catalog.bronze.uri",
+                "http://rest-host:8080",
+                "spark.sql.catalog.bronze.warehouse",
+                "s3a://warehouse-bucket/warehouse"));
+
+    SparkCatalog bronzeCatalog = mock(SparkCatalog.class);
+    SparkTable bronzeTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    when(bronzeCatalog.name()).thenReturn("bronze");
+    when(bronzeCatalog.loadTable(identifier)).thenReturn(bronzeTable);
+    when(bronzeTable.table().location())
+        .thenReturn("s3a://warehouse-bucket/warehouse/bronze/database/table");
+
+    DatasetIdentifier bronzeIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, bronzeCatalog, identifier, new HashMap<>());
+
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.silver.type",
+                "rest",
+                "spark.sql.catalog.silver.uri",
+                "http://rest-host:8080",
+                "spark.sql.catalog.silver.warehouse",
+                "s3a://warehouse-bucket/warehouse"));
+
+    SparkCatalog silverCatalog = mock(SparkCatalog.class);
+    SparkTable silverTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    when(silverCatalog.name()).thenReturn("silver");
+    when(silverCatalog.loadTable(identifier)).thenReturn(silverTable);
+    when(silverTable.table().location())
+        .thenReturn("s3a://warehouse-bucket/warehouse/silver/database/table");
+
+    DatasetIdentifier silverIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, silverCatalog, identifier, new HashMap<>());
+
+    // same REST URI on both catalogs: symlink names must stay distinguishable
+    assertThat(bronzeIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "http://rest-host:8080")
+        .hasFieldOrPropertyWithValue("name", "bronze.database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+
+    assertThat(silverIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "http://rest-host:8080")
+        .hasFieldOrPropertyWithValue("name", "silver.database.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
