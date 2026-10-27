@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import json
+import sys
 from enum import Enum
 from pathlib import Path
 from unittest import mock
@@ -1050,7 +1051,7 @@ def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code
     )
     monkeypatch.setattr("os.stat", mock.Mock())
     popen_mock.return_value = process_mock
-    process_mock.returncode = dbt_process_return_code
+    process_mock.wait.return_value = dbt_process_return_code
     process_mock.poll.return_value = 1
 
     processor = DbtStructuredLogsProcessor(
@@ -1066,6 +1067,54 @@ def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code
     list(processor._run_dbt_command())
 
     assert expected_processor_return_code == processor.dbt_command_return_code
+
+
+# stands in for dbt: while it runs, another dbt invocation sharing target/ is halfway through
+# rewriting manifest.json, so loading the manifest raises a JSONDecodeError
+FAKE_DBT_SCRIPT = """
+import json, os, sys, time
+
+log_path = sys.argv[sys.argv.index("--log-path") + 1]
+
+def log(name, data):
+    info = {"name": name, "ts": "2026-01-01T00:00:00.000000Z", "invocation_id": "1234", "msg": name}
+    with open(os.path.join(log_path, "dbt.log"), "a") as f:
+        f.write(json.dumps({"info": info, "data": data}) + "\\n")
+
+log("MainReportVersion", {"version": "v1.12.6"})
+with open(os.environ["FAKE_DBT_MANIFEST"], "w") as f:
+    f.write('{"metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json"}, "nod')
+log("ArtifactWritten", {"artifact_type": "WritableManifest"})
+time.sleep(1)
+exit_code = int(os.environ["FAKE_DBT_EXIT_CODE"])
+log("CommandCompleted", {"success": exit_code == 0, "completed_at": "2026-01-01T00:00:01.000000Z"})
+open(os.environ["FAKE_DBT_DONE"], "w").close()
+sys.exit(exit_code)
+"""
+
+
+@pytest.mark.parametrize("dbt_exit_code", [0, 1], ids=["dbt_success", "dbt_failure"])
+def test_parse_waits_for_dbt_after_event_parsing_error(dbt_exit_code, tmp_path, monkeypatch):
+    fake_dbt = tmp_path / "fake_dbt.py"
+    fake_dbt.write_text(FAKE_DBT_SCRIPT)
+    monkeypatch.setenv("FAKE_DBT_MANIFEST", str(tmp_path / "manifest.json"))
+    monkeypatch.setenv("FAKE_DBT_DONE", str(tmp_path / "done"))
+    monkeypatch.setenv("FAKE_DBT_EXIT_CODE", str(dbt_exit_code))
+
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir=CURRENT_DIR,
+        target="postgres",
+        dbt_command_line=[sys.executable, str(fake_dbt), "run", "--log-path", str(tmp_path / "logs")],
+    )
+    processor.manifest_path = str(tmp_path / "manifest.json")
+
+    events = list(processor.parse())
+
+    assert (tmp_path / "done").exists(), "dbt-ol stopped waiting for the dbt process"
+    assert processor.dbt_command_return_code == dbt_exit_code
+    assert [event.eventType.value for event in events] == ["START", "ABORT"]
 
 
 @pytest.mark.parametrize(

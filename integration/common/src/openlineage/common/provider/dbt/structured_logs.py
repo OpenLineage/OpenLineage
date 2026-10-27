@@ -149,7 +149,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.received_dbt_command_completed = False
         self.processed_bytes = 0
 
-        self.dbt_command_return_code = 0
+        # stays None until the dbt process has exited
+        self.dbt_command_return_code: int | None = None
 
     @staticmethod
     def _full_refresh_from_command_line(command_line: list[str]) -> bool | None:
@@ -245,8 +246,20 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         self.extract_dataset_namespace(self.profile)
 
+        parsing_failed = False
         for line in self._run_dbt_command():
-            ol_event = self._parse_structured_log_event(line)
+            # keep consuming the logs after a parsing error so that dbt is waited for
+            if parsing_failed:
+                continue
+            try:
+                ol_event = self._parse_structured_log_event(line)
+            except Exception:
+                self.logger.exception(
+                    "OpenLineage failed to parse a dbt log event. No further OpenLineage events will be "
+                    "emitted for this dbt execution, which continues unaffected."
+                )
+                parsing_failed = True
+                continue
             if ol_event:
                 yield ol_event
 
@@ -947,16 +960,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 "An exception occurred in OpenLineage dbt wrapper. "
                 "It should not affect underlying dbt execution that is still running."
             )
-            last_log = datetime.datetime.now()
-
-            while process.poll() is None:
-                if (datetime.datetime.now() - last_log) >= datetime.timedelta(seconds=10):
-                    self.logger.debug("dbt process is still running. Further logs won't be processed")
-                    last_log = datetime.datetime.now()
-                time.sleep(0.1)
-                pass
-            self.logger.debug("dbt process has finished")
         finally:
+            # also runs when the consumer closes this generator early: never leave dbt running untracked
+            self.logger.debug("Waiting for the dbt process to finish")
+            self.dbt_command_return_code = process.wait()
+            self.logger.debug("dbt process has finished")
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
                 if self.is_random_logfile:
@@ -968,8 +976,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                             "Failed to remove log file: %s. Leftover logs can consume disk space.",
                             self.dbt_log_file_path,
                         )
-            # process.returncode can be None if the process hasn't terminated properly
-            self.dbt_command_return_code = process.returncode if process.returncode is not None else -1
 
     def _open_dbt_log_file(self):
         """
