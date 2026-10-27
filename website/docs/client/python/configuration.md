@@ -237,6 +237,10 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
 - `endpoint` - string specifying the endpoint to which events are sent, appended to `url`. Optional, default: `api/v1/lineage`.
 - `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
 - `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
+- `sslContext` - dictionary specifying a custom SSL context, for parity with the Java client. Optional, default: `null`.
+  - `caCertPath` - string path to a custom CA bundle used to verify the server's TLS certificate. When set, it takes precedence over `verify`. Optional.
+  - `clientCertPath` - string path to a client certificate for mutual TLS authentication. Optional.
+  - `clientKeyPath` - string path to the private key for the client certificate. Optional if the certificate file already contains the key.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
   - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication:
@@ -290,6 +294,10 @@ transport:
   endpoint: api/v1/lineage
   timeout: 5
   verify: false
+  sslContext:
+    caCertPath: /etc/ssl/ca-bundle.pem
+    clientCertPath: /etc/ssl/client.crt
+    clientKeyPath: /etc/ssl/client.key
   auth:
     type: api_key
     apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
@@ -308,13 +316,24 @@ transport:
 
 ```python
 from openlineage.client import OpenLineageClient
-from openlineage.client.transport.http import ApiKeyTokenProvider, HttpConfig, HttpCompression, HttpTransport
+from openlineage.client.transport.http import (
+    ApiKeyTokenProvider,
+    HttpCompression,
+    HttpConfig,
+    HttpSslContextConfig,
+    HttpTransport,
+)
 
 http_config = HttpConfig(
   url="https://backend:5000",
   endpoint="api/v1/lineage",
   timeout=5,
   verify=False,
+  ssl_context=HttpSslContextConfig(
+    ca_cert_path="/etc/ssl/ca-bundle.pem",
+    client_cert_path="/etc/ssl/client.crt",
+    client_key_path="/etc/ssl/client.key",
+  ),
   auth=ApiKeyTokenProvider({"apiKey": "f048521b-dfe8-47cd-9c65-0cb07d57591e"}),
   compression=HttpCompression.GZIP,
 )

@@ -1,6 +1,8 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import json
+import os
+import sys
 from unittest import mock
 
 import pytest
@@ -344,3 +346,94 @@ def test_consume_local_artifacts_partial_root_falls_back_to_parent(monkeypatch):
     assert md.root_parent_run_id == parent_run_id
     assert md.root_parent_job_name == parent_job
     assert md.root_parent_job_namespace == parent_namespace
+
+
+# stands in for dbt: while it runs, another dbt invocation sharing target/ is halfway through
+# rewriting manifest.json, so loading the manifest raises a JSONDecodeError
+FAKE_DBT_SCRIPT = """
+import json, os, sys, time
+
+def log(name, data):
+    if "--log-path" not in sys.argv:
+        return
+    info = {"name": name, "ts": "2026-01-01T00:00:00.000000Z", "invocation_id": "1234", "msg": name}
+    log_path = sys.argv[sys.argv.index("--log-path") + 1]
+    with open(os.path.join(log_path, "dbt.log"), "a") as f:
+        f.write(json.dumps({"info": info, "data": data}) + "\\n")
+
+log("MainReportVersion", {"version": "v1.12.6"})
+os.makedirs(os.path.join(os.environ["FAKE_DBT_PROJECT"], "target"), exist_ok=True)
+with open(os.path.join(os.environ["FAKE_DBT_PROJECT"], "target", "manifest.json"), "w") as f:
+    f.write('{"metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json"}, "nod')
+log("ArtifactWritten", {"artifact_type": "WritableManifest"})
+time.sleep(1)
+exit_code = int(os.environ["FAKE_DBT_EXIT_CODE"])
+log("CommandCompleted", {"success": exit_code == 0, "completed_at": "2026-01-01T00:00:01.000000Z"})
+with open(os.path.join(os.environ["FAKE_DBT_PROJECT"], "done"), "w") as f:
+    f.write(" ".join(sys.argv[1:]))
+sys.exit(exit_code)
+"""
+
+
+@pytest.fixture
+def fake_dbt_project(tmp_path, monkeypatch):
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "dbt_project.yml").write_text("name: fake\nprofile: fake\n")
+    (project / "profiles.yml").write_text(
+        "fake:\n  target: dev\n  outputs:\n    dev:\n      type: duckdb\n      path: fake.duckdb\n"
+    )
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    fake_dbt = bin_dir / "dbt"
+    fake_dbt.write_text(f"#!{sys.executable}\n{FAKE_DBT_SCRIPT}")
+    fake_dbt.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("FAKE_DBT_PROJECT", str(project))
+    return project
+
+
+def consume_structured_logs_with_fake_dbt(project, dbt_args, monkeypatch):
+    client = mock.MagicMock()
+    monkeypatch.setattr("openlineage.dbt.OpenLineageClient", mock.MagicMock(return_value=client))
+    return_code = consume_structured_logs(
+        args=["dbt", *dbt_args, "--project-dir", str(project), "--profiles-dir", str(project)],
+        target=None,
+        target_path=None,
+        project_dir=str(project),
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+    emitted = [call.args[0].eventType.value for call in client.emit.call_args_list]
+    return return_code, emitted
+
+
+@pytest.mark.parametrize("dbt_exit_code", [0, 1], ids=["dbt_success", "dbt_failure"])
+def test_consume_structured_logs_returns_dbt_exit_code_when_event_parsing_fails(
+    dbt_exit_code, fake_dbt_project, tmp_path, monkeypatch
+):
+    monkeypatch.setenv("FAKE_DBT_EXIT_CODE", str(dbt_exit_code))
+
+    return_code, emitted = consume_structured_logs_with_fake_dbt(
+        fake_dbt_project, ["run", "--log-path", str(tmp_path / "logs")], monkeypatch
+    )
+
+    assert (fake_dbt_project / "done").exists(), "dbt-ol stopped waiting for the dbt process"
+    assert return_code == dbt_exit_code
+    assert emitted == ["START", "COMPLETE" if dbt_exit_code == 0 else "FAIL"]
+
+
+@pytest.mark.parametrize("dbt_exit_code", [0, 1], ids=["dbt_success", "dbt_failure"])
+def test_consume_structured_logs_runs_unsupported_command_without_lineage(
+    dbt_exit_code, fake_dbt_project, monkeypatch
+):
+    monkeypatch.setenv("FAKE_DBT_EXIT_CODE", str(dbt_exit_code))
+
+    return_code, emitted = consume_structured_logs_with_fake_dbt(
+        fake_dbt_project, ["run-operation", "my_macro"], monkeypatch
+    )
+
+    assert (fake_dbt_project / "done").read_text().startswith("run-operation my_macro")
+    assert return_code == dbt_exit_code
+    assert emitted == []

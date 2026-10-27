@@ -254,7 +254,11 @@ def consume_structured_logs(
         client.close(timeout=30)
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
-    return_code = processor.dbt_command_return_code if processor.dbt_command_return_code is not None else -1
+    return_code = processor.dbt_command_return_code
+    if return_code is None:
+        logger.warning("dbt was not executed by OpenLineage, running it without emitting OpenLineage events.")
+        with subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr) as process:
+            return_code = process.wait()
     logger.info("Underlying dbt execution returned %d", return_code)
     return return_code
 

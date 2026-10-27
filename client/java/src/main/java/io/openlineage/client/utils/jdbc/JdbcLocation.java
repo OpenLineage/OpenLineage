@@ -16,6 +16,8 @@ import org.apache.commons.lang3.StringUtils;
 
 @AllArgsConstructor
 public class JdbcLocation {
+  private static final int FULLY_QUALIFIED_NAME_PARTS = 3;
+
   @NonNull @Getter @Setter private String scheme;
   @Getter @Setter private Optional<String> authority;
   @Getter @Setter private Optional<String> instance;
@@ -33,7 +35,8 @@ public class JdbcLocation {
   }
 
   public String toName(List<String> parts) {
-    if (database.isPresent()) {
+    // a fully qualified name (database.schema.table) already contains its database
+    if (database.isPresent() && parts.size() < FULLY_QUALIFIED_NAME_PARTS) {
       parts.add(0, database.get());
     }
     return String.join(".", parts);

@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.sql.ColumnLineage;
 import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
@@ -30,12 +31,15 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class JdbcSparkUtilsTest {
   private static final String DEFAULT_URL = "jdbc:postgresql://localhost:5432/testdb";
+  private static final String SQLSERVER_URL = "jdbc:sqlserver://localhost:1433;databaseName=testdb";
+  private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/testdb";
   private final JDBCRelation relation = mock(JDBCRelation.class);
 
   @ParameterizedTest
@@ -43,7 +47,9 @@ class JdbcSparkUtilsTest {
   void testExtractQueryFromSpark(TestCase testCase) {
     givenJdbcOptions(
         JdbcOptions.builder()
-            .url(DEFAULT_URL)
+            .url(testCase.url)
+            // explicit driver, so URLs used only to select the SQL dialect need no driver jar
+            .driver("org.postgresql.Driver")
             .dbtable(testCase.dbtable)
             .query(testCase.query)
             .build());
@@ -53,6 +59,17 @@ class JdbcSparkUtilsTest {
 
     assertInputTables(result, testCase.expectedInputTables);
     assertColumnLineage(result, testCase.expectedColumnLineages);
+  }
+
+  @Test
+  void testGetDatasetIdentifierUsesQualifiedTableName() {
+    JDBCOptions options = JdbcOptions.builder().url(DEFAULT_URL).dbtable("public.users").build();
+
+    DatasetIdentifier identifier =
+        JdbcSparkUtils.getDatasetIdentifier(options, new DbTableMeta(null, "public", "users"));
+
+    assertEquals("testdb.public.users", identifier.getName());
+    assertEquals("postgres://localhost:5432", identifier.getNamespace());
   }
 
   private static Collection<TestCase> testCases() {
@@ -100,6 +117,139 @@ class JdbcSparkUtilsTest {
             .expectedColumnLineage(columnLineage("users.id"))
             .expectedColumnLineage(columnLineage("users.name"))
             .expectedColumnLineage(columnLineage("orders.total"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users WHERE name <> ')') t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id /* ) */ FROM users) t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id -- )\nFROM users) t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .url(SQLSERVER_URL)
+            .dbtable("(SELECT [id] FROM users WHERE [x)y] = 1) t")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .url(SQLSERVER_URL)
+            .dbtable("(SELECT [id] FROM users WHERE [x]])y] = 1) t") // escaped bracket
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) AS \"u\"\"x\"") // escaped quote in the alias
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .url(SQLSERVER_URL)
+            .dbtable("(SELECT [id] FROM users) AS [u]]x]") // escaped bracket in the alias
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) /* a */ AS /* b */ t /* c */ -- d")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users) t$1") // $ in an unquoted alias
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users WHERE name <> $$)$$) t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users WHERE name <> $tag$)$$$tag$) t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id /* outer /* inner */ ) */ FROM users) t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable(
+                "(SELECT id AS user_id FROM users WHERE id IN ($1, $2)) t") // not dollar quotes
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .url(MYSQL_URL)
+            .dbtable("(SELECT id AS user_id FROM users WHERE name <> 'a\\')') t") // \' escape
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id AS user_id FROM users WHERE name <> E'a\\')') t")
+            .schema(new StructType().add("user_id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedColumnLineage(columnLineage("user_id", "users.id"))
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) u CROSS JOIN (SELECT user_id FROM orders) o")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) t$1 JOIN orders o ON t$1.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
+            .dbtable(
+                "(SELECT id FROM users WHERE name <> $$)$$) u JOIN orders o ON u.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users) u JOIN orders o ON u.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
+            .dbtable(
+                "(SELECT id FROM users) u JOIN (SELECT user_id FROM orders) o ON u.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
+            .build(),
+        TestCase.builder()
+            .dbtable("(SELECT id FROM users WHERE name <> ')') u JOIN orders o ON u.id = o.user_id")
+            .schema(new StructType().add("id", DataTypes.IntegerType))
+            .expectedInputTable("users")
+            .expectedInputTable("orders")
             .build(),
         TestCase.builder()
             .dbtable("users AS u")
@@ -196,17 +346,22 @@ class JdbcSparkUtilsTest {
   }
 
   private static ColumnLineage columnLineage(String columnUri) {
-    int dotIndex = columnUri.lastIndexOf('.');
-    String sourceTable = columnUri.substring(0, dotIndex);
-    String column = columnUri.substring(dotIndex + 1);
+    return columnLineage(columnUri.substring(columnUri.lastIndexOf('.') + 1), columnUri);
+  }
+
+  private static ColumnLineage columnLineage(String outputColumn, String sourceColumnUri) {
+    int dotIndex = sourceColumnUri.lastIndexOf('.');
+    String sourceTable = sourceColumnUri.substring(0, dotIndex);
+    String sourceColumn = sourceColumnUri.substring(dotIndex + 1);
     return new ColumnLineage(
-        new ColumnMeta(null, column),
+        new ColumnMeta(null, outputColumn),
         Collections.singletonList(
-            new ColumnMeta(new DbTableMeta(null, null, sourceTable), column)));
+            new ColumnMeta(new DbTableMeta(null, null, sourceTable), sourceColumn)));
   }
 
   @Builder
   public static class TestCase {
+    @Builder.Default private final String url = DEFAULT_URL;
     private final String dbtable;
     private final String query;
     private final StructType schema;
@@ -223,6 +378,11 @@ class JdbcSparkUtilsTest {
 
     public JdbcOptions url(String url) {
       paramsMap.put(JDBCOptions$.MODULE$.JDBC_URL(), url);
+      return this;
+    }
+
+    public JdbcOptions driver(String driverClass) {
+      paramsMap.put(JDBCOptions$.MODULE$.JDBC_DRIVER_CLASS(), driverClass);
       return this;
     }
 
