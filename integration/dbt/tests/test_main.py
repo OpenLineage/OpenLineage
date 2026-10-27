@@ -421,7 +421,7 @@ def test_consume_structured_logs_returns_dbt_exit_code_when_event_parsing_fails(
 
     assert (fake_dbt_project / "done").exists(), "dbt-ol stopped waiting for the dbt process"
     assert return_code == dbt_exit_code
-    assert emitted == ["START", "ABORT"]
+    assert emitted == ["START", "COMPLETE" if dbt_exit_code == 0 else "FAIL"]
 
 
 @pytest.mark.parametrize("dbt_exit_code", [0, 1], ids=["dbt_success", "dbt_failure"])

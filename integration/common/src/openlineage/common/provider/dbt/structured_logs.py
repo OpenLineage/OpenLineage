@@ -148,6 +148,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self._dbt_log_file: TextIO | None = None
         self.received_dbt_command_completed = False
         self.processed_bytes = 0
+        # START events of runs that did not get a terminal event yet, in emission order
+        self._open_runs: dict[str, RunEvent] = {}
 
         # stays None until the dbt process has exited
         self.dbt_command_return_code: int | None = None
@@ -246,24 +248,40 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         self.extract_dataset_namespace(self.profile)
 
-        parsing_failed = False
+        parsing_error: extraction_error_run.ExtractionErrorRunFacet | None = None
         for line in self._run_dbt_command():
             # keep consuming the logs after a parsing error so that dbt is waited for
-            if parsing_failed:
+            if parsing_error:
                 continue
             try:
                 ol_event = self._parse_structured_log_event(line)
-            except Exception:
+            except Exception as e:
                 self.logger.exception(
-                    "OpenLineage failed to parse a dbt log event. No further OpenLineage events will be "
-                    "emitted for this dbt execution, which continues unaffected."
+                    "OpenLineage failed to parse a dbt log event. Further dbt log events won't be parsed, "
+                    "runs already started will be closed when dbt exits. dbt execution continues unaffected."
                 )
-                parsing_failed = True
+                parsing_error = extraction_error_run.ExtractionErrorRunFacet(
+                    totalTasks=1,
+                    failedTasks=1,
+                    errors=[
+                        extraction_error_run.Error(
+                            errorMessage=f"Failed to parse a dbt log event, lineage of this dbt execution "
+                            f"is incomplete: {e!r}",
+                            task="_parse_structured_log_event",
+                        )
+                    ],
+                )
                 continue
             if ol_event:
+                if ol_event.eventType == RunState.START:
+                    self._open_runs[ol_event.run.runId] = ol_event
+                elif ol_event.eventType in (RunState.COMPLETE, RunState.FAIL, RunState.ABORT):
+                    self._open_runs.pop(ol_event.run.runId, None)
                 yield ol_event
 
-        if not self.received_dbt_command_completed:
+        if parsing_error:
+            yield from self._close_open_runs(parsing_error)
+        elif not self.received_dbt_command_completed:
             # We did not receive the CommandCompleted event, so we emit an abort event
             self.logger.debug("CommandCompleted event was not received. ABORT event will be send.")
             ol_event = self._get_dbt_command_abort_event()
@@ -364,6 +382,42 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
         return start_event
+
+    def _close_open_runs(
+        self, extraction_error: extraction_error_run.ExtractionErrorRunFacet
+    ) -> Generator[RunEvent, None, None]:
+        """
+        After a parsing error the remaining dbt log events are not interpreted, so every run that
+        emitted START gets its terminal event here: node and sql runs first, the dbt command run last.
+        """
+        dbt_command_run_id = self.dbt_run_metadata.run_id if self.dbt_run_metadata else None
+        # sql runs start after their node, so reversed emission order closes children before parents
+        for run_id, start_event in reversed(self._open_runs.items()):
+            if run_id == dbt_command_run_id:
+                # dbt exited on its own, so its outcome is known even though its logs weren't parsed
+                event_type = RunState.COMPLETE if self.dbt_command_return_code == 0 else RunState.FAIL
+            else:
+                # the node or sql query result was never observed. dbt exiting 0 implies it succeeded,
+                # but a non-zero exit doesn't say which node failed, and a COMPLETE built here would
+                # lack what the finished event carries (status, outputs, test results), so it's ABORT
+                event_type = RunState.ABORT
+            run_facets = {
+                **self.dbt_version_facet(),
+                **self.processing_engine_facet(),
+                **self.dbt_run_run_facet(),
+                "extractionError": extraction_error,
+            }
+            if parent := (start_event.run.facets or {}).get("parent"):
+                run_facets["parent"] = parent
+            yield generate_run_event(
+                event_type=event_type,
+                event_time=datetime.datetime.now().isoformat(),
+                run_id=run_id,
+                job_name=start_event.job.name,
+                job_namespace=start_event.job.namespace,
+                job_facets=start_event.job.facets,
+                run_facets=run_facets,
+            )
 
     def _get_dbt_command_abort_event(self):
         run_facets = {
