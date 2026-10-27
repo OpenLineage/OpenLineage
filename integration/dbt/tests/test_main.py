@@ -513,14 +513,28 @@ def _consume_otel(args, project_dir):
     )
 
 
-@pytest.mark.parametrize("args", [["init"], ["deps"], ["debug"], ["--version"]])
-def test_dbt_core_v2_commands_without_lineage_never_read_the_project(args, monkeypatch, tmp_path):
+@pytest.mark.parametrize(
+    "args, dbt_args",
+    [
+        (["init"], ["init"]),
+        (["deps"], ["deps"]),
+        (["debug"], ["debug"]),
+        (["--version"], ["--version"]),
+        (["docs", "generate", "--ol-skip-parse"], ["docs", "generate"]),
+        ([CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, "deps"], ["deps"]),
+    ],
+)
+def test_commands_without_lineage_run_untouched_without_detecting_the_engine(args, dbt_args, monkeypatch):
+    # The same on both engines: the engine isn't detected, and the project isn't read.
+    monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", mock.MagicMock(side_effect=AssertionError))
+    for consume in ("consume_otel", "consume_structured_logs", "consume_local_artifacts"):
+        monkeypatch.setattr(f"openlineage.dbt.{consume}", mock.MagicMock(side_effect=AssertionError))
     run_untouched = mock.MagicMock(return_value=4)
     monkeypatch.setattr("openlineage.dbt.run_dbt_untouched", run_untouched)
-    monkeypatch.setattr("openlineage.dbt.DbtOtelProcessor", mock.MagicMock(side_effect=AssertionError))
+    monkeypatch.setattr("sys.argv", ["dbt-ol", *args])
 
-    assert _consume_otel(args, str(tmp_path / "no-project-here")) == 4
-    assert run_untouched.call_args.args[0] == ["dbt", *args]
+    assert main() == 4
+    assert run_untouched.call_args.args[0] == ["dbt", *dbt_args]
 
 
 @pytest.mark.parametrize(

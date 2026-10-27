@@ -183,6 +183,12 @@ def main():
     # `send-events` re-emits the last run's artifacts without running dbt.
     send_events = args[:1] == ["send-events"] or args[1:2] == ["send-events"]
     if not send_events:
+        dbt_command_line = ["dbt", *remove_command_line_option(args, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)]
+        if get_dbt_command(dbt_command_line) not in HANDLED_COMMANDS:
+            # Commands like init, deps or debug may run outside a project, and on any engine they produce no
+            # lineage: the engine isn't detected and the project isn't read.
+            logger.info("This dbt command produces no lineage; running it without OpenLineage events")
+            return run_dbt_untouched(dbt_command_line, logger)
         dbt_major_version, dbt_version = detect_dbt_engine()
         if dbt_major_version >= 2:
             # dbt Core v2 always reports live from its OpenTelemetry output.
@@ -279,11 +285,6 @@ def consume_otel(
         dbt_version or "v2",
     )
     dbt_command_line = ["dbt", *args]
-    dbt_command = get_dbt_command(dbt_command_line)
-    if dbt_command not in HANDLED_COMMANDS:
-        # Commands like init, deps or debug may run outside a project, so the project isn't read at all.
-        logger.info("dbt command %s produces no lineage; running it without OpenLineage events", dbt_command)
-        return run_dbt_untouched(dbt_command_line, logger)
     try:
         processor = DbtOtelProcessor(
             project_dir=project_dir,

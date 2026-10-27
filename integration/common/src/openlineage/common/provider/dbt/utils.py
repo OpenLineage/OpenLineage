@@ -31,6 +31,8 @@ OL_SKIP_PARSE_OPTION = "--ol-skip-parse"
 OL_SKIP_PARSE_ENV = "OPENLINEAGE_DBT_SKIP_PARSE"
 # where dbt Core v2 runs create their temporary directory; defaults to the system temp directory
 TEMP_DIR_ENV = "OPENLINEAGE_DBT_TEMP_DIR"
+# seconds the `dbt parse` before a dbt Core v2 run may take before it's stopped
+PARSE_TIMEOUT_ENV = "OPENLINEAGE_DBT_PARSE_TIMEOUT"
 
 log = logging.getLogger(__name__)
 

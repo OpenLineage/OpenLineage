@@ -1,6 +1,7 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import importlib.machinery
+import itertools
 import json
 import logging
 import os
@@ -364,6 +365,14 @@ def _event_types(events: list[dict]) -> dict[str, list[str]]:
     return {job: [e["eventType"] for e in job_events] for job, job_events in by_job(events).items()}
 
 
+def _assert_abort_explains_processing_failure(events: list[dict]) -> None:
+    abort = by_job(events)[BROKEN_TEST][-1]
+    assert "could not process this node's dbt telemetry" in abort["run"]["facets"]["errorMessage"]["message"]
+    # Only the node whose record failed gets it.
+    other_aborts = [e for e in events if e["eventType"] == "ABORT" and e["job"]["name"] != BROKEN_TEST]
+    assert all("errorMessage" not in e["run"]["facets"] for e in other_aborts)
+
+
 def test_a_record_that_fails_to_process_costs_only_its_own_node(caplog):
     lines = fixture_lines()
     expected = _event_types(replay(make_processor(), lines))
@@ -371,6 +380,7 @@ def test_a_record_that_fails_to_process_costs_only_its_own_node(caplog):
         events = replay(make_processor(), _with_broken_test_end(lines))
     expected[BROKEN_TEST] = ["START", "ABORT"]
     assert _event_types(events) == expected
+    _assert_abort_explains_processing_failure(events)
     assert "OpenLineage failed to process 1 dbt telemetry record" in caplog.text
 
 
@@ -391,6 +401,7 @@ def test_a_held_node_end_that_fails_costs_only_its_own_node(end_of_run_manifest,
         events = held_replay(_with_broken_test_end(lines))
     expected[BROKEN_TEST] = ["START", "ABORT"]
     assert _event_types(events) == expected
+    _assert_abort_explains_processing_failure(events)
     assert "OpenLineage failed to process 1 dbt telemetry record" in caplog.text
 
 
@@ -647,6 +658,54 @@ def test_hung_pre_parse_is_stopped_and_the_run_goes_ahead(tmp_path, caplog):
     assert processor.compiled_manifest == {}
     assert processor._pre_parse == "timed_out"
     assert "took longer than 600 s and was stopped" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "env_value, expected_timeout, warns",
+    [(None, 600, False), ("30", 30, False), ("0", 600, True), ("ten", 600, True)],
+)
+def test_pre_parse_timeout_comes_from_the_environment(
+    env_value, expected_timeout, warns, monkeypatch, tmp_path, caplog
+):
+    if env_value is None:
+        monkeypatch.delenv("OPENLINEAGE_DBT_PARSE_TIMEOUT", raising=False)
+    else:
+        monkeypatch.setenv("OPENLINEAGE_DBT_PARSE_TIMEOUT", env_value)
+    processor = make_processor()
+    processor.temp_dir = str(tmp_path)
+    timeouts = []
+
+    def hang(parse, timeout):
+        timeouts.append(timeout)
+        raise subprocess.TimeoutExpired(parse.cmd, timeout)
+
+    popen, _ = fake_parse(hang)
+    with mock.patch("openlineage.common.provider.dbt.otel_processor.subprocess.Popen", popen):
+        processor._run_pre_parse()
+    assert timeouts == [expected_timeout]
+    assert f"took longer than {expected_timeout} s" in caplog.text
+    assert ("isn't a positive number of seconds" in caplog.text) is warns
+
+
+def test_tail_stops_after_the_invocation_ends_while_another_run_keeps_writing(tmp_path):
+    processor = make_processor()
+    processor.otel_file_path = str(tmp_path / "otel.jsonl")
+    (tmp_path / "otel.jsonl").write_text("")
+    processor._invocation_end = mock.sentinel.invocation_end  # this run's Invocation end was read
+
+    class EndlessReader:
+        """Another dbt run appending to the shared file: every poll has a new line."""
+
+        def __init__(self, _file):
+            pass
+
+        def read_lines(self, _size):
+            yield "{}"
+
+    exited = mock.MagicMock(poll=mock.MagicMock(return_value=0))
+    with mock.patch("openlineage.common.provider.dbt.otel_processor.IncrementalFileReader", EndlessReader):
+        lines = list(itertools.islice(processor._tail(exited, 0), 50))
+    assert len(lines) == 1
 
 
 @pytest.mark.parametrize(

@@ -58,6 +58,7 @@ from openlineage.common.provider.dbt.otel_records import (
 )
 from openlineage.common.provider.dbt.processor import ModelNode
 from openlineage.common.provider.dbt.utils import (
+    PARSE_TIMEOUT_ENV,
     TEMP_DIR_ENV,
     generate_run_event,
     get_dbt_profiles_dir,
@@ -71,6 +72,7 @@ _OTEL_FILE_ENVS = ("DBT_ENGINE_OTEL_FILE_NAME", OTEL_FILE_ENV)
 _LOG_PATH_ENVS = ("DBT_ENGINE_LOG_PATH", "DBT_LOG_PATH")
 _INVOCATION_ID_ENVS = ("DBT_ENGINE_INVOCATION_ID", "DBT_INVOCATION_ID")
 # A parse of a 10k-model project takes about 20 s; past this, the run goes ahead without it.
+# OPENLINEAGE_DBT_PARSE_TIMEOUT overrides it.
 _PRE_PARSE_TIMEOUT_S = 600
 # Exit codes a shell reports for a process stopped by SIGINT and SIGTERM.
 _EXIT_INTERRUPTED = 128 + signal.SIGINT
@@ -101,6 +103,8 @@ class _NodeState:
     # Text of the node's ERROR log record; the only error detail some adapters (Databricks) report.
     error_message: str | None = None
     failed_query_message: str | None = None
+    # A record of this node failed to process in dbt-ol, so an ABORT doesn't mean dbt aborted it.
+    processing_failed: bool = False
 
 
 @attr.define
@@ -195,10 +199,13 @@ class DbtOtelProcessor(DbtLiveProcessor):
             try:
                 for line in lines:
                     # A record that fails is skipped, so it costs only its own node's events.
+                    record = None
                     try:
-                        yield from self._handle_line(line)
+                        record = parse_record(line)
+                        if record is not None:
+                            yield from self._handle_record(record)
                     except Exception:
-                        self._skip_failed_record()
+                        self._skip_failed_record(record)
             except Exception:
                 self.logger.exception(
                     "OpenLineage failed to process dbt telemetry. This does not make dbt execution fail, "
@@ -216,9 +223,14 @@ class DbtOtelProcessor(DbtLiveProcessor):
         finally:
             self._remove_temp_dir()
 
-    def _skip_failed_record(self) -> None:
-        """Log a telemetry record that failed to process, from inside its except block."""
+    def _skip_failed_record(self, record: OtelRecord | None) -> None:
+        """Log a telemetry record that failed to process, from inside its except block.
+
+        Its node, if still open, is marked so that the ABORT it gets at the end says why.
+        """
         self._failed_records += 1
+        if record is not None and record.unique_id and (node := self._nodes.get(record.unique_id)):
+            node.processing_failed = True
         if self._failed_records == 1:
             self.logger.exception(
                 "OpenLineage failed to process a dbt telemetry record and skipped it; some events might be "
@@ -290,19 +302,21 @@ class DbtOtelProcessor(DbtLiveProcessor):
             env.pop(name, None)
 
         output_path = os.path.join(self.temp_dir, "parse-output.log")
+        timeout = self._pre_parse_timeout()
         started = time.time()
         with open(output_path, "w", encoding="utf-8") as output:
             process = subprocess.Popen(command, env=env, stdout=output, stderr=subprocess.STDOUT)
             try:
-                return_code = process.wait(timeout=_PRE_PARSE_TIMEOUT_S)
+                return_code = process.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
                 self._pre_parse = "timed_out"
                 self.logger.warning(
                     "`dbt parse` before the run took longer than %d s and was stopped; node inputs will come "
-                    "from the manifest dbt writes at the end of the run.",
-                    _PRE_PARSE_TIMEOUT_S,
+                    "from the manifest dbt writes at the end of the run. %s sets this limit.",
+                    timeout,
+                    PARSE_TIMEOUT_ENV,
                 )
                 return
             except BaseException:
@@ -326,6 +340,25 @@ class DbtOtelProcessor(DbtLiveProcessor):
         )
         self._pre_parse = "succeeded"
         self.logger.info("Parsed the dbt project in %.1f s", time.time() - started)
+
+    def _pre_parse_timeout(self) -> int:
+        """Seconds the pre-parse may take: OPENLINEAGE_DBT_PARSE_TIMEOUT, else the default."""
+        value = os.environ.get(PARSE_TIMEOUT_ENV)
+        if not value:
+            return _PRE_PARSE_TIMEOUT_S
+        try:
+            timeout = int(value)
+        except ValueError:
+            timeout = 0
+        if timeout > 0:
+            return timeout
+        self.logger.warning(
+            "%s=%r isn't a positive number of seconds; using %d",
+            PARSE_TIMEOUT_ENV,
+            value,
+            _PRE_PARSE_TIMEOUT_S,
+        )
+        return _PRE_PARSE_TIMEOUT_S
 
     def _run_dbt_command(self) -> Generator[str, None, None]:
         """Run dbt with telemetry going to the OTel file and yield the file's lines as dbt writes them."""
@@ -373,10 +406,14 @@ class DbtOtelProcessor(DbtLiveProcessor):
                     for line in reader.read_lines(sys.maxsize):
                         read_any = True
                         yield line
-                if exited and not read_any:
-                    empty_polls_after_exit += 1
-                    if self._invocation_end is not None or empty_polls_after_exit >= _DRAIN_POLLS:
+                if exited:
+                    # Done once this run's Invocation has ended, even if others keep appending to the file.
+                    if self._invocation_end is not None:
                         return
+                    if not read_any:
+                        empty_polls_after_exit += 1
+                        if empty_polls_after_exit >= _DRAIN_POLLS:
+                            return
                 if not read_any:
                     time.sleep(_POLL_INTERVAL_S)
         finally:
@@ -441,10 +478,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
 
     # ---------------------------------------------------------------- records
 
-    def _handle_line(self, line: str) -> Iterator[RunEvent]:
-        record = parse_record(line)
-        if record is None:
-            return
+    def _handle_record(self, record: OtelRecord) -> Iterator[RunEvent]:
         if self._trace_id is None:
             if record.record_type == SPAN_START and record.name == PROCESS:
                 self._dbt_version = self._dbt_version or record.attributes.get("version")
@@ -720,7 +754,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
             try:
                 event = self._node_end_event(node_end)
             except Exception:
-                self._skip_failed_record()
+                self._skip_failed_record(node_end)
                 continue
             yield event
 
@@ -893,6 +927,12 @@ class DbtOtelProcessor(DbtLiveProcessor):
             )
         self._queries.clear()
         for node in [n for n in self._nodes.values() if n.started]:
+            run_facets = self._node_run_facets(node.unique_id)
+            if node.processing_failed:
+                run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
+                    message="OpenLineage could not process this node's dbt telemetry; its result is unknown",
+                    programmingLanguage="python",
+                )
             yield generate_run_event(
                 event_type=RunState.ABORT,
                 event_time=aborted_at,
@@ -900,7 +940,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 job_name=node.unique_id,
                 job_namespace=self.job_namespace,
                 job_facets=self._node_job_facets(node),
-                run_facets=self._node_run_facets(node.unique_id),
+                run_facets=run_facets,
             )
         self._nodes.clear()
 
