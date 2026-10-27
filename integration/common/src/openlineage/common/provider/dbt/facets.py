@@ -228,6 +228,8 @@ class DbtNodeJobFacet(JobFacet):
     alias: str | None = attr.field(default=None)
     unique_id: str | None = attr.field(default=None)
     test_type: str | None = attr.field(default=None)
+    # Unit tests only: the node the test checks. A unit test runs on mocked rows, so it has no input dataset.
+    tested_node_unique_id: str | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:

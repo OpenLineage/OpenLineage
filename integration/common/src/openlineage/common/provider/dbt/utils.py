@@ -55,11 +55,32 @@ def get_event_timestamp(timestamp: str):
     return timestamp
 
 
+# dbt subcommands, to tell `dbt --debug run` (a flag, then the command) from `dbt --log-path logs run`.
+_DBT_COMMANDS = frozenset(
+    HANDLED_COMMANDS
+    + ["clean", "clone", "compile", "debug", "deps", "docs", "init", "list", "ls", "parse"]
+    + ["run-operation", "show", "source"]
+)
+
+
 def get_dbt_command(dbt_command_line: list[str]) -> str | None:
-    dbt_command_line_tokens = set(dbt_command_line)
-    for command in HANDLED_COMMANDS:
-        if command in dbt_command_line_tokens:
-            return command
+    """The dbt subcommand when dbt-ol handles it, else None.
+
+    The subcommand is the first word that isn't an option or an option's value, so `dbt debug --log-path run`
+    is `debug`. A word after an option is taken as its value unless it's a dbt subcommand, because boolean
+    flags like `--debug` take no value.
+    """
+    previous = None
+    for token in dbt_command_line[1:]:
+        is_option_value = (
+            previous is not None
+            and previous.startswith("-")
+            and "=" not in previous
+            and token not in _DBT_COMMANDS
+        )
+        if not token.startswith("-") and not is_option_value:
+            return token if token in HANDLED_COMMANDS else None
+        previous = token
     return None
 
 

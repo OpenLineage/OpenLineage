@@ -13,7 +13,7 @@ from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
 from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext, ModelNode
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
-from openlineage.common.provider.dbt.utils import get_dbt_profiles_dir
+from openlineage.common.provider.dbt.utils import get_dbt_command, get_dbt_profiles_dir
 
 DBT_VERSION = "0.0.1"
 JOB_NAMESPACE = "job-namespace"
@@ -1109,3 +1109,26 @@ class TestModelRunStatus:
 
         assert len(events.fails) == 1
         assert not events.completes
+
+
+@pytest.mark.parametrize(
+    "command_line, expected",
+    [
+        (["dbt", "run", "--select", "orders"], "run"),
+        (["dbt", "build"], "build"),
+        # an option's value that happens to be a command name isn't the command
+        (["dbt", "debug", "--log-path", "run"], None),
+        (["dbt", "docs", "generate", "--select", "test"], None),
+        (["dbt", "run-operation", "build", "--args", "{}"], None),
+        # options before the command, with and without a value
+        (["dbt", "--log-path", "logs", "run"], "run"),
+        (["dbt", "--log-path=logs", "test"], "test"),
+        (["dbt", "--debug", "seed"], "seed"),
+        (["dbt", "--target", "prod", "--debug", "snapshot"], "snapshot"),
+        (["dbt", "deps"], None),
+        (["dbt", "--version"], None),
+        (["dbt"], None),
+    ],
+)
+def test_get_dbt_command_takes_the_subcommand_not_option_values(command_line, expected):
+    assert get_dbt_command(command_line) == expected

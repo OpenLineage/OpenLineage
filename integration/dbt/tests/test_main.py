@@ -522,6 +522,8 @@ def _consume_otel(args, project_dir):
         (["--version"], ["--version"]),
         (["docs", "generate", "--ol-skip-parse"], ["docs", "generate"]),
         ([CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, "deps"], ["deps"]),
+        # `run` here is the value of --log-path, not the command
+        (["debug", "--log-path", "run"], ["debug", "--log-path", "run"]),
     ],
 )
 def test_commands_without_lineage_run_untouched_without_detecting_the_engine(args, dbt_args, monkeypatch):

@@ -644,6 +644,7 @@ class DbtOtelProcessor(DbtLiveProcessor):
                 alias=metadata.get("alias", node.identifier),
                 unique_id=node.unique_id,
                 test_type=test_type,
+                tested_node_unique_id=self._tested_node_unique_id(node.unique_id),
             ),
         }
         compiled_sql = self._compiled_sql(node)
@@ -718,8 +719,9 @@ class DbtOtelProcessor(DbtLiveProcessor):
     def _on_node_end(self, record: OtelRecord) -> Iterator[RunEvent]:
         unique_id = record.unique_id
         assert unique_id is not None
-        if not self._has_manifest_entry(unique_id) and not unique_id.startswith("unit_test."):
-            # Inputs need a manifest entry; wait for the manifest dbt writes after the RUN phase.
+        if not self._has_manifest_entry(unique_id):
+            # Inputs, and a unit test's tested node, need a manifest entry; wait for the manifest dbt writes
+            # after the RUN phase.
             self._held_node_ends.append(record)
             return
         yield self._node_end_event(record)

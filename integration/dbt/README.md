@@ -81,9 +81,21 @@ Additional table and column level metadata will be available if `catalog.json`, 
 
 If you need to send events without running the job you can use the command `dbt-ol send-events`, it will send the metadata of your last run without running the job.
 
-Commands other than `run`, `build`, `test`, `seed`, `snapshot` and `retry` produce no lineage: `dbt-ol` runs them as plain `dbt`, without sending OpenLineage events.
+Commands other than `run`, `build`, `test`, `seed`, `snapshot` and `retry` produce no lineage: `dbt-ol` runs them as plain `dbt`, without sending OpenLineage events. Earlier versions sent a wrapper START and COMPLETE/FAIL event for commands like `compile`, `run-operation` and `docs generate` in the default mode; they no longer do.
 
 ### dbt Core v2
+
+#### Upgrading from dbt Core v1
+
+* **Node jobs get new names.** On dbt Core v2, model, seed, snapshot, test and unit test jobs are named by
+  their dbt `unique_id` (for example `model.jaffle_shop.orders`), as with `--consume-structured-logs` on
+  dbt Core v1. The default dbt Core v1 mode names them `{database}.{schema}.{alias}`, with a suffix that
+  depends on the command (`analytics.staging.orders` under `run`, `analytics.staging.orders.build.run`
+  under `build`). After the upgrade, your lineage backend shows these as new jobs, and their history stays
+  under the old names. A `unique_id` stays the same whichever command runs the node.
+* **Unit tests have no datasets.** A unit test runs on mocked rows, so its events have no inputs or
+  outputs. The `tested_node_unique_id` field of the `dbt_node` job facet names the model it tests. The same
+  applies to `--consume-structured-logs` on dbt Core v1.
 
 With dbt Core v2, `dbt-ol` always sends events while the models run. `--consume-structured-logs` isn't
 needed and changes nothing. `dbt-ol` points dbt's OpenTelemetry output (`DBT_OTEL_FILE_NAME`) at a
@@ -117,10 +129,6 @@ went (`succeeded`, `failed`, `timed_out` or `skipped`), and `write_json` says wh
 Any command runs without OpenLineage events when `dbt-ol` can't read the project or profile. On Ctrl-C, dbt stops as usual and `dbt-ol`
 keeps sending events until dbt exits, so the runs still open are closed. A second Ctrl-C kills dbt and
 stops `dbt-ol` without waiting. SIGTERM is passed on to dbt.
-
-On dbt Core v2, node jobs are named by their `unique_id` (for example `model.jaffle_shop.orders`), as with
-`--consume-structured-logs` on dbt Core v1. Jobs from the default dbt Core v1 mode are named
-`{database}.{schema}.{model}`, so their history doesn't continue under the new names.
 
 ## Development
 

@@ -95,7 +95,8 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
         self._dbt_version: str | None = None
         self._dbt_invocation_id: str | None = None
 
-        self.dbt_command_return_code = 0
+        # The structured-logs processor starts it at None: dbt hasn't run, so dbt-ol runs it untouched.
+        self.dbt_command_return_code: int | None = 0
 
     @property
     def compiled_manifest(self) -> dict:
@@ -112,6 +113,20 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
             return self._manifest_entry(node_id)
         except KeyError:
             return {}
+
+    def _tested_node_unique_id(self, unique_id: str | None) -> str | None:
+        """The node a unit test checks, or None for any other node.
+
+        dbt Core v2 writes it as `tested_node_unique_id`. dbt Core v1's manifest doesn't have that field,
+        but lists the tested node as the unit test's only dependency.
+        """
+        if not unique_id or not unique_id.startswith("unit_test."):
+            return None
+        metadata = self._node_metadata(unique_id)
+        if tested := metadata.get("tested_node_unique_id"):
+            return tested
+        nodes = (metadata.get("depends_on") or {}).get("nodes") or []
+        return nodes[0] if len(nodes) == 1 else None
 
     def _manifest_entry(self, node_id: str) -> dict:
         """The manifest entry of a node, source or unit test; raises KeyError when there is none.

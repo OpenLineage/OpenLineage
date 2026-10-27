@@ -353,8 +353,7 @@ def emit_live_events(processor: DbtLiveProcessor, logger: logging.Logger) -> int
     return_code = processor.dbt_command_return_code
     if return_code is None:
         logger.warning("dbt was not executed by OpenLineage, running it without emitting OpenLineage events.")
-        with subprocess.Popen(processor.dbt_command_line, stdout=sys.stdout, stderr=sys.stderr) as process:
-            return_code = process.wait()
+        return_code = run_dbt_untouched(processor.dbt_command_line, logger)
     logger.info("Underlying dbt execution returned %d", return_code)
     return return_code
 

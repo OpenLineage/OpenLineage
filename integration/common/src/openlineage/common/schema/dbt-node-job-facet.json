@@ -39,6 +39,11 @@
               "type": "string",
               "description": "Type of dbt test (e.g. 'singular' or 'generic')",
               "example": "singular"
+            },
+            "tested_node_unique_id": {
+              "type": "string",
+              "description": "Unit tests only: unique identifier of the dbt node the unit test checks. A unit test runs on mocked rows and reads no dataset, so this is its only link to the node.",
+              "example": "model.my_project.stg_customers"
             }
           }
         }

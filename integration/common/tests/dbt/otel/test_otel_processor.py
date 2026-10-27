@@ -287,6 +287,9 @@ def test_unit_tests(build_jobs):
         assert event["job"]["facets"]["jobType"]["jobType"] == "UNIT_TEST"
         assert event["inputs"] == [] and event["outputs"] == []
         assert "extractionError" not in event["run"]["facets"]
+    # No dataset, but the facet still links each unit test to the model it checks.
+    tested = {e["job"]["facets"]["dbt_node"]["tested_node_unique_id"] for e in passing + failing}
+    assert tested == {"model.otel_jaffle.stg_customers", "model.otel_jaffle.active_customers"}
     assert "differ" in failing[-1]["run"]["facets"]["errorMessage"]["message"]
 
 
@@ -316,6 +319,10 @@ def test_skip_parse_holds_final_events_for_the_end_of_run_manifest():
     # node final events wait for the manifest dbt writes after the RUN phase
     last_node_start = max(i for job, i in starts.items() if job.startswith("model."))
     assert index > last_node_start
+    # unit test final events wait too, so they carry the model they test
+    unit_test = "unit_test.otel_jaffle.stg_customers.ut_stg_customers_renames"
+    tested = finals[unit_test][1]["job"]["facets"]["dbt_node"]["tested_node_unique_id"]
+    assert tested == "model.otel_jaffle.stg_customers"
 
 
 def test_skip_parse_without_end_of_run_manifest_still_closes_runs():

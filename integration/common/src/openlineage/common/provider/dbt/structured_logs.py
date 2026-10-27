@@ -396,6 +396,7 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
                 alias=node_metadata.get("alias"),
                 unique_id=node_metadata.get("unique_id"),
                 test_type=test_type,
+                tested_node_unique_id=self._tested_node_unique_id(node_unique_id),
             ),
         }
 
@@ -474,6 +475,7 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
                 alias=node_metadata.get("alias"),
                 unique_id=node_metadata.get("unique_id"),
                 test_type=test_type,
+                tested_node_unique_id=self._tested_node_unique_id(node_unique_id),
             ),
         }
 
