@@ -24,7 +24,7 @@ Explicit SQL qualifiers and dialect-specific `USE` statements take precedence
 over the supplied defaults. Defaults are scoped to each parse call; callers must
 provide their current connection context explicitly.
 
-`default_database` is the third (catalog) level of a `database.schema.table`
+`default_database` is the third (database) level of a `database.schema.table`
 name. For dialects with only one namespace level above the table, such as MySQL,
 Hive, or Spark without a catalog, the parser reads a two-part name `x.t` as
 schema `x`. For these dialects, pass the connection's database or namespace as

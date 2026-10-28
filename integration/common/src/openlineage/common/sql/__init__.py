@@ -34,7 +34,7 @@ def parse(
 ) -> SqlMeta | None:
     """Extract lineage using optional defaults for unqualified table names.
 
-    ``default_database`` is the third (catalog) level of a ``database.schema.table``
+    ``default_database`` is the third (database) level of a ``database.schema.table``
     name. For dialects with a single namespace level above the table (MySQL, Hive,
     Spark without a catalog), pass the connection's database as ``default_schema``.
     """

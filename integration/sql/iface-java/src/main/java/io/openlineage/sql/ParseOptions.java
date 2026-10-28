@@ -13,7 +13,7 @@ import java.util.Objects;
  * <p>Use {@link #builder()} to create an instance. All settings are optional; unset values are
  * {@code null}.
  *
- * <p>{@code defaultDatabase} is the third (catalog) level of a {@code database.schema.table} name,
+ * <p>{@code defaultDatabase} is the third (database) level of a {@code database.schema.table} name,
  * and {@code defaultSchema} is the second level. For dialects with only one namespace level above
  * the table (for example MySQL, Hive, or Spark without a catalog), the parser reads a two-part name
  * {@code x.t} as schema {@code x}, so callers should pass the connection's database or namespace as
@@ -58,7 +58,7 @@ public final class ParseOptions {
   }
 
   /**
-   * Returns the database (catalog) used for tables without an explicit database.
+   * Returns the database used for tables without an explicit database.
    *
    * @return the default database, or null
    */
@@ -109,7 +109,7 @@ public final class ParseOptions {
     }
 
     /**
-     * Sets the database (catalog) for tables without an explicit database.
+     * Sets the database for tables without an explicit database.
      *
      * @param defaultDatabase the default database, or null to leave it unspecified
      * @return this builder

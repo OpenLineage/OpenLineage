@@ -38,7 +38,7 @@ call has an independent context.
 ### Which default to use
 
 Table names have up to three levels: `database.schema.table`. `default_database`
-fills the third (catalog) level of any name with fewer than three parts, and
+fills the third (database) level of any name with fewer than three parts, and
 `default_schema` fills the second level of any name with fewer than two parts.
 
 Some dialects have only one namespace level above the table, for example MySQL,
