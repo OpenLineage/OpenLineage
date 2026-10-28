@@ -15,6 +15,7 @@ import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -122,6 +123,34 @@ public class ColumnLevelLineageUtils {
     return plan;
   }
 
+  /**
+   * Makes each output column of an {@link InMemoryRelation} depend on the cached plan's output
+   * column at the same position.
+   *
+   * <p>Spark serves a cached plan to a query through {@code InMemoryRelation.withOutput}, which
+   * renames the cached columns to the ones the query expects but keeps their order. The name-based
+   * mapping above therefore misses columns that the query aliased: Spark 4.1, for instance, answers
+   * {@code cached.select(a AS c).cache().select(c AS e)} straight from the first cache, with an
+   * {@code InMemoryRelation} whose output is {@code e} over a cached plan whose output is {@code
+   * a}.
+   */
+  static void mapCachedOutputsByPosition(
+      ColumnLevelLineageContext context, LogicalPlan inMemoryRelation, LogicalPlan cachedPlan) {
+    List<Attribute> relationOutput = ScalaConversionUtils.fromSeq(inMemoryRelation.output());
+    List<Attribute> cachedOutput = ScalaConversionUtils.fromSeq(cachedPlan.output());
+    if (relationOutput.size() != cachedOutput.size()) {
+      return;
+    }
+    for (int i = 0; i < relationOutput.size(); i++) {
+      context
+          .getBuilder()
+          .addDependency(
+              relationOutput.get(i).exprId(),
+              cachedOutput.get(i).exprId(),
+              relationOutput.get(i).qualifiedName());
+    }
+  }
+
   static void collectInputsAndExpressionDependencies(
       ColumnLevelLineageContext context, LogicalPlan plan) {
     ExpressionDependencyCollector.collect(context, plan);
@@ -156,6 +185,8 @@ public class ColumnLevelLineageUtils {
                                             namedExpression.exprId(),
                                             idMap.get(namedExpression.name()),
                                             namedExpression.qualifiedName()));
+
+                        mapCachedOutputsByPosition(context, node, cachedPlan);
                       });
             }
             return scala.runtime.BoxedUnit.UNIT;

@@ -8,16 +8,24 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,5 +123,56 @@ class ColumnLevelLineageUtilsTest {
     boolean largeSchemaExceedsLimit =
         schemaFacet.getFields().size() > columnLineageConfig.getSchemaSizeLimit();
     assertTrue(largeSchemaExceedsLimit, "Schema with 150 fields should exceed limit of 100");
+  }
+
+  /**
+   * Spark 4.1 serves {@code cached.select(a AS c).cache().select(c AS e)} from the first cache, via
+   * an InMemoryRelation renamed to {@code e} over a cached plan whose output is {@code a}. The
+   * columns only line up by position.
+   */
+  @Test
+  void testMapCachedOutputsByPositionLinksRenamedColumns() {
+    ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+    ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
+    when(context.getBuilder()).thenReturn(builder);
+
+    Attribute e = attribute(1, "e");
+    Attribute f = attribute(2, "f");
+    Attribute a = attribute(3, "a");
+    Attribute b = attribute(4, "b");
+
+    ColumnLevelLineageUtils.mapCachedOutputsByPosition(
+        context, planWithOutput(e, f), planWithOutput(a, b));
+
+    verify(builder).addDependency(e.exprId(), a.exprId(), "e");
+    verify(builder).addDependency(f.exprId(), b.exprId(), "f");
+  }
+
+  /** Outputs of different sizes cannot be paired up, so nothing is linked. */
+  @Test
+  void testMapCachedOutputsByPositionSkipsMismatchedOutputs() {
+    ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+    ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
+    when(context.getBuilder()).thenReturn(builder);
+
+    ColumnLevelLineageUtils.mapCachedOutputsByPosition(
+        context,
+        planWithOutput(attribute(1, "e")),
+        planWithOutput(attribute(3, "a"), attribute(4, "b")));
+
+    verifyNoInteractions(builder);
+  }
+
+  private static Attribute attribute(long id, String name) {
+    Attribute attribute = mock(Attribute.class);
+    when(attribute.exprId()).thenReturn(ExprId.apply(id));
+    when(attribute.qualifiedName()).thenReturn(name);
+    return attribute;
+  }
+
+  private static LogicalPlan planWithOutput(Attribute... attributes) {
+    LogicalPlan plan = mock(LogicalPlan.class);
+    when(plan.output()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(attributes)));
+    return plan;
   }
 }
