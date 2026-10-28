@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,10 +24,14 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.io.File;
+import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
@@ -58,6 +61,7 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
       "org.apache.spark.sql.execution.streaming.FileStreamSink";
   private static final String RELOCATED_FILE_STREAM_SINK =
       "org.apache.spark.sql.execution.streaming.sinks.FileStreamSink";
+  private static final String REMOTE_FS = "remotefs://cluster";
 
   private DatasetFactory<OpenLineage.OutputDataset> factory;
   private WriteToMicroBatchDataSourceV1DatasetBuilder builder;
@@ -74,7 +78,7 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     SparkContext sparkContext = mock(SparkContext.class);
     sessionState = mock(SessionState.class);
     when(sparkSession.sessionState()).thenReturn(sessionState);
-    when(sessionState.newHadoopConfWithOptions(any())).thenReturn(new Configuration());
+    when(sessionState.newHadoopConf()).thenReturn(new Configuration());
 
     OpenLineageContext openLineageContext =
         OpenLineageContext.builder()
@@ -237,32 +241,49 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     assertSinkWithoutOutput(sinkType, Collections.singletonMap("path", ""));
   }
 
-  @Test
-  void testApply_WithRelativePathIsQualifiedAgainstWorkingDirectory() {
+  @ParameterizedTest
+  @ValueSource(strings = {DELTA_SINK, FILE_STREAM_SINK, RELOCATED_FILE_STREAM_SINK})
+  void testApply_WithRelativePathIsQualifiedAgainstWorkingDirectory(String sinkType) {
     DatasetIdentifier identifier =
-        applyFileStreamSinkWrite(Collections.singletonMap("path", "relative_output"));
+        applyPathSinkWrite(sinkType, Collections.singletonMap("path", "relative_output"));
 
     assertEquals("file", identifier.getNamespace());
     assertEquals(new File("relative_output").getAbsolutePath(), identifier.getName());
-    scala.collection.immutable.Map<String, String> writeOptions =
-        writeToMicroBatchV1.writeOptions();
-    verify(sessionState).newHadoopConfWithOptions(eq(writeOptions));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {DELTA_SINK, FILE_STREAM_SINK, RELOCATED_FILE_STREAM_SINK})
+  void testApply_WithPathQualifiedAgainstSessionDefaultFsIgnoringWriteOptions(String sinkType) {
+    Configuration hadoopConf = new Configuration();
+    hadoopConf.set("fs.defaultFS", REMOTE_FS);
+    hadoopConf.setClass("fs.remotefs.impl", RemoteFileSystem.class, RawLocalFileSystem.class);
+    hadoopConf.setBoolean("fs.remotefs.impl.disable.cache", true);
+    when(sessionState.newHadoopConf()).thenReturn(hadoopConf);
+    // The sinks resolve their path without write options, so this override must not apply.
+    Map<String, String> writeOptions = new HashMap<>();
+    writeOptions.put("path", "relative_output");
+    writeOptions.put("fs.defaultFS", "file:///");
+
+    DatasetIdentifier identifier = applyPathSinkWrite(sinkType, writeOptions);
+
+    assertEquals(REMOTE_FS, identifier.getNamespace());
+    assertEquals("/user/test/relative_output", identifier.getName());
+    verify(sessionState, never()).newHadoopConfWithOptions(any());
   }
 
   @Test
   void testApply_WithUnqualifiablePathFallsBackToRawPath() {
-    when(sessionState.newHadoopConfWithOptions(any()))
-        .thenThrow(new IllegalStateException("no conf"));
+    when(sessionState.newHadoopConf()).thenThrow(new IllegalStateException("no conf"));
 
     DatasetIdentifier identifier =
-        applyFileStreamSinkWrite(Collections.singletonMap("path", "relative_output"));
+        applyPathSinkWrite(FILE_STREAM_SINK, Collections.singletonMap("path", "relative_output"));
 
     assertEquals("file", identifier.getNamespace());
     assertEquals("relative_output", identifier.getName());
   }
 
-  private DatasetIdentifier applyFileStreamSinkWrite(Map<String, String> writeOptions) {
-    when(writeToMicroBatchV1.sink()).thenReturn(mockSink(FILE_STREAM_SINK));
+  private DatasetIdentifier applyPathSinkWrite(String sinkType, Map<String, String> writeOptions) {
+    when(writeToMicroBatchV1.sink()).thenReturn(mockSink(sinkType));
     when(writeToMicroBatchV1.schema()).thenReturn(schema);
     when(writeToMicroBatchV1.catalogTable()).thenReturn(Option.empty());
     when(writeToMicroBatchV1.writeOptions())
@@ -289,6 +310,21 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
 
     assertTrue(builder.apply(event, writeToMicroBatchV1).isEmpty());
     verify(factory, never()).sparkDatasetBuilder();
+  }
+
+  /** Non-local filesystem that qualifies paths against its own URI without touching storage. */
+  public static class RemoteFileSystem extends RawLocalFileSystem {
+    private static final URI REMOTE_URI = URI.create(REMOTE_FS);
+
+    @Override
+    public URI getUri() {
+      return REMOTE_URI;
+    }
+
+    @Override
+    public Path getWorkingDirectory() {
+      return new Path(REMOTE_FS + "/user/test");
+    }
   }
 
   @SuppressWarnings("unchecked")
