@@ -52,7 +52,7 @@ followed by nested keys separated by double underscores (`__`).
 4. JSON String Support: You can pass a JSON string at any level of the configuration hierarchy, which will be merged into the final configuration structure.
    Values are parsed as JSON when possible, so `true`, `false` and numbers such as `5` or `0.2` set boolean and numeric options.
    String settings such as tag values, API keys, OAuth2 client credentials, file paths, custom HTTP headers and Kafka topics keep the text as written: `true` stays `"true"` and `1234e5678` stays `"1234e5678"`.
-   Numbers that would not keep their exact text when parsed (for example `1.10` or `1e5`) are passed as strings.
+   This includes numbers that would not keep their exact text when parsed (for example `1.10` or `1e5`): numeric options receive the number, and string settings receive the text as written.
 5. Hyphen Restriction: Since environment variable names cannot contain `-` (hyphen), if a name strictly requires a hyphen, use a JSON string as the value of the environment variable.
 6. Precedence Rules:
 * Top-level keys have precedence and will not be overwritten by more nested entries.

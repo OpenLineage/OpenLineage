@@ -39,6 +39,43 @@ def try_import_from_string(path: str) -> type[Any] | None:
         return None
 
 
+class EnvFloat(float):
+    """A float decoded from an environment variable whose JSON text does not round-trip.
+
+    `0.50`, `1e5` or `1234e5678` (which decodes to `inf`) decode to a float that does not print
+    back as written. Numeric settings use the value as a regular float, while
+    :func:`config_value_to_str` returns `text`, so string settings such as tag values or API keys
+    keep what was written.
+    """
+
+    text: str
+
+    def __new__(cls, value: float, text: str) -> EnvFloat:
+        number = super().__new__(cls, value)
+        number.text = text
+        return number
+
+    def __getnewargs__(self) -> tuple[float, str]:  # type: ignore[override]
+        return float(self), self.text
+
+
+class EnvInt(int):
+    """An int decoded from an environment variable whose JSON text does not round-trip, like `-0`.
+
+    See :class:`EnvFloat`.
+    """
+
+    text: str
+
+    def __new__(cls, value: int, text: str) -> EnvInt:
+        number = super().__new__(cls, value)
+        number.text = text
+        return number
+
+    def __getnewargs__(self) -> tuple[int, str]:  # type: ignore[override]
+        return int(self), self.text
+
+
 def config_value_to_str(value: Any) -> str:
     """Return the string form of a scalar value given for a string-typed config setting.
 
@@ -46,6 +83,8 @@ def config_value_to_str(value: Any) -> str:
     setting written as ``true``, ``42`` or ``1.0`` arrives as ``bool``, ``int`` or ``float``.
     Booleans become ``"true"``/``"false"`` and numbers their JSON text, which matches what
     was written in the environment variable, the YAML file, and what the Java client emits.
+    Numbers decoded from environment variables whose JSON text differs from what was written
+    (:class:`EnvFloat`, :class:`EnvInt`) return the text as written.
 
     Raises:
         TypeError: for ``None`` and non-scalar values (dicts, lists, objects); callers decide
@@ -53,6 +92,8 @@ def config_value_to_str(value: Any) -> str:
     """
     if isinstance(value, str):
         return value
+    if isinstance(value, (EnvFloat, EnvInt)):
+        return value.text
     if isinstance(value, (bool, int, float)):
         return json.dumps(value)
     msg = f"Expected a string, boolean or number, got {type(value).__name__}: {value!r}"
@@ -67,13 +108,30 @@ def optional_config_value_to_str(value: Any) -> str | None:
 def config_values_to_str(values: dict[Any, Any] | None) -> dict[Any, Any]:
     """Turn boolean and numeric values of a string-to-string mapping into strings.
 
-    Uses :func:`config_value_to_str` for booleans and numbers; other values (strings, ``None``,
-    bytes, ...) are kept as given.
+    Uses :func:`config_value_to_str`; values it does not accept (``None``, bytes, ...) are kept
+    as given.
     """
-    return {
-        k: config_value_to_str(v) if isinstance(v, (bool, int, float)) else v
-        for k, v in (values or {}).items()
-    }
+
+    def to_str_if_scalar(value: Any) -> Any:
+        try:
+            return config_value_to_str(value)
+        except TypeError:
+            return value
+
+    return {k: to_str_if_scalar(v) for k, v in (values or {}).items()}
+
+
+def first_config_value(config: dict[str, Any], *keys: str) -> Any:
+    """Return the value of the first of `keys` that is set to something other than ``None`` or ``""``.
+
+    Unlike chaining ``config.get(a) or config.get(b)``, this keeps ``0`` and ``False``, which is
+    what a string setting written as ``0`` or ``false`` decodes to.
+    """
+    for key in keys:
+        value = config.get(key)
+        if value is not None and value != "":
+            return value
+    return None
 
 
 # Filter dictionary to get only those key: value pairs that have

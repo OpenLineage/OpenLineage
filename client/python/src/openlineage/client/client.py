@@ -38,7 +38,7 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import deep_merge_dicts, split_into_list
+from openlineage.client.utils import EnvFloat, EnvInt, deep_merge_dicts, split_into_list
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -437,10 +437,11 @@ class OpenLineageClient:
     def _parse_env_value(env_key: str, env_value: str) -> Any:
         """Decode an `OPENLINEAGE__*` value as JSON, falling back to the raw string.
 
-        Numbers are only decoded when their JSON text round-trips: `1.10`, `1e5` or `1234e5678`
-        (which would decode to `inf`) are kept as written, so string settings that look like
-        numbers, such as tag values, API keys or paths, are not altered. String-typed settings
-        turn decoded booleans and numbers back into text with `config_value_to_str`.
+        String-typed settings turn decoded booleans and numbers back into text with
+        `config_value_to_str`. Numbers whose JSON text does not round-trip, such as `0.50`, `1e5`
+        or `1234e5678` (which decodes to `inf`), are returned as `EnvFloat`/`EnvInt`: numeric
+        settings use them as numbers, and string settings such as tag values, API keys or paths
+        get the text as written.
         """
         try:
             value = json.loads(env_value)
@@ -459,7 +460,7 @@ class OpenLineageClient:
             and not isinstance(value, bool)
             and json.dumps(value) != env_value.strip()
         ):
-            return env_value
+            return EnvFloat(value, env_value) if isinstance(value, float) else EnvInt(value, env_value)
         return value
 
     @staticmethod

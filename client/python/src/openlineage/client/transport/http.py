@@ -23,6 +23,7 @@ from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import (
     config_value_to_str,
     config_values_to_str,
+    first_config_value,
     get_only_specified_fields,
     import_from_string,
 )
@@ -54,8 +55,8 @@ class HttpCompression(Enum):
 class ApiKeyTokenProvider(TokenProvider):
     def __init__(self, config: dict[str, str]) -> None:
         super().__init__(config)
-        api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
-        if not api_key:
+        api_key = first_config_value(config, "apiKey", "apikey", "api_key")
+        if api_key is None:
             msg = "apiKey is required for HTTP Transport when auth type is `api_key`."
             raise KeyError(msg)
         self.api_key = config_value_to_str(api_key)
@@ -293,8 +294,8 @@ class JwtTokenProvider(TokenEndpointTokenProvider):
     DEFAULT_TOKEN_FIELDS = ("token", "access_token")
 
     def __init__(self, config: dict[str, Any]) -> None:
-        api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
-        if not api_key:
+        api_key = first_config_value(config, "apiKey", "apikey", "api_key")
+        if api_key is None:
             msg = "apiKey is required for JWT token provider."
             raise KeyError(msg)
         super().__init__(config)
@@ -339,12 +340,12 @@ class OAuth2ClientCredentialsTokenProvider(TokenEndpointTokenProvider):
     CLIENT_AUTH_METHODS = ("client_secret_basic", "client_secret_post")
 
     def __init__(self, config: dict[str, Any]) -> None:
-        client_id = config.get("clientId") or config.get("client_id")
-        if not client_id:
+        client_id = first_config_value(config, "clientId", "client_id")
+        if client_id is None:
             msg = "clientId is required for OAuth2 access token provider."
             raise KeyError(msg)
-        client_secret = config.get("clientSecret") or config.get("client_secret")
-        if not client_secret:
+        client_secret = first_config_value(config, "clientSecret", "client_secret")
+        if client_secret is None:
             msg = "clientSecret is required for OAuth2 access token provider."
             raise KeyError(msg)
         super().__init__(config)

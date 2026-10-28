@@ -11,7 +11,7 @@ import attr
 from openlineage.client.transport.async_http import AsyncHttpConfig, AsyncHttpTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import config_value_to_str, get_only_specified_fields
+from openlineage.client.utils import config_value_to_str, first_config_value, get_only_specified_fields
 
 if TYPE_CHECKING:
     from openlineage.client.client import Event
@@ -68,8 +68,10 @@ class DatadogConfig(Config):
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> DatadogConfig:
-        api_key = params.get("apiKey") or params.get("apikey") or os.getenv("DD_API_KEY")
-        if not api_key:
+        api_key = first_config_value(params, "apiKey", "apikey")
+        if api_key is None:
+            api_key = os.getenv("DD_API_KEY")
+        if api_key is None or api_key == "":
             msg = (
                 "apiKey is required for DatadogTransport. "
                 "Provide it in config or set DD_API_KEY environment variable."

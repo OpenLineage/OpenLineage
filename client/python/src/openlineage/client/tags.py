@@ -15,9 +15,9 @@ def _tag_values_to_str(tags: dict[Any, Any] | None) -> dict[str, str]:
     """Normalize tag values to strings, as the Tags facets require.
 
     Environment variables are JSON-decoded and YAML scalars are typed, so `true`, `42` or `1.0`
-    arrive as bool/int/float; they are turned back into "true", "42" and "1.0". A `null` value
-    (or an empty YAML value) cannot form a valid tag, so the tag is skipped with a warning, as are
-    objects and lists.
+    arrive as bool/int/float; they are turned back into "true", "42" and "1.0". A `null` or empty
+    value (an empty YAML value or environment variable) cannot form a valid tag, so the tag is
+    skipped with a warning, as are objects and lists.
     """
     result: dict[str, str] = {}
     for key, value in (tags or {}).items():
@@ -27,6 +27,9 @@ def _tag_values_to_str(tags: dict[Any, Any] | None) -> dict[str, str]:
                 '`null`, quote it in YAML or set the environment variable to `"null"`.',
                 key,
             )
+            continue
+        if value == "":
+            log.warning("Skipping OpenLineage tag `%s`: its value is empty.", key)
             continue
         try:
             result[config_value_to_str(key)] = config_value_to_str(value)

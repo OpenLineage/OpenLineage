@@ -6,8 +6,10 @@
 package io.openlineage.client.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.openlineage.client.Environment;
@@ -24,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 public class OpenLineageEnvParser {
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
+  // Rejects values such as "true;env:prod", which would otherwise parse as their first token
+  private static final ObjectReader valueReader =
+      objectMapper.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
   private static final String PREFIX = "OPENLINEAGE__";
 
   /**
@@ -98,7 +103,8 @@ public class OpenLineageEnvParser {
   /**
    * Parses an environment variable value as JSON, falling back to a plain string.
    *
-   * <p>Numbers are only parsed when their JSON text round-trips: values such as {@code 1.10},
+   * <p>Values with text after the first JSON token, such as {@code true;env:prod}, are kept as
+   * written. Numbers are only parsed when their JSON text round-trips: values such as {@code 1.10},
    * {@code 1e5} or {@code 1234e5678} (which would parse to {@code Infinity}) are kept as written,
    * so string settings that look like numbers, such as API keys or tag values, are not altered.
    * Numeric settings still accept them, as Jackson coerces strings into numeric fields.
@@ -110,7 +116,7 @@ public class OpenLineageEnvParser {
     JsonNode textNode = TextNode.valueOf(envValue);
     JsonNode valueNode;
     try {
-      valueNode = objectMapper.readTree(envValue);
+      valueNode = valueReader.readTree(envValue);
     } catch (JsonProcessingException e) {
       // If it's not valid JSON, treat it as a plain string
       return textNode;

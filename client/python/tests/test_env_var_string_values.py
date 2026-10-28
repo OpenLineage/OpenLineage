@@ -10,9 +10,11 @@ file paths, ...) must still end up with the text that was written, while non-str
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import os
+import pickle
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
@@ -32,7 +34,8 @@ from openlineage.client.transport.http import (
     OAuth2ClientCredentialsTokenProvider,
 )
 from openlineage.client.transport.kafka import KafkaConfig
-from openlineage.client.utils import config_value_to_str, config_values_to_str
+from openlineage.client.utils import EnvFloat, EnvInt, config_value_to_str, config_values_to_str
+from urllib3.util import Retry
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -117,6 +120,14 @@ class TestTagValuesFromEnv:
             )
         assert _emitted_user_tags(client)["run"] == {"team": "data"}
         assert "Skipping OpenLineage tag `owner`: its value is null" in caplog.text
+
+    def test_empty_tag_value_is_skipped_with_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level(logging.WARNING, logger="openlineage.client.tags"):
+            client = _client_from_env(
+                {"OPENLINEAGE__TAGS__RUN__OWNER": "", "OPENLINEAGE__TAGS__RUN__TEAM": "data"}
+            )
+        assert _emitted_user_tags(client)["run"] == {"team": "data"}
+        assert "Skipping OpenLineage tag `owner`: its value is empty" in caplog.text
 
     def test_two_level_json_form(self) -> None:
         client = _client_from_env(
@@ -269,6 +280,35 @@ class TestOtherStringSettingsFromEnv:
         config = KafkaConfig.from_dict(transport)
         assert (config.topic, config.messageKey) == ("4521", "1.0")
 
+    @pytest.mark.parametrize(("env_value", "expected"), [("0", "0"), ("false", "false")])
+    def test_kafka_falsy_message_key(self, env_value: str, expected: str) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "OPENLINEAGE__TRANSPORT__TYPE": "kafka",
+                "OPENLINEAGE__TRANSPORT__TOPIC": "events",
+                "OPENLINEAGE__TRANSPORT__MESSAGE_KEY": env_value,
+                "OPENLINEAGE__TRANSPORT__CONFIG": '{"bootstrap.servers": "localhost:9092"}',
+            },
+            clear=True,
+        ):
+            transport = OpenLineageClient._load_config_from_env_variables()["transport"]  # noqa: SLF001
+        assert KafkaConfig.from_dict(transport).messageKey == expected
+
+    def test_falsy_credentials(self) -> None:
+        assert ApiKeyTokenProvider({"apiKey": 0}).api_key == "0"
+        jwt = JwtTokenProvider({"apiKey": False, "tokenEndpoint": "https://auth.example.com/token"})
+        assert jwt.api_key == "false"
+        oauth2 = OAuth2ClientCredentialsTokenProvider(
+            {"clientId": 0, "clientSecret": False, "tokenEndpoint": "https://auth.example.com/token"}
+        )
+        assert (oauth2.client_id, oauth2.client_secret) == ("0", "false")
+        with patch.dict(os.environ, {"DD_API_KEY": "from-env"}, clear=True):
+            assert DatadogConfig.from_dict({"apiKey": 0}).apiKey == "0"
+            assert DatadogConfig.from_dict({"apiKey": ""}).apiKey == "from-env"
+        with pytest.raises(KeyError):
+            ApiKeyTokenProvider({"apiKey": ""})
+
 
 class TestNonStringSettingsFromEnvStillDecoded:
     def test_http_bool_and_numbers(self) -> None:
@@ -350,6 +390,28 @@ class TestNonStringSettingsFromEnvStillDecoded:
         http = next(t for t in client.transport.transports if isinstance(t, HttpTransport))
         assert http.config.verify is False
 
+    @pytest.mark.parametrize(("env_value", "expected"), [("0.50", 0.5), ("1e1", 10.0), ("2.50", 2.5)])
+    def test_http_numbers_that_do_not_round_trip(self, env_value: str, expected: float) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "OPENLINEAGE__TRANSPORT__TYPE": "http",
+                "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5000",
+                "OPENLINEAGE__TRANSPORT__TIMEOUT": env_value,
+                "OPENLINEAGE__TRANSPORT__RETRY__BACKOFF_FACTOR": env_value,
+            },
+            clear=True,
+        ):
+            client = OpenLineageClient()
+        assert isinstance(client.transport, HttpTransport)
+        config: HttpConfig = client.transport.config
+        assert config.timeout == expected
+        assert isinstance(config.timeout, float)
+        assert config.retry["backoff_factor"] == expected
+        # urllib3 computes backoff with the value, which failed when it was a string
+        retry = Retry(total=3, backoff_factor=config.retry["backoff_factor"])
+        assert retry.increment().increment().get_backoff_time() == expected * 2
+
     def test_dataset_reducing_enabled(self) -> None:
         client = _client_from_env({"OPENLINEAGE__DATASET__REDUCING_ENABLED": "true"})
         assert client.config.dataset.reducing_enabled is True
@@ -368,11 +430,11 @@ class TestNonStringSettingsFromEnvStillDecoded:
         ('"text"', "text"),
         ('{"a": 1.10}', {"a": 1.1}),
         ("[1, 2]", [1, 2]),
-        # numbers whose JSON text does not round-trip are kept as written
-        ("1.10", "1.10"),
-        ("1e5", "1e5"),
-        ("1234e5678", "1234e5678"),
-        ("-0", "-0"),
+        # numbers whose JSON text does not round-trip keep the text as written
+        ("1.10", EnvFloat(1.1, "1.10")),
+        ("1e5", EnvFloat(100000.0, "1e5")),
+        ("1234e5678", EnvFloat(float("inf"), "1234e5678")),
+        ("-0", EnvInt(0, "-0")),
         # not JSON
         ("PRODUCTION", "PRODUCTION"),
         ("007", "007"),
@@ -383,6 +445,16 @@ def test_parse_env_value(env_value: str, expected: Any) -> None:
     parsed = OpenLineageClient._parse_env_value("OPENLINEAGE__X", env_value)  # noqa: SLF001
     assert parsed == expected
     assert type(parsed) is type(expected)
+    if isinstance(expected, (EnvFloat, EnvInt)):
+        assert parsed.text == env_value
+
+
+@pytest.mark.parametrize("number", [EnvFloat(0.5, "0.50"), EnvInt(0, "-0")])
+def test_env_number_survives_copy_and_pickle(number: EnvFloat | EnvInt) -> None:
+    for copied in (copy.deepcopy(number), pickle.loads(pickle.dumps(number))):  # noqa: S301
+        assert type(copied) is type(number)
+        assert copied == number
+        assert copied.text == number.text
 
 
 def test_config_value_to_str() -> None:
@@ -391,14 +463,17 @@ def test_config_value_to_str() -> None:
     assert config_value_to_str(False) == "false"
     assert config_value_to_str(4521) == "4521"
     assert config_value_to_str(1.0) == "1.0"
+    assert config_value_to_str(EnvFloat(1.1, "1.10")) == "1.10"
+    assert config_value_to_str(EnvInt(0, "-0")) == "-0"
     for invalid in (None, {"a": "b"}, ["a"]):
         with pytest.raises(TypeError):
             config_value_to_str(invalid)
-    assert config_values_to_str({"a": 1, "b": True, "c": "x", "d": None}) == {
+    assert config_values_to_str({"a": 1, "b": True, "c": "x", "d": None, "e": EnvFloat(1e5, "1e5")}) == {
         "a": "1",
         "b": "true",
         "c": "x",
         "d": None,
+        "e": "1e5",
     }
     assert config_values_to_str(None) == {}
 

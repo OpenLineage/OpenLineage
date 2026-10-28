@@ -47,8 +47,9 @@ class KafkaConfig(Config):
     @classmethod
     def from_dict(cls: type[_T], params: dict[str, Any]) -> _T:
         # alias message_key to messageKey
-        if message_key := params.pop("message_key", None):
-            params["messageKey"] = params.get("messageKey") or message_key
+        message_key = params.pop("message_key", None)
+        if message_key is not None and params.get("messageKey") is None:
+            params["messageKey"] = message_key
         if "config" not in params:
             msg = "kafka `config` not passed to KafkaConfig"
             raise RuntimeError(msg)

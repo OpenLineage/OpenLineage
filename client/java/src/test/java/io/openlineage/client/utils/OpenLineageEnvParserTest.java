@@ -130,7 +130,13 @@ class OpenLineageEnvParserTest {
         // numbers whose JSON text does not round-trip are kept as written
         Arguments.of("1.10", "\"1.10\""),
         Arguments.of("1e5", "\"1e5\""),
-        Arguments.of("1234e5678", "\"1234e5678\""));
+        Arguments.of("1234e5678", "\"1234e5678\""),
+        // text after the first JSON token is kept as written
+        Arguments.of("true;env:prod", "\"true;env:prod\""),
+        Arguments.of("false-abc def", "\"false-abc def\""),
+        Arguments.of("null x", "\"null x\""),
+        Arguments.of("123 456", "\"123 456\""),
+        Arguments.of("{\"a\": 1} x", "\"{\\\"a\\\": 1} x\""));
   }
 
   @ParameterizedTest
@@ -188,7 +194,12 @@ class OpenLineageEnvParserTest {
         // a single label that is valid JSON used to be dropped
         Arguments.of("4521", List.of(new TagField("4521", "true", "CONFIG"))),
         Arguments.of("true", List.of(new TagField("true", "true", "CONFIG"))),
-        Arguments.of("1.10", List.of(new TagField("1.10", "true", "CONFIG"))));
+        Arguments.of("1.10", List.of(new TagField("1.10", "true", "CONFIG"))),
+        // starts with a JSON literal, but is not one
+        Arguments.of(
+            "true;env:prod",
+            List.of(
+                new TagField("true", "true", "CONFIG"), new TagField("env", "prod", "CONFIG"))));
   }
 
   private static OpenLineageConfig loadConfig(Map<String, String> env) {
