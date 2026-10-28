@@ -35,18 +35,38 @@ precedence over its default. Defaults initialize the parsing context; `USE`
 statements can change that context according to the selected dialect. Each parse
 call has an independent context.
 
-Java callers can supply the same defaults through the four-argument overload:
+### Which default to use
+
+Table names have up to three levels: `database.schema.table`. `default_database`
+fills the third (catalog) level of any name with fewer than three parts, and
+`default_schema` fills the second level of any name with fewer than two parts.
+
+Some dialects have only one namespace level above the table, for example MySQL,
+Hive, and Spark without a catalog. In these dialects the parser reads a two-part
+name `x.t` as schema `x` and table `t`. Pass the connection's database or
+namespace as `default_schema`, not `default_database`. Otherwise the same table
+gets two different names. For example, with `dialect="mysql"` and
+`default_database="mydb"`, `INSERT INTO mydb.t SELECT * FROM t` gives the input
+`mydb.t` (database `mydb`) but the output `mydb.mydb.t` (database and schema
+`mydb`). With `default_schema="mydb"`, both resolve to `mydb.t`.
+
+Use `default_database` only for dialects with three levels, such as Postgres,
+Snowflake, BigQuery, or Databricks with Unity Catalog.
+
+### Java
+
+Java callers supply the same defaults through `ParseOptions`:
 
 ```java
 OpenLineageSql.parse(
     Collections.singletonList("INSERT INTO target SELECT id FROM source"),
     "postgres",
-    "public",
-    "mydb");
+    ParseOptions.builder().defaultSchema("public").defaultDatabase("mydb").build());
 ```
 
-The existing one- and two-argument Java methods retain their behavior. Passing
-`null` for a default leaves that component unspecified.
+The existing one- and two-argument Java methods retain their behavior. Leaving a
+`ParseOptions` field unset, or setting it to `null`, leaves that component
+unspecified.
 
 Omitting `default_database` or passing `None` preserves the existing behavior.
 Rust callers can use `parse_multiple_statements_with_default_database`; the existing

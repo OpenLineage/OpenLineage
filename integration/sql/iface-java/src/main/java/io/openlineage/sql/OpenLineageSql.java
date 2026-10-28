@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.SystemUtils;
 
@@ -32,26 +33,37 @@ public final class OpenLineageSql {
    * @return optional SqlMeta containing parsed metadata, empty if parsing fails
    */
   public static Optional<SqlMeta> parse(List<String> sql, String dialect) {
-    return parse(sql, dialect, null, null);
+    return parse(sql, dialect, ParseOptions.defaults());
   }
 
   /**
-   * Parses SQL statements with defaults for unqualified table names.
+   * Parses SQL statements with options such as defaults for unqualified table names.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * OpenLineageSql.parse(
+   *     sql,
+   *     "postgres",
+   *     ParseOptions.builder().defaultSchema("public").defaultDatabase("mydb").build());
+   * }</pre>
    *
    * @param sql list of SQL statements to parse
    * @param dialect the SQL dialect to use for parsing, or null for automatic detection
-   * @param defaultSchema schema for tables without an explicit schema, or null
-   * @param defaultDatabase database for tables without an explicit database, or null
+   * @param options parse options, not null; use {@link ParseOptions#defaults()} for none. See
+   *     {@link ParseOptions} for which default to use per dialect
+   * @throws NullPointerException if {@code options} is null
    * @return optional SqlMeta containing parsed metadata, empty if parsing fails
    */
-  public static Optional<SqlMeta> parse(
-      List<String> sql, String dialect, String defaultSchema, String defaultDatabase) {
+  public static Optional<SqlMeta> parse(List<String> sql, String dialect, ParseOptions options) {
+    Objects.requireNonNull(options, "options");
     if (loadError.isPresent()) {
       // TODO: pass error
       return Optional.empty();
     }
     try {
-      return Optional.of(parseNative(sql, dialect, defaultSchema, defaultDatabase));
+      return Optional.of(
+          parseNative(sql, dialect, options.defaultSchema(), options.defaultDatabase()));
     } catch (RuntimeException e) {
       return Optional.empty();
     }
