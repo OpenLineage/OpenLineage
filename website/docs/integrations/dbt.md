@@ -288,9 +288,7 @@ Next, set the `OPENLINEAGE_URL` environment variable:
 OPENLINEAGE_URL=http://localhost:5000
 ```
 
-If the backend requires an API key, set `OPENLINEAGE_API_KEY` as well. If the backend is protected by an OAuth 2.0
-authorization server that issues short-lived access tokens, use the `oauth2` auth type instead. It needs the full
-transport configuration in place of `OPENLINEAGE_URL`:
+For [OAuth2](../client/python/configuration.md#oauth2-token-provider), use the full transport configuration:
 
 ```bash
 OPENLINEAGE__TRANSPORT__TYPE=http
@@ -300,8 +298,6 @@ OPENLINEAGE__TRANSPORT__AUTH__CLIENT_ID=your-client-id
 OPENLINEAGE__TRANSPORT__AUTH__CLIENT_SECRET=your-client-secret
 OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT=https://auth.example.com/token
 ```
-
-The available authentication options are described in the [Python client documentation](../client/python/configuration.md#oauth2-token-provider).
 
 Optionally, set the namespace:
 

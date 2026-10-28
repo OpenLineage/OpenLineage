@@ -204,9 +204,7 @@ For backwards compatibility, the simplest HTTP transport configuration, with onl
 - `OPENLINEAGE_ENDPOINT` (optional, endpoint to which events are sent, default: `api/v1/lineage`, example: api/v2/events)
 - `OPENLINEAGE_API_KEY` (optional, token included in the Authentication HTTP header as the Bearer, example: secret_token_123)
 
-These variables only support API key authentication. To use another authentication type, such as `jwt` or `oauth2`,
-configure the transport with `OPENLINEAGE__TRANSPORT__*` variables instead of `OPENLINEAGE_URL`, as shown in the
-[JWT Token Provider](#jwt-token-provider) and [OAuth2 Token Provider](#oauth2-token-provider) sections.
+For [JWT](#jwt-token-provider) or [OAuth2](#oauth2-token-provider) authentication, use the full configuration instead.
 
 To facilitate switch to modern environment variables, aliases are dynamically created for certain variables like `OPENLINEAGE_URL`. 
 If `OPENLINEAGE_URL` is set, it automatically translates into specific transport configurations
