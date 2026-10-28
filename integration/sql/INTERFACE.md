@@ -33,7 +33,8 @@ Both input and output tables, and the input column lineage origins, use
 the database `mydb` and schema `public`. An explicit database or schema in SQL takes
 precedence over its default. Defaults initialize the parsing context; `USE`
 statements can change that context according to the selected dialect. Each parse
-call has an independent context.
+call has an independent context. Omitting `default_database` or passing `None`
+preserves the existing behavior.
 
 ### Which default to use
 
@@ -68,7 +69,8 @@ The existing one- and two-argument Java methods retain their behavior. Leaving a
 `ParseOptions` field unset, or setting it to `null`, leaves that component
 unspecified.
 
-Omitting `default_database` or passing `None` preserves the existing behavior.
+### Rust
+
 Rust callers can use `parse_multiple_statements_with_default_database`; the existing
 `parse_multiple_statements` and `parse_sql` functions retain their signatures.
 
