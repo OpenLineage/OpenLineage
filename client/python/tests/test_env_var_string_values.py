@@ -475,6 +475,7 @@ def test_config_value_to_str() -> None:
         "d": None,
         "e": "1e5",
     }
+    assert config_values_to_str({123: "x", True: "y"}) == {"123": "x", "true": "y"}
     assert config_values_to_str(None) == {}
 
 

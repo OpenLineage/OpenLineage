@@ -106,10 +106,10 @@ def optional_config_value_to_str(value: Any) -> str | None:
 
 
 def config_values_to_str(values: dict[Any, Any] | None) -> dict[Any, Any]:
-    """Turn boolean and numeric values of a string-to-string mapping into strings.
+    """Turn boolean and numeric keys and values of a string-to-string mapping into strings.
 
-    Uses :func:`config_value_to_str`; values it does not accept (``None``, bytes, ...) are kept
-    as given.
+    Uses :func:`config_value_to_str`; keys and values it does not accept (``None``, bytes, ...)
+    are kept as given.
     """
 
     def to_str_if_scalar(value: Any) -> Any:
@@ -118,7 +118,7 @@ def config_values_to_str(values: dict[Any, Any] | None) -> dict[Any, Any]:
         except TypeError:
             return value
 
-    return {k: to_str_if_scalar(v) for k, v in (values or {}).items()}
+    return {to_str_if_scalar(k): to_str_if_scalar(v) for k, v in (values or {}).items()}
 
 
 def first_config_value(config: dict[str, Any], *keys: str) -> Any:
