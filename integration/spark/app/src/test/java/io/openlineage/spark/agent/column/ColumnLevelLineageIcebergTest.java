@@ -476,6 +476,41 @@ class ColumnLevelLineageIcebergTest {
   }
 
   @Test
+  void testJobWithCachedDatasetSwappedAliases() {
+    spark.sql(CREATE_T1_FROM_TEMP);
+
+    Dataset<Row> cachedDataset = spark.read().table("local.db.t1");
+    cachedDataset = cachedDataset.select(col("a").as("x"), col("b").as("y")).cache();
+    cachedDataset.count(); // run some action to warm-up cache
+
+    // the cache matches regardless of aliases, so the InMemoryRelation outputs y, x over x, y
+    spark
+        .read()
+        .table("local.db.t1")
+        .select(col("a").as("y"), col("b").as("x"))
+        .write()
+        .saveAsTable("local.db.t3");
+
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("y").type(INT_TYPE).build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("x").type(INT_TYPE).build()));
+
+    LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
+    assertThat(plan.toString()).contains("InMemoryRelation");
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
+
+    assertColumnDependsOn(facet, "y", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "x", FILE, T1_EXPECTED_NAME, "b");
+    assertColumnDependsOnInputs(facet, "y", 1);
+    assertColumnDependsOnInputs(facet, "x", 1);
+  }
+
+  @Test
   void testMergeIntoCow() {
     Dataset<Row> dataset =
         spark
@@ -494,6 +529,59 @@ class ColumnLevelLineageIcebergTest {
 
     spark.sql(
         "CREATE TABLE local.db.t1 USING iceberg"
+            + " TBLPROPERTIES ('write.merge.mode'='copy-on-write')"
+            + " AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");
+
+    spark.sql(
+        "MERGE INTO local.db.t1 USING local.db.t2 ON local.db.t1.a = local.db.t2.a"
+            + " WHEN MATCHED THEN UPDATE SET *"
+            + " WHEN NOT MATCHED THEN INSERT *");
+
+    List<LogicalPlan> plans = LastQueryExecutionSparkEventListener.getExecutedLogicalPlans();
+
+    LogicalPlan plan =
+        plans.stream()
+            .filter(
+                p ->
+                    p.getClass().getCanonicalName().endsWith("ReplaceIcebergData")
+                        || p.getClass().getCanonicalName().endsWith("ReplaceData"))
+            .findAny()
+            .get();
+
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils
+            .buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
+            .get();
+
+    assertColumnDependsOn(facet, "a", "file", T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", "file", T1_EXPECTED_NAME, "b");
+
+    assertColumnDependsOn(facet, "a", "file", T2_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", "file", T2_EXPECTED_NAME, "b");
+  }
+
+  @Test
+  void testMergeIntoCowPartitioned() {
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1L, "bat"),
+                    RowFactory.create(2L, "mouse"),
+                    RowFactory.create(3L, "horse")),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+    dataset.createOrReplaceTempView("temp");
+
+    // a partitioned table requests a write distribution, which wraps the MERGE query
+    spark.sql(
+        "CREATE TABLE local.db.t1 USING iceberg PARTITIONED BY (b)"
             + " TBLPROPERTIES ('write.merge.mode'='copy-on-write')"
             + " AS SELECT * FROM temp");
     spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");

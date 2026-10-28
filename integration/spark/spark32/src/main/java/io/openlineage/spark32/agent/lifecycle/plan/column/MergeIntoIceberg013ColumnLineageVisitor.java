@@ -49,17 +49,22 @@ public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLinea
    * every output column resolve straight to the target column and drop the source columns. The
    * outputs are left to the default collector instead, which takes them from {@code MergeRows},
    * whose dependencies {@code MergeRowsColumnLineageVisitor} collects.
+   *
+   * <p>Spark's {@code V2Writes} rule wraps the query in single-child nodes such as {@code
+   * RepartitionByExpression} or {@code Sort} when the table requests a write distribution or
+   * ordering, as partitioned Iceberg tables do, so those are looked through.
    */
   static boolean isSparkMergeRows(LogicalPlan query) {
-    if (query == null) {
-      return false;
+    LogicalPlan plan = query;
+    while (plan != null) {
+      try {
+        plan.getClass().getMethod(MATCHED_INSTRUCTIONS);
+        return true;
+      } catch (NoSuchMethodException e) {
+        plan = plan.children().size() == 1 ? plan.children().head() : null;
+      }
     }
-    try {
-      query.getClass().getMethod(MATCHED_INSTRUCTIONS);
-      return true;
-    } catch (NoSuchMethodException e) {
-      return false;
-    }
+    return false;
   }
 
   @Override
