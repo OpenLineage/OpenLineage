@@ -531,7 +531,11 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn adjust_cte_dependencies(&mut self, cte_name: String) {
+    /// Resolves the dependencies collected for CTE `cte_name`. `recursive` is
+    /// whether the CTE's own name is in scope inside its body: true for
+    /// `WITH RECURSIVE`, and in dialects such as Snowflake where any CTE may
+    /// refer to itself. Otherwise a reference to that name is the real table.
+    pub fn adjust_cte_dependencies(&mut self, cte_name: String, recursive: bool) {
         // filter upper level deps
         let size = self.frames.iter().clone().len();
 
@@ -562,6 +566,9 @@ impl<'a> Context<'a> {
             }
 
             if cte_name.clone() == dependency.name {
+                if !recursive {
+                    resolved_dependencies.insert(dependency.clone());
+                }
                 continue;
             }
 

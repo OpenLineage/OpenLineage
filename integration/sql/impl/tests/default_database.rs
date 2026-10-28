@@ -179,6 +179,46 @@ fn qualified_source_with_cte_name_is_input() {
 }
 
 #[test]
+fn default_qualified_source_with_cte_name_is_input() {
+    let sql =
+        "WITH orders AS (SELECT * FROM public.orders) INSERT INTO target SELECT * FROM orders";
+    assert_eq!(parse_cte_inputs(sql, Some("public")), ["public.orders"]);
+}
+
+#[test]
+fn non_recursive_cte_body_reads_table_with_its_own_name() {
+    let sql = "WITH orders AS (SELECT * FROM orders) INSERT INTO target SELECT * FROM orders";
+    assert_eq!(parse_cte_inputs(sql, None), ["orders"]);
+    assert_eq!(parse_cte_inputs(sql, Some("public")), ["public.orders"]);
+}
+
+fn parse_inputs(sql: &str, dialect: &str) -> Vec<String> {
+    let metadata = parse_multiple_statements_with_default_database(
+        vec![sql.to_string()],
+        get_dialect(dialect),
+        None,
+        None,
+    )
+    .unwrap();
+    assert!(metadata.errors.is_empty());
+    table_names(&metadata.table_lineage.in_tables)
+}
+
+#[test]
+fn recursive_cte_self_reference_is_not_an_input() {
+    let sql = "WITH RECURSIVE t AS (SELECT n FROM source UNION ALL SELECT n FROM t) \
+               INSERT INTO target SELECT n FROM t";
+    assert_eq!(parse_inputs(sql, "postgres"), ["source"]);
+}
+
+#[test]
+fn snowflake_cte_self_reference_without_recursive_is_not_an_input() {
+    let sql = "WITH t AS (SELECT n FROM source UNION ALL SELECT n FROM t) \
+               INSERT INTO target SELECT n FROM t";
+    assert_eq!(parse_inputs(sql, "snowflake"), ["source"]);
+}
+
+#[test]
 fn qualified_source_with_earlier_cte_name_is_input() {
     let sql = "WITH a AS (SELECT id FROM source), b AS (SELECT id FROM raw.a) \
                INSERT INTO target SELECT id FROM b";

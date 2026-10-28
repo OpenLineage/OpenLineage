@@ -21,6 +21,8 @@ pub trait Visit {
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
         let size = self.cte_tables.len();
+        // Snowflake lets any CTE refer to itself, with or without RECURSIVE.
+        let recursive = self.recursive || context.dialect().as_base().is::<SnowflakeDialect>();
         for i in 0..size {
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),
@@ -44,7 +46,7 @@ impl Visit for With {
                     .collect_lower_nested_dependencies(self.cte_tables[i].alias.name.clone().value);
             }
 
-            context.adjust_cte_dependencies(self.cte_tables[i].alias.name.clone().value);
+            context.adjust_cte_dependencies(self.cte_tables[i].alias.name.clone().value, recursive);
         }
         Ok(())
     }
