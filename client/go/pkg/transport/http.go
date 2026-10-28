@@ -139,8 +139,14 @@ func newHTTPAuth(auth *HTTPAuthConfig) (string, *oauth2TokenSource, error) {
 
 	switch auth.Type {
 	case AuthTypeAPIKey:
+		if auth.APIKey == "" {
+			return "", nil, errors.New("auth type " + AuthTypeAPIKey + " requires APIKey")
+		}
 		return "Bearer " + auth.APIKey, nil, nil
 	case AuthTypeJWT:
+		if auth.Token == "" {
+			return "", nil, errors.New("auth type " + AuthTypeJWT + " requires Token")
+		}
 		return "Bearer " + auth.Token, nil, nil
 	case AuthTypeOAuth2:
 		tokenSource, err := newClientCredentialsTokenSource(auth)

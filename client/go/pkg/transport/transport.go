@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/url"
 	"time"
 
@@ -92,10 +93,10 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 		return &httpTransport{
 			httpClient:    httpClient,
 			uri:           u.String(),
-			urlParams:     config.HTTP.URLParams,
+			urlParams:     maps.Clone(config.HTTP.URLParams),
 			authorization: authorization,
 			tokenSource:   tokenSource,
-			headers:       config.HTTP.Headers,
+			headers:       maps.Clone(config.HTTP.Headers),
 			compression:   config.HTTP.Compression,
 		}, nil
 	case TransportTypeGCPLineage:

@@ -1068,6 +1068,59 @@ func TestHTTPTransport_Emit_AuthFixedAtConstruction(t *testing.T) {
 	}
 }
 
+// TestNew_StaticAuthRequiresCredential verifies that "apiKey" and "jwt" without a
+// credential fail at construction instead of sending "Authorization: Bearer ".
+func TestNew_StaticAuthRequiresCredential(t *testing.T) {
+	t.Parallel()
+	for _, auth := range []HTTPAuthConfig{
+		{Type: AuthTypeAPIKey},
+		{Type: AuthTypeJWT},
+	} {
+		_, err := New(&Config{
+			Type: TransportTypeHTTP,
+			HTTP: HTTPConfig{URL: "http://localhost:5000", Auth: &auth},
+		})
+		if err == nil || !strings.Contains(err.Error(), "requires") {
+			t.Errorf("New() with auth type %q and no credential: error = %v, want a missing credential error", auth.Type, err)
+		}
+	}
+}
+
+// TestHTTPTransport_Emit_HeadersAndURLParamsCopied verifies that changing the caller's
+// Headers and URLParams maps after New does not affect the requests.
+func TestHTTPTransport_Emit_HeadersAndURLParamsCopied(t *testing.T) {
+	t.Parallel()
+
+	var receivedURL string
+	var receivedHeader string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedURL = r.URL.String()
+		receivedHeader = r.Header.Get("X-Custom")
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+
+	cfg := HTTPConfig{
+		URL:       srv.URL,
+		Headers:   map[string]string{"X-Custom": "before"},
+		URLParams: map[string]string{"param": "before"},
+	}
+	tr := newHTTPTransport(t, cfg)
+	cfg.Headers["X-Custom"] = "after"
+	cfg.URLParams["param"] = "after"
+
+	if _, err := tr.Emit(context.Background(), map[string]string{}); err != nil {
+		t.Fatalf("Emit(): %v", err)
+	}
+
+	if receivedHeader != "before" {
+		t.Errorf("X-Custom = %q, want before", receivedHeader)
+	}
+	if !strings.Contains(receivedURL, "param=before") {
+		t.Errorf("URL = %q, want it to contain param=before", receivedURL)
+	}
+}
+
 // TestNew_UnsupportedAuthType verifies that an unknown or wrongly cased auth type fails
 // at construction instead of sending events without an Authorization header.
 func TestNew_UnsupportedAuthType(t *testing.T) {
