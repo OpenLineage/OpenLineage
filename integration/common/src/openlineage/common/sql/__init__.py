@@ -32,12 +32,15 @@ def parse(
     default_schema: str | None = None,
     default_database: str | None = None,
 ) -> SqlMeta | None:
-    """Extract lineage using optional defaults for unqualified table names."""
+    """Extract lineage using optional defaults for unqualified table names.
+
+    ``default_database`` is the third (catalog) level of a ``database.schema.table``
+    name. For dialects with a single namespace level above the table (MySQL, Hive,
+    Spark without a catalog), pass the connection's database as ``default_schema``.
+    """
     if isinstance(sql, str):
         sql = [sql]
     try:
-        if default_database is None:
-            return parse_sql(sql, dialect=dialect, default_schema=default_schema)
         return parse_sql(
             sql,
             dialect=dialect,

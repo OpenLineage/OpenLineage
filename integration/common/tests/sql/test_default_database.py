@@ -65,19 +65,28 @@ def test_default_database_is_scoped_to_each_call():
 
 
 @pytest.mark.parametrize("explicit_none", [False, True])
-def test_omitted_database_retains_legacy_native_signature(monkeypatch, explicit_none):
-    # Existing integrations can still use a native parser predating the fourth argument.
+def test_omitted_database_is_forwarded_as_none(monkeypatch, explicit_none):
     result = object()
+    native_parse = Mock(return_value=result)
+    monkeypatch.setattr("openlineage.common.sql.parse_sql", native_parse)
 
-    def legacy_parse(sql, dialect=None, default_schema=None):
-        assert sql == ["SELECT id FROM source"]
-        assert dialect == "postgres"
-        assert default_schema == "public"
-        return result
-
-    monkeypatch.setattr("openlineage.common.sql.parse_sql", legacy_parse)
     kwargs = {"default_database": None} if explicit_none else {}
     assert parse("SELECT id FROM source", "postgres", "public", **kwargs) is result
+    native_parse.assert_called_once_with(
+        ["SELECT id FROM source"],
+        dialect="postgres",
+        default_schema="public",
+        default_database=None,
+    )
+
+
+def test_mysql_connection_database_as_default_schema():
+    # Two-level dialects read `x.t` as schema `x`, so the connection database
+    # must be passed as default_schema for both sides to resolve to `mydb.t`.
+    metadata = parse("INSERT INTO mydb.t SELECT * FROM t", dialect="mysql", default_schema="mydb")
+    assert metadata is not None
+    assert [t.qualified_name for t in metadata.in_tables] == ["mydb.t"]
+    assert [t.qualified_name for t in metadata.out_tables] == ["mydb.t"]
 
 
 def test_native_failure_with_database_is_logged_and_returns_none(monkeypatch, caplog):
