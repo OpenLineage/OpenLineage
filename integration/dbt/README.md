@@ -63,6 +63,22 @@ OPENLINEAGE_URL=http://localhost:5000
 OPENLINEAGE_API_KEY=abc
 ```
 
+`OPENLINEAGE_API_KEY` sends a static API key. If the backend is protected by an OAuth 2.0 authorization server that
+issues short-lived access tokens, use the `oauth2` auth type instead. It needs the full transport configuration in
+place of `OPENLINEAGE_URL`:
+
+```ini
+OPENLINEAGE__TRANSPORT__TYPE=http
+OPENLINEAGE__TRANSPORT__URL=http://localhost:5000
+OPENLINEAGE__TRANSPORT__AUTH__TYPE=oauth2
+OPENLINEAGE__TRANSPORT__AUTH__CLIENT_ID=your-client-id
+OPENLINEAGE__TRANSPORT__AUTH__CLIENT_SECRET=your-client-secret
+OPENLINEAGE__TRANSPORT__AUTH__TOKEN_ENDPOINT=https://auth.example.com/token
+```
+
+See the [Python client documentation](https://openlineage.io/docs/client/python/configuration#oauth2-token-provider)
+for all authentication options.
+
 dbt integration-specific environment variables:
 
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
