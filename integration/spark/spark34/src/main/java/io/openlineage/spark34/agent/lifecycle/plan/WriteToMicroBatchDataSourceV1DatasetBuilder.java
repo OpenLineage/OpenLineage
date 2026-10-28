@@ -11,15 +11,19 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.execution.streaming.FileStreamSink;
 import org.apache.spark.sql.execution.streaming.sources.WriteToMicroBatchDataSourceV1;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 
@@ -32,8 +36,13 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 public class WriteToMicroBatchDataSourceV1DatasetBuilder
     extends AbstractQueryPlanOutputDatasetBuilder<WriteToMicroBatchDataSourceV1> {
 
-  private static final String DELTA_SINK_CLASS_NAME =
-      "org.apache.spark.sql.delta.sources.DeltaSink";
+  // Matched by name: FileStreamSink moved to the streaming.sinks package in Spark 4.1.
+  private static final Set<String> PATH_SINK_CLASS_NAMES =
+      new HashSet<>(
+          Arrays.asList(
+              "org.apache.spark.sql.delta.sources.DeltaSink",
+              "org.apache.spark.sql.execution.streaming.FileStreamSink",
+              "org.apache.spark.sql.execution.streaming.sinks.FileStreamSink"));
   private static final String PATH_OPTION = "path";
 
   private final DatasetFactory<OpenLineage.OutputDataset> factory;
@@ -71,14 +80,13 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
               .build());
     }
 
-    if (writeToMicroBatchV1.sink() instanceof FileStreamSink
-        || isDeltaSink(writeToMicroBatchV1.sink())) {
+    if (isPathBasedSink(writeToMicroBatchV1.sink())) {
       Optional<String> path = pathWriteOption(writeToMicroBatchV1);
       if (path.isPresent()) {
         return Collections.singletonList(
             factory
                 .sparkDatasetBuilder()
-                .dataset(PathUtils.fromPath(new Path(path.get())))
+                .dataset(PathUtils.fromPath(qualifyPath(writeToMicroBatchV1, path.get())))
                 .schema(writeToMicroBatchV1.schema())
                 .build());
       }
@@ -98,9 +106,29 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
         .findFirst();
   }
 
-  private static boolean isDeltaSink(Object sink) {
+  /**
+   * Qualifies the path against the default filesystem and working directory, as the sinks do, so
+   * the output matches the datasets reported by batch reads and writes of the same location.
+   */
+  private Path qualifyPath(WriteToMicroBatchDataSourceV1 write, String path) {
+    Path rawPath = new Path(path);
+    Optional<SparkSession> session = context.getSparkSession();
+    if (!session.isPresent()) {
+      return rawPath;
+    }
+    try {
+      Configuration hadoopConf =
+          session.get().sessionState().newHadoopConfWithOptions(write.writeOptions());
+      return rawPath.getFileSystem(hadoopConf).makeQualified(rawPath);
+    } catch (Exception e) {
+      log.debug("Cannot qualify sink path {}; using it as is", path, e);
+      return rawPath;
+    }
+  }
+
+  private static boolean isPathBasedSink(Object sink) {
     for (Class<?> clazz = sink.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
-      if (DELTA_SINK_CLASS_NAME.equals(clazz.getName())) {
+      if (PATH_SINK_CLASS_NAMES.contains(clazz.getName())) {
         return true;
       }
     }
