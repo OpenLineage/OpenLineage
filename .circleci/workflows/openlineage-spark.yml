@@ -36,6 +36,7 @@ workflows:
                 'java:17-spark:3.5.6-scala:2.12-full-tests',
                 'java:17-spark:3.5.6-scala:2.13-full-tests',
                 'java:17-spark:4.0.0-scala:2.13-full-tests',
+                'java:17-spark:4.1.3-scala:2.13-full-tests',
                 'java:17-spark:4.2.0-scala:2.13-full-tests',
                 # Runs on every PR: newest supported Spark on newest supported Java.
                 'java:21-spark:4.2.0-scala:2.13'
@@ -131,6 +132,7 @@ workflows:
                 'java:17-spark:3.5.6-scala:2.12-full-tests',
                 'java:17-spark:3.5.6-scala:2.13-full-tests',
                 'java:17-spark:4.0.0-scala:2.13-full-tests',
+                'java:17-spark:4.1.3-scala:2.13-full-tests',
                 'java:17-spark:4.2.0-scala:2.13-full-tests',
                 # Runs on every PR: newest supported Spark on newest supported Java.
                 'java:21-spark:4.2.0-scala:2.13'
