@@ -9,12 +9,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -114,17 +117,43 @@ type HTTPConfig struct {
 }
 
 type httpTransport struct {
-	httpClient  *http.Client
-	uri         string
-	urlParams   map[string]string
-	auth        *HTTPAuthConfig
+	httpClient *http.Client
+	uri        string
+	urlParams  map[string]string
+	// authorization is the static Authorization header value for "apiKey" and "jwt".
+	authorization string
+	// tokenSource supplies the access token for "oauth2"; nil for other auth types.
 	tokenSource *oauth2TokenSource
 	headers     map[string]string
 	compression CompressionType
 }
 
+// newHTTPAuth resolves the auth configuration when the transport is built, so that Emit
+// never reads the caller's *HTTPAuthConfig, which may change afterwards. It returns
+// either a static Authorization header value or an OAuth 2.0 token source, and both are
+// empty when auth is nil.
+func newHTTPAuth(auth *HTTPAuthConfig) (string, *oauth2TokenSource, error) {
+	if auth == nil {
+		return "", nil, nil
+	}
+
+	switch auth.Type {
+	case AuthTypeAPIKey:
+		return "Bearer " + auth.APIKey, nil, nil
+	case AuthTypeJWT:
+		return "Bearer " + auth.Token, nil, nil
+	case AuthTypeOAuth2:
+		tokenSource, err := newClientCredentialsTokenSource(auth)
+		return "", tokenSource, err
+	default:
+		return "", nil, fmt.Errorf("unsupported auth type %q, want %q, %q or %q",
+			auth.Type, AuthTypeAPIKey, AuthTypeJWT, AuthTypeOAuth2)
+	}
+}
+
 // oauth2TokenSource fetches and caches an OAuth 2.0 access token, fetching a new one
-// once the cached token is within TokenRefreshBuffer of expiring.
+// once the cached token is within TokenRefreshBuffer of expiring. A token whose expiry
+// is unknown is not cached.
 type oauth2TokenSource struct {
 	config        clientcredentials.Config
 	refreshBuffer time.Duration
@@ -147,8 +176,7 @@ func (s *oauth2TokenSource) Token(ctx context.Context, httpClient *http.Client) 
 		return nil, ctx.Err()
 	}
 
-	if s.token != nil && s.token.AccessToken != "" &&
-		(s.token.Expiry.IsZero() || time.Now().Before(s.refreshAt)) {
+	if s.token != nil && time.Now().Before(s.refreshAt) {
 		return s.token, nil
 	}
 
@@ -156,18 +184,52 @@ func (s *oauth2TokenSource) Token(ctx context.Context, httpClient *http.Client) 
 	if err != nil {
 		return nil, err
 	}
-	s.token = token
 
-	if !token.Expiry.IsZero() {
-		// Refresh early, but never so early that every event triggers a token request.
-		buffer := s.refreshBuffer
-		if lifetime := time.Until(token.Expiry); buffer > lifetime/2 {
-			buffer = lifetime / 2
-		}
-		s.refreshAt = token.Expiry.Add(-buffer)
+	// expires_in is optional (RFC 6749, section 5.1), so fall back to the JWT exp claim.
+	expiry := token.Expiry
+	if expiry.IsZero() {
+		expiry = jwtExpiry(token.AccessToken)
 	}
 
+	// A token with an unknown or past expiry is not cached: caching it would keep
+	// sending it after it expires. As in the Java and Python clients, a new token is
+	// requested for every event instead.
+	lifetime := time.Until(expiry)
+	if lifetime <= 0 {
+		s.token = nil
+		return token, nil
+	}
+
+	// Refresh early, but never so early that every event triggers a token request.
+	buffer := min(s.refreshBuffer, lifetime/2)
+	s.token = token
+	s.refreshAt = expiry.Add(-buffer)
+
 	return token, nil
+}
+
+// jwtExpiry returns the exp claim of a JWT access token, or the zero time when the token
+// is not a JWT or has no exp claim. The signature is not verified: the expiry only
+// decides when to fetch a new token.
+func jwtExpiry(accessToken string) time.Time {
+	parts := strings.Split(accessToken, ".")
+	if len(parts) != 3 {
+		return time.Time{}
+	}
+
+	payload, err := base64.RawURLEncoding.DecodeString(strings.TrimRight(parts[1], "="))
+	if err != nil {
+		return time.Time{}
+	}
+
+	var claims struct {
+		Exp float64 `json:"exp"`
+	}
+	if err := json.Unmarshal(payload, &claims); err != nil || claims.Exp <= 0 {
+		return time.Time{}
+	}
+
+	return time.Unix(int64(claims.Exp), 0)
 }
 
 // newClientCredentialsTokenSource builds a token source for the OAuth 2.0 client
@@ -200,7 +262,7 @@ func newClientCredentialsTokenSource(auth *HTTPAuthConfig) (*oauth2TokenSource, 
 			ClientID:     auth.ClientID,
 			ClientSecret: auth.ClientSecret,
 			TokenURL:     auth.TokenEndpoint,
-			Scopes:       auth.Scopes,
+			Scopes:       slices.Clone(auth.Scopes),
 			AuthStyle:    authStyle,
 		},
 		refreshBuffer: refreshBuffer,
@@ -263,19 +325,18 @@ func (h *httpTransport) Emit(ctx context.Context, event any) (map[string]string,
 	}
 
 	// Auth
-	if h.auth != nil {
-		switch h.auth.Type {
-		case AuthTypeAPIKey:
-			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", h.auth.APIKey))
-		case AuthTypeJWT:
-			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", h.auth.Token))
-		case AuthTypeOAuth2:
-			token, err := h.tokenSource.Token(ctx, h.httpClient)
-			if err != nil {
-				return nil, fmt.Errorf("obtain OAuth2 access token: %w", err)
-			}
-			token.SetAuthHeader(req)
+	switch {
+	case h.tokenSource != nil:
+		token, err := h.tokenSource.Token(ctx, h.httpClient)
+		if err != nil {
+			return nil, fmt.Errorf("obtain OAuth2 access token: %w", err)
 		}
+		// Always Bearer, like the other auth types and the Java and Python clients:
+		// token.SetAuthHeader would use the endpoint's token_type, which some identity
+		// providers set to values such as "N_A" that lineage backends reject.
+		req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	case h.authorization != "":
+		req.Header.Set("Authorization", h.authorization)
 	}
 
 	// Custom headers (applied last so they can override defaults if needed)

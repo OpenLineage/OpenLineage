@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -899,18 +900,38 @@ func TestHTTPTransport_Emit_OAuth2Refresh(t *testing.T) {
 	}
 }
 
+// testJWT returns an unsigned JWT whose payload is the given claims.
+func testJWT(t *testing.T, claims map[string]any) string {
+	t.Helper()
+	payload, err := json.Marshal(claims)
+	if err != nil {
+		t.Fatalf("marshal claims: %v", err)
+	}
+	enc := base64.RawURLEncoding
+	return enc.EncodeToString([]byte(`{"alg":"none"}`)) + "." + enc.EncodeToString(payload) + ".sig"
+}
+
 // TestHTTPTransport_Emit_OAuth2TokenResponses checks cache and failure behavior for
-// token endpoint responses without allowing an unauthenticated lineage request.
+// token endpoint responses without allowing an unauthenticated lineage request. Two
+// events are sent, so wantTokens is 1 when the token is cached and 2 when it is not.
 func TestHTTPTransport_Emit_OAuth2TokenResponses(t *testing.T) {
 	t.Parallel()
+	tokenBody := func(token string) string {
+		return fmt.Sprintf(`{"access_token":%q,"token_type":"Bearer"}`, token)
+	}
+	now := time.Now().Unix()
 	for _, tt := range []struct {
 		name, body string
 		wantError  bool
+		wantTokens int32
 	}{
-		{"no expiry", `{"access_token":"test-token","token_type":"Bearer"}`, false},
-		{"missing token", `{"token_type":"Bearer","expires_in":3600}`, true},
-		{"malformed JSON", `{"access_token":`, true},
-		{"non JSON", `<html>unavailable</html>`, true},
+		{"no expiry", tokenBody("test-token"), false, 2},
+		{"jwt exp claim", tokenBody(testJWT(t, map[string]any{"exp": now + 3600})), false, 1},
+		{"jwt without exp", tokenBody(testJWT(t, map[string]any{"sub": "client"})), false, 2},
+		{"expired jwt", tokenBody(testJWT(t, map[string]any{"exp": now - 60})), false, 2},
+		{"missing token", `{"token_type":"Bearer","expires_in":3600}`, true, 2},
+		{"malformed JSON", `{"access_token":`, true, 2},
+		{"non JSON", `<html>unavailable</html>`, true, 2},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -931,12 +952,12 @@ func TestHTTPTransport_Emit_OAuth2TokenResponses(t *testing.T) {
 					t.Fatalf("Emit error = %v, want error %v", err, tt.wantError)
 				}
 			}
-			wantTokens, wantEvents := int32(1), 2
+			wantEvents := 2
 			if tt.wantError {
-				wantTokens, wantEvents = 2, 0
+				wantEvents = 0
 			}
-			if got := tokenRequests.Load(); got != wantTokens {
-				t.Errorf("token requests = %d, want %d", got, wantTokens)
+			if got := tokenRequests.Load(); got != tt.wantTokens {
+				t.Errorf("token requests = %d, want %d", got, tt.wantTokens)
 			}
 			if len(*reqs) != wantEvents {
 				t.Errorf("lineage requests = %d, want %d", len(*reqs), wantEvents)
@@ -1004,5 +1025,60 @@ func TestHTTPTransport_Emit_OAuth2Timeout(t *testing.T) {
 	}
 	if len(*reqs) != 0 {
 		t.Errorf("lineage requests = %d, want 0", len(*reqs))
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2AlwaysSendsBearer verifies that the access token is sent
+// with the Bearer scheme whatever token_type the token endpoint returns.
+func TestHTTPTransport_Emit_OAuth2AlwaysSendsBearer(t *testing.T) {
+	t.Parallel()
+	tokenSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"access_token":"test-token","token_type":"N_A","expires_in":3600}`)
+	}))
+	t.Cleanup(tokenSrv.Close)
+	srv, reqs := testServer(t, http.StatusOK)
+	tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL, Auth: &HTTPAuthConfig{
+		Type: AuthTypeOAuth2, ClientID: "test-client", ClientSecret: "test-secret", TokenEndpoint: tokenSrv.URL,
+	}})
+	if _, err := tr.Emit(context.Background(), "event"); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := (*reqs)[0].Headers.Get("Authorization"), "Bearer test-token"; got != want {
+		t.Errorf("Authorization = %q, want %q", got, want)
+	}
+}
+
+// TestHTTPTransport_Emit_AuthFixedAtConstruction verifies that changing the auth config
+// after the transport is built does not change, or break, how events are authenticated.
+func TestHTTPTransport_Emit_AuthFixedAtConstruction(t *testing.T) {
+	t.Parallel()
+	srv, reqs := testServer(t, http.StatusOK)
+	auth := &HTTPAuthConfig{Type: AuthTypeJWT, Token: "my-jwt"}
+	tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL, Auth: auth})
+
+	auth.Type = AuthTypeOAuth2
+	auth.ClientID, auth.ClientSecret, auth.TokenEndpoint = "id", "secret", "http://127.0.0.1:0/token"
+
+	if _, err := tr.Emit(context.Background(), "event"); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := (*reqs)[0].Headers.Get("Authorization"), "Bearer my-jwt"; got != want {
+		t.Errorf("Authorization = %q, want %q", got, want)
+	}
+}
+
+// TestNew_UnsupportedAuthType verifies that an unknown or wrongly cased auth type fails
+// at construction instead of sending events without an Authorization header.
+func TestNew_UnsupportedAuthType(t *testing.T) {
+	t.Parallel()
+	for _, authType := range []string{"", "OAuth2", "oauth", "apikey"} {
+		_, err := New(&Config{
+			Type: TransportTypeHTTP,
+			HTTP: HTTPConfig{URL: "http://localhost:5000", Auth: &HTTPAuthConfig{Type: authType}},
+		})
+		if err == nil || !strings.Contains(err.Error(), "unsupported auth type") {
+			t.Errorf("New() with auth type %q: error = %v, want unsupported auth type", authType, err)
+		}
 	}
 }
