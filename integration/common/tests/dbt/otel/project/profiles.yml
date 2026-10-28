@@ -1,0 +1,10 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+otel_jaffle:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('OTEL_FIXTURE_DUCKDB', 'otel_jaffle.duckdb') }}"
+      schema: main
+      threads: 1
