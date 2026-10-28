@@ -24,12 +24,15 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.spark.SparkContext;
@@ -254,11 +257,7 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
   @ParameterizedTest
   @ValueSource(strings = {DELTA_SINK, FILE_STREAM_SINK, RELOCATED_FILE_STREAM_SINK})
   void testApply_WithPathQualifiedAgainstSessionDefaultFsIgnoringWriteOptions(String sinkType) {
-    Configuration hadoopConf = new Configuration();
-    hadoopConf.set("fs.defaultFS", REMOTE_FS);
-    hadoopConf.setClass("fs.remotefs.impl", RemoteFileSystem.class, RawLocalFileSystem.class);
-    hadoopConf.setBoolean("fs.remotefs.impl.disable.cache", true);
-    when(sessionState.newHadoopConf()).thenReturn(hadoopConf);
+    when(sessionState.newHadoopConf()).thenReturn(remoteHadoopConf(true));
     // The sinks resolve their path without write options, so this override must not apply.
     Map<String, String> writeOptions = new HashMap<>();
     writeOptions.put("path", "relative_output");
@@ -269,6 +268,31 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     assertEquals(REMOTE_FS, identifier.getNamespace());
     assertEquals("/user/test/relative_output", identifier.getName());
     verify(sessionState, never()).newHadoopConfWithOptions(any());
+  }
+
+  @Test
+  void testApply_ClosesFileSystemCreatedOutsideCache() {
+    when(sessionState.newHadoopConf()).thenReturn(remoteHadoopConf(true));
+    RemoteFileSystem.CLOSED.set(0);
+
+    applyPathSinkWrite(FILE_STREAM_SINK, Collections.singletonMap("path", "/data/output"));
+
+    assertEquals(1, RemoteFileSystem.CLOSED.get());
+  }
+
+  @Test
+  void testApply_KeepsCachedFileSystemOpen() throws IOException {
+    Configuration hadoopConf = remoteHadoopConf(false);
+    when(sessionState.newHadoopConf()).thenReturn(hadoopConf);
+    RemoteFileSystem.CLOSED.set(0);
+
+    try {
+      applyPathSinkWrite(FILE_STREAM_SINK, Collections.singletonMap("path", "/data/output"));
+
+      assertEquals(0, RemoteFileSystem.CLOSED.get());
+    } finally {
+      FileSystem.get(URI.create(REMOTE_FS), hadoopConf).close();
+    }
   }
 
   @Test
@@ -312,9 +336,18 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     verify(factory, never()).sparkDatasetBuilder();
   }
 
+  private static Configuration remoteHadoopConf(boolean disableCache) {
+    Configuration hadoopConf = new Configuration();
+    hadoopConf.set("fs.defaultFS", REMOTE_FS);
+    hadoopConf.setClass("fs.remotefs.impl", RemoteFileSystem.class, RawLocalFileSystem.class);
+    hadoopConf.setBoolean("fs.remotefs.impl.disable.cache", disableCache);
+    return hadoopConf;
+  }
+
   /** Non-local filesystem that qualifies paths against its own URI without touching storage. */
   public static class RemoteFileSystem extends RawLocalFileSystem {
     private static final URI REMOTE_URI = URI.create(REMOTE_FS);
+    static final AtomicInteger CLOSED = new AtomicInteger();
 
     @Override
     public URI getUri() {
@@ -324,6 +357,12 @@ class WriteToMicroBatchDataSourceV1DatasetBuilderTest {
     @Override
     public Path getWorkingDirectory() {
       return new Path(REMOTE_FS + "/user/test");
+    }
+
+    @Override
+    public void close() throws IOException {
+      CLOSED.incrementAndGet();
+      super.close();
     }
   }
 

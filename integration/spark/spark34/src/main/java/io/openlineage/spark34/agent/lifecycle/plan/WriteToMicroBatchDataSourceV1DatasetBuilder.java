@@ -11,6 +11,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
@@ -119,10 +121,31 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
     }
     try {
       Configuration hadoopConf = session.get().sessionState().newHadoopConf();
-      return rawPath.getFileSystem(hadoopConf).makeQualified(rawPath);
+      FileSystem fs = rawPath.getFileSystem(hadoopConf);
+      try {
+        return fs.makeQualified(rawPath);
+      } finally {
+        closeIfUncached(fs, hadoopConf);
+      }
     } catch (Exception e) {
       log.debug("Cannot qualify sink path {}; using it as is", path, e);
       return rawPath;
+    }
+  }
+
+  /**
+   * Closes a filesystem Hadoop created outside its cache. Cached instances are shared and must stay
+   * open, but with caching disabled for the scheme each lookup returns a new untracked instance.
+   */
+  private static void closeIfUncached(FileSystem fs, Configuration hadoopConf) {
+    String disableCacheKey = String.format("fs.%s.impl.disable.cache", fs.getUri().getScheme());
+    if (!hadoopConf.getBoolean(disableCacheKey, false)) {
+      return;
+    }
+    try {
+      fs.close();
+    } catch (IOException e) {
+      log.debug("Cannot close filesystem {}", fs.getUri(), e);
     }
   }
 
