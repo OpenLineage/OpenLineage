@@ -11,6 +11,7 @@ import io.openlineage.spark.agent.lifecycle.plan.catalog.UnsupportedCatalogExcep
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -91,16 +92,29 @@ public class PlanUtils3 {
           (IndexedSeq<CachedData>)
               FieldUtils.getField(CacheManager.class, "cachedData", true).get(cacheManager);
 
-      return ScalaConversionUtils.<CachedData>fromSeq(cachedDataIndexedSeq).stream()
-          .filter(
-              cachedData ->
-                  cachedData
-                      .cachedRepresentation()
-                      .cacheBuilder()
-                      .cachedName()
-                      .equals(inMemoryRelation.cacheBuilder().cachedName()))
-          .map(cachedData -> (LogicalPlan) cachedData.plan())
-          .findAny();
+      List<CachedData> cachedData = ScalaConversionUtils.fromSeq(cachedDataIndexedSeq);
+
+      // InMemoryRelation.withOutput keeps the cacheBuilder instance, so it identifies the cache
+      // exactly. The name is the fallback for a cache Spark rebuilt (with a copied builder) after
+      // its source changed; unnamed caches are named after their plan's text cut at 1024
+      // characters, so different caches of wide plans can share it.
+      Optional<CachedData> match =
+          cachedData.stream()
+              .filter(
+                  cd -> cd.cachedRepresentation().cacheBuilder() == inMemoryRelation.cacheBuilder())
+              .findAny();
+      if (!match.isPresent()) {
+        match =
+            cachedData.stream()
+                .filter(
+                    cd ->
+                        cd.cachedRepresentation()
+                            .cacheBuilder()
+                            .cachedName()
+                            .equals(inMemoryRelation.cacheBuilder().cachedName()))
+                .findAny();
+      }
+      return match.map(cd -> (LogicalPlan) cd.plan());
     } catch (Exception e) {
       log.warn("cannot extract logical plan", e);
       // do nothing
