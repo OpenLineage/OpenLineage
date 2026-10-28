@@ -665,9 +665,14 @@ class SparkIcebergIntegrationTest {
     Map<String, Object> configFacet =
         (Map<String, Object>) debug.getAdditionalProperties().get("config");
 
+    // Spark 4 moved the classic catalog implementation from internal.CatalogImpl to classic.Catalog
+    String expectedCatalogClass =
+        System.getProperty(SPARK_VERSION).startsWith("4")
+            ? "org.apache.spark.sql.classic.Catalog"
+            : "org.apache.spark.sql.internal.CatalogImpl";
     assertThat(configFacet)
         .containsEntry("extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener")
-        .containsEntry("catalogClass", "org.apache.spark.sql.internal.CatalogImpl")
+        .containsEntry("catalogClass", expectedCatalogClass)
         .containsEntry(
             "extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
 
