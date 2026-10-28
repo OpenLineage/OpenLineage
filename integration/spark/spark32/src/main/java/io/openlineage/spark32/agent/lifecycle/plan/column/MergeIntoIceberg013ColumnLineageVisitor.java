@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector;
 import io.openlineage.spark3.agent.lifecycle.plan.column.OutputFieldsCollector;
+import io.openlineage.spark3.agent.utils.V2WriteQueryUtils;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -49,22 +50,18 @@ public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLinea
    * every output column resolve straight to the target column and drop the source columns. The
    * outputs are left to the default collector instead, which takes them from {@code MergeRows},
    * whose dependencies {@code MergeRowsColumnLineageVisitor} collects.
-   *
-   * <p>Spark's {@code V2Writes} rule wraps the query in single-child nodes such as {@code
-   * RepartitionByExpression} or {@code Sort} when the table requests a write distribution or
-   * ordering, as partitioned Iceberg tables do, so those are looked through.
    */
   static boolean isSparkMergeRows(LogicalPlan query) {
-    LogicalPlan plan = query;
-    while (plan != null) {
-      try {
-        plan.getClass().getMethod(MATCHED_INSTRUCTIONS);
-        return true;
-      } catch (NoSuchMethodException e) {
-        plan = plan.children().size() == 1 ? plan.children().head() : null;
-      }
+    LogicalPlan plan = V2WriteQueryUtils.unwrapWriteQuery(query);
+    if (plan == null) {
+      return false;
     }
-    return false;
+    try {
+      plan.getClass().getMethod(MATCHED_INSTRUCTIONS);
+      return true;
+    } catch (NoSuchMethodException e) {
+      return false;
+    }
   }
 
   @Override
@@ -94,7 +91,8 @@ public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLinea
     if (node instanceof ReplaceData) {
       ReplaceData replaceIcebergData = (ReplaceData) node;
       NamedRelation namedRelation = replaceIcebergData.table();
-      LogicalPlan query = replaceIcebergData.query();
+      // a partitioned table puts the Project below the nodes requesting a write distribution
+      LogicalPlan query = V2WriteQueryUtils.unwrapWriteQuery(replaceIcebergData.query());
 
       if (query instanceof Project) {
         List<NamedExpression> queryOutputs =

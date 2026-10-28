@@ -31,6 +31,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.MergeRows;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
+import org.apache.spark.sql.catalyst.plans.logical.Sort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -118,6 +119,18 @@ class MergeIntoIceberg013ColumnLineageVisitorTest {
         .isFalse();
     assertThat(MergeIntoIceberg013ColumnLineageVisitor.isSparkMergeRows(project)).isFalse();
     assertThat(MergeIntoIceberg013ColumnLineageVisitor.isSparkMergeRows(null)).isFalse();
+  }
+
+  /** A partitioned table requests a write ordering, which wraps the MERGE query in a Sort. */
+  @Test
+  void testIsSparkMergeRowsBelowWriteOrdering() {
+    Sort sort = mock(Sort.class);
+    when(sort.children())
+        .thenReturn(
+            ScalaConversionUtils.<LogicalPlan>fromList(
+                Collections.singletonList(mock(SparkMergeRows.class))));
+
+    assertThat(MergeIntoIceberg013ColumnLineageVisitor.isSparkMergeRows(sort)).isTrue();
   }
 
   /** Shape of Spark's own MergeRows (Spark 3.5+), which this module does not compile against. */
