@@ -538,9 +538,29 @@ impl<'a> Context<'a> {
         let dependencies = self.frames[size - 1].dependencies.clone();
         let cte_dependencies = self.frames[size - 1].cte_dependencies.clone();
 
+        // CTEs are keyed by their bare alias, so only an unqualified reference
+        // can point at one. An unqualified reference picks up the defaults,
+        // which puts it in the same namespace as a bare name; `raw.orders`
+        // stays a real table even inside CTE `orders`.
+        let cte_namespace = DbTableMeta::new(
+            vec![Ident::new(cte_name.clone())],
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
+        let is_unqualified = |dependency: &DbTableMeta| {
+            dependency.schema == cte_namespace.schema
+                && dependency.database == cte_namespace.database
+        };
+
         let mut resolved_dependencies = HashSet::new();
 
         for dependency in dependencies {
+            if !is_unqualified(&dependency) {
+                resolved_dependencies.insert(dependency.clone());
+                continue;
+            }
+
             if cte_name.clone() == dependency.name {
                 continue;
             }

@@ -140,6 +140,53 @@ fn cte_sources_are_inputs_with_default_schema_and_database() {
 }
 
 #[test]
+fn chained_cte_sources_are_inputs_with_defaults() {
+    let metadata = parse_multiple_statements_with_default_database(
+        vec![
+            "WITH a AS (SELECT id FROM source), b AS (SELECT id FROM a) \
+             INSERT INTO target SELECT id FROM b"
+                .to_string(),
+        ],
+        get_dialect("postgres"),
+        Some("public".to_string()),
+        Some("mydb".to_string()),
+    )
+    .unwrap();
+    assert!(metadata.errors.is_empty());
+    assert_eq!(
+        table_names(&metadata.table_lineage.in_tables),
+        ["mydb.public.source"]
+    );
+}
+
+fn parse_cte_inputs(sql: &str, default_schema: Option<&str>) -> Vec<String> {
+    let metadata = parse_multiple_statements_with_default_database(
+        vec![sql.to_string()],
+        get_dialect("postgres"),
+        default_schema.map(str::to_string),
+        None,
+    )
+    .unwrap();
+    assert!(metadata.errors.is_empty());
+    table_names(&metadata.table_lineage.in_tables)
+}
+
+#[test]
+fn qualified_source_with_cte_name_is_input() {
+    let sql = "WITH orders AS (SELECT * FROM raw.orders) INSERT INTO target SELECT * FROM orders";
+    assert_eq!(parse_cte_inputs(sql, None), ["raw.orders"]);
+    assert_eq!(parse_cte_inputs(sql, Some("public")), ["raw.orders"]);
+}
+
+#[test]
+fn qualified_source_with_earlier_cte_name_is_input() {
+    let sql = "WITH a AS (SELECT id FROM source), b AS (SELECT id FROM raw.a) \
+               INSERT INTO target SELECT id FROM b";
+    assert_eq!(parse_cte_inputs(sql, None), ["raw.a"]);
+    assert_eq!(parse_cte_inputs(sql, Some("public")), ["raw.a"]);
+}
+
+#[test]
 fn qualified_reference_is_not_mistaken_for_cte() {
     let metadata = parse_multiple_statements_with_default_database(
         vec![
