@@ -5,6 +5,7 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.column;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -27,6 +28,7 @@ import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.MergeRows;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +92,37 @@ class MergeIntoIceberg013ColumnLineageVisitorTest {
     }
 
     visitor.collectInputs(clContext, mock(LogicalPlan.class));
+  }
+
+  /**
+   * Over Spark's own MergeRows (Iceberg 1.11 on Spark 4.1) the table shares its attributes with the
+   * target read inside the query, so the outputs are left to the default collector.
+   */
+  @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  void testCollectOutputsSkipsTableOverSparkMergeRows() {
+    when(replaceIcebergData.query()).thenReturn(mock(SparkMergeRows.class));
+
+    try (MockedStatic mocked = mockStatic(OutputFieldsCollector.class)) {
+      visitor.collectOutputs(clContext, replaceIcebergData);
+      mocked.verify(() -> OutputFieldsCollector.collect(any(), any()), times(0));
+    }
+  }
+
+  @Test
+  void testIsSparkMergeRows() {
+    assertThat(MergeIntoIceberg013ColumnLineageVisitor.isSparkMergeRows(mock(SparkMergeRows.class)))
+        .isTrue();
+    // Iceberg's own MergeRows exposes matchedOutputs() rather than matchedInstructions()
+    assertThat(MergeIntoIceberg013ColumnLineageVisitor.isSparkMergeRows(mock(MergeRows.class)))
+        .isFalse();
+    assertThat(MergeIntoIceberg013ColumnLineageVisitor.isSparkMergeRows(project)).isFalse();
+    assertThat(MergeIntoIceberg013ColumnLineageVisitor.isSparkMergeRows(null)).isFalse();
+  }
+
+  /** Shape of Spark's own MergeRows (Spark 3.5+), which this module does not compile against. */
+  abstract static class SparkMergeRows extends LogicalPlan {
+    public abstract Object matchedInstructions();
   }
 
   @Test
