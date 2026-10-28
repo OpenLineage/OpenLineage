@@ -279,20 +279,17 @@ impl<'a> Context<'a> {
         false
     }
 
-    pub fn mark_table_as_used(&mut self, table: Vec<Ident>) {
-        let name = DbTableMeta::new(
-            table,
-            self.dialect,
-            self.default_schema.clone(),
-            self.default_database.clone(),
-        );
-
+    /// Marks the CTE referenced as `table` as used, so its dependencies are
+    /// collected as inputs.
+    ///
+    /// CTEs are keyed by their bare alias, so the lookup uses the reference
+    /// exactly as written (the same key as [`Context::has_alias`]) rather than
+    /// a name qualified with the default schema/database. A qualified
+    /// reference such as `schema.c` therefore never matches CTE `c`.
+    pub fn mark_table_as_used(&mut self, table: String) {
         for frame in self.frames.iter_mut().rev() {
-            if frame.cte_dependencies.contains_key(&name.qualified_name()) {
-                if let Some(cte) = frame.cte_dependencies.get_mut(&name.qualified_name()) {
-                    cte.is_used = true;
-                }
-
+            if let Some(cte) = frame.cte_dependencies.get_mut(&table) {
+                cte.is_used = true;
                 return;
             }
         }

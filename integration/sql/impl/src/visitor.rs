@@ -82,7 +82,7 @@ impl Visit for TableFactor {
                 }
 
                 if context.is_main() && context.has_alias(effective_name.to_string()) {
-                    context.mark_table_as_used(convert_to_idents(&effective_name));
+                    context.mark_table_as_used(effective_name.to_string());
                 }
 
                 Ok(())

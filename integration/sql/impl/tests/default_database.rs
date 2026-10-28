@@ -3,6 +3,7 @@
 
 use openlineage_sql::{
     get_dialect, parse_multiple_statements, parse_multiple_statements_with_default_database,
+    DbTableMeta, SqlMeta,
 };
 
 #[test]
@@ -84,4 +85,93 @@ fn absent_default_database_preserves_existing_behavior() {
         )
         .unwrap()
     );
+}
+
+fn table_names(tables: &[DbTableMeta]) -> Vec<String> {
+    let mut names: Vec<String> = tables.iter().map(|t| t.qualified_name()).collect();
+    names.sort();
+    names
+}
+
+fn parse_cte_insert(default_schema: Option<&str>, default_database: Option<&str>) -> SqlMeta {
+    parse_multiple_statements_with_default_database(
+        vec!["WITH c AS (SELECT id FROM source) INSERT INTO target SELECT id FROM c".to_string()],
+        get_dialect("postgres"),
+        default_schema.map(str::to_string),
+        default_database.map(str::to_string),
+    )
+    .unwrap()
+}
+
+#[test]
+fn cte_sources_are_inputs_without_defaults() {
+    let metadata = parse_cte_insert(None, None);
+    assert!(metadata.errors.is_empty());
+    assert_eq!(table_names(&metadata.table_lineage.in_tables), ["source"]);
+    assert_eq!(table_names(&metadata.table_lineage.out_tables), ["target"]);
+}
+
+#[test]
+fn cte_sources_are_inputs_with_default_schema() {
+    let metadata = parse_cte_insert(Some("public"), None);
+    assert!(metadata.errors.is_empty());
+    assert_eq!(
+        table_names(&metadata.table_lineage.in_tables),
+        ["public.source"]
+    );
+    assert_eq!(
+        table_names(&metadata.table_lineage.out_tables),
+        ["public.target"]
+    );
+}
+
+#[test]
+fn cte_sources_are_inputs_with_default_schema_and_database() {
+    let metadata = parse_cte_insert(Some("public"), Some("mydb"));
+    assert!(metadata.errors.is_empty());
+    assert_eq!(
+        table_names(&metadata.table_lineage.in_tables),
+        ["mydb.public.source"]
+    );
+    assert_eq!(
+        table_names(&metadata.table_lineage.out_tables),
+        ["mydb.public.target"]
+    );
+}
+
+#[test]
+fn qualified_reference_is_not_mistaken_for_cte() {
+    let metadata = parse_multiple_statements_with_default_database(
+        vec![
+            "WITH c AS (SELECT id FROM source) INSERT INTO target SELECT id FROM other.c"
+                .to_string(),
+        ],
+        get_dialect("postgres"),
+        Some("public".to_string()),
+        Some("mydb".to_string()),
+    )
+    .unwrap();
+    assert!(metadata.errors.is_empty());
+    assert_eq!(
+        table_names(&metadata.table_lineage.in_tables),
+        ["mydb.other.c"]
+    );
+}
+
+/// For two-level dialects such as MySQL, a 2-part name `x.t` is parsed as
+/// schema `x`. The connection's database must therefore be passed as
+/// `default_schema` (not `default_database`) so that unqualified and
+/// qualified references resolve to the same table.
+#[test]
+fn mysql_connection_database_is_passed_as_default_schema() {
+    let metadata = parse_multiple_statements_with_default_database(
+        vec!["INSERT INTO mydb.t SELECT * FROM t".to_string()],
+        get_dialect("mysql"),
+        Some("mydb".to_string()),
+        None,
+    )
+    .unwrap();
+    assert!(metadata.errors.is_empty());
+    assert_eq!(table_names(&metadata.table_lineage.in_tables), ["mydb.t"]);
+    assert_eq!(table_names(&metadata.table_lineage.out_tables), ["mydb.t"]);
 }
