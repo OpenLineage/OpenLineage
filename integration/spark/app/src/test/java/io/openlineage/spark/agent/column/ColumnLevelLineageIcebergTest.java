@@ -599,7 +599,8 @@ class ColumnLevelLineageIcebergTest {
                 p ->
                     p.getClass().getCanonicalName().endsWith("ReplaceIcebergData")
                         || p.getClass().getCanonicalName().endsWith("ReplaceData"))
-            .findAny()
+            // plans are kept across tests, so take this test's, the latest one
+            .reduce((first, second) -> second)
             .get();
 
     when(queryExecution.optimizedPlan()).thenReturn(plan);
