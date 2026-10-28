@@ -83,6 +83,8 @@ public class IcebergRelationHandler implements RelationHandler {
 
   @Override
   public DatasetIdentifier getDatasetIdentifier(DataSourceV2Relation relation) {
+    // Unwrapped once here and handed to the helpers below: for a non-SparkTable such as
+    // SparkRewriteTable every unwrap is a reflective table() call.
     Table icebergTable =
         icebergTable(relation)
             .orElseThrow(
@@ -91,9 +93,14 @@ public class IcebergRelationHandler implements RelationHandler {
                         String.format(
                             "Relation over %s does not wrap an Iceberg table",
                             relation.table().getClass().getName())));
-    return getOwningCatalog(relation)
+    return owningCatalog(icebergTable)
         .flatMap(owner -> resolveThroughOwningCatalog(relation, icebergTable, owner))
         .orElseGet(() -> fromTableLocation(icebergTable));
+  }
+
+  @Override
+  public Optional<OwningCatalog> getOwningCatalog(DataSourceV2Relation relation) {
+    return icebergTable(relation).flatMap(this::owningCatalog);
   }
 
   /**
@@ -102,14 +109,12 @@ public class IcebergRelationHandler implements RelationHandler {
    * are named by their location), when there is no Spark session to look the catalog up in, or when
    * the registered catalog is not a {@link TableCatalog}.
    */
-  @Override
-  public Optional<OwningCatalog> getOwningCatalog(DataSourceV2Relation relation) {
-    Optional<Table> icebergTable = icebergTable(relation);
-    if (!icebergTable.isPresent() || !context.getSparkSession().isPresent()) {
+  private Optional<OwningCatalog> owningCatalog(Table icebergTable) {
+    if (!context.getSparkSession().isPresent()) {
       return Optional.empty();
     }
 
-    String tableName = icebergTable.get().name();
+    String tableName = icebergTable.name();
     if (tableName == null || tableName.contains("/")) {
       return Optional.empty();
     }

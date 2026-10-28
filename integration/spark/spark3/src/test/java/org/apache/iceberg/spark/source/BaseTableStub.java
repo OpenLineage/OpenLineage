@@ -14,13 +14,20 @@ import org.apache.spark.sql.types.StructType;
  */
 abstract class BaseTableStub implements org.apache.spark.sql.connector.catalog.Table {
   private final Table icebergTable;
+  private int tableCalls;
 
   BaseTableStub(Table table) {
     this.icebergTable = table;
   }
 
   public Table table() {
+    tableCalls++;
     return icebergTable;
+  }
+
+  /** How many times {@link #table()} was called; in production each call is a reflective unwrap. */
+  public int tableCallCount() {
+    return tableCalls;
   }
 
   @Override
