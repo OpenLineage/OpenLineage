@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 import logging
 import sys
 from collections import OrderedDict
@@ -36,6 +37,43 @@ def try_import_from_string(path: str) -> type[Any] | None:
         return import_from_string(path)
     except ImportError:
         return None
+
+
+def config_value_to_str(value: Any) -> str:
+    """Return the string form of a scalar value given for a string-typed config setting.
+
+    Environment variable values are JSON-decoded and YAML scalars are typed, so a string
+    setting written as ``true``, ``42`` or ``1.0`` arrives as ``bool``, ``int`` or ``float``.
+    Booleans become ``"true"``/``"false"`` and numbers their JSON text, which matches what
+    was written in the environment variable, the YAML file, and what the Java client emits.
+
+    Raises:
+        TypeError: for ``None`` and non-scalar values (dicts, lists, objects); callers decide
+            whether to skip the value or fail.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (bool, int, float)):
+        return json.dumps(value)
+    msg = f"Expected a string, boolean or number, got {type(value).__name__}: {value!r}"
+    raise TypeError(msg)
+
+
+def optional_config_value_to_str(value: Any) -> str | None:
+    """Like :func:`config_value_to_str`, but passes ``None`` through."""
+    return None if value is None else config_value_to_str(value)
+
+
+def config_values_to_str(values: dict[Any, Any] | None) -> dict[Any, Any]:
+    """Turn boolean and numeric values of a string-to-string mapping into strings.
+
+    Uses :func:`config_value_to_str` for booleans and numbers; other values (strings, ``None``,
+    bytes, ...) are kept as given.
+    """
+    return {
+        k: config_value_to_str(v) if isinstance(v, (bool, int, float)) else v
+        for k, v in (values or {}).items()
+    }
 
 
 # Filter dictionary to get only those key: value pairs that have

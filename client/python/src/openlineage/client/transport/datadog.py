@@ -11,7 +11,7 @@ import attr
 from openlineage.client.transport.async_http import AsyncHttpConfig, AsyncHttpTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import get_only_specified_fields
+from openlineage.client.utils import config_value_to_str, get_only_specified_fields
 
 if TYPE_CHECKING:
     from openlineage.client.client import Event
@@ -58,7 +58,7 @@ def _is_valid_url(url: str) -> bool:
 
 @attr.define
 class DatadogConfig(Config):
-    apiKey: str = attr.field()  # noqa: N815
+    apiKey: str = attr.field(converter=config_value_to_str)  # noqa: N815
     site: str = attr.field(default="datadoghq.com")
     timeout: float = attr.field(default=5.0)
     retry: dict[str, Any] = attr.field(factory=_default_retry)

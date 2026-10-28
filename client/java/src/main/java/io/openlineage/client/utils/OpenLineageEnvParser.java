@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import io.openlineage.client.Environment;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -75,15 +76,7 @@ public class OpenLineageEnvParser {
             .map(OpenLineageEnvParser::convertSnakeCaseToCamelCase)
             .collect(Collectors.toList());
 
-    // Create the final value node. If it's valid JSON, parse it; otherwise, treat
-    // it as a string.
-    JsonNode valueNode;
-    try {
-      valueNode = objectMapper.readTree(envValue);
-    } catch (JsonProcessingException e) {
-      // If it's not valid JSON, treat it as a plain string
-      valueNode = objectMapper.convertValue(envValue, JsonNode.class);
-    }
+    JsonNode valueNode = parseValue(envValue);
 
     // Create nested structure based on keyParts
     ObjectNode root = objectMapper.createObjectNode();
@@ -100,6 +93,35 @@ public class OpenLineageEnvParser {
     currentNode.set(keyParts.get(keyParts.size() - 1), valueNode);
 
     return root;
+  }
+
+  /**
+   * Parses an environment variable value as JSON, falling back to a plain string.
+   *
+   * <p>Numbers are only parsed when their JSON text round-trips: values such as {@code 1.10},
+   * {@code 1e5} or {@code 1234e5678} (which would parse to {@code Infinity}) are kept as written,
+   * so string settings that look like numbers, such as API keys or tag values, are not altered.
+   * Numeric settings still accept them, as Jackson coerces strings into numeric fields.
+   *
+   * @param envValue The environment variable value.
+   * @return The parsed value node.
+   */
+  static JsonNode parseValue(String envValue) {
+    JsonNode textNode = TextNode.valueOf(envValue);
+    JsonNode valueNode;
+    try {
+      valueNode = objectMapper.readTree(envValue);
+    } catch (JsonProcessingException e) {
+      // If it's not valid JSON, treat it as a plain string
+      return textNode;
+    }
+    if (valueNode == null || valueNode.isMissingNode()) {
+      return textNode;
+    }
+    if (valueNode.isNumber() && !valueNode.toString().equals(envValue.trim())) {
+      return textNode;
+    }
+    return valueNode;
   }
 
   /**

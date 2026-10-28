@@ -429,22 +429,38 @@ class OpenLineageClient:
 
         for env_key, env_value in env_vars:
             keys = env_key[len(cls.DYNAMIC_ENV_VARS_PREFIX) :].split("__")
-
-            # Parse value (try to parse as JSON, otherwise lowercase the value)
-            try:
-                env_value = json.loads(env_value)  # noqa: PLW2901
-            except json.JSONDecodeError as err:
-                if any(c in env_value for c in "{}[]"):
-                    log.warning(
-                        "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "
-                        "Treating as plain string. Error: %s",
-                        env_key,
-                        env_value,
-                        err,
-                    )
-            cls._insert_into_config(config, keys, env_value)
+            cls._insert_into_config(config, keys, cls._parse_env_value(env_key, env_value))
 
         return config
+
+    @staticmethod
+    def _parse_env_value(env_key: str, env_value: str) -> Any:
+        """Decode an `OPENLINEAGE__*` value as JSON, falling back to the raw string.
+
+        Numbers are only decoded when their JSON text round-trips: `1.10`, `1e5` or `1234e5678`
+        (which would decode to `inf`) are kept as written, so string settings that look like
+        numbers, such as tag values, API keys or paths, are not altered. String-typed settings
+        turn decoded booleans and numbers back into text with `config_value_to_str`.
+        """
+        try:
+            value = json.loads(env_value)
+        except json.JSONDecodeError as err:
+            if any(c in env_value for c in "{}[]"):
+                log.warning(
+                    "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "
+                    "Treating as plain string. Error: %s",
+                    env_key,
+                    env_value,
+                    err,
+                )
+            return env_value
+        if (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and json.dumps(value) != env_value.strip()
+        ):
+            return env_value
+        return value
 
     @staticmethod
     def _insert_into_config(config: dict[str, Any], key_path: list[str], value: str) -> None:

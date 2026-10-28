@@ -21,7 +21,7 @@ from openlineage.client.serde import Serde
 from openlineage.client.transport.http import HttpCompression, TokenProvider, create_token_provider
 from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import get_only_specified_fields
+from openlineage.client.utils import config_values_to_str, get_only_specified_fields
 
 if TYPE_CHECKING:
     from openlineage.client.client import Event
@@ -154,7 +154,7 @@ class AsyncHttpConfig(Config):
     verify: bool = attr.field(default=True)
     auth: TokenProvider = attr.field(factory=lambda: TokenProvider({}))
     compression: HttpCompression | None = attr.field(default=None)
-    custom_headers: dict[str, str] = attr.field(factory=dict)
+    custom_headers: dict[str, str] = attr.field(factory=dict, converter=config_values_to_str)
     # Async configuration fields (flattened from AsyncConfig)
     max_queue_size: int = attr.field(default=10000)
     max_concurrent_requests: int = attr.field(default=100)
