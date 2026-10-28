@@ -86,7 +86,7 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
         return Collections.singletonList(
             factory
                 .sparkDatasetBuilder()
-                .dataset(PathUtils.fromPath(qualifyPath(writeToMicroBatchV1, path.get())))
+                .dataset(PathUtils.fromPath(qualifyPath(path.get())))
                 .schema(writeToMicroBatchV1.schema())
                 .build());
       }
@@ -107,18 +107,18 @@ public class WriteToMicroBatchDataSourceV1DatasetBuilder
   }
 
   /**
-   * Qualifies the path against the default filesystem and working directory, as the sinks do, so
-   * the output matches the datasets reported by batch reads and writes of the same location.
+   * Qualifies the path against the default filesystem and working directory, so the output matches
+   * the datasets reported by batch reads and writes of the same location. Uses the session Hadoop
+   * configuration without write options, as FileStreamSink and DeltaSink do when resolving it.
    */
-  private Path qualifyPath(WriteToMicroBatchDataSourceV1 write, String path) {
+  private Path qualifyPath(String path) {
     Path rawPath = new Path(path);
     Optional<SparkSession> session = context.getSparkSession();
     if (!session.isPresent()) {
       return rawPath;
     }
     try {
-      Configuration hadoopConf =
-          session.get().sessionState().newHadoopConfWithOptions(write.writeOptions());
+      Configuration hadoopConf = session.get().sessionState().newHadoopConf();
       return rawPath.getFileSystem(hadoopConf).makeQualified(rawPath);
     } catch (Exception e) {
       log.debug("Cannot qualify sink path {}; using it as is", path, e);
