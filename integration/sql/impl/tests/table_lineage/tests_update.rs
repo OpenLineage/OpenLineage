@@ -17,6 +17,7 @@ fn update_table() {
     );
 }
 
+/// Direct and derived MySQL joins contribute inputs without changing the UPDATE target.
 #[test]
 fn update_table_join_mysql() {
     for source in [
@@ -40,6 +41,7 @@ fn update_table_join_mysql() {
     }
 }
 
+/// Subqueries in a MySQL join predicate contribute their source tables as inputs.
 #[test]
 fn update_table_join_predicate_subquery_mysql() {
     let result = test_sql_dialect(

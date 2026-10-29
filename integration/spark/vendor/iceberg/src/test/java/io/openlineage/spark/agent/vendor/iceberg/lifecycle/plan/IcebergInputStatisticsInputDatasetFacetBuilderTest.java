@@ -13,8 +13,10 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
 import io.openlineage.client.OpenLineage.InputStatisticsInputDatasetFacet;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,7 @@ import org.apache.iceberg.BaseCombinedScanTask;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.FileScanTask;
 import org.apache.iceberg.ScanTask;
+import org.apache.iceberg.spark.TestingScanWithTasks;
 import org.apache.spark.sql.connector.read.Scan;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
@@ -102,5 +105,61 @@ class IcebergInputStatisticsInputDatasetFacetBuilderTest {
     public StructType readSchema() {
       return new StructType();
     }
+  }
+
+  @Test
+  void emitsInputStatisticsWhenFacetEnabled() {
+    TestingScanWithTasks scan = new TestingScanWithTasks(Collections.singletonList(fileScanTask()));
+    Map<String, InputDatasetFacet> facets = new HashMap<>();
+
+    IcebergInputStatisticsInputDatasetFacetBuilder builder = builder(false);
+    builder.accept(scan, facets::put);
+
+    assertThat(builder.isDefinedAt(scan)).isTrue();
+    assertThat(facets.get(INPUT_STATISTICS))
+        .isInstanceOfSatisfying(
+            InputStatisticsInputDatasetFacet.class,
+            facet -> {
+              assertThat(facet.getFileCount()).isEqualTo(1L);
+              assertThat(facet.getSize()).isEqualTo(100L);
+              assertThat(facet.getRowCount()).isEqualTo(10L);
+            });
+  }
+
+  @Test
+  void doesNotReadScanTasksWhenFacetDisabled() {
+    TestingScanWithTasks scan = new TestingScanWithTasks(Collections.singletonList(fileScanTask()));
+    Map<String, InputDatasetFacet> facets = new HashMap<>();
+
+    IcebergInputStatisticsInputDatasetFacetBuilder builder = builder(true);
+    builder.accept(scan, facets::put);
+
+    assertThat(builder.isDefinedAt(scan)).isFalse();
+    assertThat(scan.getTasksCalls()).isZero();
+    assertThat(facets).isEmpty();
+  }
+
+  private IcebergInputStatisticsInputDatasetFacetBuilder builder(boolean statisticsDisabled) {
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
+    config
+        .getFacetsConfig()
+        .setDisabledFacets(Collections.singletonMap(INPUT_STATISTICS, statisticsDisabled));
+    OpenLineageContext context = mock(OpenLineageContext.class);
+    when(context.getOpenLineageConfig()).thenReturn(config);
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("https://test")));
+    return new IcebergInputStatisticsInputDatasetFacetBuilder(context);
+  }
+
+  private FileScanTask fileScanTask() {
+    DataFile file = mock(DataFile.class);
+    when(file.path()).thenReturn("s3://bucket/table/data/file.parquet");
+    when(file.fileSizeInBytes()).thenReturn(100L);
+    when(file.recordCount()).thenReturn(10L);
+
+    FileScanTask task = mock(FileScanTask.class);
+    when(task.isFileScanTask()).thenReturn(true);
+    when(task.asFileScanTask()).thenReturn(task);
+    when(task.file()).thenReturn(file);
+    return task;
   }
 }

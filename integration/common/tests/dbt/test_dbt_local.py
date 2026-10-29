@@ -28,6 +28,7 @@ CURRENT_DIR = str(Path(__file__).absolute().parent)
 
 @pytest.mark.parametrize("fixture", ["alias", "test"])
 def test_artifact_source_identifier(fixture, monkeypatch):
+    """Artifact inputs use the same physical source as column lineage and quality assertions."""
     project_dir = f"{CURRENT_DIR}/{fixture}"
     processor = DbtLocalArtifactProcessor(
         producer="https://github.com/OpenLineage/OpenLineage",

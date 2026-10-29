@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.jspecify.annotations.NonNull;
 
 public class SparkConfUtils {
   private static final String metastoreUriKey = "spark.sql.hive.metastore.uris";
@@ -32,12 +33,7 @@ public class SparkConfUtils {
   }
 
   public static Optional<URI> getMetastoreUri(SparkContext context) {
-    Optional<String> metastoreUris =
-        findSparkConfigKey(context.getConf(), metastoreUriKey, metastoreHadoopUriKey);
-    if (!metastoreUris.isPresent()) {
-      metastoreUris = findHadoopConfigKey(context.hadoopConfiguration(), metastoreHadoopUriKey);
-    }
-    return metastoreUris
+    return getMetastoreUris(context)
         .map(
             key -> {
               if (key.contains(",")) {
@@ -53,5 +49,14 @@ public class SparkConfUtils {
                 return null;
               }
             });
+  }
+
+  public static @NonNull Optional<String> getMetastoreUris(SparkContext context) {
+    Optional<String> metastoreUris =
+        findSparkConfigKey(context.getConf(), metastoreUriKey, metastoreHadoopUriKey);
+    if (!metastoreUris.isPresent()) {
+      metastoreUris = findHadoopConfigKey(context.hadoopConfiguration(), metastoreHadoopUriKey);
+    }
+    return metastoreUris;
   }
 }

@@ -21,6 +21,7 @@ import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
@@ -437,6 +440,80 @@ class SparkDeltaIntegrationTest {
     assertThat(events.get(1).getInputs())
         .extracting(InputDataset::getName)
         .containsExactly("/tmp/delta/aqe_read_source");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"plain", "join", "filter", "aggregate", "view"})
+  void testNestedMergeSourceInputs(String shape) throws Exception {
+    spark.conf().set("spark.databricks.delta.snapshotPartitions", 1);
+    String root = "/tmp/delta/merge-" + shape;
+    String source = root + "/a";
+    String target = root + "/target";
+    String parquet = root + "/parquet";
+    spark.sql("SELECT 1 AS id, 'new' AS v").write().format("delta").save(source);
+    spark.sql("SELECT 1 AS id, 'old' AS v").write().format("delta").save(target);
+    String sourceSql = "delta.`" + source + "`";
+    List<String> expected = new ArrayList<>(Arrays.asList(source, target));
+    switch (shape) {
+      case "join":
+        String joinSource = root + "/b";
+        spark.sql("SELECT 1 AS id, 'joined' AS v").write().format("delta").save(joinSource);
+        sourceSql =
+            "(SELECT a.id, b.v FROM delta.`"
+                + source
+                + "` a JOIN delta.`"
+                + joinSource
+                + "` b ON a.id = b.id)";
+        expected.add(joinSource);
+        break;
+      case "filter":
+        sourceSql = "(SELECT * FROM delta.`" + source + "` WHERE id > 0)";
+        break;
+      case "aggregate":
+        sourceSql = "(SELECT id, max(v) AS v FROM delta.`" + source + "` GROUP BY id)";
+        break;
+      case "view":
+        spark.read().format("delta").load(source).write().parquet(parquet);
+        spark.read().parquet(parquet).createOrReplaceTempView("merge_staging");
+        sourceSql = "(SELECT id, v FROM merge_staging)";
+        expected = Arrays.asList(parquet, target);
+        break;
+      default:
+        break;
+    }
+    spark.sparkContext().listenerBus().waitUntilEmpty(10000);
+    MockServerUtils.clearRequests(mockServer);
+    spark.sql(
+        "MERGE INTO delta.`"
+            + target
+            + "` t USING "
+            + sourceSql
+            + " s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.v = s.v"
+            + " WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v)");
+    spark.sparkContext().listenerBus().waitUntilEmpty(10000);
+    List<RunEvent> events =
+        MockServerUtils.getEventsEmitted(mockServer).stream()
+            .filter(e -> e.getJob().getName().contains("merge_into_command"))
+            .collect(Collectors.toList());
+    assertThat(events)
+        .extracting(e -> e.getEventType().toString())
+        .containsExactlyInAnyOrder("START", "COMPLETE");
+    assertThat(events)
+        .extracting(e -> e.getRun().getRunId())
+        .containsOnly(events.get(0).getRun().getRunId());
+    for (RunEvent event : events) {
+      assertThat(event.getInputs()).extracting(InputDataset::getNamespace).containsOnly("file");
+      assertThat(event.getInputs())
+          .extracting(InputDataset::getName)
+          .containsExactlyInAnyOrderElementsOf(expected);
+      assertThat(event.getOutputs())
+          .singleElement()
+          .satisfies(
+              output -> {
+                assertThat(output.getNamespace()).isEqualTo("file");
+                assertThat(output.getName()).isEqualTo(target);
+              });
+    }
   }
 
   @Test

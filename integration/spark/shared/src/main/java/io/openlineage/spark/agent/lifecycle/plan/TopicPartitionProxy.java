@@ -18,6 +18,7 @@ import org.apache.commons.lang3.reflect.MethodUtils;
 @Slf4j
 public final class TopicPartitionProxy {
   private static final String EXPECTED_CLASS_NAME = "org.apache.kafka.common.TopicPartition";
+  private static final String SHADED_CLASS_NAME = "kafkashaded." + EXPECTED_CLASS_NAME;
   private final Object topicPartition;
 
   /**
@@ -32,9 +33,13 @@ public final class TopicPartitionProxy {
       throw new IllegalArgumentException("constructor argument cannot be null");
     }
 
-    if (!EXPECTED_CLASS_NAME.equals(topicPartition.getClass().getCanonicalName())) {
+    String className = topicPartition.getClass().getCanonicalName();
+    if (!EXPECTED_CLASS_NAME.equals(className) && !SHADED_CLASS_NAME.equals(className)) {
       throw new IllegalArgumentException(
-          "constructor argument must be of type: " + EXPECTED_CLASS_NAME);
+          "constructor argument must be of type: "
+              + EXPECTED_CLASS_NAME
+              + " or "
+              + SHADED_CLASS_NAME);
     }
 
     this.topicPartition = topicPartition;

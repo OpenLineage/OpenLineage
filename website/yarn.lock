@@ -240,14 +240,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/api-client@npm:0.31.1":
-  version: 0.31.1
-  resolution: "@argos-ci/api-client@npm:0.31.1"
+"@argos-ci/api-client@npm:0.31.2":
+  version: 0.31.2
+  resolution: "@argos-ci/api-client@npm:0.31.2"
   dependencies:
     debug: "npm:^4.4.3"
     openapi-fetch: "npm:^0.17.0"
     p-retry: "npm:^8.0.1"
-  checksum: 10c0/4a643d47aeb7207b16278bb697c3efce0b2efa9e0e7260f854ced7c3a3b56be1fb5dd414fbaceb5294cff60015f287fed82aeb3ecc2e0d8bdd24b89eae02cd88
+  checksum: 10c0/29a2ea7202de06eed4b71d8c1086e9985f4544bed8079bf34a0adbbc110de0071d7c15d47c6d245f33068219e010272960a71e0ab43bf1f15920a952fe28098c
+  languageName: node
+  linkType: hard
+
+"@argos-ci/api-client@npm:0.31.3":
+  version: 0.31.3
+  resolution: "@argos-ci/api-client@npm:0.31.3"
+  dependencies:
+    debug: "npm:^4.4.3"
+    openapi-fetch: "npm:^0.17.0"
+    p-retry: "npm:^8.0.1"
+  checksum: 10c0/ff7aff8d3ee59512cf60bbdf8b260e86d9e9492461ccf8ecbf19c6966f0cd772dd3f3eca281aff1fdf5a1749712e01c871ff8a538182d1bce68ef1066825a02b
   languageName: node
   linkType: hard
 
@@ -258,28 +269,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@argos-ci/cli@npm:^6.9.5":
-  version: 6.9.5
-  resolution: "@argos-ci/cli@npm:6.9.5"
+"@argos-ci/cli@npm:^6.10.0":
+  version: 6.10.0
+  resolution: "@argos-ci/cli@npm:6.10.0"
   dependencies:
-    "@argos-ci/api-client": "npm:0.31.1"
-    "@argos-ci/core": "npm:6.8.6"
+    "@argos-ci/api-client": "npm:0.31.3"
+    "@argos-ci/core": "npm:6.8.8"
     "@vercel/detect-agent": "npm:^1.2.5"
     commander: "npm:^15.0.0"
     open: "npm:^11.0.4"
     ora: "npm:^9.4.1"
   bin:
     argos: bin/argos-cli.js
-  checksum: 10c0/29727ff9dc3895f557207e2d7eae26f05cc009bc386347f1a0aa46964802ea191e7111915a137ed990fb29c5891321b77cc098554a14e1eb0dd96a6f450cd81c
+  checksum: 10c0/d66765a37c68b0245110ef58e308e9b7c64b59f635da06e4afc427b1b4e237fbd5154b2454b84d0bf7b19225100bb258f4b7e37044ef2417521eca7cf4ce7744
   languageName: node
   linkType: hard
 
-"@argos-ci/core@npm:6.8.6":
-  version: 6.8.6
-  resolution: "@argos-ci/core@npm:6.8.6"
+"@argos-ci/core@npm:6.8.7":
+  version: 6.8.7
+  resolution: "@argos-ci/core@npm:6.8.7"
   dependencies:
-    "@argos-ci/api-client": "npm:0.31.1"
-    "@argos-ci/util": "npm:4.2.1"
+    "@argos-ci/api-client": "npm:0.31.2"
+    "@argos-ci/util": "npm:4.2.2"
     convict: "npm:^6.2.5"
     debug: "npm:^4.4.3"
     fast-glob: "npm:^3.3.3"
@@ -287,27 +298,51 @@ __metadata:
     p-retry: "npm:^8.0.1"
     sharp: "npm:^0.35.5"
     tmp: "npm:^0.2.7"
-  checksum: 10c0/bf8f3faf62655d78d6755f9576a1406d8f35124c1181ab9074e6ebd0fe0495606d38064f8afe392c3fea54983446e0d21c4794b12263e6e65314d268af24c126
+  checksum: 10c0/474dc09c03a264e52d428b2457298c8d776b4e1bf91b4565b27faed102a56624be6a19d3b9212fa4f0346f3e076fa9785fbb36a56536dbf925559d3a6f540897
   languageName: node
   linkType: hard
 
-"@argos-ci/playwright@npm:^7.7.0":
-  version: 7.7.0
-  resolution: "@argos-ci/playwright@npm:7.7.0"
+"@argos-ci/core@npm:6.8.8":
+  version: 6.8.8
+  resolution: "@argos-ci/core@npm:6.8.8"
+  dependencies:
+    "@argos-ci/api-client": "npm:0.31.3"
+    "@argos-ci/util": "npm:4.2.3"
+    convict: "npm:^6.2.5"
+    debug: "npm:^4.4.3"
+    fast-glob: "npm:^3.3.3"
+    mime-types: "npm:^3.0.2"
+    p-retry: "npm:^8.0.1"
+    sharp: "npm:^0.35.5"
+    tmp: "npm:^0.2.7"
+  checksum: 10c0/bb58dfa7cf9eeabae4400b3a14c07d6f0077f75dd781fe12562e2dc6b4ec4691b3b059404bc4a4ea5f865eb88e970ab6b402177d9296b9b13595ef7218426909
+  languageName: node
+  linkType: hard
+
+"@argos-ci/playwright@npm:^7.7.1":
+  version: 7.7.1
+  resolution: "@argos-ci/playwright@npm:7.7.1"
   dependencies:
     "@argos-ci/browser": "npm:6.5.0"
-    "@argos-ci/core": "npm:6.8.6"
-    "@argos-ci/util": "npm:4.2.1"
+    "@argos-ci/core": "npm:6.8.7"
+    "@argos-ci/util": "npm:4.2.2"
     chalk: "npm:^6.0.1"
     debug: "npm:^4.4.3"
-  checksum: 10c0/ae9fa3be29ab8cbdc91c3df3d9622d072620751bdd0d50300c2f828da811d316435f90cf495ac1c2b78efc4b76e1a20f7d71889308fb21d7cba9f285a0e0c3bc
+  checksum: 10c0/db54a83d8fcf12bdc8d23aa8c1be4ff47b3ce0a9dc0ed54e4c08949d781f297cdca1a2f167088acc45749b2a5aebc00143c5b4d368c4f32d5048cd278140e80c
   languageName: node
   linkType: hard
 
-"@argos-ci/util@npm:4.2.1":
-  version: 4.2.1
-  resolution: "@argos-ci/util@npm:4.2.1"
-  checksum: 10c0/d6f4c8574c02d942bed066f4a5fe1f4c2afddb92e15ddacf5a29a8e6c24bdde1d3cd1157ffac49e206dbd83c95ef38a356616fa189277db9c024da78f32d204d
+"@argos-ci/util@npm:4.2.2":
+  version: 4.2.2
+  resolution: "@argos-ci/util@npm:4.2.2"
+  checksum: 10c0/e3ac719324ba815c3c03e6d5b08e6ed31ee574e0dc0e911377c7a7dbe1b7fec0969e7f4f15a2a847ea6f86c2d0d96f4a1bfb4c7474d35a122051588fb50238e9
+  languageName: node
+  linkType: hard
+
+"@argos-ci/util@npm:4.2.3":
+  version: 4.2.3
+  resolution: "@argos-ci/util@npm:4.2.3"
+  checksum: 10c0/ad7641a885f35c5c58fa384728586d92f88f262f45ca895bafc8332698a80c413587d0f713d27c546d06599e7b691b208e62aed06cc453282ae7af90ba48eec7
   languageName: node
   linkType: hard
 
@@ -1706,10 +1741,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^8.0.5":
-  version: 8.0.5
-  resolution: "@babel/runtime@npm:8.0.5"
-  checksum: 10c0/f4a310b6d2839a5350d6282805702040024b490b8456ca58de2abf5b329dba9ef19ece1d89304c39b1538177f311290512f88d7be4cc7925e4a9c9c00adab5b9
+"@babel/runtime@npm:^8.0.7":
+  version: 8.0.7
+  resolution: "@babel/runtime@npm:8.0.7"
+  checksum: 10c0/7ff1ca2d452a3359dc63bd36b25ff219ef04dfefbf7186900f1c296e55ade2ccc7f88dd2eb9d58ed253e3bde58fae97b9e40d80220ebfe510c99f7cf54837603
   languageName: node
   linkType: hard
 
@@ -4098,14 +4133,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:^1.63.0":
-  version: 1.63.0
-  resolution: "@playwright/test@npm:1.63.0"
+"@playwright/test@npm:^1.64.1":
+  version: 1.64.1
+  resolution: "@playwright/test@npm:1.64.1"
   dependencies:
-    playwright: "npm:1.63.0"
+    playwright: "npm:1.64.1"
   bin:
     playwright: cli.js
-  checksum: 10c0/795cd06c2eb6cb6142e72792f4df8f97665aa8c551c16278a7f2b3f31664e0cff07ed3c066490da55daf2fe51bc18e9c1ec6cba05b2c37387a0c49ad63017db8
+  checksum: 10c0/0a1a853d76d6c532cafaf0366a5448584b766737ebd39bbd23dc0580f3d3b6ef4c833082af47a792e7fc2501f444debdfaad37a87a76cc5b195f3803fc80ea3c
   languageName: node
   linkType: hard
 
@@ -5319,9 +5354,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "argos@workspace:argos"
   dependencies:
-    "@argos-ci/cli": "npm:^6.9.5"
-    "@argos-ci/playwright": "npm:^7.7.0"
-    "@playwright/test": "npm:^1.63.0"
+    "@argos-ci/cli": "npm:^6.10.0"
+    "@argos-ci/playwright": "npm:^7.7.1"
+    "@playwright/test": "npm:^1.64.1"
     cheerio: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
@@ -6989,7 +7024,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "docs@workspace:."
   dependencies:
-    "@babel/runtime": "npm:^8.0.5"
+    "@babel/runtime": "npm:^8.0.7"
     "@docusaurus/core": "npm:^3.10.2"
     "@docusaurus/module-type-aliases": "npm:^3.10.2"
     "@docusaurus/plugin-client-redirects": "npm:^3.10.2"
@@ -7011,8 +7046,8 @@ __metadata:
     docusaurus-lunr-search: "npm:^3.5.0"
     lodash: "npm:^4.18.1"
     lunr: "npm:^2.3.9"
-    motion: "npm:^14.0.0"
-    postcss: "npm:^8.5.29"
+    motion: "npm:^14.3.0"
+    postcss: "npm:^8.5.30"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -7804,12 +7839,12 @@ __metadata:
   linkType: hard
 
 "follow-redirects@npm:^1.0.0":
-  version: 1.16.0
-  resolution: "follow-redirects@npm:1.16.0"
+  version: 1.16.1
+  resolution: "follow-redirects@npm:1.16.1"
   peerDependenciesMeta:
     debug:
       optional: true
-  checksum: 10c0/a1e2900163e6f1b4d1ed5c221b607f41decbab65534c63fe7e287e40a5d552a6496e7d9d7d976fa4ba77b4c51c11e5e9f683f10b43011ea11e442ff128d0e181
+  checksum: 10c0/544e24ccb93b7afb5dd5a2199bd556e167b84de2af7c13b2ced08494239677359d7883bae56ae43a9ca98ac5451e75cf4834a5fadd6fa79053b9248fac5447a4
   languageName: node
   linkType: hard
 
@@ -7841,12 +7876,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-motion@npm:14.0.0":
-  version: 14.0.0
-  resolution: "framer-motion@npm:14.0.0"
+"framer-motion@npm:14.3.0":
+  version: 14.3.0
+  resolution: "framer-motion@npm:14.3.0"
   dependencies:
-    motion-dom: "npm:14.0.0"
-    motion-utils: "npm:14.0.0"
+    motion-dom: "npm:14.3.0"
+    motion-utils: "npm:14.1.1"
     tslib: "npm:^2.4.0"
   peerDependencies:
     react: ^18.0.0 || ^19.0.0
@@ -7856,7 +7891,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10c0/cc1421daef8e8245263999de59b13b3e6a5a0e6331ffba7eaf52186ce3c4da671dce96091e2f43ee982855d8c3ee86fb4c094a65507a8abc78322b98e0fceeed
+  checksum: 10c0/66fc2c8dbe68e9ff3241440969e02dd22c8c96bac1a380987510b77e8e25d6bbd05f8192e9b5a74cd32790719c7971d31cea8c9156fb58538d0885c9fbf7b28e
   languageName: node
   linkType: hard
 
@@ -10713,27 +10748,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion-dom@npm:14.0.0":
-  version: 14.0.0
-  resolution: "motion-dom@npm:14.0.0"
+"motion-dom@npm:14.3.0":
+  version: 14.3.0
+  resolution: "motion-dom@npm:14.3.0"
   dependencies:
-    motion-utils: "npm:14.0.0"
-  checksum: 10c0/d45be2d5ca62f1c02519917c580a529cbeb05a6f585e6abc019bd0b8eaad75122eb3c037abbdc00d6bd3964b58c32cd2b6cb3ddaebbfffe901cddf79457ac630
+    motion-utils: "npm:14.1.1"
+  checksum: 10c0/0675ecf947f675acf7710b64a3ddece2fbc0bb490130333e7c695967eee55ea8cba52c1eb15df9277eda6766f029b63785c658ea869e5f14ffb3d33fdc731947
   languageName: node
   linkType: hard
 
-"motion-utils@npm:14.0.0":
-  version: 14.0.0
-  resolution: "motion-utils@npm:14.0.0"
-  checksum: 10c0/02c3d67bfacedddb91f9a69944eb5b89cd9b15ed7aae968d9d65ec804be63197adfacc7d364586b679999b7573196b8cc6f300cb932ba6dd8e5a4b1760da33c1
+"motion-utils@npm:14.1.1":
+  version: 14.1.1
+  resolution: "motion-utils@npm:14.1.1"
+  checksum: 10c0/ee89684857aae2b02897d7297568e1e6dc6c1eec08c61533fbc0a9650de5d5c454aa888532b825baabac92defddecd364cbb8cd7fa63b2171152edf8f9f819f0
   languageName: node
   linkType: hard
 
-"motion@npm:^14.0.0":
-  version: 14.0.0
-  resolution: "motion@npm:14.0.0"
+"motion@npm:^14.3.0":
+  version: 14.3.0
+  resolution: "motion@npm:14.3.0"
   dependencies:
-    framer-motion: "npm:14.0.0"
+    framer-motion: "npm:14.3.0"
     tslib: "npm:^2.4.0"
   peerDependencies:
     react: ^18.0.0 || ^19.0.0
@@ -10743,7 +10778,7 @@ __metadata:
       optional: true
     react-dom:
       optional: true
-  checksum: 10c0/2bdbfd36a20013e3e3d072e9edfcfd261e3553a7950697e77cabc3c4607b39a9e73c218fb750b83cda4eac1a8de409b62bcc7d680eb3687209758801829e6d5c
+  checksum: 10c0/6bc12ccc54881f9c8ee34c99ff289857238b2d09d009855140e8743f0a8802d9ccd6f4a009ed7db776822acc40131f03e194cab826c01732e2f14dea2527abd6
   languageName: node
   linkType: hard
 
@@ -10789,7 +10824,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^3.3.19":
+"nanoid@npm:^3.3.20":
   version: 3.3.20
   resolution: "nanoid@npm:3.3.20"
   bin:
@@ -11464,23 +11499,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.63.0":
-  version: 1.63.0
-  resolution: "playwright-core@npm:1.63.0"
+"playwright-core@npm:1.64.1":
+  version: 1.64.1
+  resolution: "playwright-core@npm:1.64.1"
   bin:
     playwright-core: cli.js
-  checksum: 10c0/39c1ebae4029ca2e9371e00a5588d962038e24b6e0bdb7d0d27374dde04838f349b83ae0c8b3b648653d0935cba7fb9011f1201adaab9dd0db7801ad6c75e9aa
+  checksum: 10c0/91c4f5ed1cff4b0e18b6ac62f66770f5f1b6c204d4aebd6a321c07466dca18a70822ac692597c6059705a703f9768097ac551df179fb49294d639509148e04f3
   languageName: node
   linkType: hard
 
-"playwright@npm:1.63.0":
-  version: 1.63.0
-  resolution: "playwright@npm:1.63.0"
+"playwright@npm:1.64.1":
+  version: 1.64.1
+  resolution: "playwright@npm:1.64.1"
   dependencies:
-    playwright-core: "npm:1.63.0"
+    playwright-core: "npm:1.64.1"
   bin:
     playwright: cli.js
-  checksum: 10c0/d1fd048a89be27c9aba6757dc4f70eff4a5163b49f439ad691767be8b2a482327d0dd1928b4f73c8fe0d8b33aab2c9dc2670424ab60f112d9e98e91b94e3b090
+  checksum: 10c0/edf52d0a79feca37bf383e841a467aa68750684128218eac560063991c9e4b615a94901f580cd8a088bb05fd53008ab4a0e5e8d976067698b60ae5d1de2459f3
   languageName: node
   linkType: hard
 
@@ -12355,14 +12390,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.5.29":
-  version: 8.5.29
-  resolution: "postcss@npm:8.5.29"
+"postcss@npm:^8.5.30":
+  version: 8.5.30
+  resolution: "postcss@npm:8.5.30"
   dependencies:
-    nanoid: "npm:^3.3.19"
+    nanoid: "npm:^3.3.20"
     picocolors: "npm:^1.1.1"
     source-map-js: "npm:^1.2.2"
-  checksum: 10c0/5d0c45a511e8ede0fe124d04885877525e69e3c1476f0c8c22ed53f3945bace9ca5ef8578274bdfe916b1cd0301253a52c5dbd8695115fae805cee55465088fc
+  checksum: 10c0/219cdc50ba3f2b6d0f8b779c4939514cb9d9f53cc9eb92dae1a06f2d6eb910b2ce339a3ee93e7c893b89e50241509fd92c04f0639af1cdf41a1e13983a476029
   languageName: node
   linkType: hard
 

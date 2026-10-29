@@ -13,7 +13,7 @@ from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
 from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext, ModelNode
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
-from openlineage.common.provider.dbt.utils import get_dbt_profiles_dir
+from openlineage.common.provider.dbt.utils import get_dbt_command, get_dbt_profiles_dir
 
 DBT_VERSION = "0.0.1"
 JOB_NAMESPACE = "job-namespace"
@@ -249,6 +249,7 @@ def test_athena_dataset_symlink_uses_assume_role_account(dbt_artifact_processor,
 )
 @pytest.mark.parametrize("has_facets", [False, True])
 def test_athena_source_dataset_identity(dbt_artifact_processor, source_metadata, expected_table, has_facets):
+    """Dataset and Glue identities agree for physical identifiers and name fallbacks."""
     dbt_artifact_processor.adapter_type = Adapter.ATHENA
     dbt_artifact_processor.extract_dataset_namespace(
         {"region_name": "us-east-1", "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena"}
@@ -275,6 +276,7 @@ def test_athena_source_dataset_identity(dbt_artifact_processor, source_metadata,
 
 
 def test_athena_source_symlink_without_table_is_omitted(dbt_artifact_processor):
+    """Incomplete source metadata must not produce a Glue table identifier."""
     dbt_artifact_processor.adapter_type = Adapter.ATHENA
     dbt_artifact_processor.dataset_symlink_namespace = "arn:aws:glue:us-east-1:123456789012"
 
@@ -285,6 +287,7 @@ def test_athena_source_symlink_without_table_is_omitted(dbt_artifact_processor):
 
 @pytest.mark.parametrize("node_type", ["model", "seed", "snapshot"])
 def test_non_source_dataset_keeps_alias(dbt_artifact_processor, node_type):
+    """Source-only identifiers must not replace materialized model, seed, or snapshot aliases."""
     node = ModelNode(
         type=node_type,
         metadata_node={
@@ -1079,3 +1082,97 @@ class TestDbtMetaTags:
     def test_tags_and_meta_combined(self, dbt_artifact_processor):
         facet = dbt_artifact_processor._build_tags_run_facet(["core"], {"tier": "gold"})
         assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "DBT_META")]
+
+
+class TestModelRunStatus:
+    """Model runs reported as ``warn`` emit COMPLETE, matching the structured-logs path.
+
+    Regression: dbt v2 reports an unchanged Snowflake dynamic table (a no-op with
+    adapter code ``skip``) as ``warn``, which ``to_openlineage_events`` rejected with
+    ValueError."""
+
+    @pytest.fixture
+    def processor(self):
+        """Processor configured for a ``dbt run`` against Snowflake."""
+        p = DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="ns",
+        )
+        p.manifest_version = 12
+        p.command = "run"
+        p.dataset_namespace = "snowflake://acct"
+        p.dbt_run_run_facet = MagicMock(return_value={})
+        return p
+
+    @staticmethod
+    def _ctx(status):
+        """Run context with one model whose run result has the given status."""
+        manifest = {
+            "nodes": {
+                "model.project.my_model": {
+                    "database": "DB",
+                    "schema": "SCH",
+                    "alias": "my_model",
+                    "unique_id": "model.project.my_model",
+                    "resource_type": "model",
+                    "columns": {},
+                },
+            },
+            "sources": {},
+            "exposures": {},
+            "parent_map": {"model.project.my_model": []},
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "model.project.my_model",
+                    "status": status,
+                    "timing": [],
+                    "adapter_response": {"code": "skip", "rows_affected": -1},
+                }
+            ]
+        }
+        return DbtRunContext(manifest=manifest, run_results=run_results, catalog={})
+
+    @pytest.mark.parametrize("status", ["success", "warn"])
+    def test_succeeded_model_emits_complete(self, processor, status):
+        """``success`` and ``warn`` both emit START and COMPLETE, with no FAIL."""
+        context = self._ctx(status)
+        processor.manifest = context.manifest
+        events = processor.parse_execution(context, context.manifest["nodes"])
+
+        assert len(events.starts) == 1
+        assert len(events.completes) == 1
+        assert not events.fails
+
+    def test_error_model_emits_fail(self, processor):
+        """``error`` still emits FAIL, so the warn mapping does not hide real failures."""
+        context = self._ctx("error")
+        processor.manifest = context.manifest
+        events = processor.parse_execution(context, context.manifest["nodes"])
+
+        assert len(events.fails) == 1
+        assert not events.completes
+
+
+@pytest.mark.parametrize(
+    "command_line, expected",
+    [
+        (["dbt", "run", "--select", "orders"], "run"),
+        (["dbt", "build"], "build"),
+        # an option's value that happens to be a command name isn't the command
+        (["dbt", "debug", "--log-path", "run"], None),
+        (["dbt", "docs", "generate", "--select", "test"], None),
+        (["dbt", "run-operation", "build", "--args", "{}"], None),
+        # options before the command, with and without a value
+        (["dbt", "--log-path", "logs", "run"], "run"),
+        (["dbt", "--log-path=logs", "test"], "test"),
+        (["dbt", "--debug", "seed"], "seed"),
+        (["dbt", "--target", "prod", "--debug", "snapshot"], "snapshot"),
+        (["dbt", "deps"], None),
+        (["dbt", "--version"], None),
+        (["dbt"], None),
+    ],
+)
+def test_get_dbt_command_takes_the_subcommand_not_option_values(command_line, expected):
+    assert get_dbt_command(command_line) == expected
