@@ -12,7 +12,9 @@ use sqlparser::ast::{
     SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
     UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
 };
-use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, MySqlDialect, SnowflakeDialect};
+use sqlparser::dialect::{
+    DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
+};
 
 pub trait Visit {
     fn visit(&self, context: &mut Context) -> Result<()>;
@@ -21,8 +23,13 @@ pub trait Visit {
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
         let size = self.cte_tables.len();
-        // Snowflake lets any CTE refer to itself, with or without RECURSIVE.
-        let recursive = self.recursive || context.dialect().as_base().is::<SnowflakeDialect>();
+        // Snowflake, SQL Server and SQLite let any CTE refer to itself, with or
+        // without RECURSIVE.
+        let dialect = context.dialect().as_base();
+        let recursive = self.recursive
+            || dialect.is::<SnowflakeDialect>()
+            || dialect.is::<MsSqlDialect>()
+            || dialect.is::<SQLiteDialect>();
         for i in 0..size {
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),

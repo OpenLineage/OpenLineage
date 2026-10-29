@@ -212,10 +212,12 @@ fn recursive_cte_self_reference_is_not_an_input() {
 }
 
 #[test]
-fn snowflake_cte_self_reference_without_recursive_is_not_an_input() {
+fn implicit_recursive_cte_self_reference_is_not_an_input() {
     let sql = "WITH t AS (SELECT n FROM source UNION ALL SELECT n FROM t) \
                INSERT INTO target SELECT n FROM t";
-    assert_eq!(parse_inputs(sql, "snowflake"), ["source"]);
+    for dialect in ["snowflake", "mssql", "sqlite"] {
+        assert_eq!(parse_inputs(sql, dialect), ["source"], "{dialect}");
+    }
 }
 
 #[test]
