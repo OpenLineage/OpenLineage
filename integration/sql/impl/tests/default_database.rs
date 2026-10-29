@@ -272,6 +272,92 @@ fn cte_reference_in_nested_subquery_is_resolved() {
     assert_eq!(parse_cte_inputs(chained, Some("public")), ["public.source"]);
 }
 
+fn parse_recursive_inputs(
+    sql: &str,
+    dialect: &str,
+    default_schema: Option<&str>,
+    default_database: Option<&str>,
+) -> Vec<String> {
+    let metadata = parse_multiple_statements_with_default_database(
+        vec![sql.to_string()],
+        get_dialect(dialect),
+        default_schema.map(str::to_string),
+        default_database.map(str::to_string),
+    )
+    .unwrap();
+    assert!(metadata.errors.is_empty());
+    table_names(&metadata.table_lineage.in_tables)
+}
+
+#[test]
+fn bare_recursive_self_reference_with_defaults_is_not_an_input() {
+    // The bare self-reference picks up the defaults too; it must still be
+    // recognised as the CTE rather than reported as `mydb.public.t`.
+    let sql = "WITH RECURSIVE t AS (SELECT n FROM source UNION ALL SELECT n FROM t) \
+               INSERT INTO target SELECT n FROM t";
+    assert_eq!(
+        parse_recursive_inputs(sql, "postgres", Some("public"), None),
+        ["public.source"]
+    );
+    assert_eq!(
+        parse_recursive_inputs(sql, "postgres", Some("public"), Some("mydb")),
+        ["mydb.public.source"]
+    );
+}
+
+#[test]
+fn fully_qualified_source_with_recursive_cte_name_is_input() {
+    let schema_qualified = "WITH RECURSIVE orders AS (SELECT * FROM public.orders) \
+                            INSERT INTO target SELECT * FROM orders";
+    assert_eq!(
+        parse_recursive_inputs(schema_qualified, "postgres", Some("public"), Some("mydb")),
+        ["mydb.public.orders"]
+    );
+    let fully_qualified = "WITH RECURSIVE orders AS (SELECT * FROM mydb.public.orders) \
+                           INSERT INTO target SELECT * FROM orders";
+    assert_eq!(
+        parse_recursive_inputs(fully_qualified, "postgres", Some("public"), Some("mydb")),
+        ["mydb.public.orders"]
+    );
+}
+
+#[test]
+fn two_level_dialect_qualified_source_with_cte_name_is_input() {
+    // MySQL reads `mydb.orders` as schema `mydb`, which is also the default.
+    let sql = "WITH RECURSIVE orders AS (SELECT * FROM mydb.orders) \
+               INSERT INTO target SELECT * FROM orders";
+    assert_eq!(
+        parse_recursive_inputs(sql, "mysql", Some("mydb"), None),
+        ["mydb.orders"]
+    );
+}
+
+#[test]
+fn qualified_source_in_subquery_with_recursive_cte_name_is_input() {
+    // A qualified reference stays qualified when the subquery's dependencies
+    // are merged into the CTE body.
+    let sql = "WITH RECURSIVE orders AS (SELECT * FROM (SELECT * FROM public.orders) AS sub) \
+               INSERT INTO target SELECT * FROM orders";
+    assert_eq!(
+        parse_recursive_inputs(sql, "postgres", Some("public"), None),
+        ["public.orders"]
+    );
+}
+
+#[test]
+fn bare_references_do_not_leak_between_ctes() {
+    // `b` refers to CTE `a`; `c` reads the real table `public.a`. The bare
+    // `a` in `b` must not make the qualified `public.a` in `c` a CTE reference.
+    let sql = "WITH a AS (SELECT id FROM source), \
+               b AS (SELECT id FROM a), \
+               c AS (SELECT id FROM public.a) \
+               INSERT INTO target SELECT b.id FROM b JOIN c ON b.id = c.id";
+    assert_eq!(
+        parse_cte_inputs(sql, Some("public")),
+        ["public.a", "public.source"]
+    );
+}
+
 #[test]
 fn qualified_reference_is_not_mistaken_for_cte() {
     let metadata = parse_multiple_statements_with_default_database(
