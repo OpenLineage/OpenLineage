@@ -13,9 +13,13 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.Checkpoint;
+import io.openlineage.spark.api.CheckpointContext;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.OpenLineageRunStatus;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -92,5 +96,27 @@ class LogicalRDDVisitorTest {
         .singleElement()
         .hasFieldOrPropertyWithValue("name", tmpDir.toString())
         .hasFieldOrPropertyWithValue("namespace", "file");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void testReadingIncompleteCheckpointIsReportedInRunStatus() {
+    List<OpenLineage.InputDataset> inputs =
+        Collections.singletonList(mock(OpenLineage.InputDataset.class));
+    CheckpointContext checkpointContext = new CheckpointContext();
+    checkpointContext.addCheckpoint(7, new Checkpoint(inputs, null, true));
+    OpenLineageRunStatus runStatus = new OpenLineageRunStatus();
+    when(context.getCheckpointContext()).thenReturn(checkpointContext);
+    when(context.getLineageRunStatus()).thenReturn(runStatus);
+    RDD<InternalRow> rdd = mock(RDD.class);
+    when(rdd.id()).thenReturn(7);
+    LogicalRDD logicalRDD = mock(LogicalRDD.class);
+    when(logicalRDD.rdd()).thenReturn(rdd);
+
+    List<OpenLineage.InputDataset> datasets =
+        new LogicalRDDVisitor<>(context, DatasetFactory.input(context)).apply(logicalRDD);
+
+    assertThat(datasets).isEqualTo(inputs);
+    assertThat(runStatus.isReadIncompleteCheckpoint()).isTrue();
   }
 }

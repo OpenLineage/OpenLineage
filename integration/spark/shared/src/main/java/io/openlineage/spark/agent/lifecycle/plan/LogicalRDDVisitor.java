@@ -53,6 +53,9 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
     Optional<Checkpoint> checkpoint = context.getCheckpointContext().getCheckpoint(rdd.id());
     if (checkpoint.isPresent()) {
       log.debug("LogicalRDD wraps checkpointed RDD id={}", rdd.id());
+      if (checkpoint.get().isIncomplete()) {
+        context.getLineageRunStatus().setReadIncompleteCheckpoint(true);
+      }
       return (List<D>) (List<?>) checkpoint.get().getInputDatasets();
     }
     if (rdd.isCheckpointed()) {
