@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"slices"
@@ -231,7 +232,8 @@ func jwtExpiry(accessToken string) time.Time {
 	var claims struct {
 		Exp float64 `json:"exp"`
 	}
-	if err := json.Unmarshal(payload, &claims); err != nil || claims.Exp <= 0 {
+	// math.MaxInt64 converts to 2^63, the smallest float64 that int64() cannot represent
+	if err := json.Unmarshal(payload, &claims); err != nil || claims.Exp <= 0 || claims.Exp >= math.MaxInt64 {
 		return time.Time{}
 	}
 

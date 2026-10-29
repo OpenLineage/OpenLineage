@@ -911,6 +911,20 @@ func testJWT(t *testing.T, claims map[string]any) string {
 	return enc.EncodeToString([]byte(`{"alg":"none"}`)) + "." + enc.EncodeToString(payload) + ".sig"
 }
 
+// TestJWTExpiry_OutOfRangeExp verifies that an exp too large for int64 is treated as
+// unknown, so the token is not cached, rather than converted to an arbitrary time.
+func TestJWTExpiry_OutOfRangeExp(t *testing.T) {
+	t.Parallel()
+	for _, exp := range []float64{1e19, 1e300} {
+		if got := jwtExpiry(testJWT(t, map[string]any{"exp": exp})); !got.IsZero() {
+			t.Errorf("jwtExpiry(exp=%g) = %v, want zero time", exp, got)
+		}
+	}
+	if got := jwtExpiry(testJWT(t, map[string]any{"exp": 2000000000})); got.Unix() != 2000000000 {
+		t.Errorf("jwtExpiry(exp=2000000000) = %v, want unix 2000000000", got)
+	}
+}
+
 // TestHTTPTransport_Emit_OAuth2TokenResponses checks cache and failure behavior for
 // token endpoint responses without allowing an unauthenticated lineage request. Two
 // events are sent, so wantTokens is 1 when the token is cached and 2 when it is not.
@@ -1118,6 +1132,33 @@ func TestHTTPTransport_Emit_HeadersAndURLParamsCopied(t *testing.T) {
 	}
 	if !strings.Contains(receivedURL, "param=before") {
 		t.Errorf("URL = %q, want it to contain param=before", receivedURL)
+	}
+}
+
+// TestHTTPTransport_Emit_OAuth2ScopesCopied verifies that changing the caller's Scopes
+// slice after New does not change the scope sent to the token endpoint.
+func TestHTTPTransport_Emit_OAuth2ScopesCopied(t *testing.T) {
+	t.Parallel()
+
+	tokenSrv, tokenReqs := tokenServer(t, http.StatusOK)
+	srv, _ := testServer(t, http.StatusOK)
+
+	auth := &HTTPAuthConfig{
+		Type:          AuthTypeOAuth2,
+		ClientID:      "my-client-id",
+		ClientSecret:  "my-client-secret",
+		TokenEndpoint: tokenSrv.URL,
+		Scopes:        []string{"openid", "lineage"},
+	}
+	tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL, Auth: auth})
+	auth.Scopes[0] = "changed"
+
+	if _, err := tr.Emit(context.Background(), map[string]string{}); err != nil {
+		t.Fatalf("Emit(): %v", err)
+	}
+
+	if got := formValueOf(t, (*tokenReqs)[0], "scope"); got != "openid lineage" {
+		t.Errorf("scope = %q, want \"openid lineage\"", got)
 	}
 }
 
