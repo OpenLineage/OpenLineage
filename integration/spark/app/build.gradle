@@ -17,7 +17,7 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id "org.gradle.test-retry" version "1.6.5"
+    id "org.gradle.test-retry" version "1.6.6"
 }
 
 ext {
@@ -30,9 +30,9 @@ ext {
     bigqueryVersion = '0.42.2'
     junit5Version = '5.14.4'
     mockitoVersion = '4.11.0'
-    postgresqlVersion = '42.7.13'
+    postgresqlVersion = '42.7.14'
     testcontainersVersion = '1.21.4'
-    awssdkVersion = '2.54.20'
+    awssdkVersion = '2.57.1'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
@@ -106,7 +106,7 @@ dependencies {
     implementation(project(path: ":iceberg"))
     implementation(project(path: ":gcp"))
 
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.6.4")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.6.5")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
@@ -125,7 +125,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.53.2.1')
+    testImplementation('org.xerial:sqlite-jdbc:3.53.4.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
@@ -725,7 +725,7 @@ List<Dependency> additionalJars(String spark, String scala) {
             ],
             "3.5.6": [
                     dependencies.create("org.slf4j:slf4j-api:2.0.10"),
-                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.18"),
+                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.20"),
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
