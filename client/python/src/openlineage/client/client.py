@@ -445,7 +445,7 @@ class OpenLineageClient:
         """
         try:
             value = json.loads(env_value)
-        except json.JSONDecodeError as err:
+        except ValueError as err:  # JSONDecodeError, or an int too long to convert
             if any(c in env_value for c in "{}[]"):
                 log.warning(
                     "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "

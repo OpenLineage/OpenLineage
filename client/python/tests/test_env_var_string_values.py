@@ -449,6 +449,21 @@ def test_parse_env_value(env_value: str, expected: Any) -> None:
         assert parsed.text == env_value
 
 
+@pytest.mark.parametrize(
+    "number", [EnvFloat(float("inf"), "1234e5678"), EnvFloat(1e5, "1e5"), EnvInt(0, "-0")]
+)
+def test_env_number_str_is_text_as_written(number: EnvFloat | EnvInt) -> None:
+    # settings without a converter, such as Kafka producer config values, only call str()
+    assert str(number) == number.text
+    assert f"{number}" == number.text
+    assert json.dumps(number) == json.dumps(float(number) if isinstance(number, float) else int(number))
+
+
+def test_parse_env_value_int_too_long_to_convert() -> None:
+    digits = "1" * 5000  # json.loads raises ValueError, not JSONDecodeError, over 4300 digits
+    assert OpenLineageClient._parse_env_value("OPENLINEAGE__X", digits) == digits  # noqa: SLF001
+
+
 @pytest.mark.parametrize("number", [EnvFloat(0.5, "0.50"), EnvInt(0, "-0")])
 def test_env_number_survives_copy_and_pickle(number: EnvFloat | EnvInt) -> None:
     for copied in (copy.deepcopy(number), pickle.loads(pickle.dumps(number))):  # noqa: S301

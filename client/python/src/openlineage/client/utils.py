@@ -44,8 +44,8 @@ class EnvFloat(float):
 
     `0.50`, `1e5` or `1234e5678` (which decodes to `inf`) decode to a float that does not print
     back as written. Numeric settings use the value as a regular float, while
-    :func:`config_value_to_str` returns `text`, so string settings such as tag values or API keys
-    keep what was written.
+    :func:`config_value_to_str` and `str()` return `text`, so string settings such as tag values or
+    API keys keep what was written, including settings that only call `str()` on the value.
     """
 
     text: str
@@ -57,6 +57,9 @@ class EnvFloat(float):
 
     def __getnewargs__(self) -> tuple[float, str]:  # type: ignore[override]
         return float(self), self.text
+
+    def __str__(self) -> str:
+        return self.text
 
 
 class EnvInt(int):
@@ -74,6 +77,9 @@ class EnvInt(int):
 
     def __getnewargs__(self) -> tuple[int, str]:  # type: ignore[override]
         return int(self), self.text
+
+    def __str__(self) -> str:
+        return self.text
 
 
 def config_value_to_str(value: Any) -> str:
