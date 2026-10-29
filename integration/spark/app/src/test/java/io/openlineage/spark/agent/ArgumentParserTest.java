@@ -385,6 +385,21 @@ class ArgumentParserTest {
   }
 
   @Test
+  void testCheckpointLineageConfig() {
+    assertThat(ArgumentParser.parse(new SparkConf()).getCheckpointConfig().getMaxEntries())
+        .isEqualTo(1000);
+
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.checkpointLineage.enabled", "true")
+            .set("spark.openlineage.checkpointLineage.maxEntries", "50");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    assertThat(config.getCheckpointConfig().getEnabled()).isTrue();
+    assertThat(config.getCheckpointConfig().getMaxEntries()).isEqualTo(50);
+  }
+
+  @Test
   @SuppressWarnings({"deprecation", "UnstableApiUsage", "ConstantConditions"})
   void testConfigReadFromYamlFile() {
     String propertyBefore = System.getProperty("user.dir");

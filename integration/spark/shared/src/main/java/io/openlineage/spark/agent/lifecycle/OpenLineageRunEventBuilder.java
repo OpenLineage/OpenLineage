@@ -23,6 +23,7 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.CheckpointColumnLineage;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.DatasetReducerUtils;
@@ -30,6 +31,7 @@ import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.RemovePathPatternUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.Checkpoint;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -55,6 +57,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.QueryExecution;
 import scala.Function1;
 import scala.PartialFunction;
 
@@ -258,6 +261,45 @@ class OpenLineageRunEventBuilder {
     }
 
     return facetBuilder;
+  }
+
+  /**
+   * Captures the lineage of the plan currently held by {@link
+   * OpenLineageContext#getQueryExecution()}, being materialized as a checkpoint. Used to eagerly
+   * capture the lineage of a checkpoint's query, which runs as its own {@code SQLExecution} and
+   * whose plan won't be retrievable once the checkpoint completes.
+   *
+   * <p>The input datasets and the column lineage are built within the datasets timeout, the same as
+   * the datasets of a regular event. If the column lineage times out, the checkpoint is returned
+   * without it and marked as incomplete. If the input datasets time out, nothing is returned.
+   *
+   * @see io.openlineage.spark.api.CheckpointContext
+   */
+  Optional<Checkpoint> buildCheckpoint(SparkListenerEvent event, QueryExecution queryExecution) {
+    List<Object> nodes = Collections.singletonList(event);
+    List<InputDataset> inputDatasets =
+        timeouter.timeoutInputDatasets(() -> buildInputDatasets(nodes));
+    if (timeouter.isInputsTimedOut()) {
+      log.warn("Building input datasets of a checkpoint timed out, its lineage is not captured");
+      return Optional.empty();
+    }
+    OpenLineage.SchemaDatasetFacet schemaFacet =
+        PlanUtils.schemaFacet(
+            openLineageContext.getOpenLineage(), queryExecution.analyzed().schema());
+    Optional<CheckpointColumnLineage> columnLineage =
+        timeouter.timeoutCheckpointColumnLineage(
+            () ->
+                ColumnLevelLineageUtils.buildCheckpointColumnLineage(
+                    event, openLineageContext, schemaFacet));
+    if (timeouter.isCheckpointColumnLineageTimedOut()) {
+      log.warn(
+          "Building column lineage of a checkpoint timed out, only its input datasets are captured");
+    }
+    return Optional.of(
+        new Checkpoint(
+            inputDatasets,
+            columnLineage.orElse(null),
+            timeouter.isCheckpointColumnLineageTimedOut()));
   }
 
   private List<InputDataset> buildInputDatasets(List<Object> nodes) {

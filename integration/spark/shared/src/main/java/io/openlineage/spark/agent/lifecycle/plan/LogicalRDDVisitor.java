@@ -8,15 +8,19 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.Checkpoint;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.types.StructType;
@@ -41,8 +45,24 @@ public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public List<D> apply(LogicalPlan x) {
-    Set<RDD<?>> flattenedRdds = Rdds.flattenRDDs(((LogicalRDD) x).rdd(), new HashSet<>());
+    RDD<InternalRow> rdd = ((LogicalRDD) x).rdd();
+    // looked up regardless of RDD#isCheckpointed(), which stays false for a lazy checkpoint until
+    // the first job reading it materializes it
+    Optional<Checkpoint> checkpoint = context.getCheckpointContext().getCheckpoint(rdd.id());
+    if (checkpoint.isPresent()) {
+      log.debug("LogicalRDD wraps checkpointed RDD id={}", rdd.id());
+      if (checkpoint.get().isIncomplete()) {
+        context.getLineageRunStatus().setReadIncompleteCheckpoint(true);
+      }
+      return (List<D>) (List<?>) checkpoint.get().getInputDatasets();
+    }
+    if (rdd.isCheckpointed()) {
+      log.debug("No lineage recorded for checkpointed RDD id={}", rdd.id());
+      return Collections.emptyList();
+    }
+    Set<RDD<?>> flattenedRdds = Rdds.flattenRDDs(rdd, new HashSet<>());
     List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(flattenedRdds);
     return findInputDatasets(fileLikeRdds, resolveSchema(fileLikeRdds));
   }

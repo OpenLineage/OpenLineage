@@ -18,6 +18,9 @@ public class OpenLineageRunStatus {
   private boolean detectedInputs;
   private boolean detectedOutputs;
 
+  /** Whether the run read a checkpoint whose lineage was captured incompletely. */
+  private boolean readIncompleteCheckpoint;
+
   public void capturedInputs(int datasetsCount) {
     if (datasetsCount > 0) {
       detectedInputs = true;
