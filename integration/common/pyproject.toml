@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "openlineage-integration-common"
-version = "1.55.0"
+version = "1.56.0"
 description = "OpenLineage common python library for integrations"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,7 +27,7 @@ dependencies = [
     "attrs>=19.3.0",
     "jinja2>=2.11.3",
     "openlineage-python",
-    "openlineage_sql>=1.55.0",
+    "openlineage_sql>=1.56.0",
     "pyyaml>=5.3.1",
 ]
 
@@ -148,7 +148,7 @@ commands =
 """
 
 [tool.bumpversion]
-current_version = "1.55.0"
+current_version = "1.56.0"
 commit = false
 tag = false
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<rc>.*)"
