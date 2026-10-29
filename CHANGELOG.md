@@ -87,6 +87,11 @@
 * **SQL: Include QUALIFY subquery inputs** [`#4915`](https://github.com/OpenLineage/OpenLineage/pull/4915) [@mattfaltyn](https://github.com/mattfaltyn)
   *Includes tables referenced only by nested QUALIFY subqueries in SQL table lineage.*
 
+### Fixed
+
+* **Spark: Keep Delta jobStart/jobEnd events for top-level executions** [`#5059`](https://github.com/OpenLineage/OpenLineage/pull/5059) [@sg0709](https://github.com/sg0709)
+  *Drops these events only for executions nested under a root command, so `spark_jobDetails` and `capturedProperties` survive on top-level queries in a Delta-enabled session.*
+
 ## [1.53.0](https://github.com/OpenLineage/OpenLineage/compare/1.52.0...1.53.0)
 
 ### Added
