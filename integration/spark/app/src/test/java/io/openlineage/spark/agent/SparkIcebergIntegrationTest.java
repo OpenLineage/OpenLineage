@@ -665,9 +665,14 @@ class SparkIcebergIntegrationTest {
     Map<String, Object> configFacet =
         (Map<String, Object>) debug.getAdditionalProperties().get("config");
 
+    // Spark 4 moved the classic catalog implementation from internal.CatalogImpl to classic.Catalog
+    String expectedCatalogClass =
+        System.getProperty(SPARK_VERSION).startsWith("4")
+            ? "org.apache.spark.sql.classic.Catalog"
+            : "org.apache.spark.sql.internal.CatalogImpl";
     assertThat(configFacet)
         .containsEntry("extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener")
-        .containsEntry("catalogClass", "org.apache.spark.sql.internal.CatalogImpl")
+        .containsEntry("catalogClass", expectedCatalogClass)
         .containsEntry(
             "extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
 
@@ -1022,27 +1027,17 @@ class SparkIcebergIntegrationTest {
     spark.sql("CREATE TABLE commit_target USING iceberg AS SELECT * FROM commit_source1");
     spark.sql("INSERT INTO commit_target VALUES (4, 5)");
 
-    // get scan report facet
-    List<RunEvent> runEvents =
-        getEventsEmittedWithJobName(
-            mockServer, "iceberg_integration_test.append_data.spark_catalog_default_commit_target");
-
-    List<OutputDatasetOutputFacets> outputFacets =
-        runEvents.stream()
-            .flatMap(e -> e.getOutputs().stream())
-            .map(o -> o.getOutputFacets())
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-
+    // On Spark 4.1 the CTAS also runs an append_data job on commit_target, whose events can carry
+    // the CTAS commit report (sequence number 1), so wait for the INSERT's report: the second
+    // commit
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> getCommitReportWithSequenceNumber(2L).isPresent());
     Optional<IcebergCommitReportOutputDatasetFacet> icebergCommitReport =
-        outputFacets.stream()
-            .map(OutputDatasetOutputFacets::getIcebergCommitReport)
-            .filter(Objects::nonNull)
-            .findFirst();
+        getCommitReportWithSequenceNumber(2L);
 
     assertThat(icebergCommitReport).isPresent();
     assertThat(icebergCommitReport.get().getOperation()).isEqualTo("append");
-    assertThat(icebergCommitReport.get().getSequenceNumber().longValue()).isEqualTo(2L);
     assertThat(icebergCommitReport.get().getSnapshotId().longValue()).isGreaterThan(0L);
 
     assertThat(icebergCommitReport.get().getMetadata().getAdditionalProperties())
@@ -1052,6 +1047,20 @@ class SparkIcebergIntegrationTest {
         .isEqualTo(1L);
     assertThat(icebergCommitReport.get().getCommitMetrics().getAddedDataFiles().longValue())
         .isEqualTo(1L);
+  }
+
+  private Optional<IcebergCommitReportOutputDatasetFacet> getCommitReportWithSequenceNumber(
+      long sequenceNumber) {
+    return getEventsEmittedWithJobName(
+            mockServer, "iceberg_integration_test.append_data.spark_catalog_default_commit_target")
+        .stream()
+        .flatMap(e -> e.getOutputs().stream())
+        .map(OutputDataset::getOutputFacets)
+        .filter(Objects::nonNull)
+        .map(OutputDatasetOutputFacets::getIcebergCommitReport)
+        .filter(Objects::nonNull)
+        .filter(r -> r.getSequenceNumber().longValue() == sequenceNumber)
+        .findFirst();
   }
 
   private void clearTables(String... tables) {

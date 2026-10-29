@@ -256,6 +256,47 @@ class IcebergRelationHandlerTest {
     }
   }
 
+  /**
+   * For a wrapper every unwrap is a reflective {@code table()} call, so resolving the identifier -
+   * owning catalog included - unwraps the relation's table exactly once.
+   */
+  @Test
+  void testGetDatasetIdentifierUnwrapsIcebergTableWrapperOnce() {
+    withSessionCatalog(context, "c", mock(CatalogPlugin.class));
+    RewriteTableStub wrapper = new RewriteTableStub(icebergTable(TABLE_LOCATION, QUALIFIED_NAME));
+
+    DatasetIdentifier di = handler.getDatasetIdentifier(relationOf(wrapper));
+
+    assertThat(di.getName()).isEqualTo(TABLE_PATH);
+    assertThat(wrapper.tableCallCount()).isEqualTo(1);
+  }
+
+  /**
+   * A table loaded by path is named by its location: even with a session there is no catalog
+   * segment to look up.
+   */
+  @Test
+  void testGetOwningCatalogIsEmptyForTableNamedByLocation() {
+    withSessionCatalog(context, "file:", mock(TableCatalog.class));
+
+    assertThat(handler.getOwningCatalog(relationOf(TABLE_LOCATION, TABLE_LOCATION))).isEmpty();
+  }
+
+  /** A single-part name cannot be split into a catalog and a table. */
+  @Test
+  void testGetOwningCatalogIsEmptyForSinglePartName() {
+    withSessionCatalog(context, "tbl", mock(TableCatalog.class));
+
+    assertThat(handler.getOwningCatalog(relationOf(TABLE_LOCATION, "tbl"))).isEmpty();
+  }
+
+  @Test
+  void testGetOwningCatalogIsEmptyWithoutSparkSession() {
+    when(context.getSparkSession()).thenReturn(Optional.empty());
+
+    assertThat(handler.getOwningCatalog(relationOf(TABLE_LOCATION, QUALIFIED_NAME))).isEmpty();
+  }
+
   @Test
   void testGetDatasetIdentifierForIcebergTableWrapperFallsBackToTableLocation() {
     when(context.getSparkSession()).thenReturn(Optional.empty());
