@@ -25,6 +25,10 @@ defaults:
 jobs:
   run-integration-tests-emr:
     runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_SERVICE: openlineage-spark
+      DD_ENV: ci
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,6 +47,13 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure Datadog Test Optimization
+        if: env.DD_API_KEY != ''
+        uses: datadog/test-visibility-github-action@v3
+        with:
+          languages: java
+          api_key: ${{ secrets.DD_API_KEY }}
+          site: us5.datadoghq.com
       - name: Build Spark integration dependencies
         run: task setup
       - name: Build Spark integration jar
