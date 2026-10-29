@@ -200,11 +200,17 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @Setter
   @ToString
   public static class CheckpointConfig {
+    public static final int DEFAULT_MAX_ENTRIES = 1000;
+
     // Disabled by default: capturing lineage across checkpoint() / localCheckpoint() boundaries
     // keeps a bounded, but potentially large, cache of input datasets and column lineage facets
     // in memory for every checkpoint materialized by the application, which can cause OOM
     // exceptions for applications with large schemas or plans. Opt in explicitly if needed.
     @NonNull private Boolean enabled = false;
+
+    // Number of most recent checkpoints whose lineage is kept in memory. Memory usage grows with
+    // the width of the checkpointed schemas, so lower it if the cache gets too large.
+    @NonNull private Integer maxEntries = DEFAULT_MAX_ENTRIES;
   }
 
   @Override
