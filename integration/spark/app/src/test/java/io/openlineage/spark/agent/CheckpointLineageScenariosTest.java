@@ -47,9 +47,11 @@ import org.mockserver.integration.ClientAndServer;
  *
  * <ul>
  *   <li>{@code SparkSQLExecutionContext#start(SparkListenerSQLExecutionStart)} - checkpoint
- *       execution detection
- *   <li>{@code SparkSQLExecutionContext#mapCheckpointRdd} - RDD id to execution id mapping (eager
- *       checkpoints only)
+ *       execution detection, from the execution's call site
+ *   <li>{@code SparkSQLExecutionContext#recordCheckpointJob} - checkpointed RDD of an eager
+ *       non-local checkpoint, from the jobs materializing it
+ *   <li>{@code SparkSQLExecutionContext#findLocalCheckpointRddId} - checkpointed RDD of a local
+ *       checkpoint (eager or lazy), among the persisted RDDs
  *   <li>{@code SparkSQLExecutionContext#captureCheckpointLineage} - lineage captured from the
  *       checkpointed plan
  *   <li>{@code LogicalRDDVisitor#apply} - input datasets looked up for a checkpointed RDD
@@ -59,8 +61,9 @@ import org.mockserver.integration.ClientAndServer;
  *
  * <p>Besides the lineage, the tests assert how Spark assigns {@code ExprId}s to the output of
  * checkpointed datasets, as that's what would allow looking up captured lineage without relying on
- * RDD ids (and thus supporting lazy checkpoints). Lineage of lazy checkpoints is only logged, as
- * it's currently not captured.
+ * RDD ids (and thus supporting lazy non-local checkpoints). Lineage of lazy local checkpoints is
+ * captured (see {@code CheckpointLineageTest}); lineage of lazy non-local checkpoints is only
+ * logged here, as it's not captured.
  */
 @Slf4j
 @EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
@@ -184,35 +187,36 @@ class CheckpointLineageScenariosTest {
   }
 
   /**
-   * The SQL execution of a checkpoint is described with the call site of the {@code checkpoint()}
-   * call, the same as the checkpointed RDD's creation site - which is still available once the
-   * checkpointed RDD is read downstream, so (output {@code ExprId}s, description) could be used as
-   * a key to look up captured lineage.
+   * The SQL execution of a checkpoint reports the call site of the {@code checkpoint()} call (as
+   * {@link SparkListenerSQLExecutionStart#details()}), the same as the checkpointed RDD's creation
+   * site - which is still available once the checkpointed RDD is read downstream, so (output {@code
+   * ExprId}s, call site) could be used as a key to look up captured lineage.
    */
   @Test
-  void testCheckpointDescriptionMatchesRddCreationSite() {
-    List<String> descriptions = checkpointDescriptions();
+  void testCheckpointCallSiteMatchesRddCreationSite() {
+    List<String> callSites = checkpointCallSites();
 
     Dataset<Row> lazy = spark.sql("SELECT a, b FROM sc_t1").checkpoint(false);
     Dataset<Row> eager = spark.sql("SELECT a, b FROM sc_t1").localCheckpoint(true);
 
-    String lazySite = checkpointedRdd(lazy).getCreationSite();
-    String eagerSite = checkpointedRdd(eager).getCreationSite();
+    String lazySite = checkpointedRdd(lazy).creationSite().longForm();
+    String eagerSite = checkpointedRdd(eager).creationSite().longForm();
     log.info("Lazy creation site: {}, eager creation site: {}", lazySite, eagerSite);
 
     await()
         .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> assertThat(descriptions).contains(lazySite, eagerSite));
+        .untilAsserted(() -> assertThat(callSites).contains(lazySite, eagerSite));
     assertThat(lazySite).isNotEqualTo(eagerSite);
   }
 
   /**
-   * Checkpoints created on the same line - in a loop, or through a helper method - share both the
-   * description and, if they don't change the output attributes, the output {@code ExprId}s, while
-   * their lineage may differ (here: the joined input).
+   * Checkpoints created in a loop share both the call site and, if they don't change the output
+   * attributes, the output {@code ExprId}s, while their lineage may differ (here: the joined
+   * input). Checkpoints created through a helper method share the short form of the call site, but
+   * not the long one, which includes the helper's callers.
    */
   @Test
-  void testSameLineCheckpointsShareDescriptionAndExprIds() {
+  void testSameLineCheckpointsShareCallSiteAndExprIds() {
     Dataset<Row> df1 = spark.sql("SELECT a, b FROM sc_t1");
 
     List<Dataset<Row>> inLoop = new ArrayList<>();
@@ -226,14 +230,17 @@ class CheckpointLineageScenariosTest {
     Dataset<Row> viaHelperOnA = checkpointLazily(df1.filter("a = 'x'"));
     Dataset<Row> viaHelperOnB = checkpointLazily(df1.filter("b = 'y'"));
 
-    assertThat(checkpointedRdd(inLoop.get(0)).getCreationSite())
-        .as("checkpoints created in a loop share the description")
-        .isEqualTo(checkpointedRdd(inLoop.get(1)).getCreationSite());
+    assertThat(checkpointedRdd(inLoop.get(0)).creationSite().longForm())
+        .as("checkpoints created in a loop share the call site")
+        .isEqualTo(checkpointedRdd(inLoop.get(1)).creationSite().longForm());
     assertThat(outputExprIds(inLoop.get(0))).isEqualTo(outputExprIds(inLoop.get(1)));
 
     assertThat(checkpointedRdd(viaHelperOnA).getCreationSite())
-        .as("checkpoints created through a helper method share the description")
+        .as("checkpoints created through a helper method share the short call site")
         .isEqualTo(checkpointedRdd(viaHelperOnB).getCreationSite());
+    assertThat(checkpointedRdd(viaHelperOnA).creationSite().longForm())
+        .as("long call sites of checkpoints created through a helper method include its callers")
+        .isNotEqualTo(checkpointedRdd(viaHelperOnB).creationSite().longForm());
     assertThat(outputExprIds(viaHelperOnA)).isEqualTo(outputExprIds(viaHelperOnB));
   }
 
@@ -241,9 +248,9 @@ class CheckpointLineageScenariosTest {
     return dataset.checkpoint(false);
   }
 
-  /** Collects descriptions of checkpoint SQL executions as reported to listeners. */
-  private List<String> checkpointDescriptions() {
-    List<String> descriptions = new CopyOnWriteArrayList<>();
+  /** Collects call sites of SQL executions as reported to listeners. */
+  private List<String> checkpointCallSites() {
+    List<String> callSites = new CopyOnWriteArrayList<>();
     spark
         .sparkContext()
         .addSparkListener(
@@ -251,11 +258,11 @@ class CheckpointLineageScenariosTest {
               @Override
               public void onOtherEvent(SparkListenerEvent event) {
                 if (event instanceof SparkListenerSQLExecutionStart) {
-                  descriptions.add(((SparkListenerSQLExecutionStart) event).description());
+                  callSites.add(((SparkListenerSQLExecutionStart) event).details());
                 }
               }
             });
-    return descriptions;
+    return callSites;
   }
 
   /**

@@ -48,7 +48,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
   protected <D extends Dataset> List<PartialFunction<LogicalPlan, List<D>>> getBaseCommonVisitors(
       OpenLineageContext context, DatasetFactory<D> factory) {
     List<PartialFunction<LogicalPlan, List<D>>> list = new ArrayList<>();
-    list.add(new LogicalRDDVisitor(context, factory));
     if (KafkaRelationVisitor.hasKafkaClasses()) {
       list.add(new KafkaRelationVisitor(context, factory));
     }
@@ -71,8 +70,11 @@ abstract class BaseVisitorFactory implements VisitorFactory {
   public List<PartialFunction<LogicalPlan, List<InputDataset>>> getInputVisitors(
       OpenLineageContext context) {
     DatasetFactory<InputDataset> factory = DatasetFactory.input(context);
-    List<PartialFunction<LogicalPlan, List<InputDataset>>> inputVisitors =
-        new ArrayList<>(getCommonVisitors(context, factory));
+    List<PartialFunction<LogicalPlan, List<InputDataset>>> inputVisitors = new ArrayList<>();
+    // input only: the root of a plan whose output is a LogicalRDD writes nothing, and a LogicalRDD
+    // wrapping a checkpointed RDD resolves to the checkpoint's input datasets
+    inputVisitors.add(new LogicalRDDVisitor<>(context, factory));
+    inputVisitors.addAll(getCommonVisitors(context, factory));
 
     if (BigQueryUtils.hasBigQueryClasses()) {
       inputVisitors.add(new BigQueryNodeInputVisitor(context, factory));

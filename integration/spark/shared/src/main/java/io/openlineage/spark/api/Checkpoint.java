@@ -34,9 +34,24 @@ public class Checkpoint {
   private final List<OpenLineage.InputDataset> inputDatasets;
   private final CheckpointColumnLineage columnLineage;
 
+  /**
+   * Whether capturing the column lineage timed out (see {@code
+   * spark.openlineage.timeout.buildDatasetsTimePercentage}), so only the input datasets were
+   * captured. Runs reading the checkpoint report it in their {@code debug} facet.
+   */
+  private final boolean incomplete;
+
   public Checkpoint(
       List<OpenLineage.InputDataset> inputDatasets, CheckpointColumnLineage columnLineage) {
+    this(inputDatasets, columnLineage, false);
+  }
+
+  public Checkpoint(
+      List<OpenLineage.InputDataset> inputDatasets,
+      CheckpointColumnLineage columnLineage,
+      boolean incomplete) {
     this.inputDatasets = inputDatasets == null ? Collections.emptyList() : inputDatasets;
     this.columnLineage = columnLineage == null ? CheckpointColumnLineage.empty() : columnLineage;
+    this.incomplete = incomplete;
   }
 }

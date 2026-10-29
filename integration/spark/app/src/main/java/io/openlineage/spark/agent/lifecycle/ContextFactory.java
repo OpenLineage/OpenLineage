@@ -36,7 +36,7 @@ public class ContextFactory {
   @Getter private final MeterRegistry meterRegistry;
   @Getter private final SparkOpenLineageConfig config;
   private final OpenLineageEventHandlerFactory handlerFactory;
-  @Getter private final CheckpointContext checkpointContext = new CheckpointContext();
+  @Getter private final CheckpointContext checkpointContext;
 
   public ContextFactory(
       EventEmitter openLineageEventEmitter,
@@ -46,6 +46,7 @@ public class ContextFactory {
     this.meterRegistry = meterRegistry;
     this.config = config;
     handlerFactory = new InternalEventHandlerFactory();
+    checkpointContext = new CheckpointContext(config.getCheckpointConfig().getMaxEntries());
   }
 
   public ExecutionContext createSparkApplicationExecutionContext(SparkContext sparkContext) {

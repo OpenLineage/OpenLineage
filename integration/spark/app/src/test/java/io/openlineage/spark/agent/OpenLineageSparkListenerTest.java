@@ -264,8 +264,8 @@ class OpenLineageSparkListenerTest {
   @Test
   void testUnpersistRddDropsCheckpointLineage() {
     CheckpointContext checkpointContext = new CheckpointContext();
-    checkpointContext.addCheckpoint(65L, new Checkpoint(null, null));
-    checkpointContext.addRddToExecutionIdMapping(650, 65L);
+    checkpointContext.addCheckpoint(650, new Checkpoint(null, null));
+    checkpointContext.claim(650);
     ContextFactory contextFactory = mock(ContextFactory.class);
     when(contextFactory.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(contextFactory.getCheckpointContext()).thenReturn(checkpointContext);
@@ -277,7 +277,7 @@ class OpenLineageSparkListenerTest {
 
     listener.onUnpersistRDD(new SparkListenerUnpersistRDD(650));
     assertThat(checkpointContext.getCheckpoint(650)).isEmpty();
-    assertThat(checkpointContext.isRddMapped(650)).isFalse();
+    assertThat(checkpointContext.isClaimed(650)).isFalse();
   }
 
   @Test

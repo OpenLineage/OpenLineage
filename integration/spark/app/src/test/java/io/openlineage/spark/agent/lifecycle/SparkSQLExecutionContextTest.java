@@ -325,4 +325,34 @@ class SparkSQLExecutionContextTest {
       assertThat(rootRun.getRunId()).isEqualTo(rootUuid);
     }
   }
+
+  @Test
+  void testCheckpointMethodIsResolvedFromOutermostSparkFrame() {
+    assertThat(
+            SparkSQLExecutionContext.checkpointMethod(
+                "org.apache.spark.sql.Dataset.localCheckpoint(Dataset.scala:690)\n"
+                    + "com.example.Job.main(Job.scala:42)"))
+        .contains("localCheckpoint");
+    assertThat(
+            SparkSQLExecutionContext.checkpointMethod(
+                "org.apache.spark.sql.classic.Dataset.checkpoint(Dataset.scala:1842)\n"
+                    + "com.example.Job.main(Job.scala:42)"))
+        .contains("checkpoint");
+  }
+
+  @Test
+  void testCheckpointMethodIgnoresOtherCallSites() {
+    assertThat(
+            SparkSQLExecutionContext.checkpointMethod(
+                "org.apache.spark.sql.DataFrameWriter.saveAsTable(DataFrameWriter.scala:633)\n"
+                    + "com.example.Job.checkpoint(Job.scala:42)"))
+        .isEmpty();
+    assertThat(
+            SparkSQLExecutionContext.checkpointMethod(
+                "org.apache.spark.sql.delta.DeltaLog.checkpoint(DeltaLog.scala:100)\n"
+                    + "com.example.Job.main(Job.scala:42)"))
+        .isEmpty();
+    assertThat(SparkSQLExecutionContext.checkpointMethod("checkpoint at Job.scala:42")).isEmpty();
+    assertThat(SparkSQLExecutionContext.checkpointMethod(null)).isEmpty();
+  }
 }
