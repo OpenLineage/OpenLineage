@@ -11,7 +11,12 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.Dataset;
@@ -80,6 +85,11 @@ class CheckpointLineageTest {
   }
 
   private SparkSession createSession(boolean checkpointLineageEnabled) {
+    return createSession(checkpointLineageEnabled, Collections.emptyMap());
+  }
+
+  private SparkSession createSession(
+      boolean checkpointLineageEnabled, Map<String, String> extraConfig) {
     SparkSession.Builder builder =
         SparkSession.builder()
             .master("local[*]")
@@ -97,6 +107,7 @@ class CheckpointLineageTest {
     if (checkpointLineageEnabled) {
       builder.config("spark.openlineage.checkpointLineage.enabled", true);
     }
+    extraConfig.forEach(builder::config);
     SparkSession session = builder.getOrCreate();
     session.sparkContext().setCheckpointDir(tempDir.resolve("spark-checkpoints").toString());
     return session;
@@ -322,5 +333,108 @@ class CheckpointLineageTest {
             "lazy non-local checkpoints are not supported, so upstream table lineage should not be "
                 + "bridged")
         .noneMatch(ds -> ds.getName().contains("checkpoint_t1"));
+  }
+  /**
+   * Checkpoints are detected from the call site of the checkpoint execution, not its description,
+   * which is replaced by the job description when one is set.
+   */
+  @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  void testCheckpointWithJobDescriptionPreservesLineage() {
+    spark.sparkContext().setJobDescription("nightly aggregation");
+    runCheckpointPipeline(df -> df.localCheckpoint(true));
+  }
+
+  /** A job described like a checkpoint's call site is not a checkpoint and emits its events. */
+  @Test
+  void testJobDescribedAsCheckpointEmitsEvents() {
+    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string) USING parquet");
+    spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
+    spark.sparkContext().setJobDescription("checkpoint at end of day");
+
+    spark.sql("CREATE TABLE checkpoint_t3 USING parquet AS SELECT * FROM checkpoint_t1");
+
+    assertThat(MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3"))
+        .filteredOn(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+        .isNotEmpty()
+        .allSatisfy(
+            complete ->
+                assertThat(complete.getInputs())
+                    .anyMatch(ds -> ds.getName().contains("checkpoint_t1")));
+  }
+
+  /**
+   * An action reading a checkpointed dataset without writing anything has a {@link
+   * org.apache.spark.sql.execution.LogicalRDD} as the root of its plan. It should be reported with
+   * the checkpoint's inputs and no outputs.
+   */
+  @Test
+  void testCollectOfCheckpointedDatasetEmitsEvents() {
+    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string) USING parquet");
+    spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
+    Dataset<Row> checkpointed =
+        spark.sql("SELECT a, upper(b) AS b FROM checkpoint_t1").localCheckpoint(true);
+    MockServerUtils.clearRequests(mockServer);
+
+    checkpointed.collect();
+    // events are emitted in order, so once the marker query completes, the collect's events are in
+    spark.sql("CREATE TABLE checkpoint_marker USING parquet AS SELECT 1 AS a");
+    MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_marker");
+
+    List<RunEvent> collectEvents =
+        MockServerUtils.getEventsEmitted(mockServer).stream()
+            .filter(e -> !e.getJob().getName().contains("checkpoint_marker"))
+            .collect(Collectors.toList());
+    assertThat(collectEvents)
+        .filteredOn(e -> e.getEventType() == RunEvent.EventType.START)
+        .isNotEmpty();
+    assertThat(collectEvents)
+        .filteredOn(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+        .isNotEmpty()
+        .allSatisfy(
+            complete -> {
+              assertThat(complete.getInputs())
+                  .anyMatch(ds -> ds.getName().contains("checkpoint_t1"));
+              assertThat(complete.getOutputs()).isEmpty();
+            });
+  }
+
+  /**
+   * Local checkpoints created at the same call site (here, in a loop) are told apart by the order
+   * of their RDD ids. The lineage of earlier ones is evicted ({@code maxEntries} is 1) while their
+   * RDDs are still persisted, which shouldn't make a later checkpoint execution resolve them.
+   */
+  @Test
+  void testLocalCheckpointsInLoopKeepTheirOwnLineageAfterEviction() {
+    spark.stop();
+    Spark4CompatUtils.cleanupAnyExistingSession();
+    spark =
+        createSession(
+            true, Collections.singletonMap("spark.openlineage.checkpointLineage.maxEntries", "1"));
+    List<String> tables =
+        Arrays.asList("checkpoint_loop_1", "checkpoint_loop_2", "checkpoint_loop_3");
+    for (String table : tables) {
+      spark.sql("CREATE TABLE " + table + " (a string) USING parquet");
+      spark.sql("INSERT INTO " + table + " VALUES ('x')");
+    }
+
+    // kept referenced so that their RDDs stay persisted
+    List<Dataset<Row>> checkpointed = new ArrayList<>();
+    for (String table : tables) {
+      checkpointed.add(spark.table(table).localCheckpoint(true));
+    }
+    checkpointed.get(2).createOrReplaceTempView("checkpoint_temp");
+    spark.sql("CREATE TABLE checkpoint_t3 USING parquet AS SELECT * FROM checkpoint_temp");
+
+    RunEvent complete =
+        MockServerUtils.getEventsEmittedWithJobName(mockServer, "checkpoint_t3").stream()
+            .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No COMPLETE event found for checkpoint_t3"));
+    assertThat(complete.getInputs())
+        .extracting(OpenLineage.InputDataset::getName)
+        .anyMatch(name -> name.endsWith("checkpoint_loop_3"))
+        .noneMatch(
+            name -> name.endsWith("checkpoint_loop_1") || name.endsWith("checkpoint_loop_2"));
   }
 }
