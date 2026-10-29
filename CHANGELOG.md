@@ -4,7 +4,7 @@
 
 ### Fixed
 
-* **Spark: parse dotted property keys of nested transports** [`#PR_NUMBER`](https://github.com/OpenLineage/OpenLineage/pull/PR_NUMBER) [@anshu1991](https://github.com/anshu1991)
+* **Spark: parse dotted property keys of nested transports** [`#5117`](https://github.com/OpenLineage/OpenLineage/pull/5117) [@anshu1991](https://github.com/anshu1991)
   *Keys like `spark.openlineage.transport.transport.properties.bootstrap.servers` (Kafka under `transform`) or `transport.transports.<name>.properties.*` (under `composite`) are no longer split into nested objects, which failed with `Cannot deserialize value of type java.lang.String from Object value`. Fixes [`#4985`](https://github.com/OpenLineage/OpenLineage/issues/4985).*
 
 ## [1.55.0](https://github.com/OpenLineage/OpenLineage/compare/1.54.0...1.55.0)
