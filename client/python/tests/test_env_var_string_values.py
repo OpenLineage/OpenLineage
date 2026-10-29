@@ -460,8 +460,12 @@ def test_env_number_str_is_text_as_written(number: EnvFloat | EnvInt) -> None:
 
 
 def test_parse_env_value_int_too_long_to_convert() -> None:
-    digits = "1" * 5000  # json.loads raises ValueError, not JSONDecodeError, over 4300 digits
-    assert OpenLineageClient._parse_env_value("OPENLINEAGE__X", digits) == digits  # noqa: SLF001
+    # Python 3.11+ (and 3.10.7+) raises a plain ValueError, not JSONDecodeError, for ints over
+    # the int max str digits limit; patched so the test does not depend on the runtime's limit
+    digits = "1" * 5000
+    error = ValueError("Exceeds the limit (4300 digits) for integer string conversion")
+    with patch("openlineage.client.client.json.loads", side_effect=error):
+        assert OpenLineageClient._parse_env_value("OPENLINEAGE__X", digits) == digits  # noqa: SLF001
 
 
 @pytest.mark.parametrize("number", [EnvFloat(0.5, "0.50"), EnvInt(0, "-0")])
