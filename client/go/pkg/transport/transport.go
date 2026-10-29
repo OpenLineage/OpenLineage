@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/url"
 	"time"
 
@@ -84,22 +85,19 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 		}
 		u = u.JoinPath(ep)
 
-		var tokenSource *oauth2TokenSource
-		if config.HTTP.Auth != nil && config.HTTP.Auth.Type == AuthTypeOAuth2 {
-			tokenSource, err = newClientCredentialsTokenSource(config.HTTP.Auth)
-			if err != nil {
-				return nil, err
-			}
+		authorization, tokenSource, err := newHTTPAuth(config.HTTP.Auth)
+		if err != nil {
+			return nil, err
 		}
 
 		return &httpTransport{
-			httpClient:  httpClient,
-			uri:         u.String(),
-			urlParams:   config.HTTP.URLParams,
-			auth:        config.HTTP.Auth,
-			tokenSource: tokenSource,
-			headers:     config.HTTP.Headers,
-			compression: config.HTTP.Compression,
+			httpClient:    httpClient,
+			uri:           u.String(),
+			urlParams:     maps.Clone(config.HTTP.URLParams),
+			authorization: authorization,
+			tokenSource:   tokenSource,
+			headers:       maps.Clone(config.HTTP.Headers),
+			compression:   config.HTTP.Compression,
 		}, nil
 	case TransportTypeGCPLineage:
 		return newGCPLineageTransport(ctx, config.GCPLineage)

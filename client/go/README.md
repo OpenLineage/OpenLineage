@@ -260,7 +260,9 @@ transport.Config{
 #### Authentication
 
 Set `HTTP.Auth` to send an `Authorization` header with every request. It is optional; when
-it is nil no header is sent.
+it is nil no header is sent. An unknown `Type`, or a missing `APIKey` or `Token`, fails when
+the transport is built, and the configuration is read once at that point, so later changes to
+it have no effect.
 
 A static API key or JWT:
 
@@ -300,6 +302,11 @@ HTTP: transport.HTTPConfig{
   (the default, an HTTP basic `Authorization` header) or `client_secret_post` (the request body).
 - `TokenRefreshBuffer` is how long before expiry a new token is requested. Optional, default 120s,
   capped at half of the token lifetime so that a short-lived token is not re-requested for every event.
+- The token's lifetime comes from `expires_in` in the token response or, failing that, from the `exp`
+  claim when the access token is a JWT. A token with neither is not cached, and a new one is requested
+  for every event, as in the Java and Python clients.
+- The access token is always sent as `Authorization: Bearer <token>`, whatever `token_type` the token
+  endpoint returns.
 
 ### GCP Lineage Transport
 
