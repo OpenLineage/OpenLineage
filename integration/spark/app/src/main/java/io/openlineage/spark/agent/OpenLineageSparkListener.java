@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +87,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private CircuitBreaker circuitBreaker = new NoOpCircuitBreaker();
   private boolean stateGaugesRegistered;
+  private final AtomicBoolean loggedStoppedContextSkip = new AtomicBoolean();
 
   private final Map<Long, ExecutionContext> sparkSqlExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
@@ -156,8 +158,69 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
   }
 
+  private Optional<SparkContext> currentSparkContext() {
+    return asJavaOptional(
+        SparkSession.getDefaultSession().map(sparkContextFromSession).orElse(activeSparkContext));
+  }
+
+  /**
+   * Returns true when the active Spark context is already stopped. {@code SparkContext.stop()} sets
+   * this before it drains the listener queue, so events already queued are delivered while this is
+   * true. Returns false when the state cannot be determined.
+   *
+   * <p>The check only observes a context that is stopped before the call. A context that stops
+   * while an event is being processed is out of scope.
+   */
+  private boolean isSparkContextStopped() {
+    try {
+      return currentSparkContext().map(SparkContext::isStopped).orElse(false);
+    } catch (Exception e) {
+      log.debug("Unable to determine whether the Spark context is stopped", e);
+      return false;
+    }
+  }
+
+  /**
+   * Creating an execution context after stop reads the Spark session and can make YARN request
+   * containers. An execution already in the registry has emitted START and must still complete.
+   *
+   * @return true when creation of a new SQL execution context should be skipped
+   */
+  private boolean skipNewSqlExecutionContext(long executionId, String eventType) {
+    if (sparkSqlExecutionRegistry.get(executionId) != null || !isSparkContextStopped()) {
+      return false;
+    }
+    logSkippedNewExecutionContext(eventType);
+    return true;
+  }
+
+  /**
+   * @return true when creation of a new RDD execution context should be skipped
+   */
+  private boolean skipNewRddExecutionContext(int jobId, String eventType) {
+    if (rddExecutionRegistry.get(jobId) != null || !isSparkContextStopped()) {
+      return false;
+    }
+    logSkippedNewExecutionContext(eventType);
+    return true;
+  }
+
+  private void logSkippedNewExecutionContext(String eventType) {
+    if (loggedStoppedContextSkip.compareAndSet(false, true)) {
+      log.info(
+          "Spark context is stopped; skipping new execution contexts ({}). Further skips are logged at debug.",
+          eventType);
+    }
+    log.debug(
+        "Spark context is stopped, skipping {} to avoid accessing the stopped context", eventType);
+  }
+
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
   private void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
+    if (skipNewSqlExecutionContext(
+        startEvent.executionId(), startEvent.getClass().getSimpleName())) {
+      return;
+    }
     OptionalLong rootExecutionId = getRootExecutionId(startEvent);
     // AQE is valid for user queries, so filters must distinguish roots from command-owned work.
     rootExecutionId.ifPresent(
@@ -195,6 +258,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
               context.end(endEvent);
               return null;
             });
+      } else if (isSparkContextStopped()) {
+        // No START was sent for this execution. Do not create a context from the end event.
+        logSkippedNewExecutionContext(endEvent.getClass().getSimpleName());
       } else {
         contextFactory
             .createSparkSQLExecutionContext(endEvent)
@@ -226,10 +292,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     initializeContextFactoryIfNotInitialized();
     meterRegistry.counter("openlineage.spark.event.job.start").increment();
     Optional<ActiveJob> activeJob =
-        asJavaOptional(
-                SparkSession.getDefaultSession()
-                    .map(sparkContextFromSession)
-                    .orElse(activeSparkContext))
+        currentSparkContext()
             .flatMap(
                 ctx ->
                     Optional.ofNullable(ctx.dagScheduler())
@@ -326,6 +389,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     try {
       circuitBreaker.run(
           () -> {
+            // Registered before stop: still emit the end event. Job end does not create a context.
             if (context != null) {
               context.end(jobEnd);
             }
@@ -349,11 +413,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private ExecutionContext getSparkApplicationExecutionContext() {
-    Optional<SparkContext> sparkContext =
-        asJavaOptional(
-            SparkSession.getDefaultSession()
-                .map(sparkContextFromSession)
-                .orElse(activeSparkContext));
+    Optional<SparkContext> sparkContext = currentSparkContext();
     return contextFactory.createSparkApplicationExecutionContext(sparkContext.orElse(null));
   }
 
@@ -371,12 +431,18 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private Optional<ExecutionContext> getExecutionContext(int jobId) {
+    if (skipNewRddExecutionContext(jobId, "SparkListenerJobStart")) {
+      return Optional.empty();
+    }
     return Optional.ofNullable(
         rddExecutionRegistry.computeIfAbsent(
             jobId, (e) -> contextFactory.createRddExecutionContext(jobId)));
   }
 
   private Optional<ExecutionContext> getExecutionContext(int jobId, long executionId) {
+    if (skipNewSqlExecutionContext(executionId, "SparkListenerJobStart")) {
+      return Optional.empty();
+    }
     Optional<ExecutionContext> executionContext = getSparkSQLExecutionContext(executionId);
     executionContext.ifPresent(context -> rddExecutionRegistry.put(jobId, context));
     return executionContext;
