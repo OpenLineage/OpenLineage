@@ -22,6 +22,7 @@ import io.openlineage.client.transports.CompositeConfig;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
+import io.openlineage.client.transports.TransformConfig;
 import io.openlineage.client.utils.TagField;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig.VendorsConfig.VendorConfig;
@@ -369,6 +370,68 @@ class ArgumentParserTest {
     assertEquals("test1", kafkaConfig.getProperties().get("test1"));
     assertEquals("test2", kafkaConfig.getProperties().get("test2"));
     assertEquals("kavvka", kafkaConfig.getName());
+  }
+
+  @Test
+  void testConfToTransformTransportWithKafkaSubTransportProperties() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "transform")
+            .set("spark.openlineage.transport.transformClass", "my.pckg.Transformer")
+            .set("spark.openlineage.transport.transformerProperties.some_key", "some_value")
+            .set("spark.openlineage.transport.transport.type", "kafka")
+            .set("spark.openlineage.transport.transport.topicName", "ol-default")
+            .set(
+                "spark.openlineage.transport.transport.properties.bootstrap.servers", "myhost:9092")
+            .set(
+                "spark.openlineage.transport.transport.properties.key.serializer",
+                "org.apache.kafka.common.serialization.StringSerializer");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    TransformConfig transformConfig = (TransformConfig) config.getTransportConfig();
+    assertEquals("my.pckg.Transformer", transformConfig.getTransformerClass());
+    assertEquals("some_value", transformConfig.getTransformerProperties().get("some_key"));
+    KafkaConfig kafkaConfig = (KafkaConfig) transformConfig.getTransport();
+    assertEquals("ol-default", kafkaConfig.getTopicName());
+    assertEquals("myhost:9092", kafkaConfig.getProperties().get("bootstrap.servers"));
+    assertEquals(
+        "org.apache.kafka.common.serialization.StringSerializer",
+        kafkaConfig.getProperties().get("key.serializer"));
+  }
+
+  @Test
+  void testConfToCompositeTransportWithDottedSubTransportProperties() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "composite")
+            .set("spark.openlineage.transport.transports.kafka.type", "kafka")
+            .set("spark.openlineage.transport.transports.kafka.topicName", "test")
+            .set(
+                "spark.openlineage.transport.transports.kafka.properties.bootstrap.servers",
+                "myhost:9092")
+            .set("spark.openlineage.transport.transports.api.type", "http")
+            .set("spark.openlineage.transport.transports.api.url", "http://localhost:5000")
+            .set("spark.openlineage.transport.transports.api.headers.X-Custom.Header", "v")
+            .set("spark.openlineage.transport.transports.api.urlParams.a.b", "c");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    CompositeConfig composite = (CompositeConfig) config.getTransportConfig();
+    // composite sorts sub-transports by name, so look them up by type instead of index
+    KafkaConfig kafkaConfig =
+        (KafkaConfig)
+            composite.getTransports().stream()
+                .filter(KafkaConfig.class::isInstance)
+                .findFirst()
+                .get();
+    assertEquals("myhost:9092", kafkaConfig.getProperties().get("bootstrap.servers"));
+    HttpConfig httpConfig =
+        (HttpConfig)
+            composite.getTransports().stream()
+                .filter(HttpConfig.class::isInstance)
+                .findFirst()
+                .get();
+    assertEquals("v", httpConfig.getHeaders().get("X-Custom.Header"));
+    assertEquals("c", httpConfig.getUrlParams().get("a.b"));
   }
 
   @Test
