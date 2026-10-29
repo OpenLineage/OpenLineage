@@ -26,6 +26,9 @@ pub struct ContextFrame {
     aliases: AliasTable,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
     pub dependencies: HashSet<DbTableMeta>,
+    // Dependencies written without a schema or database. Only these can name a
+    // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
+    pub bare_dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
     pub is_main_body: bool,
 }
@@ -44,6 +47,7 @@ impl ContextFrame {
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
             dependencies: HashSet::new(),
+            bare_dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
             is_main_body: true,
         }
@@ -257,6 +261,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn add_table_dependency(&mut self, table: Vec<Ident>) {
+        let is_bare = table.len() == 1;
         let name = DbTableMeta::new(
             table,
             self.dialect,
@@ -265,6 +270,9 @@ impl<'a> Context<'a> {
         );
 
         if let Some(frame) = self.frames.last_mut() {
+            if is_bare {
+                frame.bare_dependencies.insert(name.clone());
+            }
             frame.dependencies.extend(vec![name]);
         }
     }
@@ -368,6 +376,7 @@ impl<'a> Context<'a> {
 
         frame.column_ancestry = result;
         frame.dependencies.extend(old.dependencies);
+        frame.bare_dependencies.extend(old.bare_dependencies);
         frame.is_main_body = old.is_main_body;
     }
 
@@ -420,6 +429,7 @@ impl<'a> Context<'a> {
         if let Some(frame) = self.frames.last_mut() {
             frame.column_ancestry.extend(old.column_ancestry.drain());
             frame.dependencies.extend(old.dependencies);
+            frame.bare_dependencies.extend(old.bare_dependencies);
             frame.is_main_body = old.is_main_body;
         }
     }
@@ -466,6 +476,7 @@ impl<'a> Context<'a> {
             }
 
             frame.dependencies.extend(old.dependencies);
+            frame.bare_dependencies.extend(old.bare_dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
             frame.is_main_body = old.is_main_body;
         }
@@ -528,6 +539,7 @@ impl<'a> Context<'a> {
             );
 
             frame.dependencies = HashSet::new();
+            frame.bare_dependencies = HashSet::new();
         }
     }
 
@@ -542,25 +554,15 @@ impl<'a> Context<'a> {
         let dependencies = self.frames[size - 1].dependencies.clone();
         let cte_dependencies = self.frames[size - 1].cte_dependencies.clone();
 
-        // CTEs are keyed by their bare alias, so only an unqualified reference
-        // can point at one. An unqualified reference picks up the defaults,
-        // which puts it in the same namespace as a bare name; `raw.orders`
-        // stays a real table even inside CTE `orders`.
-        let cte_namespace = DbTableMeta::new(
-            vec![Ident::new(cte_name.clone())],
-            self.dialect,
-            self.default_schema.clone(),
-            self.default_database.clone(),
-        );
-        let is_unqualified = |dependency: &DbTableMeta| {
-            dependency.schema == cte_namespace.schema
-                && dependency.database == cte_namespace.database
-        };
+        let bare_dependencies = self.frames[size - 1].bare_dependencies.clone();
 
         let mut resolved_dependencies = HashSet::new();
 
         for dependency in dependencies {
-            if !is_unqualified(&dependency) {
+            // CTEs are keyed by their bare alias, so only a reference written
+            // without a schema or database can point at one; `raw.orders` and
+            // `public.orders` stay real tables even inside CTE `orders`.
+            if !bare_dependencies.contains(&dependency) {
                 resolved_dependencies.insert(dependency.clone());
                 continue;
             }
@@ -590,6 +592,7 @@ impl<'a> Context<'a> {
                 },
             );
             frame.dependencies = HashSet::new();
+            frame.bare_dependencies = HashSet::new();
         }
     }
 
@@ -597,6 +600,9 @@ impl<'a> Context<'a> {
         if let Some(frame) = self.frames.last_mut() {
             frame.is_main_body = old.is_main_body;
             frame.dependencies.extend(old.dependencies.clone());
+            frame
+                .bare_dependencies
+                .extend(old.bare_dependencies.clone());
             frame.cte_dependencies.extend(old.cte_dependencies.clone());
 
             for (alias, t) in old.aliases.tables() {

@@ -192,11 +192,11 @@ fn non_recursive_cte_body_reads_table_with_its_own_name() {
     assert_eq!(parse_cte_inputs(sql, Some("public")), ["public.orders"]);
 }
 
-fn parse_inputs(sql: &str, dialect: &str) -> Vec<String> {
+fn parse_inputs(sql: &str, dialect: &str, default_schema: Option<&str>) -> Vec<String> {
     let metadata = parse_multiple_statements_with_default_database(
         vec![sql.to_string()],
         get_dialect(dialect),
-        None,
+        default_schema.map(str::to_string),
         None,
     )
     .unwrap();
@@ -208,7 +208,7 @@ fn parse_inputs(sql: &str, dialect: &str) -> Vec<String> {
 fn recursive_cte_self_reference_is_not_an_input() {
     let sql = "WITH RECURSIVE t AS (SELECT n FROM source UNION ALL SELECT n FROM t) \
                INSERT INTO target SELECT n FROM t";
-    assert_eq!(parse_inputs(sql, "postgres"), ["source"]);
+    assert_eq!(parse_inputs(sql, "postgres", None), ["source"]);
 }
 
 #[test]
@@ -216,7 +216,7 @@ fn implicit_recursive_cte_self_reference_is_not_an_input() {
     let sql = "WITH t AS (SELECT n FROM source UNION ALL SELECT n FROM t) \
                INSERT INTO target SELECT n FROM t";
     for dialect in ["snowflake", "mssql", "sqlite"] {
-        assert_eq!(parse_inputs(sql, dialect), ["source"], "{dialect}");
+        assert_eq!(parse_inputs(sql, dialect, None), ["source"], "{dialect}");
     }
 }
 
@@ -226,6 +226,50 @@ fn qualified_source_with_earlier_cte_name_is_input() {
                INSERT INTO target SELECT id FROM b";
     assert_eq!(parse_cte_inputs(sql, None), ["raw.a"]);
     assert_eq!(parse_cte_inputs(sql, Some("public")), ["raw.a"]);
+}
+
+#[test]
+fn default_qualified_source_with_recursive_cte_name_is_input() {
+    // Defaults make `public.orders` and a bare `orders` the same table, so
+    // only how the reference was written tells it apart from the CTE.
+    let sql = "WITH RECURSIVE orders AS (SELECT * FROM public.orders) \
+               INSERT INTO target SELECT * FROM orders";
+    assert_eq!(
+        parse_inputs(sql, "postgres", Some("public")),
+        ["public.orders"]
+    );
+    let sql =
+        "WITH orders AS (SELECT * FROM public.orders) INSERT INTO target SELECT * FROM orders";
+    for dialect in ["snowflake", "mssql", "sqlite"] {
+        assert_eq!(
+            parse_inputs(sql, dialect, Some("public")),
+            ["public.orders"],
+            "{dialect}"
+        );
+    }
+}
+
+#[test]
+fn default_qualified_source_with_earlier_cte_name_is_input() {
+    let sql = "WITH a AS (SELECT id FROM source), b AS (SELECT id FROM public.a) \
+               INSERT INTO target SELECT id FROM b";
+    assert_eq!(parse_cte_inputs(sql, Some("public")), ["public.a"]);
+}
+
+#[test]
+fn cte_reference_in_nested_subquery_is_resolved() {
+    // A bare reference inside a subquery of a CTE body still names the CTE.
+    let recursive = "WITH RECURSIVE t AS (SELECT n FROM source \
+                     UNION ALL SELECT n FROM (SELECT n FROM t) AS sub) \
+                     INSERT INTO target SELECT n FROM t";
+    assert_eq!(
+        parse_cte_inputs(recursive, Some("public")),
+        ["public.source"]
+    );
+    let chained = "WITH a AS (SELECT id FROM source), \
+                   b AS (SELECT id FROM (SELECT id FROM a) AS sub) \
+                   INSERT INTO target SELECT id FROM b";
+    assert_eq!(parse_cte_inputs(chained, Some("public")), ["public.source"]);
 }
 
 #[test]
