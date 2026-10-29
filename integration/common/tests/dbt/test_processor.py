@@ -237,7 +237,19 @@ def test_athena_dataset_symlink_uses_assume_role_account(dbt_artifact_processor,
     assert facets["symlinks"].identifiers[0].type == "TABLE"
 
 
-def test_athena_dataset_symlink_uses_source_name(dbt_artifact_processor):
+@pytest.mark.parametrize(
+    "source_metadata, expected_table",
+    [
+        ({"identifier": "api_orders"}, "api_orders"),
+        ({"identifier": "raw_orders"}, "raw_orders"),
+        ({}, "raw_orders"),
+        ({"identifier": None}, "raw_orders"),
+        ({"identifier": ""}, "raw_orders"),
+    ],
+)
+@pytest.mark.parametrize("has_facets", [False, True])
+def test_athena_source_dataset_identity(dbt_artifact_processor, source_metadata, expected_table, has_facets):
+    """Dataset and Glue identities agree for physical identifiers and name fallbacks."""
     dbt_artifact_processor.adapter_type = Adapter.ATHENA
     dbt_artifact_processor.extract_dataset_namespace(
         {"region_name": "us-east-1", "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena"}
@@ -249,12 +261,45 @@ def test_athena_dataset_symlink_uses_source_name(dbt_artifact_processor):
             "database": "awsdatacatalog",
             "schema": "analytics",
             "name": "raw_orders",
+            "columns": {},
+            **source_metadata,
         },
     )
 
-    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(source, None)
+    namespace, name, facets, _ = dbt_artifact_processor.extract_dataset_data(
+        source, None, has_facets=has_facets
+    )
 
-    assert facets["symlinks"].identifiers[0].name == "table/analytics/raw_orders"
+    assert namespace == dbt_artifact_processor.dataset_namespace
+    assert name == f"awsdatacatalog.analytics.{expected_table}"
+    assert facets["symlinks"].identifiers[0].name == f"table/analytics/{expected_table}"
+
+
+def test_athena_source_symlink_without_table_is_omitted(dbt_artifact_processor):
+    """Incomplete source metadata must not produce a Glue table identifier."""
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.dataset_symlink_namespace = "arn:aws:glue:us-east-1:123456789012"
+
+    source = ModelNode(type="source", metadata_node={"schema": "analytics"})
+
+    assert dbt_artifact_processor._create_dataset_symlink(source) is None
+
+
+@pytest.mark.parametrize("node_type", ["model", "seed", "snapshot"])
+def test_non_source_dataset_keeps_alias(dbt_artifact_processor, node_type):
+    """Source-only identifiers must not replace materialized model, seed, or snapshot aliases."""
+    node = ModelNode(
+        type=node_type,
+        metadata_node={
+            "database": "db",
+            "schema": "public",
+            "name": "logical_name",
+            "identifier": "source_only_identifier",
+            "alias": "physical_alias",
+        },
+    )
+
+    assert dbt_artifact_processor.node_to_dataset(node).name == "db.public.physical_alias"
 
 
 def test_athena_dataset_symlink_uses_effective_profile_credentials(monkeypatch, dbt_artifact_processor):
@@ -550,8 +595,7 @@ class TestParseSingularTests:
         assert assertion.column is None
 
     def test_seed_parent_resolves_to_alias_not_name(self, processor):
-        """A seed materializes as a real table addressed by its alias, like a
-        model -- only true sources are addressed by their logical name."""
+        """Seeds use aliases like models; sources use their physical identifiers."""
         manifest_nodes = {
             "seed.project.raw_customers": {
                 "name": "raw_customers",

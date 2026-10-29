@@ -438,6 +438,48 @@ def test_node_finished_bigquery_missing_job_id_has_no_external_query():
     assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
 
 
+@pytest.mark.parametrize("resource_type", ["model", "test"])
+def test_node_finished_source_identifier(resource_type):
+    """Live model and test events agree on the physical source dataset identity."""
+    processor = node_finished_processor(adapter_type=Adapter.BIGQUERY, dataset_namespace="bigquery")
+    processor.__dict__["catalog"] = None
+    source_id = "source.jaffle_shop.raw.orders"
+    processor._compiled_manifest["sources"][source_id] = {
+        "database": "REPORTING",
+        "schema": "RAW",
+        "name": "orders",
+        "identifier": "api_orders",
+        "columns": {},
+    }
+    model_id = "model.jaffle_shop.orders"
+    test_id = "test.jaffle_shop.not_null_orders_id"
+    processor._compiled_manifest["parent_map"][model_id] = [source_id]
+    processor._compiled_manifest["parent_map"][test_id] = [source_id]
+    processor._compiled_manifest["nodes"][test_id]["attached_node"] = source_id
+    processor._compiled_manifest["nodes"][model_id]["compiled_code"] = (
+        "select id as order_id from REPORTING.RAW.api_orders"
+    )
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id=model_id if resource_type == "model" else test_id,
+            resource_type=resource_type,
+            node_status="success" if resource_type == "model" else "pass",
+        )
+    )
+
+    assert [(dataset.namespace, dataset.name) for dataset in event.inputs] == [
+        ("bigquery", "REPORTING.RAW.api_orders")
+    ]
+    if resource_type == "model":
+        lineage = event.outputs[0].facets["columnLineage"].fields["order_id"].inputFields
+        assert [(field.namespace, field.name) for field in lineage] == [
+            ("bigquery", "REPORTING.RAW.api_orders")
+        ]
+    else:
+        assert event.inputs[0].facets["dataQualityAssertions"].assertions[0].success
+
+
 def test_test_node_finished_assertion_carries_test_name():
     # The run_results path sets Assertion.name from the manifest node; the structured-logs
     # path has to produce the same facet.

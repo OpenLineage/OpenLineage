@@ -39,6 +39,23 @@ class OpenLineageSqlTest {
             .isPresent());
   }
 
+  /** MySQL joined UPDATE reads the joined table and writes only the target. */
+  @Test
+  void mysqlUpdateJoin() {
+    SqlMeta output =
+        OpenLineageSql.parse(
+                Collections.singletonList(
+                    "UPDATE inventory i JOIN new_arrivals n ON i.product = n.product "
+                        + "SET i.quantity = i.quantity + n.quantity"),
+                "mysql")
+            .get();
+    assertEquals(Collections.emptyList(), output.errors());
+    assertEquals(
+        Collections.singletonList(new DbTableMeta(null, null, "new_arrivals")), output.inTables());
+    assertEquals(
+        Collections.singletonList(new DbTableMeta(null, null, "inventory")), output.outTables());
+  }
+
   @Test
   void basicParse() {
     SqlMeta output = OpenLineageSql.parse(Arrays.asList("SELECT * FROM test")).get();

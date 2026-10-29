@@ -12,6 +12,22 @@ def test_parse_small():
     assert len(metadata.out_tables) == 0
 
 
+def test_mysql_update_join():
+    """MySQL joined UPDATE reads the joined table and writes only the target."""
+    metadata = parse(
+        [
+            (
+                "UPDATE inventory i JOIN new_arrivals n ON i.product = n.product "
+                "SET i.quantity = i.quantity + n.quantity"
+            )
+        ],
+        dialect="mysql",
+    )
+    assert metadata.errors == []
+    assert [table.name for table in metadata.in_tables] == ["new_arrivals"]
+    assert [table.name for table in metadata.out_tables] == ["inventory"]
+
+
 def test_default_database_qualifies_table_and_column_lineage():
     metadata = parse(
         ["INSERT INTO target SELECT id FROM source"],
