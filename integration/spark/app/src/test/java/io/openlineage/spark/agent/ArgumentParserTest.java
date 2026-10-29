@@ -435,6 +435,41 @@ class ArgumentParserTest {
   }
 
   @Test
+  void testNestedTransportPropertyKeyEdgeCases() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "composite")
+            // a sub-transport that happens to be named like a map field
+            .set("spark.openlineage.transport.transports.properties.type", "kafka")
+            .set("spark.openlineage.transport.transports.properties.topicName", "t")
+            .set(
+                "spark.openlineage.transport.transports.properties.properties.bootstrap.servers",
+                "myhost:9092")
+            .set("spark.openlineage.transport.transports.api.type", "http")
+            .set("spark.openlineage.transport.transports.api.url", "http://localhost:5000")
+            // trailing dot must survive, it is part of the configured header name
+            .set("spark.openlineage.transport.transports.api.headers.X-Trace.", "v");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    CompositeConfig composite = (CompositeConfig) config.getTransportConfig();
+    KafkaConfig kafkaConfig =
+        (KafkaConfig)
+            composite.getTransports().stream()
+                .filter(KafkaConfig.class::isInstance)
+                .findFirst()
+                .get();
+    assertEquals("properties", kafkaConfig.getName());
+    assertEquals("myhost:9092", kafkaConfig.getProperties().get("bootstrap.servers"));
+    HttpConfig httpConfig =
+        (HttpConfig)
+            composite.getTransports().stream()
+                .filter(HttpConfig.class::isInstance)
+                .findFirst()
+                .get();
+    assertEquals("v", httpConfig.getHeaders().get("X-Trace."));
+  }
+
+  @Test
   void testCircuitBreakerConfig() {
     SparkConf sparkConf =
         new SparkConf()

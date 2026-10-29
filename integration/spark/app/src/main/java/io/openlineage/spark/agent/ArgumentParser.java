@@ -61,6 +61,7 @@ public class ArgumentParser {
       new HashSet<>(Arrays.asList("properties", "urlParams", "headers"));
 
   private static final String TRANSPORT_KEY = "transport";
+  private static final String TRANSPORTS_KEY = "transports";
 
   private static final String separator = ";";
 
@@ -253,8 +254,13 @@ public class ArgumentParser {
     for (int i = 0; i < segments.size(); i++) {
       String segment = segments.get(i);
       pathKeys.add(segment);
-      if (PROPERTIES_KEYS.contains(segment) && i + 1 < segments.size()) {
-        pathKeys.add(String.join(".", segments.subList(i + 1, segments.size())));
+      // the segment right after "transports" is a user-chosen composite sub-transport name,
+      // which must not be mistaken for a map field even if it happens to be called "properties"
+      boolean isSubTransportName = i > 0 && TRANSPORTS_KEY.equals(segments.get(i - 1));
+      if (!isSubTransportName && PROPERTIES_KEYS.contains(segment) && i + 1 < segments.size()) {
+        // keep the remainder of the original key verbatim (dots included) as a single map key
+        int prefixLength = String.join(".", pathKeys).length() + 1;
+        pathKeys.add(keyPath.substring(prefixLength));
         break;
       }
     }
