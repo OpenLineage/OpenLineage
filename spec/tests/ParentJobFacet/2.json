@@ -1,0 +1,34 @@
+{
+  "parent": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/ParentJobFacet.json",
+    "job": {
+      "namespace": "airflow",
+      "name": "my_dag.my_task",
+      "facets": {
+        "jobType": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
+          "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json",
+          "processingType": "BATCH",
+          "integration": "AIRFLOW",
+          "jobType": "TASK"
+        }
+      }
+    },
+    "root": {
+      "job": {
+        "namespace": "airflow",
+        "name": "my_dag",
+        "facets": {
+          "jobType": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
+            "_schemaURL": "https://openlineage.io/spec/facets/2-0-4/JobTypeJobFacet.json",
+            "processingType": "BATCH",
+            "integration": "AIRFLOW",
+            "jobType": "DAG"
+          }
+        }
+      }
+    }
+  }
+}

@@ -35,6 +35,10 @@ The tool OpenLineage provides for that is the ParentRunFacet. For a given run, i
 }
 ```
 
+The ParentRunFacet captures the hierarchy primarily from the runtime perspective. To document the hierarchy between a job and
+its sub-job as they are designed (for example, a task defined within a DAG), independently of any run, use the
+[ParentJobFacet](./facets/job-facets/parent_job.md) on Job events. On Run events, the ParentRunFacet takes precedence.
+
 Data processing systems often integrate built-in hierarchies. Schedulers, for instance, use large, schedulable units like Airflow DAGs, which in turn comprise smaller, executable units like Airflow Tasks. OpenLineage seamlessly reflects this natural organization by mirroring the job hierarchy within its model.
 
 ## Complex Job Hierarchy
