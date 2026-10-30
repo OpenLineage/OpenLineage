@@ -35,14 +35,13 @@ ext {
     bigqueryVersion = "0.42.2"
     databricksVersion = "0.1.5"
     junit5Version = "5.14.4"
-    kafkaClientsVersion = "4.1.1"
     micrometerVersion = '1.17.1'
     mockitoVersion = "4.11.0"
     mockserverVersion = "5.14.0"
-    postgresqlVersion = "42.7.13"
-    sqlLiteVersion = "3.53.2.1"
+    postgresqlVersion = "42.7.14"
+    sqlLiteVersion = "3.53.4.0"
     testcontainersVersion = "1.19.3"
-    awsSdkVersion = '2.54.20'
+    awsSdkVersion = '2.57.1'
 
     sparkVersion = project.findProperty("shared.spark.version")
     sparkSeries = sparkVersion.substring(0, 3)
@@ -50,6 +49,10 @@ ext {
 }
 
 dependencies {
+    testImplementation(testFixtures(project(":test-commons")))
+    testScala212Implementation(testFixtures(project(":test-commons")))
+    testScala213Implementation(testFixtures(project(":test-commons")))
+
     // Design time dependencies
     api("io.openlineage:openlineage-java:${project.version}")
     api("io.openlineage:openlineage-sql-java:${project.version}")
@@ -87,7 +90,6 @@ dependencies {
     testFixturesApi("org.junit-pioneer:junit-pioneer:1.9.1")
     testFixturesApi("org.postgresql:postgresql:${postgresqlVersion}")
     testFixturesApi("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
-    testFixturesApi("org.apache.kafka:kafka-clients:${kafkaClientsVersion}")
     testFixturesApi("org.mock-server:mockserver-client-java:${mockserverVersion}") {
         exclude(group: "com.google.guava")
         exclude(group: "com.fasterxml.jackson.core")
@@ -149,7 +151,6 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.module")
     }
 
-    testScala212Implementation("org.apache.kafka:kafka-clients:${kafkaClientsVersion}")
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.awaitility:awaitility:${awaitilityVersion}")
     testScala212Implementation(platform("org.junit:junit-bom:${junit5Version}"))
@@ -207,7 +208,6 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.module")
     }
 
-    testScala213Implementation("org.apache.kafka:kafka-clients:${kafkaClientsVersion}")
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.awaitility:awaitility:${awaitilityVersion}")
     testScala213Implementation(platform("org.junit:junit-bom:${junit5Version}"))

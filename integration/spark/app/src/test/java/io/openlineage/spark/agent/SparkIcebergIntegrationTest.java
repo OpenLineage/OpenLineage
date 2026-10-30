@@ -665,9 +665,14 @@ class SparkIcebergIntegrationTest {
     Map<String, Object> configFacet =
         (Map<String, Object>) debug.getAdditionalProperties().get("config");
 
+    // Spark 4 moved the classic catalog implementation from internal.CatalogImpl to classic.Catalog
+    String expectedCatalogClass =
+        System.getProperty(SPARK_VERSION).startsWith("4")
+            ? "org.apache.spark.sql.classic.Catalog"
+            : "org.apache.spark.sql.internal.CatalogImpl";
     assertThat(configFacet)
         .containsEntry("extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener")
-        .containsEntry("catalogClass", "org.apache.spark.sql.internal.CatalogImpl")
+        .containsEntry("catalogClass", expectedCatalogClass)
         .containsEntry(
             "extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
 
@@ -803,11 +808,14 @@ class SparkIcebergIntegrationTest {
   @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testRewriteDataFilesReportsCompactedTable() {
     // the job name of a plain write to the table, going through its own catalog - as opposed to the
-    // compaction's append, which goes through SparkCachedTableCatalog and so is named after it
+    // compaction's append, which goes through Iceberg's rewrite catalog and so is named after it
     String plainWriteJobName =
         "iceberg_integration_test.append_data.spark_catalog_default_compaction_target";
-    // the catalog Iceberg registers for its table cache, which the compaction writes through
-    String cacheCatalogName = "default_cache_iceberg";
+    // the catalog Iceberg registers for its table cache, which the compaction reads and writes
+    // through: SparkCachedTableCatalog in the Spark 3.x and 4.0 modules, SparkRewriteTableCatalog
+    // in the Spark 4.1 module (Iceberg 1.11+), whose tables are not SparkTables
+    List<String> rewriteCatalogNames =
+        Arrays.asList("default_cache_iceberg", "default_rewrite_catalog");
 
     clearTables("compaction_target", "compaction_marker");
 
@@ -838,29 +846,37 @@ class SparkIcebergIntegrationTest {
     getEventsEmittedWithJobName(mockServer, "compaction_marker");
     List<RunEvent> events = getEventsEmitted(mockServer);
 
-    // The append that writes the compacted files is the one going through
-    // SparkCachedTableCatalog, so it is named after that catalog rather than the table's own.
-    // Selecting on the cache catalog's name is what makes this test specific: every other write
-    // here - the inserts, whose events routinely land asynchronously after clearRequests, and the
-    // marker table's own append - also emits append_data, and any of those would otherwise
-    // satisfy the assertions below on their own.
+    // The append that writes the compacted files is the one going through the rewrite catalog, so
+    // it is named after that catalog rather than the table's own. Selecting on the rewrite
+    // catalog's name is what makes this test specific: every other write here - the inserts, whose
+    // events routinely land asynchronously after clearRequests, and the marker table's own append
+    // - also emits append_data, and any of those would otherwise satisfy the assertions below on
+    // their own.
     List<RunEvent> compactionEvents =
         events.stream()
             .filter(e -> e.getJob().getName().contains("append_data"))
-            .filter(e -> e.getJob().getName().contains(cacheCatalogName))
+            .filter(e -> rewriteCatalogNames.stream().anyMatch(e.getJob().getName()::contains))
             .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
             .collect(Collectors.toList());
 
     assertThat(compactionEvents)
         .as("compaction must report the table it rewrote")
         .isNotEmpty()
-        .allSatisfy(e -> assertThat(e.getOutputs()).isNotEmpty());
+        .allSatisfy(e -> assertThat(e.getOutputs()).isNotEmpty())
+        .allSatisfy(e -> assertThat(e.getInputs()).isNotEmpty());
 
-    // and the reported dataset must be the real table, not the cache catalog's UUID key
+    // and the reported datasets must be the real table, not the cache catalog's key
     assertThat(
             compactionEvents.stream()
                 .flatMap(e -> e.getOutputs().stream())
                 .map(OutputDataset::getName)
+                .collect(Collectors.toList()))
+        .isNotEmpty()
+        .allSatisfy(name -> assertThat(name).endsWith("/default/compaction_target"));
+    assertThat(
+            compactionEvents.stream()
+                .flatMap(e -> e.getInputs().stream())
+                .map(InputDataset::getName)
                 .collect(Collectors.toList()))
         .isNotEmpty()
         .allSatisfy(name -> assertThat(name).endsWith("/default/compaction_target"));
@@ -1011,27 +1027,17 @@ class SparkIcebergIntegrationTest {
     spark.sql("CREATE TABLE commit_target USING iceberg AS SELECT * FROM commit_source1");
     spark.sql("INSERT INTO commit_target VALUES (4, 5)");
 
-    // get scan report facet
-    List<RunEvent> runEvents =
-        getEventsEmittedWithJobName(
-            mockServer, "iceberg_integration_test.append_data.spark_catalog_default_commit_target");
-
-    List<OutputDatasetOutputFacets> outputFacets =
-        runEvents.stream()
-            .flatMap(e -> e.getOutputs().stream())
-            .map(o -> o.getOutputFacets())
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-
+    // On Spark 4.1 the CTAS also runs an append_data job on commit_target, whose events can carry
+    // the CTAS commit report (sequence number 1), so wait for the INSERT's report: the second
+    // commit
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> getCommitReportWithSequenceNumber(2L).isPresent());
     Optional<IcebergCommitReportOutputDatasetFacet> icebergCommitReport =
-        outputFacets.stream()
-            .map(OutputDatasetOutputFacets::getIcebergCommitReport)
-            .filter(Objects::nonNull)
-            .findFirst();
+        getCommitReportWithSequenceNumber(2L);
 
     assertThat(icebergCommitReport).isPresent();
     assertThat(icebergCommitReport.get().getOperation()).isEqualTo("append");
-    assertThat(icebergCommitReport.get().getSequenceNumber().longValue()).isEqualTo(2L);
     assertThat(icebergCommitReport.get().getSnapshotId().longValue()).isGreaterThan(0L);
 
     assertThat(icebergCommitReport.get().getMetadata().getAdditionalProperties())
@@ -1041,6 +1047,20 @@ class SparkIcebergIntegrationTest {
         .isEqualTo(1L);
     assertThat(icebergCommitReport.get().getCommitMetrics().getAddedDataFiles().longValue())
         .isEqualTo(1L);
+  }
+
+  private Optional<IcebergCommitReportOutputDatasetFacet> getCommitReportWithSequenceNumber(
+      long sequenceNumber) {
+    return getEventsEmittedWithJobName(
+            mockServer, "iceberg_integration_test.append_data.spark_catalog_default_commit_target")
+        .stream()
+        .flatMap(e -> e.getOutputs().stream())
+        .map(OutputDataset::getOutputFacets)
+        .filter(Objects::nonNull)
+        .map(OutputDatasetOutputFacets::getIcebergCommitReport)
+        .filter(Objects::nonNull)
+        .filter(r -> r.getSequenceNumber().longValue() == sequenceNumber)
+        .findFirst();
   }
 
   private void clearTables(String... tables) {

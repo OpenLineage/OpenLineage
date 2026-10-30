@@ -17,7 +17,7 @@ from openlineage.common.provider.dbt.structured_logs import (
     DbtStructuredLogsProcessor,
     ManifestIntegrityResult,
 )
-from openlineage.common.provider.dbt.utils import DBT_LOG_FILE_MAX_BYTES
+from openlineage.common.provider.dbt.utils import DBT_LOG_FILE_MAX_BYTES, get_job_type
 from openlineage.common.test import match
 from openlineage.common.utils import get_from_nullable_chain
 
@@ -436,6 +436,48 @@ def test_node_finished_bigquery_missing_job_id_has_no_external_query():
     )
 
     assert "externalQuery" not in ol_event_to_dict(event)["run"]["facets"]
+
+
+@pytest.mark.parametrize("resource_type", ["model", "test"])
+def test_node_finished_source_identifier(resource_type):
+    """Live model and test events agree on the physical source dataset identity."""
+    processor = node_finished_processor(adapter_type=Adapter.BIGQUERY, dataset_namespace="bigquery")
+    processor.__dict__["catalog"] = None
+    source_id = "source.jaffle_shop.raw.orders"
+    processor._compiled_manifest["sources"][source_id] = {
+        "database": "REPORTING",
+        "schema": "RAW",
+        "name": "orders",
+        "identifier": "api_orders",
+        "columns": {},
+    }
+    model_id = "model.jaffle_shop.orders"
+    test_id = "test.jaffle_shop.not_null_orders_id"
+    processor._compiled_manifest["parent_map"][model_id] = [source_id]
+    processor._compiled_manifest["parent_map"][test_id] = [source_id]
+    processor._compiled_manifest["nodes"][test_id]["attached_node"] = source_id
+    processor._compiled_manifest["nodes"][model_id]["compiled_code"] = (
+        "select id as order_id from REPORTING.RAW.api_orders"
+    )
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(
+            unique_id=model_id if resource_type == "model" else test_id,
+            resource_type=resource_type,
+            node_status="success" if resource_type == "model" else "pass",
+        )
+    )
+
+    assert [(dataset.namespace, dataset.name) for dataset in event.inputs] == [
+        ("bigquery", "REPORTING.RAW.api_orders")
+    ]
+    if resource_type == "model":
+        lineage = event.outputs[0].facets["columnLineage"].fields["order_id"].inputFields
+        assert [(field.namespace, field.name) for field in lineage] == [
+            ("bigquery", "REPORTING.RAW.api_orders")
+        ]
+    else:
+        assert event.inputs[0].facets["dataQualityAssertions"].assertions[0].success
 
 
 def test_test_node_finished_assertion_carries_test_name():
@@ -1112,8 +1154,10 @@ sys.exit(exit_code)
 def test_parse_waits_for_dbt_after_event_parsing_error(
     dbt_exit_code, expected_dbt_run_state, tmp_path, monkeypatch
 ):
-    fake_dbt = tmp_path / "fake_dbt.py"
-    fake_dbt.write_text(FAKE_DBT_SCRIPT)
+    # an executable named like dbt: the dbt command line starts with the dbt executable
+    fake_dbt = tmp_path / "dbt"
+    fake_dbt.write_text(f"#!{sys.executable}\n{FAKE_DBT_SCRIPT}")
+    fake_dbt.chmod(0o755)
     monkeypatch.setenv("FAKE_DBT_MANIFEST", str(tmp_path / "manifest.json"))
     monkeypatch.setenv("FAKE_DBT_DONE", str(tmp_path / "done"))
     monkeypatch.setenv("FAKE_DBT_EXIT_CODE", str(dbt_exit_code))
@@ -1123,7 +1167,7 @@ def test_parse_waits_for_dbt_after_event_parsing_error(
         job_namespace="dbt-test-namespace",
         project_dir=CURRENT_DIR,
         target="postgres",
-        dbt_command_line=[sys.executable, str(fake_dbt), "run", "--log-path", str(tmp_path / "logs")],
+        dbt_command_line=[str(fake_dbt), "run", "--log-path", str(tmp_path / "logs")],
     )
     processor.manifest_path = str(tmp_path / "manifest.json")
 
@@ -2595,3 +2639,68 @@ def test_node_finished_attaches_source_backed_exposure_to_input_on_success_only(
         node_finished_event(unique_id="model.jaffle_shop.orders", resource_type="model", node_status="fail")
     )
     assert "dbt_exposures" not in fail_event.inputs[0].facets
+
+
+def test_unit_test_job_type():
+    assert get_job_type(
+        {"info": {"name": "NodeStart"}, "data": {"node_info": {"unique_id": "unit_test.p.m.t"}}}
+    ) == ("UNIT_TEST")
+
+
+@pytest.mark.parametrize(
+    "tested_node_fields",
+    [
+        # dbt Core v1 manifests list the tested model only as the unit test's dependency
+        {"depends_on": {"macros": [], "nodes": ["model.jaffle_shop.orders"]}},
+        # dbt Core v2 manifests name it
+        {"tested_node_unique_id": "model.jaffle_shop.orders"},
+    ],
+    ids=["dbt_core_v1_manifest", "dbt_core_v2_manifest"],
+)
+def test_unit_test_events_have_no_datasets_or_extraction_errors(tested_node_fields):
+    processor = node_finished_processor()
+    unit_test_id = "unit_test.jaffle_shop.orders.ut_orders"
+    processor._compiled_manifest["unit_tests"] = {
+        unit_test_id: {
+            "unique_id": unit_test_id,
+            "model": "orders",
+            "tags": ["unit"],
+            "meta": {},
+            **tested_node_fields,
+        }
+    }
+    processor._compiled_manifest["parent_map"][unit_test_id] = ["model.jaffle_shop.orders"]
+
+    event = processor.parse_node_finished_event(
+        node_finished_event(unique_id=unit_test_id, resource_type="unit_test", node_status="pass")
+    )
+
+    assert event.eventType.value == "COMPLETE"
+    assert event.job.facets["jobType"].jobType == "UNIT_TEST"
+    assert event.inputs == [] and event.outputs == []
+    assert "extractionError" not in event.run.facets
+    assert event.job.facets["dbt_node"].unique_id == unit_test_id
+    assert event.job.facets["dbt_node"].tested_node_unique_id == "model.jaffle_shop.orders"
+
+
+def test_random_log_directory_is_removed(monkeypatch, tmp_path):
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir=CURRENT_DIR,
+        target="postgres",
+        dbt_command_line=["dbt", "run", "--project-dir", str(tmp_path)],
+    )
+    assert processor.is_random_logfile
+    process_mock = mock.Mock(returncode=0)
+    process_mock.poll.return_value = 0
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.subprocess.Popen",
+        mock.Mock(return_value=process_mock),
+    )
+    processor.received_dbt_command_completed = True
+
+    list(processor._run_dbt_command())
+
+    assert processor.dbt_log_dirname.startswith(str(tmp_path))
+    assert not Path(processor.dbt_log_dirname).exists()

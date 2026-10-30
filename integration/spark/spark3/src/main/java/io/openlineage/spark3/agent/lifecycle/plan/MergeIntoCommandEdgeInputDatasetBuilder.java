@@ -48,7 +48,8 @@ public class MergeIntoCommandEdgeInputDatasetBuilder
       inputs.addAll(delegate((LogicalPlan) o1, event));
     }
     if (o2 != null && o2 instanceof LogicalPlan) {
-      inputs.addAll(delegate((LogicalPlan) o2, event));
+      inputs.addAll(
+          MergeSourceDatasetTraversal.collect((LogicalPlan) o2, source -> delegate(source, event)));
     }
 
     return inputs;

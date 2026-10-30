@@ -7,7 +7,14 @@ from unittest import mock
 
 import pytest
 from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, PRODUCER
-from openlineage.dbt import consume_structured_logs, main
+from openlineage.dbt import consume_otel, consume_structured_logs, emit_live_events, main
+
+
+@pytest.fixture(autouse=True)
+def dbt_core_v1(monkeypatch):
+    # main() detects the engine of the `dbt` on PATH; keep these tests independent of the machine.
+    monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", lambda: (1, None))
+    monkeypatch.delenv("OPENLINEAGE_DBT_SKIP_PARSE", raising=False)
 
 
 @pytest.mark.parametrize(
@@ -114,7 +121,7 @@ def test_consume_structured_logs(command_line, os_envs, function_kwargs, monkeyp
     mockOpenLineageClient = mock.MagicMock()
 
     mock_dbt_structured_logs_processor = mock.MagicMock()
-    mock_dbt_structured_logs_processor.parse = mock.MagicMock(return_value=[])
+    mock_dbt_structured_logs_processor.parse = mock.MagicMock(return_value=(e for e in []))
     mockDbtStructuredLogsProcessor = mock.MagicMock(
         return_value=mock_dbt_structured_logs_processor
     )  # instance returned
@@ -437,3 +444,143 @@ def test_consume_structured_logs_runs_unsupported_command_without_lineage(
     assert (fake_dbt_project / "done").read_text().startswith("run-operation my_macro")
     assert return_code == dbt_exit_code
     assert emitted == []
+
+
+@pytest.mark.parametrize(
+    "argv, skip_parse_env, expected_args, expected_skip_parse",
+    [
+        (["dbt-ol", "build", "--select", "orders"], None, ["build", "--select", "orders"], False),
+        # --consume-structured-logs changes nothing on dbt Core v2 and is not passed to dbt
+        (["dbt-ol", CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, "build"], None, ["build"], False),
+        (
+            ["dbt-ol", "build", "--ol-skip-parse", "--select", "orders"],
+            None,
+            ["build", "--select", "orders"],
+            True,
+        ),
+        (["dbt-ol", "build"], "true", ["build"], True),
+    ],
+)
+def test_dbt_core_v2_always_consumes_otel(
+    argv, skip_parse_env, expected_args, expected_skip_parse, monkeypatch
+):
+    monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", lambda: (2, "2.0.8"))
+    if skip_parse_env:
+        monkeypatch.setenv("OPENLINEAGE_DBT_SKIP_PARSE", skip_parse_env)
+    consume_otel = mock.MagicMock(return_value=0)
+    monkeypatch.setattr("openlineage.dbt.consume_otel", consume_otel)
+    monkeypatch.setattr("openlineage.dbt.consume_structured_logs", mock.MagicMock(side_effect=AssertionError))
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", mock.MagicMock(side_effect=AssertionError))
+    monkeypatch.setattr("sys.argv", argv)
+
+    assert main() == 0
+
+    kwargs = consume_otel.call_args.kwargs
+    assert kwargs["args"] == expected_args
+    assert kwargs["skip_parse"] is expected_skip_parse
+
+
+def test_skip_parse_flag_is_removed_on_dbt_core_v1(monkeypatch):
+    consume_local_artifacts = mock.MagicMock(return_value=0)
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", consume_local_artifacts)
+    monkeypatch.setattr("sys.argv", ["dbt-ol", "run", "--ol-skip-parse"])
+
+    main()
+
+    assert consume_local_artifacts.call_args.kwargs["args"] == ["run"]
+
+
+def test_send_events_does_not_detect_the_engine(monkeypatch):
+    monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", mock.MagicMock(side_effect=AssertionError))
+    consume_local_artifacts = mock.MagicMock(return_value=0)
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", consume_local_artifacts)
+    monkeypatch.setattr("sys.argv", ["dbt-ol", "send-events"])
+
+    main()
+
+    assert consume_local_artifacts.called
+
+
+def _consume_otel(args, project_dir):
+    return consume_otel(
+        args=args,
+        target=None,
+        target_path=None,
+        project_dir=project_dir,
+        profile_name=None,
+        model_selector=None,
+        models=[],
+    )
+
+
+@pytest.mark.parametrize(
+    "args, dbt_args",
+    [
+        (["init"], ["init"]),
+        (["deps"], ["deps"]),
+        (["debug"], ["debug"]),
+        (["--version"], ["--version"]),
+        (["docs", "generate", "--ol-skip-parse"], ["docs", "generate"]),
+        ([CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, "deps"], ["deps"]),
+        # `run` here is the value of --log-path, not the command
+        (["debug", "--log-path", "run"], ["debug", "--log-path", "run"]),
+    ],
+)
+def test_commands_without_lineage_run_untouched_without_detecting_the_engine(args, dbt_args, monkeypatch):
+    # The same on both engines: the engine isn't detected, and the project isn't read.
+    monkeypatch.setattr("openlineage.dbt.detect_dbt_engine", mock.MagicMock(side_effect=AssertionError))
+    for consume in ("consume_otel", "consume_structured_logs", "consume_local_artifacts"):
+        monkeypatch.setattr(f"openlineage.dbt.{consume}", mock.MagicMock(side_effect=AssertionError))
+    run_untouched = mock.MagicMock(return_value=4)
+    monkeypatch.setattr("openlineage.dbt.run_dbt_untouched", run_untouched)
+    monkeypatch.setattr("sys.argv", ["dbt-ol", *args])
+
+    assert main() == 4
+    assert run_untouched.call_args.args[0] == ["dbt", *dbt_args]
+
+
+@pytest.mark.parametrize(
+    "dbt_project_yml",
+    [None, "name: p\nversion: '1'\n"],  # no dbt_project.yml; one without a profile
+    ids=["missing_project", "project_without_profile"],
+)
+def test_dbt_core_v2_runs_dbt_when_the_project_cannot_be_read(dbt_project_yml, monkeypatch, tmp_path, caplog):
+    if dbt_project_yml is not None:
+        (tmp_path / "dbt_project.yml").write_text(dbt_project_yml)
+    run_untouched = mock.MagicMock(return_value=0)
+    monkeypatch.setattr("openlineage.dbt.run_dbt_untouched", run_untouched)
+    monkeypatch.setattr("openlineage.dbt.emit_live_events", mock.MagicMock(side_effect=AssertionError))
+
+    assert _consume_otel(["build", "--select", "orders"], str(tmp_path)) == 0
+    assert run_untouched.call_args.args[0] == ["dbt", "build", "--select", "orders"]
+    assert "could not read the dbt project" in caplog.text
+
+
+def test_dbt_core_v2_forced_quit_exits_like_a_ctrl_c(monkeypatch, tmp_path, caplog):
+    (tmp_path / "dbt_project.yml").write_text("name: p\nversion: '1'\nprofile: p\n")
+    monkeypatch.setattr("openlineage.dbt.DbtOtelProcessor", mock.MagicMock())
+    monkeypatch.setattr("openlineage.dbt.emit_live_events", mock.MagicMock(side_effect=KeyboardInterrupt))
+
+    assert _consume_otel(["build"], str(tmp_path)) == 130
+    assert "stopped without waiting for dbt" in caplog.text
+
+
+def test_emit_live_events_cleans_up_when_interrupted_while_sending(monkeypatch):
+    cleaned_up = []
+
+    def parse():
+        try:
+            yield mock.MagicMock()
+            yield mock.MagicMock()
+        finally:
+            cleaned_up.append(True)  # waits for dbt and removes the temporary directory
+
+    processor = mock.MagicMock(parse=parse)
+    client = mock.MagicMock()
+    client.emit.side_effect = KeyboardInterrupt  # the second Ctrl-C arrives while an event is sent
+    monkeypatch.setattr("openlineage.dbt.OpenLineageClient", mock.MagicMock(return_value=client))
+
+    with pytest.raises(KeyboardInterrupt):
+        emit_live_events(processor, mock.MagicMock())
+    assert cleaned_up == [True]
+    client.close.assert_called_once_with(timeout=30)

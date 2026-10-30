@@ -1,0 +1,45 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+version: 2
+
+models:
+  - name: stg_customers
+    columns:
+      - name: customer_id
+        data_tests:
+          - not_null
+          - unique
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['active']
+              config:
+                severity: warn
+  - name: order_statuses
+    columns:
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['placed', 'shipped']
+
+unit_tests:
+  - name: ut_stg_customers_renames
+    model: stg_customers
+    given:
+      - input: ref('raw_customers')
+        rows:
+          - {id: 1, name: alice, status: active}
+    expect:
+      rows:
+        - {customer_id: 1, name: alice, status: active}
+  - name: ut_active_customers_wrong_expectation
+    model: active_customers
+    given:
+      - input: ref('stg_customers')
+        rows:
+          - {customer_id: 1, name: alice, status: active}
+    expect:
+      rows:
+        - {customer_id: 2, name: bob}

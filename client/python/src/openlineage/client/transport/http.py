@@ -20,7 +20,13 @@ import urllib3.util
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import get_only_specified_fields, import_from_string
+from openlineage.client.utils import (
+    config_value_to_str,
+    config_values_to_str,
+    first_config_value,
+    get_only_specified_fields,
+    import_from_string,
+)
 from requests import Session
 from requests.adapters import HTTPAdapter
 
@@ -49,10 +55,11 @@ class HttpCompression(Enum):
 class ApiKeyTokenProvider(TokenProvider):
     def __init__(self, config: dict[str, str]) -> None:
         super().__init__(config)
-        self.api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
-        if not self.api_key:
+        api_key = first_config_value(config, "apiKey", "apikey", "api_key")
+        if api_key is None:
             msg = "apiKey is required for HTTP Transport when auth type is `api_key`."
             raise KeyError(msg)
+        self.api_key = config_value_to_str(api_key)
 
     def get_bearer(self) -> str | None:
         return f"Bearer {self.api_key}"
@@ -287,12 +294,12 @@ class JwtTokenProvider(TokenEndpointTokenProvider):
     DEFAULT_TOKEN_FIELDS = ("token", "access_token")
 
     def __init__(self, config: dict[str, Any]) -> None:
-        api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
-        if not api_key:
+        api_key = first_config_value(config, "apiKey", "apikey", "api_key")
+        if api_key is None:
             msg = "apiKey is required for JWT token provider."
             raise KeyError(msg)
         super().__init__(config)
-        self.api_key = api_key
+        self.api_key = config_value_to_str(api_key)
 
         # OAuth parameters
         self.grant_type = (
@@ -333,17 +340,17 @@ class OAuth2ClientCredentialsTokenProvider(TokenEndpointTokenProvider):
     CLIENT_AUTH_METHODS = ("client_secret_basic", "client_secret_post")
 
     def __init__(self, config: dict[str, Any]) -> None:
-        client_id = config.get("clientId") or config.get("client_id")
-        if not client_id:
+        client_id = first_config_value(config, "clientId", "client_id")
+        if client_id is None:
             msg = "clientId is required for OAuth2 access token provider."
             raise KeyError(msg)
-        client_secret = config.get("clientSecret") or config.get("client_secret")
-        if not client_secret:
+        client_secret = first_config_value(config, "clientSecret", "client_secret")
+        if client_secret is None:
             msg = "clientSecret is required for OAuth2 access token provider."
             raise KeyError(msg)
         super().__init__(config)
-        self.client_id = str(client_id)
-        self.client_secret = str(client_secret)
+        self.client_id = config_value_to_str(client_id)
+        self.client_secret = config_value_to_str(client_secret)
         self.scope = config.get("scope")
         self.client_auth_method = str(
             config.get("clientAuthMethod") or config.get("client_auth_method") or self.CLIENT_AUTH_METHODS[0]
@@ -469,7 +476,7 @@ class HttpConfig(Config):
     # not set by TransportFactory
     adapter: HTTPAdapter | None = None
     # custom headers support
-    custom_headers: dict[str, str] = attr.field(factory=dict)
+    custom_headers: dict[str, str] = attr.field(factory=dict, converter=config_values_to_str)
     # retry settings
     retry: dict[str, Any] = attr.field(default=DEFAULT_RETRY_CONFIG)
     # custom SSL context (CA bundle / client certificate) for parity with the Java client

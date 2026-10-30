@@ -827,6 +827,7 @@ class DbtArtifactProcessor:
         assertions: data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet | None,
         has_facets: bool = False,
     ) -> tuple[str, str, dict, dict]:
+        """Resolve physical source identifiers or materialized aliases with dataset facets."""
         facets: dict[str, DatasetFacet] = {}
         input_facets: dict[str, InputDatasetFacet] = {}
         if symlink := self._create_dataset_symlink(node):
@@ -864,7 +865,7 @@ class DbtArtifactProcessor:
             if dbt_model_facet := self._create_dbt_model_dataset_facet(node):
                 facets["dbt_model"] = dbt_model_facet
         if node.type == "source":
-            table = node.metadata_node["name"]
+            table = node.metadata_node.get("identifier") or node.metadata_node["name"]
         else:
             table = node.metadata_node["alias"]
         return (
@@ -892,7 +893,10 @@ class DbtArtifactProcessor:
             return None
 
         database = node.metadata_node.get("schema")
-        table = node.metadata_node.get("name" if node.type == "source" else "alias")
+        if node.type == "source":
+            table = node.metadata_node.get("identifier") or node.metadata_node.get("name")
+        else:
+            table = node.metadata_node.get("alias")
         if not database or not table:
             return None
 

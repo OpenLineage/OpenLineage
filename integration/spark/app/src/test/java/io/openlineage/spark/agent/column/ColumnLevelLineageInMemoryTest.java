@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.column;
 
 import static org.apache.spark.sql.functions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -20,15 +21,19 @@ import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
+import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.columnar.InMemoryRelation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -110,5 +115,42 @@ class ColumnLevelLineageInMemoryTest {
         () ->
             ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(
                 event, context, schemaDatasetFacet));
+  }
+
+  @Test
+  void testCachedPlanLookupWithCollidingCacheNames() {
+    // Unnamed caches are named after their plan's text cut at 1024 characters; the top Project of
+    // this wide plan is longer than that, so caches differing only in the filter share a name.
+    Column[] columns =
+        IntStream.range(0, 60)
+            .mapToObj(i -> col("id").plus(i).as("a_rather_long_column_name_" + i))
+            .toArray(Column[]::new);
+    Column[] reversed =
+        IntStream.range(0, 60)
+            .mapToObj(i -> col("a_rather_long_column_name_" + (59 - i)))
+            .toArray(Column[]::new);
+    Dataset<Row> base = spark.range(10).select(columns);
+
+    Dataset<Row> first =
+        base.where(col("a_rather_long_column_name_0").equalTo(1001)).select(reversed).cache();
+    first.count();
+    Dataset<Row> second =
+        base.where(col("a_rather_long_column_name_0").equalTo(1002)).select(reversed).cache();
+    second.count();
+
+    InMemoryRelation firstRelation = inMemoryRelationOf(first);
+    InMemoryRelation secondRelation = inMemoryRelationOf(second);
+    assertThat(firstRelation.cacheBuilder().cachedName())
+        .isEqualTo(secondRelation.cacheBuilder().cachedName());
+
+    assertThat(PlanUtils3.getLogicalPlanOf(context, firstRelation).map(LogicalPlan::toString))
+        .hasValueSatisfying(plan -> assertThat(plan).contains("1001").doesNotContain("1002"));
+    assertThat(PlanUtils3.getLogicalPlanOf(context, secondRelation).map(LogicalPlan::toString))
+        .hasValueSatisfying(plan -> assertThat(plan).contains("1002").doesNotContain("1001"));
+  }
+
+  private static InMemoryRelation inMemoryRelationOf(Dataset<Row> dataset) {
+    return (InMemoryRelation)
+        dataset.queryExecution().optimizedPlan().find(p -> p instanceof InMemoryRelation).get();
   }
 }
