@@ -1,11 +1,140 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.53.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.55.0...HEAD)
+
+## [1.55.0](https://github.com/OpenLineage/OpenLineage/compare/1.54.0...1.55.0)
 
 ### Added
 
-* **Python: Detect PR number in Bitbucket Pipelines and Azure Pipelines** [`#5041`](https://github.com/OpenLineage/OpenLineage/pull/5041) [@himakolavennu](https://github.com/himakolavennu)
-  *Fills `pullRequestNumber` in the sourceCodeLocation facet from `BITBUCKET_PR_ID` and Azure's `SYSTEM_PULLREQUEST_PULLREQUESTNUMBER` / `SYSTEM_PULLREQUEST_PULLREQUESTID`.*
+* **Client/Go: Add OAuth 2.0 client credentials authentication** [`#4940`](https://github.com/OpenLineage/OpenLineage/pull/4940) [@rahul-madaan](https://github.com/rahul-madaan)
+  *Adds the `oauth2` HTTP authentication type to the Go client, matching Java and Python, with `client_secret_basic` or `client_secret_post` credentials and token refresh.*
+* **dbt: Support dbt Core v2 with live OpenTelemetry events** [`#5064`](https://github.com/OpenLineage/OpenLineage/pull/5064) [@mobuchowski](https://github.com/mobuchowski)
+  *`dbt-ol` detects dbt Core v2 and emits lineage while dbt runs by reading its OpenTelemetry output. **Breaking:** on v2, node jobs are named by `unique_id`; unit tests get the `UNIT_TEST` job type and no datasets; commands that produce no lineage (`compile`, `run-operation`, `docs generate`, `deps`, ...) run as plain dbt without wrapper events, also on v1.*
+* **OData: Add experimental OData catalog integration** [`#4967`](https://github.com/OpenLineage/OpenLineage/pull/4967) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Adds a read-only service that scans OData v4 services and emits a `DatasetEvent` with schema, row count, and last-updated time for each entity set, with SAP Datasphere as the worked example.*
+* **Spark: Add Dataproc Metastore properties to Hive catalog facets** [`#4461`](https://github.com/OpenLineage/OpenLineage/pull/4461) [@tnazarew](https://github.com/tnazarew)
+  *Detects Dataproc Metastore from `spark.dataproc.metastore.*` settings and adds its service name, project, and location to the catalog properties of Hive and Iceberg Hive catalogs.*
+* **SQL: Accept a default database in parser APIs** [`#5067`](https://github.com/OpenLineage/OpenLineage/pull/5067) [@autoCAT6](https://github.com/autoCAT6)
+  *The Rust, Python, and Java parser APIs and `openlineage.common.sql.parse` accept a default database that qualifies unqualified tables and column lineage origins. Java callers pass it through `ParseOptions`.*
+
+### Changed
+
+* **Client/Python: Share the composite transport shutdown timeout** [`#5060`](https://github.com/OpenLineage/OpenLineage/pull/5060) [@vishwanathmuthuraman](https://github.com/vishwanathmuthuraman)
+  *`CompositeTransport.close(timeout)` passes each child transport the remaining time instead of the full timeout, so total shutdown time no longer grows with the number of transports.*
+* **dbt: Drop the dbt-core dependency** [`#5063`](https://github.com/OpenLineage/OpenLineage/pull/5063) [@mobuchowski](https://github.com/mobuchowski)
+  *`openlineage-dbt` no longer installs `dbt-core`, which overwrote dbt Core v2 installations. `jinja2` is now declared directly in `openlineage-integration-common`.*
+
+### Fixed
+
+* **Clients: Keep environment and YAML values as text for string settings** [`#5111`](https://github.com/OpenLineage/OpenLineage/pull/5111) [@mobuchowski](https://github.com/mobuchowski)
+  *Tag values, API keys, file paths, headers, and other string settings that look like numbers or booleans are kept as written instead of being decoded, which fixes tags with non-string values and API keys such as `1234e5678` being sent as `Bearer inf`.*
+* **dbt: Keep dbt's outcome when structured-logs parsing fails** [`#5108`](https://github.com/OpenLineage/OpenLineage/pull/5108) [@gusvargas](https://github.com/gusvargas)
+  *In `--consume-structured-logs` mode, lineage parsing errors no longer abandon dbt or change its exit code, and unsupported commands such as `run-operation` now run dbt instead of exiting 0.*
+* **dbt: Treat warn status on model runs as success** [`#5068`](https://github.com/OpenLineage/OpenLineage/pull/5068) [@smitstay](https://github.com/smitstay)
+  *A `warn` status on model and snapshot runs, such as an unchanged Snowflake dynamic table on dbt v2, is reported as success instead of raising `ValueError`.*
+* **dbt, SQL: Preserve dbt source identifiers and MySQL UPDATE join inputs** [`#5066`](https://github.com/OpenLineage/OpenLineage/pull/5066) [@mattfaltyn](https://github.com/mattfaltyn)
+  *dbt source datasets use the physical `identifier` when set, matching column lineage, and MySQL `UPDATE ... JOIN` statements report joined tables and tables in `ON` subqueries as inputs.*
+* **Hive: Fix NullPointerException when generating runId in Hive CLI** [`#5091`](https://github.com/OpenLineage/OpenLineage/pull/5091) [@tnazarew](https://github.com/tnazarew)
+  *Derives the runId from `QueryPlan` when `QueryInfo` is unavailable, which stopped all lineage events under Hive CLI since 1.40.0.*
+* **Spark: Keep MERGE source columns in Iceberg column lineage** [`#5109`](https://github.com/OpenLineage/OpenLineage/pull/5109) [@mobuchowski](https://github.com/mobuchowski)
+  *Keeps MERGE source columns in column lineage for Iceberg copy-on-write MERGE on Spark 4.1 and for partitioned Iceberg tables, and fixes column lineage for cached datasets.*
+* **Spark: Report datasets for Iceberg rewrite actions on Spark 4.1** [`#4994`](https://github.com/OpenLineage/OpenLineage/pull/4994) [@MSDehghan](https://github.com/MSDehghan)
+  *Reports the compacted table as input and output for `rewrite_data_files` on Spark 4.1 with Iceberg 1.11+, where reads and writes go through `SparkRewriteTable`.*
+* **Spark: Report nested Delta MERGE source datasets** [`#5080`](https://github.com/OpenLineage/OpenLineage/pull/5080) [@MSDehghan](https://github.com/MSDehghan)
+  *Reports Delta MERGE source datasets behind joins, filters, aggregates, and parquet-backed temporary views.*
+* **Spark: Skip Iceberg input statistics when the facet is disabled** [`#5015`](https://github.com/OpenLineage/OpenLineage/pull/5015) [@MSDehghan](https://github.com/MSDehghan)
+  *Stops scanning Iceberg data files on the listener thread when `inputStatistics` is disabled, and no longer logs a warning for scans without `tasks()`.*
+* **Spark: Skip unavailable RDD file paths** [`#5082`](https://github.com/OpenLineage/OpenLineage/pull/5082) [@MSDehghan](https://github.com/MSDehghan)
+  *One unavailable file path no longer aborts RDD dataset extraction, and expected extraction misses are logged at DEBUG.*
+* **Spark: Support shaded Kafka topic partitions on Databricks** [`#5101`](https://github.com/OpenLineage/OpenLineage/pull/5101) [@autoCAT6](https://github.com/autoCAT6)
+  *Reports Kafka streaming inputs on Databricks, which uses the shaded `kafkashaded.org.apache.kafka.common.TopicPartition` class.*
+* **SQL: Keep CTE source tables as inputs when defaults are set** [`#5113`](https://github.com/OpenLineage/OpenLineage/pull/5113) [@mobuchowski](https://github.com/mobuchowski)
+  *CTE source tables stay in the inputs when a default schema or database is set, or when a source table has the same name as a CTE.*
+
+## [1.54.0](https://github.com/OpenLineage/OpenLineage/compare/1.53.0...1.54.0)
+
+### Added
+
+* **Client/Java: Support HTTP proxies** [`#4998`](https://github.com/OpenLineage/OpenLineage/pull/4998) [@jakub-moravec](https://github.com/jakub-moravec)
+  *Routes HTTP events through JVM proxy settings or an explicit transport proxy, with configurable hosts that bypass the proxy.*
+* **Client/Java: Support Unix domain socket URLs** [`#4920`](https://github.com/OpenLineage/OpenLineage/pull/4920) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Delivers HTTP events through `unix://` collector sockets on Java 16 or later, using the existing endpoint, authentication, and compression settings.*
+* **Client/Python: Add custom CA certificates and mutual TLS** [`#4983`](https://github.com/OpenLineage/OpenLineage/pull/4983) [@srujankgandla](https://github.com/srujankgandla)
+  *Adds `sslContext` settings for a CA bundle, client certificate, and client key to the HTTP transport.*
+* **Client/Python: Detect PR numbers in Bitbucket Pipelines and Azure Pipelines** [`#5041`](https://github.com/OpenLineage/OpenLineage/pull/5041) [@himakolavennu](https://github.com/himakolavennu)
+  *Populates `pullRequestNumber` in the source code location facet from Bitbucket and Azure Pipelines environment variables.*
+* **Clients: Add OAuth 2.0 client credentials authentication** [`#4935`](https://github.com/OpenLineage/OpenLineage/pull/4935) [@rahul-madaan](https://github.com/rahul-madaan)
+  *Adds the `oauth2_client_credentials` HTTP authentication provider to the Java and Python clients, with token caching and refresh.*
+* **dbt: Add IBM watsonx.data Presto adapter support** [`#4978`](https://github.com/OpenLineage/OpenLineage/pull/4978) [@aseelert](https://github.com/aseelert)
+  *Recognizes `watsonx_presto` profiles and emits datasets in the same `presto://host:port` namespace as PrestoDB.*
+* **dbt: Add PrestoDB adapter support** [`#4969`](https://github.com/OpenLineage/OpenLineage/pull/4969) [@aseelert](https://github.com/aseelert)
+  *Recognizes `presto` profiles and derives dataset namespaces from the Presto host and port.*
+* **Spark: Add column lineage for CREATE and REPLACE TABLE AS SELECT** [`#4984`](https://github.com/OpenLineage/OpenLineage/pull/4984) [@ujwalkumar-meesho](https://github.com/ujwalkumar-meesho)
+  *Traverses childless CTAS and RTAS query plans and nested operators to capture complete column dependencies on Spark 3.5 and Databricks runtimes.*
+* **Spark: Emit outputs for relation-backed streaming writes** [`#4908`](https://github.com/OpenLineage/OpenLineage/pull/4908) [@MSDehghan](https://github.com/MSDehghan)
+  *Captures catalog-aware output datasets for non-Kafka Structured Streaming V2 writes, including Iceberg sinks, on Spark 3.2 or later.*
+* **Spec: Add capture timestamps to data quality metrics** [`#4936`](https://github.com/OpenLineage/OpenLineage/pull/4936) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Adds optional `captureDate` to `DataQualityMetricsDatasetFacet` to identify when the reported dataset metrics were captured.*
+
+### Changed
+
+* **Spark: Add target tables to metadata-only DELETE job names** [`#5033`](https://github.com/OpenLineage/OpenLineage/pull/5033) [@MSDehghan](https://github.com/MSDehghan)
+  *Includes the target table in supported metadata-only DELETE job names so deletes against different tables produce distinct jobs.*
+* **SQL: Upgrade sqlparser and preserve lineage for new SQL forms** [`#5046`](https://github.com/OpenLineage/OpenLineage/pull/5046) [@mobuchowski](https://github.com/mobuchowski)
+  *Upgrades sqlparser to 0.63.0, captures dependencies in aggregate WHERE predicates, ESCAPE expressions, IS JSON operands, and Redshift expression unpivoting, and explicitly rejects unsupported SQL pipe queries.*
+
+### Fixed
+
+* **Client/Go: Accept all successful HTTP responses** [`#4939`](https://github.com/OpenLineage/OpenLineage/pull/4939) [@rahul-madaan](https://github.com/rahul-madaan)
+  *Treats every HTTP 2xx response as success, including `202 Accepted` responses from consumers that queue events.*
+* **Client/Java: Ignore historical GC time in circuit breaker checks** [`#4956`](https://github.com/OpenLineage/OpenLineage/pull/4956) [@Daksha1611](https://github.com/Daksha1611)
+  *Initializes the garbage collection baseline correctly so GC time accumulated before the first check does not trigger the circuit breaker.*
+* **Client/Java: Preserve fully qualified JDBC table names** [`#5044`](https://github.com/OpenLineage/OpenLineage/pull/5044) [@MSDehghan](https://github.com/MSDehghan)
+  *Avoids prepending the JDBC URL database to table names that already include a database, including SQL Server cross-database references.*
+* **Client/Python: Serialize dates and UUIDs as canonical strings** [`#4942`](https://github.com/OpenLineage/OpenLineage/pull/4942) [@ptimizeroracle](https://github.com/ptimizeroracle)
+  *Serializes `datetime` and `date` values with ISO formatting and UUIDs as strings instead of non-serializable placeholders in events and custom facets.*
+* **dbt: Skip exposure job events and handle null Datadog routing fields** [`#4990`](https://github.com/OpenLineage/OpenLineage/pull/4990) [@himakolavennu](https://github.com/himakolavennu)
+  *Skips job events for non-executable exposures while preserving their dataset metadata, and handles null integration and job type values in Datadog routing.*
+* **Flink: Preserve Kafka datasets with unsupported deserializers** [`#4966`](https://github.com/OpenLineage/OpenLineage/pull/4966) [@josemasa13](https://github.com/josemasa13)
+  *Retains Kafka input dataset identities when a custom deserializer cannot provide a schema facet.*
+* **Spark: Avoid reusing Iceberg commit reports across runs** [`#5030`](https://github.com/OpenLineage/OpenLineage/pull/5030) [@MSDehghan](https://github.com/MSDehghan)
+  *Removes matched commit reports from the shared catalog reporter and caches them per run so later runs do not reuse reports already claimed by an earlier run.*
+* **Spark: Avoid scanning dynamic file indexes for input statistics** [`#4977`](https://github.com/OpenLineage/OpenLineage/pull/4977) [@MSDehghan](https://github.com/MSDehghan)
+  *Uses cached file listings or stored catalog statistics to avoid starting Spark jobs on the listener thread while collecting optional input statistics.*
+* **Spark: Cancel facet tasks when event processing is interrupted** [`#4922`](https://github.com/OpenLineage/OpenLineage/pull/4922) [@mobuchowski](https://github.com/mobuchowski)
+  *Cancels pending dataset or facet work when its waiting thread is interrupted, reducing prolonged memory retention and occupied executor threads.*
+* **Spark: Capture remaining properties when one configured key is unset** [`#5054`](https://github.com/OpenLineage/OpenLineage/pull/5054) [@sg0709](https://github.com/sg0709)
+  *Handles each `capturedProperties` lookup separately so a missing runtime configuration key does not discard other available properties.*
+* **Spark: Derive dataset lifecycle changes from the save mode** [`#5031`](https://github.com/OpenLineage/OpenLineage/pull/5031) [@MSDehghan](https://github.com/MSDehghan)
+  *Reports CREATE and OVERWRITE only for the corresponding save modes, avoiding incorrect lifecycle facets on JDBC, Delta path, and generic provider appends.*
+* **Spark: Include computed MERGE assignments in column lineage** [`#4991`](https://github.com/OpenLineage/OpenLineage/pull/4991) [@MSDehghan](https://github.com/MSDehghan)
+  *Captures source dependencies for casts, not-null checks, functions, and arithmetic in MERGE assignments instead of retaining only bare column references.*
+* **Spark: Inject Iceberg metrics reporters when catalog caching is disabled** [`#5013`](https://github.com/OpenLineage/OpenLineage/pull/5013) [@MSDehghan](https://github.com/MSDehghan)
+  *Registers metrics reporters for uncached Iceberg catalogs so commit report facets can be emitted with `cache-enabled=false`.*
+* **Spark: Isolate facet builder failures** [`#5023`](https://github.com/OpenLineage/OpenLineage/pull/5023) [@MSDehghan](https://github.com/MSDehghan)
+  *Continues building events and other facets when a facet builder throws an exception or linkage error.*
+* **Spark: Keep V2 datasets when version lookup fails** [`#5020`](https://github.com/OpenLineage/OpenLineage/pull/5020) [@MSDehghan](https://github.com/MSDehghan)
+  *Emits DataSourceV2 datasets without a version facet when the catalog version lookup fails, preserving the other datasets in the event.*
+* **Spark: Preserve Delta lineage for top-level adaptive queries** [`#4932`](https://github.com/OpenLineage/OpenLineage/pull/4932) [@mobuchowski](https://github.com/mobuchowski)
+  *Uses root execution IDs on Spark 3.4 or later to retain user queries with Adaptive Query Execution while filtering nested Delta executions.*
+* **Spark: Preserve JDBC inputs in joins following subqueries** [`#5014`](https://github.com/OpenLineage/OpenLineage/pull/5014) [@MSDehghan](https://github.com/MSDehghan)
+  *Parses the full `dbtable` expression when a parenthesized subquery is followed by a join, retaining all input tables.*
+* **Spark: Prevent late task metrics retention** [`#4921`](https://github.com/OpenLineage/OpenLineage/pull/4921) [@mobuchowski](https://github.com/mobuchowski)
+  *Ignores task metrics for stages with no active job owner, preventing orphaned metrics from accumulating after job cancellation.*
+* **Spark: Retain matching Iceberg metrics reports across catalogs** [`#5009`](https://github.com/OpenLineage/OpenLineage/pull/5009) [@MSDehghan](https://github.com/MSDehghan)
+  *Stops searching after finding a matching scan or commit report so a later catalog's empty result cannot discard it.*
+* **Spark: Skip unsupported Iceberg metrics catalogs safely** [`#4952`](https://github.com/OpenLineage/OpenLineage/pull/4952) [@MSDehghan](https://github.com/MSDehghan)
+  *Skips unsupported or missing Iceberg catalogs during metrics reporter injection instead of failing lineage event construction.*
+* **Spark: Support Iceberg Glue catalogs configured with type=glue** [`#5037`](https://github.com/OpenLineage/OpenLineage/pull/5037) [@alokr-dhub](https://github.com/alokr-dhub)
+  *Recognizes the Glue catalog shorthand and emits the correct AWS Glue table identity and TABLE symlink.*
+* **Spark: Tolerate duplicate files in Iceberg input statistics** [`#5022`](https://github.com/OpenLineage/OpenLineage/pull/5022) [@MSDehghan](https://github.com/MSDehghan)
+  *Counts each data file once when it appears in multiple scan tasks, preventing duplicate-key errors from dropping input datasets.*
+* **Spark: Use qualified JDBC names when matching column lineage inputs** [`#4992`](https://github.com/OpenLineage/OpenLineage/pull/4992) [@MSDehghan](https://github.com/MSDehghan)
+  *Uses consistent schema-qualified dataset identifiers when matching JDBC query columns to input datasets.*
+* **SQL: Handle BigQuery UNNEST and UNPIVOT table factors** [`#4962`](https://github.com/OpenLineage/OpenLineage/pull/4962) [@MostafaAbdelsalam11](https://github.com/MostafaAbdelsalam11)
+  *Preserves query lineage around UNNEST expressions and visits the source table and alias of UNPIVOT instead of failing the entire query.*
+* **SQL: Include QUALIFY subquery inputs** [`#4915`](https://github.com/OpenLineage/OpenLineage/pull/4915) [@mattfaltyn](https://github.com/mattfaltyn)
+  *Includes tables referenced only by nested QUALIFY subqueries in SQL table lineage.*
 
 ## [1.53.0](https://github.com/OpenLineage/OpenLineage/compare/1.52.0...1.53.0)
 

@@ -20,7 +20,13 @@ import urllib3.util
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import get_only_specified_fields, import_from_string
+from openlineage.client.utils import (
+    config_value_to_str,
+    config_values_to_str,
+    first_config_value,
+    get_only_specified_fields,
+    import_from_string,
+)
 from requests import Session
 from requests.adapters import HTTPAdapter
 
@@ -49,10 +55,11 @@ class HttpCompression(Enum):
 class ApiKeyTokenProvider(TokenProvider):
     def __init__(self, config: dict[str, str]) -> None:
         super().__init__(config)
-        self.api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
-        if not self.api_key:
+        api_key = first_config_value(config, "apiKey", "apikey", "api_key")
+        if api_key is None:
             msg = "apiKey is required for HTTP Transport when auth type is `api_key`."
             raise KeyError(msg)
+        self.api_key = config_value_to_str(api_key)
 
     def get_bearer(self) -> str | None:
         return f"Bearer {self.api_key}"
@@ -287,12 +294,12 @@ class JwtTokenProvider(TokenEndpointTokenProvider):
     DEFAULT_TOKEN_FIELDS = ("token", "access_token")
 
     def __init__(self, config: dict[str, Any]) -> None:
-        api_key = config.get("apiKey") or config.get("apikey") or config.get("api_key")
-        if not api_key:
+        api_key = first_config_value(config, "apiKey", "apikey", "api_key")
+        if api_key is None:
             msg = "apiKey is required for JWT token provider."
             raise KeyError(msg)
         super().__init__(config)
-        self.api_key = api_key
+        self.api_key = config_value_to_str(api_key)
 
         # OAuth parameters
         self.grant_type = (
@@ -333,17 +340,17 @@ class OAuth2ClientCredentialsTokenProvider(TokenEndpointTokenProvider):
     CLIENT_AUTH_METHODS = ("client_secret_basic", "client_secret_post")
 
     def __init__(self, config: dict[str, Any]) -> None:
-        client_id = config.get("clientId") or config.get("client_id")
-        if not client_id:
+        client_id = first_config_value(config, "clientId", "client_id")
+        if client_id is None:
             msg = "clientId is required for OAuth2 access token provider."
             raise KeyError(msg)
-        client_secret = config.get("clientSecret") or config.get("client_secret")
-        if not client_secret:
+        client_secret = first_config_value(config, "clientSecret", "client_secret")
+        if client_secret is None:
             msg = "clientSecret is required for OAuth2 access token provider."
             raise KeyError(msg)
         super().__init__(config)
-        self.client_id = str(client_id)
-        self.client_secret = str(client_secret)
+        self.client_id = config_value_to_str(client_id)
+        self.client_secret = config_value_to_str(client_secret)
         self.scope = config.get("scope")
         self.client_auth_method = str(
             config.get("clientAuthMethod") or config.get("client_auth_method") or self.CLIENT_AUTH_METHODS[0]
@@ -407,6 +414,55 @@ def get_session() -> Session:
 
 
 @attr.define
+class HttpSslContextConfig:
+    """SSL context configuration for the HTTP transport.
+
+    Provides parity with the Java client's ``sslContext`` config section,
+    letting the Python client verify the server against a custom CA bundle
+    and authenticate itself with a client certificate (mutual TLS).
+
+    ``ca_cert_path`` maps to ``requests`` ``verify`` (a CA bundle path).
+    ``client_cert_path`` / ``client_key_path`` map to ``requests`` ``cert``.
+    """
+
+    ca_cert_path: str | None = None
+    client_cert_path: str | None = None
+    client_key_path: str | None = None
+
+    def __attrs_post_init__(self) -> None:
+        if self.client_key_path and not self.client_cert_path:
+            msg = (
+                "`clientKeyPath` requires `clientCertPath` to be set: "
+                "a client key without a client certificate cannot be used."
+            )
+            raise ValueError(msg)
+
+    @classmethod
+    def from_dict(cls, params: dict[str, Any]) -> HttpSslContextConfig:
+        # Accept camelCase (matching the Java client), snake_case, and lowercased keys
+        # (the environment-variable loader lowercases keys, e.g. `cacertpath`).
+        # The key-without-cert validation runs in __attrs_post_init__.
+        return cls(
+            ca_cert_path=params.get("caCertPath", params.get("ca_cert_path", params.get("cacertpath"))),
+            client_cert_path=params.get(
+                "clientCertPath", params.get("client_cert_path", params.get("clientcertpath"))
+            ),
+            client_key_path=params.get(
+                "clientKeyPath", params.get("client_key_path", params.get("clientkeypath"))
+            ),
+        )
+
+    def as_requests_cert(self) -> str | tuple[str, str] | None:
+        """Return the value for ``requests`` ``cert``: a (cert, key) tuple, a
+        single combined cert/key file path, or None when no client cert is set."""
+        if not self.client_cert_path:
+            return None
+        if self.client_key_path:
+            return (self.client_cert_path, self.client_key_path)
+        return self.client_cert_path
+
+
+@attr.define
 class HttpConfig(Config):
     url: str
     endpoint: str = "api/v1/lineage"
@@ -420,9 +476,11 @@ class HttpConfig(Config):
     # not set by TransportFactory
     adapter: HTTPAdapter | None = None
     # custom headers support
-    custom_headers: dict[str, str] = attr.field(factory=dict)
+    custom_headers: dict[str, str] = attr.field(factory=dict, converter=config_values_to_str)
     # retry settings
     retry: dict[str, Any] = attr.field(default=DEFAULT_RETRY_CONFIG)
+    # custom SSL context (CA bundle / client certificate) for parity with the Java client
+    ssl_context: HttpSslContextConfig | None = None
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> HttpConfig:
@@ -431,6 +489,17 @@ class HttpConfig(Config):
             raise RuntimeError(msg)
         specified_dict = get_only_specified_fields(cls, params)
         specified_dict["auth"] = create_token_provider(specified_dict.get("auth", {}))
+        ssl_context = params.get("sslContext", params.get("ssl_context", params.get("sslcontext")))
+        if isinstance(ssl_context, dict):
+            specified_dict["ssl_context"] = HttpSslContextConfig.from_dict(ssl_context)
+        elif isinstance(ssl_context, HttpSslContextConfig):
+            specified_dict["ssl_context"] = ssl_context
+        elif ssl_context is not None:
+            msg = (
+                '`sslContext` must be a mapping (e.g. `{"caCertPath": ...}`) '
+                f"or `HttpSslContextConfig`, got {type(ssl_context).__name__}."
+            )
+            raise ValueError(msg)
         compression = specified_dict.get("compression")
         if compression:
             specified_dict["compression"] = HttpCompression(compression)
@@ -486,7 +555,14 @@ class HttpTransport(Transport):
         self.url = url
         self.endpoint = config.endpoint
         self.timeout = config.timeout
-        self.verify = config.verify
+        self.verify: bool | str = config.verify
+        self.ssl_context = config.ssl_context
+        if self.ssl_context and self.ssl_context.ca_cert_path:
+            # A custom CA bundle takes precedence over the boolean verify flag.
+            self.verify = self.ssl_context.ca_cert_path
+        self.cert: str | tuple[str, str] | None = (
+            self.ssl_context.as_requests_cert() if self.ssl_context else None
+        )
         self.compression = config.compression
         self._session: Session | None = None
         self.session = config.session
@@ -499,14 +575,30 @@ class HttpTransport(Transport):
         try:
             body, headers = self._prepare_request(Serde.to_json(event))
 
-            resp = self.session.post(
-                url=urljoin(self.url, self.endpoint),
-                data=body,
-                headers=headers,
-                timeout=self.timeout,
-                verify=self.verify,
-            )
+            post_kwargs: dict[str, Any] = {
+                "url": urljoin(self.url, self.endpoint),
+                "data": body,
+                "headers": headers,
+                "timeout": self.timeout,
+                "verify": self.verify,
+            }
+            if self.cert is not None:
+                # Only pass ``cert`` when a client certificate is configured,
+                # so the default call signature stays unchanged.
+                post_kwargs["cert"] = self.cert
+                # Never follow redirects with a client certificate: the
+                # certificate would be presented to the redirect target,
+                # an endpoint it was not issued for.
+                post_kwargs["allow_redirects"] = False
+            resp = self.session.post(**post_kwargs)
             resp.close()
+            if self.cert is not None and resp.is_redirect:
+                msg = (
+                    "Refusing to follow redirect while a client certificate "
+                    "is configured: authenticating against the redirect "
+                    "target was not requested."
+                )
+                raise RuntimeError(msg)
             resp.raise_for_status()
             return resp
         finally:

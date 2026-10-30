@@ -20,9 +20,19 @@ pub fn parse_multiple_statements(
     dialect: &dyn CanonicalDialect,
     default_schema: Option<String>,
 ) -> Result<SqlMeta> {
+    parse_multiple_statements_with_default_database(sql, dialect, default_schema, None)
+}
+
+/// Parses SQL using an initial database and schema for unqualified table names.
+pub fn parse_multiple_statements_with_default_database(
+    sql: Vec<String>,
+    dialect: &dyn CanonicalDialect,
+    default_schema: Option<String>,
+    default_database: Option<String>,
+) -> Result<SqlMeta> {
     let mut column_lineage: Vec<ColumnLineage> = vec![];
     let mut errors: Vec<ExtractionError> = vec![];
-    let mut context = Context::new(dialect, default_schema.clone(), None);
+    let mut context = Context::new(dialect, default_schema, default_database);
 
     for (index, statement) in sql.iter().enumerate() {
         let ast = Parser::parse_sql(dialect.as_base(), statement);

@@ -111,6 +111,26 @@ class IcebergHandlerTest {
   @Test
   @SneakyThrows
   void testGetDatasetIdentifierForHive() {
+    assertDatasetIdentifierForHive();
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForDataprocMetastore() {
+    // test that adding the properties for the Dataproc Metastore does not affect DatasetIdentifier
+    // generation
+
+    sparkConf.set("spark.sql.hive.metastore.uris", "thrift://metastore-host:10001");
+    sparkConf.set("spark.dataproc.metastore.project-id", "my-gcp-project");
+    sparkConf.set("spark.dataproc.metastore.location", "eu");
+    sparkConf.set("spark.dataproc.metastore.service.short.name", "my-dpms");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+
+    assertDatasetIdentifierForHive();
+  }
+
+  private void assertDatasetIdentifierForHive() throws NoSuchTableException {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
@@ -401,6 +421,51 @@ class IcebergHandlerTest {
             new Map.Map2<>(
                 "spark.sql.catalog.iceberg.catalog-impl",
                 "org.apache.iceberg.aws.glue.GlueCatalog",
+                "spark.sql.catalog.iceberg.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("iceberg");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"database"}, "table"),
+            new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-west-2:1122334455")
+        .hasFieldOrPropertyWithValue("name", "table/database/table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  /** End-to-end: type=GLUE yields the same Glue TABLE symlink as catalog-impl. */
+  @Test
+  @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
+  void testGetDatasetIdentifierForIcebergGlueCatalogTypeShorthand() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    sparkConf.set("spark.glue.accountId", "1122334455");
+    sparkConf.set("spark.sql.catalog.iceberg.type", "GLUE");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.iceberg.type",
+                "GLUE",
                 "spark.sql.catalog.iceberg.warehouse",
                 "/tmp/warehouse"));
 
@@ -914,6 +979,105 @@ class IcebergHandlerTest {
     assertThat(facet.getCatalogProperties().getAdditionalProperties())
         .hasFieldOrPropertyWithValue("gcp_location", "eu")
         .hasFieldOrPropertyWithValue("gcp_project_id", "my-gcp-project");
+  }
+
+  @Test
+  void testGetHiveCatalogDataWithoutDataprocMetastoreProperties() {
+    SparkCatalog sparkCatalog = setupHiveCatalogDataTest("thrift://metastore-host:10001", false);
+
+    assertHiveCatalogData(sparkCatalog, "thrift://metastore-host:10001", Collections.emptyMap());
+  }
+
+  @Test
+  void testGetHiveCatalogDataWithDataprocMetastorePropertiesAndDifferentMetastoreUri() {
+    SparkCatalog sparkCatalog =
+        setupHiveCatalogDataTest("thrift://another-metastore-host:10001", true);
+
+    assertHiveCatalogData(
+        sparkCatalog, "thrift://another-metastore-host:10001", Collections.emptyMap());
+  }
+
+  @Test
+  void testGetHiveCatalogDataWithDataprocMetastorePropertiesAndMatchingMetastoreUri() {
+    SparkCatalog sparkCatalog = setupHiveCatalogDataTest("thrift://metastore-host:10001", true);
+
+    HashMap<String, String> expectedProperties = new HashMap<String, String>();
+    expectedProperties.put("gcp_location", "eu");
+    expectedProperties.put("gcp_project_id", "my-gcp-project");
+    expectedProperties.put("gcp_instance_id", "my-dpms");
+
+    assertHiveCatalogData(sparkCatalog, "thrift://metastore-host:10001", expectedProperties);
+  }
+
+  @Test
+  void testGetHiveCatalogDataWithDataprocMetastorePropertiesAndUndefinedCatalogUri() {
+    SparkCatalog sparkCatalog = setupHiveCatalogDataTest(null, true);
+
+    HashMap<String, String> expectedProperties = new HashMap<String, String>();
+
+    expectedProperties.put("gcp_location", "eu");
+    expectedProperties.put("gcp_project_id", "my-gcp-project");
+    expectedProperties.put("gcp_instance_id", "my-dpms");
+
+    assertHiveCatalogData(sparkCatalog, null, expectedProperties);
+  }
+
+  private void assertHiveCatalogData(
+      SparkCatalog sparkCatalog,
+      String expectedMetadataUri,
+      java.util.Map<String, String> expectedCatalogProperties) {
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
+    assertEquals("hive_catalog", facet.getName());
+    assertEquals("hive", facet.getType());
+    assertEquals("iceberg", facet.getFramework());
+    assertEquals(expectedMetadataUri, facet.getMetadataUri());
+    assertEquals("gs://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
+
+    if (expectedCatalogProperties.isEmpty()) {
+      assertNull(facet.getCatalogProperties());
+      return;
+    }
+
+    assertThat(facet.getCatalogProperties().getAdditionalProperties())
+        .containsAllEntriesOf(expectedCatalogProperties);
+  }
+
+  private SparkCatalog setupHiveCatalogDataTest(String catalogUri, boolean withDpmsProperties) {
+    SparkCatalog sparkCatalog = setupCatalogFacetMocks("hive_catalog");
+    if (catalogUri == null) {
+      when(runtimeConfig.getAll())
+          .thenReturn(
+              new Map.Map2(
+                  "spark.sql.catalog.hive_catalog.type",
+                  "hive",
+                  "spark.sql.catalog.hive_catalog.warehouse",
+                  "gs://bucket/path/to/iceberg/warehouse"));
+    } else {
+      when(runtimeConfig.getAll())
+          .thenReturn(
+              new Map.Map3(
+                  "spark.sql.catalog.hive_catalog.type",
+                  "hive",
+                  "spark.sql.catalog.hive_catalog.uri",
+                  catalogUri,
+                  "spark.sql.catalog.hive_catalog.warehouse",
+                  "gs://bucket/path/to/iceberg/warehouse"));
+    }
+
+    sparkConf.set("spark.sql.hive.metastore.uris", "thrift://metastore-host:10001");
+    if (withDpmsProperties) {
+      sparkConf.set("spark.dataproc.metastore.project-id", "my-gcp-project");
+      sparkConf.set("spark.dataproc.metastore.location", "eu");
+      sparkConf.set("spark.dataproc.metastore.service.short.name", "my-dpms");
+    }
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
+
+    return sparkCatalog;
   }
 
   @Test

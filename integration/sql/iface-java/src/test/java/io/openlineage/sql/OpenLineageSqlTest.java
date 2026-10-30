@@ -7,6 +7,7 @@ package io.openlineage.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +39,23 @@ class OpenLineageSqlTest {
             .isPresent());
   }
 
+  /** MySQL joined UPDATE reads the joined table and writes only the target. */
+  @Test
+  void mysqlUpdateJoin() {
+    SqlMeta output =
+        OpenLineageSql.parse(
+                Collections.singletonList(
+                    "UPDATE inventory i JOIN new_arrivals n ON i.product = n.product "
+                        + "SET i.quantity = i.quantity + n.quantity"),
+                "mysql")
+            .get();
+    assertEquals(Collections.emptyList(), output.errors());
+    assertEquals(
+        Collections.singletonList(new DbTableMeta(null, null, "new_arrivals")), output.inTables());
+    assertEquals(
+        Collections.singletonList(new DbTableMeta(null, null, "inventory")), output.outTables());
+  }
+
   @Test
   void basicParse() {
     SqlMeta output = OpenLineageSql.parse(Arrays.asList("SELECT * FROM test")).get();
@@ -67,6 +85,85 @@ class OpenLineageSqlTest {
             new ArrayList<DbTableMeta>(),
             Collections.emptyList(),
             Collections.emptyList()));
+  }
+
+  @Test
+  void parseWithDefaultDatabaseAndSchema() {
+    SqlMeta output =
+        OpenLineageSql.parse(
+                Collections.singletonList("INSERT INTO target SELECT src.id FROM source src"),
+                "postgres",
+                ParseOptions.builder().defaultSchema("public").defaultDatabase("mydb").build())
+            .get();
+    DbTableMeta source = new DbTableMeta("mydb", "public", "source");
+    DbTableMeta target = new DbTableMeta("mydb", "public", "target");
+    assertEquals(Collections.singletonList(source), output.inTables());
+    assertEquals(Collections.singletonList(target), output.outTables());
+    assertEquals(
+        Collections.singletonList(
+            new ColumnLineage(
+                new ColumnMeta(null, "id"),
+                Collections.singletonList(new ColumnMeta(source, "id")))),
+        output.columnLineage());
+    assertEquals(Collections.emptyList(), output.errors());
+  }
+
+  @Test
+  void explicitDatabaseOverridesDefault() {
+    SqlMeta output =
+        OpenLineageSql.parse(
+                Collections.singletonList("SELECT id FROM \"OtherDB\".\"OtherSchema\".customers"),
+                "postgres",
+                ParseOptions.builder().defaultSchema("public").defaultDatabase("mydb").build())
+            .get();
+    DbTableMeta source = output.inTables().get(0);
+    assertEquals("OtherDB", source.database());
+    assertEquals("OtherSchema", source.schema());
+    assertEquals(source, output.columnLineage().get(0).lineage().get(0).origin().get());
+    assertEquals(Collections.emptyList(), output.errors());
+  }
+
+  @Test
+  void nullDefaultsPreserveExistingCalls() {
+    List<String> sql = Collections.singletonList("SELECT id FROM customers");
+    assertEquals(
+        OpenLineageSql.parse(sql, "postgres"),
+        OpenLineageSql.parse(sql, "postgres", ParseOptions.defaults()));
+    assertEquals(
+        OpenLineageSql.parse(sql), OpenLineageSql.parse(sql, null, ParseOptions.builder().build()));
+  }
+
+  @Test
+  void defaultDatabaseIsScopedToOneCall() {
+    List<String> sql = Collections.singletonList("SELECT id FROM customers");
+    SqlMeta first =
+        OpenLineageSql.parse(
+                sql,
+                "postgres",
+                ParseOptions.builder().defaultSchema("public").defaultDatabase("first_db").build())
+            .get();
+    SqlMeta second =
+        OpenLineageSql.parse(
+                sql,
+                "postgres",
+                ParseOptions.builder().defaultSchema("public").defaultDatabase("second_db").build())
+            .get();
+    assertEquals("first_db", first.inTables().get(0).database());
+    assertEquals("second_db", second.inTables().get(0).database());
+    assertNull(OpenLineageSql.parse(sql, "postgres").get().inTables().get(0).database());
+  }
+
+  @Test
+  void parseOptionsBuilder() {
+    ParseOptions options =
+        ParseOptions.builder().defaultSchema("public").defaultDatabase("mydb").build();
+    assertEquals("public", options.defaultSchema());
+    assertEquals("mydb", options.defaultDatabase());
+    assertEquals(
+        options, ParseOptions.builder().defaultDatabase("mydb").defaultSchema("public").build());
+    assertNull(ParseOptions.defaults().defaultSchema());
+    assertNull(ParseOptions.defaults().defaultDatabase());
+    assertEquals(ParseOptions.defaults(), ParseOptions.builder().build());
   }
 
   @Test

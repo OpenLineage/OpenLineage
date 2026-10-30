@@ -48,8 +48,11 @@ followed by nested keys separated by double underscores (`__`).
 
 1. Prefix Requirement: All environment variables must begin with `OPENLINEAGE__`.
 2. Sections Separation: Configuration sections are separated using double underscores `__` to form the hierarchy.
-3. Lowercase Conversion: Environment variable values are automatically converted to lowercase.
+3. Lowercase Conversion: Configuration keys taken from environment variable names are converted to lowercase; values keep their case.
 4. JSON String Support: You can pass a JSON string at any level of the configuration hierarchy, which will be merged into the final configuration structure.
+   Values are parsed as JSON when possible, so `true`, `false` and numbers such as `5` or `0.2` set boolean and numeric options.
+   String settings such as tag values, API keys, OAuth2 client credentials, file paths, custom HTTP headers and Kafka topics keep the text as written: `true` stays `"true"` and `1234e5678` stays `"1234e5678"`.
+   This includes numbers that would not keep their exact text when parsed (for example `1.10` or `1e5`): numeric options receive the number, and string settings receive the text as written.
 5. Hyphen Restriction: Since environment variable names cannot contain `-` (hyphen), if a name strictly requires a hyphen, use a JSON string as the value of the environment variable.
 6. Precedence Rules:
 * Top-level keys have precedence and will not be overwritten by more nested entries.
@@ -237,6 +240,10 @@ The HTTP transport provides synchronous, blocking event emission. This is the de
 - `endpoint` - string specifying the endpoint to which events are sent, appended to `url`. Optional, default: `api/v1/lineage`.
 - `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
 - `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
+- `sslContext` - dictionary specifying a custom SSL context, for parity with the Java client. Optional, default: `null`.
+  - `caCertPath` - string path to a custom CA bundle used to verify the server's TLS certificate. When set, it takes precedence over `verify`. Optional.
+  - `clientCertPath` - string path to a client certificate for mutual TLS authentication. Optional.
+  - `clientKeyPath` - string path to the private key for the client certificate. Optional if the certificate file already contains the key.
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
   - `type` - string specifying value for one of the out-of-the-box available authentication methods (`api_key`, `jwt` or `oauth2`), or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - Configuration options for `api_key` authentication:
@@ -290,6 +297,10 @@ transport:
   endpoint: api/v1/lineage
   timeout: 5
   verify: false
+  sslContext:
+    caCertPath: /etc/ssl/ca-bundle.pem
+    clientCertPath: /etc/ssl/client.crt
+    clientKeyPath: /etc/ssl/client.key
   auth:
     type: api_key
     apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
@@ -308,13 +319,24 @@ transport:
 
 ```python
 from openlineage.client import OpenLineageClient
-from openlineage.client.transport.http import ApiKeyTokenProvider, HttpConfig, HttpCompression, HttpTransport
+from openlineage.client.transport.http import (
+    ApiKeyTokenProvider,
+    HttpCompression,
+    HttpConfig,
+    HttpSslContextConfig,
+    HttpTransport,
+)
 
 http_config = HttpConfig(
   url="https://backend:5000",
   endpoint="api/v1/lineage",
   timeout=5,
   verify=False,
+  ssl_context=HttpSslContextConfig(
+    ca_cert_path="/etc/ssl/ca-bundle.pem",
+    client_cert_path="/etc/ssl/client.crt",
+    client_key_path="/etc/ssl/client.key",
+  ),
   auth=ApiKeyTokenProvider({"apiKey": "f048521b-dfe8-47cd-9c65-0cb07d57591e"}),
   compression=HttpCompression.GZIP,
 )
@@ -2033,7 +2055,7 @@ User-supplied tags can override integration tags with the same key (case-insensi
 ```sh
 OPENLINEAGE__TAGS__JOB__ENVIRONMENT="PRODUCTION"  # Job tag
 OPENLINEAGE__TAGS__JOB__PIPELINE="sales_monthly"  # Job tag
-OPENLINEAGE__TAGS__RUN__adhoc="true"  # Run tag
+OPENLINEAGE__TAGS__RUN__adhoc=true  # Run tag
 ```
 
 </TabItem>
@@ -2078,6 +2100,13 @@ client = OpenLineageClient(config=config)
 
 </TabItem>
 </Tabs>
+
+Tag values are always emitted as strings. Booleans and numbers are converted to their text form, so
+`OPENLINEAGE__TAGS__RUN__adhoc=true`, `adhoc: true` in YAML and `"adhoc": True` in Python all produce the tag value `"true"`,
+and `OPENLINEAGE__TAGS__JOB__TICKET=4521` produces `"4521"`.
+In YAML and JSON, quote values whose exact text matters, such as `version: "1.10"`, because the parser reads unquoted `1.10` as the number `1.1`.
+A tag with a `null` or empty value is skipped with a warning. To use the literal string `null` as a value, quote it in YAML (`owner: "null"`)
+or set the environment variable to a JSON string (`OPENLINEAGE__TAGS__RUN__OWNER='"null"'`).
 
 
 ## Dataset Reducing

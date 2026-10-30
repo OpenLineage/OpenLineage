@@ -11,6 +11,12 @@ To learn more about dbt, visit the [documentation site](https://docs.getdbt.com)
 
 dbt generates rich telemetry and metadata that OpenLineage uses to trace datasets, jobs, and lineage.
 
+Source datasets use dbt's physical table `identifier`, which defaults to the source `name` when not
+overridden. Models, seeds, and snapshots use their materialized `alias`. Athena Glue symlinks use the
+same physical table name. Correcting an overridden source identifier affects newly emitted events;
+historical lineage recorded under the logical source name may need replay or reconciliation in the
+consuming catalog.
+
 OpenLineage processes dbt telemetry using **two primary parsing mechanisms** based on *when* and *how* metadata is collected:
 
 1. **Artifact Processor (Post-Run)**: Extracts lineage after dbt finishes by parsing generated JSON artifacts (`manifest.json`, `run_results.json`, and optionally `catalog.json`).

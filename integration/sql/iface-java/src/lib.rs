@@ -12,7 +12,7 @@ use jni::strings::JNIString;
 use jni::sys::{jobject, jstring};
 use jni::{Env, EnvUnowned, Outcome};
 
-use rust_impl::{get_generic_dialect, parse_multiple_statements};
+use rust_impl::{get_generic_dialect, parse_multiple_statements_with_default_database};
 
 trait AsJavaObject {
     fn as_java_object<'local>(&self, env: &mut Env<'local>) -> Result<JObject<'local>> {
@@ -223,12 +223,13 @@ fn throw_anyhow(env: &mut Env<'_>, err: anyhow::Error) {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parse(
+pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parseNative(
     mut env: EnvUnowned,
     _class: JClass,
     sql: JObject,
     dialect: JString,
     default_schema: JString,
+    default_database: JString,
 ) -> jobject {
     let outcome = env.with_env(move |env| -> Result<jobject, Error> {
         let result: anyhow::Result<jobject> = (|| {
@@ -258,7 +259,18 @@ pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parse(
                 Some(default_schema.try_to_string(env)?)
             };
 
-            let parsed = parse_multiple_statements(vec_sql, dialect_obj, default_schema_str)?;
+            let default_database_str: Option<String> = if default_database.as_raw().is_null() {
+                None
+            } else {
+                Some(default_database.try_to_string(env)?)
+            };
+
+            let parsed = parse_multiple_statements_with_default_database(
+                vec_sql,
+                dialect_obj,
+                default_schema_str,
+                default_database_str,
+            )?;
             Ok(parsed.as_java_object(env)?.into_raw())
         })();
 

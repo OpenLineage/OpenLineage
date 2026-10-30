@@ -17,7 +17,6 @@ import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.Expression;
-import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.Option;
 import scala.collection.Seq;
@@ -154,7 +153,6 @@ public class IcebergMergeIntoVisitor implements OperatorVisitor {
               matched.stream()
                   .filter(exprs -> exprs.size() > position)
                   .map(exprs -> exprs.get(position))
-                  .filter(expr -> expr instanceof NamedExpression)
                   .forEach(
                       expr ->
                           ExpressionTraverser.of(
@@ -168,7 +166,6 @@ public class IcebergMergeIntoVisitor implements OperatorVisitor {
               notMatched.stream()
                   .filter(exprs -> exprs.size() > position)
                   .map(exprs -> exprs.get(position))
-                  .filter(expr -> expr instanceof NamedExpression)
                   .forEach(
                       expr ->
                           ExpressionTraverser.of(

@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +58,8 @@ class LakehouseRestCatalogTypeHandler extends RestCatalogTypeHandler {
   }
 
   @Override
-  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+  Map<String, String> catalogProperties(
+      Map<String, String> catalogConf, OpenLineageContext context) {
     return Collections.singletonMap(
         "gcp_project_id", catalogConf.get("header.x-goog-user-project"));
   }

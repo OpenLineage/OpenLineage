@@ -48,6 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 import scala.PartialFunction;
@@ -183,6 +184,28 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertEquals("string", result.get(0).getFacets().getSchema().getFields().get(1).getType());
     assertEquals("postgres://127.0.0.1:5432", result.get(0).getNamespace());
     assertEquals("some_db.public.test_table", result.get(0).getName());
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "jdbc:postgresql://127.0.0.1/some_db|some_db.public.test_table|some_db.public.test_table",
+        "jdbc:sqlserver://127.0.0.1:1433;databaseName=some_db|some_db.dbo.test_table|some_db.dbo.test_table",
+        "jdbc:sqlserver://127.0.0.1:1433;databaseName=some_db|other_db.dbo.test_table|other_db.dbo.test_table"
+      })
+  void testJdbcWriteToFullyQualifiedTable(String url, String dbtable, String expectedName) {
+    java.util.Map<String, String> options = new java.util.HashMap<>();
+    options.put("dbtable", dbtable);
+    options.put("url", url);
+    when(command.options()).thenReturn(ScalaConversionUtils.fromJavaMap(options));
+    when(command.schema()).thenReturn(schema);
+    when(command.dataSource()).thenReturn(mock(JdbcRelationProvider.class));
+
+    List<OpenLineage.OutputDataset> result = visitor.apply(event, command);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getName()).isEqualTo(expectedName);
   }
 
   @ParameterizedTest
