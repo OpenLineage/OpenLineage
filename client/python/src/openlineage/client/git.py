@@ -114,7 +114,14 @@ def _find_tag_in_packed_refs(git_dir: Path, head_sha: str) -> str | None:
 
 
 def _read_loose_tag_target(git_dir: Path, object_sha: str) -> str | None:
-    """Return the object SHA targeted by a loose annotated tag object."""
+    """Return the object SHA targeted by a loose annotated tag object.
+
+    When the tag object is packed (not stored as a loose object), resolving
+    it requires shelling out to ``git cat-file``. That can spawn one ``git``
+    process per unmatched loose tag — seconds of latency on large repos —
+    so the fallback is opt-in via ``OPENLINEAGE_GIT_TAG_FALLBACK=1``.
+    By default packed tag objects are not resolved (returns ``None``).
+    """
     if len(object_sha) != 40:
         return None
     try:
@@ -125,6 +132,8 @@ def _read_loose_tag_target(git_dir: Path, object_sha: str) -> str | None:
             if header != b"tag " + str(len(body)).encode("ascii"):
                 return None
         else:
+            if os.getenv("OPENLINEAGE_GIT_TAG_FALLBACK", "").strip().lower() not in ("1", "true", "yes", "on"):
+                return None
             body = subprocess.run(
                 ["git", "--git-dir", str(_get_common_git_dir(git_dir)), "cat-file", "tag", object_sha],
                 check=True,
@@ -162,7 +171,12 @@ def get_git_repo_url(repo_url: str | None = None, git_dir: Path | None = None) -
     # https://host/repo%2Fname.git don't raise InterpolationSyntaxError.
     config = configparser.RawConfigParser(strict=False)
     config.read(config_file)
-    if config.getboolean("extensions", "worktreeConfig", fallback=False):
+    try:
+        worktree_config_enabled = config.getboolean("extensions", "worktreeConfig", fallback=False)
+    except ValueError:
+        # git accepts values configparser cannot parse (e.g. "true # enabled")
+        worktree_config_enabled = False
+    if worktree_config_enabled:
         config.read(git_dir / "config.worktree")
     return config.get('remote "origin"', "url", fallback=None)
 
