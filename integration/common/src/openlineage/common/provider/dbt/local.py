@@ -263,14 +263,24 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         except FileNotFoundError:
             catalog = None
 
+        # dbt Fusion (dbt v2) does not write args.profiles_dir to run_results.json,
+        # so its absence is expected and only a named directory that fails is worth a warning.
+        profile_dir = run_result.get("args", {}).get("profiles_dir")
         try:
-            profile_dir = run_result["args"]["profiles_dir"]
+            if not profile_dir:
+                raise KeyError("profiles_dir")
             profile = self.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[self.profile_name]
         except (KeyError, FileNotFoundError):
-            self.logger.warning(
-                "Could not load profile directory from run_results.json. "
-                "Falling back to default profiles.yml location."
-            )
+            if profile_dir:
+                self.logger.warning(
+                    "Could not load profile directory from run_results.json. "
+                    "Falling back to default profiles.yml location."
+                )
+            else:
+                self.logger.debug(
+                    "run_results.json does not name the profile directory. "
+                    "Using the default profiles.yml location."
+                )
             profile = self.load_yaml_with_jinja(
                 os.path.join(self.get_dbt_profiles_dir(self.dbt_command_line), "profiles.yml")  # type: ignore[arg-type]
             )[self.profile_name]
