@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any
+from dataclasses import dataclass
+from datetime import datetime
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import Dataset
@@ -20,6 +21,41 @@ PRODUCER: str = "https://github.com/OpenLineage/openlineage/integration/prefect"
 logger: logging.Logger = logging.getLogger(__name__)
 
 
+@dataclass
+class FlowInfo:
+    start_time: datetime
+    name: str
+    namespace: str | None
+
+
+@dataclass
+class DeploymentInfo:
+    namespace: str
+    flow_run: object
+    id: str | None = None
+    created: datetime | None = None
+    updated: datetime | None = None
+    name: str | None = None
+
+
+@dataclass
+class TaskInfo:
+    run_id: str
+    event_time: datetime
+    name: str
+    namespace: str
+    event_type: RunState
+    expected_start_time: datetime
+    prefect_version: str | None = None
+    job_deps: list | None = None
+
+
+@dataclass
+class DatasetInfo:
+    input_datasets: list
+    output_datasets: list
+
+
 class PrefectOpenLineageAdapter:
     def __init__(self, client: OpenLineageClient | None = None):
         self.client = client or OpenLineageClient()
@@ -28,9 +64,9 @@ class PrefectOpenLineageAdapter:
         self,
         run_id: str,
         event_type: RunState,
-        flow_info: Any,
+        flow_info: FlowInfo,
         prefect_version: str | None = None,
-        deployment: Any | None = None,
+        deployment: DeploymentInfo | None = None,
     ) -> RunEvent:
         """Create and emit a flow-level OpenLineage event."""
 
@@ -73,11 +109,11 @@ class PrefectOpenLineageAdapter:
 
     def create_and_emit_task_event(
         self,
-        task_info: Any,
+        task_info: TaskInfo,
         flow_run_id: str | None = None,
         flow_name: str | None = None,
-        deployment: Any | None = None,
-        datasets: Any | None = None,
+        deployment: DeploymentInfo | None = None,
+        datasets: DatasetInfo | None = None,
     ) -> RunEvent:
         """Create and emit a task-level OpenLineage event."""
 

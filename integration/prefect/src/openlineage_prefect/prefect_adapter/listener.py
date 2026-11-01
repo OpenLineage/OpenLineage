@@ -6,13 +6,18 @@ import asyncio
 import logging
 import os
 import re
-from dataclasses import dataclass
 from datetime import datetime
 
 import requests
 from openlineage.client.run import RunState
 from openlineage.client.uuid import generate_static_uuid
-from openlineage_prefect.prefect_adapter import adapter
+from openlineage_prefect.prefect_adapter import (
+    DatasetInfo,
+    DeploymentInfo,
+    FlowInfo,
+    TaskInfo,
+    adapter,
+)
 from prefect.client.orchestration import get_client
 from prefect.events.clients import get_events_subscriber
 from prefect.events.filters import EventFilter, EventNameFilter
@@ -59,15 +64,6 @@ class PrefectOpenLineageListener:
 
         return re.sub(r"-[a-f0-9]+$", "", run_name)
 
-    @dataclass
-    class DeploymentInfo:
-        id: str
-        created: datetime
-        updated: datetime
-        name: str
-        namespace: str
-        flow_run: object
-
     async def get_deployment_info(self, flow_run_id: str) -> DeploymentInfo:
         flow_run = await self.client.read_flow_run(flow_run_id)
 
@@ -83,7 +79,7 @@ class PrefectOpenLineageListener:
                 )
                 if JOB_NAMESPACE == "default":
                     logger.info("OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'")
-            return self.DeploymentInfo(
+            return DeploymentInfo(
                 id=str(deployment.id),
                 created=deployment.created,
                 updated=deployment.updated,
@@ -102,13 +98,10 @@ class PrefectOpenLineageListener:
             if JOB_NAMESPACE == "default":
                 logger.info("OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'")
 
-            return None
-
-    @dataclass
-    class FlowInfo:
-        start_time: datetime
-        name: str
-        namespace: str | None
+            return DeploymentInfo(
+                namespace=ns,
+                flow_run=flow_run,
+            )
 
     async def get_flow_info(self, flow_run) -> FlowInfo:
         flow_id = flow_run.flow_id
@@ -118,7 +111,7 @@ class PrefectOpenLineageListener:
         elif FLOW_NAME_TYPE == "flow-run":
             flow_name = flow_run.name
 
-        return self.FlowInfo(
+        return FlowInfo(
             start_time=flow_run.start_time,
             name=flow_name,
             namespace=None,
@@ -190,17 +183,13 @@ class PrefectOpenLineageListener:
 
         for res in event.related:
             if res["prefect.resource.role"] == "flow":
-                if FLOW_NAME_TYPE == "flow-run":
-                    flow_name = event.resource.name
-                elif FLOW_NAME_TYPE == "flow":
-                    flow_name = res["prefect.resource.name"]
                 prefect_flow_run_id = event.resource.id.split(".")[-1]
                 event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
                 deployment_info = await self.get_deployment_info(prefect_flow_run_id)
                 flow_info = await self.get_flow_info(deployment_info.flow_run)
                 try:
                     ol_flow_run_id: str = self.build_run_id(
-                        flow_info.start_time, flow_name, deployment_info.namespace
+                        flow_info.start_time, flow_info.name, deployment_info.namespace
                     )
                 except AttributeError:
                     logger.info(
@@ -209,7 +198,8 @@ class PrefectOpenLineageListener:
                         event_state,
                     )
                     continue
-                flow_info.namespace = deployment_info.namespace
+
+                # to reduce args passed to create_and_emit_flow_event
                 flow_info.start_time = event_time
 
                 self.ol_adapter.create_and_emit_flow_event(
@@ -217,24 +207,8 @@ class PrefectOpenLineageListener:
                     event_type=event_state,
                     flow_info=flow_info,
                     prefect_version=prefect_version,
-                    deployment=deployment_info,
+                    deployment=deployment_info if deployment_info.id else None,
                 )
-
-    @dataclass
-    class TaskInfo:
-        run_id: str
-        event_time: datetime
-        name: str
-        namespace: str
-        event_type: RunState
-        expected_start_time: datetime
-        prefect_version: str | None = None
-        job_deps: list | None = None
-
-    @dataclass
-    class DatasetInfo:
-        input_datasets: list
-        output_datasets: list
 
     async def collect_and_process_task_runs(
         self, prefect_version: str, event: Event, event_state: RunState
@@ -285,7 +259,7 @@ class PrefectOpenLineageListener:
                         "ParentRunFacet will not be included.",
                         flow_run_id,
                     )
-                task_info = self.TaskInfo(
+                task_info = TaskInfo(
                     run_id=ol_task_run_id,
                     event_time=event_time,
                     name=task_name,
@@ -295,7 +269,7 @@ class PrefectOpenLineageListener:
                     job_deps=parent_runs,
                     prefect_version=prefect_version,
                 )
-                datasets = self.DatasetInfo(
+                datasets = DatasetInfo(
                     input_datasets=input_datasets,
                     output_datasets=output_datasets,
                 )
