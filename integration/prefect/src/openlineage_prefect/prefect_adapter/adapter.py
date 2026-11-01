@@ -7,12 +7,13 @@ from datetime import datetime
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import Dataset
-from openlineage.client.facet import (
-    JobTypeJobFacet,
-    NominalTimeRunFacet,
-    ParentRunFacet,
+from openlineage.client.facet_v2 import (
+    job_dependencies_run,
+    job_type_job,
+    nominal_time_run,
+    parent_run,
+    processing_engine_run,
 )
-from openlineage.client.facet_v2 import job_dependencies_run, processing_engine_run
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage_prefect.prefect_adapter import facets
 
@@ -90,7 +91,9 @@ class PrefectOpenLineageAdapter:
             }
 
         job_facets = {
-            "jobType": JobTypeJobFacet(processingType="BATCH", integration="Prefect", jobType="FLOW")
+            "jobType": job_type_job.JobTypeJobFacet(
+                processingType="BATCH", integration="Prefect", jobType="FLOW"
+            )
         }
 
         run_event = RunEvent(
@@ -130,7 +133,7 @@ class PrefectOpenLineageAdapter:
 
         if deployment:
             run_facets = {
-                "nominalTime": NominalTimeRunFacet(nominalStartTime=expected_start_time),
+                "nominalTime": nominal_time_run.NominalTimeRunFacet(nominalStartTime=expected_start_time),
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version, name="Prefect"
                 ),
@@ -140,7 +143,7 @@ class PrefectOpenLineageAdapter:
                     updated=deployment.updated.isoformat(),
                     name=deployment.name,
                 ),
-                "parentRun": ParentRunFacet(
+                "parentRun": parent_run.ParentRunFacet(
                     run={"runId": flow_run_id},
                     job={"namespace": namespace, "name": flow_name},
                 )
@@ -149,11 +152,11 @@ class PrefectOpenLineageAdapter:
             }
         else:
             run_facets = {
-                "nominalTime": NominalTimeRunFacet(nominalStartTime=expected_start_time),
+                "nominalTime": nominal_time_run.NominalTimeRunFacet(nominalStartTime=expected_start_time),
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version, name="Prefect"
                 ),
-                "parentRun": ParentRunFacet(
+                "parentRun": parent_run.ParentRunFacet(
                     run={"runId": flow_run_id},
                     job={"namespace": namespace, "name": flow_name},
                 ),
@@ -171,7 +174,9 @@ class PrefectOpenLineageAdapter:
             )
 
         job_facets = {
-            "jobType": JobTypeJobFacet(processingType="BATCH", integration="Prefect", jobType="TASK")
+            "jobType": job_type_job.JobTypeJobFacet(
+                processingType="BATCH", integration="Prefect", jobType="TASK"
+            )
         }
 
         inputs = [
