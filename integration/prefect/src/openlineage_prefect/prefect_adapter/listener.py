@@ -328,10 +328,10 @@ class PrefectOpenLineageListener:
             prefect_version = await self.get_prefect_version()
 
             async for event in subscriber:
-                entity_type = event.event.split(".")[1]
-                prefect_state = event.event.split(".")[-1]
+                try:
+                    entity_type = event.event.split(".")[1]
+                    prefect_state = event.event.split(".")[-1]
 
-                if prefect_state in ["Running", "Completed", "Failed", "Cancelled", "Crashed"]:
                     match prefect_state:
                         case "Running":
                             event_state = RunState.START
@@ -347,6 +347,8 @@ class PrefectOpenLineageListener:
 
                     if entity_type == "task-run":
                         await self.collect_and_process_task_runs(prefect_version, event, event_state)
+                except Exception:
+                    logger.exception("Error processing Prefect event %s", event.event)
 
 
 async def main():
