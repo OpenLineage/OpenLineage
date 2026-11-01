@@ -266,8 +266,8 @@ class PrefectOpenLineageListener:
                     )
                 except AttributeError:
                     logger.info(
-                        "Failed to build OpenLineage run id for Flow %s. "
-                        "ParentRunFacet will not be included.",
+                        "Failed to build OpenLineage run id for Flow %s. \
+                        ParentRunFacet will not be included.",
                         flow_run_id,
                     )
                 task_info = TaskInfo(

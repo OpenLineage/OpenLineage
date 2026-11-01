@@ -134,16 +134,18 @@ class PrefectOpenLineageAdapter:
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version, name="Prefect"
                 ),
-                "parentRun": ParentRunFacet(
-                    run={"runId": flow_run_id},
-                    job={"namespace": namespace, "name": flow_name},
-                ),
                 "prefectDeployment": facets.run_facets.PrefectDeploymentRunFacet(
                     deploymentId=deployment.id,
                     created=deployment.created.isoformat(),
                     updated=deployment.updated.isoformat(),
                     name=deployment.name,
                 ),
+                "parentRun": ParentRunFacet(
+                    run={"runId": flow_run_id},
+                    job={"namespace": namespace, "name": flow_name},
+                )
+                if flow_run_id
+                else None,
             }
         else:
             run_facets = {
