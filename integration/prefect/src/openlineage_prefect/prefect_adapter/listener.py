@@ -11,12 +11,12 @@ from datetime import datetime
 import requests
 from openlineage.client.run import RunState
 from openlineage.client.uuid import generate_static_uuid
-from openlineage_prefect.prefect_adapter import (
+from openlineage_prefect.prefect_adapter.adapter import (
     DatasetInfo,
     DeploymentInfo,
     FlowInfo,
+    PrefectOpenLineageAdapter,
     TaskInfo,
-    adapter,
 )
 from prefect.client.orchestration import get_client
 from prefect.events.clients import get_events_subscriber
@@ -47,7 +47,7 @@ class PrefectOpenLineageListener:
         ol_adapter=None,
     ):
         self.client = client or get_client()
-        self.ol_adapter = ol_adapter or adapter.PrefectOpenLineageAdapter()
+        self.ol_adapter = ol_adapter or PrefectOpenLineageAdapter()
 
     def build_run_id(self, execution_time: datetime, run_name: str, namespace: str) -> str:
         """
@@ -331,13 +331,15 @@ class PrefectOpenLineageListener:
                 entity_type = event.event.split(".")[1]
                 prefect_state = event.event.split(".")[-1]
 
-                if prefect_state in ["Running", "Completed", "Failed"]:
+                if prefect_state in ["Running", "Completed", "Failed", "Cancelled", "Crashed"]:
                     match prefect_state:
                         case "Running":
                             event_state = RunState.START
                         case "Completed":
                             event_state = RunState.COMPLETE
-                        case "Failed":
+                        case "Cancelled":
+                            event_state = RunState.ABORT
+                        case "Failed" | "Crashed":
                             event_state = RunState.FAIL
 
                     if entity_type == "flow-run":
