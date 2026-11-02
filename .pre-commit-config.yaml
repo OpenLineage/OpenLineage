@@ -102,6 +102,13 @@ repos:
         exclude: ".*gradlew$"
   - repo: local
     hooks:
+      - id: test-datadog-ci
+        name: Test Datadog CI instrumentation setup
+        language: python
+        additional_dependencies: ["PyYAML"]
+        entry: python -m unittest discover -s .circleci/tests
+        files: ^\.circleci/|^\.github/workflows/|^(client/python|integration/common)/pyproject\.toml$|^integration/spark/cli/configurable-test\.sh$
+        pass_filenames: false
       - id: check-version-files
         name: Check version file paths in release.sh
         description: "Verifies that file paths in release.sh exist and are only defined in that file"
