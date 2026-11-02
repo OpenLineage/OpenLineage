@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from openlineage.client.run import RunState
@@ -20,7 +20,7 @@ from openlineage_prefect.prefect_adapter.adapter import (
 )
 from prefect.client.orchestration import get_client
 from prefect.events.clients import get_events_subscriber
-from prefect.events.filters import EventFilter, EventNameFilter
+from prefect.events.filters import EventFilter, EventNameFilter, EventOccurredFilter
 from prefect.events.schemas.events import Event
 from prefect.exceptions import ObjectNotFound, PrefectHTTPStatusError
 
@@ -56,7 +56,8 @@ class PrefectOpenLineageListener:
                     "prefect.flow-run.",
                     "prefect.asset.materialization.",
                 ]
-            )
+            ),
+            occurred=EventOccurredFilter(since=datetime.now(timezone.utc)),
         )
 
     def build_run_id(self, execution_time: datetime, run_name: str, namespace: str) -> str:
