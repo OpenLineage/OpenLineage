@@ -1,8 +1,8 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import ast
 import asyncio
+import json
 import logging
 import os
 import re
@@ -158,10 +158,33 @@ class PrefectOpenLineageListener:
             artifacts = response.json()
             for artifact in artifacts:
                 if artifact["description"] and "ol-dataset" in artifact["description"]:
-                    dataset_type = artifact["description"].split("_")[-1].lower()
-                    data_list = ast.literal_eval(artifact["data"])
-                    uri = data_list[0]["database_uri"]
-                    table = data_list[0]["table"]
+                    try:
+                        dataset_type = artifact["description"].split("_")[-1].lower()
+                        assert dataset_type in ["input", "output"], f"Invalid dataset_type: {dataset_type}"
+                    except AssertionError:
+                        logging.warning("Invalid dataset_type in artifact description.")
+                        try:
+                            dataset_type = artifact["description"].split("-")[-1].lower()
+                            assert dataset_type in ["input", "output"], (
+                                f"Invalid dataset_type: {dataset_type}"
+                            )
+                        except AssertionError:
+                            logging.warning(
+                                "Invalid dataset_type in artifact description after trying both separators."
+                            )
+                            dataset_type = None
+
+                    data_list = json.loads(artifact["data"])
+                    try:
+                        uri = data_list[0]["database_uri"]
+                    except AttributeError:
+                        logging.warning("Failed to retrieve database_uri from artifact data.")
+                        uri = None
+                    try:
+                        table = data_list[0]["table"]
+                    except AttributeError:
+                        logging.warning("Failed to retrieve table from artifact data.")
+                        table = None
                     dataset_info.append({"uri": uri, "table": table, "dataset_type": dataset_type})
             return dataset_info
         logger.info("No datasets found for task run.")
