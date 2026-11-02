@@ -93,22 +93,35 @@ public class HudiUtils {
 
   /**
    * Resolves the base path of a {@code HoodieBaseRelation} with an already resolved meta client.
+   * Hudi 0.x returns a Hadoop {@code Path} or a {@code String}, Hudi 1.x returns a {@code
+   * StoragePath}, so any value with a {@code toUri()} method is accepted.
    */
   public static URI basePath(Object relation, Object metaClient) {
+    Optional<URI> uri = pathUri(relation, "basePath");
+    if (!uri.isPresent()) {
+      uri = pathUri(metaClient, "getBasePath");
+    }
+    if (!uri.isPresent()) {
+      uri = pathUri(metaClient, "getBasePathV2");
+    }
+    return uri.orElseThrow(() -> new IllegalStateException("Unable to resolve Hudi base path"));
+  }
+
+  private static Optional<URI> pathUri(Object target, String method) {
     try {
-      Path path = (Path) MethodUtils.invokeMethod(relation, "basePath");
+      Object path = MethodUtils.invokeMethod(target, method);
+      if (path instanceof String) {
+        return Optional.of(new Path((String) path).toUri());
+      }
       if (path != null) {
-        return path.toUri();
+        Object uri = MethodUtils.invokeMethod(path, "toUri");
+        if (uri instanceof URI) {
+          return Optional.of((URI) uri);
+        }
       }
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      log.debug("Unable to resolve Hudi relation basePath via reflection", e);
+      log.debug("Unable to resolve Hudi base path via {}", method, e);
     }
-
-    try {
-      Object storagePath = MethodUtils.invokeMethod(metaClient, "getBasePathV2");
-      return (URI) MethodUtils.invokeMethod(storagePath, "toUri");
-    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw new IllegalStateException("Unable to resolve Hudi base path", e);
-    }
+    return Optional.empty();
   }
 }

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
+import io.openlineage.client.OpenLineage.DatasetTypeDatasetFacet;
 import io.openlineage.client.OpenLineage.InputField;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -163,6 +164,7 @@ class SparkHudiIntegrationTest {
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
     assertColumnLineage(targetPath, sourcePath, IDENTITY_LINEAGE);
+    assertHudiInputDatasetType(sourcePath, "COPY_ON_WRITE");
   }
 
   @Test
@@ -186,6 +188,7 @@ class SparkHudiIntegrationTest {
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
     assertColumnLineage(targetPath, sourcePath, IDENTITY_LINEAGE);
+    assertHudiInputDatasetType(sourcePath, "MERGE_ON_READ");
   }
 
   @Test
@@ -264,6 +267,19 @@ class SparkHudiIntegrationTest {
                 .map(LifecycleStateChangeDatasetFacet::getLifecycleStateChange))
         .as("lifecycle state change of output %s", outputPath)
         .contains(LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+  }
+
+  private void assertHudiInputDatasetType(String inputPath, String hudiTableType) {
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .filter(e -> e.getInputs() != null)
+                .flatMap(e -> e.getInputs().stream())
+                .filter(d -> inputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getDatasetType())
+                .filter(Objects::nonNull)
+                .map(DatasetTypeDatasetFacet::getSubType))
+        .as("Hudi table type of input %s", inputPath)
+        .contains(hudiTableType);
   }
 
   /**

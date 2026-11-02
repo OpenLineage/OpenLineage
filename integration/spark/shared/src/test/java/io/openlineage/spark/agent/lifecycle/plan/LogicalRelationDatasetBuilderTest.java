@@ -330,4 +330,38 @@ class LogicalRelationDatasetBuilderTest {
     assertEquals(dataset.getName(), "someName");
     assertEquals(dataset.getNamespace(), "someNamespace");
   }
+
+  @Test
+  void testHadoopFsRelationFallbackKeepsSuppliedBuilderFacets() {
+    HadoopFsRelation hadoopFsRelation = mock(HadoopFsRelation.class);
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    FileIndex fileIndex = mock(FileIndex.class);
+    SessionState sessionState = mock(SessionState.class);
+
+    when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    when(session.sessionState()).thenReturn(sessionState);
+    // e.g. credential passthrough or Unity Catalog: "no Credential Scope"
+    when(sessionState.newHadoopConfWithOptions(any()))
+        .thenThrow(new IllegalStateException("no Credential Scope"));
+    when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    when(hadoopFsRelation.schema()).thenReturn(new StructType());
+    when(fileIndex.rootPaths())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Collections.singletonList(new Path("/tmp/table")))
+                .asScala()
+                .toSeq());
+
+    List<OpenLineage.Dataset> datasets =
+        builder.handleHadoopFsRelation(
+            logicalRelation,
+            DatasetFactory.output(openLineageContext)
+                .sparkDatasetBuilder()
+                .datasetType("TABLE", "COPY_ON_WRITE"));
+
+    assertEquals(1, datasets.size());
+    assertEquals("/tmp/table", datasets.get(0).getName());
+    assertEquals("COPY_ON_WRITE", datasets.get(0).getFacets().getDatasetType().getSubType());
+  }
 }
