@@ -6,7 +6,8 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -30,9 +31,9 @@ import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hudi.HoodieBaseRelation;
+import org.apache.hudi.HoodieFileIndex;
 import org.apache.hudi.common.model.HoodieTableType;
 import org.apache.hudi.common.table.HoodieTableMetaClient;
-import org.apache.hudi.storage.StoragePath;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
@@ -152,7 +153,6 @@ class LogicalRelationDatasetBuilderTest {
   void testApplyForHudiBaseRelationCoversMorRelations() {
     HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
     HoodieTableMetaClient metaClient = mock(HoodieTableMetaClient.class);
-    StoragePath storagePath = mock(StoragePath.class);
 
     StructType schema =
         new StructType(
@@ -166,8 +166,6 @@ class LogicalRelationDatasetBuilderTest {
     when(hudiRelation.schema()).thenReturn(schema);
     when(hudiRelation.metaClient()).thenReturn(metaClient);
     when(metaClient.getTableType()).thenReturn(HoodieTableType.MERGE_ON_READ);
-    when(metaClient.getBasePathV2()).thenReturn(storagePath);
-    when(storagePath.toUri()).thenReturn(java.net.URI.create("file:/tmp/hudi_mor"));
 
     List<OpenLineage.Dataset> datasets =
         visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
@@ -176,14 +174,15 @@ class LogicalRelationDatasetBuilderTest {
     OpenLineage.Dataset dataset = datasets.get(0);
     assertEquals("file", dataset.getNamespace());
     assertEquals("/tmp/hudi_mor", dataset.getName());
-    assertNotNull(dataset.getFacets().getSymlinks());
+    assertEquals("TABLE", dataset.getFacets().getDatasetType().getDatasetType());
+    assertEquals("MERGE_ON_READ", dataset.getFacets().getDatasetType().getSubType());
+    assertNull(dataset.getFacets().getSymlinks());
   }
 
   @Test
   void testApplyForHudiBaseRelationCoversCowRelations() {
     HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
     HoodieTableMetaClient metaClient = mock(HoodieTableMetaClient.class);
-    StoragePath storagePath = mock(StoragePath.class);
 
     StructType schema =
         new StructType(
@@ -197,8 +196,6 @@ class LogicalRelationDatasetBuilderTest {
     when(hudiRelation.schema()).thenReturn(schema);
     when(hudiRelation.metaClient()).thenReturn(metaClient);
     when(metaClient.getTableType()).thenReturn(HoodieTableType.COPY_ON_WRITE);
-    when(metaClient.getBasePathV2()).thenReturn(storagePath);
-    when(storagePath.toUri()).thenReturn(java.net.URI.create("file:/tmp/hudi_cow"));
 
     List<OpenLineage.Dataset> datasets =
         visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
@@ -207,6 +204,100 @@ class LogicalRelationDatasetBuilderTest {
     OpenLineage.Dataset dataset = datasets.get(0);
     assertEquals("file", dataset.getNamespace());
     assertEquals("/tmp/hudi_cow", dataset.getName());
-    assertNotNull(dataset.getFacets().getSymlinks());
+    assertEquals("TABLE", dataset.getFacets().getDatasetType().getDatasetType());
+    assertEquals("COPY_ON_WRITE", dataset.getFacets().getDatasetType().getSubType());
+    assertNull(dataset.getFacets().getSymlinks());
+  }
+
+  @Test
+  void testApplyForCatalogBackedHudiCowRelationUsesCatalogIdentity() {
+    HadoopFsRelation hadoopFsRelation = mock(HadoopFsRelation.class);
+    HoodieFileIndex fileIndex = mock(HoodieFileIndex.class);
+    HoodieTableMetaClient metaClient = mock(HoodieTableMetaClient.class);
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.apply(catalogTable));
+    when(logicalRelation.schema()).thenReturn(hudiSchema());
+    when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    when(fileIndex.metaClient()).thenReturn(metaClient);
+    when(metaClient.getTableType()).thenReturn(HoodieTableType.COPY_ON_WRITE);
+
+    OpenLineage.Dataset dataset = applyWithCatalogIdentity(catalogTable);
+
+    assertEquals("file", dataset.getNamespace());
+    assertEquals("/warehouse/orders", dataset.getName());
+    assertCatalogSymlink(dataset);
+    assertEquals("COPY_ON_WRITE", dataset.getFacets().getDatasetType().getSubType());
+  }
+
+  @Test
+  void testApplyForCatalogBackedHudiMorRelationUsesCatalogIdentity() {
+    HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
+    HoodieTableMetaClient metaClient = mock(HoodieTableMetaClient.class);
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    when(logicalRelation.relation()).thenReturn(hudiRelation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.apply(catalogTable));
+    when(logicalRelation.schema()).thenReturn(hudiSchema());
+    when(hudiRelation.metaClient()).thenReturn(metaClient);
+    when(metaClient.getTableType()).thenReturn(HoodieTableType.MERGE_ON_READ);
+
+    OpenLineage.Dataset dataset = applyWithCatalogIdentity(catalogTable);
+
+    assertEquals("/warehouse/orders", dataset.getName());
+    assertCatalogSymlink(dataset);
+    assertEquals("MERGE_ON_READ", dataset.getFacets().getDatasetType().getSubType());
+  }
+
+  @Test
+  void testApplyForHudiBaseRelationWithUnresolvableMetadataReturnsNoDataset() {
+    HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
+    when(logicalRelation.relation()).thenReturn(hudiRelation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    when(hudiRelation.metaClient()).thenThrow(new IllegalStateException("incompatible Hudi"));
+
+    assertTrue(visitor.apply(mock(SparkListenerEvent.class), logicalRelation).isEmpty());
+  }
+
+  @Test
+  void testApplyForCatalogBackedHudiRelationWithUnresolvableMetadataFallsBackToCatalog() {
+    HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    when(logicalRelation.relation()).thenReturn(hudiRelation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.apply(catalogTable));
+    when(logicalRelation.schema()).thenReturn(hudiSchema());
+    when(hudiRelation.metaClient()).thenThrow(new IllegalStateException("incompatible Hudi"));
+
+    OpenLineage.Dataset dataset = applyWithCatalogIdentity(catalogTable);
+
+    assertEquals("/warehouse/orders", dataset.getName());
+    assertCatalogSymlink(dataset);
+    assertNull(dataset.getFacets().getDatasetType());
+  }
+
+  private OpenLineage.Dataset applyWithCatalogIdentity(CatalogTable catalogTable) {
+    when(catalogTable.provider()).thenReturn(Option.apply("hudi"));
+    DatasetIdentifier di =
+        new DatasetIdentifier("/warehouse/orders", "file")
+            .withSymlink("db.orders", "hive://metastore:9083", DatasetIdentifier.SymlinkType.TABLE);
+    try (MockedStatic pathUtils = mockStatic(PathUtils.class)) {
+      when(PathUtils.fromCatalogTable(catalogTable, session)).thenReturn(di);
+      List<OpenLineage.Dataset> datasets =
+          visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
+      assertEquals(1, datasets.size());
+      return datasets.get(0);
+    }
+  }
+
+  private static void assertCatalogSymlink(OpenLineage.Dataset dataset) {
+    List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinks =
+        dataset.getFacets().getSymlinks().getIdentifiers();
+    assertEquals(1, symlinks.size());
+    assertEquals("db.orders", symlinks.get(0).getName());
+    assertEquals("hive://metastore:9083", symlinks.get(0).getNamespace());
+  }
+
+  private static StructType hudiSchema() {
+    return new StructType(
+        new StructField[] {new StructField("name", StringType$.MODULE$, false, Metadata.empty())});
   }
 }
