@@ -4,6 +4,8 @@
 
 ### Fixed
 
+* **Spark: Extract job conf from `saveAsNewAPIHadoopFile` RDD jobs** [`#5131`](https://github.com/OpenLineage/OpenLineage/pull/5131) [@rdtr](https://github.com/rdtr)
+  *`HadoopMapReduceWriteConfigUtil` holds a `SerializableConfiguration`, not a `SerializableJobConf`, so reading its conf failed with `ClassCastException` and no events were emitted for `saveAsNewAPIHadoopFile` / `saveAsNewAPIHadoopDataset` jobs. The conf is now wrapped in a `JobConf`, and an unexpected conf type only logs a warning.*
 * **Spark: parse dotted property keys of nested transports** [`#5117`](https://github.com/OpenLineage/OpenLineage/pull/5117) [@anshu1991](https://github.com/anshu1991)
   *Keys like `spark.openlineage.transport.transport.properties.bootstrap.servers` (Kafka under `transform`) or `transport.transports.<name>.properties.*` (under `composite`) are no longer split into nested objects, which failed with `Cannot deserialize value of type java.lang.String from Object value`. Fixes [`#4985`](https://github.com/OpenLineage/OpenLineage/issues/4985).*
 
