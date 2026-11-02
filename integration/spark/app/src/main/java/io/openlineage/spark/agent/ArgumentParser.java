@@ -51,9 +51,17 @@ public class ArgumentParser {
   private static final String SPARK_TEST_EXTENSION_PROVIDER =
       "spark.openlineage.testExtensionProvider";
 
-  public static final Set<String> PROPERTIES_PREFIXES =
-      new HashSet<>(
-          Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
+  /**
+   * Transport config entries holding free-form key/value maps. Their keys may themselves contain
+   * dots (e.g. Kafka's {@code bootstrap.servers}), so everything after one of these segments is
+   * kept as a single leaf key instead of being split into nested objects. Matched at any depth
+   * under {@code transport}, so sub-transports of {@code composite} and {@code transform} work too.
+   */
+  public static final Set<String> PROPERTIES_KEYS =
+      new HashSet<>(Arrays.asList("properties", "urlParams", "headers"));
+
+  private static final String TRANSPORT_KEY = "transport";
+  private static final String TRANSPORTS_KEY = "transports";
 
   private static final String separator = ";";
 
@@ -238,17 +246,24 @@ public class ArgumentParser {
   }
 
   private static List<String> getJsonPath(String keyPath) {
-    Optional<String> propertyPath =
-        PROPERTIES_PREFIXES.stream().filter(keyPath::startsWith).findAny();
-    List<String> pathKeys =
-        propertyPath
-            .map(
-                s -> {
-                  List<String> path = new ArrayList<>(Arrays.asList(s.split("\\.")));
-                  path.add(keyPath.replaceFirst(s, ""));
-                  return path;
-                })
-            .orElseGet(() -> Arrays.asList(keyPath.split("\\.")));
+    List<String> segments = Arrays.asList(keyPath.split("\\."));
+    if (!TRANSPORT_KEY.equals(segments.get(0))) {
+      return segments;
+    }
+    List<String> pathKeys = new ArrayList<>();
+    for (int i = 0; i < segments.size(); i++) {
+      String segment = segments.get(i);
+      pathKeys.add(segment);
+      // the segment right after "transports" is a user-chosen composite sub-transport name,
+      // which must not be mistaken for a map field even if it happens to be called "properties"
+      boolean isSubTransportName = i > 0 && TRANSPORTS_KEY.equals(segments.get(i - 1));
+      if (!isSubTransportName && PROPERTIES_KEYS.contains(segment) && i + 1 < segments.size()) {
+        // keep the remainder of the original key verbatim (dots included) as a single map key
+        int prefixLength = String.join(".", pathKeys).length() + 1;
+        pathKeys.add(keyPath.substring(prefixLength));
+        break;
+      }
+    }
     return pathKeys;
   }
 
