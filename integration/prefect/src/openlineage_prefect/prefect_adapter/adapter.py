@@ -68,7 +68,7 @@ class PrefectOpenLineageAdapter:
         flow_info: FlowInfo,
         prefect_version: str | None = None,
         deployment: DeploymentInfo | None = None,
-    ) -> RunEvent:
+    ) -> None:
         """Create and emit a flow-level OpenLineage event."""
 
         if deployment:
@@ -117,7 +117,7 @@ class PrefectOpenLineageAdapter:
         flow_name: str | None = None,
         deployment: DeploymentInfo | None = None,
         datasets: DatasetInfo | None = None,
-    ) -> RunEvent:
+    ) -> None:
         """Create and emit a task-level OpenLineage event."""
 
         run_id = task_info.run_id
