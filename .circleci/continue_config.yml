@@ -319,6 +319,9 @@ jobs:
       - run:
           name: Run tox tests
           command: |
+            # tox >= 4.67.5 rejects group-writable package staging dirs, which Ubuntu's default umask 002 creates
+            # https://github.com/tox-dev/tox/issues/4357
+            umask 022
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --notest
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
