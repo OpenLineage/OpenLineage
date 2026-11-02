@@ -128,7 +128,12 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
             + logRel);
   }
 
-  private List<D> handleCatalogTable(LogicalRelation logRel) {
+  protected List<D> handleCatalogTable(LogicalRelation logRel) {
+    return handleCatalogTable(logRel, datasetFactory.sparkDatasetBuilder());
+  }
+
+  protected List<D> handleCatalogTable(
+      LogicalRelation logRel, SparkDatasetBuilder<D> sparkBuilder) {
     if (!context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
@@ -138,8 +143,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     DatasetIdentifier di =
         PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get());
 
-    SparkDatasetBuilder<D> sparkBuilder =
-        datasetFactory.sparkDatasetBuilder().dataset(di).schema(logRel.schema());
+    sparkBuilder.dataset(di).schema(logRel.schema());
     DatasetCompositeFacetsBuilder datasetFacetsBuilder = sparkBuilder.getInner();
 
     if (!isFacetDisabled(context, "inputStatistics")) {
@@ -256,12 +260,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       List<Path> paths =
           new ArrayList<>(ScalaConversionUtils.fromSeq(relation.location().rootPaths()));
       for (Path p : paths) {
-        inputDatasets.add(
-            datasetFactory
-                .sparkDatasetBuilder()
-                .dataset(p.toUri())
-                .schema(relation.schema())
-                .build());
+        inputDatasets.add(sparkBuilder.dataset(p.toUri()).schema(relation.schema()).build());
       }
       if (inputDatasets.isEmpty()) {
         return Collections.emptyList();
