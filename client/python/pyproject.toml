@@ -157,7 +157,8 @@ addopts = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-requires = tox-uv
+# tox 4.67.5 breaks under umask 002: https://github.com/tox-dev/tox/issues/4357
+requires = tox-uv, tox<4.67.5
 env_list = py310,py311,py312,py313,py314
 skip_missing_interpreters = true
 
