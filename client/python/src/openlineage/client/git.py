@@ -152,7 +152,12 @@ def _read_loose_tag_target(git_dir: Path, object_sha: str) -> str | None:
             if header != b"tag " + str(len(body)).encode("ascii"):
                 return None
         else:
-            if os.getenv("OPENLINEAGE_GIT_TAG_FALLBACK", "").strip().lower() not in ("1", "true", "yes", "on"):
+            if os.getenv("OPENLINEAGE_GIT_TAG_FALLBACK", "").strip().lower() not in (
+                "1",
+                "true",
+                "yes",
+                "on",
+            ):
                 return None
             body = subprocess.run(
                 ["git", "--git-dir", str(_get_common_git_dir(git_dir)), "cat-file", "tag", object_sha],
