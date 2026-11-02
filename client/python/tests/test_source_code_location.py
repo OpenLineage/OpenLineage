@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import shutil
 import subprocess
 import zlib
 from pathlib import Path
@@ -50,9 +51,24 @@ class TestFindGitDir:
         result = _find_git_dir(str(subdir))
         assert result == tmp_path / ".git"
 
-    def test_returns_none_when_no_git(self, tmp_path):
+    def test_returns_none_when_no_git(self, tmp_path, monkeypatch):
         subdir = tmp_path / "project"
         subdir.mkdir()
+        # The walk climbs to the real filesystem root, where an ambient .git
+        # may exist (e.g. /tmp/.git on some machines). Bound the walk to
+        # tmp_path so the not-found branch stays hermetic.
+        base = tmp_path.resolve()
+
+        def bounded_parents(self):
+            parents = []
+            parent = self.parent
+            while parent != base:
+                parents.append(parent)
+                parent = parent.parent
+            parents.append(parent)
+            return parents
+
+        monkeypatch.setattr(Path, "parents", property(bounded_parents))
         assert _find_git_dir(str(subdir)) is None
 
     def test_finds_real_repo(self):
@@ -358,7 +374,8 @@ class TestGetGitTag:
         (tag_dir / "v1.0.0").write_text(tag_sha + "\n")
         assert get_git_tag(git_dir) == "v1.0.0"
 
-    def test_loose_annotated_tag_with_packed_object(self, tmp_path):
+    @pytest.mark.skipif(shutil.which("git") is None, reason="git binary not available")
+    def test_loose_annotated_tag_with_packed_object(self, tmp_path, monkeypatch):
         repo = tmp_path / "repo"
         repo.mkdir()
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
@@ -413,6 +430,11 @@ class TestGetGitTag:
         (git_dir / "refs" / "tags" / "v1.0.0").write_text(tag_sha + "\n")
         assert (git_dir / "objects" / tag_sha[:2] / tag_sha[2:]).exists() is False
         (git_dir / "HEAD").write_text(head + "\n")
+        # A packed tag object is only resolved when the fallback is opted
+        # into, because it shells out to `git cat-file`, which can take
+        # seconds on large repos and must stay off the hot path by default.
+        assert get_git_tag(git_dir) is None
+        monkeypatch.setenv("OPENLINEAGE_GIT_TAG_FALLBACK", "1")
         assert get_git_tag(git_dir) == "v1.0.0"
 
     def test_packed_tag(self, tmp_path):
