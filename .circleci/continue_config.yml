@@ -319,8 +319,9 @@ jobs:
       - run:
           name: Run tox tests
           command: |
-            uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --notest
-            uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
+            # tox 4.67.5 breaks under umask 002: https://github.com/tox-dev/tox/issues/4357
+            uv run --python << parameters.py_env >> --with "tox<4.67.5" python -m tox r -e "<< parameters.tox_env >>" --notest
+            uv run --python << parameters.py_env >> --with "tox<4.67.5" python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
   unit-tests-client-python:
     working_directory: ~/openlineage/client/python
