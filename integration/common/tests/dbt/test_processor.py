@@ -151,16 +151,46 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     assert generated_query_id is None
 
 
-def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
-    dbt_artifact_processor.adapter_type = Adapter.FABRIC
-    dbt_artifact_processor.extract_dataset_namespace(
-        {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433}
-    )
+_FABRIC_HOST = "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna"
 
-    assert (
-        dbt_artifact_processor.dataset_namespace
-        == "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1433"
-    )
+
+@pytest.mark.parametrize(
+    "profile, expected",
+    [
+        # port 1433 is the default, so it is left out
+        (
+            {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433},
+            "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com",
+        ),
+        (
+            {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1444},
+            "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1444",
+        ),
+        # the ".z8b"-style label Fabric sometimes adds is left out
+        (
+            {"server": f"{_FABRIC_HOST}.z8b.datawarehouse.fabric.microsoft.com", "port": 1433},
+            f"fabric-warehouse://{_FABRIC_HOST}.datawarehouse.fabric.microsoft.com",
+        ),
+        (
+            {"server": f"{_FABRIC_HOST.upper()}.DATAWAREHOUSE.FABRIC.MICROSOFT.COM"},
+            f"fabric-warehouse://{_FABRIC_HOST}.datawarehouse.fabric.microsoft.com",
+        ),
+        (
+            {"server": f"{_FABRIC_HOST}.zbc.datawarehouse.fabric.microsoft.com,1433"},
+            f"fabric-warehouse://{_FABRIC_HOST}.datawarehouse.fabric.microsoft.com",
+        ),
+        # a ".z8b"-style label elsewhere in the address is kept
+        (
+            {"server": "a.z8b.example.datawarehouse.fabric.microsoft.com"},
+            "fabric-warehouse://a.z8b.example.datawarehouse.fabric.microsoft.com",
+        ),
+    ],
+)
+def test_fabric_warehouse_canonical_namespace(dbt_artifact_processor, profile, expected):
+    dbt_artifact_processor.adapter_type = Adapter.FABRIC
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    assert dbt_artifact_processor.dataset_namespace == expected
 
 
 def test_presto_namespace(dbt_artifact_processor):

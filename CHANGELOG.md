@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.55.0...HEAD)
 
+### Changed
+
+* **dbt: Normalize Fabric warehouse addresses** [`#5133`](https://github.com/OpenLineage/OpenLineage/pull/5133) [@mobuchowski](https://github.com/mobuchowski)
+  *dbt-fabric dataset namespaces are lowercased and leave out port 1433 and the `.z8b`-style label Fabric sometimes adds, so the same table always gets the same name, matching the Spark integration. **Breaking:** users whose dbt-fabric profile sets `port: 1433`, uses upper case, or includes such a label will see new dataset names.*
+
 ### Fixed
 
 * **Spark: parse dotted property keys of nested transports** [`#5117`](https://github.com/OpenLineage/OpenLineage/pull/5117) [@anshu1991](https://github.com/anshu1991)
