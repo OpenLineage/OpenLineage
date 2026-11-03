@@ -138,6 +138,7 @@ class PrefectOpenLineageListener:
             name=flow_name,
             namespace=None,
             event_time=None,
+            state_msg=None,
         )
 
     async def get_prefect_version(self) -> str | None:
@@ -232,6 +233,12 @@ class PrefectOpenLineageListener:
         for res in event.related:
             if res["prefect.resource.role"] == "flow":
                 flow_run_id = event.resource.id.split(".")[-1]
+                prefect_state_msg = (
+                    event.payload["validated_state"]["message"]
+                    if event_state in [RunState.FAIL, RunState.ABORT]
+                    else ""
+                )
+                logging.info(prefect_state_msg)
                 event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
                 if event_state != RunState.START:
                     try:
@@ -255,7 +262,10 @@ class PrefectOpenLineageListener:
                     continue
 
                 flow_info = dataclasses.replace(
-                    flow_info, event_time=event_time, namespace=related_deployment_info.namespace
+                    flow_info,
+                    event_time=event_time,
+                    namespace=related_deployment_info.namespace,
+                    state_msg=prefect_state_msg,
                 )
 
                 self.ol_adapter.create_and_emit_flow_event(

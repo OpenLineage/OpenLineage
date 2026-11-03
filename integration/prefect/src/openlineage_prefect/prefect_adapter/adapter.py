@@ -29,6 +29,7 @@ class FlowInfo:
     name: str
     namespace: str | None
     event_time: datetime | None
+    state_msg: str | None = None
 
 
 @dataclass
@@ -85,12 +86,24 @@ class PrefectOpenLineageAdapter:
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version if prefect_version else "unknown", name="Prefect"
                 ),
+                "errorMessageRun": error_message_run.ErrorMessageRunFacet(
+                    message=flow_info.state_msg,
+                    programmingLanguage="Python",
+                )
+                if flow_info.state_msg
+                else None,
             }
         else:
             run_facets = {
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version if prefect_version else "unknown", name="Prefect"
                 ),
+                "errorMessageRun": error_message_run.ErrorMessageRunFacet(
+                    message=flow_info.state_msg,
+                    programmingLanguage="Python",
+                )
+                if flow_info.state_msg
+                else None,
             }
 
         job_facets = {
