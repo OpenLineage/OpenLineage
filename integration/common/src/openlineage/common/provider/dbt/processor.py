@@ -49,6 +49,7 @@ from openlineage.common.provider.dbt.facets import (
     ParentRunMetadata,
 )
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
+from openlineage.common.provider.fabric import canonical_fabric_endpoint
 from openlineage.common.provider.snowflake import fix_account_name
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
 from openlineage_sql import parse as parse_sql
@@ -1187,9 +1188,7 @@ class DbtArtifactProcessor:
         elif self.adapter_type == Adapter.SQLSERVER:
             return f"mssql://{profile['server']}:{profile['port']}"
         elif self.adapter_type == Adapter.FABRIC:
-            if "port" in profile:
-                return f"fabric-warehouse://{profile['server']}:{profile['port']}"
-            return f"fabric-warehouse://{profile['server']}"
+            return f"fabric-warehouse://{canonical_fabric_endpoint(profile['server'], profile.get('port'))}"
         elif self.adapter_type == Adapter.DREMIO:
             return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.ATHENA:
