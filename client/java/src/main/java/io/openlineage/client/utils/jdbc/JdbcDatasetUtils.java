@@ -20,6 +20,8 @@ public class JdbcDatasetUtils {
     new PostgresJdbcExtractor(),
     new OracleJdbcExtractor(),
     new MySqlJdbcExtractor(),
+    // must come before SqlServerJdbcExtractor, because Fabric URLs are also SQL Server URLs
+    new FabricWarehouseJdbcExtractor(),
     new SqlServerJdbcExtractor(),
     new TeradataJdbcExtractor(),
     new DerbyJdbcExtractor(),
