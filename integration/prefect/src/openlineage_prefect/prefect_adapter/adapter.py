@@ -83,14 +83,14 @@ class PrefectOpenLineageAdapter:
                     name=deployment.name,
                 ),
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                    version=prefect_version, name="Prefect"
+                    version=prefect_version if prefect_version else "unknown", name="Prefect"
                 ),
             }
         else:
             run_facets = {
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                    version=prefect_version, name="Prefect"
-                )
+                    version=prefect_version if prefect_version else "unknown", name="Prefect"
+                ),
             }
 
         job_facets = {
@@ -133,6 +133,7 @@ class PrefectOpenLineageAdapter:
         job_deps = task_info.job_deps if task_info.job_deps else []
         input_datasets = datasets.input_datasets if datasets else []
         output_datasets = datasets.output_datasets if datasets else []
+        state_msg = task_info.state_msg if task_info.state_msg else ""
 
         if deployment:
             run_facets = {
@@ -152,6 +153,12 @@ class PrefectOpenLineageAdapter:
                 )
                 if flow_run_id
                 else None,
+                "errorMessageRun": error_message_run.ErrorMessageRunFacet(
+                    message=state_msg,
+                    programmingLanguage="Python",
+                )
+                if state_msg
+                else None,
             }
         else:
             run_facets = {
@@ -163,8 +170,11 @@ class PrefectOpenLineageAdapter:
                     run={"runId": flow_run_id},
                     job={"namespace": namespace, "name": flow_name},
                 ),
-                "errorRun": error_message_run.ErrorRunFacet(message=task_info.state_msg)
-                if task_info.event_type in [RunState.FAIL, RunState.ABORT]
+                "errorMessageRun": error_message_run.ErrorMessageRunFacet(
+                    message=state_msg,
+                    programmingLanguage="Python",
+                )
+                if state_msg
                 else None,
             }
 

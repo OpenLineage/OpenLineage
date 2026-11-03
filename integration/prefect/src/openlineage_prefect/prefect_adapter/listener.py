@@ -229,7 +229,7 @@ class PrefectOpenLineageListener:
     ) -> None:
         """Retrieve the flow runs for a given event and emit OpenLineage events."""
 
-        for res in event.related:
+        for res in event.related:  # to do: implement caching of deployment info
             if res["prefect.resource.role"] == "flow":
                 prefect_flow_run_id = event.resource.id.split(".")[-1]
                 event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
@@ -249,7 +249,7 @@ class PrefectOpenLineageListener:
 
                 flow_info = dataclasses.replace(
                     flow_info, event_time=event_time, namespace=deployment_info.namespace
-                )  # reduces args
+                )
 
                 self.ol_adapter.create_and_emit_flow_event(
                     run_id=ol_flow_run_id,
@@ -269,7 +269,11 @@ class PrefectOpenLineageListener:
         parsed_start_timestamp = event.payload["task_run"]["start_time"][:-1] + "+00:00"
         start_time = datetime.fromisoformat(parsed_start_timestamp)
         prefect_task_run_id = event.resource.id.split(".")[-1]
-        prefect_state_msg = event.resource["prefect.state-message"]
+        prefect_state_msg = (
+            event.payload["validated_state"]["message"]
+            if event_state in [RunState.FAIL, RunState.ABORT]
+            else ""
+        )
         if TASK_NAME_TYPE == "base":
             task_name = self.get_base_name(event.resource.name)
         elif TASK_NAME_TYPE == "full":
