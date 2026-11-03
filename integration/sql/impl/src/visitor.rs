@@ -9,8 +9,9 @@ use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
     JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
-    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    SelectItem, SelectItemQualifiedWildcardKind, SetExpr, Statement, Subscript, Table, TableFactor,
+    TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan,
+    WildcardAdditionalOptions, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -582,6 +583,23 @@ impl Visit for Join {
     }
 }
 
+/// Visits the expressions of a wildcard REPLACE modifier: each replaced
+/// column's lineage comes from its replacement expression, evaluated
+/// against the same FROM clause as the wildcard itself.
+fn visit_wildcard_replacements(
+    context: &mut Context,
+    options: &WildcardAdditionalOptions,
+) -> Result<()> {
+    if let Some(replace) = &options.opt_replace {
+        for item in &replace.items {
+            context.set_column_context(Some(ColumnMeta::new(item.column_name.value.clone(), None)));
+            item.expr.visit(context)?;
+        }
+        context.set_column_context(None);
+    }
+    Ok(())
+}
+
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
         // If we're selecting from a single table, that table becomes the default
@@ -638,6 +656,16 @@ impl Visit for Select {
                 SelectItem::ExprWithAlias { expr, alias } => {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
                     expr.visit(context)?;
+                }
+                SelectItem::Wildcard(options) => {
+                    context.add_wildcard_lineage(&tables_frame, None, options);
+                    visit_wildcard_replacements(context, options)?;
+                }
+                SelectItem::QualifiedWildcard(kind, options) => {
+                    if let SelectItemQualifiedWildcardKind::ObjectName(name) = kind {
+                        context.add_wildcard_lineage(&tables_frame, Some(name), options);
+                        visit_wildcard_replacements(context, options)?;
+                    }
                 }
                 _ => {}
             }

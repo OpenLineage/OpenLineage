@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
-use sqlparser::ast::Ident;
+use sqlparser::ast::{ExcludeSelectItem, Ident, ObjectName, WildcardAdditionalOptions};
 use sqlparser::dialect::SnowflakeDialect;
 
 type ColumnAncestors = HashSet<ColumnMeta>;
@@ -214,6 +214,92 @@ impl<'a> Context<'a> {
         entry
             .and_modify(|x| x.extend(ancestors.drain(..)))
             .or_insert(HashSet::from_iter(ancestors));
+    }
+
+    /// Registers column lineage for a wildcard projection (`*` or
+    /// `qualifier.*`) using the output columns the FROM frame already knows.
+    ///
+    /// Only derived tables contribute known output columns to the frame:
+    /// their select outputs are the frame's column_ancestry keys, stamped
+    /// with the derived table's alias as origin when one is present. Plain
+    /// tables carry no column information at this layer, so a wildcard over
+    /// them registers nothing.
+    ///
+    /// Wildcard modifiers are honored: EXCLUDE and EXCEPT drop columns,
+    /// RENAME renames the descendant, and columns named by REPLACE are
+    /// skipped here - the visitor attributes those to the replacement
+    /// expression instead. ILIKE and AS options do not affect lineage.
+    pub fn add_wildcard_lineage(
+        &mut self,
+        tables_frame: &ContextFrame,
+        qualifier: Option<&ObjectName>,
+        options: &WildcardAdditionalOptions,
+    ) {
+        let last_part = |name: &ObjectName| {
+            name.0
+                .last()
+                .and_then(|part| part.as_ident())
+                .map(|ident| ident.value.clone())
+        };
+
+        let mut excluded: HashSet<String> = HashSet::new();
+        if let Some(exclude) = &options.opt_exclude {
+            match exclude {
+                ExcludeSelectItem::Single(name) => {
+                    excluded.extend(last_part(name));
+                }
+                ExcludeSelectItem::Multiple(names) => {
+                    for name in names {
+                        excluded.extend(last_part(name));
+                    }
+                }
+            }
+        }
+        if let Some(except) = &options.opt_except {
+            excluded.insert(except.first_element.value.clone());
+            excluded.extend(
+                except
+                    .additional_elements
+                    .iter()
+                    .map(|ident| ident.value.clone()),
+            );
+        }
+
+        let replaced: HashSet<String> = options
+            .opt_replace
+            .iter()
+            .flat_map(|replace| replace.items.iter())
+            .map(|item| item.column_name.value.clone())
+            .collect();
+
+        let renames: HashMap<String, String> = options
+            .opt_rename
+            .iter()
+            .flat_map(|rename| match rename {
+                sqlparser::ast::RenameSelectItem::Single(item) => vec![item],
+                sqlparser::ast::RenameSelectItem::Multiple(items) => items.iter().collect(),
+            })
+            .map(|item| (item.ident.value.clone(), item.alias.value.clone()))
+            .collect();
+
+        let qualifier_name = qualifier.and_then(last_part);
+
+        for col in tables_frame.column_ancestry.keys() {
+            if let Some(qualifier) = &qualifier_name {
+                match &col.origin {
+                    Some(origin) if &origin.name == qualifier => {}
+                    _ => continue,
+                }
+            }
+            if excluded.contains(&col.name) || replaced.contains(&col.name) {
+                continue;
+            }
+            let descendant = renames
+                .get(&col.name)
+                .cloned()
+                .unwrap_or_else(|| col.name.clone());
+            self.add_column_ancestors(ColumnMeta::new(descendant, None), vec![col.clone()]);
+        }
     }
 
     // --- Context Manipulators ---
