@@ -689,3 +689,61 @@ fn insert_overwrite_partition_dates() {
         }
     )
 }
+
+#[test]
+fn insert_all_multiple_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO t1 VALUES (x) INTO t2 VALUES (y) SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_else_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WHEN x < 0 THEN INTO t2 VALUES (x) ELSE INTO t3 VALUES (x) \
+             SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2", "t3"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_does_not_abort_other_statements() {
+    // A multi-table insert used to panic, aborting the whole parse call and
+    // losing the lineage of every other statement in it.
+    assert_eq!(
+        test_multiple_sql_dialect(
+            vec![
+                "INSERT INTO a SELECT * FROM b",
+                "INSERT ALL INTO db.schema.t1 (c1) VALUES (x) INTO t2 VALUES (y) \
+                 SELECT x, y FROM s",
+            ],
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["b", "s"]),
+            // SqlMeta sorts outputs by (database, schema, name), so the
+            // unqualified t2 sorts ahead of the qualified db.schema.t1.
+            out_tables: tables(vec!["a", "t2", "db.schema.t1"])
+        }
+    );
+}

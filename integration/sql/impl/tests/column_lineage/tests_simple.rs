@@ -1,7 +1,7 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_utils::{table, test_sql};
+use crate::test_utils::{table, test_sql, test_sql_dialect};
 use openlineage_sql::{ColumnLineage, ColumnMeta};
 
 #[test]
@@ -414,4 +414,38 @@ fn test_like_escape_expression() {
             }],
         );
     }
+}
+
+#[test]
+fn test_insert_all_column_lineage() {
+    let output = test_sql_dialect(
+        "INSERT ALL INTO t1 VALUES (x) INTO t2 VALUES (y) SELECT x, y FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "x".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("s")),
+                    name: "x".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "y".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("s")),
+                    name: "y".to_string()
+                }]
+            },
+        ]
+    );
 }

@@ -772,9 +772,32 @@ impl Visit for Statement {
                 if let Some(src) = &insert.source {
                     src.visit(context)?;
                 }
+                // Multi-table inserts (Snowflake/Oracle INSERT ALL and
+                // INSERT FIRST) carry their targets in the multi-table
+                // clauses, and `insert.table` is empty for them. Collect
+                // every clause target as an output.
+                for clause in &insert.multi_table_into_clauses {
+                    context.add_output(convert_to_idents(&clause.table_name));
+                }
+                for when_clause in &insert.multi_table_when_clauses {
+                    for clause in &when_clause.into_clauses {
+                        context.add_output(convert_to_idents(&clause.table_name));
+                    }
+                }
+                if let Some(else_clauses) = &insert.multi_table_else_clause {
+                    for clause in else_clauses {
+                        context.add_output(convert_to_idents(&clause.table_name));
+                    }
+                }
                 match &insert.table {
                     TableObject::TableName(name) => {
-                        context.add_output(convert_to_idents(name));
+                        let idents = convert_to_idents(name);
+                        // An empty name can never be a real target (it is
+                        // what multi-table inserts leave behind); registering
+                        // it would panic in DbTableMeta construction.
+                        if !idents.is_empty() {
+                            context.add_output(idents);
+                        }
                     }
                     TableObject::TableFunction(func) => {
                         func.visit(context)?;
