@@ -98,6 +98,8 @@ public final class FabricWarehouseSparkUtils {
     return Optional.of(
         FabricWarehouseUtils.withOneLakeLocation(
             identifier,
+            // the DatawarehouseId option is for the warehouse being written to
+            Optional.of(warehouse),
             workspaceOption,
             option(options, FabricWarehouseUtils.DATAWAREHOUSE_ID_OPTION)));
   }

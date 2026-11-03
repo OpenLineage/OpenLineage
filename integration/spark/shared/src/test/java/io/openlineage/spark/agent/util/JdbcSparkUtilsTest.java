@@ -147,6 +147,57 @@ class JdbcSparkUtilsTest {
   }
 
   @Test
+  void testOneLakeLocationOnlyForDatabaseNameWarehouse() {
+    // a query sent with the connector's database_name option; the URL names no database
+    JdbcOptions options =
+        JdbcOptions.builder()
+            .url(
+                "jdbc:sqlserver://;servername="
+                    + FABRIC_HOST.replace(".datawarehouse", ".z8b.datawarehouse")
+                    + ";encrypt=true")
+            .option("database_name", "wh_primary");
+
+    assertLocationOnlyForPrimaryWarehouse(options);
+  }
+
+  @Test
+  void testOneLakeLocationOnlyForUrlDatabaseWarehouse() {
+    // without the database_name option, the database in the URL is used
+    assertLocationOnlyForPrimaryWarehouse(JdbcOptions.builder().url(FABRIC_URL));
+  }
+
+  // A query in wh_primary that also reads a table from wh_secondary, in the same workspace. The
+  // DatawarehouseId option is wh_primary's ID, so only wh_primary's table gets a OneLake location.
+  private void assertLocationOnlyForPrimaryWarehouse(JdbcOptions options) {
+    givenJdbcOptions(
+        options
+            .driver("org.postgresql.Driver")
+            .dbtable(
+                "(SELECT TOP 5 o.order_id, x.v FROM wh_primary.raw.orders o"
+                    + " CROSS JOIN wh_secondary.probe_pr.l9_other x) as Qry0123abcdAlias")
+            .option("WorkspaceId", "8b4cb800-a044-43ce-8f76-3356f709b468")
+            .option("DatawarehouseId", FABRIC_WAREHOUSE_ID)
+            .build());
+    givenSchema(
+        new StructType().add("order_id", DataTypes.IntegerType).add("v", DataTypes.StringType));
+
+    Map<String, List<DatasetIdentifier.Symlink>> symlinks =
+        JdbcSparkUtils.extractQueryFromSpark(relation).get().inTables().stream()
+            .map(table -> JdbcSparkUtils.getDatasetIdentifier(relation.jdbcOptions(), table))
+            .collect(Collectors.toMap(DatasetIdentifier::getName, DatasetIdentifier::getSymlinks));
+
+    assertEquals(2, symlinks.size());
+    assertEquals(
+        Collections.singletonList(
+            new DatasetIdentifier.Symlink(
+                FABRIC_WAREHOUSE_ID + "/Tables/raw/orders",
+                "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com",
+                DatasetIdentifier.SymlinkType.LOCATION)),
+        symlinks.get("wh_primary.raw.orders"));
+    assertTrue(symlinks.get("wh_secondary.probe_pr.l9_other").isEmpty());
+  }
+
+  @Test
   void testDatawarehouseIdIgnoredForNonFabricUrls() {
     JDBCOptions options =
         JdbcOptions.builder()

@@ -116,6 +116,7 @@ class FabricWarehouseUtilsTest {
     DatasetIdentifier identifier =
         FabricWarehouseUtils.withOneLakeLocation(
             new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
             Optional.of(WORKSPACE_2.toString()),
             Optional.of(WAREHOUSE.toString()));
 
@@ -132,6 +133,7 @@ class FabricWarehouseUtilsTest {
     DatasetIdentifier identifier =
         FabricWarehouseUtils.withOneLakeLocation(
             new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
             Optional.empty(),
             Optional.of(WAREHOUSE.toString()));
 
@@ -149,6 +151,7 @@ class FabricWarehouseUtilsTest {
     assertThat(
             FabricWarehouseUtils.withOneLakeLocation(
                     new DatasetIdentifier("wh_primary.raw.orders", namespace),
+                    Optional.of("wh_primary"),
                     Optional.empty(),
                     Optional.empty())
                 .getSymlinks())
@@ -157,6 +160,7 @@ class FabricWarehouseUtilsTest {
     assertThat(
             FabricWarehouseUtils.withOneLakeLocation(
                     new DatasetIdentifier("wh_primary.raw.orders", namespace),
+                    Optional.of("wh_primary"),
                     Optional.of("my workspace"),
                     warehouse)
                 .getSymlinks())
@@ -164,14 +168,53 @@ class FabricWarehouseUtilsTest {
     // not a <warehouse>.<schema>.<table> name
     assertThat(
             FabricWarehouseUtils.withOneLakeLocation(
-                    new DatasetIdentifier("raw.orders", namespace), Optional.empty(), warehouse)
+                    new DatasetIdentifier("raw.orders", namespace),
+                    Optional.of("raw"),
+                    Optional.empty(),
+                    warehouse)
                 .getSymlinks())
         .isEmpty();
     // not a Fabric dataset
     assertThat(
             FabricWarehouseUtils.withOneLakeLocation(
                     new DatasetIdentifier("sales.dbo.orders", "sqlserver://myserver:1433"),
+                    Optional.of("sales"),
                     Optional.of(WORKSPACE.toString()),
+                    warehouse)
+                .getSymlinks())
+        .isEmpty();
+  }
+
+  @Test
+  void testWithOneLakeLocationOnlyForTheIdsWarehouse() {
+    String namespace = "fabric-warehouse://" + ENDPOINT;
+    Optional<String> workspace = Optional.of(WORKSPACE.toString());
+    Optional<String> warehouse = Optional.of(WAREHOUSE.toString());
+
+    // a query in wh_primary can also read wh_secondary, but the ID is wh_primary's
+    assertThat(
+            FabricWarehouseUtils.withOneLakeLocation(
+                    new DatasetIdentifier("wh_secondary.probe_pr.l9_other", namespace),
+                    Optional.of("wh_primary"),
+                    workspace,
+                    warehouse)
+                .getSymlinks())
+        .isEmpty();
+    // warehouse names don't depend on upper or lower case
+    assertThat(
+            FabricWarehouseUtils.withOneLakeLocation(
+                    new DatasetIdentifier("WH_Primary.raw.orders", namespace),
+                    Optional.of("wh_primary"),
+                    workspace,
+                    warehouse)
+                .getSymlinks())
+        .hasSize(1);
+    // without knowing which warehouse the ID is for, no location is added
+    assertThat(
+            FabricWarehouseUtils.withOneLakeLocation(
+                    new DatasetIdentifier("wh_primary.raw.orders", namespace),
+                    Optional.empty(),
+                    workspace,
                     warehouse)
                 .getSymlinks())
         .isEmpty();

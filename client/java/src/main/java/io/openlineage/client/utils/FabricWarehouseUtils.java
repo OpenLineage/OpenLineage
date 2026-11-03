@@ -35,6 +35,9 @@ public final class FabricWarehouseUtils {
   public static final String WORKSPACE_ID_OPTION = "WorkspaceId";
   public static final String DATAWAREHOUSE_ID_OPTION = "DatawarehouseId";
 
+  /** Connector option naming the warehouse that a read's query runs in. */
+  public static final String DATABASE_NAME_OPTION = "database_name";
+
   private static final String DEFAULT_PORT = "1433";
   private static final String ONELAKE_HOST = "onelake.dfs.fabric.microsoft.com";
   private static final String BASE32_ALPHABET = "abcdefghijklmnopqrstuvwxyz234567";
@@ -147,10 +150,15 @@ public final class FabricWarehouseUtils {
    * symlink.
    *
    * <p>This needs the warehouse's ID, which is only available when the user passes it with the
-   * connector's {@code DatawarehouseId} option. If it's missing, or any ID isn't valid, the dataset
+   * connector's {@code DatawarehouseId} option. That ID belongs to one warehouse, but a query can
+   * read tables from several warehouses in the same workspace. So the location is only added to
+   * tables in the warehouse the ID was given for; other tables would get a wrong path.
+   *
+   * <p>If anything is missing, the table is in another warehouse, or an ID isn't valid, the dataset
    * is returned as it was.
    *
    * @param identifier a {@code fabric-warehouse} dataset named {@code <warehouse>.<schema>.<table>}
+   * @param idWarehouse name of the warehouse that {@code warehouseIdOption} belongs to
    * @param workspaceIdOption the {@code WorkspaceId} option; if not set, the workspace ID is read
    *     from the address
    * @param warehouseIdOption the {@code DatawarehouseId} option
@@ -158,11 +166,14 @@ public final class FabricWarehouseUtils {
    */
   public static DatasetIdentifier withOneLakeLocation(
       DatasetIdentifier identifier,
+      Optional<String> idWarehouse,
       Optional<String> workspaceIdOption,
       Optional<String> warehouseIdOption) {
     String prefix = SCHEME + "://";
     String[] parts = identifier.getName().split("\\.");
-    if (!identifier.getNamespace().startsWith(prefix) || parts.length != TABLE_NAME_PARTS) {
+    if (!identifier.getNamespace().startsWith(prefix)
+        || parts.length != TABLE_NAME_PARTS
+        || !idWarehouse.filter(parts[0]::equalsIgnoreCase).isPresent()) {
       return identifier;
     }
     Optional<UUID> warehouseId = warehouseIdOption.flatMap(FabricWarehouseUtils::parseGuid);

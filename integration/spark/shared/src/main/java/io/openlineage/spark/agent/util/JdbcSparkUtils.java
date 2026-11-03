@@ -59,8 +59,20 @@ public class JdbcSparkUtils {
     // through to the JDBC read, so they can be read here
     return FabricWarehouseUtils.withOneLakeLocation(
         identifier,
+        queryWarehouse(jdbcOptions),
         option(jdbcOptions, FabricWarehouseUtils.WORKSPACE_ID_OPTION),
         option(jdbcOptions, FabricWarehouseUtils.DATAWAREHOUSE_ID_OPTION));
+  }
+
+  // The warehouse a query runs in, which the DatawarehouseId option belongs to: the connector's
+  // database_name option, or else the database in the JDBC URL. A query can also read tables from
+  // other warehouses in the workspace, and those tables must not get this warehouse's location.
+  private static Optional<String> queryWarehouse(JDBCOptions jdbcOptions) {
+    Optional<String> databaseName = option(jdbcOptions, FabricWarehouseUtils.DATABASE_NAME_OPTION);
+    if (databaseName.isPresent()) {
+      return databaseName;
+    }
+    return JdbcDatasetUtils.getDatabase(jdbcOptions.url(), jdbcOptions.asConnectionProperties());
   }
 
   private static Optional<String> option(JDBCOptions jdbcOptions, String key) {
