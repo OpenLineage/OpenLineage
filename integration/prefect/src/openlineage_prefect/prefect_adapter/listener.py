@@ -229,26 +229,33 @@ class PrefectOpenLineageListener:
     ) -> None:
         """Retrieve the flow runs for a given event and emit OpenLineage events."""
 
-        for res in event.related:  # to do: implement caching of deployment info
+        for res in event.related:
             if res["prefect.resource.role"] == "flow":
-                prefect_flow_run_id = event.resource.id.split(".")[-1]
+                flow_run_id = event.resource.id.split(".")[-1]
                 event_time: datetime = datetime.fromisoformat(event.resource["prefect.state-timestamp"])
-                deployment_info = await self.get_deployment_info(prefect_flow_run_id)
-                flow_info = await self.get_flow_info(deployment_info.flow_run)
+                if event_state != RunState.START:
+                    try:
+                        related_deployment_info = self.related_deployment_info[flow_run_id]
+                    except KeyError:
+                        related_deployment_info = await self.get_deployment_info(flow_run_id)
+                else:
+                    related_deployment_info = await self.get_deployment_info(flow_run_id)
+                    self.related_deployment_info[flow_run_id] = related_deployment_info
+                flow_info = await self.get_flow_info(related_deployment_info.flow_run)
                 try:
                     ol_flow_run_id: str = self.build_run_id(
-                        flow_info.start_time, flow_info.name, deployment_info.namespace
+                        flow_info.start_time, flow_info.name, related_deployment_info.namespace
                     )
                 except AttributeError:
                     logger.info(
                         "Failed to build OpenLineage run id for Flow %s. Flow %s event will not be emitted.",
-                        prefect_flow_run_id,
+                        flow_run_id,
                         event_state,
                     )
                     continue
 
                 flow_info = dataclasses.replace(
-                    flow_info, event_time=event_time, namespace=deployment_info.namespace
+                    flow_info, event_time=event_time, namespace=related_deployment_info.namespace
                 )
 
                 self.ol_adapter.create_and_emit_flow_event(
@@ -256,7 +263,7 @@ class PrefectOpenLineageListener:
                     event_type=event_state,
                     flow_info=flow_info,
                     prefect_version=prefect_version,
-                    deployment=deployment_info if deployment_info.id else None,
+                    deployment=related_deployment_info if related_deployment_info.id else None,
                 )
 
     async def collect_and_process_task_runs(
