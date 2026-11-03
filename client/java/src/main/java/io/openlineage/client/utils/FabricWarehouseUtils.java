@@ -266,8 +266,8 @@ public final class FabricWarehouseUtils {
     ByteBuffer bigEndian = ByteBuffer.allocate(GUID_BYTES);
     bigEndian.putInt(source.getInt()).putShort(source.getShort()).putShort(source.getShort());
     bigEndian.put(bytes, 8, 8);
-    bigEndian.flip();
-    return new UUID(bigEndian.getLong(), bigEndian.getLong());
+    // read by position: ByteBuffer.flip() doesn't exist on Java 8 when compiled with a newer JDK
+    return new UUID(bigEndian.getLong(0), bigEndian.getLong(Long.BYTES));
   }
 
   private static String hostOf(String canonicalEndpoint) {
