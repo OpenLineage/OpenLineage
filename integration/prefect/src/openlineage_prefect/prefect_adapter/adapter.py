@@ -8,6 +8,7 @@ from datetime import datetime
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import Dataset
 from openlineage.client.facet_v2 import (
+    error_message_run,
     job_dependencies_run,
     job_type_job,
     nominal_time_run,
@@ -27,6 +28,7 @@ class FlowInfo:
     start_time: datetime
     name: str
     namespace: str | None
+    event_time: datetime | None
 
 
 @dataclass
@@ -49,6 +51,7 @@ class TaskInfo:
     expected_start_time: datetime
     prefect_version: str | None = None
     job_deps: list | None = None
+    state_msg: str | None = None
 
 
 @dataclass
@@ -98,7 +101,7 @@ class PrefectOpenLineageAdapter:
 
         run_event = RunEvent(
             eventType=event_type,
-            eventTime=flow_info.start_time.isoformat(),
+            eventTime=flow_info.event_time.isoformat(),
             run=Run(run_id, run_facets),
             job=Job(flow_info.namespace, flow_info.name, job_facets),
             producer=PRODUCER,
@@ -160,6 +163,9 @@ class PrefectOpenLineageAdapter:
                     run={"runId": flow_run_id},
                     job={"namespace": namespace, "name": flow_name},
                 ),
+                "errorRun": error_message_run.ErrorRunFacet(message=task_info.state_msg)
+                if task_info.event_type in [RunState.FAIL, RunState.ABORT]
+                else None,
             }
 
         if job_deps:

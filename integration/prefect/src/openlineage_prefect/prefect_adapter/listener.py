@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import dataclasses
 import json
 import logging
 import os
@@ -136,6 +137,7 @@ class PrefectOpenLineageListener:
             start_time=flow_run.start_time,
             name=flow_name,
             namespace=None,
+            event_time=None,
         )
 
     async def get_prefect_version(self) -> str | None:
@@ -245,7 +247,9 @@ class PrefectOpenLineageListener:
                     )
                     continue
 
-                flow_info.start_time = event_time  # reduces args
+                flow_info = dataclasses.replace(
+                    flow_info, event_time=event_time, namespace=deployment_info.namespace
+                )  # reduces args
 
                 self.ol_adapter.create_and_emit_flow_event(
                     run_id=ol_flow_run_id,
@@ -265,6 +269,7 @@ class PrefectOpenLineageListener:
         parsed_start_timestamp = event.payload["task_run"]["start_time"][:-1] + "+00:00"
         start_time = datetime.fromisoformat(parsed_start_timestamp)
         prefect_task_run_id = event.resource.id.split(".")[-1]
+        prefect_state_msg = event.resource["prefect.state-message"]
         if TASK_NAME_TYPE == "base":
             task_name = self.get_base_name(event.resource.name)
         elif TASK_NAME_TYPE == "full":
@@ -321,6 +326,7 @@ class PrefectOpenLineageListener:
                     expected_start_time=expected_start_time,
                     job_deps=parent_runs,
                     prefect_version=prefect_version,
+                    state_msg=prefect_state_msg,
                 )
                 datasets = DatasetInfo(
                     input_datasets=input_datasets,
