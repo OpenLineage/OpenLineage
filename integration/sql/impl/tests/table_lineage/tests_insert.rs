@@ -774,6 +774,71 @@ fn insert_first_identifier_when_else_targets() {
 }
 
 #[test]
+fn insert_into_identifier_qualified_target() {
+    // A qualified IDENTIFIER('db.schema.t1') value is an object name, not
+    // a single table name: database, schema and table must be recorded
+    // separately, exactly as for a literal qualified target.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO IDENTIFIER('db.schema.t1') SELECT * FROM s",
+            "snowflake"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["db.schema.t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_quoted_qualified_target() {
+    // Quoted components inside the IDENTIFIER value stay quoted and exact.
+    let output = test_sql_dialect(
+        "INSERT INTO IDENTIFIER('\"db\".\"Schema\".\"t1\"') SELECT * FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.table_lineage.out_tables.len(), 1);
+    let target = &output.table_lineage.out_tables[0];
+    assert_eq!(target.database.as_deref(), Some("db"));
+    assert_eq!(target.schema.as_deref(), Some("Schema"));
+    assert_eq!(target.name, "t1");
+}
+
+#[test]
+fn insert_into_identifier_mixed_quoted_qualified_target() {
+    let output = test_sql_dialect(
+        "INSERT INTO IDENTIFIER('db.\"Schema\".t1') SELECT * FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.table_lineage.out_tables.len(), 1);
+    let target = &output.table_lineage.out_tables[0];
+    assert_eq!(target.database.as_deref(), Some("db"));
+    assert_eq!(target.schema.as_deref(), Some("Schema"));
+    assert_eq!(target.name, "t1");
+}
+
+#[test]
+fn insert_all_identifier_qualified_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO IDENTIFIER('db.schema.t1') VALUES (x) \
+             INTO IDENTIFIER('db2.schema2.t2') VALUES (y) SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["db.schema.t1", "db2.schema2.t2"])
+        }
+    );
+}
+
+#[test]
 fn insert_target_named_like_cte() {
     // The target is outside the CTE's alias scope: sharing its name must
     // not suppress it as an output.
