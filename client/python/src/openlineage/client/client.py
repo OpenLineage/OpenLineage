@@ -22,9 +22,11 @@ from openlineage.client.facet_v2 import (
 from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
 from openlineage.client.filter import Filter, FilterConfig, create_filter
 from openlineage.client.git import (
-    _find_git_dir,
+    _find_git_root,
+    _git_dir_from_root,
     get_ci_pr_number,
     get_git_branch,
+    get_git_project_path,
     get_git_repo_url,
     get_git_tag,
     get_git_version,
@@ -117,7 +119,10 @@ class OpenLineageClient:
         factory: TransportFactory | None = None,
         *,
         config: dict[str, Any] | None = None,
+        source_code_location_dir: str | None = None,
     ) -> None:
+        # Look for Git metadata from the selected project folder.
+        self._source_code_location_dir = source_code_location_dir
         # Set parent's logging level if environment variable is present
         custom_logging_level = os.getenv("OPENLINEAGE_CLIENT_LOGGING", None)
         if custom_logging_level:
@@ -619,9 +624,13 @@ class OpenLineageClient:
         tag: str | None = scl.tag
         pr_number: str | None = scl.pull_request_number
 
+        path = None
         try:
-            git_dir = _find_git_dir()
+            root = _find_git_root(self._source_code_location_dir)
+            git_dir = _git_dir_from_root(root)
             if git_dir:
+                if self._source_code_location_dir is not None and root is not None:
+                    path = get_git_project_path(self._source_code_location_dir, root)
                 if url is None:
                     url = get_git_repo_url(git_dir=git_dir)
                 if sha is None:
@@ -639,7 +648,14 @@ class OpenLineageClient:
         if url is None:
             return None
 
-        return {"url": url, "version": sha, "branch": branch, "tag": tag, "pullRequestNumber": pr_number}
+        return {
+            "url": url,
+            "version": sha,
+            "branch": branch,
+            "tag": tag,
+            "pullRequestNumber": pr_number,
+            "path": path,
+        }
 
     def add_source_code_location_facet(self, event: Event) -> Event:
         """Adds sourceCodeLocation job facet if not already present and not disabled."""
@@ -658,6 +674,7 @@ class OpenLineageClient:
                 type="git",
                 url=scl["url"],
                 repoUrl=scl["url"],
+                path=scl["path"],
                 version=scl["version"],
                 branch=scl["branch"],
                 tag=scl["tag"],

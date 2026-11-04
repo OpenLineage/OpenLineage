@@ -2,9 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
+from unittest import mock
 from unittest.mock import patch
 
+import attr
 import pytest
 from openlineage.client.client import OpenLineageClient, OpenLineageConfig
 from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
@@ -383,6 +386,7 @@ def _make_client(repo_url=None, disabled=False, version=None, branch=None, tag=N
     )
     facets_config = FacetsConfig(source_code_location=scl_config)
     client = OpenLineageClient.__new__(OpenLineageClient)
+    client._source_code_location_dir = None
     client._config = OpenLineageConfig(facets=facets_config)
     client.transport = NoopTransport(NoopConfig())
     client._filters = []
@@ -431,7 +435,7 @@ class TestAddSourceCodeLocationFacet:
     def test_adds_facet_to_run_event(self):
         client = _make_client(repo_url="https://github.com/org/repo")
         event = _make_run_event()
-        with patch("openlineage.client.client._find_git_dir", return_value=None):
+        with patch("openlineage.client.client._git_dir_from_root", return_value=None):
             result = client.add_source_code_location_facet(event)
         assert "sourceCodeLocation" in result.job.facets
         facet = result.job.facets["sourceCodeLocation"]
@@ -459,13 +463,13 @@ class TestAddSourceCodeLocationFacet:
         )
         client = _make_client(repo_url="https://github.com/org/repo")
         event = _make_run_event(job_facets={"sourceCodeLocation": existing})
-        with patch("openlineage.client.client._find_git_dir", return_value=None):
+        with patch("openlineage.client.client._git_dir_from_root", return_value=None):
             result = client.add_source_code_location_facet(event)
         assert result.job.facets["sourceCodeLocation"].url == "https://custom.example.com/repo"
 
     def test_skips_when_no_url(self):
         client = _make_client(repo_url=None)
-        with patch("openlineage.client.client._find_git_dir", return_value=None):
+        with patch("openlineage.client.client._git_dir_from_root", return_value=None):
             result = client.add_source_code_location_facet(_make_run_event())
         assert result.job.facets is None or "sourceCodeLocation" not in (result.job.facets or {})
 
@@ -473,7 +477,7 @@ class TestAddSourceCodeLocationFacet:
         client = _make_client()
         git_dir = _make_fake_git_dir(tmp_path, _FAKE_SHA, branch="main")
         with (
-            patch("openlineage.client.client._find_git_dir", return_value=git_dir),
+            patch("openlineage.client.client._git_dir_from_root", return_value=git_dir),
             patch("openlineage.client.client.get_git_repo_url", return_value="https://github.com/org/repo"),
         ):
             first = client._source_code_location
@@ -483,14 +487,14 @@ class TestAddSourceCodeLocationFacet:
     def test_preserves_git_suffix_in_facet(self):
         client = _make_client(repo_url="git@github.com:org/repo.git")
         event = _make_run_event()
-        with patch("openlineage.client.client._find_git_dir", return_value=None):
+        with patch("openlineage.client.client._git_dir_from_root", return_value=None):
             result = client.add_source_code_location_facet(event)
         assert result.job.facets["sourceCodeLocation"].url == "git@github.com:org/repo.git"
 
     def test_autodetects_version_branch_tag(self, tmp_path):
         client = _make_client(repo_url="https://github.com/org/repo")
         git_dir = _make_fake_git_dir(tmp_path, _FAKE_SHA, branch="main", tag="v1.0.0")
-        with patch("openlineage.client.client._find_git_dir", return_value=git_dir):
+        with patch("openlineage.client.client._git_dir_from_root", return_value=git_dir):
             result = client.add_source_code_location_facet(_make_run_event())
 
         facet = result.job.facets["sourceCodeLocation"]
@@ -505,7 +509,7 @@ class TestAddSourceCodeLocationFacet:
             branch="feature/my-branch",
             tag="v2.0.0",
         )
-        with patch("openlineage.client.client._find_git_dir", return_value=None):
+        with patch("openlineage.client.client._git_dir_from_root", return_value=None):
             result = client.add_source_code_location_facet(_make_run_event())
         facet = result.job.facets["sourceCodeLocation"]
         assert facet.version == "deadbeef"
@@ -516,7 +520,7 @@ class TestAddSourceCodeLocationFacet:
         client = _make_client(repo_url="https://github.com/org/repo")
         # Branch only, no tag
         git_dir = _make_fake_git_dir(tmp_path, _FAKE_SHA, branch="main")
-        with patch("openlineage.client.client._find_git_dir", return_value=git_dir):
+        with patch("openlineage.client.client._git_dir_from_root", return_value=git_dir):
             result = client.add_source_code_location_facet(_make_run_event())
 
         assert result.job.facets["sourceCodeLocation"].tag is None
@@ -524,7 +528,7 @@ class TestAddSourceCodeLocationFacet:
     def test_includes_pr_number_from_ci_env(self):
         client = _make_client(repo_url="https://github.com/org/repo")
         with (
-            patch("openlineage.client.client._find_git_dir", return_value=None),
+            patch("openlineage.client.client._git_dir_from_root", return_value=None),
             patch("openlineage.client.client.get_ci_pr_number", return_value="42"),
         ):
             result = client.add_source_code_location_facet(_make_run_event())
@@ -533,7 +537,7 @@ class TestAddSourceCodeLocationFacet:
     def test_pr_number_is_none_outside_ci(self):
         client = _make_client(repo_url="https://github.com/org/repo")
         with (
-            patch("openlineage.client.client._find_git_dir", return_value=None),
+            patch("openlineage.client.client._git_dir_from_root", return_value=None),
             patch("openlineage.client.client.get_ci_pr_number", return_value=None),
         ):
             result = client.add_source_code_location_facet(_make_run_event())
@@ -599,3 +603,107 @@ class TestGetCiPrNumber:
     @patch.dict("os.environ", {"CI_MERGE_REQUEST_IID": "99", "GITHUB_REF": "refs/pull/42/merge"}, clear=True)
     def test_gitlab_takes_precedence_over_github(self):
         assert get_ci_pr_number() == "99"
+
+
+def project_source_code_location(project_dir, config):
+    from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
+
+    client = OpenLineageClient(
+        source_code_location_dir=project_dir,
+        config={"facets": {"source_code_location": attr.asdict(config)}},
+        transport=NoopTransport(NoopConfig()),
+    )
+    event = RunEvent(
+        eventType=RunState.COMPLETE,
+        eventTime="2026-11-04T00:00:00Z",
+        run=Run(runId="987b54dc-7537-5edc-808e-cf56dbc77e7c"),
+        job=Job(namespace="test", name="test"),
+    )
+    client.add_source_code_location_facet(event)
+    return event.job.facets.get("sourceCodeLocation")
+
+
+def git(directory, *args):
+    return subprocess.run(["git", "-C", str(directory), *args], check=True, capture_output=True, text=True)
+
+
+@pytest.fixture
+def repository(tmp_path):
+    repo = tmp_path / "repository"
+    repo.mkdir()
+    git(repo, "init")
+    git(repo, "remote", "add", "origin", "https://github.com/example/analytics.git")
+    git(
+        repo,
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--allow-empty",
+        "-m",
+        "Initial commit",
+    )
+    return repo
+
+
+@pytest.mark.parametrize("directory", ["", "teams/finance", "teams/sales"])
+def test_selected_project_directory(repository, tmp_path, monkeypatch, directory):
+    project = repository / directory
+    project.mkdir(parents=True, exist_ok=True)
+    # Invoke from outside the checkout; do not infer the selected project from CWD.
+    monkeypatch.chdir(tmp_path)
+    facet = project_source_code_location(str(project), SourceCodeLocationConfig(disabled=False))
+    assert facet.path == directory
+    assert facet.repoUrl == "https://github.com/example/analytics.git"
+    assert facet.version == git(repository, "rev-parse", "HEAD").stdout.strip()
+
+
+def test_project_path_uses_worktree_root(repository, tmp_path):
+    from openlineage.client.git import _find_git_root, _git_dir_from_root, get_git_project_path
+
+    worktree = tmp_path / "linked"
+    git(repository, "worktree", "add", "--detach", str(worktree))
+    project = worktree / "nested"
+    project.mkdir()
+    root = _find_git_root(str(project))
+    metadata = _git_dir_from_root(root)
+    assert root == worktree.resolve()
+    assert metadata == _find_git_dir(str(worktree))
+    assert get_git_project_path(str(project), root) == "nested"
+    assert get_git_project_path(str(worktree), root) == ""
+
+
+def test_no_checkout_is_unknown(tmp_path):
+    assert project_source_code_location(str(tmp_path), SourceCodeLocationConfig(disabled=False)) is None
+
+
+def test_disabled_does_not_inspect_checkout(repository):
+    with mock.patch("openlineage.client.client._git_dir_from_root") as inspect:
+        assert project_source_code_location(str(repository), SourceCodeLocationConfig()) is None
+        inspect.assert_not_called()
+
+
+def test_config_overrides(repository):
+    config = SourceCodeLocationConfig(
+        disabled=False,
+        repo_url="https://github.com/example/override",
+        version="configured-sha",
+        branch="configured-branch",
+        tag="configured-tag",
+        pull_request_number="42",
+    )
+    facet = project_source_code_location(str(repository), config)
+    assert facet.repoUrl == config.repo_url
+    assert facet.version == config.version
+    assert facet.branch == config.branch
+    assert facet.tag == config.tag
+    assert facet.pullRequestNumber == "42"
+
+
+@pytest.mark.parametrize("error", [FileNotFoundError(), PermissionError()])
+def test_git_failure_does_not_fail_emission(repository, error):
+    with mock.patch("openlineage.client.client._git_dir_from_root", side_effect=error):
+        assert project_source_code_location(str(repository), SourceCodeLocationConfig(disabled=False)) is None

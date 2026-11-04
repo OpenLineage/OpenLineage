@@ -67,6 +67,18 @@ dbt integration-specific environment variables:
 
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
 
+### Project source location
+
+When the Python client's `facets.source_code_location.disabled` setting is `false`,
+`dbt-ol` includes the selected project's repository-relative directory in
+`sourceCodeLocation.path`. For example, `--project-dir teams/finance` emits
+`teams/finance` when launched from the repository root; a project at the repository
+root emits an empty path. The same applies to artifact, structured-log, and Core v2 modes.
+
+Discovery uses the selected project directory's Git checkout rather than assuming
+the wrapper's current directory is the project.
+If the checkout or repository URL cannot be identified, no project path is inferred. Existing source-location facets are preserved.
+
 ### Logging
 
 In addition to conventional logging approaches, the OpenLineage dbt wrapper script provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_DBT_LOGGING` environment variable, you can establish the logging level for the `openlineage.dbt` and its child modules.

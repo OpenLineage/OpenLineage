@@ -21,19 +21,39 @@ def _find_git_dir(cwd: str | None = None) -> Path | None:
     Returns the resolved ``.git`` directory path, or ``None`` if no git
     repository is found before reaching the filesystem root.
     """
+    return _git_dir_from_root(_find_git_root(cwd))
+
+
+def _find_git_root(cwd: str | None = None) -> Path | None:
+    """Walk upward to find the folder containing the checkout's .git entry."""
     start = Path(cwd).resolve() if cwd is not None else Path.cwd()
     for directory in [start, *start.parents]:
         git_path = directory / ".git"
-        if git_path.is_file():
-            # Worktree: .git is a file like "gitdir: /real/.git/worktrees/foo"
-            # The path may be relative — resolve it against the file's parent dir.
-            content = git_path.read_text().strip()
-            if content.startswith("gitdir: "):
-                raw = Path(content.removeprefix("gitdir: "))
-                return (git_path.parent / raw).resolve() if not raw.is_absolute() else raw
-        elif git_path.is_dir():
-            return git_path
+        if git_path.is_dir() or git_path.is_file():
+            return directory
     return None
+
+
+def _git_dir_from_root(root: Path | None) -> Path | None:
+    """Locate Git metadata in a known checkout, following worktree pointers."""
+    if root is None:
+        return None
+    git_path = root / ".git"
+    if git_path.is_dir():
+        return git_path
+    if git_path.is_file():
+        content = git_path.read_text().strip()
+        if content.startswith("gitdir: "):
+            raw = Path(content.removeprefix("gitdir: "))
+            return (git_path.parent / raw).resolve() if not raw.is_absolute() else raw
+    return None
+
+
+def get_git_project_path(project_dir: str, root: Path) -> str:
+    """Return the project folder relative to the already located checkout."""
+    project = Path(project_dir).resolve(strict=True)
+    relative = project.relative_to(root).as_posix()
+    return "" if relative == "." else relative
 
 
 def _read_head_content(git_dir: Path) -> str | None:

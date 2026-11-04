@@ -264,7 +264,7 @@ def consume_structured_logs(
         selector=model_selector,
     )
     logger.info("dbt-ol will read logs from %s", processor.dbt_log_file_path)
-    return emit_live_events(processor, logger)
+    return emit_live_events(processor, logger, project_dir)
 
 
 def consume_otel(
@@ -306,16 +306,16 @@ def consume_otel(
         logger.exception("OpenLineage could not read the dbt project; running dbt without OpenLineage events")
         return run_dbt_untouched(dbt_command_line, logger)
     try:
-        return emit_live_events(processor, logger)
+        return emit_live_events(processor, logger, project_dir)
     except KeyboardInterrupt:
         # A second Ctrl-C: dbt was killed, and the runs still open get no final event.
         logger.warning("dbt-ol stopped without waiting for dbt to exit")
         return 128 + signal.SIGINT
 
 
-def emit_live_events(processor: DbtLiveProcessor, logger: logging.Logger) -> int:
+def emit_live_events(processor: DbtLiveProcessor, logger: logging.Logger, project_dir: str = "./") -> int:
     """Run dbt through the processor, emit each event as it comes, and return dbt's exit code."""
-    client = OpenLineageClient()
+    client = OpenLineageClient(source_code_location_dir=project_dir)
     emitted_events = 0
     events = processor.parse()
     try:
@@ -375,7 +375,7 @@ def consume_local_artifacts(
     # get_parent_run_metadata() reads OPENLINEAGE_CONTEXT first and only then the legacy
     # OPENLINEAGE_PARENT_ID, so it must not be gated on the legacy variable being set.
     parent_run_metadata = get_parent_run_metadata()
-    client = OpenLineageClient()
+    client = OpenLineageClient(source_code_location_dir=project_dir)
 
     processor = DbtLocalArtifactProcessor(
         producer=PRODUCER,
