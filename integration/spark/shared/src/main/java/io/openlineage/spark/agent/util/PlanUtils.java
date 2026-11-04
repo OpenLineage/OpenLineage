@@ -314,6 +314,36 @@ public class PlanUtils {
     return new ArrayList<>(normalizedPaths);
   }
 
+  /**
+   * Given root paths of a file-based relation, returns the locations to report as datasets: the
+   * path itself when it is a single file, otherwise the distinct data directories of {@link
+   * #getDirectoryPaths}.
+   *
+   * @param rootPaths
+   * @param hadoopConf
+   * @return
+   */
+  public static List<Path> getRelationPaths(Collection<Path> rootPaths, Configuration hadoopConf) {
+    if (isSingleFile(rootPaths, hadoopConf)) {
+      return new ArrayList<>(rootPaths);
+    }
+    return getDirectoryPaths(rootPaths, hadoopConf);
+  }
+
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+  private static boolean isSingleFile(Collection<Path> paths, Configuration hadoopConf) {
+    if (paths.size() != 1) {
+      return false;
+    }
+
+    try {
+      Path path = paths.iterator().next();
+      return path.getFileSystem(hadoopConf).isFile(path);
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
   private static Path getDirectoryPath(Path p, Configuration hadoopConf) {
     try {
       if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
