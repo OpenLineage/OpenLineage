@@ -164,3 +164,96 @@ fn test_star_replace() {
         vec![lineage("a", "table1", "a"), lineage("b", "table1", "b"),]
     );
 }
+
+#[test]
+fn test_replace_and_rename_compose() {
+    // The renamed output carries the replacement expression's lineage.
+    let output = test_sql_dialect(
+        "SELECT * REPLACE (a + 1 AS a) RENAME (a AS b) FROM (SELECT a FROM t)",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("b", "t", "a")]);
+}
+
+#[test]
+fn test_rename_before_replace_is_rejected_by_the_parser() {
+    // sqlparser parses wildcard options in a single fixed-order pass
+    // (REPLACE before RENAME), so with RENAME first the trailing REPLACE
+    // is never consumed as a wildcard option and the statement fails to
+    // parse: no lineage is extracted, and the failure is recorded in
+    // `errors`. The modifier composition in the visitor is itself
+    // order-independent; this pins the upstream limitation so that a
+    // future sqlparser fix shows up here.
+    let output = test_sql_dialect(
+        "SELECT * RENAME (a AS b) REPLACE (a + 1 AS a) FROM (SELECT a FROM t)",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+    assert_eq!(output.errors.len(), 1);
+}
+
+fn edge(descendant: &str, origin: &str, source: &str) -> ColumnLineage {
+    ColumnLineage {
+        descendant: ColumnMeta {
+            origin: None,
+            name: descendant.to_string(),
+        },
+        lineage: vec![ColumnMeta {
+            origin: Some(table(origin)),
+            name: source.to_string(),
+        }],
+    }
+}
+
+#[test]
+fn test_derived_column_alias_list_renames_the_output() {
+    let output = test_sql("SELECT * FROM (SELECT a, b FROM t) AS d(x, y)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("x", "t", "a"), edge("y", "t", "b")]
+    );
+}
+
+#[test]
+fn test_alias_list_binds_by_position_past_a_constant() {
+    let output = test_sql("SELECT * FROM (SELECT 1 AS k, a FROM t) AS d(x, y)").unwrap();
+    assert_eq!(output.column_lineage, vec![edge("y", "t", "a")]);
+}
+
+#[test]
+fn test_exclude_unquoted_is_case_insensitive_in_snowflake() {
+    let output = test_sql_dialect(
+        "SELECT * EXCLUDE (SECRET) FROM (SELECT id, secret FROM t)",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![edge("id", "t", "id")]);
+}
+
+#[test]
+fn test_rename_unquoted_is_case_insensitive_in_snowflake() {
+    let output = test_sql_dialect(
+        "SELECT * RENAME (X AS y) FROM (SELECT id, x FROM t)",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("id", "t", "id"), edge("y", "t", "x")]
+    );
+}
+
+#[test]
+fn test_ilike_reports_no_column_outside_the_output() {
+    let output = test_sql_dialect(
+        "SELECT * ILIKE '%id%' FROM (SELECT id, secret FROM t)",
+        "snowflake",
+    )
+    .unwrap();
+    assert!(output
+        .column_lineage
+        .iter()
+        .all(|c| c.descendant.name != "secret"));
+}

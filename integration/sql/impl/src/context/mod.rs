@@ -8,10 +8,79 @@ use std::collections::{HashMap, HashSet};
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
-use sqlparser::ast::{ExcludeSelectItem, Ident, ObjectName, WildcardAdditionalOptions};
+use sqlparser::ast::{
+    ExcludeSelectItem, Ident, ObjectName, RenameSelectItem, WildcardAdditionalOptions,
+};
 use sqlparser::dialect::SnowflakeDialect;
 
 type ColumnAncestors = HashSet<ColumnMeta>;
+
+/// The (source, alias) identifier pairs of a wildcard RENAME modifier.
+fn rename_pairs(options: &WildcardAdditionalOptions) -> Vec<(&Ident, &Ident)> {
+    options
+        .opt_rename
+        .iter()
+        .flat_map(|rename| match rename {
+            RenameSelectItem::Single(item) => vec![item],
+            RenameSelectItem::Multiple(items) => items.iter().collect(),
+        })
+        .map(|item| (&item.ident, &item.alias))
+        .collect()
+}
+
+/// Whether a wildcard modifier's identifier refers to a column of the given
+/// name. A quoted identifier must match exactly; an unquoted one folds -
+/// Snowflake folds unquoted identifiers to upper case, Postgres to lower
+/// case - so it is compared without regard to case.
+fn ident_matches_column(ident: &Ident, column_name: &str) -> bool {
+    ident.value == column_name
+        || (ident.quote_style.is_none() && ident.value.eq_ignore_ascii_case(column_name))
+}
+
+/// Case-insensitive SQL LIKE match, as used by the wildcard ILIKE modifier:
+/// `%` matches any run of characters, `_` exactly one character.
+fn ilike_matches(pattern: &str, value: &str) -> bool {
+    let pattern: Vec<char> = pattern.chars().collect();
+    let value: Vec<char> = value.chars().collect();
+    let (mut p, mut v) = (0, 0);
+    // Position just past the last `%` seen, and the value position it had
+    // consumed up to; on a mismatch, retry with the `%` eating one more char.
+    let (mut star_p, mut star_v) = (usize::MAX, 0);
+    while v < value.len() {
+        if p < pattern.len() && (pattern[p] == '_' || pattern[p].eq_ignore_ascii_case(&value[v])) {
+            p += 1;
+            v += 1;
+        } else if p < pattern.len() && pattern[p] == '%' {
+            star_p = p;
+            star_v = v;
+            p += 1;
+        } else if star_p != usize::MAX {
+            p = star_p + 1;
+            star_v += 1;
+            v = star_v;
+        } else {
+            return false;
+        }
+    }
+    while p < pattern.len() && pattern[p] == '%' {
+        p += 1;
+    }
+    p == pattern.len()
+}
+
+/// The output name of a column named by a wildcard REPLACE modifier. When
+/// the same wildcard also renames that column, the RENAME alias wins: it is
+/// the name the column has in the query result.
+pub(crate) fn wildcard_replacement_name(
+    options: &WildcardAdditionalOptions,
+    column_name: &Ident,
+) -> String {
+    rename_pairs(options)
+        .iter()
+        .find(|(from, _)| ident_matches_column(from, &column_name.value))
+        .map(|(_, alias)| alias.value.clone())
+        .unwrap_or_else(|| column_name.value.clone())
+}
 
 #[derive(Debug)]
 pub struct ContextFrame {
@@ -225,10 +294,11 @@ impl<'a> Context<'a> {
     /// tables carry no column information at this layer, so a wildcard over
     /// them registers nothing.
     ///
-    /// Wildcard modifiers are honored: EXCLUDE and EXCEPT drop columns,
-    /// RENAME renames the descendant, and columns named by REPLACE are
-    /// skipped here - the visitor attributes those to the replacement
-    /// expression instead. ILIKE and AS options do not affect lineage.
+    /// Wildcard modifiers are honored: ILIKE keeps only the columns whose
+    /// names match its pattern, EXCLUDE and EXCEPT drop columns, RENAME
+    /// renames the descendant, and columns named by REPLACE are skipped
+    /// here - the visitor attributes those to the replacement expression
+    /// instead.
     pub fn add_wildcard_lineage(
         &mut self,
         tables_frame: &ContextFrame,
@@ -242,45 +312,31 @@ impl<'a> Context<'a> {
                 .map(|ident| ident.value.clone())
         };
 
-        let mut excluded: HashSet<String> = HashSet::new();
+        let mut excluded: Vec<Ident> = Vec::new();
         if let Some(exclude) = &options.opt_exclude {
-            match exclude {
-                ExcludeSelectItem::Single(name) => {
-                    excluded.extend(last_part(name));
-                }
-                ExcludeSelectItem::Multiple(names) => {
-                    for name in names {
-                        excluded.extend(last_part(name));
-                    }
+            let names = match exclude {
+                ExcludeSelectItem::Single(name) => vec![name],
+                ExcludeSelectItem::Multiple(names) => names.iter().collect(),
+            };
+            for name in names {
+                if let Some(ident) = name.0.last().and_then(|part| part.as_ident()) {
+                    excluded.push(ident.clone());
                 }
             }
         }
         if let Some(except) = &options.opt_except {
-            excluded.insert(except.first_element.value.clone());
-            excluded.extend(
-                except
-                    .additional_elements
-                    .iter()
-                    .map(|ident| ident.value.clone()),
-            );
+            excluded.push(except.first_element.clone());
+            excluded.extend(except.additional_elements.iter().cloned());
         }
 
-        let replaced: HashSet<String> = options
+        let replaced: Vec<&Ident> = options
             .opt_replace
             .iter()
             .flat_map(|replace| replace.items.iter())
-            .map(|item| item.column_name.value.clone())
+            .map(|item| &item.column_name)
             .collect();
 
-        let renames: HashMap<String, String> = options
-            .opt_rename
-            .iter()
-            .flat_map(|rename| match rename {
-                sqlparser::ast::RenameSelectItem::Single(item) => vec![item],
-                sqlparser::ast::RenameSelectItem::Multiple(items) => items.iter().collect(),
-            })
-            .map(|item| (item.ident.value.clone(), item.alias.value.clone()))
-            .collect();
+        let renames = rename_pairs(options);
 
         let qualifier_name = qualifier.and_then(last_part);
 
@@ -291,12 +347,24 @@ impl<'a> Context<'a> {
                     _ => continue,
                 }
             }
-            if excluded.contains(&col.name) || replaced.contains(&col.name) {
+            if let Some(ilike) = &options.opt_ilike {
+                if !ilike_matches(&ilike.pattern, &col.name) {
+                    continue;
+                }
+            }
+            if excluded
+                .iter()
+                .any(|ident| ident_matches_column(ident, &col.name))
+                || replaced
+                    .iter()
+                    .any(|ident| ident_matches_column(ident, &col.name))
+            {
                 continue;
             }
             let descendant = renames
-                .get(&col.name)
-                .cloned()
+                .iter()
+                .find(|(from, _)| ident_matches_column(from, &col.name))
+                .map(|(_, alias)| alias.value.clone())
                 .unwrap_or_else(|| col.name.clone());
             self.add_column_ancestors(ColumnMeta::new(descendant, None), vec![col.clone()]);
         }
