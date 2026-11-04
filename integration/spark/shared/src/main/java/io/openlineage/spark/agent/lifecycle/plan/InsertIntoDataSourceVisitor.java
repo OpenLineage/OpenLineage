@@ -13,7 +13,6 @@ import io.openlineage.spark.agent.util.OpenLineageAbstractPartialFunction;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import io.openlineage.spark.api.SparkOutputDatasetBuilder;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -53,12 +52,20 @@ public class InsertIntoDataSourceVisitor
               ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
               if (command.overwrite()) {
                 // rebuild whole dataset with a LifecycleStateChange facet added
-                SparkOutputDatasetBuilder builder = new SparkOutputDatasetBuilder(context);
-                return builder
-                    .fromBuilder(DatasetFacetsUtils.copyToBuilder(context, ds.getFacets()))
-                    .lifecycleStateChange(
-                        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE)
-                    .build();
+                OpenLineage.DatasetFacets facets =
+                    DatasetFacetsUtils.copyToBuilder(context, ds.getFacets())
+                        .lifecycleStateChange(
+                            context
+                                .getOpenLineage()
+                                .newLifecycleStateChangeDatasetFacet(
+                                    OpenLineage.LifecycleStateChangeDatasetFacet
+                                        .LifecycleStateChange.OVERWRITE,
+                                    null))
+                        .build();
+                return context
+                    .getOpenLineage()
+                    .newOutputDataset(
+                        ds.getNamespace(), ds.getName(), facets, ds.getOutputFacets());
               }
               return ds;
             })
