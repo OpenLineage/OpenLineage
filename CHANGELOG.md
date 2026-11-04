@@ -7,6 +7,11 @@
 * **Spark: Report Microsoft Fabric warehouse tables read and written with `synapsesql`** [`#5132`](https://github.com/OpenLineage/OpenLineage/pull/5132) [@mobuchowski](https://github.com/mobuchowski)
   *Tables read or written with Microsoft's Spark connector for Fabric warehouses are named `fabric-warehouse://<workspace SQL address>` / `<warehouse>.<schema>.<table>`. Before, reads were named `sqlserver://` and writes were reported as the connector's temporary folder. Passing the `DatawarehouseId` option also reports the table's OneLake file location. Requires loading the `openlineage-spark` jar yourself; Fabric's bundled copy is unchanged.*
 
+### Changed
+
+* **dbt: Normalize Fabric warehouse addresses** [`#5133`](https://github.com/OpenLineage/OpenLineage/pull/5133) [@mobuchowski](https://github.com/mobuchowski)
+  *dbt-fabric dataset namespaces are lowercased and leave out port 1433 and the `.z8b`-style label Fabric sometimes adds, so the same table always gets the same name, matching the Spark integration. **Breaking:** users whose dbt-fabric profile sets `port: 1433`, uses upper case, or includes such a label will see new dataset names.*
+
 ### Fixed
 
 * **Spark: parse dotted property keys of nested transports** [`#5117`](https://github.com/OpenLineage/OpenLineage/pull/5117) [@anshu1991](https://github.com/anshu1991)
