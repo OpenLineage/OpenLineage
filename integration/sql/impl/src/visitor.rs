@@ -775,28 +775,46 @@ impl Visit for Statement {
                 // Multi-table inserts (Snowflake/Oracle INSERT ALL and
                 // INSERT FIRST) carry their targets in the multi-table
                 // clauses, and `insert.table` is empty for them. Collect
-                // every clause target as an output.
+                // every clause target as an output. Each target's effective
+                // name is resolved first: IDENTIFIER('t') names the table
+                // through a function call, and converting the raw name
+                // would register a false output called IDENTIFIER and lose
+                // the real target.
                 for clause in &insert.multi_table_into_clauses {
-                    context.add_output(convert_to_idents(&clause.table_name));
+                    if let Some(name) =
+                        resolve_effective_table_name(&clause.table_name, &None, context)
+                    {
+                        context.add_insert_output(convert_to_idents(&name));
+                    }
                 }
                 for when_clause in &insert.multi_table_when_clauses {
                     for clause in &when_clause.into_clauses {
-                        context.add_output(convert_to_idents(&clause.table_name));
+                        if let Some(name) =
+                            resolve_effective_table_name(&clause.table_name, &None, context)
+                        {
+                            context.add_insert_output(convert_to_idents(&name));
+                        }
                     }
                 }
                 if let Some(else_clauses) = &insert.multi_table_else_clause {
                     for clause in else_clauses {
-                        context.add_output(convert_to_idents(&clause.table_name));
+                        if let Some(name) =
+                            resolve_effective_table_name(&clause.table_name, &None, context)
+                        {
+                            context.add_insert_output(convert_to_idents(&name));
+                        }
                     }
                 }
                 match &insert.table {
                     TableObject::TableName(name) => {
-                        let idents = convert_to_idents(name);
-                        // An empty name can never be a real target (it is
-                        // what multi-table inserts leave behind); registering
-                        // it would panic in DbTableMeta construction.
-                        if !idents.is_empty() {
-                            context.add_output(idents);
+                        if let Some(name) = resolve_effective_table_name(name, &None, context) {
+                            let idents = convert_to_idents(&name);
+                            // An empty name can never be a real target (it is
+                            // what multi-table inserts leave behind); registering
+                            // it would panic in DbTableMeta construction.
+                            if !idents.is_empty() {
+                                context.add_insert_output(idents);
+                            }
                         }
                     }
                     TableObject::TableFunction(func) => {

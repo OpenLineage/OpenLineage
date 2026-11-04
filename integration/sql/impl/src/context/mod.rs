@@ -163,6 +163,22 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// Registers an INSERT target as an output. Unlike
+    /// [`Context::add_output`], the name is never treated as a table alias:
+    /// CTE names are registered as aliases of an empty table, and an insert
+    /// target can share its name with a CTE defined over the insert's
+    /// source. The target is a real table written by the statement, outside
+    /// the CTE's alias scope, so it must always be registered.
+    pub fn add_insert_output(&mut self, output: Vec<Ident>) {
+        let name = DbTableMeta::new(
+            output,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
+        self.outputs.insert(name);
+    }
+
     pub fn move_input_to_output(&mut self, input: Vec<Ident>) {
         let name = DbTableMeta::new(
             input,

@@ -725,6 +725,105 @@ fn insert_first_when_else_targets() {
 }
 
 #[test]
+fn insert_into_identifier_target() {
+    // IDENTIFIER('t1') names the target through a function call; the raw
+    // name would register a false output called IDENTIFIER.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER('t1') SELECT * FROM s", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_identifier_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO IDENTIFIER('t1') VALUES (x) INTO IDENTIFIER('t2') VALUES (y) \
+             SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_identifier_when_else_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > 0 THEN INTO IDENTIFIER('t1') VALUES (x) \
+             ELSE INTO IDENTIFIER('t3') VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t3"])
+        }
+    );
+}
+
+#[test]
+fn insert_target_named_like_cte() {
+    // The target is outside the CTE's alias scope: sharing its name must
+    // not suppress it as an output.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH t1 AS (SELECT * FROM s) INSERT INTO t1 SELECT * FROM t1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_target_named_like_cte_in_source() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO t1 WITH t1 AS (SELECT a FROM s) SELECT * FROM t1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_target_with_unrelated_cte() {
+    assert_eq!(
+        test_sql_dialect(
+            "WITH c AS (SELECT * FROM s) INSERT INTO t1 SELECT * FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
 fn insert_all_does_not_abort_other_statements() {
     // A multi-table insert used to panic, aborting the whole parse call and
     // losing the lineage of every other statement in it.
