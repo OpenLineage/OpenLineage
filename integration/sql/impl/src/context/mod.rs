@@ -305,12 +305,10 @@ impl<'a> Context<'a> {
         qualifier: Option<&ObjectName>,
         options: &WildcardAdditionalOptions,
     ) {
-        let last_part = |name: &ObjectName| {
-            name.0
-                .last()
-                .and_then(|part| part.as_ident())
-                .map(|ident| ident.value.clone())
-        };
+        // The qualifier is kept as an identifier, not reduced to its
+        // value: whether it may fold against the origin's name depends on
+        // its quoting, exactly as for the wildcard modifiers below.
+        let last_part = |name: &ObjectName| name.0.last().and_then(|part| part.as_ident()).cloned();
 
         let mut excluded: Vec<Ident> = Vec::new();
         if let Some(exclude) = &options.opt_exclude {
@@ -338,12 +336,12 @@ impl<'a> Context<'a> {
 
         let renames = rename_pairs(options);
 
-        let qualifier_name = qualifier.and_then(last_part);
+        let qualifier_ident = qualifier.and_then(last_part);
 
         for col in tables_frame.column_ancestry.keys() {
-            if let Some(qualifier) = &qualifier_name {
+            if let Some(qualifier) = &qualifier_ident {
                 match &col.origin {
-                    Some(origin) if &origin.name == qualifier => {}
+                    Some(origin) if ident_matches_column(qualifier, &origin.name) => {}
                     _ => continue,
                 }
             }

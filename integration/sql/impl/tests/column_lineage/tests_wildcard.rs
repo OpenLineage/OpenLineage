@@ -252,8 +252,44 @@ fn test_ilike_reports_no_column_outside_the_output() {
         "snowflake",
     )
     .unwrap();
-    assert!(output
-        .column_lineage
-        .iter()
-        .all(|c| c.descendant.name != "secret"));
+    assert_eq!(output.column_lineage, vec![edge("id", "t", "id")]);
+}
+
+#[test]
+fn test_qualified_star_unquoted_qualifier_is_case_insensitive_in_snowflake() {
+    // An unquoted qualifier folds, so T.* names the table aliased t.
+    let output = test_sql_dialect(
+        "SELECT T.* FROM (SELECT a, b FROM table1) AS t",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("a", "table1", "a"), edge("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_qualified_star_quoted_qualifier_matches_exactly_in_snowflake() {
+    let output = test_sql_dialect(
+        "SELECT \"T\".* FROM (SELECT a, b FROM table1) AS \"T\"",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("a", "table1", "a"), edge("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_qualified_star_quoted_qualifier_does_not_fold_in_snowflake() {
+    // A quoted qualifier must match exactly: "t" does not name the table
+    // aliased "T".
+    let output = test_sql_dialect(
+        "SELECT \"t\".* FROM (SELECT a, b FROM table1) AS \"T\"",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
 }

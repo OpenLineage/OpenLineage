@@ -671,11 +671,12 @@ impl Visit for Select {
                     context.add_wildcard_lineage(&tables_frame, None, options);
                     visit_wildcard_replacements(context, options)?;
                 }
-                SelectItem::QualifiedWildcard(kind, options) => {
-                    if let SelectItemQualifiedWildcardKind::ObjectName(name) = kind {
-                        context.add_wildcard_lineage(&tables_frame, Some(name), options);
-                        visit_wildcard_replacements(context, options)?;
-                    }
+                SelectItem::QualifiedWildcard(
+                    SelectItemQualifiedWildcardKind::ObjectName(name),
+                    options,
+                ) => {
+                    context.add_wildcard_lineage(&tables_frame, Some(name), options);
+                    visit_wildcard_replacements(context, options)?;
                 }
                 _ => {}
             }
