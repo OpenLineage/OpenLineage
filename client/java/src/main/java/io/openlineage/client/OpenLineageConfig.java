@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.naming.NameConfig;
 import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
@@ -53,6 +54,9 @@ public class OpenLineageConfig<T extends OpenLineageConfig> implements MergeConf
   @JsonProperty("job")
   protected JobConfig jobConfig;
 
+  @JsonProperty("name")
+  protected NameConfig nameConfig;
+
   /**
    * Overwrites existing object with properties of other config entries whenever they're present.
    *
@@ -68,6 +72,7 @@ public class OpenLineageConfig<T extends OpenLineageConfig> implements MergeConf
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(runConfig, other.runConfig),
-        mergePropertyWith(jobConfig, other.jobConfig));
+        mergePropertyWith(jobConfig, other.jobConfig),
+        mergePropertyWith(nameConfig, other.nameConfig));
   }
 }

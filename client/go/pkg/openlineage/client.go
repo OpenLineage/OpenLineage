@@ -25,6 +25,11 @@ type ClientConfig struct {
 
 	// When true, OpenLineage will not emit events (default: false)
 	Disabled bool
+
+	// Name holds name-related configuration (e.g. dot-escaping of name
+	// segments). When Name.Escaping is non-nil it takes precedence over the
+	// OPENLINEAGE__NAME__ESCAPING environment variable.
+	Name NameConfig
 }
 
 // NewClient creates a new OpenLineage client.
@@ -49,6 +54,10 @@ func NewClient(producer string, cfg *ClientConfig) (*Client, error) {
 	if cfg.Namespace == "" {
 		namespace = "default"
 	}
+
+	// Apply name config so that a programmatic NameConfig takes precedence
+	// over the OPENLINEAGE__NAME__ESCAPING environment variable.
+	ConfigureName(cfg.Name)
 
 	return &Client{
 		transport: t,
