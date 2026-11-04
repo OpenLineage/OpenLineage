@@ -909,7 +909,9 @@ def test_detect_engine_native_binary(monkeypatch, tmp_path):
         ),
     ],
 )
-@pytest.mark.parametrize("probe_output, expected", [("2 2.0.8\n", (2, "2.0.8")), ("1\n", (1, None))])
+@pytest.mark.parametrize(
+    "probe_output, expected", [("2 2.0.8\n", (2, "2.0.8")), ("1\n", (1, None)), ("1 1.12.6\n", (1, "1.12.6"))]
+)
 def test_detect_engine_python_script(monkeypatch, tmp_path, script, interpreter, probe_output, expected):
     path = _fake_dbt(tmp_path, script)
     with (
@@ -925,7 +927,7 @@ def test_detect_engine_python_script(monkeypatch, tmp_path, script, interpreter,
 
 @pytest.mark.parametrize(
     "output, expected",
-    [("dbt 2.0.8\n", (2, "2.0.8")), ("Core:\n  - installed: 1.11.2\n", (1, None))],
+    [("dbt 2.0.8\n", (2, "2.0.8")), ("Core:\n  - installed: 1.11.2\n", (1, "1.11.2"))],
 )
 def test_detect_engine_falls_back_to_version_output(monkeypatch, tmp_path, output, expected):
     path = _fake_dbt(tmp_path, b"MZ\x90\x00")  # neither a native Unix binary nor a script
@@ -981,7 +983,7 @@ def _dbt_in_this_environment(monkeypatch, tmp_path, *, importable=True, with_cor
     monkeypatch.setattr(f"{utils}.importlib.metadata.version", lambda name: "2.0.8")
 
 
-@pytest.mark.parametrize("with_core, expected", [(True, (2, "2.0.8")), (False, (1, None))])
+@pytest.mark.parametrize("with_core, expected", [(True, (2, "2.0.8")), (False, (1, "2.0.8"))])
 def test_detect_engine_reads_a_dbt_in_this_environment_without_a_process(
     monkeypatch, tmp_path, with_core, expected
 ):

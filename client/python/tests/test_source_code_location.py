@@ -707,3 +707,50 @@ def test_config_overrides(repository):
 def test_git_failure_does_not_fail_emission(repository, error):
     with mock.patch("openlineage.client.client._git_dir_from_root", side_effect=error):
         assert project_source_code_location(str(repository), SourceCodeLocationConfig(disabled=False)) is None
+
+
+@pytest.mark.parametrize("detached", [False, True])
+@pytest.mark.parametrize("packed", [False, True])
+def test_worktree_emits_shared_metadata_and_its_own_commit(repository, tmp_path, detached, packed):
+    worktree = tmp_path / "linked"
+    git(repository, "worktree", "add", "-b", "worktree-branch", str(worktree))
+    git(
+        worktree,
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--allow-empty",
+        "-m",
+        "Worktree commit",
+    )
+    git(worktree, "-c", "tag.gpgSign=false", "tag", "worktree-tag")
+    sha = git(worktree, "rev-parse", "HEAD").stdout.strip()
+    assert sha != git(repository, "rev-parse", "HEAD").stdout.strip()
+    if detached:
+        git(worktree, "checkout", "--detach")
+    if packed:
+        git(repository, "pack-refs", "--all", "--prune")
+    project = worktree / "analytics"
+    project.mkdir()
+    facet = project_source_code_location(str(project), SourceCodeLocationConfig(disabled=False))
+    assert facet.repoUrl == "https://github.com/example/analytics.git"
+    assert facet.path == "analytics"
+    assert facet.version == sha
+    assert facet.branch == (None if detached else "worktree-branch")
+    assert facet.tag == "worktree-tag"
+
+
+@pytest.mark.parametrize("absolute", [False, True])
+def test_common_git_directory_pointer(tmp_path, absolute):
+    from openlineage.client.git import _common_git_dir
+
+    common = tmp_path / "common"
+    private = common / "worktrees" / "linked"
+    private.mkdir(parents=True)
+    (private / "commondir").write_text(str(common) if absolute else "../..")
+    assert _common_git_dir(private) == common.resolve()
+    assert _common_git_dir(common) == common

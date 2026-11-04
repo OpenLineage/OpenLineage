@@ -34,6 +34,7 @@ from openlineage.common.provider.dbt.utils import (
     __version__,
     detect_dbt_engine,
     get_dbt_command,
+    get_dbt_project_dir,
     get_parent_run_metadata,
     is_truthy,
 )
@@ -161,7 +162,6 @@ def main():
 
     args = sys.argv[1:]
     target = parse_single_arg(args, ["-t", "--target"])
-    project_dir = parse_single_arg(args, ["--project-dir"], default="./")
     profile_name = parse_single_arg(args, ["--profile"])
     model_selector = parse_single_arg(args, ["--selector"])
     target_path = parse_single_arg(args, ["--target-path"])
@@ -189,6 +189,8 @@ def main():
             # lineage: the engine isn't detected and the project isn't read.
             logger.info("This dbt command produces no lineage; running it without OpenLineage events")
             return run_dbt_untouched(dbt_command_line, logger)
+    project_dir = get_dbt_project_dir(args)
+    if not send_events:
         dbt_major_version, dbt_version = detect_dbt_engine()
         if dbt_major_version >= 2:
             # dbt Core v2 always reports live from its OpenTelemetry output.

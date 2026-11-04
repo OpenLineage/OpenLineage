@@ -584,3 +584,27 @@ def test_emit_live_events_cleans_up_when_interrupted_while_sending(monkeypatch):
         emit_live_events(processor, mock.MagicMock())
     assert cleaned_up == [True]
     client.close.assert_called_once_with(timeout=30)
+
+
+@pytest.mark.parametrize("mode", ["artifacts", "structured", "otel"])
+def test_main_passes_environment_project_to_each_mode(monkeypatch, tmp_path, mode):
+    project = tmp_path / "analytics"
+    project.mkdir()
+    monkeypatch.setenv("DBT_PROJECT_DIR", str(project))
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    handler = mock.MagicMock(return_value=0)
+    name = {
+        "artifacts": "consume_local_artifacts",
+        "structured": "consume_structured_logs",
+        "otel": "consume_otel",
+    }[mode]
+    monkeypatch.setattr(f"openlineage.dbt.{name}", handler)
+    monkeypatch.setattr(
+        "openlineage.dbt.detect_dbt_engine", lambda: (2, "2.0.8") if mode == "otel" else (1, None)
+    )
+    args = ["dbt-ol", "run"]
+    if mode == "structured":
+        args.append("--consume-structured-logs")
+    monkeypatch.setattr("sys.argv", args)
+    assert main() == 0
+    assert handler.call_args.kwargs["project_dir"] == str(project)

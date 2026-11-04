@@ -76,7 +76,9 @@ When the Python client's `facets.source_code_location.disabled` setting is `fals
 root emits an empty path. The same applies to artifact, structured-log, and Core v2 modes.
 
 Discovery uses the selected project directory's Git checkout rather than assuming
-the wrapper's current directory is the project.
+the wrapper's current directory is the project. Project selection follows `--project-dir`,
+the installed dbt engine's project-directory environment variables, then the nearest
+`dbt_project.yml` in the current directory or its parents.
 If the checkout or repository URL cannot be identified, no project path is inferred. Existing source-location facets are preserved.
 
 ### Logging

@@ -1206,3 +1206,55 @@ class TestModelRunStatus:
 )
 def test_get_dbt_command_takes_the_subcommand_not_option_values(command_line, expected):
     assert get_dbt_command(command_line) == expected
+
+
+@pytest.mark.parametrize(
+    "version,expected", [("1.10.15", "legacy"), ("1.11.0", "engine"), ("1.12.6", "engine")]
+)
+def test_project_directory_environment_precedence(monkeypatch, tmp_path, version, expected):
+    from openlineage.common.provider.dbt.utils import get_dbt_project_dir
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DBT_PROJECT_DIR", "legacy")
+    monkeypatch.setenv("DBT_ENGINE_PROJECT_DIR", "engine")
+    monkeypatch.setattr("openlineage.common.provider.dbt.utils.detect_dbt_engine", lambda: (1, version))
+    assert get_dbt_project_dir(["run"]) == str(tmp_path / expected)
+    assert get_dbt_project_dir(["run", "--project-dir", "explicit"]) == str(tmp_path / "explicit")
+    assert get_dbt_project_dir(["run", "--project-dir=explicit"]) == str(tmp_path / "explicit")
+
+
+def test_project_directory_parent_discovery_and_explicit_invalid_path(monkeypatch, tmp_path):
+    from openlineage.common.provider.dbt.utils import get_dbt_project_dir
+
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    (tmp_path / "dbt_project.yml").write_text("name: outer")
+    project = tmp_path / "analytics"
+    project.mkdir()
+    (project / "dbt_project.yml").write_text("name: inner")
+    models = project / "models"
+    models.mkdir()
+    monkeypatch.chdir(models)
+    assert get_dbt_project_dir(["run"]) == str(project)
+    assert get_dbt_project_dir(["run", "--project-dir", "missing"]) == str(models / "missing")
+    monkeypatch.setenv("DBT_PROJECT_DIR", "also-missing")
+    assert get_dbt_project_dir(["run"]) == str(models / "also-missing")
+
+
+def test_project_directory_without_project_uses_current_directory(monkeypatch, tmp_path):
+    from openlineage.common.provider.dbt.utils import get_dbt_project_dir
+
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(tmp_path)
+    assert get_dbt_project_dir(["run"]) == str(tmp_path)
+
+
+def test_log_path_uses_selected_project(monkeypatch, tmp_path):
+    from openlineage.common.provider.dbt.utils import get_dbt_log_path
+
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_LOG_PATH", raising=False)
+    monkeypatch.setenv("DBT_PROJECT_DIR", str(tmp_path / "analytics"))
+    monkeypatch.setattr("openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: "logs")
+    assert get_dbt_log_path(["run"]) == str(tmp_path / "analytics" / "logs" / "dbt.log")

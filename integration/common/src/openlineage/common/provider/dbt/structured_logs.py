@@ -87,7 +87,9 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
         super().__init__(dbt_command_line, *args, **kwargs)
 
         self.profiles_dir = get_dbt_profiles_dir(command=self.dbt_command_line)
-        self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
+        self.dbt_log_file_path: str = get_dbt_log_path(
+            command=self.dbt_command_line, project_dir=self.project_dir
+        )
         self.is_random_logfile: bool = is_random_logfile(command=self.dbt_command_line)
         self.dbt_log_dirname: str = os.path.dirname(self.dbt_log_file_path)
 
