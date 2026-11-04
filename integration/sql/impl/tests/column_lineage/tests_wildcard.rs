@@ -293,3 +293,43 @@ fn test_qualified_star_quoted_qualifier_does_not_fold_in_snowflake() {
     .unwrap();
     assert_eq!(output.column_lineage, vec![]);
 }
+
+#[test]
+fn test_alias_list_rename_collision_merges_ancestry() {
+    // Renaming a to b collides with the existing output column b: the
+    // renamed column's lineage is the union of both ancestry sets, not
+    // whichever set a map collect happened to keep.
+    let output = test_sql("SELECT * FROM (SELECT a, b FROM t) AS d(b)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "b".to_string(),
+            },
+            lineage: vec![
+                ColumnMeta {
+                    origin: Some(table("t")),
+                    name: "a".to_string(),
+                },
+                ColumnMeta {
+                    origin: Some(table("t")),
+                    name: "b".to_string(),
+                },
+            ],
+        }]
+    );
+}
+
+#[test]
+fn test_qualified_star_unquoted_qualifier_skips_quoted_alias_of_other_case() {
+    // Both derived tables carry quoted aliases, "t" and "T". The unquoted
+    // qualifier T resolves to the exact identifier T under Snowflake rules,
+    // so it must not also claim the columns of "t" through case folding.
+    let output = test_sql_dialect(
+        "SELECT T.* FROM (SELECT a FROM table1) AS \"t\" JOIN (SELECT b FROM table2) AS \"T\" ON true",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![edge("b", "table2", "b")]);
+}

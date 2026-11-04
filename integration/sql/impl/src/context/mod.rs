@@ -37,6 +37,26 @@ fn ident_matches_column(ident: &Ident, column_name: &str) -> bool {
         || (ident.quote_style.is_none() && ident.value.eq_ignore_ascii_case(column_name))
 }
 
+/// Whether a wildcard qualifier names a frame origin. Both sides are
+/// identifiers here, and the origin carries the quote style of the alias
+/// it was stamped from: when either side is quoted, the names must match
+/// exactly - a quoted alias is one exact identifier, and an unquoted
+/// qualifier, which the dialect folds, cannot claim it through a
+/// differently-cased spelling. Only when both sides are unquoted may the
+/// comparison fold case.
+fn ident_matches_origin(qualifier: &Ident, origin: &DbTableMeta) -> bool {
+    let origin_quoted = origin
+        .quote_style
+        .as_ref()
+        .and_then(|style| style.name)
+        .is_some();
+    if qualifier.quote_style.is_some() || origin_quoted {
+        qualifier.value == origin.name
+    } else {
+        qualifier.value.eq_ignore_ascii_case(&origin.name)
+    }
+}
+
 /// Case-insensitive SQL LIKE match, as used by the wildcard ILIKE modifier:
 /// `%` matches any run of characters, `_` exactly one character.
 fn ilike_matches(pattern: &str, value: &str) -> bool {
@@ -341,7 +361,7 @@ impl<'a> Context<'a> {
         for col in tables_frame.column_ancestry.keys() {
             if let Some(qualifier) = &qualifier_ident {
                 match &col.origin {
-                    Some(origin) if ident_matches_column(qualifier, &origin.name) => {}
+                    Some(origin) if ident_matches_origin(qualifier, origin) => {}
                     _ => continue,
                 }
             }

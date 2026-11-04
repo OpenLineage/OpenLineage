@@ -1105,7 +1105,16 @@ fn apply_column_alias_list(
             }
         }
     }
-    frame.column_ancestry = entries.into_iter().collect();
+    // A positional rename can land on a name another output column
+    // already carries; merge the ancestry sets then, as the insertion
+    // path in Context does, instead of letting one overwrite the other.
+    for (column, ancestors) in entries {
+        frame
+            .column_ancestry
+            .entry(column)
+            .or_default()
+            .extend(ancestors);
+    }
 }
 
 /// The output column names of a query in projection order, or None when
