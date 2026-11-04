@@ -25,3 +25,30 @@ Please refer to [Java client for Openlineage](../../client/java/configuration.md
 | openlineage.flink.disableCheckpointTracking         | Disables checkpoint polling against the Flink jobs API and prevents checkpoint-driven `RUNNING` events from being emitted when checkpoint metadata is not needed.                                                  | False (default)         |
 | openlineage.flink.enableDetachedJobTracking         | Enables the Flink 2.x detached job tracking flow for detached submissions where the submitting client emits the `START` event and exits, while the JobManager emits later status events from a separate JVM.          | False (default)         |
 | openlineage.flink.detachedStartEventEmitTimeoutInSeconds | Defines how long the Flink 2.x listener waits for the detached `START` event emit call to complete, for example waiting for Kafka send acknowledgement, before the Flink job submitter JVM exits.              | 5 (default)             |
+| openlineage.run.tags                                | Semicolon-delimited run tags. Each tag uses `key`, `key:value`, or `key:value:source` syntax. | `environment:production;team:data` |
+
+## Run tags
+
+Flink 1.x and 2.x attach configured run tags to emitted events in `run.facets.tags`
+using the standard `TagsRunFacet`. This includes job start, checkpoint, and terminal
+events. No tags facet is emitted when run tags are not configured.
+
+Set tags in the Flink configuration:
+
+```yaml
+openlineage.run.tags: "environment:production;team:data;scheduled"
+```
+
+Alternatively, configure `run.tags` in `openlineage.yml`:
+
+```yaml
+run:
+  tags:
+    - "environment:production"
+    - "team:data"
+    - "scheduled"
+```
+
+A tag without a value defaults to `"true"`. The source defaults to `"CONFIG"` and
+can be set explicitly, for example `team:data:DEPLOYMENT`. See the
+[Java client tag configuration](../../client/java/configuration.md#tags).
