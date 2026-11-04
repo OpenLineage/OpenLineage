@@ -147,6 +147,16 @@ class InsertIntoHadoopFsRelationVisitorTest {
   }
 
   @Test
+  void testConnectorWriteWithGuestAddressSettingEmitsNoOutput() {
+    // the tenant and workspace in the Spark settings could build an address, but must not be used
+    runtimeConf.put(
+        "spark.datawarehouse.wh_primary.sqlendpoint",
+        "qvrmbuxie7we7glrekxgy6npqu-6xgyei3x2xiejip4iime6knh5m-jh0bi.zcf.datawarehouse.fabric.microsoft.com");
+
+    assertThat(visitor.apply(command(observedOptions()))).isEmpty();
+  }
+
+  @Test
   void testConnectorWriteWithoutEndpointEmitsNoOutput() {
     sparkConf.remove("trident.tenant.id");
     Map<String, String> options = new HashMap<>();

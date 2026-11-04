@@ -86,11 +86,17 @@ public final class FabricWarehouseUtils {
   }
 
   /**
-   * Whether this is the SQL address of a Fabric workspace. Addresses used to reach a workspace in
-   * another organization have an extra part and aren't matched.
+   * Whether this is the SQL address of a Fabric workspace, optionally followed by a numeric port.
+   * Addresses used to reach a workspace in another organization have an extra part and aren't
+   * matched.
    */
   public static boolean isFabricEndpoint(String endpoint) {
-    return ENDPOINT_HOST.matcher(hostOf(canonicalEndpoint(endpoint))).matches();
+    String value = endpoint.trim().toLowerCase(Locale.ROOT);
+    // anything after the host that isn't a numeric port, such as "host:bad", isn't an address
+    if (!HOST_AND_PORT.matcher(value).matches()) {
+      return false;
+    }
+    return ENDPOINT_HOST.matcher(hostOf(canonicalEndpoint(value))).matches();
   }
 
   /**

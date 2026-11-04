@@ -25,6 +25,9 @@ class FabricWarehouseSparkUtilsTest {
   private static final String ENDPOINT_2 =
       "6obaxtbopqfublwdicr5oicqlm-vspmlpdq4kuebhpl7d2zsrmwuu.datawarehouse.fabric.microsoft.com";
   private static final String TABLE = "wh_primary.probe_dw.a_write";
+  // the address of a workspace reached as a guest from another organization has a third part
+  private static final String GUEST_ENDPOINT =
+      "qvrmbuxie7we7glrekxgy6npqu-6xgyei3x2xiejip4iime6knh5m-jh0bi.zcf.datawarehouse.fabric.microsoft.com";
 
   private final Map<String, String> conf = new HashMap<>();
   private final Function<String, Optional<String>> confLookup =
@@ -119,6 +122,36 @@ class FabricWarehouseSparkUtilsTest {
 
     // the table must be named <warehouse>.<schema>.<table>
     assertThat(FabricWarehouseSparkUtils.isConnectorWrite(options("probe_dw.a_write"))).isFalse();
+  }
+
+  @Test
+  void testGuestAddressSettingEmitsNoOutput() {
+    // the Fabric settings would give an address, but the setting is the one that was used
+    conf.put("trident.tenant.id", TENANT);
+    conf.put("trident.workspace.id", WORKSPACE);
+    conf.put("spark.datawarehouse.wh_primary.sqlendpoint", GUEST_ENDPOINT);
+
+    assertThat(FabricWarehouseSparkUtils.isConnectorWrite(options(TABLE))).isTrue();
+    assertThat(FabricWarehouseSparkUtils.getWriteIdentifier(options(TABLE), confLookup)).isEmpty();
+  }
+
+  @Test
+  void testMalformedPortInSettingEmitsNoOutput() {
+    conf.put("trident.tenant.id", TENANT);
+    conf.put("trident.workspace.id", WORKSPACE);
+    conf.put("spark.datawarehouse.wh_primary.sqlendpoint", ENDPOINT + ":bad");
+
+    assertThat(FabricWarehouseSparkUtils.getWriteIdentifier(options(TABLE), confLookup)).isEmpty();
+  }
+
+  @Test
+  void testBlankSettingIsIgnored() {
+    conf.put("trident.tenant.id", TENANT);
+    conf.put("trident.workspace.id", WORKSPACE);
+    conf.put("spark.datawarehouse.wh_primary.sqlendpoint", "  ");
+
+    assertThat(identifier(options(TABLE)).getNamespace())
+        .isEqualTo("fabric-warehouse://" + ENDPOINT);
   }
 
   private DatasetIdentifier identifier(Map<String, String> options) {

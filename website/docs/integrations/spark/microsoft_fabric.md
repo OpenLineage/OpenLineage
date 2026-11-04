@@ -31,6 +31,9 @@ The same address can be written in several ways, so OpenLineage always writes it
 the `.z{xx}` label that Fabric sometimes adds (for example `.z8b`), and without port 1433, the default. This way a
 table always gets the same name, however the connector wrote the address.
 
+Addresses for a workspace in another organization (guest access) have an extra part and aren't recognized. Those
+tables keep the `sqlserver://` name.
+
 ## Writes
 
 The connector writes a table in two steps:
@@ -42,7 +45,9 @@ OpenLineage only sees the first step. It reports the table being loaded as the o
 
 The first step doesn't include the workspace's SQL address, so OpenLineage works it out in this order:
 
-1. If you set the address in `spark.datawarehouse.{warehouse}.sqlendpoint`, that address is used.
+1. If you set the address in `spark.datawarehouse.{warehouse}.sqlendpoint`, that address is used, as long as it is the
+   address of a Fabric workspace. If it isn't, for example because it is an address for a workspace in another
+   organization, the write is reported without an output.
 2. Otherwise, the address is built from two IDs: the tenant ID, which Fabric provides in `trident.tenant.id`, and the
    workspace ID. The workspace ID comes from the connector's `WorkspaceId` option, or from `trident.workspace.id` if
    you don't set the option. When you write to a warehouse in a different workspace from your notebook, set

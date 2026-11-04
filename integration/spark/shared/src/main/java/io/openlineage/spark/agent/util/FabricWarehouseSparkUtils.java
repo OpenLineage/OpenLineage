@@ -35,6 +35,8 @@ import org.apache.spark.sql.SparkSession;
  * <ol>
  *   <li>The address the user set in Spark settings as {@code
  *       spark.datawarehouse.<warehouse>.sqlendpoint}, written as {@code host} or {@code host,port}.
+ *       It is used only if it is the address of a Fabric workspace, the same check that reads use.
+ *       Otherwise the write is reported with no output, without trying the next option.
  *   <li>The address built from the tenant ID ({@code trident.tenant.id}, set by Fabric) and the
  *       workspace ID. The workspace ID comes from the {@code WorkspaceId} option, or from {@code
  *       trident.workspace.id} if the option isn't set. The option comes first because it names the
@@ -79,12 +81,24 @@ public final class FabricWarehouseSparkUtils {
     String warehouse = table.get()[0];
     Optional<String> workspaceOption = option(options, FabricWarehouseUtils.WORKSPACE_ID_OPTION);
 
-    Optional<String> endpoint =
+    Optional<String> override =
         conf.apply(String.format(Locale.ROOT, ENDPOINT_OVERRIDE_CONF, warehouse))
-            .map(FabricWarehouseUtils::canonicalEndpoint);
-    if (!endpoint.isPresent()) {
-      endpoint = buildEndpoint(workspaceOption, conf);
+            .filter(value -> !value.trim().isEmpty());
+    if (override.isPresent() && !FabricWarehouseUtils.isFabricEndpoint(override.get())) {
+      // Reads only name an address as a Fabric one when it passes this check, so it can't be, for
+      // example, an address for a workspace in another organization. Using the setting anyway
+      // would give a table one name when written and another when read, and building the address
+      // from IDs instead could name the wrong workspace. So the write is reported without output.
+      log.debug(
+          "The {} setting for {} is not a Fabric workspace SQL address; emitting no output dataset",
+          ENDPOINT_OVERRIDE_CONF,
+          warehouse);
+      return Optional.empty();
     }
+    Optional<String> endpoint =
+        override.isPresent()
+            ? override.map(FabricWarehouseUtils::canonicalEndpoint)
+            : buildEndpoint(workspaceOption, conf);
     if (!endpoint.isPresent()) {
       log.debug(
           "Cannot resolve the Fabric Warehouse endpoint of {}; emitting no output dataset",

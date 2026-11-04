@@ -79,6 +79,11 @@ class FabricWarehouseUtilsTest {
       delimiter = '|',
       value = {
         ENDPOINT + " | true",
+        ENDPOINT + ":1444 | true",
+        ENDPOINT + ",1433 | true",
+        // a port has to be a number
+        ENDPOINT + ":bad | false",
+        ENDPOINT + ": | false",
         "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.z8b.datawarehouse.fabric.microsoft.com:1433 | true",
         // an address for reaching a workspace in another organization has an extra part
         "qvrmbuxie7we7glrekxgy6npqu-6xgyei3x2xiejip4iime6knh5m-jh0bi.zcf.datawarehouse.fabric.microsoft.com | false",
