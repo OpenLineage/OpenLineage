@@ -790,6 +790,11 @@ impl Visit for Statement {
                     }
                 }
                 for when_clause in &insert.multi_table_when_clauses {
+                    // A WHEN predicate is a general expression and can
+                    // read tables through subqueries; visit it, as the
+                    // MERGE arm visits its ON predicate, so those tables
+                    // join the statement's inputs.
+                    when_clause.condition.visit(context)?;
                     for clause in &when_clause.into_clauses {
                         if let Some(name) =
                             resolve_effective_table_name(&clause.table_name, &None, context)

@@ -911,3 +911,58 @@ fn insert_all_does_not_abort_other_statements() {
         }
     );
 }
+
+#[test]
+fn insert_all_when_exists_predicate_table_is_input() {
+    // A WHEN predicate is a general expression: a table it reads through
+    // a subquery is an input of the statement, like the source query's.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN EXISTS (SELECT 1 FROM ref) THEN INTO t1 VALUES (x) \
+             SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["ref", "s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_scalar_subquery_table_is_input() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > (SELECT MAX(m) FROM limits) THEN INTO t1 VALUES (x) \
+             ELSE INTO t2 VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["limits", "s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_plain_comparison_adds_no_input() {
+    // Control: WHEN conditions that read no table add nothing beyond the
+    // source query's inputs.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WHEN x < 0 THEN INTO t2 VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
