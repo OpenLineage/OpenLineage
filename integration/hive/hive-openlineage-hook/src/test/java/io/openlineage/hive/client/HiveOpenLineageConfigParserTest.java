@@ -7,6 +7,7 @@ package io.openlineage.hive.client;
 import static io.openlineage.hive.client.HiveOpenLineageConfigParser.extractFromHadoopConf;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.LineageCompatibility;
 import io.openlineage.client.transports.ConsoleConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
@@ -36,5 +37,15 @@ public class HiveOpenLineageConfigParserTest {
     assertThat(config.getCircuitBreaker()).isNull();
     assertThat(config.getMetricsConfig()).isNull();
     assertThat(config.getDatasetConfig()).isNull();
+  }
+
+  @Test
+  public void testLineageCompatibility() {
+    Configuration conf = new Configuration();
+    conf.set("hive.openlineage.lineage.compatibility", "modern");
+
+    HiveOpenLineageConfig config = extractFromHadoopConf(conf);
+
+    assertThat(config.getLineageConfig().getCompatibility()).isEqualTo(LineageCompatibility.MODERN);
   }
 }
