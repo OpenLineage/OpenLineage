@@ -7,6 +7,7 @@ package io.openlineage.client.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -194,6 +195,52 @@ public final class FabricWarehouseUtils {
         oneLakeLocation(workspaceId.get(), warehouseId.get(), parts[1], parts[2]);
     return identifier.withSymlink(
         location.getName(), location.getNamespace(), DatasetIdentifier.SymlinkType.LOCATION);
+  }
+
+  /**
+   * Describes a Fabric warehouse table in OneLake terms, for the {@code oneLake} facet.
+   *
+   * <p>Everything comes from the dataset itself, never from the Spark session, because a table can
+   * be in another workspace than the one the job runs in:
+   *
+   * <ul>
+   *   <li>the item type is {@code Warehouse} and the item name is the warehouse;
+   *   <li>the workspace ID is read from the SQL address;
+   *   <li>the warehouse ID and the table's location come from the {@code LOCATION} symlink that
+   *       {@link #withOneLakeLocation} adds, and only if that symlink is in the same workspace as
+   *       the address.
+   * </ul>
+   *
+   * @param identifier a dataset, possibly with symlinks
+   * @return the description, or empty if this isn't a {@code fabric-warehouse} dataset named {@code
+   *     <warehouse>.<schema>.<table>}
+   */
+  public static Optional<OneLakeLocation> toOneLakeLocation(DatasetIdentifier identifier) {
+    String prefix = SCHEME + "://";
+    String[] parts = identifier.getName().split("\\.");
+    if (!identifier.getNamespace().startsWith(prefix) || parts.length != TABLE_NAME_PARTS) {
+      return Optional.empty();
+    }
+    Optional<UUID> workspaceId =
+        workspaceIdOf(identifier.getNamespace().substring(prefix.length()));
+    OneLakeLocation.OneLakeLocationBuilder builder =
+        OneLakeLocation.builder()
+            .workspaceId(workspaceId.orElse(null))
+            .itemName(parts[0])
+            .itemType(OneLakeLocation.WAREHOUSE)
+            .path(Arrays.asList(OneLakeLocation.TABLES, parts[1], parts[2]));
+    if (identifier.getSymlinks() != null && workspaceId.isPresent()) {
+      identifier.getSymlinks().stream()
+          .filter(s -> s.getType() == DatasetIdentifier.SymlinkType.LOCATION)
+          .map(s -> OneLakeLocation.parse(s.getNamespace(), s.getName()))
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .filter(location -> workspaceId.get().equals(location.getWorkspaceId()))
+          .filter(location -> location.getItemId() != null)
+          .findFirst()
+          .ifPresent(location -> builder.itemId(location.getItemId()).path(location.getPath()));
+    }
+    return Optional.of(builder.build());
   }
 
   /** Reads an ID, returning empty instead of failing when the text isn't a valid ID. */

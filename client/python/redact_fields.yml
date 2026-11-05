@@ -354,3 +354,7 @@
       redact_fields: []
     - class_name: HierarchyDatasetFacetLevel
       redact_fields: []
+- module: one_lake_dataset
+  classes:
+    - class_name: OneLakeDatasetFacet
+      redact_fields: []

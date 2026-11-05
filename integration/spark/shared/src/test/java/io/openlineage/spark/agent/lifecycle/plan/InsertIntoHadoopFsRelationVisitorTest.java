@@ -113,6 +113,53 @@ class InsertIntoHadoopFsRelationVisitorTest {
             });
   }
 
+  @Test
+  void testConnectorWriteHasOneLakeFacet() {
+    // Fabric puts the workspace's name only in the session's settings
+    runtimeConf.put("trident.workspace.name", "do-test-env-fabric");
+
+    OpenLineage.OneLakeDatasetFacet facet = connectorWriteOutput().getFacets().getOneLake();
+
+    assertThat(facet.getItemType()).isEqualTo("Warehouse");
+    assertThat(facet.getItemName()).isEqualTo("wh_primary");
+    assertThat(facet.getWorkspaceId()).isEqualTo("8b4cb800-a044-43ce-8f76-3356f709b468");
+    assertThat(facet.getWorkspaceName()).isEqualTo("do-test-env-fabric");
+    assertThat(facet.getItemId()).isEqualTo("0fd9a0c2-ee93-46af-aaea-a45c8649ed9d");
+    assertThat(facet.getLocation())
+        .isEqualTo(
+            "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/"
+                + "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/probe_dw/a_write");
+    assertThat(facet.getTableId()).isNull();
+  }
+
+  @Test
+  void testConnectorWriteToAnotherWorkspaceHasNoWorkspaceName() {
+    runtimeConf.put("trident.workspace.name", "do-test-env-fabric");
+    Map<String, String> options = observedOptions();
+    options.put("WorkspaceId", "bcc59eac-e270-40a8-9deb-f8f5994596a5");
+
+    OpenLineage.OneLakeDatasetFacet facet =
+        visitor.apply(command(options)).get(0).getFacets().getOneLake();
+
+    // the address is built for the other workspace, so the session's workspace name doesn't apply
+    assertThat(facet.getWorkspaceId()).isEqualTo("bcc59eac-e270-40a8-9deb-f8f5994596a5");
+    assertThat(facet.getWorkspaceName()).isNull();
+    assertThat(facet.getItemId()).isEqualTo("0fd9a0c2-ee93-46af-aaea-a45c8649ed9d");
+  }
+
+  @Test
+  void testConnectorWriteWithoutWarehouseIdHasNoLocation() {
+    Map<String, String> options = observedOptions();
+    options.remove("DatawarehouseId");
+
+    OpenLineage.OneLakeDatasetFacet facet =
+        visitor.apply(command(options)).get(0).getFacets().getOneLake();
+
+    assertThat(facet.getItemName()).isEqualTo("wh_primary");
+    assertThat(facet.getItemId()).isNull();
+    assertThat(facet.getLocation()).isNull();
+  }
+
   private OpenLineage.OutputDataset connectorWriteOutput() {
     List<OpenLineage.OutputDataset> outputs = visitor.apply(command(observedOptions()));
     assertThat(outputs).hasSize(1);
@@ -181,6 +228,7 @@ class InsertIntoHadoopFsRelationVisitorTest {
     assertThat(output.getName()).isEqualTo("user/trusted-service-user/a_write5f15");
     assertThat(output.getFacets().getLifecycleStateChange().getLifecycleStateChange())
         .isEqualTo(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+    assertThat(output.getFacets().getOneLake()).isNull();
   }
 
   private static InsertIntoHadoopFsRelationCommand command(Map<String, String> options) {

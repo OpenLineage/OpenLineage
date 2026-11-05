@@ -96,3 +96,37 @@ This read gets the symlink `abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake
 
 The location always uses IDs, because OneLake refuses paths that mix IDs and names. Without `DatawarehouseId`, the
 connector doesn't make the warehouse's ID available, so no location is reported.
+
+## The `oneLake` facet
+
+Every Fabric warehouse table that OpenLineage reports, read or written, also gets the
+[`oneLake` facet](../../spec/facets/dataset-facets/onelake.md). It describes the table in OneLake terms, so you can
+link it to the warehouse that holds it:
+
+| Field           | Value                                                                                                   |
+|:----------------|:--------------------------------------------------------------------------------------------------------|
+| `itemType`      | `Warehouse`                                                                                             |
+| `itemName`      | the warehouse, the first part of the table's name                                                       |
+| `workspaceId`   | the workspace ID, read from the SQL address                                                             |
+| `workspaceName` | the workspace's name, from Fabric's `trident.workspace.name`, only for the workspace the notebook runs in |
+| `itemId`        | the warehouse ID, only when the `LOCATION` symlink is reported (see above)                              |
+| `location`      | the same OneLake location as the `LOCATION` symlink, as a single path                                   |
+
+For the read above, the facet is:
+
+```json
+"oneLake": {
+  "location": "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/raw/orders",
+  "workspaceId": "8b4cb800-a044-43ce-8f76-3356f709b468",
+  "workspaceName": "do-test-env-fabric",
+  "itemId": "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d",
+  "itemName": "wh_primary",
+  "itemType": "Warehouse"
+}
+```
+
+Everything comes from the table's own name and options. The workspace ID is never taken from the notebook's
+settings, because a notebook can read and write warehouses in other workspaces. Outside Fabric, for example when you
+read a warehouse over JDBC from your own Spark cluster, the facet has the same fields except `workspaceName`.
+
+To leave the facet out, add `oneLake` to the disabled facets: `spark.openlineage.facets.oneLake.disabled=true`.

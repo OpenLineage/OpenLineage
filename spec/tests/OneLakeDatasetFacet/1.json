@@ -1,0 +1,12 @@
+{
+  "oneLake": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.56.0/integration/spark",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/OneLakeDatasetFacet.json#/$defs/OneLakeDatasetFacet",
+    "location": "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/raw/orders",
+    "workspaceId": "8b4cb800-a044-43ce-8f76-3356f709b468",
+    "workspaceName": "do-test-env-fabric",
+    "itemId": "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d",
+    "itemName": "wh_primary",
+    "itemType": "Warehouse"
+  }
+}

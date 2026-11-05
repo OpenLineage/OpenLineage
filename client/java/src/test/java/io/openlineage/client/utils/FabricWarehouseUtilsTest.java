@@ -226,6 +226,80 @@ class FabricWarehouseUtilsTest {
   }
 
   @Test
+  void testToOneLakeLocationWithWarehouseId() {
+    DatasetIdentifier identifier =
+        FabricWarehouseUtils.withOneLakeLocation(
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
+            Optional.empty(),
+            Optional.of(WAREHOUSE.toString()));
+
+    OneLakeLocation location = FabricWarehouseUtils.toOneLakeLocation(identifier).get();
+
+    assertThat(location.getWorkspaceId()).isEqualTo(WORKSPACE);
+    assertThat(location.getItemId()).isEqualTo(WAREHOUSE);
+    assertThat(location.getItemName()).isEqualTo("wh_primary");
+    assertThat(location.getItemType()).isEqualTo("Warehouse");
+    assertThat(location.guidLocation())
+        .contains(
+            "abfss://"
+                + WORKSPACE
+                + "@onelake.dfs.fabric.microsoft.com/"
+                + WAREHOUSE
+                + "/Tables/raw/orders");
+  }
+
+  @Test
+  void testToOneLakeLocationWithoutWarehouseId() {
+    OneLakeLocation location =
+        FabricWarehouseUtils.toOneLakeLocation(
+                new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT))
+            .get();
+
+    assertThat(location.getWorkspaceId()).isEqualTo(WORKSPACE);
+    assertThat(location.getItemName()).isEqualTo("wh_primary");
+    assertThat(location.getItemType()).isEqualTo("Warehouse");
+    assertThat(location.getItemId()).isNull();
+    assertThat(location.guidLocation()).isEmpty();
+  }
+
+  @Test
+  void testToOneLakeLocationIgnoresLocationInAnotherWorkspace() {
+    // the WorkspaceId option names another workspace than the address; the address wins, and the
+    // location, which belongs to the other workspace, isn't used
+    DatasetIdentifier identifier =
+        FabricWarehouseUtils.withOneLakeLocation(
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
+            Optional.of(WORKSPACE_2.toString()),
+            Optional.of(WAREHOUSE.toString()));
+
+    OneLakeLocation location = FabricWarehouseUtils.toOneLakeLocation(identifier).get();
+
+    assertThat(location.getWorkspaceId()).isEqualTo(WORKSPACE);
+    assertThat(location.getItemId()).isNull();
+  }
+
+  @Test
+  void testToOneLakeLocationOnlyForFabricWarehouseTables() {
+    assertThat(
+            FabricWarehouseUtils.toOneLakeLocation(
+                new DatasetIdentifier("db.dbo.orders", "sqlserver://myserver:1433")))
+        .isEmpty();
+    assertThat(
+            FabricWarehouseUtils.toOneLakeLocation(
+                new DatasetIdentifier("raw.orders", "fabric-warehouse://" + ENDPOINT)))
+        .isEmpty();
+    // an address that isn't a workspace's still names the warehouse, without a workspace ID
+    assertThat(
+            FabricWarehouseUtils.toOneLakeLocation(
+                    new DatasetIdentifier("wh.raw.orders", "fabric-warehouse://example.com"))
+                .get()
+                .getWorkspaceId())
+        .isNull();
+  }
+
+  @Test
   void testParseGuid() {
     assertThat(FabricWarehouseUtils.parseGuid(" 8b4cb800-a044-43ce-8f76-3356f709b468 "))
         .contains(WORKSPACE);
