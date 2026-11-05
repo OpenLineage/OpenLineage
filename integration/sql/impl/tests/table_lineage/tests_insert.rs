@@ -707,6 +707,64 @@ fn insert_all_multiple_targets() {
 }
 
 #[test]
+fn insert_all_when_exists_predicate_table_is_input_with_cte_source() {
+    // The source query defines and reads a CTE while the WHEN predicate
+    // reads another table: both the CTE's own input and the predicate
+    // table are inputs of the statement. (The CTE rides on the source
+    // query - a WITH leading the whole INSERT ALL is not a shape the
+    // parser accepts.)
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN EXISTS (SELECT 1 FROM ref) THEN INTO t1 VALUES (x) \
+             WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["ref", "s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_scalar_subquery_table_is_input_with_cte_source() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > (SELECT MAX(m) FROM limits) THEN INTO t1 VALUES (x) \
+             ELSE INTO t2 VALUES (x) WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["limits", "s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_plain_comparison_adds_no_input_with_cte_source() {
+    // Control: with a CTE source and a WHEN condition that reads no
+    // table, the CTE's input is the statement's only input.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
 fn insert_first_when_else_targets() {
     assert_eq!(
         test_sql_dialect(

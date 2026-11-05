@@ -1074,7 +1074,8 @@ impl Visit for Statement {
         let frame = context.pop_frame().unwrap();
         let cte_deps = frame.cte_dependencies.clone();
         let deps = frame.dependencies.clone();
-        context.collect_inputs(cte_deps, deps);
+        let bare_deps = frame.bare_dependencies.clone();
+        context.collect_inputs(cte_deps, deps, bare_deps);
         context.collect(frame);
 
         Ok(())
