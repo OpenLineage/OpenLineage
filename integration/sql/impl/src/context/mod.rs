@@ -11,7 +11,7 @@ use alias_table::AliasTable;
 use sqlparser::ast::{
     ExcludeSelectItem, Ident, ObjectName, RenameSelectItem, WildcardAdditionalOptions,
 };
-use sqlparser::dialect::SnowflakeDialect;
+use sqlparser::dialect::{Dialect, PostgreSqlDialect, RedshiftSqlDialect, SnowflakeDialect};
 
 type ColumnAncestors = HashSet<ColumnMeta>;
 
@@ -37,24 +37,36 @@ fn ident_matches_column(ident: &Ident, column_name: &str) -> bool {
         || (ident.quote_style.is_none() && ident.value.eq_ignore_ascii_case(column_name))
 }
 
+/// The stored form of an identifier under the active dialect: a quoted
+/// identifier is stored exactly as written, while an unquoted one is
+/// folded - to lower case by Postgres and Redshift, to upper case by
+/// Snowflake and the SQL standard.
+fn canonical_ident(value: &str, quoted: bool, dialect: &dyn Dialect) -> String {
+    if quoted {
+        value.to_string()
+    } else if dialect.is::<PostgreSqlDialect>() || dialect.is::<RedshiftSqlDialect>() {
+        value.to_ascii_lowercase()
+    } else {
+        value.to_ascii_uppercase()
+    }
+}
+
 /// Whether a wildcard qualifier names a frame origin. Both sides are
-/// identifiers here, and the origin carries the quote style of the alias
-/// it was stamped from: when either side is quoted, the names must match
-/// exactly - a quoted alias is one exact identifier, and an unquoted
-/// qualifier, which the dialect folds, cannot claim it through a
-/// differently-cased spelling. Only when both sides are unquoted may the
-/// comparison fold case.
-fn ident_matches_origin(qualifier: &Ident, origin: &DbTableMeta) -> bool {
+/// identifiers, and the origin carries the quote style of the alias it
+/// was stamped from. Identifiers denote the same name when their stored
+/// forms agree, so each side is canonicalized with the dialect's folding
+/// for unquoted identifiers before comparing: the unquoted qualifier T
+/// names the quoted alias "t" in Postgres (both stored as t) but not in
+/// Snowflake (stored as T), and the quoted qualifier "t" names only the
+/// identifier t, never an unquoted alias the dialect folds elsewhere.
+fn ident_matches_origin(qualifier: &Ident, origin: &DbTableMeta, dialect: &dyn Dialect) -> bool {
     let origin_quoted = origin
         .quote_style
         .as_ref()
         .and_then(|style| style.name)
         .is_some();
-    if qualifier.quote_style.is_some() || origin_quoted {
-        qualifier.value == origin.name
-    } else {
-        qualifier.value.eq_ignore_ascii_case(&origin.name)
-    }
+    canonical_ident(&qualifier.value, qualifier.quote_style.is_some(), dialect)
+        == canonical_ident(&origin.name, origin_quoted, dialect)
 }
 
 /// Case-insensitive SQL LIKE match, as used by the wildcard ILIKE modifier:
@@ -361,7 +373,9 @@ impl<'a> Context<'a> {
         for col in tables_frame.column_ancestry.keys() {
             if let Some(qualifier) = &qualifier_ident {
                 match &col.origin {
-                    Some(origin) if ident_matches_origin(qualifier, origin) => {}
+                    Some(origin)
+                        if ident_matches_origin(qualifier, origin, self.dialect().as_base()) => {}
+
                     _ => continue,
                 }
             }

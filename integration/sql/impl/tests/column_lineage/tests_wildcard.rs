@@ -322,6 +322,85 @@ fn test_alias_list_rename_collision_merges_ancestry() {
 }
 
 #[test]
+fn test_qualified_star_unquoted_qualifier_folds_down_to_quoted_alias_in_postgres() {
+    // Postgres folds unquoted identifiers to lower case, so the unquoted
+    // qualifier T names the identifier t - including the quoted alias
+    // "t", whose stored form is exactly t.
+    let output = test_sql_dialect(
+        "SELECT T.* FROM (SELECT a, b FROM table1) AS \"t\"",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("a", "table1", "a"), edge("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_qualified_star_unquoted_qualifier_skips_quoted_alias_in_postgres() {
+    // The quoted alias "T" is the exact identifier T; the unquoted
+    // qualifier T folds to t in Postgres and cannot claim it.
+    let output = test_sql_dialect(
+        "SELECT T.* FROM (SELECT a, b FROM table1) AS \"T\"",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_qualified_star_unquoted_qualifier_is_case_insensitive_in_postgres() {
+    // Control: two unquoted identifiers fold to the same lower-case form.
+    let output =
+        test_sql_dialect("SELECT T.* FROM (SELECT a, b FROM table1) AS t", "postgres").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("a", "table1", "a"), edge("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_qualified_star_quoted_qualifier_skips_unquoted_alias_in_snowflake() {
+    // Snowflake folds the unquoted alias t to T, so the exact quoted
+    // qualifier "t" does not name it.
+    let output = test_sql_dialect(
+        "SELECT \"t\".* FROM (SELECT a, b FROM table1) AS t",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_qualified_star_unquoted_qualifier_folds_up_to_quoted_alias_in_snowflake() {
+    // Snowflake folds unquoted identifiers to upper case, so the
+    // unquoted qualifier t names the identifier T - the quoted alias
+    // "T", whose stored form is exactly T.
+    let output = test_sql_dialect(
+        "SELECT t.* FROM (SELECT a, b FROM table1) AS \"T\"",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![edge("a", "table1", "a"), edge("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_qualified_star_unquoted_qualifier_skips_lowercase_quoted_alias_in_snowflake() {
+    // Control: the unquoted qualifier T folds to T in Snowflake and
+    // cannot claim the quoted alias "t", whose stored form is t.
+    let output = test_sql_dialect(
+        "SELECT T.* FROM (SELECT a, b FROM table1) AS \"t\"",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
 fn test_qualified_star_unquoted_qualifier_skips_quoted_alias_of_other_case() {
     // Both derived tables carry quoted aliases, "t" and "T". The unquoted
     // qualifier T resolves to the exact identifier T under Snowflake rules,
