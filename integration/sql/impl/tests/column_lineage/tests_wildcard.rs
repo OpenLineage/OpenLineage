@@ -412,3 +412,51 @@ fn test_qualified_star_unquoted_qualifier_skips_quoted_alias_of_other_case() {
     .unwrap();
     assert_eq!(output.column_lineage, vec![edge("b", "table2", "b")]);
 }
+
+#[test]
+fn test_qualified_star_backtick_qualifier_matches_alias_in_bigquery() {
+    // GoogleSQL treats aliases within a query as case-insensitive,
+    // quoted or not, so the backtick-quoted qualifier `d` names the
+    // unquoted alias d even though the standard folding would store
+    // that alias as D.
+    let output = test_sql_dialect("SELECT `d`.* FROM (SELECT a FROM t) AS d", "bigquery").unwrap();
+    assert_eq!(output.column_lineage, vec![edge("a", "t", "a")]);
+}
+
+#[test]
+fn test_qualified_star_unquoted_qualifier_matches_backtick_alias_in_bigquery() {
+    // The mirror case: the backtick-quoted alias `d` is still the
+    // alias d, so the unquoted qualifier D names it in BigQuery.
+    let output = test_sql_dialect("SELECT D.* FROM (SELECT a FROM t) AS `d`", "bigquery").unwrap();
+    assert_eq!(output.column_lineage, vec![edge("a", "t", "a")]);
+}
+
+#[test]
+fn test_qualified_star_unquoted_pair_is_case_insensitive_in_bigquery() {
+    // Control: two unquoted identifiers already agree after folding.
+    let output = test_sql_dialect("SELECT D.* FROM (SELECT a FROM t) AS d", "bigquery").unwrap();
+    assert_eq!(output.column_lineage, vec![edge("a", "t", "a")]);
+}
+
+#[test]
+fn test_qualified_star_quoted_qualifier_folds_to_unquoted_alias_in_redshift() {
+    // Redshift folds even delimited identifiers to lower case by
+    // default (enable_case_sensitive_identifier off), so the quoted
+    // qualifier "D" names the unquoted alias D, whose stored form is
+    // d. With that session setting on, Redshift would keep "D" exact
+    // and this match would not happen; the parser is not given the
+    // setting, so the default is what is modeled here.
+    let output =
+        test_sql_dialect("SELECT \"D\".* FROM (SELECT a FROM t) AS D", "redshift").unwrap();
+    assert_eq!(output.column_lineage, vec![edge("a", "t", "a")]);
+}
+
+#[test]
+fn test_qualified_star_quoted_qualifier_skips_unquoted_alias_in_postgres() {
+    // Control: Postgres quoted identifiers are case-sensitive, so the
+    // exact qualifier "D" does not name the unquoted alias D, whose
+    // stored form is d.
+    let output =
+        test_sql_dialect("SELECT \"D\".* FROM (SELECT a FROM t) AS D", "postgres").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}

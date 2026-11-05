@@ -11,7 +11,9 @@ use alias_table::AliasTable;
 use sqlparser::ast::{
     ExcludeSelectItem, Ident, ObjectName, RenameSelectItem, WildcardAdditionalOptions,
 };
-use sqlparser::dialect::{Dialect, PostgreSqlDialect, RedshiftSqlDialect, SnowflakeDialect};
+use sqlparser::dialect::{
+    BigQueryDialect, Dialect, PostgreSqlDialect, RedshiftSqlDialect, SnowflakeDialect,
+};
 
 type ColumnAncestors = HashSet<ColumnMeta>;
 
@@ -40,11 +42,17 @@ fn ident_matches_column(ident: &Ident, column_name: &str) -> bool {
 /// The stored form of an identifier under the active dialect: a quoted
 /// identifier is stored exactly as written, while an unquoted one is
 /// folded - to lower case by Postgres and Redshift, to upper case by
-/// Snowflake and the SQL standard.
+/// Snowflake and the SQL standard. Redshift is the exception on the
+/// quoted side too: by default it folds even delimited identifiers to
+/// lower case (that is the behavior unless the session enables
+/// `enable_case_sensitive_identifier`, a setting the parser is not
+/// given), so every Redshift identifier canonicalizes to lower case.
 fn canonical_ident(value: &str, quoted: bool, dialect: &dyn Dialect) -> String {
-    if quoted {
+    if dialect.is::<RedshiftSqlDialect>() {
+        value.to_ascii_lowercase()
+    } else if quoted {
         value.to_string()
-    } else if dialect.is::<PostgreSqlDialect>() || dialect.is::<RedshiftSqlDialect>() {
+    } else if dialect.is::<PostgreSqlDialect>() {
         value.to_ascii_lowercase()
     } else {
         value.to_ascii_uppercase()
@@ -59,7 +67,16 @@ fn canonical_ident(value: &str, quoted: bool, dialect: &dyn Dialect) -> String {
 /// names the quoted alias "t" in Postgres (both stored as t) but not in
 /// Snowflake (stored as T), and the quoted qualifier "t" names only the
 /// identifier t, never an unquoted alias the dialect folds elsewhere.
+///
+/// BigQuery never reaches the canonical comparison: GoogleSQL treats
+/// aliases within a query as case-insensitive, quoted or not, so the
+/// qualifier and the alias compare without regard to case. Only alias
+/// origins are matched here - physical table names are matched
+/// elsewhere, and BigQuery table names stay case-sensitive there.
 fn ident_matches_origin(qualifier: &Ident, origin: &DbTableMeta, dialect: &dyn Dialect) -> bool {
+    if dialect.is::<BigQueryDialect>() {
+        return qualifier.value.eq_ignore_ascii_case(&origin.name);
+    }
     let origin_quoted = origin
         .quote_style
         .as_ref()
