@@ -22,12 +22,17 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -45,6 +50,12 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
 
   private static final String providerCanonicalName =
       "io.openlineage.spark.extension.OpenLineageExtensionProvider";
+
+  /**
+   * Caps consecutive failed lookups. A failure to read one services file is skipped, but a failure
+   * to list the files at all repeats on every lookup.
+   */
+  private static final int MAX_PROVIDER_LOOKUP_FAILURES = 10;
 
   private static ByteBuffer providerClassBytes;
   private static boolean providerFailWarned;
@@ -217,8 +228,7 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     return Optional.empty();
   }
 
-  private static List<Object> init(String testExtensionProvider)
-      throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException {
+  private static List<Object> init(String testExtensionProvider) throws IOException {
     List<Object> objects = new ArrayList<>();
     // The following sequence of operations must be preserved as is.
     // We cannot use ResourceFinder or ServiceLoader to determine if there are any
@@ -227,31 +237,69 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     // As a result, there is no reliable way to bypass the entire mechanism, even if
     // no OpenLineageExtensionProvider implementations are present.
 
-    List<ClassLoader> availableClassloaders =
+    List<ClassLoader> contextClassloaders =
         Thread.getAllStackTraces().keySet().stream()
             .map(Thread::getContextClassLoader)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
-    // Mutates the state of available classloader(s)
-    loadProviderToAvailableClassloaders(availableClassloaders);
-    ExtensionClassloader classLoader = new ExtensionClassloader(availableClassloaders);
-
-    ServiceLoader<OpenLineageExtensionProvider> serviceLoader =
-        ServiceLoader.load(OpenLineageExtensionProvider.class, classLoader);
-
-    for (OpenLineageExtensionProvider service : serviceLoader) {
-      String className = service.getVisitorClassName();
+    for (OpenLineageExtensionProvider service : loadProviders(contextClassloaders)) {
       if (testExtensionProvider == null) {
-        final Object classInstance = getClassInstance(className);
-        objects.add(classInstance);
+        loadVisitor(service).ifPresent(objects::add);
       } else if (testExtensionProvider.equals(service.getClass().getCanonicalName())) {
-        Object classInstance = getClassInstance(className);
-        objects.add(classInstance);
+        loadVisitor(service).ifPresent(objects::add);
         break;
       }
     }
     return objects;
+  }
+
+  /**
+   * Loads extension providers visible to the classloader of this class or to any of the given
+   * context classloaders.
+   *
+   * <p>The classloader of this class is tried first, so a provider it can see always implements its
+   * {@link OpenLineageExtensionProvider}. Another classloader may hold its own copy of the
+   * interface (for example Hive's isolated metastore client loader), and a provider defined there
+   * would not be a subtype of it. Such providers are skipped instead of failing all of them.
+   */
+  static List<OpenLineageExtensionProvider> loadProviders(
+      Collection<ClassLoader> contextClassloaders) throws IOException {
+    Set<ClassLoader> orderedClassloaders = new LinkedHashSet<>();
+    orderedClassloaders.add(OpenLineageExtensionProvider.class.getClassLoader());
+    orderedClassloaders.addAll(contextClassloaders);
+    List<ClassLoader> availableClassloaders = new ArrayList<>(orderedClassloaders);
+
+    // Mutates the state of available classloader(s)
+    loadProviderToAvailableClassloaders(availableClassloaders);
+    ExtensionClassloader classLoader = new ExtensionClassloader(availableClassloaders);
+
+    Iterator<OpenLineageExtensionProvider> iterator =
+        ServiceLoader.load(OpenLineageExtensionProvider.class, classLoader).iterator();
+    List<OpenLineageExtensionProvider> providers = new ArrayList<>();
+    while (hasNextProvider(iterator)) {
+      try {
+        providers.add(iterator.next());
+      } catch (ServiceConfigurationError | LinkageError e) {
+        log.warn("Skipping OpenLineageExtensionProvider which failed to load", e);
+      }
+    }
+    return providers;
+  }
+
+  private static boolean hasNextProvider(Iterator<OpenLineageExtensionProvider> iterator) {
+    for (int failures = 1; ; failures++) {
+      try {
+        return iterator.hasNext();
+      } catch (ServiceConfigurationError e) {
+        // the iterator has moved past the services file which failed, so retrying continues with
+        // the next one
+        log.warn("Failed to look up further OpenLineageExtensionProvider implementations", e);
+        if (failures >= MAX_PROVIDER_LOOKUP_FAILURES) {
+          return false;
+        }
+      }
+    }
   }
 
   private static void loadProviderToAvailableClassloaders(List<ClassLoader> classloaders)
@@ -338,11 +386,22 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     }
   }
 
-  private static Object getClassInstance(String className)
-      throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-    Class<?> loadedClass = Class.forName(className);
-    Object classInstance = loadedClass.newInstance();
-    return classInstance;
+  /**
+   * Instantiates the visitor of the given provider. The visitor is loaded through the provider's
+   * classloader, since the connector jar may not be visible to the classloader of this class.
+   */
+  static Optional<Object> loadVisitor(OpenLineageExtensionProvider provider) {
+    try {
+      Class<?> visitorClass =
+          Class.forName(provider.getVisitorClassName(), true, provider.getClass().getClassLoader());
+      return Optional.of(visitorClass.newInstance());
+    } catch (Exception | LinkageError e) {
+      log.warn(
+          "Skipping OpenLineageExtensionProvider {} whose visitor failed to load",
+          provider.getClass().getName(),
+          e);
+      return Optional.empty();
+    }
   }
 
   @SuppressWarnings("PMD") // always point locally

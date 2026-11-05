@@ -5,12 +5,17 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.extension.AnotherTestExtensionProvider;
+import io.openlineage.spark.extension.OpenLineageExtensionProvider;
+import io.openlineage.spark.extension.TestOpenLineageExtensionProvider;
 import io.openlineage.spark.shade.client.utils.DatasetIdentifier;
 import io.openlineage.spark.shade.extension.v1.InputDatasetWithDelegate;
 import io.openlineage.spark.shade.extension.v1.InputDatasetWithIdentifier;
@@ -20,16 +25,24 @@ import io.openlineage.spark.shade.extension.v1.LineageRelationProvider;
 import io.openlineage.spark.shade.extension.v1.OutputDatasetWithDelegate;
 import io.openlineage.spark.shade.extension.v1.OutputDatasetWithIdentifier;
 import io.openlineage.spark.shade.extension.v1.OutputLineageNode;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("PMD")
 class SparkOpenLineageExtensionVisitorWrapperTest {
@@ -37,6 +50,8 @@ class SparkOpenLineageExtensionVisitorWrapperTest {
   static SparkListenerEvent event = mock(SparkListenerEvent.class);
   static Map<String, String> options = Collections.singletonMap("path", "some-path");
   static SQLContext sqlContext = mock(SQLContext.class);
+  static final String SERVICES_FILE =
+      "META-INF/services/" + OpenLineageExtensionProvider.class.getName();
 
   SparkOpenLineageExtensionVisitorWrapper wrapper =
       new SparkOpenLineageExtensionVisitorWrapper(sparkOpenLineageConfig);
@@ -237,5 +252,147 @@ class SparkOpenLineageExtensionVisitorWrapperTest {
 
     // then
     assertThat(inputs.getRight()).isNotEmpty().isEqualTo(Collections.singletonList(delegate));
+  }
+
+  @Test
+  void testLoadProvidersPrefersOwnClassloaderOverIsolatedCopy() throws Exception {
+    // a loader with its own copy of the extension interface, like Hive's isolated client loader
+    URL[] urls = {
+      location(OpenLineageExtensionProvider.class),
+      location(TestOpenLineageExtensionProvider.class),
+      getClass().getClassLoader().getResource(SERVICES_FILE).toURI().resolve("../..").toURL()
+    };
+    try (URLClassLoader isolated = new URLClassLoader(urls, null)) {
+      assertThat(isolated.loadClass(OpenLineageExtensionProvider.class.getName()))
+          .isNotSameAs(OpenLineageExtensionProvider.class);
+
+      List<OpenLineageExtensionProvider> providers =
+          SparkOpenLineageExtensionVisitorWrapper.loadProviders(
+              Collections.singletonList(isolated));
+
+      assertThat(providers)
+          .extracting(Object::getClass)
+          .contains(TestOpenLineageExtensionProvider.class);
+    }
+  }
+
+  @Test
+  void testLoadProvidersSkipsProviderWhichFailsToLoad(@TempDir Path dir) throws Exception {
+    Path services = dir.resolve(SERVICES_FILE);
+    Files.createDirectories(services.getParent());
+    // the valid provider comes after the missing one, so the lookup has to continue past it
+    Files.write(
+        services,
+        Arrays.asList(
+            "com.example.MissingExtensionProvider", AnotherTestExtensionProvider.class.getName()));
+
+    try (URLClassLoader loader =
+        new URLClassLoader(new URL[] {dir.toUri().toURL()}, getClass().getClassLoader())) {
+      List<OpenLineageExtensionProvider> providers =
+          SparkOpenLineageExtensionVisitorWrapper.loadProviders(Collections.singletonList(loader));
+
+      assertThat(providers)
+          .extracting(Object::getClass)
+          .contains(TestOpenLineageExtensionProvider.class, AnotherTestExtensionProvider.class);
+    }
+  }
+
+  @Test
+  void testLoadProvidersContinuesAfterMalformedServicesFile(@TempDir Path dir) throws Exception {
+    Path malformed = dir.resolve("malformed").resolve(SERVICES_FILE);
+    Files.createDirectories(malformed.getParent());
+    Files.write(malformed, Collections.singletonList("not a class name"));
+    Path valid = dir.resolve("valid").resolve(SERVICES_FILE);
+    Files.createDirectories(valid.getParent());
+    Files.write(valid, Collections.singletonList(AnotherTestExtensionProvider.class.getName()));
+
+    try (URLClassLoader malformedLoader =
+            new URLClassLoader(
+                new URL[] {dir.resolve("malformed").toUri().toURL()}, getClass().getClassLoader());
+        URLClassLoader validLoader =
+            new URLClassLoader(
+                new URL[] {dir.resolve("valid").toUri().toURL()}, getClass().getClassLoader())) {
+      List<OpenLineageExtensionProvider> providers =
+          SparkOpenLineageExtensionVisitorWrapper.loadProviders(
+              Arrays.asList(malformedLoader, validLoader));
+
+      assertThat(providers)
+          .extracting(Object::getClass)
+          .contains(AnotherTestExtensionProvider.class);
+    }
+  }
+
+  @Test
+  void testLoadVisitorUsesProviderClassloader(@TempDir Path dir) throws Exception {
+    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    assumeTrue(compiler != null, "requires a JDK");
+    // a connector jar which only a child classloader can see
+    Path provider =
+        writeSource(
+            dir,
+            "com/example/isolated/IsolatedExtensionProvider.java",
+            "package com.example.isolated;\n"
+                + "public class IsolatedExtensionProvider implements "
+                + OpenLineageExtensionProvider.class.getName()
+                + " {\n"
+                + "  public String shadedPackage() { return \"com.example.isolated\"; }\n"
+                + "}\n");
+    Path visitor =
+        writeSource(
+            dir,
+            "com/example/isolated/extension/v1/lifecycle/plan/SparkOpenLineageExtensionVisitor.java",
+            "package com.example.isolated.extension.v1.lifecycle.plan;\n"
+                + "public class SparkOpenLineageExtensionVisitor {}\n");
+    int result =
+        compiler.run(
+            null,
+            null,
+            null,
+            "-classpath",
+            Paths.get(location(OpenLineageExtensionProvider.class).toURI()).toString(),
+            "-d",
+            dir.toString(),
+            provider.toString(),
+            visitor.toString());
+    assertThat(result).isZero();
+
+    try (URLClassLoader connectorLoader =
+        new URLClassLoader(new URL[] {dir.toUri().toURL()}, getClass().getClassLoader())) {
+      OpenLineageExtensionProvider isolatedProvider =
+          (OpenLineageExtensionProvider)
+              connectorLoader
+                  .loadClass("com.example.isolated.IsolatedExtensionProvider")
+                  .newInstance();
+      assertThatThrownBy(() -> Class.forName(isolatedProvider.getVisitorClassName()))
+          .isInstanceOf(ClassNotFoundException.class);
+
+      assertThat(SparkOpenLineageExtensionVisitorWrapper.loadVisitor(isolatedProvider))
+          .hasValueSatisfying(
+              v -> assertThat(v.getClass().getClassLoader()).isSameAs(connectorLoader));
+    }
+  }
+
+  @Test
+  void testLoadVisitorSkipsProviderWithMissingVisitor() {
+    assertThat(SparkOpenLineageExtensionVisitorWrapper.loadVisitor(new MissingVisitorProvider()))
+        .isEmpty();
+  }
+
+  public static class MissingVisitorProvider implements OpenLineageExtensionProvider {
+    @Override
+    public String shadedPackage() {
+      return "com.example.missing";
+    }
+  }
+
+  private static Path writeSource(Path dir, String path, String source) throws Exception {
+    Path file = dir.resolve(path);
+    Files.createDirectories(file.getParent());
+    Files.write(file, Collections.singletonList(source));
+    return file;
+  }
+
+  private static URL location(Class<?> clazz) {
+    return clazz.getProtectionDomain().getCodeSource().getLocation();
   }
 }
