@@ -25,7 +25,7 @@ import org.apache.spark.sql.SparkSession;
  * temporary folder as the output. The real table is only in the first step's options, for example:
  *
  * <pre>
- * [WorkspaceId=8b4cb800-…, DatawarehouseId=0fd9a0c2-…,
+ * [WorkspaceId=d1f6473b-…, DatawarehouseId=d75873bd-…,
  *  three-part_sql_table_or_view_name=wh_primary.probe_dw.a_write,
  *  path=abfss://…@spark1triprodcus.dfs.core.windows.net/user/trusted-service-user/a_write5f15…]
  * </pre>

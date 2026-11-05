@@ -29,7 +29,7 @@ import lombok.Value;
  *
  * <ul>
  *   <li>by ID: {@code
- *       8b4cb800-...@onelake.dfs.fabric.microsoft.com/05bac213-.../Tables/sales/orders}
+ *       d1f6473b-...@onelake.dfs.fabric.microsoft.com/c7a14054-.../Tables/sales/orders}
  *   <li>by name, with the item's type after a dot: {@code
  *       sales-ws@onelake.dfs.fabric.microsoft.com/lh_sales.Lakehouse/Tables/sales/orders}
  * </ul>

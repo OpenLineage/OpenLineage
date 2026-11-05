@@ -39,11 +39,11 @@ import scala.Option;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class OneLakeFacetUtilsTest {
-  private static final String WORKSPACE = "8b4cb800-a044-43ce-8f76-3356f709b468";
-  private static final String OTHER_WORKSPACE = "bcc59eac-e270-40a8-9deb-f8f5994596a5";
-  private static final String WAREHOUSE = "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d";
+  private static final String WORKSPACE = "d1f6473b-9f7a-4352-940b-a8d74461d3fc";
+  private static final String OTHER_WORKSPACE = "45ff911e-5e75-428a-a618-52958fcc7604";
+  private static final String WAREHOUSE = "d75873bd-716b-4378-a37e-864c76fc9b3b";
   private static final String HOST =
-      "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com";
+      "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com";
   private static final String NAMESPACE = "fabric-warehouse://" + HOST;
 
   private final Map<String, String> runtimeConf = new HashMap<>();
@@ -117,7 +117,7 @@ class OneLakeFacetUtilsTest {
     String otherNamespace =
         "fabric-warehouse://"
             + FabricWarehouseUtils.endpointFor(
-                UUID.fromString("cc0b82f3-7c2e-400b-aec3-40a3d720505b"),
+                UUID.fromString("68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c"),
                 UUID.fromString(OTHER_WORKSPACE));
     OpenLineage.OneLakeDatasetFacet other = facet(otherNamespace).get();
     assertThat(other.getWorkspaceId()).isEqualTo(OTHER_WORKSPACE);

@@ -42,7 +42,7 @@ class InsertIntoHadoopFsRelationVisitorTest {
           + "/user/trusted-service-user/a_write5f15";
   private static final String NAMESPACE =
       "fabric-warehouse://"
-          + "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com";
+          + "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com";
 
   private final SparkConf sparkConf = new SparkConf();
   private final Map<String, String> runtimeConf = new HashMap<>();
@@ -73,8 +73,8 @@ class InsertIntoHadoopFsRelationVisitorTest {
     visitor = new InsertIntoHadoopFsRelationVisitor(context);
 
     // Fabric sets these Spark settings in every notebook
-    sparkConf.set("trident.tenant.id", "cc0b82f3-7c2e-400b-aec3-40a3d720505b");
-    sparkConf.set("trident.workspace.id", "8b4cb800-a044-43ce-8f76-3356f709b468");
+    sparkConf.set("trident.tenant.id", "68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c");
+    sparkConf.set("trident.workspace.id", "d1f6473b-9f7a-4352-940b-a8d74461d3fc");
   }
 
   @Test
@@ -106,9 +106,9 @@ class InsertIntoHadoopFsRelationVisitorTest {
             symlink -> {
               assertThat(symlink.getNamespace())
                   .isEqualTo(
-                      "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com");
+                      "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com");
               assertThat(symlink.getName())
-                  .isEqualTo("0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/probe_dw/a_write");
+                  .isEqualTo("d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/probe_dw/a_write");
               assertThat(symlink.getType()).isEqualTo("LOCATION");
             });
   }
@@ -122,13 +122,13 @@ class InsertIntoHadoopFsRelationVisitorTest {
 
     assertThat(facet.getItemType()).isEqualTo("Warehouse");
     assertThat(facet.getItemName()).isEqualTo("wh_primary");
-    assertThat(facet.getWorkspaceId()).isEqualTo("8b4cb800-a044-43ce-8f76-3356f709b468");
+    assertThat(facet.getWorkspaceId()).isEqualTo("d1f6473b-9f7a-4352-940b-a8d74461d3fc");
     assertThat(facet.getWorkspaceName()).isEqualTo("do-test-env-fabric");
-    assertThat(facet.getItemId()).isEqualTo("0fd9a0c2-ee93-46af-aaea-a45c8649ed9d");
+    assertThat(facet.getItemId()).isEqualTo("d75873bd-716b-4378-a37e-864c76fc9b3b");
     assertThat(facet.getLocation())
         .isEqualTo(
-            "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/"
-                + "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/probe_dw/a_write");
+            "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/"
+                + "d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/probe_dw/a_write");
     assertThat(facet.getTableId()).isNull();
   }
 
@@ -136,15 +136,15 @@ class InsertIntoHadoopFsRelationVisitorTest {
   void testConnectorWriteToAnotherWorkspaceHasNoWorkspaceName() {
     runtimeConf.put("trident.workspace.name", "do-test-env-fabric");
     Map<String, String> options = observedOptions();
-    options.put("WorkspaceId", "bcc59eac-e270-40a8-9deb-f8f5994596a5");
+    options.put("WorkspaceId", "45ff911e-5e75-428a-a618-52958fcc7604");
 
     OpenLineage.OneLakeDatasetFacet facet =
         visitor.apply(command(options)).get(0).getFacets().getOneLake();
 
     // the address is built for the other workspace, so the session's workspace name doesn't apply
-    assertThat(facet.getWorkspaceId()).isEqualTo("bcc59eac-e270-40a8-9deb-f8f5994596a5");
+    assertThat(facet.getWorkspaceId()).isEqualTo("45ff911e-5e75-428a-a618-52958fcc7604");
     assertThat(facet.getWorkspaceName()).isNull();
-    assertThat(facet.getItemId()).isEqualTo("0fd9a0c2-ee93-46af-aaea-a45c8649ed9d");
+    assertThat(facet.getItemId()).isEqualTo("d75873bd-716b-4378-a37e-864c76fc9b3b");
   }
 
   @Test
@@ -169,8 +169,8 @@ class InsertIntoHadoopFsRelationVisitorTest {
   // the options seen on the Fabric connector's first write step, on a real workspace
   private static Map<String, String> observedOptions() {
     Map<String, String> options = new HashMap<>();
-    options.put("WorkspaceId", "8b4cb800-a044-43ce-8f76-3356f709b468");
-    options.put("DatawarehouseId", "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d");
+    options.put("WorkspaceId", "d1f6473b-9f7a-4352-940b-a8d74461d3fc");
+    options.put("DatawarehouseId", "d75873bd-716b-4378-a37e-864c76fc9b3b");
     options.put("three-part_sql_table_or_view_name", "wh_primary.probe_dw.a_write");
     options.put("path", STAGING_PATH);
     return options;
@@ -180,7 +180,7 @@ class InsertIntoHadoopFsRelationVisitorTest {
   void testConnectorWriteUsesEndpointOverride() {
     runtimeConf.put(
         "spark.datawarehouse.wh_primary.sqlendpoint",
-        "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com,1433");
+        "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com,1433");
     sparkConf.remove("trident.tenant.id");
     Map<String, String> options = new HashMap<>();
     options.put("three-part_sql_table_or_view_name", "wh_primary.probe_dw.a_write");
@@ -198,7 +198,7 @@ class InsertIntoHadoopFsRelationVisitorTest {
     // the tenant and workspace in the Spark settings could build an address, but must not be used
     runtimeConf.put(
         "spark.datawarehouse.wh_primary.sqlendpoint",
-        "qvrmbuxie7we7glrekxgy6npqu-6xgyei3x2xiejip4iime6knh5m-jh0bi.zcf.datawarehouse.fabric.microsoft.com");
+        "45jm47djf4je5afhvapdos5fae-gakpgz3u6twe7nemz77to4q2ti-jh0bi.zcf.datawarehouse.fabric.microsoft.com");
 
     assertThat(visitor.apply(command(observedOptions()))).isEmpty();
   }

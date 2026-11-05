@@ -15,14 +15,14 @@ class OneLakeDatasetFacet(DatasetFacet):
     abfss://{workspaceId}@onelake.dfs.fabric.microsoft.com/{itemId}/Tables/{schema}/{table}, or
     .../Tables/{table} in a lakehouse without schemas. IDs are lowercase, with no trailing slash.
 
-    Example: abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/05bac213-
-    0db7-4b56-ad4c-ac8617938d3f/Tables/sales/orders
+    Example: abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/c7a14054-
+    60a7-4121-8fb7-252d16f687eb/Tables/sales/orders
     """
     workspaceId: str | None = attr.field(default=None)  # noqa: N815
     """
     ID of the Fabric workspace that holds the item, in lowercase.
 
-    Example: 8b4cb800-a044-43ce-8f76-3356f709b468
+    Example: d1f6473b-9f7a-4352-940b-a8d74461d3fc
     """
     workspaceName: str | None = attr.field(default=None)  # noqa: N815
     """
@@ -34,7 +34,7 @@ class OneLakeDatasetFacet(DatasetFacet):
     """
     ID of the Fabric item that holds the table, such as a lakehouse or a warehouse, in lowercase.
 
-    Example: 05bac213-0db7-4b56-ad4c-ac8617938d3f
+    Example: c7a14054-60a7-4121-8fb7-252d16f687eb
     """
     itemName: str | None = attr.field(default=None)  # noqa: N815
     """

@@ -42,14 +42,14 @@ class JdbcSparkUtilsTest {
   private static final String SQLSERVER_URL = "jdbc:sqlserver://localhost:1433;databaseName=testdb";
   private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/testdb";
   private static final String FABRIC_HOST =
-      "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com";
+      "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com";
   // the URL the Fabric connector builds when it looks up the address itself, with ".z8b"
   private static final String FABRIC_URL =
       "jdbc:sqlserver://;servername="
           + FABRIC_HOST.replace(".datawarehouse", ".z8b.datawarehouse")
           + ";encrypt=true;databaseName=wh_primary";
   private static final String FABRIC_NAMESPACE = "fabric-warehouse://" + FABRIC_HOST;
-  private static final String FABRIC_WAREHOUSE_ID = "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d";
+  private static final String FABRIC_WAREHOUSE_ID = "d75873bd-716b-4378-a37e-864c76fc9b3b";
   private final JDBCRelation relation = mock(JDBCRelation.class);
 
   @ParameterizedTest
@@ -113,11 +113,11 @@ class JdbcSparkUtilsTest {
       nullValues = "null",
       value = {
         // the WorkspaceId option wins over the workspace in the address
-        "WorkspaceId|bcc59eac-e270-40a8-9deb-f8f5994596a5|DatawarehouseId|bcc59eac-e270-40a8-9deb-f8f5994596a5",
+        "WorkspaceId|45ff911e-5e75-428a-a618-52958fcc7604|DatawarehouseId|45ff911e-5e75-428a-a618-52958fcc7604",
         // without WorkspaceId, the workspace ID is read from the address
-        "null|null|DatawarehouseId|8b4cb800-a044-43ce-8f76-3356f709b468",
+        "null|null|DatawarehouseId|d1f6473b-9f7a-4352-940b-a8d74461d3fc",
         // option names can be in any case
-        "workspaceid|bcc59eac-e270-40a8-9deb-f8f5994596a5|DATAWAREHOUSEID|bcc59eac-e270-40a8-9deb-f8f5994596a5",
+        "workspaceid|45ff911e-5e75-428a-a618-52958fcc7604|DATAWAREHOUSEID|45ff911e-5e75-428a-a618-52958fcc7604",
       })
   void testFabricWarehouseOneLakeLocation(
       String workspaceKey, String workspaceId, String warehouseKey, String expectedWorkspace) {
@@ -175,7 +175,7 @@ class JdbcSparkUtilsTest {
             .dbtable(
                 "(SELECT TOP 5 o.order_id, x.v FROM wh_primary.raw.orders o"
                     + " CROSS JOIN wh_secondary.probe_pr.l9_other x) as Qry0123abcdAlias")
-            .option("WorkspaceId", "8b4cb800-a044-43ce-8f76-3356f709b468")
+            .option("WorkspaceId", "d1f6473b-9f7a-4352-940b-a8d74461d3fc")
             .option("DatawarehouseId", FABRIC_WAREHOUSE_ID)
             .build());
     givenSchema(
@@ -191,7 +191,7 @@ class JdbcSparkUtilsTest {
         Collections.singletonList(
             new DatasetIdentifier.Symlink(
                 FABRIC_WAREHOUSE_ID + "/Tables/raw/orders",
-                "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com",
+                "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com",
                 DatasetIdentifier.SymlinkType.LOCATION)),
         symlinks.get("wh_primary.raw.orders"));
     assertTrue(symlinks.get("wh_secondary.probe_pr.l9_other").isEmpty());

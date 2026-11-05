@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class JdbcDatasetUtilsTestForFabricWarehouse {
-  private static final String HOST = "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna";
+  private static final String HOST = "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q";
   private static final String NAMESPACE =
       "fabric-warehouse://" + HOST + ".datawarehouse.fabric.microsoft.com";
 
@@ -101,7 +101,7 @@ class JdbcDatasetUtilsTestForFabricWarehouse {
   @Test
   void testGuestHostStaysSqlServer() {
     String guest =
-        "qvrmbuxie7we7glrekxgy6npqu-6xgyei3x2xiejip4iime6knh5m-jh0bi.zcf.datawarehouse.fabric.microsoft.com";
+        "45jm47djf4je5afhvapdos5fae-gakpgz3u6twe7nemz77to4q2ti-jh0bi.zcf.datawarehouse.fabric.microsoft.com";
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:sqlserver://;servername=" + guest + ";databaseName=wh",

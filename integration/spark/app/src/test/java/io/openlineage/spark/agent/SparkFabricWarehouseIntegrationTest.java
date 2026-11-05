@@ -42,12 +42,12 @@ class SparkFabricWarehouseIntegrationTest {
 
   private static final int MOCK_SERVER_PORT = 1087;
   private static final String STAGING_ROOT = "/tmp/fabric_warehouse_it/trusted-service-user";
-  private static final String TENANT = "cc0b82f3-7c2e-400b-aec3-40a3d720505b";
-  private static final String WORKSPACE = "8b4cb800-a044-43ce-8f76-3356f709b468";
-  private static final String WORKSPACE_2 = "bcc59eac-e270-40a8-9deb-f8f5994596a5";
-  private static final String WAREHOUSE_ID = "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d";
+  private static final String TENANT = "68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c";
+  private static final String WORKSPACE = "d1f6473b-9f7a-4352-940b-a8d74461d3fc";
+  private static final String WORKSPACE_2 = "45ff911e-5e75-428a-a618-52958fcc7604";
+  private static final String WAREHOUSE_ID = "d75873bd-716b-4378-a37e-864c76fc9b3b";
   private static final String TABLE = "wh_primary.probe_dw.a_write";
-  private static final String ENDPOINT_PREFIX = "fabric-warehouse://6obaxtbopqfublwdicr5oicqlm-";
+  private static final String ENDPOINT_PREFIX = "fabric-warehouse://ck32i2hmt2qeziwtnklnft2ptq-";
   private static final String ENDPOINT_SUFFIX = ".datawarehouse.fabric.microsoft.com";
 
   private static ClientAndServer mockServer;
@@ -100,7 +100,7 @@ class SparkFabricWarehouseIntegrationTest {
         .allSatisfy(
             output -> {
               assertThat(output.getNamespace())
-                  .isEqualTo(ENDPOINT_PREFIX + "ac4ezc2eudhehd3wgnlpocnuna" + ENDPOINT_SUFFIX);
+                  .isEqualTo(ENDPOINT_PREFIX + "hnd7nul2t5jehfalvdluiyot7q" + ENDPOINT_SUFFIX);
               assertThat(output.getName()).isEqualTo(TABLE);
               assertThat(output.getFacets().getLifecycleStateChange()).isNull();
               assertThat(output.getFacets().getSymlinks().getIdentifiers())
@@ -142,7 +142,7 @@ class SparkFabricWarehouseIntegrationTest {
         .allSatisfy(
             output -> {
               assertThat(output.getNamespace())
-                  .isEqualTo(ENDPOINT_PREFIX + "vspmlpdq4kuebhpl7d2zsrmwuu" + ENDPOINT_SUFFIX);
+                  .isEqualTo(ENDPOINT_PREFIX + "d2i76rlvl2fefjqykkky7tdwaq" + ENDPOINT_SUFFIX);
               assertThat(output.getFacets().getSymlinks()).isNull();
               // another workspace than the session's: no name, and no warehouse ID was given
               OneLakeDatasetFacet oneLake = output.getFacets().getOneLake();
