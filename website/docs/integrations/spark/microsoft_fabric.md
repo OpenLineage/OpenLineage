@@ -99,7 +99,7 @@ connector doesn't make the warehouse's ID available, so no location is reported.
 
 ## The `oneLake` facet
 
-Every Fabric warehouse table that OpenLineage reports, read or written, also gets the
+Every Fabric table that OpenLineage reports, read or written, also gets the
 [`oneLake` facet](../../spec/facets/dataset-facets/onelake.md). It describes the table in OneLake terms, so you can
 link it to the warehouse that holds it:
 
