@@ -20,8 +20,8 @@ All fields are optional. Producers set only what they know locally, without call
 - `itemName`: name of the item that holds the table.
 - `itemType`: type of the item, as Fabric names item types, such as `Lakehouse` or `Warehouse`. Set only when the
   producer knows it; for example, a Spark catalog can't tell a lakehouse from a warehouse.
-- `tableId`: ID of the table's Delta metadata (`metaData.id` in the Delta log). For a table reached through a
-  shortcut, this is the ID of the target table, so it links the shortcut to the table it points to.
+- `tableId`: ID of the table's Delta metadata (`metaData.id` in the Delta log), in lowercase. For a table reached
+  through a shortcut, this is the ID of the target table, so it links the shortcut to the table it points to.
 
 Example:
 
