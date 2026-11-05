@@ -180,7 +180,7 @@ type OneLakeDatasetFacet struct {
 	ItemType *string `json:"itemType,omitempty"`
 	// Location of the table's files in OneLake, Microsoft Fabric's storage, using IDs only: abfss://{workspaceId}@onelake.dfs.fabric.microsoft.com/{itemId}/Tables/{schema}/{table}, or .../Tables/{table} in a lakehouse without schemas. IDs are lowercase, with no trailing slash.
 	Location *string `json:"location,omitempty"`
-	// ID of the table's Delta metadata (metaData.id in the Delta log). For a table reached through a shortcut, this is the ID of the target table.
+	// ID of the table's Delta metadata (metaData.id in the Delta log), in lowercase. For a table reached through a shortcut, this is the ID of the target table.
 	TableID *string `json:"tableId,omitempty"`
 	// ID of the Fabric workspace that holds the item, in lowercase.
 	WorkspaceID *string `json:"workspaceId,omitempty"`

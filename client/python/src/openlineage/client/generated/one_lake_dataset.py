@@ -51,8 +51,8 @@ class OneLakeDatasetFacet(DatasetFacet):
     """
     tableId: str | None = attr.field(default=None)  # noqa: N815
     """
-    ID of the table's Delta metadata (metaData.id in the Delta log). For a table reached through a
-    shortcut, this is the ID of the target table.
+    ID of the table's Delta metadata (metaData.id in the Delta log), in lowercase. For a table reached
+    through a shortcut, this is the ID of the target table.
 
     Example: 6d3a2bc0-7f1e-4f4b-9a39-2c4e8f1d2b7a
     """
