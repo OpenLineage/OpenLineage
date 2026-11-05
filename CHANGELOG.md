@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.55.0...HEAD)
 
+### Added
+
+* **Spark: Report Microsoft Fabric warehouse tables read and written with `synapsesql`** [`#5132`](https://github.com/OpenLineage/OpenLineage/pull/5132) [@mobuchowski](https://github.com/mobuchowski)
+  *Tables read or written with Microsoft's Spark connector for Fabric warehouses are named `fabric-warehouse://<workspace SQL address>` / `<warehouse>.<schema>.<table>`. Before, reads were named `sqlserver://` and writes were reported as the connector's temporary folder. Passing the `DatawarehouseId` option also reports the table's OneLake file location. Requires loading the `openlineage-spark` jar yourself; Fabric's bundled copy is unchanged.*
+
 ### Changed
 
 * **dbt: Normalize Fabric warehouse addresses** [`#5133`](https://github.com/OpenLineage/OpenLineage/pull/5133) [@mobuchowski](https://github.com/mobuchowski)
