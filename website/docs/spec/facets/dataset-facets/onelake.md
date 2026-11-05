@@ -29,16 +29,16 @@ Example:
 {
     ...
     "inputs": [{
-        "namespace": "fabric-warehouse://6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com",
+        "namespace": "fabric-warehouse://ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com",
         "name": "wh_primary.raw.orders",
         "facets": {
             "oneLake": {
                 "_producer": "https://some.producer.com/version/1.0",
                 "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/OneLakeDatasetFacet.json#/$defs/OneLakeDatasetFacet",
-                "location": "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/raw/orders",
-                "workspaceId": "8b4cb800-a044-43ce-8f76-3356f709b468",
+                "location": "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/raw/orders",
+                "workspaceId": "d1f6473b-9f7a-4352-940b-a8d74461d3fc",
                 "workspaceName": "sales-analytics",
-                "itemId": "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d",
+                "itemId": "d75873bd-716b-4378-a37e-864c76fc9b3b",
                 "itemName": "wh_primary",
                 "itemType": "Warehouse"
             }

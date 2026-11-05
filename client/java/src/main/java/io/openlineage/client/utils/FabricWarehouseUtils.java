@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * How OpenLineage names tables in Microsoft Fabric warehouses.
  *
  * <p>Each Fabric workspace has one SQL address that all its warehouses share, for example {@code
- * 6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com}. A
+ * ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com}. A
  * table is named {@code fabric-warehouse://<address>} plus {@code <warehouse>.<schema>.<table>}.
  *
  * <p>Some of what this class relies on isn't documented by Microsoft: how the address is built from
@@ -114,9 +114,9 @@ public final class FabricWarehouseUtils {
    *       {@code =} padding.
    * </ol>
    *
-   * <p>For example, tenant {@code cc0b82f3-7c2e-400b-aec3-40a3d720505b} and workspace {@code
-   * 8b4cb800-a044-43ce-8f76-3356f709b468} give {@code
-   * 6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com}.
+   * <p>For example, tenant {@code 68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c} and workspace {@code
+   * d1f6473b-9f7a-4352-940b-a8d74461d3fc} give {@code
+   * ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com}.
    *
    * <p>Microsoft doesn't document this. In November 2026 it matched the real addresses of 2 test
    * workspaces and 44 public tenants, and Microsoft's own {@code fabric-warehouse-labs} samples

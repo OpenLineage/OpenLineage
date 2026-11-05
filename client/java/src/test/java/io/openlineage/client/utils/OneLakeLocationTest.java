@@ -19,17 +19,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 // The IDs and names below are those of a real Fabric test workspace
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class OneLakeLocationTest {
-  private static final UUID WORKSPACE = UUID.fromString("8b4cb800-a044-43ce-8f76-3356f709b468");
-  private static final UUID LAKEHOUSE = UUID.fromString("05bac213-0db7-4b56-ad4c-ac8617938d3f");
+  private static final UUID WORKSPACE = UUID.fromString("d1f6473b-9f7a-4352-940b-a8d74461d3fc");
+  private static final UUID LAKEHOUSE = UUID.fromString("c7a14054-60a7-4121-8fb7-252d16f687eb");
   private static final String NAMESPACE =
-      "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com";
+      "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com";
   private static final String GUID_PATH =
-      NAMESPACE + "/05bac213-0db7-4b56-ad4c-ac8617938d3f/Tables/sales/orders";
+      NAMESPACE + "/c7a14054-60a7-4121-8fb7-252d16f687eb/Tables/sales/orders";
 
   @Test
   void testParseGuidForm() {
     OneLakeLocation location =
-        OneLakeLocation.parse(NAMESPACE, "05bac213-0db7-4b56-ad4c-ac8617938d3f/Tables/sales/orders")
+        OneLakeLocation.parse(NAMESPACE, "c7a14054-60a7-4121-8fb7-252d16f687eb/Tables/sales/orders")
             .get();
 
     assertThat(location.getWorkspaceId()).isEqualTo(WORKSPACE);
@@ -80,14 +80,14 @@ class OneLakeLocationTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "abfss://8B4CB800-A044-43CE-8F76-3356F709B468@onelake.dfs.fabric.microsoft.com/"
-            + "05BAC213-0DB7-4B56-AD4C-AC8617938D3F/Tables/sales/orders/",
-        "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@ONELAKE.BLOB.FABRIC.MICROSOFT.COM/"
-            + "05bac213-0db7-4b56-ad4c-ac8617938d3f/tables/sales/orders",
-        "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@westus-onelake.dfs.fabric.microsoft.com/"
-            + "05bac213-0db7-4b56-ad4c-ac8617938d3f//Tables/sales/orders",
-        "abfs://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/"
-            + "05bac213-0db7-4b56-ad4c-ac8617938d3f/Tables/sales/orders"
+        "abfss://D1F6473B-9F7A-4352-940B-A8D74461D3FC@onelake.dfs.fabric.microsoft.com/"
+            + "C7A14054-60A7-4121-8FB7-252D16F687EB/Tables/sales/orders/",
+        "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@ONELAKE.BLOB.FABRIC.MICROSOFT.COM/"
+            + "c7a14054-60a7-4121-8fb7-252d16f687eb/tables/sales/orders",
+        "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@westus-onelake.dfs.fabric.microsoft.com/"
+            + "c7a14054-60a7-4121-8fb7-252d16f687eb//Tables/sales/orders",
+        "abfs://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/"
+            + "c7a14054-60a7-4121-8fb7-252d16f687eb/Tables/sales/orders"
       })
   void testCanonicalGuidLocation(String path) {
     assertThat(OneLakeLocation.parse(path).flatMap(OneLakeLocation::guidLocation))
@@ -98,16 +98,16 @@ class OneLakeLocationTest {
   @ValueSource(
       strings = {
         // not OneLake
-        "abfss://container@account.dfs.core.windows.net/05bac213-0db7-4b56-ad4c-ac8617938d3f/Tables/t",
-        "s3://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/x/Tables/t",
+        "abfss://container@account.dfs.core.windows.net/c7a14054-60a7-4121-8fb7-252d16f687eb/Tables/t",
+        "s3://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/x/Tables/t",
         // no item
-        "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com",
+        "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com",
         // a bare item name, which OneLake rejects
         "abfss://ws@onelake.dfs.fabric.microsoft.com/lh_shopist/Tables/t",
         // IDs and names mixed, which OneLake rejects
-        "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/"
+        "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/"
             + "lh_shopist.Lakehouse/Tables/t",
-        "abfss://ws@onelake.dfs.fabric.microsoft.com/05bac213-0db7-4b56-ad4c-ac8617938d3f/Tables/t",
+        "abfss://ws@onelake.dfs.fabric.microsoft.com/c7a14054-60a7-4121-8fb7-252d16f687eb/Tables/t",
         "Tables/t"
       })
   void testParseRejects(String path) {
@@ -161,7 +161,7 @@ class OneLakeLocationTest {
 
   @Test
   void testGuid() {
-    assertThat(OneLakeLocation.guid(" 05BAC213-0DB7-4B56-AD4C-AC8617938D3F ")).contains(LAKEHOUSE);
+    assertThat(OneLakeLocation.guid(" C7A14054-60A7-4121-8FB7-252D16F687EB ")).contains(LAKEHOUSE);
     assertThat(OneLakeLocation.guid("lh_shopist")).isEmpty();
     assertThat(OneLakeLocation.guid(null)).isEqualTo(Optional.empty());
   }

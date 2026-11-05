@@ -11,7 +11,7 @@ the table itself, named as the [naming conventions](../../spec/naming.md) descri
 | `fabric-warehouse://{workspace SQL address}`, such as `fabric-warehouse://6obax…-ac4e….datawarehouse.fabric.microsoft.com` | `{warehouse}.{schema}.{table}` |
 
 For example, `spark.read.synapsesql("wh_primary.raw.orders")` is reported as reading
-`fabric-warehouse://6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com` /
+`fabric-warehouse://ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com` /
 `wh_primary.raw.orders`.
 
 Each Fabric workspace has one SQL address, shared by all its warehouses.
@@ -85,14 +85,14 @@ from com.microsoft.spark.fabric.Constants import Constants
 
 df = (
     spark.read
-    .option(Constants.WorkspaceId, "8b4cb800-a044-43ce-8f76-3356f709b468")
-    .option(Constants.DatawarehouseId, "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d")
+    .option(Constants.WorkspaceId, "d1f6473b-9f7a-4352-940b-a8d74461d3fc")
+    .option(Constants.DatawarehouseId, "d75873bd-716b-4378-a37e-864c76fc9b3b")
     .synapsesql("wh_primary.raw.orders")
 )
 ```
 
-This read gets the symlink `abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com` /
-`0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/raw/orders`.
+This read gets the symlink `abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com` /
+`d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/raw/orders`.
 
 The location always uses IDs, because OneLake refuses paths that mix IDs and names. Without `DatawarehouseId`, the
 connector doesn't make the warehouse's ID available, so no location is reported.
@@ -116,10 +116,10 @@ For the read above, the facet is:
 
 ```json
 "oneLake": {
-  "location": "abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com/0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/raw/orders",
-  "workspaceId": "8b4cb800-a044-43ce-8f76-3356f709b468",
+  "location": "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/raw/orders",
+  "workspaceId": "d1f6473b-9f7a-4352-940b-a8d74461d3fc",
   "workspaceName": "do-test-env-fabric",
-  "itemId": "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d",
+  "itemId": "d75873bd-716b-4378-a37e-864c76fc9b3b",
   "itemName": "wh_primary",
   "itemType": "Warehouse"
 }
