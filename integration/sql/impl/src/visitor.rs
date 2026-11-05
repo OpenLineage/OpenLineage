@@ -791,10 +791,17 @@ impl Visit for Statement {
                 }
                 for when_clause in &insert.multi_table_when_clauses {
                     // A WHEN predicate is a general expression and can
-                    // read tables through subqueries; visit it, as the
-                    // MERGE arm visits its ON predicate, so those tables
-                    // join the statement's inputs.
+                    // read tables through subqueries; visit it so those
+                    // tables join the statement's inputs. Like a SELECT
+                    // predicate, it is visited in a temporary frame: the
+                    // columns a predicate subquery projects are compared
+                    // or tested, never inserted, so they must not enter
+                    // the INSERT's column lineage. collect_aliases keeps
+                    // the frame's table dependencies as inputs.
+                    context.push_frame();
                     when_clause.condition.visit(context)?;
+                    let frame = context.pop_frame().unwrap();
+                    context.collect_aliases(&frame);
                     for clause in &when_clause.into_clauses {
                         if let Some(name) =
                             resolve_effective_table_name(&clause.table_name, &None, context)
