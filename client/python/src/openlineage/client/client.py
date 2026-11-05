@@ -122,6 +122,7 @@ class OpenLineageClient:
         source_code_location_dir: str | None = None,
     ) -> None:
         # Look for Git metadata from the selected project folder.
+        """Configure event delivery and the directory used for optional source-location discovery."""
         self._source_code_location_dir = source_code_location_dir
         # Set parent's logging level if environment variable is present
         custom_logging_level = os.getenv("OPENLINEAGE_CLIENT_LOGGING", None)
@@ -616,6 +617,7 @@ class OpenLineageClient:
 
     @cached_property
     def _source_code_location(self) -> dict[str, str | None] | None:
+        """Discover and cache source metadata, honoring configured overrides and the selected project."""
         scl = self.config.facets.source_code_location
 
         url: str | None = scl.repo_url

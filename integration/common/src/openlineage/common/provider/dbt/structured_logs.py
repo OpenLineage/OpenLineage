@@ -84,6 +84,7 @@ class DbtStructuredLogsProcessor(DbtLiveProcessor):
         *args,
         **kwargs,
     ):
+        """Configure live log processing using the artifact processor's selected project directory."""
         super().__init__(dbt_command_line, *args, **kwargs)
 
         self.profiles_dir = get_dbt_profiles_dir(command=self.dbt_command_line)

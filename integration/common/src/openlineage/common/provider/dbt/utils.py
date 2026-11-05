@@ -115,22 +115,25 @@ def generate_run_event(
     )
 
 
-def get_dbt_project_dir(command: list[str]) -> str:
+def get_dbt_project_dir(command: list[str], engine: tuple[int, str | None] = (1, None)) -> str:
     """Match dbt's project selection: explicit flag, supported environment variable, then parents."""
     from_command = parse_single_arg(command, ["--project-dir"])
     if from_command is not None:
-        return os.path.abspath(from_command)
+        return os.path.abspath(os.path.expanduser(from_command))
 
     from_env = os.getenv("DBT_PROJECT_DIR")
     engine_project_dir = os.getenv("DBT_ENGINE_PROJECT_DIR")
     if engine_project_dir:
-        major, version = detect_dbt_engine()
+        major, version = engine
         # Core 1.11 introduced the engine-prefixed variables; older versions ignore them.
         match = re.match(r"(\d+)\.(\d+)", version or "")
         if major >= 2 or (match and tuple(map(int, match.groups())) >= (1, 11)):
             from_env = engine_project_dir
+        elif version is None and not from_env:
+            # Artifact replay can select a project without a dbt executable.
+            from_env = engine_project_dir
     if from_env:
-        return os.path.abspath(from_env)
+        return os.path.abspath(os.path.expanduser(from_env))
 
     cwd = Path.cwd()
     for directory in [cwd, *cwd.parents]:
@@ -331,7 +334,10 @@ _ENGINE_PROBE = (
     "if importlib.util.find_spec('dbt._core'):\n"
     "    print('2', importlib.metadata.version('dbt'))\n"
     "else:\n"
-    "    print('1', importlib.metadata.version('dbt-core'))\n"
+    "    try:\n"
+    "        print('1', importlib.metadata.version('dbt-core'))\n"
+    "    except importlib.metadata.PackageNotFoundError:\n"
+    "        print('1')\n"
 )
 
 
@@ -372,12 +378,16 @@ def _engine_in_this_environment(path: str) -> tuple[int, str | None] | None:
             "dbt._core", list(dbt_package.submodule_search_locations)
         ):
             return 2, importlib.metadata.version("dbt")
-        return 1, importlib.metadata.version("dbt-core")
-    except (OSError, ImportError, ValueError, importlib.metadata.PackageNotFoundError):
+        try:
+            return 1, importlib.metadata.version("dbt-core")
+        except importlib.metadata.PackageNotFoundError:
+            return 1, None
+    except (OSError, ImportError, ValueError):
         return None
 
 
 def _inspect_dbt_executable(path: str) -> tuple[int, str | None] | None:
+    """Identify a native dbt binary or probe a Python launcher with its own interpreter."""
     try:
         with open(path, "rb") as executable:
             head = executable.read(512)
@@ -430,6 +440,7 @@ def _console_script_interpreter(head: bytes) -> list[str] | None:
 
 
 def _dbt_engine_from_version_output(path: str) -> tuple[int, str | None]:
+    """Read the engine version from command output when executable inspection is inconclusive."""
     try:
         result = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=60, check=False)
     except (OSError, subprocess.SubprocessError):

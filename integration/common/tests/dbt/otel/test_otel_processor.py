@@ -1005,3 +1005,25 @@ def test_detect_engine_inspects_dbt_when_this_environment_cannot_import_it(monke
 def test_detect_engine_without_dbt(monkeypatch):
     with mock.patch("openlineage.common.provider.dbt.utils.shutil.which", return_value=None):
         assert detect_dbt_engine() == (1, None)
+
+
+def test_detect_engine_without_core_metadata_avoids_subprocess(monkeypatch, tmp_path):
+    """A bundled v1 installation without distribution metadata keeps the in-process fast path."""
+    _dbt_in_this_environment(monkeypatch, tmp_path, with_core=False)
+    with (
+        mock.patch("importlib.metadata.version", side_effect=importlib.metadata.PackageNotFoundError),
+        mock.patch("openlineage.common.provider.dbt.utils.subprocess.run", side_effect=AssertionError),
+    ):
+        assert detect_dbt_engine() == (1, None)
+
+
+def test_engine_probe_without_core_metadata(capsys):
+    """The external-interpreter probe reports v1 even when its distribution version is unavailable."""
+    from openlineage.common.provider.dbt.utils import _ENGINE_PROBE
+
+    with (
+        mock.patch("importlib.util.find_spec", return_value=None),
+        mock.patch("importlib.metadata.version", side_effect=importlib.metadata.PackageNotFoundError),
+    ):
+        exec(_ENGINE_PROBE)
+    assert capsys.readouterr().out == "1\n"

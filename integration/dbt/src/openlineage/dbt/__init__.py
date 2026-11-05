@@ -156,6 +156,7 @@ def set_up_logger():
 
 
 def main():
+    """Select the project and dispatch to artifact, structured-log, or OpenTelemetry processing."""
     logger = set_up_logger()
 
     logger.info("Running OpenLineage dbt wrapper version %s", __version__)
@@ -189,9 +190,10 @@ def main():
             # lineage: the engine isn't detected and the project isn't read.
             logger.info("This dbt command produces no lineage; running it without OpenLineage events")
             return run_dbt_untouched(dbt_command_line, logger)
-    project_dir = get_dbt_project_dir(args)
+    engine = detect_dbt_engine() if not send_events else (1, None)
+    project_dir = get_dbt_project_dir(args, engine=engine)
     if not send_events:
-        dbt_major_version, dbt_version = detect_dbt_engine()
+        dbt_major_version, dbt_version = engine
         if dbt_major_version >= 2:
             # dbt Core v2 always reports live from its OpenTelemetry output.
             return consume_otel(
@@ -243,6 +245,7 @@ def consume_structured_logs(
     models: list[str],
     openlineage_job_name: str | None = None,
 ):
+    """Run dbt and emit live lineage from structured logs for the selected project."""
     logger = logging.getLogger("openlineage.dbt")
     logger.info(
         "This wrapper is using --consume-structured-logs: will send OpenLineage "
@@ -281,6 +284,7 @@ def consume_otel(
     skip_parse: bool = False,
     dbt_version: str | None = None,
 ):
+    """Run dbt Core v2 and emit live lineage from its OpenTelemetry output."""
     logger = logging.getLogger("openlineage.dbt")
     logger.info(
         "dbt Core %s detected: will send OpenLineage events while the models are executing.",
@@ -370,6 +374,7 @@ def consume_local_artifacts(
     models: list[str],
     openlineage_job_name: str | None = None,
 ):
+    """Emit saved artifact lineage, running dbt first unless send-events was requested."""
     logger = logging.getLogger("openlineage.dbt")
     logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")

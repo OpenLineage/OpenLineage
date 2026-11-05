@@ -89,6 +89,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         *args,
         **kwargs,
     ):
+        """Load the selected project and configure artifact paths and connection details."""
         super().__init__(*args, **kwargs)
         self.dbt_command_line = dbt_command_line
         if self.dbt_command_line is None:

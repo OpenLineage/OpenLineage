@@ -588,6 +588,7 @@ def test_emit_live_events_cleans_up_when_interrupted_while_sending(monkeypatch):
 
 @pytest.mark.parametrize("mode", ["artifacts", "structured", "otel"])
 def test_main_passes_environment_project_to_each_mode(monkeypatch, tmp_path, mode):
+    """Every processing mode receives the project selected through the environment."""
     project = tmp_path / "analytics"
     project.mkdir()
     monkeypatch.setenv("DBT_PROJECT_DIR", str(project))
@@ -608,3 +609,20 @@ def test_main_passes_environment_project_to_each_mode(monkeypatch, tmp_path, mod
     monkeypatch.setattr("sys.argv", args)
     assert main() == 0
     assert handler.call_args.kwargs["project_dir"] == str(project)
+
+
+@pytest.mark.parametrize("command", ["run", "send-events"])
+def test_engine_project_directory_does_not_repeat_detection(monkeypatch, tmp_path, command):
+    """Runs detect dbt once; artifact replay selects its project without detecting dbt at all."""
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    monkeypatch.setenv("DBT_ENGINE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.setattr("sys.argv", ["dbt-ol", command])
+    handler = mock.MagicMock(return_value=0)
+    monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", handler)
+    with (
+        mock.patch("openlineage.dbt.detect_dbt_engine", return_value=(1, "1.11.0")) as detect,
+        mock.patch("openlineage.common.provider.dbt.utils.detect_dbt_engine", side_effect=AssertionError),
+    ):
+        assert main() == 0
+    assert detect.call_count == (1 if command == "run" else 0)
+    assert handler.call_args.kwargs["project_dir"] == str(tmp_path)

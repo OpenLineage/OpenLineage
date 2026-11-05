@@ -15,6 +15,7 @@ def git(directory, *args):
 
 @pytest.fixture
 def repository(tmp_path):
+    """Create an isolated repository containing a nested dbt project."""
     repo = tmp_path / "repository"
     repo.mkdir()
     git(repo, "init")
@@ -36,6 +37,7 @@ def repository(tmp_path):
 
 
 def test_live_events_include_project_path_and_preserve_existing_facet(repository, monkeypatch):
+    """Live events receive the project prefix without replacing a producer-supplied source facet."""
     from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
     from openlineage.client.facet_v2 import source_code_location_job
     from openlineage.dbt import emit_live_events
@@ -79,6 +81,7 @@ def test_live_events_include_project_path_and_preserve_existing_facet(repository
 
 
 def test_artifact_wrapper_events_include_project_path(repository, monkeypatch):
+    """Artifact replay emits the repository-relative directory of the selected project."""
     from openlineage.dbt import consume_local_artifacts
 
     project = repository / "analytics"

@@ -606,6 +606,7 @@ class TestGetCiPrNumber:
 
 
 def project_source_code_location(project_dir, config):
+    """Read the cached source facet with discovery rooted at the supplied project directory."""
     from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
 
     client = OpenLineageClient(
@@ -629,6 +630,7 @@ def git(directory, *args):
 
 @pytest.fixture
 def repository(tmp_path):
+    """Create an isolated Git checkout with a nested project and a configured remote."""
     repo = tmp_path / "repository"
     repo.mkdir()
     git(repo, "init")
@@ -712,6 +714,7 @@ def test_git_failure_does_not_fail_emission(repository, error):
 @pytest.mark.parametrize("detached", [False, True])
 @pytest.mark.parametrize("packed", [False, True])
 def test_worktree_emits_shared_metadata_and_its_own_commit(repository, tmp_path, detached, packed):
+    """Shared refs resolve the worktree commit and tag for detached, symbolic, and packed checkouts."""
     worktree = tmp_path / "linked"
     git(repository, "worktree", "add", "-b", "worktree-branch", str(worktree))
     git(
@@ -746,6 +749,7 @@ def test_worktree_emits_shared_metadata_and_its_own_commit(repository, tmp_path,
 
 @pytest.mark.parametrize("absolute", [False, True])
 def test_common_git_directory_pointer(tmp_path, absolute):
+    """Relative and absolute commondir pointers resolve to the shared metadata directory."""
     from openlineage.client.git import _common_git_dir
 
     common = tmp_path / "common"

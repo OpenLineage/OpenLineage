@@ -1212,18 +1212,19 @@ def test_get_dbt_command_takes_the_subcommand_not_option_values(command_line, ex
     "version,expected", [("1.10.15", "legacy"), ("1.11.0", "engine"), ("1.12.6", "engine")]
 )
 def test_project_directory_environment_precedence(monkeypatch, tmp_path, version, expected):
+    """Explicit flags win over environment variables; known versions select the supported variable."""
     from openlineage.common.provider.dbt.utils import get_dbt_project_dir
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("DBT_PROJECT_DIR", "legacy")
     monkeypatch.setenv("DBT_ENGINE_PROJECT_DIR", "engine")
-    monkeypatch.setattr("openlineage.common.provider.dbt.utils.detect_dbt_engine", lambda: (1, version))
-    assert get_dbt_project_dir(["run"]) == str(tmp_path / expected)
+    assert get_dbt_project_dir(["run"], engine=(1, version)) == str(tmp_path / expected)
     assert get_dbt_project_dir(["run", "--project-dir", "explicit"]) == str(tmp_path / "explicit")
     assert get_dbt_project_dir(["run", "--project-dir=explicit"]) == str(tmp_path / "explicit")
 
 
 def test_project_directory_parent_discovery_and_explicit_invalid_path(monkeypatch, tmp_path):
+    """Find the nearest project without silently replacing an explicitly selected invalid directory."""
     from openlineage.common.provider.dbt.utils import get_dbt_project_dir
 
     monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
@@ -1242,6 +1243,7 @@ def test_project_directory_parent_discovery_and_explicit_invalid_path(monkeypatc
 
 
 def test_project_directory_without_project_uses_current_directory(monkeypatch, tmp_path):
+    """Keep the current directory when no project selection or parent project exists."""
     from openlineage.common.provider.dbt.utils import get_dbt_project_dir
 
     monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
@@ -1251,6 +1253,7 @@ def test_project_directory_without_project_uses_current_directory(monkeypatch, t
 
 
 def test_log_path_uses_selected_project(monkeypatch, tmp_path):
+    """Default logs belong to the project selected through the environment."""
     from openlineage.common.provider.dbt.utils import get_dbt_log_path
 
     monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
@@ -1258,3 +1261,37 @@ def test_log_path_uses_selected_project(monkeypatch, tmp_path):
     monkeypatch.setenv("DBT_PROJECT_DIR", str(tmp_path / "analytics"))
     monkeypatch.setattr("openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: "logs")
     assert get_dbt_log_path(["run"]) == str(tmp_path / "analytics" / "logs" / "dbt.log")
+
+
+@pytest.mark.parametrize("source", ["flag", "legacy", "engine"])
+def test_project_directory_expands_home_before_resolving(monkeypatch, tmp_path, source):
+    """Literal home-directory shortcuts resolve correctly for flags and both environment variables."""
+    from openlineage.common.provider.dbt.utils import get_dbt_log_path, get_dbt_project_dir
+
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_LOG_PATH", raising=False)
+    command = ["run"]
+    if source == "flag":
+        command.append("--project-dir=~/analytics")
+    else:
+        variable = "DBT_PROJECT_DIR" if source == "legacy" else "DBT_ENGINE_PROJECT_DIR"
+        monkeypatch.setenv(variable, "~/analytics")
+    directory = get_dbt_project_dir(command, engine=(1, "1.11.0"))
+    assert directory == str(tmp_path / "analytics")
+    monkeypatch.setattr("openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: "logs")
+    assert get_dbt_log_path(command, project_dir=directory) == str(tmp_path / "analytics/logs/dbt.log")
+
+
+@pytest.mark.parametrize("legacy,expected", [(None, "engine"), ("legacy", "legacy")])
+def test_unknown_engine_project_directory_fallback(monkeypatch, tmp_path, legacy, expected):
+    """An unknown engine honors the newer variable only when the legacy variable is absent."""
+    from openlineage.common.provider.dbt.utils import get_dbt_project_dir
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    if legacy:
+        monkeypatch.setenv("DBT_PROJECT_DIR", legacy)
+    monkeypatch.setenv("DBT_ENGINE_PROJECT_DIR", "engine")
+    assert get_dbt_project_dir(["send-events"]) == str(tmp_path / expected)
