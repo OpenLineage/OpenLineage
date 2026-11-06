@@ -64,13 +64,11 @@ tasks:
       - task --list
 
   setup:
-    # Pin the JDK for publishing to Maven Local, where a silently wrong JDK
-    # poisons every downstream consumer. Task-level env on purpose: global
-    # env leaks across included Taskfiles. `JAVA_VERSION=… task …` overrides;
-    # see dev/java-home.sh for the resolution order.
-    env:
-      JAVA_HOME:
-        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" "${JAVA_VERSION:-17}"'
+    # Each publish-local task pins its own JDK for publishing to Maven Local,
+    # where a silently wrong JDK poisons every downstream consumer. Env set
+    # here would not reach them: Task does not pass a task's env to the tasks
+    # it calls. `JAVA_VERSION=… task …` overrides; see dev/java-home.sh for the
+    # resolution order.
     desc: Build and publish ALL sibling dependencies to Maven Local (openlineage-java, spark-extension-interfaces, openlineage-sql-java)
     cmds:
       - task: setup-java
