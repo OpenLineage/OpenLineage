@@ -12,6 +12,7 @@ requires-python = ">=3.10"
 keywords = ["openlineage"]
 dependencies = [
     "tqdm>=4.62.0",
+    "openlineage-python>=1.56.0",
     "openlineage-integration-common==1.56.0",
 ]
 
@@ -33,6 +34,7 @@ dev = [
 dbt-ol = "openlineage.dbt:main"
 
 [tool.uv.sources]
+openlineage-python = { path = "../../client/python", editable = true }
 openlineage-integration-common = { path = "../common", editable = true }
 
 [tool.uv.build-backend]
@@ -76,3 +78,8 @@ serialize = [
 filename = "pyproject.toml"
 search = "openlineage-integration-common=={current_version}"
 replace = "openlineage-integration-common=={new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "openlineage-python>={current_version}"
+replace = "openlineage-python>={new_version}"

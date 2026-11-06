@@ -13,6 +13,7 @@ import subprocess
 import sysconfig
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.provider.dbt.facets import ParentRunMetadata
@@ -114,6 +115,33 @@ def generate_run_event(
     )
 
 
+def get_dbt_project_dir(command: list[str], engine: tuple[int, str | None] = (1, None)) -> str:
+    """Match dbt's project selection: explicit flag, supported environment variable, then parents."""
+    from_command = parse_single_arg(command, ["--project-dir"])
+    if from_command is not None:
+        return os.path.abspath(os.path.expanduser(from_command))
+
+    from_env = os.getenv("DBT_PROJECT_DIR")
+    engine_project_dir = os.getenv("DBT_ENGINE_PROJECT_DIR")
+    if engine_project_dir:
+        major, version = engine
+        # Core 1.11 introduced the engine-prefixed variables; older versions ignore them.
+        match = re.match(r"(\d+)\.(\d+)", version or "")
+        if major >= 2 or (match and tuple(map(int, match.groups())) >= (1, 11)):
+            from_env = engine_project_dir
+        elif version is None and not from_env:
+            # Artifact replay can select a project without a dbt executable.
+            from_env = engine_project_dir
+    if from_env:
+        return os.path.abspath(os.path.expanduser(from_env))
+
+    cwd = Path.cwd()
+    for directory in [cwd, *cwd.parents]:
+        if (directory / "dbt_project.yml").is_file():
+            return str(directory)
+    return str(cwd)
+
+
 def get_dbt_profiles_dir(command: list[str]) -> str:
     """
     Based on https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
@@ -129,13 +157,13 @@ def get_dbt_profiles_dir(command: list[str]) -> str:
     return from_command or from_env_var or current_working_directory or default_dir
 
 
-def get_dbt_log_path(command: list[str]) -> str:
+def get_dbt_log_path(command: list[str], project_dir: str | None = None) -> str:
     """
     Based on this https://docs.getdbt.com/reference/global-configs/logs
     Gets the absolute path of the dbt log file.
     If the user doesn't specify the log path, we generate a random name for the logs directory
     """
-    project_dir = parse_single_arg(command, ["--project-dir"], default="./") or "./"
+    project_dir = project_dir if project_dir is not None else get_dbt_project_dir(command)
     default_log_dirname = os.path.expanduser(os.path.join(project_dir, generate_random_log_file_name()))
     from_command = parse_single_arg(command, ["--log-path"], default=None)
     from_env_var = os.getenv("DBT_LOG_PATH")
@@ -306,7 +334,10 @@ _ENGINE_PROBE = (
     "if importlib.util.find_spec('dbt._core'):\n"
     "    print('2', importlib.metadata.version('dbt'))\n"
     "else:\n"
-    "    print('1')\n"
+    "    try:\n"
+    "        print('1', importlib.metadata.version('dbt-core'))\n"
+    "    except importlib.metadata.PackageNotFoundError:\n"
+    "        print('1')\n"
 )
 
 
@@ -347,12 +378,16 @@ def _engine_in_this_environment(path: str) -> tuple[int, str | None] | None:
             "dbt._core", list(dbt_package.submodule_search_locations)
         ):
             return 2, importlib.metadata.version("dbt")
-        return 1, None
+        try:
+            return 1, importlib.metadata.version("dbt-core")
+        except importlib.metadata.PackageNotFoundError:
+            return 1, None
     except (OSError, ImportError, ValueError):
         return None
 
 
 def _inspect_dbt_executable(path: str) -> tuple[int, str | None] | None:
+    """Identify a native dbt binary or probe a Python launcher with its own interpreter."""
     try:
         with open(path, "rb") as executable:
             head = executable.read(512)
@@ -378,7 +413,7 @@ def _inspect_dbt_executable(path: str) -> tuple[int, str | None] | None:
         return None
     if words[0] == "2":
         return 2, words[1] if len(words) > 1 else None
-    return 1, None
+    return 1, words[1] if len(words) > 1 else None
 
 
 def _console_script_interpreter(head: bytes) -> list[str] | None:
@@ -405,12 +440,16 @@ def _console_script_interpreter(head: bytes) -> list[str] | None:
 
 
 def _dbt_engine_from_version_output(path: str) -> tuple[int, str | None]:
+    """Read the engine version from command output when executable inspection is inconclusive."""
     try:
         result = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=60, check=False)
     except (OSError, subprocess.SubprocessError):
         log.debug("Running `%s --version` failed; assuming dbt Core v1", path, exc_info=True)
         return 1, None
     for line in result.stdout.splitlines():
+        installed = re.match(r"\s*- installed:\s*(\S+)", line)
+        if installed:
+            return 1, installed.group(1)
         match = _DBT_VERSION_LINE.match(line.strip())
         if match and int(match.group(1)) >= 2:
             return int(match.group(1)), line.strip()[len("dbt ") :]

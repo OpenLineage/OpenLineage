@@ -34,6 +34,7 @@ from openlineage.common.provider.dbt.utils import (
     __version__,
     detect_dbt_engine,
     get_dbt_command,
+    get_dbt_project_dir,
     get_parent_run_metadata,
     is_truthy,
 )
@@ -155,13 +156,13 @@ def set_up_logger():
 
 
 def main():
+    """Select the project and dispatch to artifact, structured-log, or OpenTelemetry processing."""
     logger = set_up_logger()
 
     logger.info("Running OpenLineage dbt wrapper version %s", __version__)
 
     args = sys.argv[1:]
     target = parse_single_arg(args, ["-t", "--target"])
-    project_dir = parse_single_arg(args, ["--project-dir"], default="./")
     profile_name = parse_single_arg(args, ["--profile"])
     model_selector = parse_single_arg(args, ["--selector"])
     target_path = parse_single_arg(args, ["--target-path"])
@@ -189,7 +190,10 @@ def main():
             # lineage: the engine isn't detected and the project isn't read.
             logger.info("This dbt command produces no lineage; running it without OpenLineage events")
             return run_dbt_untouched(dbt_command_line, logger)
-        dbt_major_version, dbt_version = detect_dbt_engine()
+    engine = detect_dbt_engine() if not send_events else (1, None)
+    project_dir = get_dbt_project_dir(args, engine=engine)
+    if not send_events:
+        dbt_major_version, dbt_version = engine
         if dbt_major_version >= 2:
             # dbt Core v2 always reports live from its OpenTelemetry output.
             return consume_otel(
@@ -241,6 +245,7 @@ def consume_structured_logs(
     models: list[str],
     openlineage_job_name: str | None = None,
 ):
+    """Run dbt and emit live lineage from structured logs for the selected project."""
     logger = logging.getLogger("openlineage.dbt")
     logger.info(
         "This wrapper is using --consume-structured-logs: will send OpenLineage "
@@ -264,7 +269,7 @@ def consume_structured_logs(
         selector=model_selector,
     )
     logger.info("dbt-ol will read logs from %s", processor.dbt_log_file_path)
-    return emit_live_events(processor, logger)
+    return emit_live_events(processor, logger, project_dir)
 
 
 def consume_otel(
@@ -279,6 +284,7 @@ def consume_otel(
     skip_parse: bool = False,
     dbt_version: str | None = None,
 ):
+    """Run dbt Core v2 and emit live lineage from its OpenTelemetry output."""
     logger = logging.getLogger("openlineage.dbt")
     logger.info(
         "dbt Core %s detected: will send OpenLineage events while the models are executing.",
@@ -306,16 +312,16 @@ def consume_otel(
         logger.exception("OpenLineage could not read the dbt project; running dbt without OpenLineage events")
         return run_dbt_untouched(dbt_command_line, logger)
     try:
-        return emit_live_events(processor, logger)
+        return emit_live_events(processor, logger, project_dir)
     except KeyboardInterrupt:
         # A second Ctrl-C: dbt was killed, and the runs still open get no final event.
         logger.warning("dbt-ol stopped without waiting for dbt to exit")
         return 128 + signal.SIGINT
 
 
-def emit_live_events(processor: DbtLiveProcessor, logger: logging.Logger) -> int:
+def emit_live_events(processor: DbtLiveProcessor, logger: logging.Logger, project_dir: str = "./") -> int:
     """Run dbt through the processor, emit each event as it comes, and return dbt's exit code."""
-    client = OpenLineageClient()
+    client = OpenLineageClient(source_code_location_dir=project_dir)
     emitted_events = 0
     events = processor.parse()
     try:
@@ -368,6 +374,7 @@ def consume_local_artifacts(
     models: list[str],
     openlineage_job_name: str | None = None,
 ):
+    """Emit saved artifact lineage, running dbt first unless send-events was requested."""
     logger = logging.getLogger("openlineage.dbt")
     logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
@@ -375,7 +382,7 @@ def consume_local_artifacts(
     # get_parent_run_metadata() reads OPENLINEAGE_CONTEXT first and only then the legacy
     # OPENLINEAGE_PARENT_ID, so it must not be gated on the legacy variable being set.
     parent_run_metadata = get_parent_run_metadata()
-    client = OpenLineageClient()
+    client = OpenLineageClient(source_code_location_dir=project_dir)
 
     processor = DbtLocalArtifactProcessor(
         producer=PRODUCER,

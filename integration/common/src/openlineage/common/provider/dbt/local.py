@@ -89,6 +89,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         *args,
         **kwargs,
     ):
+        """Load the selected project and configure artifact paths and connection details."""
         super().__init__(*args, **kwargs)
         self.dbt_command_line = dbt_command_line
         if self.dbt_command_line is None:
@@ -96,6 +97,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         self.jinja_environment: Environment | None = None
 
         absolute_dir = os.path.abspath(project_dir)
+        self.project_dir = absolute_dir
         dbt_project = self.load_yaml_with_jinja(os.path.join(project_dir, "dbt_project.yml"))
         self.target_path = target_path
         target_path = self.build_target_path(dbt_project)
