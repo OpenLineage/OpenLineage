@@ -26,6 +26,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.util.OpenLineageHttpHandler;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -66,6 +68,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
@@ -132,6 +135,57 @@ class SparkStreamingTest {
   }
 
   private static final OpenLineageHttpHandler handler = new OpenLineageHttpHandler();
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "3\\.[45]\\..*|4\\..*")
+  void testCsvSourceToParquetPathSink(@TempDir Path directory) throws Exception {
+    Path input = Files.createDirectory(directory.resolve("input"));
+    Files.write(input.resolve("part.csv"), Arrays.asList("1,x", "2,y"), StandardCharsets.UTF_8);
+    Path output = directory.resolve("output");
+    OpenLineageHttpHandler fileHandler = new OpenLineageHttpHandler();
+    HttpServer server = createHttpServer(fileHandler);
+    SparkSession spark = createSparkSession(server.getAddress().getPort(), "fileStreamOutput");
+    try {
+      // Reflective access keeps this test source compilable against Spark 3.2.
+      StreamingQuery query =
+          spark
+              .readStream()
+              .schema("id INT, v STRING")
+              .csv(input.toString())
+              .writeStream()
+              .format("parquet")
+              .option("checkpointLocation", directory.resolve("checkpoint").toString())
+              .trigger((Trigger) Trigger.class.getMethod("AvailableNow").invoke(null))
+              .start(output.toString());
+      assertTrue(query.awaitTermination(60000));
+      spark.sparkContext().listenerBus().waitUntilEmpty(10000);
+      List<RunEvent> events =
+          fileHandler.getEventsMap().values().stream()
+              .flatMap(Collection::stream)
+              .filter(event -> !event.getOutputs().isEmpty())
+              .collect(Collectors.toList());
+      assertThat(events).isNotEmpty();
+      assertThat(events)
+          .allSatisfy(
+              event -> {
+                assertThat(event.getOutputs())
+                    .singleElement()
+                    .satisfies(
+                        dataset -> {
+                          assertThat(dataset.getNamespace()).isEqualTo("file");
+                          assertThat(dataset.getName()).isEqualTo(output.toString());
+                          assertThat(mapToSchemaRecord(dataset.getFacets().getSchema()))
+                              .containsExactly(
+                                  new SchemaRecord("id", "integer"),
+                                  new SchemaRecord("v", "string"));
+                        });
+              });
+      assertEquals(2, spark.read().parquet(output.toString()).count());
+    } finally {
+      spark.stop();
+      server.stop(0);
+    }
+  }
 
   @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
