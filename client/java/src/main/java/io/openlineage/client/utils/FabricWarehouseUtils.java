@@ -40,7 +40,6 @@ public final class FabricWarehouseUtils {
   public static final String DATABASE_NAME_OPTION = "database_name";
 
   private static final String DEFAULT_PORT = "1433";
-  private static final String ONELAKE_HOST = "onelake.dfs.fabric.microsoft.com";
   private static final String BASE32_ALPHABET = "abcdefghijklmnopqrstuvwxyz234567";
   private static final int GUID_BYTES = 16;
   private static final int GUID_BASE32_LENGTH = 26;
@@ -147,9 +146,14 @@ public final class FabricWarehouseUtils {
    */
   public static DatasetIdentifier oneLakeLocation(
       UUID workspaceId, UUID warehouseId, String schema, String table) {
-    return new DatasetIdentifier(
-        warehouseId + "/Tables/" + schema + "/" + table,
-        "abfss://" + workspaceId + "@" + ONELAKE_HOST);
+    return OneLakeLocation.builder()
+        .workspaceId(workspaceId)
+        .itemId(warehouseId)
+        .path(Arrays.asList(OneLakeLocation.TABLES, schema, table))
+        .build()
+        .guidIdentifier()
+        // both IDs and a path are set, so the identifier can always be written
+        .orElseThrow(IllegalStateException::new);
   }
 
   /**
@@ -243,16 +247,12 @@ public final class FabricWarehouseUtils {
     return Optional.of(builder.build());
   }
 
-  /** Reads an ID, returning empty instead of failing when the text isn't a valid ID. */
+  /**
+   * Reads an ID, returning empty instead of failing when the text isn't a valid ID. Same as {@link
+   * OneLakeLocation#guid}: only the full 36-character form is accepted.
+   */
   public static Optional<UUID> parseGuid(String value) {
-    if (value == null) {
-      return Optional.empty();
-    }
-    try {
-      return Optional.of(UUID.fromString(value.trim()));
-    } catch (IllegalArgumentException e) {
-      return Optional.empty();
-    }
+    return OneLakeLocation.guid(value);
   }
 
   static String encodeGuid(UUID guid) {

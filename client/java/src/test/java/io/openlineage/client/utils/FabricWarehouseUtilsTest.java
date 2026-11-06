@@ -305,5 +305,8 @@ class FabricWarehouseUtilsTest {
         .contains(WORKSPACE);
     assertThat(FabricWarehouseUtils.parseGuid("wh_primary")).isEmpty();
     assertThat(FabricWarehouseUtils.parseGuid(null)).isEqualTo(Optional.empty());
+    // UUID.fromString accepts these short forms, but they aren't Fabric IDs
+    assertThat(FabricWarehouseUtils.parseGuid("1-1-1-1-1")).isEmpty();
+    assertThat(FabricWarehouseUtils.parseGuid("d1f6473b-9f7a-4352-940b-a8d74461d3f")).isEmpty();
   }
 }
