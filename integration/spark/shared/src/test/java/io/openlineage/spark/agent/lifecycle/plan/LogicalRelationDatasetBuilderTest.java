@@ -193,7 +193,7 @@ class LogicalRelationDatasetBuilderTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
-      when(PlanUtils.getDirectoryPaths(any(Collection.class), any(Configuration.class)))
+      when(PlanUtils.getRelationPaths(any(Collection.class), any(Configuration.class)))
           .thenReturn(Collections.singletonList(new Path("/tmp")));
 
       LogicalRelationDatasetBuilder<OpenLineage.InputDataset> inputBuilder =
@@ -288,6 +288,7 @@ class LogicalRelationDatasetBuilderTest {
     when(fileSystem.isFile(p)).thenReturn(true);
 
     when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
+    when(hadoopFsRelation.schema()).thenReturn(new StructType());
     when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(session.sessionState()).thenReturn(sessionState);
@@ -299,13 +300,11 @@ class LogicalRelationDatasetBuilderTest {
                 .asScala()
                 .toSeq());
 
-    try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
-      List<OpenLineage.Dataset> datasets =
-          builder.apply(mock(SparkListenerEvent.class), logicalRelation);
-      assertEquals(1, datasets.size());
-      OpenLineage.Dataset ds = datasets.get(0);
-      assertEquals("/tmp/path.csv", ds.getName());
-    }
+    List<OpenLineage.Dataset> datasets =
+        builder.apply(mock(SparkListenerEvent.class), logicalRelation);
+    assertEquals(1, datasets.size());
+    OpenLineage.Dataset ds = datasets.get(0);
+    assertEquals("/tmp/path.csv", ds.getName());
   }
 
   @Test

@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -137,7 +138,7 @@ public class InputFieldsCollector {
     } else if (node instanceof LogicalRelation
         && (((LogicalRelation) node).relation() instanceof HadoopFsRelation)) {
       HadoopFsRelation relation = (HadoopFsRelation) ((LogicalRelation) node).relation();
-      return extractDatasetIdentifier(relation);
+      return extractDatasetIdentifier(context, relation);
     } else if (node instanceof LogicalRelation
         && BigQueryUtils.hasBigQueryClasses()
         && ((LogicalRelation) node).relation() instanceof BigQueryRelation) {
@@ -215,17 +216,38 @@ public class InputFieldsCollector {
    * We need to handle a HadoopFsRelation by extracting that paths it traverses
    * to identify the datasets being used.
    */
-  private static List<DatasetIdentifier> extractDatasetIdentifier(HadoopFsRelation relation) {
+  private static List<DatasetIdentifier> extractDatasetIdentifier(
+      ColumnLevelLineageContext context, HadoopFsRelation relation) {
     List<DatasetIdentifier> inputDatasets = new ArrayList<DatasetIdentifier>();
-    List<Path> paths =
-        ScalaConversionUtils.fromSeq(relation.location().rootPaths()).stream()
-            .collect(Collectors.toList());
+    List<Path> paths = getRelationPaths(context, relation);
 
     for (Path p : paths) {
       inputDatasets.add(PathUtils.fromURI(p.toUri()));
     }
 
     return inputDatasets;
+  }
+
+  /*
+   * Same paths as LogicalRelationDatasetBuilder, so a relation read from a list of files names
+   * their directory rather than every file. Falls back to the root paths, as the builder does,
+   * when the filesystem is not reachable (e.g. Databricks credential passthrough).
+   */
+  @SuppressWarnings("PMD.AvoidCatchingGenericException")
+  private static List<Path> getRelationPaths(
+      ColumnLevelLineageContext context, HadoopFsRelation relation) {
+    List<Path> rootPaths = ScalaConversionUtils.fromSeq(relation.location().rootPaths());
+    Optional<SparkSession> session = context.getOlContext().getSparkSession();
+    if (!session.isPresent()) {
+      return rootPaths;
+    }
+    try {
+      return PlanUtils.getRelationPaths(
+          rootPaths, session.get().sessionState().newHadoopConfWithOptions(relation.options()));
+    } catch (Exception e) {
+      log.debug("Unable to resolve relation paths, using root paths: {}", e.getMessage());
+      return rootPaths;
+    }
   }
 
   private static List<DatasetIdentifier> extractExtensionDatasetIdentifier(
