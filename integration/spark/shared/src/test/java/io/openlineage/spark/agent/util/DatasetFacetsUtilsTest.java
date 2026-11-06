@@ -21,15 +21,15 @@ class DatasetFacetsUtilsTest {
   void testCopyToBuilderKeepsOneLakeFacet() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     when(context.getOpenLineage()).thenReturn(openLineage);
-    OpenLineage.OneLakeDatasetFacet oneLake =
+    OpenLineage.FabricOneLakeDatasetFacet oneLake =
         openLineage
-            .newOneLakeDatasetFacetBuilder()
+            .newFabricOneLakeDatasetFacetBuilder()
             .workspaceId("d1f6473b-9f7a-4352-940b-a8d74461d3fc")
             .itemName("wh_primary")
             .itemType("Warehouse")
             .build();
     OpenLineage.DatasetFacets facets =
-        openLineage.newDatasetFacetsBuilder().oneLake(oneLake).build();
+        openLineage.newDatasetFacetsBuilder().fabric_onelake(oneLake).build();
 
     // what SaveIntoDataSourceCommandVisitor does when it marks a table as overwritten
     OpenLineage.DatasetFacets rebuilt =
@@ -40,7 +40,7 @@ class DatasetFacetsUtilsTest {
                     null))
             .build();
 
-    assertThat(rebuilt.getOneLake()).isSameAs(oneLake);
+    assertThat(rebuilt.getFabric_onelake()).isSameAs(oneLake);
     assertThat(rebuilt.getLifecycleStateChange()).isNotNull();
   }
 }

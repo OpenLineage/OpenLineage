@@ -23,6 +23,6 @@ public class DatasetFacetsUtils {
         .symlinks(facets.getSymlinks())
         .version(facets.getVersion())
         .lifecycleStateChange(facets.getLifecycleStateChange())
-        .oneLake(facets.getOneLake());
+        .fabric_onelake(facets.getFabric_onelake());
   }
 }

@@ -90,7 +90,7 @@ class OneLakeFacetUtilsTest {
     OpenLineage.InputDataset input =
         DatasetFactory.input(context).sparkDatasetBuilder().dataset(identifier).build();
 
-    OpenLineage.OneLakeDatasetFacet facet = input.getFacets().getOneLake();
+    OpenLineage.FabricOneLakeDatasetFacet facet = input.getFacets().getFabric_onelake();
     assertThat(facet.getItemType()).isEqualTo("Warehouse");
     assertThat(facet.getItemName()).isEqualTo("wh_primary");
     assertThat(facet.getWorkspaceId()).isEqualTo(WORKSPACE);
@@ -109,9 +109,9 @@ class OneLakeFacetUtilsTest {
   @Test
   void testWorkspaceNameOnlyForTheSessionsWorkspace() {
     runtimeConf.put("trident.workspace.id", WORKSPACE);
-    hadoopConf.set("trident.workspace.name", "do-test-env-fabric");
+    hadoopConf.set("trident.workspace.name", "sales-analytics");
 
-    assertThat(facet(NAMESPACE).get().getWorkspaceName()).isEqualTo("do-test-env-fabric");
+    assertThat(facet(NAMESPACE).get().getWorkspaceName()).isEqualTo("sales-analytics");
 
     // a table in another workspace, reached through that workspace's address
     String otherNamespace =
@@ -119,7 +119,7 @@ class OneLakeFacetUtilsTest {
             + FabricWarehouseUtils.endpointFor(
                 UUID.fromString("68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c"),
                 UUID.fromString(OTHER_WORKSPACE));
-    OpenLineage.OneLakeDatasetFacet other = facet(otherNamespace).get();
+    OpenLineage.FabricOneLakeDatasetFacet other = facet(otherNamespace).get();
     assertThat(other.getWorkspaceId()).isEqualTo(OTHER_WORKSPACE);
     assertThat(other.getWorkspaceName()).isNull();
   }
@@ -133,13 +133,13 @@ class OneLakeFacetUtilsTest {
                 .dataset("raw/orders", "s3://bucket")
                 .build()
                 .getFacets()
-                .getOneLake())
+                .getFabric_onelake())
         .isNull();
   }
 
   @Test
   void testFacetCanBeDisabled() {
-    config.getFacetsConfig().getDisabledFacets().put("oneLake", true);
+    config.getFacetsConfig().getDisabledFacets().put("fabric_onelake", true);
 
     assertThat(facet(NAMESPACE)).isEmpty();
   }
@@ -160,7 +160,7 @@ class OneLakeFacetUtilsTest {
         .isSameAs(location);
   }
 
-  private Optional<OpenLineage.OneLakeDatasetFacet> facet(String namespace) {
+  private Optional<OpenLineage.FabricOneLakeDatasetFacet> facet(String namespace) {
     return OneLakeFacetUtils.facetFor(
         context,
         new DatasetIdentifier("wh_primary.raw.orders", namespace, Collections.emptyList()));

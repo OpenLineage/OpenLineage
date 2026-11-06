@@ -33,10 +33,10 @@ type DatasetFacets struct {
 	DatasetVersionDatasetFacet       *DatasetVersionDatasetFacet       `json:"version,omitempty"`
 	DatasourceDatasetFacet           *DatasourceDatasetFacet           `json:"dataSource,omitempty"`
 	DocumentationDatasetFacet        *DocumentationDatasetFacet        `json:"documentation,omitempty"`
+	FabricOneLakeDatasetFacet        *FabricOneLakeDatasetFacet        `json:"fabric_onelake,omitempty"`
 	HierarchyDatasetFacet            *HierarchyDatasetFacet            `json:"hierarchy,omitempty"`
 	LifecycleStateChangeDatasetFacet *LifecycleStateChangeDatasetFacet `json:"lifecycleStateChange,omitempty"`
 	LineageDatasetFacet              *LineageDatasetFacet              `json:"lineage,omitempty"`
-	OneLakeDatasetFacet              *OneLakeDatasetFacet              `json:"oneLake,omitempty"`
 	OwnershipDatasetFacet            *OwnershipDatasetFacet            `json:"ownership,omitempty"`
 	SchemaDatasetFacet               *SchemaDatasetFacet               `json:"schema,omitempty"`
 	StorageDatasetFacet              *StorageDatasetFacet              `json:"storage,omitempty"`
@@ -378,6 +378,82 @@ func (f *DocumentationDatasetFacet) WithContentType(contentType string) *Documen
 	return f
 }
 
+var _ DatasetFacet = (*FabricOneLakeDatasetFacet)(nil)
+
+// Apply sets this FabricOneLakeDatasetFacet facet in the DatasetFacets container.
+func (f *FabricOneLakeDatasetFacet) Apply(facets **DatasetFacets) {
+	if *facets == nil {
+		*facets = &DatasetFacets{}
+	}
+	(*facets).FabricOneLakeDatasetFacet = f
+}
+
+// NewFabricOneLakeDatasetFacet creates a new FabricOneLakeDatasetFacet facet.
+func NewFabricOneLakeDatasetFacet(
+	producer string,
+) *FabricOneLakeDatasetFacet {
+	return &FabricOneLakeDatasetFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/FabricOneLakeDatasetFacet.json",
+	}
+}
+
+// WithDeleted sets the Deleted field on this FabricOneLakeDatasetFacet.
+func (f *FabricOneLakeDatasetFacet) WithDeleted(deleted bool) *FabricOneLakeDatasetFacet {
+	f.Deleted = &deleted
+
+	return f
+}
+
+// WithItemID sets the ItemID field on this FabricOneLakeDatasetFacet.
+func (f *FabricOneLakeDatasetFacet) WithItemID(itemID string) *FabricOneLakeDatasetFacet {
+	f.ItemID = &itemID
+
+	return f
+}
+
+// WithItemName sets the ItemName field on this FabricOneLakeDatasetFacet.
+func (f *FabricOneLakeDatasetFacet) WithItemName(itemName string) *FabricOneLakeDatasetFacet {
+	f.ItemName = &itemName
+
+	return f
+}
+
+// WithItemType sets the ItemType field on this FabricOneLakeDatasetFacet.
+func (f *FabricOneLakeDatasetFacet) WithItemType(itemType string) *FabricOneLakeDatasetFacet {
+	f.ItemType = &itemType
+
+	return f
+}
+
+// WithLocation sets the Location field on this FabricOneLakeDatasetFacet.
+func (f *FabricOneLakeDatasetFacet) WithLocation(location string) *FabricOneLakeDatasetFacet {
+	f.Location = &location
+
+	return f
+}
+
+// WithTableID sets the TableID field on this FabricOneLakeDatasetFacet.
+func (f *FabricOneLakeDatasetFacet) WithTableID(tableID string) *FabricOneLakeDatasetFacet {
+	f.TableID = &tableID
+
+	return f
+}
+
+// WithWorkspaceID sets the WorkspaceID field on this FabricOneLakeDatasetFacet.
+func (f *FabricOneLakeDatasetFacet) WithWorkspaceID(workspaceID string) *FabricOneLakeDatasetFacet {
+	f.WorkspaceID = &workspaceID
+
+	return f
+}
+
+// WithWorkspaceName sets the WorkspaceName field on this FabricOneLakeDatasetFacet.
+func (f *FabricOneLakeDatasetFacet) WithWorkspaceName(workspaceName string) *FabricOneLakeDatasetFacet {
+	f.WorkspaceName = &workspaceName
+
+	return f
+}
+
 var _ DatasetFacet = (*HierarchyDatasetFacet)(nil)
 
 // Apply sets this HierarchyDatasetFacet facet in the DatasetFacets container.
@@ -480,82 +556,6 @@ func (f *LineageDatasetFacet) WithFields(fields map[string]LineageFieldEntry) *L
 // WithInputs sets the Inputs field on this LineageDatasetFacet.
 func (f *LineageDatasetFacet) WithInputs(inputs []RawLineageInput) *LineageDatasetFacet {
 	f.Inputs = inputs
-
-	return f
-}
-
-var _ DatasetFacet = (*OneLakeDatasetFacet)(nil)
-
-// Apply sets this OneLakeDatasetFacet facet in the DatasetFacets container.
-func (f *OneLakeDatasetFacet) Apply(facets **DatasetFacets) {
-	if *facets == nil {
-		*facets = &DatasetFacets{}
-	}
-	(*facets).OneLakeDatasetFacet = f
-}
-
-// NewOneLakeDatasetFacet creates a new OneLakeDatasetFacet facet.
-func NewOneLakeDatasetFacet(
-	producer string,
-) *OneLakeDatasetFacet {
-	return &OneLakeDatasetFacet{
-		Producer:  producer,
-		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/OneLakeDatasetFacet.json",
-	}
-}
-
-// WithDeleted sets the Deleted field on this OneLakeDatasetFacet.
-func (f *OneLakeDatasetFacet) WithDeleted(deleted bool) *OneLakeDatasetFacet {
-	f.Deleted = &deleted
-
-	return f
-}
-
-// WithItemID sets the ItemID field on this OneLakeDatasetFacet.
-func (f *OneLakeDatasetFacet) WithItemID(itemID string) *OneLakeDatasetFacet {
-	f.ItemID = &itemID
-
-	return f
-}
-
-// WithItemName sets the ItemName field on this OneLakeDatasetFacet.
-func (f *OneLakeDatasetFacet) WithItemName(itemName string) *OneLakeDatasetFacet {
-	f.ItemName = &itemName
-
-	return f
-}
-
-// WithItemType sets the ItemType field on this OneLakeDatasetFacet.
-func (f *OneLakeDatasetFacet) WithItemType(itemType string) *OneLakeDatasetFacet {
-	f.ItemType = &itemType
-
-	return f
-}
-
-// WithLocation sets the Location field on this OneLakeDatasetFacet.
-func (f *OneLakeDatasetFacet) WithLocation(location string) *OneLakeDatasetFacet {
-	f.Location = &location
-
-	return f
-}
-
-// WithTableID sets the TableID field on this OneLakeDatasetFacet.
-func (f *OneLakeDatasetFacet) WithTableID(tableID string) *OneLakeDatasetFacet {
-	f.TableID = &tableID
-
-	return f
-}
-
-// WithWorkspaceID sets the WorkspaceID field on this OneLakeDatasetFacet.
-func (f *OneLakeDatasetFacet) WithWorkspaceID(workspaceID string) *OneLakeDatasetFacet {
-	f.WorkspaceID = &workspaceID
-
-	return f
-}
-
-// WithWorkspaceName sets the WorkspaceName field on this OneLakeDatasetFacet.
-func (f *OneLakeDatasetFacet) WithWorkspaceName(workspaceName string) *OneLakeDatasetFacet {
-	f.WorkspaceName = &workspaceName
 
 	return f
 }

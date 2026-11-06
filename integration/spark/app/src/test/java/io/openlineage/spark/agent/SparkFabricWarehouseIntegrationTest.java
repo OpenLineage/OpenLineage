@@ -8,7 +8,7 @@ package io.openlineage.spark.agent;
 import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.openlineage.client.OpenLineage.OneLakeDatasetFacet;
+import io.openlineage.client.OpenLineage.FabricOneLakeDatasetFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.util.Arrays;
@@ -84,7 +84,7 @@ class SparkFabricWarehouseIntegrationTest {
             // Fabric sets these in every notebook
             .config("trident.tenant.id", TENANT)
             .config("trident.workspace.id", WORKSPACE)
-            .config("trident.workspace.name", "do-test-env-fabric")
+            .config("trident.workspace.name", "sales-analytics")
             .getOrCreate();
   }
 
@@ -128,11 +128,11 @@ class SparkFabricWarehouseIntegrationTest {
     assertThat(outputs)
         .allSatisfy(
             output -> {
-              OneLakeDatasetFacet oneLake = output.getFacets().getOneLake();
+              FabricOneLakeDatasetFacet oneLake = output.getFacets().getFabric_onelake();
               assertThat(oneLake.getItemType()).isEqualTo("Warehouse");
               assertThat(oneLake.getItemName()).isEqualTo("wh_primary");
               assertThat(oneLake.getWorkspaceId()).isEqualTo(WORKSPACE);
-              assertThat(oneLake.getWorkspaceName()).isEqualTo("do-test-env-fabric");
+              assertThat(oneLake.getWorkspaceName()).isEqualTo("sales-analytics");
               assertThat(oneLake.getItemId()).isEqualTo(WAREHOUSE_ID);
               assertThat(oneLake.getLocation())
                   .isEqualTo(
@@ -159,7 +159,7 @@ class SparkFabricWarehouseIntegrationTest {
                   .isEqualTo(ENDPOINT_PREFIX + "d2i76rlvl2fefjqykkky7tdwaq" + ENDPOINT_SUFFIX);
               assertThat(output.getFacets().getSymlinks()).isNull();
               // another workspace than the session's: no name, and no warehouse ID was given
-              OneLakeDatasetFacet oneLake = output.getFacets().getOneLake();
+              FabricOneLakeDatasetFacet oneLake = output.getFacets().getFabric_onelake();
               assertThat(oneLake.getWorkspaceId()).isEqualTo(WORKSPACE_2);
               assertThat(oneLake.getWorkspaceName()).isNull();
               assertThat(oneLake.getItemName()).isEqualTo("wh_primary");
@@ -181,7 +181,7 @@ class SparkFabricWarehouseIntegrationTest {
             output -> {
               assertThat(output.getNamespace()).isEqualTo("file");
               assertThat(output.getName()).isEqualTo(STAGING_ROOT + "/plain_write");
-              assertThat(output.getFacets().getOneLake()).isNull();
+              assertThat(output.getFacets().getFabric_onelake()).isNull();
             });
   }
 

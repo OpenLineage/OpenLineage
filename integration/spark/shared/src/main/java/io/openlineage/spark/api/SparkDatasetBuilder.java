@@ -217,16 +217,16 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   }
 
   /**
-   * Adds the facets that follow from the dataset's identity, such as {@code oneLake} for datasets
-   * stored in Microsoft Fabric's OneLake. Subclasses call this when building the dataset, so it
-   * uses the final name, namespace and symlinks.
+   * Adds the facets that follow from the dataset's identity, such as {@code fabric_onelake} for
+   * datasets stored in Microsoft Fabric's OneLake. Subclasses call this when building the dataset,
+   * so it uses the final name, namespace and symlinks.
    */
   protected void addIdentityFacets() {
     if (name == null || namespace == null) {
       return;
     }
     OneLakeFacetUtils.facetFor(context, new DatasetIdentifier(name, namespace, identifierSymlinks))
-        .ifPresent(facet -> inner.getFacets().oneLake(facet));
+        .ifPresent(facet -> inner.getFacets().fabric_onelake(facet));
   }
 
   public abstract T build();

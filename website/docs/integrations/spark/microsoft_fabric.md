@@ -98,11 +98,12 @@ The location always uses IDs, because OneLake refuses paths that mix IDs and nam
 connector doesn't make the warehouse's ID available, so no location is reported. The location is in the workspace of
 the SQL address that was queried; if a `WorkspaceId` option names another workspace, no location is reported.
 
-## The `oneLake` facet
+## The `fabric_onelake` facet
 
-Every Fabric table that OpenLineage reports, read or written, also gets the
-[`oneLake` facet](../../spec/facets/dataset-facets/onelake.md). It describes the table in OneLake terms, so you can
-link it to the warehouse that holds it:
+Every Fabric table that OpenLineage reports, read or written, also gets the `fabric_onelake` dataset facet
+([schema](https://openlineage.io/spec/facets/1-0-0/FabricOneLakeDatasetFacet.json)). It describes where the table is
+in OneLake, so you can link it to the warehouse that holds it, whichever name a job used for the table. Every field is
+optional; producers set only what they know without calling Fabric. For warehouse tables, Spark sets:
 
 | Field           | Value                                                                                                   |
 |:----------------|:--------------------------------------------------------------------------------------------------------|
@@ -116,18 +117,20 @@ link it to the warehouse that holds it:
 For the read above, the facet is:
 
 ```json
-"oneLake": {
+"fabric_onelake": {
   "location": "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/raw/orders",
   "workspaceId": "d1f6473b-9f7a-4352-940b-a8d74461d3fc",
-  "workspaceName": "do-test-env-fabric",
+  "workspaceName": "sales-analytics",
   "itemId": "d75873bd-716b-4378-a37e-864c76fc9b3b",
   "itemName": "wh_primary",
   "itemType": "Warehouse"
 }
 ```
 
-Everything comes from the table's own name and options. The workspace ID is never taken from the notebook's
-settings, because a notebook can read and write warehouses in other workspaces. Outside Fabric, for example when you
-read a warehouse over JDBC from your own Spark cluster, the facet has the same fields except `workspaceName`.
+Everything comes from the table itself, not from the notebook's own workspace, because a notebook can read and write
+warehouses in other workspaces. The workspace is always the one in the table's SQL address. For a write without
+`WorkspaceId`, that address is built from the notebook's workspace (see above), so set `WorkspaceId` when you write to
+another workspace. Outside Fabric, for example when you read a warehouse over JDBC from your own Spark cluster, the
+facet has the same fields except `workspaceName`.
 
-To leave the facet out, add `oneLake` to the disabled facets: `spark.openlineage.facets.oneLake.disabled=true`.
+To leave the facet out, add it to the disabled facets: `spark.openlineage.facets.fabric_onelake.disabled=true`.

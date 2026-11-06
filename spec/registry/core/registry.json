@@ -21,7 +21,6 @@
       "ol:core:LifecycleStateChangeDatasetFacet.json",
       "ol:core:LineageFacet.json",
       "ol:core:NominalTimeRunFacet.json",
-      "ol:core:OneLakeDatasetFacet.json",
       "ol:core:OutputStatisticsOutputDatasetFacet.json",
       "ol:core:OwnershipDatasetFacet.json",
       "ol:core:OwnershipJobFacet.json",
