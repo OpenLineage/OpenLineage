@@ -1,0 +1,11 @@
+{
+  "semanticModel": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.54.0/client/python",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/SemanticModelDatasetFacet.json#/$defs/SemanticModelDatasetFacet",
+    "spec": "ossie",
+    "specVersion": "0.2.0.dev0",
+    "modelUri": "https://github.com/apache/ossie/blob/main/examples/tpcds_semantic_model.yaml",
+    "modelName": "tpcds_retail_model",
+    "datasetName": "store_sales"
+  }
+}
