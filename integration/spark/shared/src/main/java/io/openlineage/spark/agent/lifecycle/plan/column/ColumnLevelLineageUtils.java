@@ -25,14 +25,34 @@ public class ColumnLevelLineageUtils {
       SparkListenerEvent event,
       OpenLineageContext context,
       OpenLineage.SchemaDatasetFacet schemaFacet) {
+    return invokeSpark3("buildColumnLineageDatasetFacet", event, context, schemaFacet);
+  }
+
+  /**
+   * Captures column lineage of a checkpointed plan, see {@link
+   * io.openlineage.spark.api.Checkpoint}. Supported only for Spark 3.
+   */
+  public static Optional<CheckpointColumnLineage> buildCheckpointColumnLineage(
+      SparkListenerEvent event,
+      OpenLineageContext context,
+      OpenLineage.SchemaDatasetFacet schemaFacet) {
+    return invokeSpark3("buildCheckpointColumnLineage", event, context, schemaFacet);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> Optional<T> invokeSpark3(
+      String methodName,
+      SparkListenerEvent event,
+      OpenLineageContext context,
+      OpenLineage.SchemaDatasetFacet schemaFacet) {
     // if Spark3 include column lineage
     if (!package$.MODULE$.SPARK_VERSION().startsWith("2")) {
       try {
-        return (Optional<OpenLineage.ColumnLineageDatasetFacet>)
+        return (Optional<T>)
             Class.forName(
                     "io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils")
                 .getMethod(
-                    "buildColumnLineageDatasetFacet",
+                    methodName,
                     SparkListenerEvent.class,
                     OpenLineageContext.class,
                     OpenLineage.SchemaDatasetFacet.class)
@@ -42,8 +62,7 @@ public class ColumnLevelLineageUtils {
           | IllegalAccessException
           | IllegalArgumentException
           | InvocationTargetException e) {
-        log.error(
-            "Error when invoking static method 'buildColumnLineageDatasetFacet' for Spark3", e);
+        log.error("Error when invoking static method '{}' for Spark3", methodName, e);
         return Optional.empty();
       } catch (RuntimeException e) {
         log.error("Error when building column level lineage", e);

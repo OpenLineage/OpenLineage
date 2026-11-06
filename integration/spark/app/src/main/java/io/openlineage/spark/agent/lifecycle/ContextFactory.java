@@ -10,6 +10,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.CheckpointContext;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -35,6 +36,7 @@ public class ContextFactory {
   @Getter private final MeterRegistry meterRegistry;
   @Getter private final SparkOpenLineageConfig config;
   private final OpenLineageEventHandlerFactory handlerFactory;
+  @Getter private final CheckpointContext checkpointContext;
 
   public ContextFactory(
       EventEmitter openLineageEventEmitter,
@@ -44,6 +46,7 @@ public class ContextFactory {
     this.meterRegistry = meterRegistry;
     this.config = config;
     handlerFactory = new InternalEventHandlerFactory();
+    checkpointContext = new CheckpointContext(config.getCheckpointConfig().getMaxEntries());
   }
 
   public ExecutionContext createSparkApplicationExecutionContext(SparkContext sparkContext) {
@@ -61,6 +64,7 @@ public class ContextFactory {
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
+            .checkpointContext(checkpointContext)
             .build();
 
     String resolvedAppName = JobNameBuilder.buildApplicationName(olContext);
@@ -86,6 +90,7 @@ public class ContextFactory {
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
+            .checkpointContext(checkpointContext)
             .build();
 
     OpenLineageRunEventBuilder runEventBuilder =
@@ -116,6 +121,7 @@ public class ContextFactory {
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
+            .checkpointContext(checkpointContext)
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -146,6 +152,7 @@ public class ContextFactory {
                       .sparkExtensionVisitorWrapper(
                           new SparkOpenLineageExtensionVisitorWrapper(config))
                       .datasetBuilderFactory(DatasetBuilderFactoryProvider.getInstance())
+                      .checkpointContext(checkpointContext)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

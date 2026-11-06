@@ -25,12 +25,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +55,14 @@ public class ColumnLevelLineageBuilder {
 
   private Map<ExprId, Set<Dependency>> exprDependencies = new HashMap<>();
   private List<DatasetDependency> datasetDependencies = new LinkedList<>();
+  // Fields of checkpointed datasets read by the plan (see io.openlineage.spark.api.Checkpoint).
+  // Kept as references to the lineage captured for them and only expanded once a dependency of an
+  // output field reaches them.
+  private final Map<ExprId, Set<CheckpointField>> checkpointFields = new HashMap<>();
+  // Lineage of checkpointed datasets read by the plan, whose dataset-level dependencies apply to
+  // the plan as a whole. Compared by identity, as each instance represents a single checkpoint.
+  private final Set<CheckpointColumnLineage> checkpoints =
+      Collections.newSetFromMap(new IdentityHashMap<>());
   @Getter private Map<ExprId, Set<Input>> inputs = new HashMap<>();
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
@@ -86,6 +96,31 @@ public class ColumnLevelLineageBuilder {
             new Input(
                 DatasetReducerUtils.trimDatasetIdentifier(context, datasetIdentifier),
                 attributeName));
+  }
+
+  /**
+   * Adds input field read from a checkpointed dataset - i.e. a field of a now-discarded plan, whose
+   * lineage was captured when the checkpoint was materialized. The inputs captured for the field
+   * are merged with the transformations found within the current plan when building the facet, the
+   * same way dependencies between expressions are merged.
+   *
+   * @param exprId expression representing the checkpointed field within the current plan
+   * @param fieldName name of the field within the checkpointed plan
+   * @param lineage lineage captured for the checkpointed plan
+   */
+  public void addCheckpointInput(ExprId exprId, String fieldName, CheckpointColumnLineage lineage) {
+    checkpointFields
+        .computeIfAbsent(exprId, k -> new HashSet<>())
+        .add(new CheckpointField(lineage, fieldName));
+  }
+
+  /**
+   * Adds dataset-level dependencies (filter/sort/group by/join/window columns) of a checkpointed
+   * plan read by the current plan. They aren't tied to any specific output field of the checkpoint,
+   * so they apply to the current plan as a whole.
+   */
+  public void addCheckpointDatasetDependencies(CheckpointColumnLineage lineage) {
+    checkpoints.add(lineage);
   }
 
   /**
@@ -319,11 +354,15 @@ public class ColumnLevelLineageBuilder {
       ExprId outputExprId, String outputExpressionString) {
     List<TransformedInput> collect =
         findDependentInputs(outputExprId, outputExpressionString).stream()
-            .filter(dependency -> inputs.containsKey(dependency.getExprId()))
             .flatMap(
                 dependency ->
-                    inputs.get(dependency.getExprId()).stream()
-                        .map(e -> new TransformedInput(e, dependency.getTransformationInfo())))
+                    Stream.concat(
+                        inputs.getOrDefault(dependency.getExprId(), Collections.emptySet()).stream()
+                            .map(e -> new TransformedInput(e, dependency.getTransformationInfo())),
+                        checkpointFields
+                            .getOrDefault(dependency.getExprId(), Collections.emptySet())
+                            .stream()
+                            .flatMap(f -> f.resolve(dependency, isDescriptionsEnabled()))))
             .distinct()
             .collect(Collectors.toList());
     return collect;
@@ -377,9 +416,46 @@ public class ColumnLevelLineageBuilder {
   }
 
   private List<TransformedInput> datasetDependencyInputs() {
-    return datasetDependencies.stream()
-        .flatMap(e -> getInputsUsedFor(e.getExprId(), e.getOutputExpression()).stream())
+    return Stream.concat(
+            datasetDependencies.stream()
+                .flatMap(e -> getInputsUsedFor(e.getExprId(), e.getOutputExpression()).stream()),
+            checkpoints.stream().flatMap(c -> c.getDatasetDependencyInputs().stream()))
         .distinct()
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Resolves lineage of the plan being processed the same way {@link #buildFields} does, but keeps
+   * it in a form which can be attached to plans reading the plan's output later on. Used to capture
+   * lineage of a checkpointed plan, see {@link io.openlineage.spark.api.Checkpoint}.
+   */
+  public CheckpointColumnLineage buildCheckpointColumnLineage() {
+    if (dependenciesAdded >= COMPUTED_DEPENDENCY_HARD_LIMIT) {
+      log.warn(
+          "Field dependency amount exceeded allowed hard limit of {}. Not capturing checkpoint column lineage.",
+          COMPUTED_DEPENDENCY_HARD_LIMIT);
+      return CheckpointColumnLineage.empty();
+    }
+
+    Map<String, List<TransformedInput>> fieldInputs = new HashMap<>();
+    schema
+        .getFields()
+        .forEach(
+            field -> {
+              List<TransformedInput> fieldInput = getInputsUsedFor(field.getName());
+              if (!fieldInput.isEmpty()) {
+                fieldInputs.put(field.getName(), fieldInput);
+              }
+            });
+
+    int fieldsDependencies = fieldInputs.values().stream().mapToInt(List::size).sum();
+    if (fieldsDependencies > RETURNED_INPUT_FIELD_LIMIT) {
+      log.warn(
+          "Amount of input fields exceeds {}. Not capturing checkpoint column lineage.",
+          RETURNED_INPUT_FIELD_LIMIT);
+      return CheckpointColumnLineage.empty();
+    }
+
+    return new CheckpointColumnLineage(fieldInputs, datasetDependencyInputs());
   }
 }
