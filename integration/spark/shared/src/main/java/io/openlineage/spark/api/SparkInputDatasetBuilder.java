@@ -20,6 +20,7 @@ public class SparkInputDatasetBuilder extends SparkDatasetBuilder<OpenLineage.In
 
   @Override
   public OpenLineage.InputDataset build() {
+    addIdentityFacets();
     return context
         .getOpenLineage()
         .newInputDatasetBuilder()

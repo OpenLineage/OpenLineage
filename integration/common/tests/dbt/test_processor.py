@@ -151,7 +151,7 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     assert generated_query_id is None
 
 
-_FABRIC_HOST = "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna"
+_FABRIC_HOST = "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q"
 
 
 @pytest.mark.parametrize(

@@ -7,24 +7,27 @@ package io.openlineage.client.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * How OpenLineage names tables in Microsoft Fabric warehouses.
  *
  * <p>Each Fabric workspace has one SQL address that all its warehouses share, for example {@code
- * 6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com}. A
+ * ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com}. A
  * table is named {@code fabric-warehouse://<address>} plus {@code <warehouse>.<schema>.<table>}.
  *
  * <p>Some of what this class relies on isn't documented by Microsoft: how the address is built from
  * the tenant and workspace IDs, and the option names that Microsoft's Spark connector for Fabric
- * uses. All of it is kept in this class, and the tests check it against addresses taken from real
- * workspaces, so a change on Microsoft's side only needs fixing here.
+ * uses. All of it is kept in this class, and was checked against real workspaces, so a change on
+ * Microsoft's side only needs fixing here.
  */
+@Slf4j
 public final class FabricWarehouseUtils {
   public static final String SCHEME = "fabric-warehouse";
   public static final String ENDPOINT_SUFFIX = ".datawarehouse.fabric.microsoft.com";
@@ -39,7 +42,6 @@ public final class FabricWarehouseUtils {
   public static final String DATABASE_NAME_OPTION = "database_name";
 
   private static final String DEFAULT_PORT = "1433";
-  private static final String ONELAKE_HOST = "onelake.dfs.fabric.microsoft.com";
   private static final String BASE32_ALPHABET = "abcdefghijklmnopqrstuvwxyz234567";
   private static final int GUID_BYTES = 16;
   private static final int GUID_BASE32_LENGTH = 26;
@@ -113,9 +115,9 @@ public final class FabricWarehouseUtils {
    *       {@code =} padding.
    * </ol>
    *
-   * <p>For example, tenant {@code cc0b82f3-7c2e-400b-aec3-40a3d720505b} and workspace {@code
-   * 8b4cb800-a044-43ce-8f76-3356f709b468} give {@code
-   * 6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com}.
+   * <p>For example, tenant {@code 68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c} and workspace {@code
+   * d1f6473b-9f7a-4352-940b-a8d74461d3fc} give {@code
+   * ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com}.
    *
    * <p>Microsoft doesn't document this. In November 2026 it matched the real addresses of 2 test
    * workspaces and 44 public tenants, and Microsoft's own {@code fabric-warehouse-labs} samples
@@ -146,9 +148,14 @@ public final class FabricWarehouseUtils {
    */
   public static DatasetIdentifier oneLakeLocation(
       UUID workspaceId, UUID warehouseId, String schema, String table) {
-    return new DatasetIdentifier(
-        warehouseId + "/Tables/" + schema + "/" + table,
-        "abfss://" + workspaceId + "@" + ONELAKE_HOST);
+    return OneLakeLocation.builder()
+        .workspaceId(workspaceId)
+        .itemId(warehouseId)
+        .path(Arrays.asList(OneLakeLocation.TABLES, schema, table))
+        .build()
+        .guidIdentifier()
+        // both IDs and a path are set, so the identifier can always be written
+        .orElseThrow(IllegalStateException::new);
   }
 
   /**
@@ -160,13 +167,19 @@ public final class FabricWarehouseUtils {
    * read tables from several warehouses in the same workspace. So the location is only added to
    * tables in the warehouse the ID was given for; other tables would get a wrong path.
    *
+   * <p>The workspace is the one in the SQL address, because that is what was queried, and the
+   * dataset's name says so; {@link #toOneLakeLocation} uses the same rule. If the address has no
+   * workspace, no location is added. If the {@code WorkspaceId} option names another workspace, or
+   * isn't a valid ID, the IDs can't be trusted to belong together and no location is added either.
+   * When the address is built from the tenant and the {@code WorkspaceId} option, as for {@code
+   * synapsesql} writes, the two always agree.
+   *
    * <p>If anything is missing, the table is in another warehouse, or an ID isn't valid, the dataset
    * is returned as it was.
    *
    * @param identifier a {@code fabric-warehouse} dataset named {@code <warehouse>.<schema>.<table>}
    * @param idWarehouse name of the warehouse that {@code warehouseIdOption} belongs to
-   * @param workspaceIdOption the {@code WorkspaceId} option; if not set, the workspace ID is read
-   *     from the address
+   * @param workspaceIdOption the {@code WorkspaceId} option; must match the address's workspace
    * @param warehouseIdOption the {@code DatawarehouseId} option
    * @return the same dataset, with the location added when possible
    */
@@ -182,12 +195,21 @@ public final class FabricWarehouseUtils {
         || !idWarehouse.filter(parts[0]::equalsIgnoreCase).isPresent()) {
       return identifier;
     }
-    Optional<UUID> warehouseId = warehouseIdOption.flatMap(FabricWarehouseUtils::parseGuid);
+    Optional<UUID> warehouseId = warehouseIdOption.flatMap(OneLakeLocation::guid);
+    // The workspace is the one in the SQL address, as in toOneLakeLocation. The WorkspaceId
+    // option only has to agree with it.
     Optional<UUID> workspaceId =
-        workspaceIdOption.isPresent()
-            ? workspaceIdOption.flatMap(FabricWarehouseUtils::parseGuid)
-            : workspaceIdOf(identifier.getNamespace().substring(prefix.length()));
+        workspaceIdOf(identifier.getNamespace().substring(prefix.length()));
     if (!warehouseId.isPresent() || !workspaceId.isPresent()) {
+      return identifier;
+    }
+    if (workspaceIdOption.isPresent()
+        && !workspaceId.equals(workspaceIdOption.flatMap(OneLakeLocation::guid))) {
+      log.debug(
+          "The WorkspaceId option {} doesn't match the workspace of {}; not adding a OneLake"
+              + " location",
+          workspaceIdOption.get(),
+          identifier.getNamespace());
       return identifier;
     }
     DatasetIdentifier location =
@@ -196,16 +218,58 @@ public final class FabricWarehouseUtils {
         location.getName(), location.getNamespace(), DatasetIdentifier.SymlinkType.LOCATION);
   }
 
-  /** Reads an ID, returning empty instead of failing when the text isn't a valid ID. */
+  /**
+   * Describes a Fabric warehouse table in OneLake terms, for the {@code fabric_onelake} facet.
+   *
+   * <p>Everything comes from the dataset itself, never from the Spark session, because a table can
+   * be in another workspace than the one the job runs in:
+   *
+   * <ul>
+   *   <li>the item type is {@code Warehouse} and the item name is the warehouse;
+   *   <li>the workspace ID is read from the SQL address;
+   *   <li>the warehouse ID and the table's location come from the {@code LOCATION} symlink that
+   *       {@link #withOneLakeLocation} adds, and only if that symlink is in the same workspace as
+   *       the address.
+   * </ul>
+   *
+   * @param identifier a dataset, possibly with symlinks
+   * @return the description, or empty if this isn't a {@code fabric-warehouse} dataset named {@code
+   *     <warehouse>.<schema>.<table>}
+   */
+  public static Optional<OneLakeLocation> toOneLakeLocation(DatasetIdentifier identifier) {
+    String prefix = SCHEME + "://";
+    String[] parts = identifier.getName().split("\\.");
+    if (!identifier.getNamespace().startsWith(prefix) || parts.length != TABLE_NAME_PARTS) {
+      return Optional.empty();
+    }
+    Optional<UUID> workspaceId =
+        workspaceIdOf(identifier.getNamespace().substring(prefix.length()));
+    OneLakeLocation.OneLakeLocationBuilder builder =
+        OneLakeLocation.builder()
+            .workspaceId(workspaceId.orElse(null))
+            .itemName(parts[0])
+            .itemType(OneLakeLocation.WAREHOUSE)
+            .path(Arrays.asList(OneLakeLocation.TABLES, parts[1], parts[2]));
+    if (identifier.getSymlinks() != null && workspaceId.isPresent()) {
+      identifier.getSymlinks().stream()
+          .filter(s -> s.getType() == DatasetIdentifier.SymlinkType.LOCATION)
+          .map(s -> OneLakeLocation.parse(s.getNamespace(), s.getName()))
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .filter(location -> workspaceId.get().equals(location.getWorkspaceId()))
+          .filter(location -> location.getItemId() != null)
+          .findFirst()
+          .ifPresent(location -> builder.itemId(location.getItemId()).path(location.getPath()));
+    }
+    return Optional.of(builder.build());
+  }
+
+  /**
+   * Reads an ID, returning empty instead of failing when the text isn't a valid ID. Same as {@link
+   * OneLakeLocation#guid}: only the full 36-character form is accepted.
+   */
   public static Optional<UUID> parseGuid(String value) {
-    if (value == null) {
-      return Optional.empty();
-    }
-    try {
-      return Optional.of(UUID.fromString(value.trim()));
-    } catch (IllegalArgumentException e) {
-      return Optional.empty();
-    }
+    return OneLakeLocation.guid(value);
   }
 
   static String encodeGuid(UUID guid) {

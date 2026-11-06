@@ -8,10 +8,10 @@ the table itself, named as the [naming conventions](../../spec/naming.md) descri
 
 | Namespace                                                                           | Name                           |
 |:------------------------------------------------------------------------------------|:-------------------------------|
-| `fabric-warehouse://{workspace SQL address}`, such as `fabric-warehouse://6obax…-ac4e….datawarehouse.fabric.microsoft.com` | `{warehouse}.{schema}.{table}` |
+| `fabric-warehouse://{workspace SQL address}`, such as `fabric-warehouse://ck32i…-hnd7n….datawarehouse.fabric.microsoft.com` | `{warehouse}.{schema}.{table}` |
 
 For example, `spark.read.synapsesql("wh_primary.raw.orders")` is reported as reading
-`fabric-warehouse://6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com` /
+`fabric-warehouse://ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com` /
 `wh_primary.raw.orders`.
 
 Each Fabric workspace has one SQL address, shared by all its warehouses.
@@ -85,14 +85,52 @@ from com.microsoft.spark.fabric.Constants import Constants
 
 df = (
     spark.read
-    .option(Constants.WorkspaceId, "8b4cb800-a044-43ce-8f76-3356f709b468")
-    .option(Constants.DatawarehouseId, "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d")
+    .option(Constants.WorkspaceId, "d1f6473b-9f7a-4352-940b-a8d74461d3fc")
+    .option(Constants.DatawarehouseId, "d75873bd-716b-4378-a37e-864c76fc9b3b")
     .synapsesql("wh_primary.raw.orders")
 )
 ```
 
-This read gets the symlink `abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com` /
-`0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/raw/orders`.
+This read gets the symlink `abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com` /
+`d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/raw/orders`.
 
 The location always uses IDs, because OneLake refuses paths that mix IDs and names. Without `DatawarehouseId`, the
-connector doesn't make the warehouse's ID available, so no location is reported.
+connector doesn't make the warehouse's ID available, so no location is reported. The location is in the workspace of
+the SQL address that was queried; if a `WorkspaceId` option names another workspace, no location is reported.
+
+## The `fabric_onelake` facet
+
+Every Fabric table that OpenLineage reports, read or written, also gets the `fabric_onelake` dataset facet
+([schema](https://openlineage.io/spec/facets/1-0-0/FabricOneLakeDatasetFacet.json)). It describes where the table is
+in OneLake, so you can link it to the warehouse that holds it, whichever name a job used for the table. Every field is
+optional; producers set only what they know without calling Fabric. For warehouse tables, Spark sets:
+
+| Field           | Value                                                                                                   |
+|:----------------|:--------------------------------------------------------------------------------------------------------|
+| `itemType`      | `Warehouse`                                                                                             |
+| `itemName`      | the warehouse, the first part of the table's name                                                       |
+| `workspaceId`   | the workspace ID, read from the SQL address                                                             |
+| `workspaceName` | the workspace's name, from Fabric's `trident.workspace.name`, only for the workspace the notebook runs in |
+| `itemId`        | the warehouse ID, only when the `LOCATION` symlink is reported (see above)                              |
+| `location`      | the same OneLake location as the `LOCATION` symlink, as a single path                                   |
+
+For the read above, the facet is:
+
+```json
+"fabric_onelake": {
+  "location": "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/raw/orders",
+  "workspaceId": "d1f6473b-9f7a-4352-940b-a8d74461d3fc",
+  "workspaceName": "sales-analytics",
+  "itemId": "d75873bd-716b-4378-a37e-864c76fc9b3b",
+  "itemName": "wh_primary",
+  "itemType": "Warehouse"
+}
+```
+
+Everything comes from the table itself, not from the notebook's own workspace, because a notebook can read and write
+warehouses in other workspaces. The workspace is always the one in the table's SQL address. For a write without
+`WorkspaceId`, that address is built from the notebook's workspace (see above), so set `WorkspaceId` when you write to
+another workspace. Outside Fabric, for example when you read a warehouse over JDBC from your own Spark cluster, the
+facet has the same fields except `workspaceName`.
+
+To leave the facet out, add it to the disabled facets: `spark.openlineage.facets.fabric_onelake.disabled=true`.
