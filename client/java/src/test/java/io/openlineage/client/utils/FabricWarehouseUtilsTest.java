@@ -7,6 +7,7 @@ package io.openlineage.client.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -118,9 +119,10 @@ class FabricWarehouseUtilsTest {
 
   @Test
   void testWithOneLakeLocationFromWorkspaceOption() {
+    // the workspace can't be read from this address, so the WorkspaceId option is used
     DatasetIdentifier identifier =
         FabricWarehouseUtils.withOneLakeLocation(
-            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://example.com"),
             Optional.of("wh_primary"),
             Optional.of(WORKSPACE_2.toString()),
             Optional.of(WAREHOUSE.toString()));
@@ -148,6 +150,34 @@ class FabricWarehouseUtilsTest {
   }
 
   @Test
+  void testWithOneLakeLocationWhenWorkspaceOptionMatchesEndpoint() {
+    DatasetIdentifier identifier =
+        FabricWarehouseUtils.withOneLakeLocation(
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
+            Optional.of(WORKSPACE.toString().toUpperCase(Locale.ROOT)),
+            Optional.of(WAREHOUSE.toString()));
+
+    assertThat(identifier.getSymlinks())
+        .extracting(DatasetIdentifier.Symlink::getNamespace)
+        .containsExactly("abfss://" + WORKSPACE + "@onelake.dfs.fabric.microsoft.com");
+  }
+
+  @Test
+  void testWithOneLakeLocationSkippedWhenWorkspaceOptionDisagreesWithEndpoint() {
+    // the address is what was queried; a warehouse ID given next to another workspace's ID may
+    // not belong to the address's workspace
+    DatasetIdentifier identifier =
+        FabricWarehouseUtils.withOneLakeLocation(
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
+            Optional.of(WORKSPACE_2.toString()),
+            Optional.of(WAREHOUSE.toString()));
+
+    assertThat(identifier.getSymlinks()).isEmpty();
+  }
+
+  @Test
   void testWithOneLakeLocationSkippedWhenUnsafe() {
     String namespace = "fabric-warehouse://" + ENDPOINT;
     Optional<String> warehouse = Optional.of(WAREHOUSE.toString());
@@ -161,7 +191,7 @@ class FabricWarehouseUtilsTest {
                     Optional.empty())
                 .getSymlinks())
         .isEmpty();
-    // a name instead of an ID would give a path that mixes IDs and names, which OneLake refuses
+    // a WorkspaceId option that isn't an ID doesn't match the address's workspace
     assertThat(
             FabricWarehouseUtils.withOneLakeLocation(
                     new DatasetIdentifier("wh_primary.raw.orders", namespace),
@@ -265,14 +295,14 @@ class FabricWarehouseUtilsTest {
 
   @Test
   void testToOneLakeLocationIgnoresLocationInAnotherWorkspace() {
-    // the WorkspaceId option names another workspace than the address; the address wins, and the
-    // location, which belongs to the other workspace, isn't used
+    // a location in another workspace than the address's, as another producer might add; the
+    // address wins, and the location isn't used
     DatasetIdentifier identifier =
-        FabricWarehouseUtils.withOneLakeLocation(
-            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
-            Optional.of("wh_primary"),
-            Optional.of(WORKSPACE_2.toString()),
-            Optional.of(WAREHOUSE.toString()));
+        new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT)
+            .withSymlink(
+                WAREHOUSE + "/Tables/raw/orders",
+                "abfss://" + WORKSPACE_2 + "@onelake.dfs.fabric.microsoft.com",
+                DatasetIdentifier.SymlinkType.LOCATION);
 
     OneLakeLocation location = FabricWarehouseUtils.toOneLakeLocation(identifier).get();
 

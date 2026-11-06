@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * How OpenLineage names tables in Microsoft Fabric warehouses.
@@ -26,6 +27,7 @@ import java.util.regex.Pattern;
  * uses. All of it is kept in this class, and the tests check it against addresses taken from real
  * workspaces, so a change on Microsoft's side only needs fixing here.
  */
+@Slf4j
 public final class FabricWarehouseUtils {
   public static final String SCHEME = "fabric-warehouse";
   public static final String ENDPOINT_SUFFIX = ".datawarehouse.fabric.microsoft.com";
@@ -165,13 +167,19 @@ public final class FabricWarehouseUtils {
    * read tables from several warehouses in the same workspace. So the location is only added to
    * tables in the warehouse the ID was given for; other tables would get a wrong path.
    *
+   * <p>The workspace is the one in the SQL address, because that is what was queried. If the {@code
+   * WorkspaceId} option names another workspace, or isn't a valid ID, the IDs can't be trusted to
+   * belong together and no location is added. The option is only used when the workspace can't be
+   * read from the address. When the address is built from the tenant and the {@code WorkspaceId}
+   * option, as for {@code synapsesql} writes, the two always agree.
+   *
    * <p>If anything is missing, the table is in another warehouse, or an ID isn't valid, the dataset
    * is returned as it was.
    *
    * @param identifier a {@code fabric-warehouse} dataset named {@code <warehouse>.<schema>.<table>}
    * @param idWarehouse name of the warehouse that {@code warehouseIdOption} belongs to
-   * @param workspaceIdOption the {@code WorkspaceId} option; if not set, the workspace ID is read
-   *     from the address
+   * @param workspaceIdOption the {@code WorkspaceId} option; used only if the address doesn't give
+   *     the workspace, and must match it if it does
    * @param warehouseIdOption the {@code DatawarehouseId} option
    * @return the same dataset, with the location added when possible
    */
@@ -187,11 +195,22 @@ public final class FabricWarehouseUtils {
         || !idWarehouse.filter(parts[0]::equalsIgnoreCase).isPresent()) {
       return identifier;
     }
-    Optional<UUID> warehouseId = warehouseIdOption.flatMap(FabricWarehouseUtils::parseGuid);
+    Optional<UUID> warehouseId = warehouseIdOption.flatMap(OneLakeLocation::guid);
+    Optional<UUID> endpointWorkspace =
+        workspaceIdOf(identifier.getNamespace().substring(prefix.length()));
+    Optional<UUID> optionWorkspace = workspaceIdOption.flatMap(OneLakeLocation::guid);
+    if (endpointWorkspace.isPresent()
+        && workspaceIdOption.isPresent()
+        && !endpointWorkspace.equals(optionWorkspace)) {
+      log.debug(
+          "The WorkspaceId option {} doesn't match the workspace of {}; not adding a OneLake"
+              + " location",
+          workspaceIdOption.get(),
+          identifier.getNamespace());
+      return identifier;
+    }
     Optional<UUID> workspaceId =
-        workspaceIdOption.isPresent()
-            ? workspaceIdOption.flatMap(FabricWarehouseUtils::parseGuid)
-            : workspaceIdOf(identifier.getNamespace().substring(prefix.length()));
+        endpointWorkspace.isPresent() ? endpointWorkspace : optionWorkspace;
     if (!warehouseId.isPresent() || !workspaceId.isPresent()) {
       return identifier;
     }

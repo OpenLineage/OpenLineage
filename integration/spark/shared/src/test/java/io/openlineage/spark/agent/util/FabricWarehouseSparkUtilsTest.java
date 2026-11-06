@@ -41,8 +41,14 @@ class FabricWarehouseSparkUtilsTest {
     conf.put("trident.tenant.id", TENANT);
     Map<String, String> options = options(TABLE);
     options.put("WorkspaceId", WORKSPACE_2);
+    options.put("DatawarehouseId", WAREHOUSE_ID);
 
-    assertThat(identifier(options).getNamespace()).isEqualTo("fabric-warehouse://" + ENDPOINT);
+    DatasetIdentifier identifier = identifier(options);
+
+    assertThat(identifier.getNamespace()).isEqualTo("fabric-warehouse://" + ENDPOINT);
+    // the address set by the user is in another workspace than the WorkspaceId option, so the
+    // warehouse ID can't be placed in it
+    assertThat(identifier.getSymlinks()).isEmpty();
   }
 
   @Test
@@ -53,11 +59,16 @@ class FabricWarehouseSparkUtilsTest {
     conf.put("trident.workspace.id", WORKSPACE);
     Map<String, String> options = options(TABLE);
     options.put("WorkspaceId", WORKSPACE_2);
+    options.put("DatawarehouseId", WAREHOUSE_ID);
 
     DatasetIdentifier identifier = identifier(options);
 
     assertThat(identifier.getNamespace()).isEqualTo("fabric-warehouse://" + ENDPOINT_2);
     assertThat(identifier.getName()).isEqualTo(TABLE);
+    // the address is built from the WorkspaceId option, so the two always agree
+    assertThat(identifier.getSymlinks())
+        .extracting(DatasetIdentifier.Symlink::getNamespace)
+        .containsExactly("abfss://" + WORKSPACE_2 + "@onelake.dfs.fabric.microsoft.com");
   }
 
   @Test
