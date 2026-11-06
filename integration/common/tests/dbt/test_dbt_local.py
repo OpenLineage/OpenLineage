@@ -3,6 +3,7 @@
 
 import json
 import os
+import shutil
 import textwrap
 from enum import Enum
 from pathlib import Path
@@ -603,3 +604,42 @@ class TestDbtMetadataExceptions:
         processor.load_metadata["args"]["profiles_dir"] = "./non_existent_dir/dbt/test"
         processor.get_dbt_metadata = self.simple_get_dbt_metadata(processor)
         assert processor.get_dbt_metadata is FileNotFoundError
+
+
+class TestProfileDirectoryFallback:
+    @staticmethod
+    def processor(tmp_path, profiles_dir):
+        project_dir = tmp_path / "test"
+        shutil.copytree(CURRENT_DIR + "/test", project_dir)
+        run_results_path = project_dir / "target" / "run_results.json"
+        run_results = json.loads(run_results_path.read_text())
+        if profiles_dir is None:
+            run_results["args"].pop("profiles_dir")
+        else:
+            run_results["args"]["profiles_dir"] = profiles_dir
+        run_results_path.write_text(json.dumps(run_results))
+        processor = DbtLocalArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage",
+            job_namespace="dbt",
+            project_dir=str(project_dir),
+            dbt_command_line=["dbt", "run", "--profiles-dir", str(project_dir)],
+        )
+        processor.logger = mock.Mock()
+        return processor
+
+    def test_missing_profiles_dir_falls_back_quietly(self, tmp_path):
+        """dbt Fusion (dbt v2) writes no args.profiles_dir to run_results.json."""
+        processor = self.processor(tmp_path, profiles_dir=None)
+
+        _, _, profile, _ = processor.get_dbt_metadata()
+
+        assert profile
+        processor.logger.warning.assert_not_called()
+
+    def test_unreadable_profiles_dir_still_warns(self, tmp_path):
+        processor = self.processor(tmp_path, profiles_dir=str(tmp_path / "missing"))
+
+        _, _, profile, _ = processor.get_dbt_metadata()
+
+        assert profile
+        processor.logger.warning.assert_called_once()
