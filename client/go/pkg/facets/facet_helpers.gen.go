@@ -51,6 +51,7 @@ type JobFacets struct {
 	JobTypeJobFacet            *JobTypeJobFacet            `json:"jobType,omitempty"`
 	LineageJobFacet            *LineageJobFacet            `json:"lineage,omitempty"`
 	OwnershipJobFacet          *OwnershipJobFacet          `json:"ownership,omitempty"`
+	ParentJobFacet             *ParentJobFacet             `json:"parent,omitempty"`
 	SQLJobFacet                *SQLJobFacet                `json:"sql,omitempty"`
 	SourceCodeJobFacet         *SourceCodeJobFacet         `json:"sourceCode,omitempty"`
 	SourceCodeLocationJobFacet *SourceCodeLocationJobFacet `json:"sourceCodeLocation,omitempty"`
@@ -1082,6 +1083,42 @@ func (f *OwnershipJobFacet) WithDeleted(deleted bool) *OwnershipJobFacet {
 // WithOwners sets the Owners field on this OwnershipJobFacet.
 func (f *OwnershipJobFacet) WithOwners(owners []OwnershipJobFacetOwner) *OwnershipJobFacet {
 	f.Owners = owners
+
+	return f
+}
+
+var _ JobFacet = (*ParentJobFacet)(nil)
+
+// Apply sets this ParentJobFacet facet in the JobFacets container.
+func (f *ParentJobFacet) Apply(facets **JobFacets) {
+	if *facets == nil {
+		*facets = &JobFacets{}
+	}
+	(*facets).ParentJobFacet = f
+}
+
+// NewParentJobFacet creates a new ParentJobFacet facet.
+func NewParentJobFacet(
+	producer string,
+	job ParentJobFacetJob,
+) *ParentJobFacet {
+	return &ParentJobFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/ParentJobFacet.json",
+		Job:       job,
+	}
+}
+
+// WithDeleted sets the Deleted field on this ParentJobFacet.
+func (f *ParentJobFacet) WithDeleted(deleted bool) *ParentJobFacet {
+	f.Deleted = &deleted
+
+	return f
+}
+
+// WithRoot sets the Root field on this ParentJobFacet.
+func (f *ParentJobFacet) WithRoot(root *ParentJobFacetRoot) *ParentJobFacet {
+	f.Root = root
 
 	return f
 }
