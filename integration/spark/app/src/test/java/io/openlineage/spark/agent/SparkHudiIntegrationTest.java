@@ -48,8 +48,6 @@ import org.mockserver.integration.ClientAndServer;
 @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
 class SparkHudiIntegrationTest {
   private static final int MOCK_SERVER_PORT = 1090;
-  private static final String SPARK_3_4_OR_ABOVE = "^3\\.[4-9]\\.\\d+.*|^[4-9].*";
-  private static final String SPARK_3_1_TO_3_3 = "^3\\.[1-3]\\.\\d+.*";
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
@@ -104,25 +102,16 @@ class SparkHudiIntegrationTest {
             .config(
                 "spark.openlineage.transport.transports.http.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
-            .config("spark.extraListeners", OpenLineageSparkListener.class.getName());
-
-    if (requiresLegacyHudiInitialization()) {
-      sparkSessionBuilder
-          .config("spark.sql.extensions", "org.apache.spark.sql.hudi.HoodieSparkSessionExtension")
-          .config(
-              "spark.sql.catalog.spark_catalog", "org.apache.spark.sql.hudi.catalog.HoodieCatalog");
-    }
+            .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
+            .config("spark.sql.extensions", "org.apache.spark.sql.hudi.HoodieSparkSessionExtension")
+            .config(
+                "spark.sql.catalog.spark_catalog",
+                "org.apache.spark.sql.hudi.catalog.HoodieCatalog");
 
     spark = sparkSessionBuilder.getOrCreate();
   }
 
-  private boolean requiresLegacyHudiInitialization() {
-    String sparkVersion = System.getProperty(SPARK_VERSION, "");
-    return sparkVersion.matches("^3\\.[1-3]\\.\\d+.*");
-  }
-
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_4_OR_ABOVE)
   void testHudiCopyOnWriteCapturesOutputDataset() {
     String outputPath = HUDI_BASE_PATH + "/cow_target";
     writeHudi("COPY_ON_WRITE", outputPath);
@@ -130,10 +119,10 @@ class SparkHudiIntegrationTest {
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
     assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    assertHudiOutputDatasetType(outputPath, "COPY_ON_WRITE");
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_4_OR_ABOVE)
   void testHudiMergeOnReadCapturesOutputDataset() {
     String outputPath = HUDI_BASE_PATH + "/mor_target";
     writeHudi("MERGE_ON_READ", outputPath);
@@ -141,10 +130,10 @@ class SparkHudiIntegrationTest {
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
     assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+    assertHudiOutputDatasetType(outputPath, "MERGE_ON_READ");
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_4_OR_ABOVE)
   void testHudiReadTransformAndWriteAgainCapturesOutputDataset() {
     String sourcePath = HUDI_BASE_PATH + "/roundtrip_source";
     String targetPath = HUDI_BASE_PATH + "/roundtrip_target";
@@ -168,7 +157,6 @@ class SparkHudiIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_4_OR_ABOVE)
   void testHudiMergeOnReadReadTransformAndWriteAgainCapturesOutputDataset() {
     String sourcePath = HUDI_BASE_PATH + "/mor_roundtrip_source";
     String targetPath = HUDI_BASE_PATH + "/mor_roundtrip_target";
@@ -192,7 +180,6 @@ class SparkHudiIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_4_OR_ABOVE)
   void testHudiMergeOnReadIncrementalReadTransformAndWriteAgainCapturesOutputDataset() {
     String sourcePath = HUDI_BASE_PATH + "/mor_incremental_source";
     String targetPath = HUDI_BASE_PATH + "/mor_incremental_target";
@@ -218,29 +205,29 @@ class SparkHudiIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_1_TO_3_3)
-  void testLegacyHudiSqlCopyOnWriteTableCapturesOutputDataset() {
-    String outputPath = HUDI_BASE_PATH + "/legacy_cow_target";
-    String tableName = "default.hudi_legacy_cow_target";
+  void testHudiSqlCopyOnWriteTableCapturesOutputDataset() {
+    String outputPath = HUDI_BASE_PATH + "/sql_cow_target";
+    String tableName = "default.hudi_sql_cow_target";
 
-    writeLegacyHudiTable("COPY_ON_WRITE", outputPath, tableName);
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertThat(completeEvent.getJob().getName()).endsWith(".hudi_sql_cow_target");
     assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
     assertOverwriteLifecycleStateChange(outputPath);
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_1_TO_3_3)
-  void testLegacyHudiSqlMergeOnReadTableCapturesOutputDataset() {
-    String outputPath = HUDI_BASE_PATH + "/legacy_mor_target";
-    String tableName = "default.hudi_legacy_mor_target";
+  void testHudiSqlMergeOnReadTableCapturesOutputDataset() {
+    String outputPath = HUDI_BASE_PATH + "/sql_mor_target";
+    String tableName = "default.hudi_sql_mor_target";
 
-    writeLegacyHudiTable("MERGE_ON_READ", outputPath, tableName);
+    writeHudiSqlTable("MERGE_ON_READ", outputPath, tableName);
 
     RunEvent completeEvent = getLatestSaveCompleteEvent();
     assertThat(completeEvent.getOutputs()).isNotEmpty();
+    assertThat(completeEvent.getJob().getName()).endsWith(".hudi_sql_mor_target");
     assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
     assertOverwriteLifecycleStateChange(outputPath);
   }
@@ -267,6 +254,19 @@ class SparkHudiIntegrationTest {
                 .map(LifecycleStateChangeDatasetFacet::getLifecycleStateChange))
         .as("lifecycle state change of output %s", outputPath)
         .contains(LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+  }
+
+  private void assertHudiOutputDatasetType(String outputPath, String hudiTableType) {
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .filter(e -> e.getOutputs() != null)
+                .flatMap(e -> e.getOutputs().stream())
+                .filter(d -> outputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getDatasetType())
+                .filter(Objects::nonNull)
+                .map(DatasetTypeDatasetFacet::getSubType))
+        .as("Hudi table type of output %s", outputPath)
+        .contains(hudiTableType);
   }
 
   private void assertHudiInputDatasetType(String inputPath, String hudiTableType) {
@@ -360,10 +360,10 @@ class SparkHudiIntegrationTest {
         .save(outputPath);
   }
 
-  private void writeLegacyHudiTable(String tableType, String outputPath, String tableName) {
+  private void writeHudiSqlTable(String tableType, String outputPath, String tableName) {
     String hudiTableType = "MERGE_ON_READ".equals(tableType) ? "mor" : "cow";
     writeInputParquet();
-    spark.read().parquet(INPUT_PATH).createOrReplaceTempView("legacy_hudi_input");
+    spark.read().parquet(INPUT_PATH).createOrReplaceTempView("hudi_sql_input");
 
     spark.sql("DROP TABLE IF EXISTS " + tableName);
     spark.sql(
@@ -378,7 +378,7 @@ class SparkHudiIntegrationTest {
     spark.sql(
         String.format(
             Locale.ROOT,
-            "INSERT OVERWRITE TABLE %s SELECT id as entity_id, name, ts FROM legacy_hudi_input",
+            "INSERT OVERWRITE TABLE %s SELECT id as entity_id, name, ts FROM hudi_sql_input",
             tableName));
   }
 
