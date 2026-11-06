@@ -68,9 +68,10 @@ class ApiKeyTokenProvider(TokenProvider):
 class TokenEndpointTokenProvider(TokenProvider):
     """Base class for TokenProviders that obtain a short-lived bearer token from a token endpoint.
 
-    The token is cached and fetched again ``tokenRefreshBuffer`` seconds before it expires. Subclasses
-    provide the token request form data via ``_get_token_request_data`` and, optionally, an Authorization
-    header via ``_get_token_request_authorization``.
+    The token is cached and fetched again ``tokenRefreshBuffer`` seconds before it expires.
+    A zero buffer disables early refresh. Subclasses provide the token request form data via
+    ``_get_token_request_data`` and, optionally, an Authorization header via
+    ``_get_token_request_authorization``.
 
     Common configuration options:
         {
@@ -106,8 +107,8 @@ class TokenEndpointTokenProvider(TokenProvider):
         self.expires_in_field = config.get("expiresInField") or config.get("expires_in_field") or "expires_in"
 
         # Token refresh buffer (seconds before expiry to refresh)
-        token_refresh_buffer = config.get("tokenRefreshBuffer") or config.get("token_refresh_buffer")
-        if token_refresh_buffer:
+        token_refresh_buffer = first_config_value(config, "tokenRefreshBuffer", "token_refresh_buffer")
+        if token_refresh_buffer is not None:
             self.token_refresh_buffer = int(token_refresh_buffer)
         else:
             self.token_refresh_buffer = self.TOKEN_REFRESH_BUFFER_SECONDS
