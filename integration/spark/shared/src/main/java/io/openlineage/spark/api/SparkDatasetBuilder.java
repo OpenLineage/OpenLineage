@@ -17,8 +17,8 @@ import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
+import io.openlineage.spark.agent.util.DatasetIdentityFacetUtils;
 import io.openlineage.spark.agent.util.DatasetVersionUtils;
-import io.openlineage.spark.agent.util.OneLakeFacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
@@ -217,16 +217,16 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   }
 
   /**
-   * Adds the facets that follow from the dataset's identity, such as {@code fabric_onelake} for
-   * datasets stored in Microsoft Fabric's OneLake. Subclasses call this when building the dataset,
-   * so it uses the final name, namespace and symlinks.
+   * Adds the facets that follow from the dataset's identity (see {@link
+   * DatasetIdentityFacetUtils}). Subclasses call this when building the dataset, so it uses the
+   * final name, namespace and symlinks.
    */
   protected void addIdentityFacets() {
     if (name == null || namespace == null) {
       return;
     }
-    OneLakeFacetUtils.facetFor(context, new DatasetIdentifier(name, namespace, identifierSymlinks))
-        .ifPresent(facet -> inner.getFacets().fabric_onelake(facet));
+    DatasetIdentityFacetUtils.buildIdentityFacets(
+        context, inner, new DatasetIdentifier(name, namespace, identifierSymlinks));
   }
 
   public abstract T build();
