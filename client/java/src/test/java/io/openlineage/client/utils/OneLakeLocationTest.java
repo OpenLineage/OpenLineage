@@ -160,6 +160,55 @@ class OneLakeLocationTest {
   }
 
   @Test
+  void testToFacetLowercasesTableId() {
+    OpenLineage.OneLakeDatasetFacet facet =
+        OneLakeLocation.parse(GUID_PATH).get().toBuilder()
+            .tableId("6D3A2BC0-7F1E-4F4B-9A39-2C4E8F1D2B7A")
+            .build()
+            .toFacet(new OpenLineage(URI.create("https://producer")));
+
+    assertThat(facet.getTableId()).isEqualTo("6d3a2bc0-7f1e-4f4b-9a39-2c4e8f1d2b7a");
+  }
+
+  @Test
+  void testItemRootHasNoLocation() {
+    // known workspace and item, but no table or file under the item
+    OneLakeLocation location =
+        OneLakeLocation.builder()
+            .workspaceId(WORKSPACE)
+            .itemId(LAKEHOUSE)
+            .workspaceName("do-test-env-fabric")
+            .itemName("lh_shopist")
+            .itemType(OneLakeLocation.LAKEHOUSE)
+            .build();
+
+    assertThat(location.guidIdentifier()).isEmpty();
+    assertThat(location.canonicalIdentifier()).isEmpty();
+    OpenLineage.OneLakeDatasetFacet facet =
+        location.toFacet(new OpenLineage(URI.create("https://producer")));
+    assertThat(facet.getWorkspaceId()).isEqualTo(WORKSPACE.toString());
+    assertThat(facet.getItemId()).isEqualTo(LAKEHOUSE.toString());
+    assertThat(facet.getLocation()).isNull();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        NAMESPACE + "/c7a14054-60a7-4121-8fb7-252d16f687eb",
+        NAMESPACE + "/c7a14054-60a7-4121-8fb7-252d16f687eb/",
+        "abfss://do-test-env-fabric@onelake.dfs.fabric.microsoft.com/lh_shopist.Lakehouse"
+      })
+  void testParsedItemRootHasNoLocation(String path) {
+    OneLakeLocation location = OneLakeLocation.parse(path).get();
+
+    assertThat(location.getPath()).isEmpty();
+    assertThat(location.guidIdentifier()).isEmpty();
+    assertThat(location.canonicalIdentifier()).isEmpty();
+    assertThat(location.toFacet(new OpenLineage(URI.create("https://producer"))).getLocation())
+        .isNull();
+  }
+
+  @Test
   void testGuid() {
     assertThat(OneLakeLocation.guid(" C7A14054-60A7-4121-8FB7-252D16F687EB ")).contains(LAKEHOUSE);
     assertThat(OneLakeLocation.guid("lh_shopist")).isEmpty();
