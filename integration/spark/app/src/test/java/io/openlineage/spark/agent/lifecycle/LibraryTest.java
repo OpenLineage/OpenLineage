@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.BeanUtils;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -177,6 +178,51 @@ class LibraryTest {
     assertThat(applicationComplete.getEventType()).isEqualTo(EventType.COMPLETE);
 
     verifySerialization(events);
+  }
+
+  /**
+   * {@code saveAsNewAPIHadoopFile} uses the new {@code mapreduce} API, so the result stage captures
+   * a {@code HadoopMapReduceWriteConfigUtil} holding a {@code SerializableConfiguration} rather
+   * than a {@code SerializableJobConf}. The output path must still be found and no event lost.
+   */
+  @Test
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+  void testRddWithNewHadoopApi(@TempDir Path tmpDir, SparkSession spark) {
+    URL url = Resources.getResource("test_data/data.txt");
+    JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
+    JavaRDD<String> textFile = sc.textFile(url.getPath());
+
+    textFile
+        .flatMap(s -> Arrays.asList(s.split(" ")).iterator())
+        .mapToPair(word -> new Tuple2<>(word, 1))
+        .reduceByKey(Integer::sum)
+        .saveAsNewAPIHadoopFile(
+            tmpDir.toString() + "/output", String.class, Integer.class, TextOutputFormat.class);
+
+    sc.stop();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    Mockito.verify(EVENT_EMITTER, times(4)).emit(lineageEvent.capture());
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+
+    RunEvent jobStart = events.get(1);
+    assertThat(jobStart.getEventType()).isEqualTo(EventType.START);
+    assertThat(jobStart.getJob().getFacets().getJobType())
+        .hasFieldOrPropertyWithValue("jobType", "RDD_JOB");
+    assertThat(jobStart.getInputs())
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue("namespace", "file");
+    assertThat(jobStart.getInputs().get(0).getName()).endsWith("test_data");
+
+    RunEvent jobComplete = events.get(2);
+    assertThat(jobComplete.getEventType()).isEqualTo(EventType.COMPLETE);
+    assertThat(jobComplete.getOutputs())
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue("namespace", "file");
+    assertThat(jobComplete.getOutputs().get(0).getName()).endsWith("output");
   }
 
   Map<String, Object> stripSchemaURL(Map<String, Object> map) {
