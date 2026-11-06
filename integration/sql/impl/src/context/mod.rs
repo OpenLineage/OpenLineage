@@ -8,10 +8,128 @@ use std::collections::{HashMap, HashSet};
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
-use sqlparser::ast::Ident;
-use sqlparser::dialect::SnowflakeDialect;
+use sqlparser::ast::{
+    ExcludeSelectItem, Ident, ObjectName, RenameSelectItem, WildcardAdditionalOptions,
+};
+use sqlparser::dialect::{
+    BigQueryDialect, Dialect, PostgreSqlDialect, RedshiftSqlDialect, SnowflakeDialect,
+};
 
 type ColumnAncestors = HashSet<ColumnMeta>;
+
+/// The (source, alias) identifier pairs of a wildcard RENAME modifier.
+fn rename_pairs(options: &WildcardAdditionalOptions) -> Vec<(&Ident, &Ident)> {
+    options
+        .opt_rename
+        .iter()
+        .flat_map(|rename| match rename {
+            RenameSelectItem::Single(item) => vec![item],
+            RenameSelectItem::Multiple(items) => items.iter().collect(),
+        })
+        .map(|item| (&item.ident, &item.alias))
+        .collect()
+}
+
+/// Whether a wildcard modifier's identifier refers to a column of the given
+/// name. A quoted identifier must match exactly; an unquoted one folds -
+/// Snowflake folds unquoted identifiers to upper case, Postgres to lower
+/// case - so it is compared without regard to case.
+fn ident_matches_column(ident: &Ident, column_name: &str) -> bool {
+    ident.value == column_name
+        || (ident.quote_style.is_none() && ident.value.eq_ignore_ascii_case(column_name))
+}
+
+/// The stored form of an identifier under the active dialect: a quoted
+/// identifier is stored exactly as written, while an unquoted one is
+/// folded - to lower case by Postgres and Redshift, to upper case by
+/// Snowflake and the SQL standard. Redshift is the exception on the
+/// quoted side too: by default it folds even delimited identifiers to
+/// lower case (that is the behavior unless the session enables
+/// `enable_case_sensitive_identifier`, a setting the parser is not
+/// given), so every Redshift identifier canonicalizes to lower case.
+fn canonical_ident(value: &str, quoted: bool, dialect: &dyn Dialect) -> String {
+    if dialect.is::<RedshiftSqlDialect>() {
+        value.to_ascii_lowercase()
+    } else if quoted {
+        value.to_string()
+    } else if dialect.is::<PostgreSqlDialect>() {
+        value.to_ascii_lowercase()
+    } else {
+        value.to_ascii_uppercase()
+    }
+}
+
+/// Whether a wildcard qualifier names a frame origin. Both sides are
+/// identifiers, and the origin carries the quote style of the alias it
+/// was stamped from. Identifiers denote the same name when their stored
+/// forms agree, so each side is canonicalized with the dialect's folding
+/// for unquoted identifiers before comparing: the unquoted qualifier T
+/// names the quoted alias "t" in Postgres (both stored as t) but not in
+/// Snowflake (stored as T), and the quoted qualifier "t" names only the
+/// identifier t, never an unquoted alias the dialect folds elsewhere.
+///
+/// BigQuery never reaches the canonical comparison: GoogleSQL treats
+/// aliases within a query as case-insensitive, quoted or not, so the
+/// qualifier and the alias compare without regard to case. Only alias
+/// origins are matched here - physical table names are matched
+/// elsewhere, and BigQuery table names stay case-sensitive there.
+fn ident_matches_origin(qualifier: &Ident, origin: &DbTableMeta, dialect: &dyn Dialect) -> bool {
+    if dialect.is::<BigQueryDialect>() {
+        return qualifier.value.eq_ignore_ascii_case(&origin.name);
+    }
+    let origin_quoted = origin
+        .quote_style
+        .as_ref()
+        .and_then(|style| style.name)
+        .is_some();
+    canonical_ident(&qualifier.value, qualifier.quote_style.is_some(), dialect)
+        == canonical_ident(&origin.name, origin_quoted, dialect)
+}
+
+/// Case-insensitive SQL LIKE match, as used by the wildcard ILIKE modifier:
+/// `%` matches any run of characters, `_` exactly one character.
+fn ilike_matches(pattern: &str, value: &str) -> bool {
+    let pattern: Vec<char> = pattern.chars().collect();
+    let value: Vec<char> = value.chars().collect();
+    let (mut p, mut v) = (0, 0);
+    // Position just past the last `%` seen, and the value position it had
+    // consumed up to; on a mismatch, retry with the `%` eating one more char.
+    let (mut star_p, mut star_v) = (usize::MAX, 0);
+    while v < value.len() {
+        if p < pattern.len() && (pattern[p] == '_' || pattern[p].eq_ignore_ascii_case(&value[v])) {
+            p += 1;
+            v += 1;
+        } else if p < pattern.len() && pattern[p] == '%' {
+            star_p = p;
+            star_v = v;
+            p += 1;
+        } else if star_p != usize::MAX {
+            p = star_p + 1;
+            star_v += 1;
+            v = star_v;
+        } else {
+            return false;
+        }
+    }
+    while p < pattern.len() && pattern[p] == '%' {
+        p += 1;
+    }
+    p == pattern.len()
+}
+
+/// The output name of a column named by a wildcard REPLACE modifier. When
+/// the same wildcard also renames that column, the RENAME alias wins: it is
+/// the name the column has in the query result.
+pub(crate) fn wildcard_replacement_name(
+    options: &WildcardAdditionalOptions,
+    column_name: &Ident,
+) -> String {
+    rename_pairs(options)
+        .iter()
+        .find(|(from, _)| ident_matches_column(from, &column_name.value))
+        .map(|(_, alias)| alias.value.clone())
+        .unwrap_or_else(|| column_name.value.clone())
+}
 
 #[derive(Debug)]
 pub struct ContextFrame {
@@ -214,6 +332,91 @@ impl<'a> Context<'a> {
         entry
             .and_modify(|x| x.extend(ancestors.drain(..)))
             .or_insert(HashSet::from_iter(ancestors));
+    }
+
+    /// Registers column lineage for a wildcard projection (`*` or
+    /// `qualifier.*`) using the output columns the FROM frame already knows.
+    ///
+    /// Only derived tables contribute known output columns to the frame:
+    /// their select outputs are the frame's column_ancestry keys, stamped
+    /// with the derived table's alias as origin when one is present. Plain
+    /// tables carry no column information at this layer, so a wildcard over
+    /// them registers nothing.
+    ///
+    /// Wildcard modifiers are honored: ILIKE keeps only the columns whose
+    /// names match its pattern, EXCLUDE and EXCEPT drop columns, RENAME
+    /// renames the descendant, and columns named by REPLACE are skipped
+    /// here - the visitor attributes those to the replacement expression
+    /// instead.
+    pub fn add_wildcard_lineage(
+        &mut self,
+        tables_frame: &ContextFrame,
+        qualifier: Option<&ObjectName>,
+        options: &WildcardAdditionalOptions,
+    ) {
+        // The qualifier is kept as an identifier, not reduced to its
+        // value: whether it may fold against the origin's name depends on
+        // its quoting, exactly as for the wildcard modifiers below.
+        let last_part = |name: &ObjectName| name.0.last().and_then(|part| part.as_ident()).cloned();
+
+        let mut excluded: Vec<Ident> = Vec::new();
+        if let Some(exclude) = &options.opt_exclude {
+            let names = match exclude {
+                ExcludeSelectItem::Single(name) => vec![name],
+                ExcludeSelectItem::Multiple(names) => names.iter().collect(),
+            };
+            for name in names {
+                if let Some(ident) = name.0.last().and_then(|part| part.as_ident()) {
+                    excluded.push(ident.clone());
+                }
+            }
+        }
+        if let Some(except) = &options.opt_except {
+            excluded.push(except.first_element.clone());
+            excluded.extend(except.additional_elements.iter().cloned());
+        }
+
+        let replaced: Vec<&Ident> = options
+            .opt_replace
+            .iter()
+            .flat_map(|replace| replace.items.iter())
+            .map(|item| &item.column_name)
+            .collect();
+
+        let renames = rename_pairs(options);
+
+        let qualifier_ident = qualifier.and_then(last_part);
+
+        for col in tables_frame.column_ancestry.keys() {
+            if let Some(qualifier) = &qualifier_ident {
+                match &col.origin {
+                    Some(origin)
+                        if ident_matches_origin(qualifier, origin, self.dialect().as_base()) => {}
+
+                    _ => continue,
+                }
+            }
+            if let Some(ilike) = &options.opt_ilike {
+                if !ilike_matches(&ilike.pattern, &col.name) {
+                    continue;
+                }
+            }
+            if excluded
+                .iter()
+                .any(|ident| ident_matches_column(ident, &col.name))
+                || replaced
+                    .iter()
+                    .any(|ident| ident_matches_column(ident, &col.name))
+            {
+                continue;
+            }
+            let descendant = renames
+                .iter()
+                .find(|(from, _)| ident_matches_column(from, &col.name))
+                .map(|(_, alias)| alias.value.clone())
+                .unwrap_or_else(|| col.name.clone());
+            self.add_column_ancestors(ColumnMeta::new(descendant, None), vec![col.clone()]);
+        }
     }
 
     // --- Context Manipulators ---

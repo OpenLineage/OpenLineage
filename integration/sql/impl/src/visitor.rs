@@ -1,16 +1,19 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::Context;
+use crate::context::{wildcard_replacement_name, Context, ContextFrame};
 use crate::lineage::*;
+
+use std::collections::HashSet;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
     JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
-    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    SelectItem, SelectItemQualifiedWildcardKind, SetExpr, Statement, Subscript, Table,
+    TableAliasColumnDef, TableFactor, TableFunctionArgs, TableObject, UpdateTableFromKind, Use,
+    Value, ValueWithSpan, WildcardAdditionalOptions, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -121,9 +124,14 @@ impl Visit for TableFactor {
             } => {
                 context.push_frame();
                 subquery.visit(context)?;
-                let frame = context.pop_frame().unwrap();
+                let mut frame = context.pop_frame().unwrap();
 
                 if let Some(alias) = alias {
+                    // A column alias list (`AS d(x, y)`) renames the
+                    // subquery's output columns by position.
+                    if !alias.columns.is_empty() {
+                        apply_column_alias_list(&mut frame, subquery, &alias.columns);
+                    }
                     let table = DbTableMeta::new(
                         vec![alias.clone().name],
                         context.dialect(),
@@ -582,6 +590,26 @@ impl Visit for Join {
     }
 }
 
+/// Visits the expressions of a wildcard REPLACE modifier: each replaced
+/// column's lineage comes from its replacement expression, evaluated
+/// against the same FROM clause as the wildcard itself. When the wildcard
+/// also renames the replaced column, the descendant is registered under
+/// the renamed name.
+fn visit_wildcard_replacements(
+    context: &mut Context,
+    options: &WildcardAdditionalOptions,
+) -> Result<()> {
+    if let Some(replace) = &options.opt_replace {
+        for item in &replace.items {
+            let descendant = wildcard_replacement_name(options, &item.column_name);
+            context.set_column_context(Some(ColumnMeta::new(descendant, None)));
+            item.expr.visit(context)?;
+        }
+        context.set_column_context(None);
+    }
+    Ok(())
+}
+
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
         // If we're selecting from a single table, that table becomes the default
@@ -638,6 +666,17 @@ impl Visit for Select {
                 SelectItem::ExprWithAlias { expr, alias } => {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
                     expr.visit(context)?;
+                }
+                SelectItem::Wildcard(options) => {
+                    context.add_wildcard_lineage(&tables_frame, None, options);
+                    visit_wildcard_replacements(context, options)?;
+                }
+                SelectItem::QualifiedWildcard(
+                    SelectItemQualifiedWildcardKind::ObjectName(name),
+                    options,
+                ) => {
+                    context.add_wildcard_lineage(&tables_frame, Some(name), options);
+                    visit_wildcard_replacements(context, options)?;
                 }
                 _ => {}
             }
@@ -1036,6 +1075,88 @@ impl Visit for Table {
 }
 
 // --- Utils ---
+
+/// Renames a derived table's output columns according to a column alias
+/// list (`AS d(x, y)`), which binds by position: the first alias renames
+/// the subquery's first output column, and so on. Outputs that carry no
+/// lineage of their own - a constant, say - occupy a position without
+/// appearing in the frame, so positions are taken from the subquery's
+/// projection list rather than from the frame's keys.
+fn apply_column_alias_list(
+    frame: &mut ContextFrame,
+    subquery: &Query,
+    columns: &[TableAliasColumnDef],
+) {
+    let Some(names) = derived_output_names(subquery) else {
+        return;
+    };
+
+    let mut entries: Vec<_> = frame.column_ancestry.drain().collect();
+    let mut renamed: HashSet<usize> = HashSet::new();
+    for (position, alias) in columns.iter().enumerate() {
+        let Some(Some(output_name)) = names.get(position) else {
+            continue;
+        };
+        for (index, (column, _)) in entries.iter_mut().enumerate() {
+            if !renamed.contains(&index) && &column.name == output_name {
+                *column = ColumnMeta::new(alias.name.value.clone(), column.origin.clone());
+                renamed.insert(index);
+                break;
+            }
+        }
+    }
+    // A positional rename can land on a name another output column
+    // already carries; merge the ancestry sets then, as the insertion
+    // path in Context does, instead of letting one overwrite the other.
+    for (column, ancestors) in entries {
+        frame
+            .column_ancestry
+            .entry(column)
+            .or_default()
+            .extend(ancestors);
+    }
+}
+
+/// The output column names of a query in projection order, or None when
+/// they cannot be determined statically - a wildcard projection expands to
+/// an unknown number of columns, which breaks positional alignment. A
+/// single name is None when that projection's output name is not knowable
+/// here (a bare expression is registered under a generated name), but its
+/// position still counts.
+fn derived_output_names(query: &Query) -> Option<Vec<Option<String>>> {
+    fn select_names(select: &Select) -> Option<Vec<Option<String>>> {
+        let mut names = Vec::new();
+        for item in &select.projection {
+            match item {
+                SelectItem::ExprWithAlias { alias, .. } => names.push(Some(alias.value.clone())),
+                SelectItem::UnnamedExpr(Expr::Identifier(ident)) => {
+                    names.push(Some(ident.value.clone()))
+                }
+                SelectItem::UnnamedExpr(Expr::CompoundIdentifier(idents)) => {
+                    names.push(idents.last().map(|ident| ident.value.clone()))
+                }
+                SelectItem::UnnamedExpr(_) => names.push(None),
+                // A wildcard, or one expression aliased to several
+                // columns, expands to an unknown number of outputs.
+                SelectItem::Wildcard(_)
+                | SelectItem::QualifiedWildcard(..)
+                | SelectItem::ExprWithAliases { .. } => return None,
+            }
+        }
+        Some(names)
+    }
+
+    fn body_names(body: &SetExpr) -> Option<Vec<Option<String>>> {
+        match body {
+            SetExpr::Select(select) => select_names(select),
+            SetExpr::Query(query) => body_names(&query.body),
+            SetExpr::SetOperation { left, .. } => body_names(left),
+            _ => None,
+        }
+    }
+
+    body_names(&query.body)
+}
 
 fn get_table_name_from_table_factor(table: &TableFactor, context: &Context) -> Option<Vec<Ident>> {
     if let TableFactor::Table { name, args, .. } = table {
