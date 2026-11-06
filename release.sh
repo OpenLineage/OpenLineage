@@ -267,7 +267,7 @@ fi
 # the same version as what was expected the last time we released. E.g., if the next expected
 # release was a patch version, but a new minor version is being released, we need to update to the
 # actual release version prior to committing/tagging
-PYTHON_MODULES=(client/python/ integration/common/ integration/dbt/ integration/sql/iface-py/)
+PYTHON_MODULES=(client/python/ integration/common/ integration/dbt/ integration/sql/iface-py/ integration/prefect/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
   (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
 done
@@ -300,7 +300,7 @@ git commit --no-verify -sam "Prepare for release ${RELEASE_VERSION}" --signoff
 # (5) Pull latest tags, then prepare release tag
 git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
-# Required for go client so it can be imported with from github.com/OpenLineage/openlineage/client/go@v${RELEASE_VERSION}
+# Required for go client so it can be imported from github.com/OpenLineage/openlineage/client/go@v${RELEASE_VERSION}
 git tag -a "client/go/v${RELEASE_VERSION}" -m "openlineage go-style version client/go/v${RELEASE_VERSION}"
 
 
