@@ -4,7 +4,7 @@
 
 ### Added
 
-* **Spec: Add the `oneLake` dataset facet** [`#PR1`](https://github.com/OpenLineage/OpenLineage/pull/PR1) [@mobuchowski](https://github.com/mobuchowski)
+* **Spec: Add the `oneLake` dataset facet** [`#5139`](https://github.com/OpenLineage/OpenLineage/pull/5139) [@mobuchowski](https://github.com/mobuchowski)
   *A new dataset facet describes where a table is stored in OneLake, Microsoft Fabric's storage: the workspace and item (such as a lakehouse or a warehouse) that hold it, by ID and name, the item's type, the table's OneLake location written with IDs, and its Delta table ID. Spark adds it to Fabric warehouse tables. The Java, Python and Go clients include the new facet.*
 * **Spark: Report Microsoft Fabric warehouse tables read and written with `synapsesql`** [`#5132`](https://github.com/OpenLineage/OpenLineage/pull/5132) [@mobuchowski](https://github.com/mobuchowski)
   *Tables read or written with Microsoft's Spark connector for Fabric warehouses are named `fabric-warehouse://<workspace SQL address>` / `<warehouse>.<schema>.<table>`. Before, reads were named `sqlserver://` and writes were reported as the connector's temporary folder. Passing the `DatawarehouseId` option also reports the table's OneLake file location. Requires loading the `openlineage-spark` jar yourself; Fabric's bundled copy is unchanged.*
