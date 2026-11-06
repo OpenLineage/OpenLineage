@@ -36,7 +36,6 @@ import java.util.Properties;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;
 import org.apache.hudi.HoodieBaseRelation;
-import org.apache.hudi.common.table.HoodieTableMetaClient;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
@@ -295,7 +294,6 @@ class InputFieldsCollectorTest {
     LogicalRelation logicalRelation = mock(LogicalRelation.class);
     when(logicalRelation.catalogTable()).thenReturn(Option.empty());
     HoodieBaseRelation relation = mock(HoodieBaseRelation.class);
-    when(relation.metaClient()).thenReturn(mock(HoodieTableMetaClient.class));
     when(relation.basePath()).thenReturn(new Path("file:/tmp/hudi_mor"));
     when(logicalRelation.relation()).thenReturn(relation);
 
@@ -311,6 +309,43 @@ class InputFieldsCollectorTest {
     InputFieldsCollector.collect(context, plan);
     verify(builder, times(1))
         .addInput(exprId, new DatasetIdentifier("/tmp/hudi_mor", FILE), SOME_NAME);
+  }
+
+  @Test
+  void collectSkipsOnlyUnresolvableHudiBaseRelation() {
+    // neither basePath() nor metaClient() resolve
+    LogicalRelation hudiLogicalRelation = mock(LogicalRelation.class);
+    when(hudiLogicalRelation.catalogTable()).thenReturn(Option.empty());
+    when(hudiLogicalRelation.relation()).thenReturn(mock(HoodieBaseRelation.class));
+    when(hudiLogicalRelation.output())
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(attributeReference)));
+
+    LogicalRelation parquetLogicalRelation = mock(LogicalRelation.class);
+    when(parquetLogicalRelation.catalogTable()).thenReturn(Option.empty());
+    HadoopFsRelation parquetRelation = mock(HadoopFsRelation.class, RETURNS_DEEP_STUBS);
+    when(parquetLogicalRelation.relation()).thenReturn(parquetRelation);
+    when(parquetRelation.location().rootPaths())
+        .thenReturn(
+            ScalaConversionUtils.fromList(
+                Collections.singletonList(new Path("file:/tmp/parquet_input"))));
+    AttributeReference parquetAttribute = mock(AttributeReference.class);
+    ExprId parquetExprId = mock(ExprId.class);
+    when(parquetAttribute.exprId()).thenReturn(parquetExprId);
+    when(parquetAttribute.name()).thenReturn("parquet-name");
+    when(parquetLogicalRelation.output())
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(parquetAttribute)));
+
+    LogicalPlan join = mock(LogicalPlan.class);
+    when(join.children())
+        .thenReturn(
+            ScalaConversionUtils.fromList(
+                Arrays.asList(hudiLogicalRelation, parquetLogicalRelation)));
+
+    InputFieldsCollector.collect(context, join);
+
+    verify(builder, times(1))
+        .addInput(parquetExprId, new DatasetIdentifier("/tmp/parquet_input", FILE), "parquet-name");
+    verify(builder, never()).addInput(eq(exprId), any(), any());
   }
 
   @Test
