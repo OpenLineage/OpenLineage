@@ -190,10 +190,11 @@ public class OneLakeLocation {
    * The location written with IDs, as {@code abfss://<workspace
    * ID>@onelake.dfs.fabric.microsoft.com/<item ID>/...}, with lowercase IDs and no trailing slash.
    *
-   * @return the location, or empty if either ID isn't known
+   * @return the location, or empty if either ID isn't known or there's no path after the item, as
+   *     the item's root isn't a dataset
    */
   public Optional<DatasetIdentifier> guidIdentifier() {
-    if (workspaceId == null || itemId == null) {
+    if (workspaceId == null || itemId == null || path.isEmpty()) {
       return Optional.empty();
     }
     return Optional.of(identifier(workspaceId.toString(), itemId.toString()));
@@ -204,14 +205,15 @@ public class OneLakeLocation {
    * host is always {@code onelake.dfs.fabric.microsoft.com}, IDs are lowercase and item types use
    * Fabric's names.
    *
-   * @return the identifier, or empty if neither form can be written
+   * @return the identifier, or empty if neither form can be written or there's no path after the
+   *     item
    */
   public Optional<DatasetIdentifier> canonicalIdentifier() {
     Optional<DatasetIdentifier> byId = guidIdentifier();
     if (byId.isPresent()) {
       return byId;
     }
-    if (workspaceName == null || itemName == null || itemType == null) {
+    if (workspaceName == null || itemName == null || itemType == null || path.isEmpty()) {
       return Optional.empty();
     }
     return Optional.of(identifier(workspaceName, itemName + "." + itemType));
@@ -222,7 +224,10 @@ public class OneLakeLocation {
     return guidIdentifier().map(id -> id.getNamespace() + "/" + id.getName());
   }
 
-  /** Builds the {@code oneLake} facet from everything known. */
+  /**
+   * Builds the {@code oneLake} facet from everything known. The table ID is written in lowercase,
+   * as the spec requires.
+   */
   public OpenLineage.OneLakeDatasetFacet toFacet(OpenLineage openLineage) {
     return openLineage
         .newOneLakeDatasetFacetBuilder()
@@ -232,7 +237,7 @@ public class OneLakeLocation {
         .itemId(itemId == null ? null : itemId.toString())
         .itemName(itemName)
         .itemType(itemType)
-        .tableId(tableId)
+        .tableId(tableId == null ? null : tableId.toLowerCase(Locale.ROOT))
         .build();
   }
 
