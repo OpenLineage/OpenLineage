@@ -114,6 +114,20 @@ class SparkFabricWarehouseIntegrationTest {
                             .isEqualTo(WAREHOUSE_ID + "/Tables/probe_dw/a_write");
                         assertThat(symlink.getType()).isEqualTo("LOCATION");
                       });
+            });
+  }
+
+  @Test
+  void connectorWriteSetsOneLakeFacet() {
+    stagingWrite("a_write9d41", WORKSPACE, WAREHOUSE_ID);
+    spark.stop();
+
+    List<OutputDataset> outputs = outputs(getEventsEmitted(mockServer));
+
+    assertThat(outputs).isNotEmpty();
+    assertThat(outputs)
+        .allSatisfy(
+            output -> {
               OneLakeDatasetFacet oneLake = output.getFacets().getOneLake();
               assertThat(oneLake.getItemType()).isEqualTo("Warehouse");
               assertThat(oneLake.getItemName()).isEqualTo("wh_primary");
