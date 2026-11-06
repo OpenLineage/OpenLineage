@@ -28,7 +28,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
-import org.apache.spark.sql.types.StructType;
 import scala.Option;
 
 /**
@@ -39,7 +38,6 @@ import scala.Option;
 @Slf4j
 public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     extends io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder<D> {
-  private static final String HOODIE_FILE_INDEX_CLASS = "org.apache.hudi.HoodieFileIndex";
 
   public LogicalRelationDatasetBuilder(
       OpenLineageContext context, DatasetFactory datasetFactory, boolean searchDependencies) {
@@ -64,7 +62,8 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     Object relation = logRel.relation();
     boolean hudiBaseRelation = HudiUtils.isHudiBaseRelation(relation);
     boolean hudiFileIndex =
-        relation instanceof HadoopFsRelation && isHudiFileIndex((HadoopFsRelation) relation);
+        relation instanceof HadoopFsRelation
+            && HudiUtils.isHudiFileIndex(((HadoopFsRelation) relation).location());
     if (!hudiBaseRelation && !hudiFileIndex
         || context.getSparkExtensionVisitorWrapper().isDefinedAt(relation)) {
       return super.apply(event, logRel);
@@ -90,9 +89,9 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     Object metaClient =
         hudiBaseRelation
             ? HudiUtils.metaClient(relation)
-            : hudiMetaClient((HadoopFsRelation) relation);
+            : HudiUtils.metaClient(((HadoopFsRelation) relation).location());
     SparkDatasetBuilder<D> builder =
-        datasetFactory.sparkDatasetBuilder().datasetType("TABLE", hudiTableType(metaClient));
+        datasetFactory.sparkDatasetBuilder().datasetType("TABLE", HudiUtils.tableType(metaClient));
     if (hasCatalogTable(logRel)) {
       return handleCatalogTable(logRel, builder);
     }
@@ -100,7 +99,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       return Collections.singletonList(
           builder
               .dataset(HudiUtils.basePath(relation, metaClient))
-              .schema(hudiSchema(relation))
+              .schema(HudiUtils.schema(relation))
               .build());
     }
     return handleHadoopFsRelation(logRel, builder);
@@ -108,35 +107,6 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   private boolean hasCatalogTable(LogicalRelation logRel) {
     return logRel.catalogTable() != null && logRel.catalogTable().isDefined();
-  }
-
-  private boolean isHudiFileIndex(HadoopFsRelation relation) {
-    return HudiUtils.isInstanceOf(relation.location(), HOODIE_FILE_INDEX_CLASS);
-  }
-
-  private Object hudiMetaClient(HadoopFsRelation relation) {
-    try {
-      return MethodUtils.invokeMethod(relation.location(), "metaClient");
-    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw new IllegalStateException("Unable to resolve Hudi file index meta client", e);
-    }
-  }
-
-  private StructType hudiSchema(Object relation) {
-    try {
-      return (StructType) MethodUtils.invokeMethod(relation, "schema");
-    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw new IllegalStateException("Unable to resolve Hudi schema", e);
-    }
-  }
-
-  private String hudiTableType(Object metaClient) {
-    try {
-      Object tableType = MethodUtils.invokeMethod(metaClient, "getTableType");
-      return tableType.toString();
-    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw new IllegalStateException("Unable to resolve Hudi table type", e);
-    }
   }
 
   @Override

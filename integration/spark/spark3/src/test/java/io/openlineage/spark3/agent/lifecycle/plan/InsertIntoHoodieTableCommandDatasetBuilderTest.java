@@ -7,18 +7,25 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.OneRowRelation;
@@ -26,6 +33,8 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.hudi.command.InsertIntoHoodieTableCommand;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import scala.Option;
 import scala.PartialFunction;
 import scala.runtime.AbstractPartialFunction;
 
@@ -102,6 +111,9 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
                                 OPEN_LINEAGE
                                     .newDatasetFacetsBuilder()
                                     .schema(OPEN_LINEAGE.newSchemaDatasetFacetBuilder().build())
+                                    .datasetType(
+                                        OPEN_LINEAGE.newDatasetTypeDatasetFacet(
+                                            "TABLE", "COPY_ON_WRITE"))
                                     .build())
                             .build())));
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.emptyList());
@@ -113,8 +125,39 @@ class InsertIntoHoodieTableCommandDatasetBuilderTest {
     assertThat(output.getNamespace()).isEqualTo(NAMESPACE);
     assertThat(output.getName()).isEqualTo(TARGET_NAME);
     assertThat(output.getFacets().getSchema()).isNotNull();
+    assertThat(output.getFacets().getDatasetType().getSubType()).isEqualTo("COPY_ON_WRITE");
     assertThat(output.getFacets().getLifecycleStateChange().getLifecycleStateChange())
         .isEqualTo(LifecycleStateChange.OVERWRITE);
+  }
+
+  @Test
+  void testJobNameSuffixIsTargetTable() {
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    LogicalRelation target = mock(LogicalRelation.class);
+    when(target.catalogTable()).thenReturn(Option.apply(catalogTable));
+    InsertIntoHoodieTableCommand command = mock(InsertIntoHoodieTableCommand.class);
+    when(command.logicalRelation()).thenReturn(target);
+    SparkSession session = mock(SparkSession.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(session));
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+
+    try (MockedStatic<PathUtils> pathUtils = mockStatic(PathUtils.class)) {
+      pathUtils
+          .when(() -> PathUtils.fromCatalogTable(catalogTable, session))
+          .thenReturn(new DatasetIdentifier(TARGET_NAME, NAMESPACE));
+
+      assertThat(outputBuilder.jobNameSuffix(command)).hasValue("hudi_target");
+    }
+  }
+
+  @Test
+  void testJobNameSuffixIsEmptyWithoutCatalogTable() {
+    LogicalRelation target = mock(LogicalRelation.class);
+    when(target.catalogTable()).thenReturn(Option.empty());
+    InsertIntoHoodieTableCommand command = mock(InsertIntoHoodieTableCommand.class);
+    when(command.logicalRelation()).thenReturn(target);
+
+    assertThat(outputBuilder.jobNameSuffix(command)).isEmpty();
   }
 
   @Test

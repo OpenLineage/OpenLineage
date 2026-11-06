@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.types.StructType;
 
 /**
  * Reflection based helpers for Hudi relations. Hudi classes are not guaranteed to be present on the
@@ -20,6 +21,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 @Slf4j
 public class HudiUtils {
   private static final String HOODIE_BASE_RELATION_CLASS = "org.apache.hudi.HoodieBaseRelation";
+  private static final String HOODIE_FILE_INDEX_CLASS = "org.apache.hudi.HoodieFileIndex";
   private static final String INSERT_INTO_HOODIE_TABLE_COMMAND_CLASS =
       "org.apache.spark.sql.hudi.command.InsertIntoHoodieTableCommand";
 
@@ -28,6 +30,13 @@ public class HudiUtils {
   /** Checks whether the relation is a Hudi {@code HoodieBaseRelation} (e.g. MOR or incremental). */
   public static boolean isHudiBaseRelation(Object relation) {
     return isInstanceOf(relation, HOODIE_BASE_RELATION_CLASS);
+  }
+
+  /**
+   * Checks whether the file index of a {@code HadoopFsRelation} is Hudi's {@code HoodieFileIndex}.
+   */
+  public static boolean isHudiFileIndex(Object fileIndex) {
+    return isInstanceOf(fileIndex, HOODIE_FILE_INDEX_CLASS);
   }
 
   /**
@@ -77,18 +86,48 @@ public class HudiUtils {
     }
   }
 
-  /** Returns the meta client of a {@code HoodieBaseRelation}. */
-  public static Object metaClient(Object relation) {
+  /** Returns the meta client of a {@code HoodieBaseRelation} or a {@code HoodieFileIndex}. */
+  public static Object metaClient(Object relationOrFileIndex) {
     try {
-      return MethodUtils.invokeMethod(relation, "metaClient");
+      return MethodUtils.invokeMethod(relationOrFileIndex, "metaClient");
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       throw new IllegalStateException("Unable to resolve Hudi meta client", e);
     }
   }
 
-  /** Resolves the base path of a {@code HoodieBaseRelation}. */
-  public static URI basePath(Object relation) {
-    return basePath(relation, metaClient(relation));
+  /** Returns the schema of a {@code HoodieBaseRelation}. */
+  public static StructType schema(Object relation) {
+    try {
+      return (StructType) MethodUtils.invokeMethod(relation, "schema");
+    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+      throw new IllegalStateException("Unable to resolve Hudi schema", e);
+    }
+  }
+
+  /** Returns the table type ({@code COPY_ON_WRITE} or {@code MERGE_ON_READ}) of a meta client. */
+  public static String tableType(Object metaClient) {
+    try {
+      return MethodUtils.invokeMethod(metaClient, "getTableType").toString();
+    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+      throw new IllegalStateException("Unable to resolve Hudi table type", e);
+    }
+  }
+
+  /**
+   * Resolves the base path of a {@code HoodieBaseRelation}, or returns empty if it can't be
+   * resolved. The meta client is only used when the relation has no {@code basePath()} of its own.
+   */
+  public static Optional<URI> basePath(Object relation) {
+    Optional<URI> uri = pathUri(relation, "basePath");
+    if (uri.isPresent()) {
+      return uri;
+    }
+    try {
+      return metaClientBasePath(metaClient(relation));
+    } catch (RuntimeException e) {
+      log.debug("Unable to resolve Hudi base path", e);
+      return Optional.empty();
+    }
   }
 
   /**
@@ -99,15 +138,20 @@ public class HudiUtils {
   public static URI basePath(Object relation, Object metaClient) {
     Optional<URI> uri = pathUri(relation, "basePath");
     if (!uri.isPresent()) {
-      uri = pathUri(metaClient, "getBasePath");
-    }
-    if (!uri.isPresent()) {
-      uri = pathUri(metaClient, "getBasePathV2");
+      uri = metaClientBasePath(metaClient);
     }
     return uri.orElseThrow(() -> new IllegalStateException("Unable to resolve Hudi base path"));
   }
 
+  private static Optional<URI> metaClientBasePath(Object metaClient) {
+    Optional<URI> uri = pathUri(metaClient, "getBasePath");
+    return uri.isPresent() ? uri : pathUri(metaClient, "getBasePathV2");
+  }
+
   private static Optional<URI> pathUri(Object target, String method) {
+    if (target == null) {
+      return Optional.empty();
+    }
     try {
       Object path = MethodUtils.invokeMethod(target, method);
       if (path instanceof String) {

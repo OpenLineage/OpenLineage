@@ -141,8 +141,10 @@ public class InputFieldsCollector {
       return extractDatasetIdentifier(relation);
     } else if (node instanceof LogicalRelation
         && HudiUtils.isHudiBaseRelation(((LogicalRelation) node).relation())) {
-      return Collections.singletonList(
-          PathUtils.fromURI(HudiUtils.basePath(((LogicalRelation) node).relation())));
+      // An unresolvable Hudi relation only skips its own input fields
+      return HudiUtils.basePath(((LogicalRelation) node).relation())
+          .map(uri -> Collections.singletonList(PathUtils.fromURI(uri)))
+          .orElse(Collections.emptyList());
     } else if (node instanceof LogicalRelation
         && BigQueryUtils.hasBigQueryClasses()
         && ((LogicalRelation) node).relation() instanceof BigQueryRelation) {
