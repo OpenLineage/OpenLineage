@@ -689,3 +689,338 @@ fn insert_overwrite_partition_dates() {
         }
     )
 }
+
+#[test]
+fn insert_all_multiple_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO t1 VALUES (x) INTO t2 VALUES (y) SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_exists_predicate_table_is_input_with_cte_source() {
+    // The source query defines and reads a CTE while the WHEN predicate
+    // reads another table: both the CTE's own input and the predicate
+    // table are inputs of the statement. (The CTE rides on the source
+    // query - a WITH leading the whole INSERT ALL is not a shape the
+    // parser accepts.)
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN EXISTS (SELECT 1 FROM ref) THEN INTO t1 VALUES (x) \
+             WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["ref", "s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_scalar_subquery_table_is_input_with_cte_source() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > (SELECT MAX(m) FROM limits) THEN INTO t1 VALUES (x) \
+             ELSE INTO t2 VALUES (x) WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["limits", "s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_plain_comparison_adds_no_input_with_cte_source() {
+    // Control: with a CTE source and a WHEN condition that reads no
+    // table, the CTE's input is the statement's only input.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WITH c AS (SELECT x FROM s) SELECT x FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_else_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WHEN x < 0 THEN INTO t2 VALUES (x) ELSE INTO t3 VALUES (x) \
+             SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2", "t3"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_target() {
+    // IDENTIFIER('t1') names the target through a function call; the raw
+    // name would register a false output called IDENTIFIER.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER('t1') SELECT * FROM s", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_identifier_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO IDENTIFIER('t1') VALUES (x) INTO IDENTIFIER('t2') VALUES (y) \
+             SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_identifier_when_else_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > 0 THEN INTO IDENTIFIER('t1') VALUES (x) \
+             ELSE INTO IDENTIFIER('t3') VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t3"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_qualified_target() {
+    // A qualified IDENTIFIER('db.schema.t1') value is an object name, not
+    // a single table name: database, schema and table must be recorded
+    // separately, exactly as for a literal qualified target.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO IDENTIFIER('db.schema.t1') SELECT * FROM s",
+            "snowflake"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["db.schema.t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_quoted_qualified_target() {
+    // Quoted components inside the IDENTIFIER value stay quoted and exact.
+    let output = test_sql_dialect(
+        "INSERT INTO IDENTIFIER('\"db\".\"Schema\".\"t1\"') SELECT * FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.table_lineage.out_tables.len(), 1);
+    let target = &output.table_lineage.out_tables[0];
+    assert_eq!(target.database.as_deref(), Some("db"));
+    assert_eq!(target.schema.as_deref(), Some("Schema"));
+    assert_eq!(target.name, "t1");
+}
+
+#[test]
+fn insert_into_identifier_mixed_quoted_qualified_target() {
+    let output = test_sql_dialect(
+        "INSERT INTO IDENTIFIER('db.\"Schema\".t1') SELECT * FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.table_lineage.out_tables.len(), 1);
+    let target = &output.table_lineage.out_tables[0];
+    assert_eq!(target.database.as_deref(), Some("db"));
+    assert_eq!(target.schema.as_deref(), Some("Schema"));
+    assert_eq!(target.name, "t1");
+}
+
+#[test]
+fn insert_all_identifier_qualified_targets() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO IDENTIFIER('db.schema.t1') VALUES (x) \
+             INTO IDENTIFIER('db2.schema2.t2') VALUES (y) SELECT x, y FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["db.schema.t1", "db2.schema2.t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_target_named_like_cte() {
+    // The target is outside the CTE's alias scope: sharing its name must
+    // not suppress it as an output.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH t1 AS (SELECT * FROM s) INSERT INTO t1 SELECT * FROM t1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_target_named_like_cte_in_source() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO t1 WITH t1 AS (SELECT a FROM s) SELECT * FROM t1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_target_with_unrelated_cte() {
+    assert_eq!(
+        test_sql_dialect(
+            "WITH c AS (SELECT * FROM s) INSERT INTO t1 SELECT * FROM c",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_does_not_abort_other_statements() {
+    // A multi-table insert used to panic, aborting the whole parse call and
+    // losing the lineage of every other statement in it.
+    assert_eq!(
+        test_multiple_sql_dialect(
+            vec![
+                "INSERT INTO a SELECT * FROM b",
+                "INSERT ALL INTO db.schema.t1 (c1) VALUES (x) INTO t2 VALUES (y) \
+                 SELECT x, y FROM s",
+            ],
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["b", "s"]),
+            // SqlMeta sorts outputs by (database, schema, name), so the
+            // unqualified t2 sorts ahead of the qualified db.schema.t1.
+            out_tables: tables(vec!["a", "t2", "db.schema.t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_exists_predicate_table_is_input() {
+    // A WHEN predicate is a general expression: a table it reads through
+    // a subquery is an input of the statement, like the source query's.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN EXISTS (SELECT 1 FROM ref) THEN INTO t1 VALUES (x) \
+             SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["ref", "s"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
+
+#[test]
+fn insert_first_when_scalar_subquery_table_is_input() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT FIRST WHEN x > (SELECT MAX(m) FROM limits) THEN INTO t1 VALUES (x) \
+             ELSE INTO t2 VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["limits", "s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_plain_comparison_adds_no_input() {
+    // Control: WHEN conditions that read no table add nothing beyond the
+    // source query's inputs.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN x > 0 THEN INTO t1 VALUES (x) \
+             WHEN x < 0 THEN INTO t2 VALUES (x) SELECT x FROM s",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec!["t1", "t2"])
+        }
+    );
+}

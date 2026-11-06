@@ -1,7 +1,7 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_utils::{table, test_sql};
+use crate::test_utils::{table, test_sql, test_sql_dialect};
 use openlineage_sql::{ColumnLineage, ColumnMeta};
 
 #[test]
@@ -414,4 +414,90 @@ fn test_like_escape_expression() {
             }],
         );
     }
+}
+
+#[test]
+fn test_insert_all_when_exists_subquery_projection_not_in_column_lineage() {
+    // A WHEN predicate only gates the insert: the columns its subquery
+    // projects are not inserted anywhere, so they must not appear in the
+    // statement's column lineage (the predicate's table is still an input,
+    // covered by the table-lineage tests).
+    let output = test_sql_dialect(
+        "INSERT ALL WHEN EXISTS (SELECT secret_col FROM ref) THEN INTO t1 VALUES (x) \
+         SELECT x FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "x".to_string()
+            },
+            lineage: vec![ColumnMeta {
+                origin: Some(table("s")),
+                name: "x".to_string()
+            }]
+        }]
+    );
+}
+
+#[test]
+fn test_insert_first_when_scalar_subquery_projection_not_in_column_lineage() {
+    // Same isolation for a scalar-subquery WHEN predicate: MAX(m) is
+    // compared, never inserted.
+    let output = test_sql_dialect(
+        "INSERT FIRST WHEN x > (SELECT MAX(m) FROM limits) THEN INTO t1 VALUES (x) \
+         ELSE INTO t2 VALUES (x) SELECT x FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "x".to_string()
+            },
+            lineage: vec![ColumnMeta {
+                origin: Some(table("s")),
+                name: "x".to_string()
+            }]
+        }]
+    );
+}
+
+#[test]
+fn test_insert_all_column_lineage() {
+    let output = test_sql_dialect(
+        "INSERT ALL INTO t1 VALUES (x) INTO t2 VALUES (y) SELECT x, y FROM s",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "x".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("s")),
+                    name: "x".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "y".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("s")),
+                    name: "y".to_string()
+                }]
+            },
+        ]
+    );
 }

@@ -13,8 +13,10 @@ use sqlparser::ast::{
     UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
-    DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
+    DatabricksDialect, Dialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
 };
+use sqlparser::parser::Parser;
+use sqlparser::tokenizer::Token;
 
 pub trait Visit {
     fn visit(&self, context: &mut Context) -> Result<()>;
@@ -772,9 +774,62 @@ impl Visit for Statement {
                 if let Some(src) = &insert.source {
                     src.visit(context)?;
                 }
+                // Multi-table inserts (Snowflake/Oracle INSERT ALL and
+                // INSERT FIRST) carry their targets in the multi-table
+                // clauses, and `insert.table` is empty for them. Collect
+                // every clause target as an output. Each target's effective
+                // name is resolved first: IDENTIFIER('t') names the table
+                // through a function call, and converting the raw name
+                // would register a false output called IDENTIFIER and lose
+                // the real target.
+                for clause in &insert.multi_table_into_clauses {
+                    if let Some(name) =
+                        resolve_effective_table_name(&clause.table_name, &None, context)
+                    {
+                        context.add_insert_output(convert_to_idents(&name));
+                    }
+                }
+                for when_clause in &insert.multi_table_when_clauses {
+                    // A WHEN predicate is a general expression and can
+                    // read tables through subqueries; visit it so those
+                    // tables join the statement's inputs. Like a SELECT
+                    // predicate, it is visited in a temporary frame: the
+                    // columns a predicate subquery projects are compared
+                    // or tested, never inserted, so they must not enter
+                    // the INSERT's column lineage. collect_aliases keeps
+                    // the frame's table dependencies as inputs.
+                    context.push_frame();
+                    when_clause.condition.visit(context)?;
+                    let frame = context.pop_frame().unwrap();
+                    context.collect_aliases(&frame);
+                    for clause in &when_clause.into_clauses {
+                        if let Some(name) =
+                            resolve_effective_table_name(&clause.table_name, &None, context)
+                        {
+                            context.add_insert_output(convert_to_idents(&name));
+                        }
+                    }
+                }
+                if let Some(else_clauses) = &insert.multi_table_else_clause {
+                    for clause in else_clauses {
+                        if let Some(name) =
+                            resolve_effective_table_name(&clause.table_name, &None, context)
+                        {
+                            context.add_insert_output(convert_to_idents(&name));
+                        }
+                    }
+                }
                 match &insert.table {
                     TableObject::TableName(name) => {
-                        context.add_output(convert_to_idents(name));
+                        if let Some(name) = resolve_effective_table_name(name, &None, context) {
+                            let idents = convert_to_idents(&name);
+                            // An empty name can never be a real target (it is
+                            // what multi-table inserts leave behind); registering
+                            // it would panic in DbTableMeta construction.
+                            if !idents.is_empty() {
+                                context.add_insert_output(idents);
+                            }
+                        }
                     }
                     TableObject::TableFunction(func) => {
                         func.visit(context)?;
@@ -1019,7 +1074,8 @@ impl Visit for Statement {
         let frame = context.pop_frame().unwrap();
         let cte_deps = frame.cte_dependencies.clone();
         let deps = frame.dependencies.clone();
-        context.collect_inputs(cte_deps, deps);
+        let bare_deps = frame.bare_dependencies.clone();
+        context.collect_inputs(cte_deps, deps, bare_deps);
         context.collect(frame);
 
         Ok(())
@@ -1070,12 +1126,15 @@ fn resolve_effective_table_name(
         if args.args.len() != 1 {
             return None; // Return None if the length is not 1, we do not support it yet
         }
-        get_table_name_from_identifier_function_args(&args.args)
+        get_table_name_from_identifier_function_args(&args.args, context.dialect().as_base())
     } else if context.dialect().as_base().is::<SnowflakeDialect>() {
         name.0.first().and_then(|part| match part {
             ObjectNamePart::Function(f) => {
                 if f.name.value.to_lowercase() == "identifier" {
-                    get_table_name_from_identifier_function_args(&f.args)
+                    get_table_name_from_identifier_function_args(
+                        &f.args,
+                        context.dialect().as_base(),
+                    )
                 } else {
                     Some(name.clone())
                 }
@@ -1087,7 +1146,10 @@ fn resolve_effective_table_name(
     }
 }
 
-fn get_table_name_from_identifier_function_args(args: &[FunctionArg]) -> Option<ObjectName> {
+fn get_table_name_from_identifier_function_args(
+    args: &[FunctionArg],
+    dialect: &dyn Dialect,
+) -> Option<ObjectName> {
     let arg = args.first()?; // Return None if empty
 
     match arg {
@@ -1096,11 +1158,35 @@ fn get_table_name_from_identifier_function_args(args: &[FunctionArg]) -> Option<
             Expr::Value(ValueWithSpan {
                 value: Value::SingleQuotedString(ident),
                 span: _,
-            }) => Some(ObjectName::from(vec![Ident::new(ident.to_string())])),
+            }) => Some(parse_identifier_string(ident, dialect)),
             _ => None,
         },
         _ => None,
     }
+}
+
+/// The string argument of IDENTIFIER(...) is itself an object name:
+/// IDENTIFIER('db.schema.t1') refers to table t1 in db.schema, not to a
+/// table literally named "db.schema.t1". Parse it with the statement's
+/// dialect so quoted components keep their quoting and case. A string that
+/// does not parse as one complete object name keeps the historical
+/// treatment of the whole string as a single identifier.
+fn parse_identifier_string(value: &str, dialect: &dyn Dialect) -> ObjectName {
+    let parsed = (|| {
+        let mut parser = Parser::new(dialect).try_with_sql(value).ok()?;
+        let name = parser.parse_object_name(false).ok()?;
+        let fully_consumed = parser.peek_token().token == Token::EOF;
+        let all_identifiers = name
+            .0
+            .iter()
+            .all(|part| matches!(part, ObjectNamePart::Identifier(_)));
+        if fully_consumed && all_identifiers && !name.0.is_empty() {
+            Some(name)
+        } else {
+            None
+        }
+    })();
+    parsed.unwrap_or_else(|| ObjectName::from(vec![Ident::new(value.to_string())]))
 }
 
 fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
