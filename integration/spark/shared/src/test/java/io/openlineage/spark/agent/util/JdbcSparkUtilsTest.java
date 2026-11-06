@@ -112,15 +112,15 @@ class JdbcSparkUtilsTest {
       delimiter = '|',
       nullValues = "null",
       value = {
-        // the WorkspaceId option wins over the workspace in the address
-        "WorkspaceId|45ff911e-5e75-428a-a618-52958fcc7604|DatawarehouseId|45ff911e-5e75-428a-a618-52958fcc7604",
+        // a WorkspaceId option that matches the workspace in the address
+        "WorkspaceId|d1f6473b-9f7a-4352-940b-a8d74461d3fc|DatawarehouseId",
         // without WorkspaceId, the workspace ID is read from the address
-        "null|null|DatawarehouseId|d1f6473b-9f7a-4352-940b-a8d74461d3fc",
+        "null|null|DatawarehouseId",
         // option names can be in any case
-        "workspaceid|45ff911e-5e75-428a-a618-52958fcc7604|DATAWAREHOUSEID|45ff911e-5e75-428a-a618-52958fcc7604",
+        "workspaceid|D1F6473B-9F7A-4352-940B-A8D74461D3FC|DATAWAREHOUSEID",
       })
   void testFabricWarehouseOneLakeLocation(
-      String workspaceKey, String workspaceId, String warehouseKey, String expectedWorkspace) {
+      String workspaceKey, String workspaceId, String warehouseKey) {
     JdbcOptions builder =
         JdbcOptions.builder()
             .url(FABRIC_URL)
@@ -141,9 +141,29 @@ class JdbcSparkUtilsTest {
         Collections.singletonList(
             new DatasetIdentifier.Symlink(
                 FABRIC_WAREHOUSE_ID + "/Tables/raw/orders",
-                "abfss://" + expectedWorkspace + "@onelake.dfs.fabric.microsoft.com",
+                "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com",
                 DatasetIdentifier.SymlinkType.LOCATION)),
         identifier.getSymlinks());
+  }
+
+  @Test
+  void testFabricWarehouseOneLakeLocationSkippedWhenWorkspaceOptionDisagrees() {
+    // the address is what was queried; a WorkspaceId option naming another workspace means the
+    // warehouse ID may not be in the address's workspace, so no location is added
+    JDBCOptions options =
+        JdbcOptions.builder()
+            .url(FABRIC_URL)
+            .driver("org.postgresql.Driver")
+            .dbtable("raw.orders")
+            .option("WorkspaceId", "45ff911e-5e75-428a-a618-52958fcc7604")
+            .option("DatawarehouseId", FABRIC_WAREHOUSE_ID)
+            .build();
+
+    DatasetIdentifier identifier =
+        JdbcSparkUtils.getDatasetIdentifier(options, new DbTableMeta(null, "raw", "orders"));
+
+    assertEquals(FABRIC_NAMESPACE, identifier.getNamespace());
+    assertTrue(identifier.getSymlinks().isEmpty());
   }
 
   @Test

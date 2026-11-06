@@ -95,7 +95,8 @@ This read gets the symlink `abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake
 `d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/raw/orders`.
 
 The location always uses IDs, because OneLake refuses paths that mix IDs and names. Without `DatawarehouseId`, the
-connector doesn't make the warehouse's ID available, so no location is reported.
+connector doesn't make the warehouse's ID available, so no location is reported. The location is in the workspace of
+the SQL address that was queried; if a `WorkspaceId` option names another workspace, no location is reported.
 
 ## The `oneLake` facet
 
