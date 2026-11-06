@@ -116,14 +116,15 @@ class InsertIntoHadoopFsRelationVisitorTest {
   @Test
   void testConnectorWriteHasOneLakeFacet() {
     // Fabric puts the workspace's name only in the session's settings
-    runtimeConf.put("trident.workspace.name", "do-test-env-fabric");
+    runtimeConf.put("trident.workspace.name", "sales-analytics");
 
-    OpenLineage.OneLakeDatasetFacet facet = connectorWriteOutput().getFacets().getOneLake();
+    OpenLineage.FabricOneLakeDatasetFacet facet =
+        connectorWriteOutput().getFacets().getFabric_onelake();
 
     assertThat(facet.getItemType()).isEqualTo("Warehouse");
     assertThat(facet.getItemName()).isEqualTo("wh_primary");
     assertThat(facet.getWorkspaceId()).isEqualTo("d1f6473b-9f7a-4352-940b-a8d74461d3fc");
-    assertThat(facet.getWorkspaceName()).isEqualTo("do-test-env-fabric");
+    assertThat(facet.getWorkspaceName()).isEqualTo("sales-analytics");
     assertThat(facet.getItemId()).isEqualTo("d75873bd-716b-4378-a37e-864c76fc9b3b");
     assertThat(facet.getLocation())
         .isEqualTo(
@@ -134,12 +135,12 @@ class InsertIntoHadoopFsRelationVisitorTest {
 
   @Test
   void testConnectorWriteToAnotherWorkspaceHasNoWorkspaceName() {
-    runtimeConf.put("trident.workspace.name", "do-test-env-fabric");
+    runtimeConf.put("trident.workspace.name", "sales-analytics");
     Map<String, String> options = observedOptions();
     options.put("WorkspaceId", "45ff911e-5e75-428a-a618-52958fcc7604");
 
-    OpenLineage.OneLakeDatasetFacet facet =
-        visitor.apply(command(options)).get(0).getFacets().getOneLake();
+    OpenLineage.FabricOneLakeDatasetFacet facet =
+        visitor.apply(command(options)).get(0).getFacets().getFabric_onelake();
 
     // the address is built for the other workspace, so the session's workspace name doesn't apply
     assertThat(facet.getWorkspaceId()).isEqualTo("45ff911e-5e75-428a-a618-52958fcc7604");
@@ -152,8 +153,8 @@ class InsertIntoHadoopFsRelationVisitorTest {
     Map<String, String> options = observedOptions();
     options.remove("DatawarehouseId");
 
-    OpenLineage.OneLakeDatasetFacet facet =
-        visitor.apply(command(options)).get(0).getFacets().getOneLake();
+    OpenLineage.FabricOneLakeDatasetFacet facet =
+        visitor.apply(command(options)).get(0).getFacets().getFabric_onelake();
 
     assertThat(facet.getItemName()).isEqualTo("wh_primary");
     assertThat(facet.getItemId()).isNull();
@@ -166,7 +167,7 @@ class InsertIntoHadoopFsRelationVisitorTest {
     return outputs.get(0);
   }
 
-  // the options seen on the Fabric connector's first write step, on a real workspace
+  // the options the Fabric connector's first write step has on a real workspace, with made-up IDs
   private static Map<String, String> observedOptions() {
     Map<String, String> options = new HashMap<>();
     options.put("WorkspaceId", "d1f6473b-9f7a-4352-940b-a8d74461d3fc");
@@ -228,7 +229,7 @@ class InsertIntoHadoopFsRelationVisitorTest {
     assertThat(output.getName()).isEqualTo("user/trusted-service-user/a_write5f15");
     assertThat(output.getFacets().getLifecycleStateChange().getLifecycleStateChange())
         .isEqualTo(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
-    assertThat(output.getFacets().getOneLake()).isNull();
+    assertThat(output.getFacets().getFabric_onelake()).isNull();
   }
 
   private static InsertIntoHadoopFsRelationCommand command(Map<String, String> options) {

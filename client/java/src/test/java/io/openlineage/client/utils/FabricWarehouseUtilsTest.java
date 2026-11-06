@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-// The IDs and addresses below come from real Fabric workspaces. They check that the address is
-// built exactly as Fabric builds it; see FabricWarehouseUtils#endpointFor.
+// The IDs below are made up; each address is built from its IDs the way Fabric builds real
+// addresses (checked against real workspaces; see FabricWarehouseUtils#endpointFor).
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class FabricWarehouseUtilsTest {
   private static final UUID TENANT = UUID.fromString("68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c");
@@ -118,8 +118,9 @@ class FabricWarehouseUtilsTest {
   }
 
   @Test
-  void testWithOneLakeLocationFromWorkspaceOption() {
-    // the workspace can't be read from this address, so the WorkspaceId option is used
+  void testWithOneLakeLocationNeedsTheAddressWorkspace() {
+    // the workspace can't be read from this address; the WorkspaceId option alone isn't enough,
+    // because the dataset's name doesn't say which workspace it is in
     DatasetIdentifier identifier =
         FabricWarehouseUtils.withOneLakeLocation(
             new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://example.com"),
@@ -127,12 +128,7 @@ class FabricWarehouseUtilsTest {
             Optional.of(WORKSPACE_2.toString()),
             Optional.of(WAREHOUSE.toString()));
 
-    assertThat(identifier.getSymlinks())
-        .containsExactly(
-            new DatasetIdentifier.Symlink(
-                WAREHOUSE + "/Tables/raw/orders",
-                "abfss://" + WORKSPACE_2 + "@onelake.dfs.fabric.microsoft.com",
-                DatasetIdentifier.SymlinkType.LOCATION));
+    assertThat(identifier.getSymlinks()).isEmpty();
   }
 
   @Test

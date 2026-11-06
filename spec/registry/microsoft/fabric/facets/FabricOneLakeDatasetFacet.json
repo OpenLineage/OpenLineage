@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/OneLakeDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/FabricOneLakeDatasetFacet.json",
   "$defs": {
-    "OneLakeDatasetFacet": {
+    "FabricOneLakeDatasetFacet": {
       "allOf": [
         {
           "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
@@ -36,9 +36,9 @@
               "example": "lh_sales"
             },
             "itemType": {
-              "description": "Type of the Fabric item that holds the table, as Fabric names item types. Set only when the producer knows it.",
+              "description": "Type of the Fabric item that holds the table, as Fabric names item types, for example Lakehouse, Warehouse or MirroredDatabase. Set only when the producer knows it.",
               "type": "string",
-              "example": "Lakehouse, Warehouse"
+              "example": "Warehouse"
             },
             "tableId": {
               "description": "ID of the table's Delta metadata (metaData.id in the Delta log), in lowercase. For a table reached through a shortcut, this is the ID of the target table.",
@@ -53,8 +53,8 @@
   },
   "type": "object",
   "properties": {
-    "oneLake": {
-      "$ref": "#/$defs/OneLakeDatasetFacet"
+    "fabric_onelake": {
+      "$ref": "#/$defs/FabricOneLakeDatasetFacet"
     }
   }
 }

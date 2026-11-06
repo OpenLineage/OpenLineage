@@ -24,8 +24,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>Some of what this class relies on isn't documented by Microsoft: how the address is built from
  * the tenant and workspace IDs, and the option names that Microsoft's Spark connector for Fabric
- * uses. All of it is kept in this class, and the tests check it against addresses taken from real
- * workspaces, so a change on Microsoft's side only needs fixing here.
+ * uses. All of it is kept in this class, and was checked against real workspaces, so a change on
+ * Microsoft's side only needs fixing here.
  */
 @Slf4j
 public final class FabricWarehouseUtils {
@@ -167,19 +167,19 @@ public final class FabricWarehouseUtils {
    * read tables from several warehouses in the same workspace. So the location is only added to
    * tables in the warehouse the ID was given for; other tables would get a wrong path.
    *
-   * <p>The workspace is the one in the SQL address, because that is what was queried. If the {@code
-   * WorkspaceId} option names another workspace, or isn't a valid ID, the IDs can't be trusted to
-   * belong together and no location is added. The option is only used when the workspace can't be
-   * read from the address. When the address is built from the tenant and the {@code WorkspaceId}
-   * option, as for {@code synapsesql} writes, the two always agree.
+   * <p>The workspace is the one in the SQL address, because that is what was queried, and the
+   * dataset's name says so; {@link #toOneLakeLocation} uses the same rule. If the address has no
+   * workspace, no location is added. If the {@code WorkspaceId} option names another workspace, or
+   * isn't a valid ID, the IDs can't be trusted to belong together and no location is added either.
+   * When the address is built from the tenant and the {@code WorkspaceId} option, as for {@code
+   * synapsesql} writes, the two always agree.
    *
    * <p>If anything is missing, the table is in another warehouse, or an ID isn't valid, the dataset
    * is returned as it was.
    *
    * @param identifier a {@code fabric-warehouse} dataset named {@code <warehouse>.<schema>.<table>}
    * @param idWarehouse name of the warehouse that {@code warehouseIdOption} belongs to
-   * @param workspaceIdOption the {@code WorkspaceId} option; used only if the address doesn't give
-   *     the workspace, and must match it if it does
+   * @param workspaceIdOption the {@code WorkspaceId} option; must match the address's workspace
    * @param warehouseIdOption the {@code DatawarehouseId} option
    * @return the same dataset, with the location added when possible
    */
@@ -196,22 +196,20 @@ public final class FabricWarehouseUtils {
       return identifier;
     }
     Optional<UUID> warehouseId = warehouseIdOption.flatMap(OneLakeLocation::guid);
-    Optional<UUID> endpointWorkspace =
+    // The workspace is the one in the SQL address, as in toOneLakeLocation. The WorkspaceId
+    // option only has to agree with it.
+    Optional<UUID> workspaceId =
         workspaceIdOf(identifier.getNamespace().substring(prefix.length()));
-    Optional<UUID> optionWorkspace = workspaceIdOption.flatMap(OneLakeLocation::guid);
-    if (endpointWorkspace.isPresent()
-        && workspaceIdOption.isPresent()
-        && !endpointWorkspace.equals(optionWorkspace)) {
+    if (!warehouseId.isPresent() || !workspaceId.isPresent()) {
+      return identifier;
+    }
+    if (workspaceIdOption.isPresent()
+        && !workspaceId.equals(workspaceIdOption.flatMap(OneLakeLocation::guid))) {
       log.debug(
           "The WorkspaceId option {} doesn't match the workspace of {}; not adding a OneLake"
               + " location",
           workspaceIdOption.get(),
           identifier.getNamespace());
-      return identifier;
-    }
-    Optional<UUID> workspaceId =
-        endpointWorkspace.isPresent() ? endpointWorkspace : optionWorkspace;
-    if (!warehouseId.isPresent() || !workspaceId.isPresent()) {
       return identifier;
     }
     DatasetIdentifier location =
@@ -221,7 +219,7 @@ public final class FabricWarehouseUtils {
   }
 
   /**
-   * Describes a Fabric warehouse table in OneLake terms, for the {@code oneLake} facet.
+   * Describes a Fabric warehouse table in OneLake terms, for the {@code fabric_onelake} facet.
    *
    * <p>Everything comes from the dataset itself, never from the Spark session, because a table can
    * be in another workspace than the one the job runs in:

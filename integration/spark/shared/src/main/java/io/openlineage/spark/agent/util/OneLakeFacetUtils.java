@@ -15,7 +15,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Adds the {@code oneLake} facet to datasets stored in OneLake, Microsoft Fabric's storage.
+ * Adds the {@code fabric_onelake} facet to datasets stored in OneLake, Microsoft Fabric's storage.
  *
  * <p>The facet is built from the dataset's own name, namespace and symlinks, so it describes the
  * dataset however the job reached it, including from outside Fabric. When the job runs in Fabric,
@@ -23,19 +23,19 @@ import java.util.function.Function;
  * in: a job can read and write items in other workspaces.
  */
 public final class OneLakeFacetUtils {
-  public static final String FACET_NAME = "oneLake";
+  public static final String FACET_NAME = "fabric_onelake";
   public static final String WORKSPACE_NAME_CONF = "trident.workspace.name";
 
   private OneLakeFacetUtils() {}
 
   /**
-   * Builds the {@code oneLake} facet of a dataset.
+   * Builds the {@code fabric_onelake} facet of a dataset.
    *
    * @param context the OpenLineage context, for the session's settings and the disabled facets
    * @param identifier the dataset, with its symlinks
    * @return the facet, or empty if the dataset isn't stored in OneLake or the facet is disabled
    */
-  public static Optional<OpenLineage.OneLakeDatasetFacet> facetFor(
+  public static Optional<OpenLineage.FabricOneLakeDatasetFacet> facetFor(
       OpenLineageContext context, DatasetIdentifier identifier) {
     if (FacetUtils.isFacetDisabled(context, FACET_NAME)) {
       return Optional.empty();

@@ -20,32 +20,21 @@ import lombok.NonNull;
 import lombok.Value;
 
 /**
- * What is known about a location in OneLake, Microsoft Fabric's storage, and the {@code oneLake}
- * dataset facet built from it.
+ * What is known about a location in OneLake, Microsoft Fabric's storage, and the {@code
+ * fabric_onelake} dataset facet built from it.
  *
  * <p>OneLake paths have the form {@code
- * abfss://<workspace>@onelake.dfs.fabric.microsoft.com/<item>/ <section>/...}, where the section is
- * {@code Tables} or {@code Files}. The workspace and the item can each be written in two ways:
- *
- * <ul>
- *   <li>by ID: {@code
- *       d1f6473b-...@onelake.dfs.fabric.microsoft.com/c7a14054-.../Tables/sales/orders}
- *   <li>by name, with the item's type after a dot: {@code
- *       sales-ws@onelake.dfs.fabric.microsoft.com/lh_sales.Lakehouse/Tables/sales/orders}
- * </ul>
- *
- * OneLake refuses paths that mix the two. Every field is optional: each producer sets only what it
- * knows locally, without calling Fabric.
+ * abfss://<workspace>@onelake.dfs.fabric.microsoft.com/<item>/<section>/...}, where the section is
+ * {@code Tables} or {@code Files}. This class reads the form written with IDs, {@code
+ * d1f6473b-...@onelake.dfs.fabric.microsoft.com/c7a14054-.../Tables/sales/orders}. Every field is
+ * optional: each producer sets only what it knows locally, without calling Fabric.
  */
 @Value
 @Builder(toBuilder = true)
 public class OneLakeLocation {
   public static final String HOST = "onelake.dfs.fabric.microsoft.com";
-  public static final String LAKEHOUSE = "Lakehouse";
   public static final String WAREHOUSE = "Warehouse";
   public static final String TABLES = "Tables";
-  public static final String FILES = "Files";
-  private static final String SPARK_WAREHOUSE_SUFFIX = "Datawarehouse";
 
   // The global host, the blob host and regional hosts such as westus-onelake.dfs.fabric...
   private static final Pattern HOST_PATTERN =
@@ -69,10 +58,10 @@ public class OneLakeLocation {
   String tableId;
 
   /**
-   * Reads a OneLake location from a dataset's namespace and name, such as {@code
-   * abfss://<workspace>@onelake.dfs.fabric.microsoft.com} and {@code <item>/Tables/<table>}.
+   * Reads a OneLake location written with IDs from a dataset's namespace and name, such as {@code
+   * abfss://<workspace ID>@onelake.dfs.fabric.microsoft.com} and {@code <item ID>/Tables/<table>}.
    *
-   * @return the location, or empty if this isn't a OneLake path that names an item
+   * @return the location, or empty if this isn't a OneLake path that names an item by ID
    */
   public static Optional<OneLakeLocation> parse(String namespace, String name) {
     if (namespace == null || name == null) {
@@ -81,13 +70,8 @@ public class OneLakeLocation {
     return parse(namespace + "/" + name);
   }
 
-  /**
-   * Reads a OneLake location from a full path, such as {@code
-   * abfss://<workspace>@onelake.dfs.fabric.microsoft.com/<item>/Tables/<table>}.
-   *
-   * @return the location, or empty if this isn't a OneLake path that names an item
-   */
-  public static Optional<OneLakeLocation> parse(String location) {
+  /** {@link #parse(String, String)} for a full path. */
+  static Optional<OneLakeLocation> parse(String location) {
     if (location == null) {
       return Optional.empty();
     }
@@ -119,41 +103,22 @@ public class OneLakeLocation {
       return Optional.empty();
     }
 
-    OneLakeLocationBuilder builder = OneLakeLocation.builder();
-    Optional<UUID> workspaceGuid = guid(container);
-    if (workspaceGuid.isPresent()) {
-      builder.workspaceId(workspaceGuid.get());
-    } else {
-      builder.workspaceName(container);
-    }
-
-    String item = segments.get(0);
-    Optional<UUID> itemGuid = guid(item);
-    if (itemGuid.isPresent()) {
-      builder.itemId(itemGuid.get());
-    } else {
-      int dot = item.lastIndexOf('.');
-      if (dot <= 0 || dot == item.length() - 1) {
-        // OneLake rejects a bare item name; this isn't a path it would accept
-        return Optional.empty();
-      }
-      builder.itemName(item.substring(0, dot)).itemType(itemType(item.substring(dot + 1)));
-    }
-    if (workspaceGuid.isPresent() != itemGuid.isPresent()) {
-      // OneLake rejects paths that mix IDs and names
+    Optional<UUID> workspaceId = guid(container);
+    Optional<UUID> itemId = guid(segments.get(0));
+    if (!workspaceId.isPresent() || !itemId.isPresent()) {
       return Optional.empty();
     }
 
     List<String> path = new ArrayList<>(segments.subList(1, segments.size()));
-    if (!path.isEmpty()) {
-      path.set(0, section(path.get(0)));
+    if (!path.isEmpty() && TABLES.equalsIgnoreCase(path.get(0))) {
+      path.set(0, TABLES);
     }
-    return Optional.of(builder.path(Collections.unmodifiableList(path)).build());
-  }
-
-  /** Whether this host is a OneLake host, such as {@code onelake.dfs.fabric.microsoft.com}. */
-  public static boolean isOneLakeHost(String host) {
-    return host != null && HOST_PATTERN.matcher(host.toLowerCase(Locale.ROOT)).matches();
+    return Optional.of(
+        OneLakeLocation.builder()
+            .workspaceId(workspaceId.get())
+            .itemId(itemId.get())
+            .path(Collections.unmodifiableList(path))
+            .build());
   }
 
   /** Reads an ID, returning empty instead of failing when the text isn't one. */
@@ -162,28 +127,6 @@ public class OneLakeLocation {
       return Optional.empty();
     }
     return Optional.of(UUID.fromString(value.trim()));
-  }
-
-  /**
-   * Fabric's name for an item type written as a path suffix. Spark sometimes reports warehouses as
-   * {@code .Datawarehouse}, while OneLake's own APIs use {@code .Warehouse}.
-   */
-  public static String itemType(String suffix) {
-    if (LAKEHOUSE.equalsIgnoreCase(suffix)) {
-      return LAKEHOUSE;
-    }
-    if (WAREHOUSE.equalsIgnoreCase(suffix) || SPARK_WAREHOUSE_SUFFIX.equalsIgnoreCase(suffix)) {
-      return WAREHOUSE;
-    }
-    return suffix;
-  }
-
-  /** The table's segments after {@code Tables/}: {@code [schema, table]} or {@code [table]}. */
-  public Optional<List<String>> tableParts() {
-    if (path.size() < 2 || path.size() > 3 || !TABLES.equals(path.get(0))) {
-      return Optional.empty();
-    }
-    return Optional.of(path.subList(1, path.size()));
   }
 
   /**
@@ -197,26 +140,12 @@ public class OneLakeLocation {
     if (workspaceId == null || itemId == null || path.isEmpty()) {
       return Optional.empty();
     }
-    return Optional.of(identifier(workspaceId.toString(), itemId.toString()));
-  }
-
-  /**
-   * The location written the standard way: with IDs if both are known, otherwise with names. The
-   * host is always {@code onelake.dfs.fabric.microsoft.com}, IDs are lowercase and item types use
-   * Fabric's names.
-   *
-   * @return the identifier, or empty if neither form can be written or there's no path after the
-   *     item
-   */
-  public Optional<DatasetIdentifier> canonicalIdentifier() {
-    Optional<DatasetIdentifier> byId = guidIdentifier();
-    if (byId.isPresent()) {
-      return byId;
+    StringBuilder name = new StringBuilder(itemId.toString());
+    for (String segment : path) {
+      name.append('/').append(segment);
     }
-    if (workspaceName == null || itemName == null || itemType == null || path.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(identifier(workspaceName, itemName + "." + itemType));
+    return Optional.of(
+        new DatasetIdentifier(name.toString(), "abfss://" + workspaceId + "@" + HOST));
   }
 
   /** {@link #guidIdentifier()} as a single path. */
@@ -225,12 +154,12 @@ public class OneLakeLocation {
   }
 
   /**
-   * Builds the {@code oneLake} facet from everything known. The table ID is written in lowercase,
-   * as the spec requires.
+   * Builds the {@code fabric_onelake} facet from everything known. The table ID is written in
+   * lowercase, as the spec requires.
    */
-  public OpenLineage.OneLakeDatasetFacet toFacet(OpenLineage openLineage) {
+  public OpenLineage.FabricOneLakeDatasetFacet toFacet(OpenLineage openLineage) {
     return openLineage
-        .newOneLakeDatasetFacetBuilder()
+        .newFabricOneLakeDatasetFacetBuilder()
         .location(guidLocation().orElse(null))
         .workspaceId(workspaceId == null ? null : workspaceId.toString())
         .workspaceName(workspaceName)
@@ -239,23 +168,5 @@ public class OneLakeLocation {
         .itemType(itemType)
         .tableId(tableId == null ? null : tableId.toLowerCase(Locale.ROOT))
         .build();
-  }
-
-  private DatasetIdentifier identifier(String container, String item) {
-    StringBuilder name = new StringBuilder(item);
-    for (String segment : path) {
-      name.append('/').append(segment);
-    }
-    return new DatasetIdentifier(name.toString(), "abfss://" + container + "@" + HOST);
-  }
-
-  private static String section(String segment) {
-    if (TABLES.equalsIgnoreCase(segment)) {
-      return TABLES;
-    }
-    if (FILES.equalsIgnoreCase(segment)) {
-      return FILES;
-    }
-    return segment;
   }
 }
