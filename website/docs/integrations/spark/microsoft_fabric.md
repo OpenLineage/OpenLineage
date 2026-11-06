@@ -8,7 +8,7 @@ the table itself, named as the [naming conventions](../../spec/naming.md) descri
 
 | Namespace                                                                           | Name                           |
 |:------------------------------------------------------------------------------------|:-------------------------------|
-| `fabric-warehouse://{workspace SQL address}`, such as `fabric-warehouse://6obax…-ac4e….datawarehouse.fabric.microsoft.com` | `{warehouse}.{schema}.{table}` |
+| `fabric-warehouse://{workspace SQL address}`, such as `fabric-warehouse://ck32i…-hnd7n….datawarehouse.fabric.microsoft.com` | `{warehouse}.{schema}.{table}` |
 
 For example, `spark.read.synapsesql("wh_primary.raw.orders")` is reported as reading
 `fabric-warehouse://ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com` /
