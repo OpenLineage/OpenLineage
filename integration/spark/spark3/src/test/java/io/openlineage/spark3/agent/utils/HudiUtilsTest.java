@@ -15,26 +15,22 @@ import org.junit.jupiter.api.Test;
 
 class HudiUtilsTest {
 
+  private static final String BASE_PATH = "s3://bucket/warehouse/orders";
+
   @Test
   void testBasePathFromRelation() {
-    assertEquals(
-        URI.create("s3://bucket/warehouse/orders"),
-        HudiUtils.basePath(new HadoopPathRelation(), new Object()));
+    assertEquals(URI.create(BASE_PATH), HudiUtils.basePath(new HadoopPathRelation(), new Object()));
   }
 
   @Test
   void testBasePathFromHudi1MetaClientStoragePath() {
     // Hudi 1.x removed getBasePathV2() and getBasePath() returns a StoragePath
-    assertEquals(
-        URI.create("s3://bucket/warehouse/orders"),
-        HudiUtils.basePath(new Object(), new Hudi1MetaClient()));
+    assertEquals(URI.create(BASE_PATH), HudiUtils.basePath(new Object(), new Hudi1MetaClient()));
   }
 
   @Test
   void testBasePathFromHudi0MetaClientString() {
-    assertEquals(
-        URI.create("s3://bucket/warehouse/orders"),
-        HudiUtils.basePath(new Object(), new Hudi0MetaClient()));
+    assertEquals(URI.create(BASE_PATH), HudiUtils.basePath(new Object(), new Hudi0MetaClient()));
   }
 
   @Test
@@ -44,19 +40,19 @@ class HudiUtilsTest {
 
   public static class HadoopPathRelation {
     public Path basePath() {
-      return new Path("s3://bucket/warehouse/orders");
+      return new Path(BASE_PATH);
     }
   }
 
   public static class Hudi1MetaClient {
     public StoragePath getBasePath() {
-      return new StoragePath("s3://bucket/warehouse/orders");
+      return new StoragePath(BASE_PATH);
     }
   }
 
   public static class Hudi0MetaClient {
     public String getBasePath() {
-      return "s3://bucket/warehouse/orders";
+      return BASE_PATH;
     }
   }
 }
