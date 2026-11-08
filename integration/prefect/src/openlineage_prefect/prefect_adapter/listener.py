@@ -313,60 +313,66 @@ class PrefectOpenLineageListener:
                 ol_task_run_id: str = self.build_run_id(
                     start_time, task_name, self.related_deployment_info[flow_run_id].namespace
                 )
-
-                # Get datasets from Prefect Artifacts
-                datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
-                input_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "input"]
-                output_datasets = [dataset for dataset in datasets if dataset["dataset_type"] == "output"]
-
-                # Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
-                parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
-
-                # Get flow run info for ParentRunFacet
-                ol_flow_run_id = ""
-                flow_info = await self.get_flow_info(self.related_deployment_info[flow_run_id].flow_run)
-
-                try:
-                    ol_flow_run_id = self.build_run_id(
-                        flow_info.start_time,
-                        flow_info.name,
-                        self.related_deployment_info[flow_run_id].namespace,
-                    )
-                except AttributeError:
-                    logger.info(
-                        "Failed to build OpenLineage run id for Flow %s. \
-                        ParentRunFacet will not be included.",
-                        self.related_deployment_info[flow_run_id].flow_run,
-                    )
-                task_info = TaskInfo(
-                    run_id=ol_task_run_id,
-                    event_time=event_time,
-                    name=task_name,
-                    namespace=self.related_deployment_info[flow_run_id].namespace,
-                    event_type=event_state,
-                    expected_start_time=expected_start_time,
-                    job_deps=parent_runs,
-                    prefect_version=prefect_version,
-                    state_msg=prefect_state_msg,
-                )
-                datasets = DatasetInfo(
-                    input_datasets=input_datasets,
-                    output_datasets=output_datasets,
-                )
-
-                self.ol_adapter.create_and_emit_task_event(
-                    task_info=task_info,
-                    flow_run_id=ol_flow_run_id,
-                    flow_name=flow_info.name,
-                    deployment=self.related_deployment_info[flow_run_id],
-                    datasets=datasets,
-                )
-
             except AttributeError:
                 logger.info(
                     "No start time found for task run %s. An event will not be emitted.",
                     prefect_task_run_id,
                 )
+                return
+
+            # Get datasets from Prefect Artifacts
+            input_datasets = []
+            output_datasets = []
+            datasets = await self.get_artifacts_by_task_run(prefect_task_run_id)
+            input_datasets = [
+                dataset for dataset in datasets if (datasets and dataset["dataset_type"] == "input")
+            ]
+            output_datasets = [
+                dataset for dataset in datasets if (datasets and dataset["dataset_type"] == "output")
+            ]
+
+            # Get job dependencies (Prefect "parents") info for JobDependenciesRunFacet
+            parent_runs = await self.get_parent_runs(event.payload, prefect_task_run_id)
+
+            # Get flow run info for ParentRunFacet
+            flow_info = await self.get_flow_info(self.related_deployment_info[flow_run_id].flow_run)
+
+            ol_flow_run_id = ""
+            try:
+                ol_flow_run_id = self.build_run_id(
+                    flow_info.start_time,
+                    flow_info.name,
+                    self.related_deployment_info[flow_run_id].namespace,
+                )
+            except AttributeError:
+                logger.info(
+                    "Failed to build OpenLineage run id for Flow %s. \
+                    ParentRunFacet will not be included.",
+                    self.related_deployment_info[flow_run_id].flow_run,
+                )
+            task_info = TaskInfo(
+                run_id=ol_task_run_id,
+                event_time=event_time,
+                name=task_name,
+                namespace=self.related_deployment_info[flow_run_id].namespace,
+                event_type=event_state,
+                expected_start_time=expected_start_time,
+                job_deps=parent_runs,
+                prefect_version=prefect_version,
+                state_msg=prefect_state_msg,
+            )
+            datasets = DatasetInfo(
+                input_datasets=input_datasets,
+                output_datasets=output_datasets,
+            )
+
+            self.ol_adapter.create_and_emit_task_event(
+                task_info=task_info,
+                flow_run_id=ol_flow_run_id,
+                flow_name=flow_info.name,
+                deployment=self.related_deployment_info[flow_run_id],
+                datasets=datasets,
+            )
 
         except (PrefectHTTPStatusError, ObjectNotFound):
             logger.info(

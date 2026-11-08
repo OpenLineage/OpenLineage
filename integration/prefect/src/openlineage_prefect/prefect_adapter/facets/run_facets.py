@@ -7,14 +7,14 @@ from openlineage.client.facet import BaseFacet
 
 @attr.define
 class PrefectDeploymentRunFacet(BaseFacet):
-    deploymentId: str
+    deployment_id: str
     created: str
     updated: str
     name: str
 
-    def __init__(self, deploymentId, created, updated, name):
+    def __init__(self, deployment_id, created, updated, name):
         super().__init__()
-        self.deploymentId = deploymentId
+        self.deployment_id = deployment_id
         self.created = created
         self.updated = updated
         self.name = name

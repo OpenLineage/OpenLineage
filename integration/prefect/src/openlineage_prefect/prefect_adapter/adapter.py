@@ -16,7 +16,7 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
 )
 from openlineage.client.run import Job, Run, RunEvent, RunState
-from openlineage_prefect.prefect_adapter import facets
+from openlineage_prefect.prefect_adapter.facets.run_facets import PrefectDeploymentRunFacet
 
 PRODUCER: str = "https://github.com/OpenLineage/openlineage/integration/prefect"
 
@@ -49,7 +49,7 @@ class TaskInfo:
     name: str
     namespace: str
     event_type: RunState
-    expected_start_time: datetime
+    expected_start_time: str
     prefect_version: str | None = None
     job_deps: list | None = None
     state_msg: str | None = None
@@ -77,8 +77,8 @@ class PrefectOpenLineageAdapter:
 
         if deployment:
             run_facets = {
-                "prefectDeployment": facets.run_facets.PrefectDeploymentRunFacet(
-                    deploymentId=deployment.id,
+                "prefectDeployment": PrefectDeploymentRunFacet(
+                    deployment_id=deployment.id,
                     created=deployment.created.isoformat(),
                     updated=deployment.updated.isoformat(),
                     name=deployment.name,
@@ -154,8 +154,8 @@ class PrefectOpenLineageAdapter:
                 "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
                     version=prefect_version, name="Prefect"
                 ),
-                "prefectDeployment": facets.run_facets.PrefectDeploymentRunFacet(
-                    deploymentId=deployment.id,
+                "prefectDeployment": PrefectDeploymentRunFacet(
+                    deployment_id=deployment.id,
                     created=deployment.created.isoformat(),
                     updated=deployment.updated.isoformat(),
                     name=deployment.name,

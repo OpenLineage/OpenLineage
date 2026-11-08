@@ -1,27 +1,26 @@
 # Copyright 2018-2026 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-"""
-Unit tests for PrefectOpenLineageAdapter module.
-
-Tests cover OpenLineage event creation and emission.
-"""
+"""Unit tests for PrefectOpenLineageAdapter event creation and emission."""
 
 import uuid
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-from prefect_adapter.adapter import PRODUCER, PrefectOpenLineageAdapter
-from prefect_adapter.listener import PrefectOpenLineageListener
 from openlineage.client.run import RunEvent, RunState
-
-# ========== Fixtures ==========
+from openlineage_prefect.prefect_adapter.adapter import (
+    PRODUCER,
+    DatasetInfo,
+    DeploymentInfo,
+    FlowInfo,
+    PrefectOpenLineageAdapter,
+    TaskInfo,
+)
 
 
 @pytest.fixture
 def mock_client():
-    """Create a mock OpenLineage client."""
     client = MagicMock()
     client.emit = MagicMock()
     return client
@@ -29,602 +28,200 @@ def mock_client():
 
 @pytest.fixture
 def adapter(mock_client):
-    """Create an adapter instance with mocked OpenLineage client."""
     return PrefectOpenLineageAdapter(client=mock_client)
 
 
 @pytest.fixture
 def sample_datetime():
-    """Create a sample datetime for testing."""
     return datetime.fromisoformat("2026-07-06T11:04:46.467291+00:00")
 
 
 @pytest.fixture
 def sample_run_id():
-    """Create a sample valid UUID for run ID."""
     return str(uuid.uuid4())
 
 
-# ========== Tests for create_and_emit_flow_event ==========
+@pytest.fixture
+def deployment_info():
+    return DeploymentInfo(
+        id="dep-123",
+        created=datetime.fromisoformat("2026-07-05T08:05:01.001+00:00"),
+        updated=datetime.fromisoformat("2026-07-05T08:06:02.100+00:00"),
+        name="test_deploy",
+        namespace="default",
+        flow_run=None,
+    )
 
 
-def test_create_and_emit_flow_event_start(adapter, sample_datetime, sample_run_id):
-    """Test creation and emission of a flow START event."""
+@pytest.fixture
+def flow_info(sample_datetime):
+    return FlowInfo(
+        start_time=sample_datetime,
+        name="test_flow",
+        namespace="default",
+        event_time=sample_datetime,
+    )
+
+
+@pytest.fixture
+def task_info(sample_datetime, sample_run_id):
+    return TaskInfo(
+        run_id=sample_run_id,
+        event_time=sample_datetime,
+        name="test_task",
+        namespace="default",
+        event_type=RunState.START,
+        expected_start_time=sample_datetime.isoformat(),
+        prefect_version="3.7.6",
+    )
+
+
+def test_create_and_emit_flow_event(adapter, flow_info, deployment_info, sample_run_id):
     adapter.create_and_emit_flow_event(
         run_id=sample_run_id,
         event_type=RunState.START,
-        event_time=sample_datetime,
-        flow_name="test_flow",
-        flow_namespace="default",
+        flow_info=flow_info,
         prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
+        deployment=deployment_info,
     )
 
     adapter.client.emit.assert_called_once()
-    event = adapter.client.emit.call_args[0][0]
-
+    event = adapter.client.emit.call_args.args[0]
     assert isinstance(event, RunEvent)
     assert event.eventType == RunState.START
-    assert event.eventTime == sample_datetime.isoformat()
+    assert event.eventTime == flow_info.event_time.isoformat()
+    assert event.run.runId == sample_run_id
     assert event.job.name == "test_flow"
     assert event.job.namespace == "default"
     assert event.producer == PRODUCER
-
-
-def test_create_and_emit_flow_event_complete(adapter, sample_datetime, sample_run_id):
-    """Test creation and emission of a flow COMPLETE event."""
-    adapter.create_and_emit_flow_event(
-        run_id=sample_run_id,
-        event_type=RunState.COMPLETE,
-        event_time=sample_datetime,
-        flow_name="test_flow",
-        flow_namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-    assert event.eventType == RunState.COMPLETE
-
-
-def test_create_and_emit_flow_event_failed(adapter, sample_datetime, sample_run_id):
-    """Test creation and emission of a flow FAILED event."""
-    adapter.create_and_emit_flow_event(
-        run_id=sample_run_id,
-        event_type=RunState.FAIL,
-        event_time=sample_datetime,
-        flow_name="test_flow",
-        flow_namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-    assert event.eventType == RunState.FAIL
-
-
-def test_create_and_emit_flow_event_has_processing_engine_facet(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that flow event includes processingEngine facet."""
-    adapter.create_and_emit_flow_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        flow_name="test_flow",
-        flow_namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "processingEngine" in event.run.facets
     assert event.run.facets["processingEngine"].version == "3.7.6"
     assert event.run.facets["processingEngine"].name == "Prefect"
-
-
-def test_create_and_emit_flow_event_has_deployment_facet(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that flow event includes prefectDeployment facet."""
-    adapter.create_and_emit_flow_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        flow_name="test_flow",
-        flow_namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "prefectDeployment" in event.run.facets
-    assert event.run.facets["prefectDeployment"].deploymentId == "dep-123"
+    assert event.run.facets["prefectDeployment"].deployment_id == "dep-123"
     assert event.run.facets["prefectDeployment"].name == "test_deploy"
-
-
-def test_create_and_emit_flow_event_has_job_type_facet(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that flow event includes jobType facet."""
-    adapter.create_and_emit_flow_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        flow_name="test_flow",
-        flow_namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "jobType" in event.job.facets
     assert event.job.facets["jobType"].processingType == "BATCH"
     assert event.job.facets["jobType"].integration == "Prefect"
     assert event.job.facets["jobType"].jobType == "FLOW"
 
 
-# ========== Tests for create_and_emit_task_event ==========
-
-
-def test_create_and_emit_task_event_start(adapter, sample_datetime, sample_run_id):
-    """Test creation and emission of a task START event."""
-    adapter.create_and_emit_task_event(
+def test_create_and_emit_flow_event_without_deployment(adapter, flow_info, sample_run_id):
+    adapter.create_and_emit_flow_event(
         run_id=sample_run_id,
-        event_type=RunState.START,
+        event_type=RunState.COMPLETE,
+        flow_info=flow_info,
+    )
+
+    event = adapter.client.emit.call_args.args[0]
+    assert event.eventType == RunState.COMPLETE
+    assert "prefectDeployment" not in event.run.facets
+    assert event.run.facets["processingEngine"].version == "unknown"
+
+
+def test_create_and_emit_flow_event_includes_error_message(adapter, sample_datetime, sample_run_id):
+    flow_info = FlowInfo(
+        start_time=sample_datetime,
+        name="test_flow",
+        namespace="default",
         event_time=sample_datetime,
-        expected_start_time=sample_datetime,
+        state_msg="flow failed",
+    )
+    adapter.create_and_emit_flow_event(
+        run_id=sample_run_id,
+        event_type=RunState.FAIL,
+        flow_info=flow_info,
+    )
+
+    event = adapter.client.emit.call_args.args[0]
+    assert event.run.facets["errorMessageRun"].message == "flow failed"
+
+
+def test_create_and_emit_task_event(adapter, task_info, deployment_info):
+    adapter.create_and_emit_task_event(
+        task_info=task_info,
         flow_run_id="flow-run-456",
         flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        job_deps=[],
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
+        deployment=deployment_info,
+        datasets=DatasetInfo(input_datasets=[], output_datasets=[]),
     )
 
     adapter.client.emit.assert_called_once()
-    event = adapter.client.emit.call_args[0][0]
-
+    event = adapter.client.emit.call_args.args[0]
     assert isinstance(event, RunEvent)
     assert event.eventType == RunState.START
+    assert event.eventTime == task_info.event_time.isoformat()
     assert event.job.name == "test_task"
     assert event.job.namespace == "default"
-
-
-def test_create_and_emit_task_event_complete(adapter, sample_datetime, sample_run_id):
-    """Test creation and emission of a task COMPLETE event."""
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.COMPLETE,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-    assert event.eventType == RunState.COMPLETE
-
-
-def test_create_and_emit_task_event_failed(adapter, sample_datetime, sample_run_id):
-    """Test creation and emission of a task FAILED event."""
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.FAIL,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-    assert event.eventType == RunState.FAIL
-
-
-def test_create_and_emit_task_event_has_nominal_time_facet(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that task event includes nominalTime facet."""
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "nominalTime" in event.run.facets
-    assert event.run.facets["nominalTime"].nominalStartTime == sample_datetime
-
-
-def test_create_and_emit_task_event_has_parent_run_facet(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that task event includes parentRun facet."""
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "parentRun" in event.run.facets
+    assert event.run.facets["nominalTime"].nominalStartTime == task_info.expected_start_time
     assert event.run.facets["parentRun"].run["runId"] == "flow-run-456"
     assert event.run.facets["parentRun"].job["name"] == "test_flow"
-
-
-def test_create_and_emit_task_event_has_job_dependencies(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that task event includes job dependencies facet."""
-    job_deps = [
-        {"namespace": "default", "name": "parent_task_1"},
-        {"namespace": "default", "name": "parent_task_2"},
-    ]
-
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        job_deps=job_deps,
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "jobDependencies" in event.run.facets
-    assert len(event.run.facets["jobDependencies"].upstream) == 2
-
-
-def test_create_and_emit_task_event_no_job_dependencies(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that jobDependencies facet is not included when no dependencies exist."""
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        job_deps=[],
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "jobDependencies" not in event.run.facets
-
-
-def test_create_and_emit_task_event_has_input_datasets(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that task event includes input datasets."""
-    input_datasets = [
-        {"uri": "postgres://localhost", "table": "users"},
-        {"uri": "postgres://localhost", "table": "accounts"},
-    ]
-
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=input_datasets,
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert len(event.inputs) == 2
-    assert event.inputs[0].namespace == "postgres://localhost"
-    assert event.inputs[0].name == "users"
-
-
-def test_create_and_emit_task_event_has_output_datasets(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that task event includes output datasets."""
-    output_datasets = [{"uri": "postgres://localhost", "table": "results"}]
-
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=output_datasets,
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert len(event.outputs) == 1
-    assert event.outputs[0].namespace == "postgres://localhost"
-    assert event.outputs[0].name == "results"
-
-
-def test_create_and_emit_task_event_has_deployment_facet(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that task event includes prefectDeployment facet."""
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "prefectDeployment" in event.run.facets
-    assert event.run.facets["prefectDeployment"].deploymentId == "dep-123"
-    assert event.run.facets["prefectDeployment"].name == "test_deploy"
-
-
-def test_create_and_emit_task_event_has_processing_engine_facet(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that task event includes processingEngine facet."""
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "processingEngine" in event.run.facets
+    assert event.run.facets["prefectDeployment"].deployment_id == "dep-123"
     assert event.run.facets["processingEngine"].version == "3.7.6"
     assert event.run.facets["processingEngine"].name == "Prefect"
-
-
-def test_create_and_emit_task_event_has_job_type_facet(
-    adapter, sample_datetime, sample_run_id
-):
-    """Test that task event includes jobType facet."""
-    adapter.create_and_emit_task_event(
-        run_id=sample_run_id,
-        event_type=RunState.START,
-        event_time=sample_datetime,
-        expected_start_time=sample_datetime,
-        flow_run_id="flow-run-456",
-        flow_name="test_flow",
-        task_name="test_task",
-        namespace="default",
-        prefect_version="3.7.6",
-        deployment=PrefectOpenLineageListener.DeploymentInfo(
-            id="dep-123",
-            created=datetime.fromisoformat("2026-07-05T08:05:01.001Z"),
-            updated=datetime.fromisoformat("2026-07-05T08:06:02.100Z"),
-            name="test_deploy",
-            namespace="default",
-            flow_run=None,
-        ),
-        input_datasets=[],
-        output_datasets=[],
-    )
-
-    event = adapter.client.emit.call_args[0][0]
-
-    assert "jobType" in event.job.facets
     assert event.job.facets["jobType"].processingType == "BATCH"
     assert event.job.facets["jobType"].integration == "Prefect"
     assert event.job.facets["jobType"].jobType == "TASK"
 
 
-# ========== Tests for adapter initialization ==========
+def test_create_and_emit_task_complete_event(adapter, task_info):
+    task_info.event_type = RunState.COMPLETE
+    adapter.create_and_emit_task_event(task_info=task_info)
+
+    event = adapter.client.emit.call_args.args[0]
+    assert event.eventType == RunState.COMPLETE
 
 
-def test_adapter_initialization_with_client():
-    """Test adapter initialization with provided client."""
+def test_create_and_emit_task_event_includes_job_dependencies(adapter, task_info):
+    task_info.job_deps = [
+        {"namespace": "default", "name": "parent_task_1"},
+        {"namespace": "default", "name": "parent_task_2"},
+    ]
+    adapter.create_and_emit_task_event(task_info=task_info)
 
-    client = patch("adapter.OpenLineageClient")
-    adapter = PrefectOpenLineageAdapter(client=client)
+    upstream = adapter.client.emit.call_args.args[0].run.facets["jobDependencies"].upstream
+    assert [item.job.name for item in upstream] == ["parent_task_1", "parent_task_2"]
+    assert upstream[0].job.namespace == "default"
 
-    assert adapter.client == client
+
+def test_create_and_emit_task_event_omits_empty_job_dependencies(adapter, task_info):
+    adapter.create_and_emit_task_event(task_info=task_info)
+
+    event = adapter.client.emit.call_args.args[0]
+    assert "jobDependencies" not in event.run.facets
+    assert event.run.facets["processingEngine"].version == "3.7.6"
+
+
+def test_create_and_emit_task_event_includes_datasets(adapter, task_info):
+    datasets = DatasetInfo(
+        input_datasets=[
+            {"uri": "postgres://localhost", "table": "users"},
+            {"uri": "postgres://localhost", "table": "accounts"},
+        ],
+        output_datasets=[{"uri": "postgres://localhost", "table": "results"}],
+    )
+    adapter.create_and_emit_task_event(task_info=task_info, datasets=datasets)
+
+    event = adapter.client.emit.call_args.args[0]
+    assert [(dataset.namespace, dataset.name) for dataset in event.inputs] == [
+        ("postgres://localhost", "users"),
+        ("postgres://localhost", "accounts"),
+    ]
+    assert [(dataset.namespace, dataset.name) for dataset in event.outputs] == [
+        ("postgres://localhost", "results")
+    ]
+
+
+def test_create_and_emit_task_event_includes_error_message(adapter, task_info):
+    task_info.event_type = RunState.FAIL
+    task_info.state_msg = "task failed"
+    adapter.create_and_emit_task_event(task_info=task_info)
+
+    event = adapter.client.emit.call_args.args[0]
+    assert event.eventType == RunState.FAIL
+    assert event.run.facets["errorMessageRun"].message == "task failed"
+
+
+def test_adapter_initialization_with_client(mock_client):
+    assert PrefectOpenLineageAdapter(client=mock_client).client is mock_client
 
 
 def test_producer_constant():
-    """Test that PRODUCER constant is correctly set."""
-    assert (
-        PRODUCER
-        == "https://github.com/OpenLineage/openlineage/integration/prefect"
-    )
+    assert PRODUCER == "https://github.com/OpenLineage/openlineage/integration/prefect"
