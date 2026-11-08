@@ -131,7 +131,7 @@ def test_create_and_emit_flow_event_includes_error_message(adapter, sample_datet
     )
 
     event = adapter.client.emit.call_args.args[0]
-    assert event.run.facets["errorMessageRun"].message == "flow failed"
+    assert event.run.facets["errorMessage"].message == "flow failed"
 
 
 def test_create_and_emit_task_event(adapter, task_info, deployment_info):
