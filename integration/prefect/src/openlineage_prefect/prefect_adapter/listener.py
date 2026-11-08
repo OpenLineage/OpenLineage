@@ -281,6 +281,9 @@ class PrefectOpenLineageListener:
                     deployment=related_deployment_info if related_deployment_info.id else None,
                 )
 
+                if event_state in [RunState.COMPLETE, RunState.FAIL, RunState.ABORT]:
+                    self.related_deployment_info.pop(flow_run_id, None)
+
     async def collect_and_process_task_runs(
         self, prefect_version: str, event: Event, event_state: RunState
     ) -> None:
@@ -384,6 +387,9 @@ class PrefectOpenLineageListener:
                 deployment=self.related_deployment_info[flow_run_id],
                 datasets=datasets,
             )
+
+            if task_info.event_type in [RunState.COMPLETE, RunState.FAIL, RunState.ABORT]:
+                self.related_deployment_info.pop(flow_run_id, None)
 
         except (PrefectHTTPStatusError, ObjectNotFound):
             logger.info(
