@@ -75,36 +75,24 @@ class PrefectOpenLineageAdapter:
     ) -> None:
         """Create and emit a flow-level OpenLineage event."""
 
-        if deployment:
-            run_facets = {
-                "prefectDeployment": PrefectDeploymentRunFacet(
-                    deployment_id=deployment.id,
-                    created=deployment.created.isoformat(),
-                    updated=deployment.updated.isoformat(),
-                    name=deployment.name,
-                ),
-                "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                    version=prefect_version if prefect_version else "unknown", name="Prefect"
-                ),
-                "errorMessageRun": error_message_run.ErrorMessageRunFacet(
-                    message=flow_info.state_msg,
-                    programmingLanguage="Python",
-                )
-                if flow_info.state_msg
-                else None,
-            }
-        else:
-            run_facets = {
-                "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                    version=prefect_version if prefect_version else "unknown", name="Prefect"
-                ),
-                "errorMessageRun": error_message_run.ErrorMessageRunFacet(
-                    message=flow_info.state_msg,
-                    programmingLanguage="Python",
-                )
-                if flow_info.state_msg
-                else None,
-            }
+        run_facets = {
+            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                version=prefect_version if prefect_version else "unknown", name="Prefect"
+            ),
+            "errorMessage": error_message_run.ErrorMessageRunFacet(
+                message=flow_info.state_msg,
+                programmingLanguage="Python",
+            )
+            if flow_info.state_msg
+            else None,
+        }
+        if deployment and deployment.id:
+            run_facets["prefectDeployment"] = PrefectDeploymentRunFacet(
+                deployment_id=deployment.id,
+                created=deployment.created.isoformat(),
+                updated=deployment.updated.isoformat(),
+                name=deployment.name,
+            )
 
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
@@ -148,48 +136,31 @@ class PrefectOpenLineageAdapter:
         output_datasets = datasets.output_datasets if datasets else []
         state_msg = task_info.state_msg if task_info.state_msg else ""
 
-        if deployment:
-            run_facets = {
-                "nominalTime": nominal_time_run.NominalTimeRunFacet(nominalStartTime=expected_start_time),
-                "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                    version=prefect_version, name="Prefect"
-                ),
-                "prefectDeployment": PrefectDeploymentRunFacet(
-                    deployment_id=deployment.id,
-                    created=deployment.created.isoformat(),
-                    updated=deployment.updated.isoformat(),
-                    name=deployment.name,
-                ),
-                "parentRun": parent_run.ParentRunFacet(
-                    run={"runId": flow_run_id},
-                    job={"namespace": namespace, "name": flow_name},
-                )
-                if flow_run_id
-                else None,
-                "errorMessageRun": error_message_run.ErrorMessageRunFacet(
-                    message=state_msg,
-                    programmingLanguage="Python",
-                )
-                if state_msg
-                else None,
-            }
-        else:
-            run_facets = {
-                "nominalTime": nominal_time_run.NominalTimeRunFacet(nominalStartTime=expected_start_time),
-                "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
-                    version=prefect_version, name="Prefect"
-                ),
-                "parentRun": parent_run.ParentRunFacet(
-                    run={"runId": flow_run_id},
-                    job={"namespace": namespace, "name": flow_name},
-                ),
-                "errorMessageRun": error_message_run.ErrorMessageRunFacet(
-                    message=state_msg,
-                    programmingLanguage="Python",
-                )
-                if state_msg
-                else None,
-            }
+        run_facets = {
+            "nominalTime": nominal_time_run.NominalTimeRunFacet(nominalStartTime=expected_start_time),
+            "processingEngine": processing_engine_run.ProcessingEngineRunFacet(
+                version=prefect_version, name="Prefect"
+            ),
+            "parentRun": parent_run.ParentRunFacet(
+                run={"runId": flow_run_id},
+                job={"namespace": namespace, "name": flow_name},
+            )
+            if flow_run_id
+            else None,
+            "errorMessageRun": error_message_run.ErrorMessageRunFacet(
+                message=state_msg,
+                programmingLanguage="Python",
+            )
+            if state_msg
+            else None,
+        }
+        if deployment and deployment.id:
+            run_facets["prefectDeployment"] = PrefectDeploymentRunFacet(
+                deployment_id=deployment.id,
+                created=deployment.created.isoformat(),
+                updated=deployment.updated.isoformat(),
+                name=deployment.name,
+            )
 
         if job_deps:
             upstream_jobs = [

@@ -234,7 +234,9 @@ class PrefectOpenLineageListener:
             if res["prefect.resource.role"] == "flow":
                 flow_run_id = event.resource.id.split(".")[-1]
                 prefect_state_msg = (
-                    event.payload["validated_state"]["message"]
+                    event.payload.get("validated_state", {}).get("message")
+                    or event.resource.get("prefect.state-message")
+                    or ""
                     if event_state in [RunState.FAIL, RunState.ABORT]
                     else ""
                 )
@@ -245,13 +247,16 @@ class PrefectOpenLineageListener:
                         related_deployment_info = self.related_deployment_info[flow_run_id]
                     except KeyError:
                         related_deployment_info = await self.get_deployment_info(flow_run_id)
+                        self.related_deployment_info[flow_run_id] = related_deployment_info
                 else:
                     related_deployment_info = await self.get_deployment_info(flow_run_id)
                     self.related_deployment_info[flow_run_id] = related_deployment_info
                 flow_info = await self.get_flow_info(related_deployment_info.flow_run)
                 try:
                     ol_flow_run_id: str = self.build_run_id(
-                        flow_info.start_time, flow_info.name, related_deployment_info.namespace
+                        flow_info.start_time,
+                        flow_info.name,
+                        self.related_deployment_info[flow_run_id].namespace,
                     )
                 except AttributeError:
                     logger.info(
@@ -264,7 +269,7 @@ class PrefectOpenLineageListener:
                 flow_info = dataclasses.replace(
                     flow_info,
                     event_time=event_time,
-                    namespace=related_deployment_info.namespace,
+                    namespace=self.related_deployment_info[flow_run_id].namespace,
                     state_msg=prefect_state_msg,
                 )
 
@@ -283,27 +288,35 @@ class PrefectOpenLineageListener:
 
         event_time = event.occurred
         expected_start_time = event.payload["task_run"]["expected_start_time"]
-        parsed_start_timestamp = event.payload["task_run"]["start_time"][:-1] + "+00:00"
-        start_time = datetime.fromisoformat(parsed_start_timestamp)
         prefect_task_run_id = event.resource.id.split(".")[-1]
+        raw_start_time = event.payload["task_run"].get("start_time")
+        if not raw_start_time:
+            logger.info(
+                "No start time found for task run %s. An event will not be emitted.", prefect_task_run_id
+            )
+            return
+        start_time = datetime.fromisoformat(raw_start_time.replace("Z", "+00:00"))
         prefect_state_msg = (
-            event.payload["validated_state"]["message"]
+            event.payload.get("validated_state", {}).get("message")
+            or event.resource.get("prefect.state-message")
+            or ""
             if event_state in [RunState.FAIL, RunState.ABORT]
             else ""
         )
-        if TASK_NAME_TYPE == "base":
-            task_name = self.get_base_name(event.resource.name)
-        elif TASK_NAME_TYPE == "full":
-            task_name = event.resource.name
+        task_name = (
+            self.get_base_name(event.resource.name) if TASK_NAME_TYPE == "base" else event.resource.name
+        )
         try:
             for res in event.related:
                 if res["prefect.resource.id"].split(".")[1] == "flow-run":
                     flow_run_id = res["prefect.resource.id"].split(".")[-1]
             if event_state != RunState.START:
+                # check cache and fetch related deployment info if not cached
                 try:
                     related_deployment_info = self.related_deployment_info[flow_run_id]
                 except KeyError:
                     related_deployment_info = await self.get_deployment_info(flow_run_id)
+                    self.related_deployment_info[flow_run_id] = related_deployment_info
             else:
                 related_deployment_info = await self.get_deployment_info(flow_run_id)
                 self.related_deployment_info[flow_run_id] = related_deployment_info
@@ -340,9 +353,7 @@ class PrefectOpenLineageListener:
             ol_flow_run_id = ""
             try:
                 ol_flow_run_id = self.build_run_id(
-                    flow_info.start_time,
-                    flow_info.name,
-                    self.related_deployment_info[flow_run_id].namespace,
+                    flow_info.start_time, flow_info.name, self.related_deployment_info[flow_run_id].namespace
                 )
             except AttributeError:
                 logger.info(
