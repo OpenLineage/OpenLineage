@@ -11,4 +11,5 @@ describe exact dataset-to-dataset, job-to-dataset, dataset-to-job, or job-to-job
 relationships instead of relying on lineage inferred from the event boundary.
 
 Use the [Parent Job Facet](parent_job.md) on JobEvents to describe the design-time hierarchy between a job and its
-parent job. On RunEvents, the [Parent Run Facet](../run-facets/parent_run.md) takes precedence.
+parent job. It can also be used on RunEvents when the parent run is unknown; if the
+[Parent Run Facet](../run-facets/parent_run.md) is also present, it takes precedence.

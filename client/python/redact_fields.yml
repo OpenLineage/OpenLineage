@@ -233,18 +233,14 @@
       redact_fields: []
 - module: parent_job
   classes:
-    - class_name: Job
+    - class_name: ParentJobFacetJob
       redact_fields:
         - namespace
         - name
-    - class_name: ParentJobFacet
+    - class_name: ParentJobFacetRoot
       redact_fields:
         - job
-    - class_name: RootJobIdentifier
-      redact_fields:
-        - namespace
-        - name
-    - class_name: Root
+    - class_name: ParentJobFacet
       redact_fields:
         - job
 - module: parent_run

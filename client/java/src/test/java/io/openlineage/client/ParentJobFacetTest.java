@@ -43,7 +43,7 @@ class ParentJobFacetTest {
                     .newParentJobFacetRootBuilder()
                     .job(
                         openLineage
-                            .newRootJobIdentifierBuilder()
+                            .newParentJobFacetJobBuilder()
                             .namespace("airflow")
                             .name("my_dag")
                             .build())
