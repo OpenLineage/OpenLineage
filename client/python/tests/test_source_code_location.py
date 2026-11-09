@@ -936,11 +936,11 @@ def test_worktree_emits_shared_metadata_and_its_own_commit(repository, tmp_path,
 @pytest.mark.parametrize("absolute", [False, True])
 def test_common_git_directory_pointer(tmp_path, absolute):
     """Relative and absolute commondir pointers resolve to the shared metadata directory."""
-    from openlineage.client.git import _common_git_dir
+    from openlineage.client.git import _get_common_git_dir
 
     common = tmp_path / "common"
     private = common / "worktrees" / "linked"
     private.mkdir(parents=True)
     (private / "commondir").write_text(str(common) if absolute else "../..")
-    assert _common_git_dir(private) == common.resolve()
-    assert _common_git_dir(common) == common
+    assert _get_common_git_dir(private) == common.resolve()
+    assert _get_common_git_dir(common) == common
