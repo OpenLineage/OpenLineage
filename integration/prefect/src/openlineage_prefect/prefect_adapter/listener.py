@@ -133,7 +133,7 @@ class PrefectOpenLineageListener:
     async def get_prefect_version(self) -> str | None:
         """Retrieves the Prefect version from the Prefect API."""
         try:
-            response = requests.get(f"{PREFECT_API_URL}/admin/version", timeout=(5, 20))
+            response = await self.client._client.get("/admin/version")  # NOQA: SLF001
             return response.json()
         except (requests.RequestException, ValueError):
             logger.info("Cannot get the Prefect version. Did you set the PREFECT_API_URL?")
@@ -145,7 +145,7 @@ class PrefectOpenLineageListener:
         for each artifact.
         """
         payload = {"artifacts": {"task_run_id": {"any_": [run_id]}}}
-        response = requests.post(f"{PREFECT_API_URL}/artifacts/filter", timeout=(5, 20), json=payload)
+        response = await self.client._client.post("/artifacts/filter", json=payload)  # NOQA: SLF001
         if response.status_code == STATUS_CODE_OK:
             dataset_info = []
             artifacts = response.json()
