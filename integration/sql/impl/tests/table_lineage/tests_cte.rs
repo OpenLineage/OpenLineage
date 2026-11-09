@@ -32,6 +32,29 @@ fn parse_simple_cte() {
 }
 
 #[test]
+fn parse_cte_select_predicate_subquery_table_is_input() {
+    // The statement body reads the CTE while a predicate subquery reads
+    // another table: both the CTE's own input and the predicate table
+    // are inputs of the statement. This is the plain-statement
+    // counterpart of the multi-table insert predicate tests - the
+    // collect_inputs change that stopped dropping a frame's own
+    // dependencies when the frame has CTEs applies to every statement,
+    // not only to multi-table inserts.
+    assert_eq!(
+        test_sql(
+            "WITH c AS (SELECT * FROM a) \
+             SELECT * FROM c WHERE id IN (SELECT id FROM b)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
 fn parse_bugged_cte() {
     let sql = "
         WITH sum_trans (

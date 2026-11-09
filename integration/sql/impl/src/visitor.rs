@@ -8,9 +8,10 @@ use anyhow::{anyhow, Result};
 use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
-    JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
-    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    JoinConstraint, JoinOperator, MultiTableInsertIntoClause, ObjectName, ObjectNamePart, Query,
+    RenameTableNameKind, Select, SelectItem, SetExpr, Statement, Subscript, Table, TableFactor,
+    TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec,
+    WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, Dialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -777,17 +778,9 @@ impl Visit for Statement {
                 // Multi-table inserts (Snowflake/Oracle INSERT ALL and
                 // INSERT FIRST) carry their targets in the multi-table
                 // clauses, and `insert.table` is empty for them. Collect
-                // every clause target as an output. Each target's effective
-                // name is resolved first: IDENTIFIER('t') names the table
-                // through a function call, and converting the raw name
-                // would register a false output called IDENTIFIER and lose
-                // the real target.
+                // every clause target as an output.
                 for clause in &insert.multi_table_into_clauses {
-                    if let Some(name) =
-                        resolve_effective_table_name(&clause.table_name, &None, context)
-                    {
-                        context.add_insert_output(convert_to_idents(&name));
-                    }
+                    add_multi_table_target(clause, context);
                 }
                 for when_clause in &insert.multi_table_when_clauses {
                     // A WHEN predicate is a general expression and can
@@ -803,20 +796,12 @@ impl Visit for Statement {
                     let frame = context.pop_frame().unwrap();
                     context.collect_aliases(&frame);
                     for clause in &when_clause.into_clauses {
-                        if let Some(name) =
-                            resolve_effective_table_name(&clause.table_name, &None, context)
-                        {
-                            context.add_insert_output(convert_to_idents(&name));
-                        }
+                        add_multi_table_target(clause, context);
                     }
                 }
                 if let Some(else_clauses) = &insert.multi_table_else_clause {
                     for clause in else_clauses {
-                        if let Some(name) =
-                            resolve_effective_table_name(&clause.table_name, &None, context)
-                        {
-                            context.add_insert_output(convert_to_idents(&name));
-                        }
+                        add_multi_table_target(clause, context);
                     }
                 }
                 match &insert.table {
@@ -1092,6 +1077,20 @@ impl Visit for Table {
 }
 
 // --- Utils ---
+
+/// Register one multi-table insert clause target (an INTO clause of a
+/// Snowflake/Oracle INSERT ALL or INSERT FIRST) as an output. The
+/// target's effective name is resolved first: IDENTIFIER('t') names the
+/// table through a function call, and converting the raw name would
+/// register a false output called IDENTIFIER and lose the real target.
+/// The unconditional into-clauses, the WHEN clauses' into-clauses and
+/// the ELSE into-clauses all go through here so the three paths cannot
+/// drift apart.
+fn add_multi_table_target(clause: &MultiTableInsertIntoClause, context: &mut Context) {
+    if let Some(name) = resolve_effective_table_name(&clause.table_name, &None, context) {
+        context.add_insert_output(convert_to_idents(&name));
+    }
+}
 
 fn get_table_name_from_table_factor(table: &TableFactor, context: &Context) -> Option<Vec<Ident>> {
     if let TableFactor::Table { name, args, .. } = table {

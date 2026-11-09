@@ -470,6 +470,12 @@ fn test_insert_first_when_scalar_subquery_projection_not_in_column_lineage() {
 
 #[test]
 fn test_insert_all_column_lineage() {
+    // Note: per-target column attribution is not supported yet. With
+    // several targets the descendants carry origin: None and nothing
+    // ties x to t1 or y to t2; with a column list, as in
+    // INTO t1 (c1) VALUES (x), the descendant would still be named x,
+    // not c1. This test documents the current behavior, not the final
+    // intended one.
     let output = test_sql_dialect(
         "INSERT ALL INTO t1 VALUES (x) INTO t2 VALUES (y) SELECT x, y FROM s",
         "snowflake",

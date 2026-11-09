@@ -897,6 +897,24 @@ fn insert_all_identifier_qualified_targets() {
 }
 
 #[test]
+fn select_from_identifier_qualified_table() {
+    // resolve_effective_table_name is shared by every table factor, not
+    // only insert targets: a qualified IDENTIFIER('db.schema.t') in a
+    // plain SELECT resolves to the same database/schema/table
+    // components as a literal qualified name, not to one table
+    // literally named "db.schema.t".
+    assert_eq!(
+        test_sql_dialect("SELECT * FROM IDENTIFIER('db.schema.t')", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["db.schema.t"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
 fn insert_target_named_like_cte() {
     // The target is outside the CTE's alias scope: sharing its name must
     // not suppress it as an output.
