@@ -460,3 +460,308 @@ fn test_qualified_star_quoted_qualifier_skips_unquoted_alias_in_postgres() {
         test_sql_dialect("SELECT \"D\".* FROM (SELECT a FROM t) AS D", "postgres").unwrap();
     assert_eq!(output.column_lineage, vec![]);
 }
+
+// Wildcards over CTEs. A CTE named in FROM offers its output columns to the
+// wildcard the same way a derived table does, so the cases below mirror the
+// derived-table ones above. CTEs are looked up by the name as written, so a
+// qualified reference such as `other.d` stays a physical table.
+
+#[test]
+fn test_star_over_cte() {
+    let output = test_sql("WITH d AS (SELECT a, b FROM table1) SELECT * FROM d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("a", "table1", "a"), lineage("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_qualified_star_over_cte() {
+    let output = test_sql("WITH d AS (SELECT a, b FROM table1) SELECT d.* FROM d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("a", "table1", "a"), lineage("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_qualified_star_over_aliased_cte() {
+    let output = test_sql("WITH d AS (SELECT a, b FROM table1) SELECT x.* FROM d AS x").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("a", "table1", "a"), lineage("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_star_over_chained_ctes() {
+    let output = test_sql(
+        "WITH first AS (SELECT a, b FROM table1), second AS (SELECT * FROM first) \
+         SELECT * FROM second",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("a", "table1", "a"), lineage("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_star_over_joined_ctes() {
+    let output = test_sql(
+        "WITH d1 AS (SELECT a FROM table1), d2 AS (SELECT b FROM table2) \
+         SELECT * FROM d1 JOIN d2 ON d1.a = d2.b",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("a", "table1", "a"), lineage("b", "table2", "b")]
+    );
+}
+
+#[test]
+fn test_qualified_star_picks_one_of_two_ctes() {
+    let output = test_sql(
+        "WITH d1 AS (SELECT a FROM table1), d2 AS (SELECT b FROM table2) \
+         SELECT d2.* FROM d1 JOIN d2 ON d1.a = d2.b",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("b", "table2", "b")]);
+}
+
+#[test]
+fn test_star_and_explicit_column_over_cte() {
+    let output = test_sql("WITH d AS (SELECT a, b FROM table1) SELECT *, a AS a2 FROM d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            lineage("a", "table1", "a"),
+            lineage("a2", "table1", "a"),
+            lineage("b", "table1", "b"),
+        ]
+    );
+}
+
+#[test]
+fn test_cte_column_list_renames_by_position() {
+    let output = test_sql("WITH d(x, y) AS (SELECT a, b FROM table1) SELECT * FROM d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("x", "table1", "a"), lineage("y", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_cte_column_list_names_resolve_explicitly() {
+    // The renamed columns are the CTE's columns for explicit references too.
+    let output = test_sql("WITH d(x, y) AS (SELECT a, b FROM table1) SELECT y FROM d").unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("y", "table1", "b")]);
+}
+
+#[test]
+fn test_cte_column_list_counts_a_constant_position() {
+    let output = test_sql("WITH d(k, x) AS (SELECT 1, a FROM table1) SELECT * FROM d").unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("x", "table1", "a")]);
+}
+
+#[test]
+fn test_star_exclude_over_cte_snowflake() {
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT id, secret FROM table1) SELECT * EXCLUDE (SECRET) FROM d",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("id", "table1", "id")]);
+}
+
+#[test]
+fn test_star_rename_over_cte_snowflake() {
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT a, b FROM table1) SELECT * RENAME (a AS z) FROM d",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("b", "table1", "b"), lineage("z", "table1", "a")]
+    );
+}
+
+#[test]
+fn test_star_replace_over_cte_bigquery() {
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT a, b, c FROM table1) SELECT * REPLACE (c AS b) FROM d",
+        "bigquery",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            lineage("a", "table1", "a"),
+            lineage("b", "table1", "c"),
+            lineage("c", "table1", "c"),
+        ]
+    );
+}
+
+#[test]
+fn test_star_ilike_over_cte_snowflake() {
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT id, secret FROM table1) SELECT * ILIKE '%id%' FROM d",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("id", "table1", "id")]);
+}
+
+#[test]
+fn test_star_over_qualified_name_is_not_the_cte() {
+    // `other.d` names a physical table even though a CTE `d` is in scope,
+    // so the wildcard has no columns to expand.
+    let output = test_sql("WITH d AS (SELECT a FROM table1) SELECT * FROM other.d").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_star_over_cte_of_star_over_physical_table() {
+    // The CTE's own `*` is over a physical table, whose columns are not
+    // known at this layer, so neither wildcard has anything to expand.
+    let output = test_sql("WITH d AS (SELECT * FROM table1) SELECT * FROM d").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_star_over_cte_does_not_reach_across_union() {
+    // The CTE's columns belong to the FROM clause that names it: the other
+    // side of the UNION reads a physical table and contributes nothing.
+    let output =
+        test_sql("WITH d AS (SELECT a FROM table1) SELECT * FROM d UNION ALL SELECT * FROM table2")
+            .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "table1", "a")]);
+}
+
+#[test]
+fn test_star_over_recursive_cte() {
+    let output = test_sql_dialect(
+        "WITH RECURSIVE r AS (SELECT id FROM src UNION ALL SELECT id FROM r) SELECT * FROM r",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("id", "src", "id")]);
+}
+
+#[test]
+fn test_star_over_cte_keeps_table_lineage() {
+    let output = test_sql("WITH d AS (SELECT a FROM table1) SELECT * FROM d").unwrap();
+    assert_eq!(output.table_lineage.in_tables, vec![table("table1")]);
+}
+
+#[test]
+fn test_star_over_parenthesised_join_of_ctes() {
+    let output = test_sql(
+        "WITH d1 AS (SELECT a FROM table1), d2 AS (SELECT b FROM table2) \
+         SELECT * FROM (d1 JOIN d2 ON d1.a = d2.b)",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("a", "table1", "a"), lineage("b", "table2", "b")]
+    );
+}
+
+#[test]
+fn test_update_from_cte_reports_no_cte_columns() {
+    // A CTE's columns are offered only to a SELECT's FROM clause, where a
+    // wildcard consumes them; an UPDATE ... FROM must not report them as
+    // lineage of their own.
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT a FROM table1) UPDATE table2 SET b = d.a FROM d WHERE table2.id = d.a",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_column_list_at_cte_reference_renames_by_position() {
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT a, b FROM table1) SELECT * FROM d AS x(p, q)",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("p", "table1", "a"), lineage("q", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_short_column_list_at_cte_reference_keeps_the_rest() {
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT a, b FROM table1) SELECT * FROM d AS x(p)",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("b", "table1", "b"), lineage("p", "table1", "a")]
+    );
+}
+
+#[test]
+fn test_column_list_at_reference_over_cte_column_list() {
+    let output = test_sql_dialect(
+        "WITH d(x, y) AS (SELECT a, b FROM table1) SELECT * FROM d AS z(p, q)",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("p", "table1", "a"), lineage("q", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_column_list_at_reference_with_unknown_order_offers_nothing() {
+    // The CTE projects `*`, so which column a position names is not known
+    // here; reporting the old names would name columns the query does not
+    // output, so the wildcard expands nothing.
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT * FROM (SELECT a, b FROM table1) s) SELECT * FROM d AS x(p, q)",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_column_list_at_cte_reference_names_resolve_explicitly() {
+    let output = test_sql_dialect(
+        "WITH d AS (SELECT a, b FROM table1) SELECT p FROM d AS x(p, q)",
+        "postgres",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("p", "table1", "a")]);
+}
+
+#[test]
+fn test_qualified_star_over_one_side_of_cte_self_join() {
+    let output = test_sql(
+        "WITH d AS (SELECT a, b FROM table1) SELECT x.* FROM d AS x JOIN d AS y ON x.a = y.a",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("a", "table1", "a"), lineage("b", "table1", "b")]
+    );
+}
+
+#[test]
+fn test_cte_column_list_with_unknown_order_offers_nothing() {
+    // The CTE's body projects `*`, so its column list cannot be applied by
+    // position; the wildcard expands nothing rather than old names.
+    let output =
+        test_sql("WITH d(x, y) AS (SELECT * FROM (SELECT a, b FROM table1) s) SELECT * FROM d")
+            .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
