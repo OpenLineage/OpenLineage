@@ -86,41 +86,30 @@ class PrefectOpenLineageListener:
         """
         flow_run = await self.client.read_flow_run(flow_run_id)
 
+        if not flow_run.deployment_id:
+            logger.info("No deployment ID found for flow run: %s", flow_run_id)
+            return DeploymentInfo(
+                namespace=JOB_NAMESPACE,
+                flow_run=flow_run,
+            )
+
         try:
             deployment = await self.client.read_deployment(flow_run.deployment_id)
-            try:
-                ns = deployment.job_variables["env"]["OPENLINEAGE_NAMESPACE"]
-            except KeyError:
-                ns = JOB_NAMESPACE
-                logger.info(
-                    "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
-                    OPENLINEAGE_NAMESPACE env variable."
-                )
-                if JOB_NAMESPACE == "default":
-                    logger.info("OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'")
+        except (ObjectNotFound, PrefectHTTPStatusError):
+            logger.info("No deployment found for deployment ID: %s", flow_run.deployment_id)
             return DeploymentInfo(
-                id=str(deployment.id),
-                created=deployment.created,
-                updated=deployment.updated,
-                name=deployment.name,
-                namespace=ns,
+                namespace=JOB_NAMESPACE,
                 flow_run=flow_run,
             )
-
-        except (AttributeError, TypeError):
-            logger.info("Deployment not found for flow run: %s", flow_run_id)
-            ns = JOB_NAMESPACE
-            logger.info(
-                "OPENLINEAGE_NAMESPACE deployment variable not found. Using \
-                OPENLINEAGE_NAMESPACE env variable for the namespace."
-            )
-            if JOB_NAMESPACE == "default":
-                logger.info("OPENLINEAGE_NAMESPACE env variable not set. Namespace will be 'default.'")
-
-            return DeploymentInfo(
-                namespace=ns,
-                flow_run=flow_run,
-            )
+        ns = (deployment.job_variables or {}).get("env", {}).get("OPENLINEAGE_NAMESPACE", JOB_NAMESPACE)
+        return DeploymentInfo(
+            id=str(deployment.id),
+            created=deployment.created,
+            updated=deployment.updated,
+            name=deployment.name,
+            namespace=ns,
+            flow_run=flow_run,
+        )
 
     async def get_flow_info(self, flow_run) -> FlowInfo:
         """
@@ -146,7 +135,7 @@ class PrefectOpenLineageListener:
         try:
             response = requests.get(f"{PREFECT_API_URL}/admin/version", timeout=(5, 20))
             return response.json()
-        except TypeError:
+        except (requests.RequestException, ValueError):
             logger.info("Cannot get the Prefect version. Did you set the PREFECT_API_URL?")
 
     async def get_artifacts_by_task_run(self, run_id: str) -> list[dict]:
@@ -181,12 +170,12 @@ class PrefectOpenLineageListener:
                     data_list = json.loads(artifact["data"])
                     try:
                         uri = data_list[0]["database_uri"]
-                    except AttributeError:
+                    except (KeyError, IndexError, TypeError):
                         logging.warning("Failed to retrieve database_uri from artifact data.")
                         uri = None
                     try:
                         table = data_list[0]["table"]
-                    except AttributeError:
+                    except (KeyError, IndexError, TypeError):
                         logging.warning("Failed to retrieve table from artifact data.")
                         table = None
                     dataset_info.append({"uri": uri, "table": table, "dataset_type": dataset_type})
