@@ -145,6 +145,28 @@ class OneLakeFacetUtilsTest {
   }
 
   @Test
+  void testReplacedDatasetDropsThePreviousSymlinks() {
+    String location = WAREHOUSE + "/Tables/raw/orders";
+    String oneLake = "abfss://" + WORKSPACE + "@onelake.dfs.fabric.microsoft.com";
+    DatasetIdentifier first =
+        new DatasetIdentifier("wh_primary.raw.orders", NAMESPACE)
+            .withSymlink(location, oneLake, DatasetIdentifier.SymlinkType.LOCATION);
+
+    OpenLineage.InputDataset input =
+        DatasetFactory.input(context)
+            .sparkDatasetBuilder()
+            .dataset(first)
+            .dataset(new DatasetIdentifier("wh_other.raw.orders", NAMESPACE))
+            .build();
+
+    assertThat(input.getFacets().getSymlinks()).isNull();
+    OpenLineage.FabricOneLakeDatasetFacet facet = input.getFacets().getFabric_onelake();
+    assertThat(facet.getItemName()).isEqualTo("wh_other");
+    assertThat(facet.getItemId()).isNull();
+    assertThat(facet.getLocation()).isNull();
+  }
+
+  @Test
   void testWorkspaceNameOnlyForTheSessionsWorkspace() {
     runtimeConf.put("trident.workspace.id", WORKSPACE);
     hadoopConf.set("trident.workspace.name", "sales-analytics");
