@@ -30,6 +30,15 @@ pub struct ContextFrame {
     // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
     pub bare_dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
+    // Whether this frame's region is the main body of its statement, where
+    // table references become inputs directly. The flag belongs to the
+    // frame's own region: Query::visit sets it on the frames it creates,
+    // and frame merges (collect, coalesce, collect_aliases,
+    // collect_with_table) must never overwrite the receiving frame's flag
+    // with the merged frame's. A merged subquery frame is routinely not a
+    // main body (a query with a WITH unsets the flag on its own frames);
+    // copying its flag up would silently demote the rest of the enclosing
+    // body - later joins, say - to dependency recording.
     pub is_main_body: bool,
 }
 
@@ -393,7 +402,6 @@ impl<'a> Context<'a> {
         frame.column_ancestry = result;
         frame.dependencies.extend(old.dependencies);
         frame.bare_dependencies.extend(old.bare_dependencies);
-        frame.is_main_body = old.is_main_body;
     }
 
     fn expand_ancestors(ancestor: ColumnMeta, old: &ContextFrame) -> Vec<ColumnMeta> {
@@ -446,7 +454,24 @@ impl<'a> Context<'a> {
             frame.column_ancestry.extend(old.column_ancestry.drain());
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
-            frame.is_main_body = old.is_main_body;
+            // CTE registrations travel up with the frame, so the used
+            // dependencies of CTEs defined in nested queries still reach
+            // collect_inputs. Merges flow from inner scopes outward, so a
+            // registration already present - an outer scope's - wins over
+            // a same-named nested one.
+            for (name, dep) in old.cte_dependencies {
+                frame.cte_dependencies.entry(name).or_insert(dep);
+            }
+        }
+    }
+
+    /// CTE registrations never outlive their statement: collect() carries
+    /// nested registrations up to the global frame, so drop them there
+    /// once the statement's inputs have been collected, lest a later
+    /// statement mistake them for its own CTEs.
+    pub fn clear_global_cte_dependencies(&mut self) {
+        if let Some(frame) = self.frames.first_mut() {
+            frame.cte_dependencies.clear();
         }
     }
 
@@ -508,7 +533,6 @@ impl<'a> Context<'a> {
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
-            frame.is_main_body = old.is_main_body;
         }
     }
 
@@ -626,9 +650,33 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// Merges only the table dependencies of a popped frame, without its
+    /// CTE and alias scope. Used for frames whose scope ends with them -
+    /// a multi-table insert's WHEN predicate, say: the tables it reads are
+    /// inputs of the statement, but a CTE it defines is visible only
+    /// inside the predicate. Carrying that CTE's registration into the
+    /// statement frame (as collect_aliases would) makes later, unrelated
+    /// references to a real table of the same name resolve to the CTE and
+    /// vanish from the inputs. The resolved dependencies of CTEs the frame
+    /// did use are carried as plain dependencies - they were resolved
+    /// against the frame's own scope, so they are real tables - but the
+    /// CTE registrations themselves are not.
+    pub fn collect_dependencies(&mut self, old: &ContextFrame) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame.dependencies.extend(old.dependencies.clone());
+            frame
+                .bare_dependencies
+                .extend(old.bare_dependencies.clone());
+            for value in old.cte_dependencies.values() {
+                if value.is_used {
+                    frame.dependencies.extend(value.deps.clone());
+                }
+            }
+        }
+    }
+
     pub fn collect_aliases(&mut self, old: &ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
-            frame.is_main_body = old.is_main_body;
             frame.dependencies.extend(old.dependencies.clone());
             frame
                 .bare_dependencies

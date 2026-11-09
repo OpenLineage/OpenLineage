@@ -146,3 +146,21 @@ fn test_merge_multiple_clauses() {
         }
     )
 }
+
+#[test]
+fn merge_into_identifier_target() {
+    // A MERGE target named through IDENTIFIER('db.s.t') resolves to the
+    // qualified table, like an INSERT target does.
+    assert_eq!(
+        test_sql_dialect(
+            "MERGE INTO IDENTIFIER('db.s.t') USING src ON 1=1 WHEN MATCHED THEN DELETE",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["db.s.t"])
+        }
+    );
+}

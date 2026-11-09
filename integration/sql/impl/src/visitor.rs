@@ -789,12 +789,15 @@ impl Visit for Statement {
                     // predicate, it is visited in a temporary frame: the
                     // columns a predicate subquery projects are compared
                     // or tested, never inserted, so they must not enter
-                    // the INSERT's column lineage. collect_aliases keeps
-                    // the frame's table dependencies as inputs.
+                    // the INSERT's column lineage. Only the frame's table
+                    // dependencies are kept: a CTE or alias defined inside
+                    // one predicate is scoped to it, and registering it on
+                    // the statement frame would hide a real table of the
+                    // same name read by a later predicate.
                     context.push_frame();
                     when_clause.condition.visit(context)?;
                     let frame = context.pop_frame().unwrap();
-                    context.collect_aliases(&frame);
+                    context.collect_dependencies(&frame);
                     for clause in &when_clause.into_clauses {
                         add_multi_table_target(clause, context);
                     }
@@ -806,7 +809,9 @@ impl Visit for Statement {
                 }
                 match &insert.table {
                     TableObject::TableName(name) => {
-                        if let Some(name) = resolve_effective_table_name(name, &None, context) {
+                        if let Some(name) =
+                            resolve_insert_target_name(name, &insert.columns, context)
+                        {
                             let idents = convert_to_idents(&name);
                             // An empty name can never be a real target (it is
                             // what multi-table inserts leave behind); registering
@@ -1062,6 +1067,7 @@ impl Visit for Statement {
         let bare_deps = frame.bare_dependencies.clone();
         context.collect_inputs(cte_deps, deps, bare_deps);
         context.collect(frame);
+        context.clear_global_cte_dependencies();
 
         Ok(())
     }
@@ -1090,6 +1096,43 @@ fn add_multi_table_target(clause: &MultiTableInsertIntoClause, context: &mut Con
     if let Some(name) = resolve_effective_table_name(&clause.table_name, &None, context) {
         context.add_insert_output(convert_to_idents(&name));
     }
+}
+
+/// Resolve the effective name of a regular INSERT target. Databricks and
+/// SQL Server also accept IDENTIFIER('db.schema.t') as the target, but
+/// sqlparser parses that as the bare name IDENTIFIER with the string
+/// landing in the statement's column list, so recover the real name from
+/// there when the shape matches exactly: a single-part `identifier` name
+/// and one single-quoted pseudo-column. A real table named `identifier`
+/// with a genuine column list has unquoted columns and is unaffected.
+fn resolve_insert_target_name(
+    name: &ObjectName,
+    columns: &[ObjectName],
+    context: &Context,
+) -> Option<ObjectName> {
+    let is_mssql_or_databricks = context.dialect().as_base().is::<DatabricksDialect>()
+        || context.dialect().as_base().is::<MsSqlDialect>();
+    if is_mssql_or_databricks && name.0.len() == 1 && columns.len() == 1 {
+        let is_bare_identifier = matches!(
+            name.0.first(),
+            Some(ObjectNamePart::Identifier(part)) if part.value.eq_ignore_ascii_case("identifier")
+        );
+        let pseudo_column = match columns.first() {
+            Some(column) if column.0.len() == 1 => match column.0.first() {
+                Some(ObjectNamePart::Identifier(part)) if part.quote_style == Some('\'') => {
+                    Some(part.value.clone())
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        if is_bare_identifier {
+            if let Some(value) = pseudo_column {
+                return Some(parse_identifier_string(&value, context.dialect().as_base()));
+            }
+        }
+    }
+    resolve_effective_table_name(name, &None, context)
 }
 
 fn get_table_name_from_table_factor(table: &TableFactor, context: &Context) -> Option<Vec<Ident>> {
@@ -1121,7 +1164,14 @@ fn resolve_effective_table_name(
         if !is_identifier_function {
             return Some(name.clone());
         }
-        let args = args.as_ref()?; // Return None if there are no args
+        // Only a genuine IDENTIFIER() call carries arguments. With none,
+        // this is a plain, possibly qualified, table name whose first
+        // part happens to be `identifier` - a schema or catalog named
+        // `identifier`, say - and it must be kept as written.
+        let args = match args {
+            Some(args) => args,
+            None => return Some(name.clone()),
+        };
         if args.args.len() != 1 {
             return None; // Return None if the length is not 1, we do not support it yet
         }
@@ -1157,7 +1207,21 @@ fn get_table_name_from_identifier_function_args(
             Expr::Value(ValueWithSpan {
                 value: Value::SingleQuotedString(ident),
                 span: _,
-            }) => Some(parse_identifier_string(ident, dialect)),
+            }) => {
+                let name = parse_identifier_string(ident, dialect);
+                // IDENTIFIER('') names nothing: emit no dataset rather
+                // than one with an empty name.
+                let is_empty_name = name.0.len() == 1
+                    && matches!(
+                        name.0.first(),
+                        Some(ObjectNamePart::Identifier(part)) if part.value.is_empty()
+                    );
+                if is_empty_name {
+                    None
+                } else {
+                    Some(name)
+                }
+            }
             _ => None,
         },
         _ => None,

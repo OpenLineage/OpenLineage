@@ -219,3 +219,106 @@ fn cte_insert_overwrite() {
         }
     )
 }
+
+#[test]
+fn nested_with_cte_inputs_are_collected() {
+    // A CTE defined in a nested WITH subquery contributes its own inputs,
+    // and its name must not surface as an input itself: b reads t2, so t2
+    // is the only input.
+    assert_eq!(
+        test_sql(
+            "WITH o AS (SELECT 1) SELECT * FROM \
+             (WITH b AS (SELECT * FROM t2) \
+             SELECT * FROM (WITH c AS (SELECT 1 AS x) SELECT * FROM c) q \
+             JOIN b ON 1=1) z",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["t2"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn nested_with_in_projection_subquery_inputs_are_collected() {
+    // The same collection through a scalar subquery in the projection:
+    // the nested CTE c reads a, so a and the outer CTE's input x are the
+    // inputs; c itself is not.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH o AS (SELECT * FROM x) \
+             SELECT (WITH c AS (SELECT * FROM a) \
+             SELECT max(id) FROM (WITH d AS (SELECT 1 id) SELECT * FROM d) q \
+             JOIN c ON 1=1) AS m FROM o",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "x"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn predicate_subquery_with_nested_with_inputs_are_collected() {
+    // A table joined inside a predicate subquery whose FROM is a derived
+    // table with its own WITH is a statement input alongside the CTE's.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH c AS (SELECT * FROM a) SELECT * FROM c \
+             WHERE id IN (SELECT id FROM \
+             (WITH d AS (SELECT 1 AS id) SELECT * FROM d) q JOIN b ON 1=1)",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn join_back_to_cte_adds_no_cte_input() {
+    // Joining back to the statement's CTE after a nested WITH subquery
+    // adds nothing: c resolves to the CTE, whose input a is already
+    // counted.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH c AS (SELECT * FROM a) SELECT * FROM c \
+             JOIN (WITH d AS (SELECT 1 AS n) SELECT * FROM d) q ON 1=1 \
+             JOIN c c2 ON 1=1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn qualified_join_matching_cte_name_is_an_input() {
+    // Only a bare reference can name a CTE: sch.c is a real table even
+    // though the statement defines a CTE called c.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH c AS (SELECT * FROM a) SELECT * FROM \
+             (WITH d AS (SELECT 1 AS n) SELECT * FROM d) q JOIN sch.c ON 1=1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["sch.c"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
