@@ -41,7 +41,12 @@ impl Visit for With {
             context.push_frame();
             self.cte_tables[i].query.visit(context)?;
             let frame = context.pop_frame();
-            if let Some(f) = frame {
+            if let Some(mut f) = frame {
+                // The CTE body's own WITH scope ends with the body:
+                // resolve its registrations before they merge into the
+                // enclosing query, where they would capture references
+                // meant for real tables or enclosing CTEs.
+                context.resolve_subquery_cte_dependencies(&mut f);
                 let table = DbTableMeta::new(
                     vec![self.cte_tables[i].alias.name.clone()],
                     context.dialect(),
@@ -124,7 +129,12 @@ impl Visit for TableFactor {
             } => {
                 context.push_frame();
                 subquery.visit(context)?;
-                let frame = context.pop_frame().unwrap();
+                let mut frame = context.pop_frame().unwrap();
+                // The subquery's WITH scope ends with it: resolve its
+                // CTE registrations before they merge into the enclosing
+                // query, where they would capture references meant for
+                // real tables or enclosing CTEs.
+                context.resolve_subquery_cte_dependencies(&mut frame);
 
                 if let Some(alias) = alias {
                     let table = DbTableMeta::new(
@@ -207,14 +217,14 @@ impl Visit for Expr {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
             Expr::Subquery(query) => {
-                query.visit(context)?;
+                visit_subquery(query, context)?;
             }
             Expr::InSubquery {
                 expr: _,
                 subquery,
                 negated: _,
             } => {
-                subquery.visit(context)?;
+                visit_subquery(subquery, context)?;
             }
             Expr::BinaryOp { left, op: _, right } => {
                 left.visit(context)?;
@@ -429,7 +439,7 @@ impl Visit for Expr {
                 }
             }
             Expr::Exists { subquery, .. } => {
-                subquery.visit(context)?;
+                visit_subquery(subquery, context)?;
             }
             Expr::GroupingSets(list) | Expr::Cube(list) | Expr::Rollup(list) => {
                 for exprs in list {
@@ -471,7 +481,7 @@ impl Visit for Function {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match &self.args {
             FunctionArguments::None => {}
-            FunctionArguments::Subquery(query) => query.visit(context)?,
+            FunctionArguments::Subquery(query) => visit_subquery(query, context)?,
             FunctionArguments::List(arguments) => {
                 for arg in &arguments.args {
                     arg.visit(context)?;
@@ -1012,50 +1022,49 @@ impl Visit for Statement {
             },
             Statement::Use(use_enum) => {
                 // We expect either one id (USE [...] foo;) or two ids (USE [...] foo.bar;)
+                // No arm of this match may return early: the frame pushed
+                // for the statement is popped by the common tail below,
+                // and returning here would leave it on the stack for the
+                // rest of the script.
                 let (first_id, second_id) = match use_enum {
                     Use::Catalog(object_name)
                     | Use::Schema(object_name)
                     | Use::Database(object_name)
                     | Use::Object(object_name) => extract_up_to_two_ident_values(object_name),
-                    _ => return Ok(()),
+                    _ => (None, None),
                 };
-
-                if first_id.is_none() && second_id.is_none() {
-                    return Ok(()); // Should never happen
-                }
 
                 // Two ids are present, set db and schema
                 if first_id.is_some() && second_id.is_some() {
                     context.set_default_database(first_id.clone());
                     context.set_default_schema(second_id.clone());
-                    return Ok(());
-                }
-
-                // One id is present, each dialect can work differently
-                match use_enum {
-                    Use::Catalog(_) => {
-                        context.set_default_database(first_id); // Databricks specific
-                    }
-                    Use::Schema(_) => {
-                        context.set_default_schema(first_id.clone()); // Snowflake specific
-                    }
-                    Use::Database(_) => {
-                        if context.dialect().as_base().is::<DatabricksDialect>() {
-                            // Databricks treats DATABASE as alias for SCHEMA
-                            context.set_default_schema(first_id);
-                        } else {
-                            context.set_default_database(first_id); // Snowflake specific
+                } else if first_id.is_some() {
+                    // One id is present, each dialect can work differently
+                    match use_enum {
+                        Use::Catalog(_) => {
+                            context.set_default_database(first_id); // Databricks specific
                         }
-                    }
-                    Use::Object(_) => {
-                        if context.dialect().as_base().is::<DatabricksDialect>() {
-                            // Databricks treats single id with no keyword as SCHEMA
-                            context.set_default_schema(first_id);
-                        } else {
-                            context.set_default_database(first_id);
+                        Use::Schema(_) => {
+                            context.set_default_schema(first_id.clone()); // Snowflake specific
                         }
+                        Use::Database(_) => {
+                            if context.dialect().as_base().is::<DatabricksDialect>() {
+                                // Databricks treats DATABASE as alias for SCHEMA
+                                context.set_default_schema(first_id);
+                            } else {
+                                context.set_default_database(first_id); // Snowflake specific
+                            }
+                        }
+                        Use::Object(_) => {
+                            if context.dialect().as_base().is::<DatabricksDialect>() {
+                                // Databricks treats single id with no keyword as SCHEMA
+                                context.set_default_schema(first_id);
+                            } else {
+                                context.set_default_database(first_id);
+                            }
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
             _ => {}
@@ -1083,6 +1092,22 @@ impl Visit for Table {
 }
 
 // --- Utils ---
+
+/// Visit a subquery appearing inside an expression. The subquery runs
+/// in a dedicated frame: when it returns, its CTE registrations are
+/// resolved and dropped (see
+/// [`Context::resolve_subquery_cte_dependencies`]) before the frame's
+/// outcome merges into the enclosing frame, so a CTE defined inside
+/// the subquery stays invisible outside it.
+fn visit_subquery(query: &Query, context: &mut Context) -> Result<()> {
+    context.push_frame();
+    let result = query.visit(context);
+    let mut frame = context.pop_frame().unwrap();
+    context.resolve_subquery_cte_dependencies(&mut frame);
+    context.collect_aliases(&frame);
+    context.collect(frame);
+    result
+}
 
 /// Register one multi-table insert clause target (an INTO clause of a
 /// Snowflake/Oracle INSERT ALL or INSERT FIRST) as an output. The
@@ -1112,13 +1137,19 @@ fn resolve_insert_target_name(
 ) -> Option<ObjectName> {
     let is_mssql_or_databricks = context.dialect().as_base().is::<DatabricksDialect>()
         || context.dialect().as_base().is::<MsSqlDialect>();
-    if is_mssql_or_databricks && name.0.len() == 1 && columns.len() == 1 {
-        let is_bare_identifier = matches!(
+    let is_bare_identifier = is_mssql_or_databricks
+        && name.0.len() == 1
+        && matches!(
             name.0.first(),
             Some(ObjectNamePart::Identifier(part)) if part.value.eq_ignore_ascii_case("identifier")
         );
-        let pseudo_column = match columns.first() {
-            Some(column) if column.0.len() == 1 => match column.0.first() {
+    if is_bare_identifier && !columns.is_empty() {
+        // The target carries something in its column list. For an
+        // IDENTIFIER(...) target that is the call's argument, spilled
+        // here by sqlparser; a single-quoted string is the one
+        // argument form that resolves to a table name.
+        let pseudo_column = match columns {
+            [column] if column.0.len() == 1 => match column.0.first() {
                 Some(ObjectNamePart::Identifier(part)) if part.quote_style == Some('\'') => {
                     Some(part.value.clone())
                 }
@@ -1126,13 +1157,39 @@ fn resolve_insert_target_name(
             },
             _ => None,
         };
-        if is_bare_identifier {
-            if let Some(value) = pseudo_column {
-                return Some(parse_identifier_string(&value, context.dialect().as_base()));
-            }
+        if let Some(value) = pseudo_column {
+            let resolved = parse_identifier_string(&value, context.dialect().as_base());
+            // The same check the function form applies: an empty or
+            // blank string names nothing.
+            return if is_empty_object_name(&resolved) {
+                None
+            } else {
+                Some(resolved)
+            };
+        }
+        // Any other argument form - quoted parts, a variable, several
+        // values - cannot be resolved, and then the target is an
+        // IDENTIFIER(...) call, not a table called `identifier`: emit
+        // no output rather than a phantom IDENTIFIER one. A list of
+        // plain column names, on the other hand, belongs to a genuine
+        // table called `identifier` and falls through.
+        if !columns.iter().all(is_plain_column_name) {
+            return None;
         }
     }
     resolve_effective_table_name(name, &None, context)
+}
+
+/// Whether an insert column is a plain column name, as opposed to an
+/// IDENTIFIER(...) argument that sqlparser spilled into the column
+/// list: one unquoted, bracket-quoted or backtick-quoted identifier.
+fn is_plain_column_name(column: &ObjectName) -> bool {
+    column.0.len() == 1
+        && matches!(
+            column.0.first(),
+            Some(ObjectNamePart::Identifier(part))
+                if matches!(part.quote_style, None | Some('[') | Some('`'))
+        )
 }
 
 fn get_table_name_from_table_factor(table: &TableFactor, context: &Context) -> Option<Vec<Ident>> {
@@ -1195,6 +1252,17 @@ fn resolve_effective_table_name(
     }
 }
 
+/// Whether an object name is a single identifier that is empty or
+/// blank - what IDENTIFIER('') and IDENTIFIER('   ') resolve to.
+/// Such a name names nothing.
+fn is_empty_object_name(name: &ObjectName) -> bool {
+    name.0.len() == 1
+        && matches!(
+            name.0.first(),
+            Some(ObjectNamePart::Identifier(part)) if part.value.trim().is_empty()
+        )
+}
+
 fn get_table_name_from_identifier_function_args(
     args: &[FunctionArg],
     dialect: &dyn Dialect,
@@ -1211,12 +1279,7 @@ fn get_table_name_from_identifier_function_args(
                 let name = parse_identifier_string(ident, dialect);
                 // IDENTIFIER('') names nothing: emit no dataset rather
                 // than one with an empty name.
-                let is_empty_name = name.0.len() == 1
-                    && matches!(
-                        name.0.first(),
-                        Some(ObjectNamePart::Identifier(part)) if part.value.is_empty()
-                    );
-                if is_empty_name {
+                if is_empty_object_name(&name) {
                     None
                 } else {
                     Some(name)

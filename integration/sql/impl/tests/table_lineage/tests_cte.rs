@@ -305,6 +305,184 @@ fn join_back_to_cte_adds_no_cte_input() {
 }
 
 #[test]
+fn nested_with_reading_outer_cte_in_predicate_subquery() {
+    // The nested WITH's CTE reads the outer CTE: the reference resolves
+    // through the outer CTE, whose own input is collected - the outer
+    // CTE's name is not itself an input.
+    assert_eq!(
+        test_sql(
+            "WITH c AS (SELECT * FROM a) \
+             SELECT * FROM c WHERE id IN (WITH e AS (SELECT id FROM c) SELECT id FROM e)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn nested_with_reading_outer_cte_in_derived_table() {
+    // Same through a derived table: the only real table read anywhere
+    // is a, reached through both CTEs.
+    assert_eq!(
+        test_sql(
+            "WITH c AS (SELECT * FROM a) \
+             SELECT * FROM (WITH e AS (SELECT * FROM c) SELECT * FROM e) z"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn cte_in_derived_table_does_not_capture_join_table() {
+    // The CTE t exists only inside the derived table. The t joined in
+    // the outer query is a real table and stays an input, next to the
+    // CTE's own input a.
+    assert_eq!(
+        test_sql(
+            "SELECT * FROM (WITH t AS (SELECT * FROM a) SELECT * FROM t) x \
+             JOIN t ON x.id = t.id"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "t"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn cte_in_derived_table_does_not_capture_predicate_table() {
+    // Same scoping through an INSERT source: the t read by the WHERE
+    // predicate subquery is a real table, not the derived table's CTE.
+    assert_eq!(
+        test_sql(
+            "INSERT INTO o \
+             SELECT * FROM (WITH t AS (SELECT * FROM a) SELECT * FROM t) x \
+             WHERE id IN (SELECT id FROM t)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "t"]),
+            out_tables: tables(vec!["o"])
+        }
+    );
+}
+
+#[test]
+fn inner_cte_does_not_shadow_outer_cte() {
+    // The inner WITH redefines c over b; the outer query's own c still
+    // resolves to its definition over a, and both real tables are
+    // inputs.
+    assert_eq!(
+        test_sql(
+            "WITH c AS (SELECT * FROM a) \
+             SELECT * FROM (SELECT * FROM (WITH c AS (SELECT * FROM b) SELECT * FROM c) y) x \
+             JOIN c ON 1=1"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn cte_defined_in_cte_body_does_not_capture_join_table() {
+    // d exists only inside c's body. The d joined in the outer query
+    // is a real table, and c contributes its body's input a.
+    assert_eq!(
+        test_sql(
+            "WITH c AS (WITH d AS (SELECT * FROM a) SELECT * FROM d) \
+             SELECT * FROM c JOIN d ON 1=1"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "d"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn cte_does_not_leak_into_later_statement_after_use_warehouse() {
+    // A Snowflake script starting with USE WAREHOUSE: the CTE defined
+    // in the second statement must not capture the real table c read
+    // by the third.
+    assert_eq!(
+        test_multiple_sql_dialect(
+            vec![
+                "USE WAREHOUSE wh;",
+                "WITH c AS (SELECT * FROM a) SELECT * FROM c;",
+                "INSERT INTO out1 SELECT * FROM c;",
+            ],
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "c"]),
+            out_tables: tables(vec!["out1"])
+        }
+    );
+}
+
+#[test]
+fn cte_does_not_leak_into_later_statement_without_use() {
+    // The same script without the leading USE.
+    assert_eq!(
+        test_multiple_sql_dialect(
+            vec![
+                "WITH c AS (SELECT * FROM a) SELECT * FROM c;",
+                "INSERT INTO out1 SELECT * FROM c;",
+            ],
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "c"]),
+            out_tables: tables(vec!["out1"])
+        }
+    );
+}
+
+#[test]
+fn cte_does_not_leak_into_later_statement_after_use_db_schema() {
+    // With USE db.sch the same holds, and the defaults apply to the
+    // tables of both later statements.
+    assert_eq!(
+        test_multiple_sql_dialect(
+            vec![
+                "USE db.sch;",
+                "WITH c AS (SELECT * FROM a) SELECT * FROM c;",
+                "INSERT INTO out1 SELECT * FROM c;",
+            ],
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["db.sch.a", "db.sch.c"]),
+            out_tables: tables(vec!["db.sch.out1"])
+        }
+    );
+}
+
+#[test]
 fn qualified_join_matching_cte_name_is_an_input() {
     // Only a bare reference can name a CTE: sch.c is a real table even
     // though the statement defines a CTE called c.

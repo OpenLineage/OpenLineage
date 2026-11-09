@@ -1075,6 +1075,24 @@ fn insert_into_table_named_identifier_databricks() {
 }
 
 #[test]
+fn insert_into_table_named_identifier_with_columns_databricks() {
+    // A genuine column list of plain names belongs to a table called
+    // `identifier`, not to an IDENTIFIER(...) call: the target stands.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO identifier (a, b) SELECT * FROM src",
+            "databricks",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["identifier"])
+        }
+    );
+}
+
+#[test]
 fn insert_into_identifier_function_databricks() {
     // Databricks also accepts IDENTIFIER('cat.sch.t1') as the target;
     // sqlparser parses that as the bare name IDENTIFIER with the string
@@ -1221,6 +1239,55 @@ fn insert_into_identifier_empty_string_has_no_output() {
             }
         );
     }
+}
+
+#[test]
+fn insert_into_identifier_empty_string_databricks_has_no_output() {
+    // On Databricks the IDENTIFIER('...') argument lands in the insert
+    // column list; an empty string names nothing, so no output is
+    // emitted - the same check the function form applies.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER('') SELECT * FROM s", "databricks")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_blank_string_mssql_has_no_output() {
+    // A blank string names nothing either.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO IDENTIFIER('   ') SELECT * FROM s", "mssql")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn insert_into_identifier_quoted_parts_databricks_has_no_output() {
+    // IDENTIFIER("db"."t1") passes identifier parts, not one string
+    // literal; that form is not resolved, so no output is emitted
+    // rather than a phantom one called IDENTIFIER - as on Snowflake.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO IDENTIFIER(\"db\".\"t1\") SELECT * FROM s",
+            "databricks",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
 }
 
 #[test]

@@ -46,6 +46,14 @@ pub struct ContextFrame {
 pub struct CteDependency {
     pub is_used: bool,
     pub deps: HashSet<DbTableMeta>,
+    // The subset of `deps` that was written without a schema or database
+    // at the point it was recorded. Only those can name a CTE of an
+    // enclosing scope: a reference written `sch.c` is the real table
+    // even when a CTE called `c` is in scope, so it must never be
+    // resolved through one. Tracked separately because DbTableMeta
+    // values cannot carry the distinction - defaults make a bare `c`
+    // and an explicit `public.c` the same value.
+    pub bare_deps: HashSet<DbTableMeta>,
 }
 
 impl ContextFrame {
@@ -465,10 +473,96 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// Resolves the CTE registrations of a frame popped from a finished
+    /// subquery - a derived table, an expression subquery, a CTE body -
+    /// before the frame is merged into the enclosing query. A CTE is
+    /// visible only inside its own query, so its registration must not
+    /// travel up as a live registration: left in the enclosing frame it
+    /// captures later references to real tables of the same name. What
+    /// travels up instead is the resolved outcome:
+    ///
+    /// - the real tables a used CTE read become plain dependencies of
+    ///   the frame (references between the subquery's own CTEs are
+    ///   resolved transitively first);
+    /// - a dependency that was written bare and names a CTE of an
+    ///   enclosing scope is a reference to that CTE: the enclosing
+    ///   registration is marked used and the dependency itself is
+    ///   dropped, so the enclosing CTE's own inputs are collected;
+    /// - unused CTEs contribute nothing, as at statement level.
+    ///
+    /// Call this with the subquery's frame already popped: the frames
+    /// still on the stack are the enclosing scopes.
+    pub fn resolve_subquery_cte_dependencies(&mut self, frame: &mut ContextFrame) {
+        if frame.cte_dependencies.is_empty() {
+            return;
+        }
+
+        // Resolve the used registrations transitively: a used CTE whose
+        // dependency names a sibling CTE of the same subquery pulls that
+        // CTE's dependencies in, whether or not the sibling was itself
+        // marked used.
+        let mut resolved: Vec<(DbTableMeta, bool)> = Vec::new();
+        let mut resolved_names: HashSet<String> = HashSet::new();
+        let mut queue: Vec<String> = frame
+            .cte_dependencies
+            .iter()
+            .filter(|(_, dep)| dep.is_used)
+            .map(|(name, _)| name.clone())
+            .collect();
+        while let Some(name) = queue.pop() {
+            if !resolved_names.insert(name.clone()) {
+                continue;
+            }
+            if let Some(dep) = frame.cte_dependencies.get(&name) {
+                for table in &dep.deps {
+                    if dep.bare_deps.contains(table)
+                        && frame.cte_dependencies.contains_key(&table.name)
+                    {
+                        queue.push(table.name.clone());
+                    } else {
+                        resolved.push((table.clone(), dep.bare_deps.contains(table)));
+                    }
+                }
+            }
+        }
+
+        frame.cte_dependencies.clear();
+
+        for (table, was_bare) in resolved {
+            if was_bare && self.has_alias(table.name.clone()) {
+                self.mark_table_as_used(table.name.clone());
+            } else {
+                frame.dependencies.insert(table);
+            }
+        }
+
+        // A plain dependency of the frame that was written bare and
+        // names one of the resolved CTEs was a reference to it, from a
+        // region that records dependencies; the CTE's own dependencies,
+        // resolved above, already account for it. A qualified reference
+        // of the same name is a real table and stays.
+        let resolved_bare: Vec<DbTableMeta> = frame
+            .bare_dependencies
+            .iter()
+            .filter(|table| resolved_names.contains(&table.name))
+            .cloned()
+            .collect();
+        for table in resolved_bare {
+            frame.dependencies.remove(&table);
+            frame.bare_dependencies.remove(&table);
+        }
+    }
+
     /// CTE registrations never outlive their statement: collect() carries
     /// nested registrations up to the global frame, so drop them there
     /// once the statement's inputs have been collected, lest a later
-    /// statement mistake them for its own CTEs.
+    /// statement mistake them for its own CTEs. Only the global frame
+    /// is cleared: Statement::visit also runs for statements nested in
+    /// a query body (a WITH wrapping an INSERT visits the INSERT as its
+    /// own statement), and at that inner tail the enclosing statement's
+    /// registrations live in deeper frames and must survive. Registrations
+    /// reach the global frame only when every statement visit pops the
+    /// frame it pushed - which is why no statement arm may return early.
     pub fn clear_global_cte_dependencies(&mut self) {
         if let Some(frame) = self.frames.first_mut() {
             frame.cte_dependencies.clear();
@@ -574,6 +668,7 @@ impl<'a> Context<'a> {
             }
 
             let mut resolved_dependencies = HashSet::new();
+            let mut resolved_bare_dependencies = HashSet::new();
 
             for dep in deps_in_one_level_below {
                 if !dep.is_used {
@@ -581,6 +676,7 @@ impl<'a> Context<'a> {
                 }
 
                 resolved_dependencies.extend(dep.deps.clone());
+                resolved_bare_dependencies.extend(dep.bare_deps.clone());
             }
 
             frame.cte_dependencies = HashMap::new();
@@ -589,6 +685,7 @@ impl<'a> Context<'a> {
                 CteDependency {
                     is_used: false,
                     deps: resolved_dependencies,
+                    bare_deps: resolved_bare_dependencies,
                 },
             );
 
@@ -611,6 +708,7 @@ impl<'a> Context<'a> {
         let bare_dependencies = self.frames[size - 1].bare_dependencies.clone();
 
         let mut resolved_dependencies = HashSet::new();
+        let mut resolved_bare_dependencies = HashSet::new();
 
         for dependency in dependencies {
             // CTEs are keyed by their bare alias, so only a reference written
@@ -624,17 +722,20 @@ impl<'a> Context<'a> {
             if cte_name.clone() == dependency.name {
                 if !recursive {
                     resolved_dependencies.insert(dependency.clone());
+                    resolved_bare_dependencies.insert(dependency.clone());
                 }
                 continue;
             }
 
             if cte_dependencies.contains_key(&dependency.name) {
-                resolved_dependencies
-                    .extend(cte_dependencies.get(&dependency.name).unwrap().clone().deps);
+                let nested = cte_dependencies.get(&dependency.name).unwrap().clone();
+                resolved_dependencies.extend(nested.deps);
+                resolved_bare_dependencies.extend(nested.bare_deps);
                 continue;
             }
 
             resolved_dependencies.insert(dependency.clone());
+            resolved_bare_dependencies.insert(dependency);
         }
 
         if let Some(frame) = self.frames.last_mut() {
@@ -643,6 +744,7 @@ impl<'a> Context<'a> {
                 CteDependency {
                     is_used: false,
                     deps: resolved_dependencies,
+                    bare_deps: resolved_bare_dependencies,
                 },
             );
             frame.dependencies = HashSet::new();
