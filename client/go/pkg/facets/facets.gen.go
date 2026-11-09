@@ -124,6 +124,30 @@ type DocumentationDatasetFacet struct {
 	Description string `json:"description"`
 }
 
+// FabricOneLakeDatasetFacet
+type FabricOneLakeDatasetFacet struct {
+	// URI identifying the producer of this metadata.
+	Producer string `json:"_producer"`
+	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// set to true to delete a facet
+	Deleted *bool `json:"_deleted,omitempty"`
+	// ID of the Fabric item that holds the table, such as a lakehouse or a warehouse, in lowercase.
+	ItemID *string `json:"itemId,omitempty"`
+	// Name of the Fabric item that holds the table.
+	ItemName *string `json:"itemName,omitempty"`
+	// Type of the Fabric item that holds the table, as Fabric names item types, for example Lakehouse, Warehouse or MirroredDatabase. Set only when the producer knows it.
+	ItemType *string `json:"itemType,omitempty"`
+	// Location of the table's files in OneLake, Microsoft Fabric's storage, using IDs only: abfss://{workspaceId}@onelake.dfs.fabric.microsoft.com/{itemId}/Tables/{schema}/{table}, or .../Tables/{table} in a lakehouse without schemas. IDs are lowercase, with no trailing slash.
+	Location *string `json:"location,omitempty"`
+	// ID of the table's Delta metadata (metaData.id in the Delta log), in lowercase. For a table reached through a shortcut, this is the ID of the target table.
+	TableID *string `json:"tableId,omitempty"`
+	// ID of the Fabric workspace that holds the item, in lowercase.
+	WorkspaceID *string `json:"workspaceId,omitempty"`
+	// Name of the Fabric workspace that holds the item.
+	WorkspaceName *string `json:"workspaceName,omitempty"`
+}
+
 // HierarchyDatasetFacet
 type HierarchyDatasetFacet struct {
 	// URI identifying the producer of this metadata.

@@ -25,7 +25,7 @@ import org.apache.spark.sql.SparkSession;
  * temporary folder as the output. The real table is only in the first step's options, for example:
  *
  * <pre>
- * [WorkspaceId=8b4cb800-…, DatawarehouseId=0fd9a0c2-…,
+ * [WorkspaceId=d1f6473b-…, DatawarehouseId=d75873bd-…,
  *  three-part_sql_table_or_view_name=wh_primary.probe_dw.a_write,
  *  path=abfss://…@spark1triprodcus.dfs.core.windows.net/user/trusted-service-user/a_write5f15…]
  * </pre>
@@ -117,14 +117,22 @@ public final class FabricWarehouseSparkUtils {
             option(options, FabricWarehouseUtils.DATAWAREHOUSE_ID_OPTION)));
   }
 
-  /** Looks up a Spark setting in the session's settings, then in the application's settings. */
+  /**
+   * Looks up a Spark setting in the session's settings, then in the application's settings, then in
+   * the Hadoop configuration. Fabric doesn't put every {@code trident.*} setting in all three; for
+   * example, {@code trident.workspace.name} is sometimes only in the Hadoop configuration.
+   */
   public static Function<String, Optional<String>> confOf(SparkSession session) {
     return key -> {
       Optional<String> value = ScalaConversionUtils.asJavaOptional(session.conf().getOption(key));
       if (value.isPresent()) {
         return value;
       }
-      return ScalaConversionUtils.asJavaOptional(session.sparkContext().getConf().getOption(key));
+      value = ScalaConversionUtils.asJavaOptional(session.sparkContext().getConf().getOption(key));
+      if (value.isPresent()) {
+        return value;
+      }
+      return Optional.ofNullable(session.sparkContext().hadoopConfiguration().get(key));
     };
   }
 

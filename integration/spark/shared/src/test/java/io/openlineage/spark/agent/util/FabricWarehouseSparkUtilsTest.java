@@ -16,18 +16,18 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class FabricWarehouseSparkUtilsTest {
-  private static final String TENANT = "cc0b82f3-7c2e-400b-aec3-40a3d720505b";
-  private static final String WORKSPACE = "8b4cb800-a044-43ce-8f76-3356f709b468";
-  private static final String WORKSPACE_2 = "bcc59eac-e270-40a8-9deb-f8f5994596a5";
-  private static final String WAREHOUSE_ID = "0fd9a0c2-ee93-46af-aaea-a45c8649ed9d";
+  private static final String TENANT = "68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c";
+  private static final String WORKSPACE = "d1f6473b-9f7a-4352-940b-a8d74461d3fc";
+  private static final String WORKSPACE_2 = "45ff911e-5e75-428a-a618-52958fcc7604";
+  private static final String WAREHOUSE_ID = "d75873bd-716b-4378-a37e-864c76fc9b3b";
   private static final String ENDPOINT =
-      "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com";
+      "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com";
   private static final String ENDPOINT_2 =
-      "6obaxtbopqfublwdicr5oicqlm-vspmlpdq4kuebhpl7d2zsrmwuu.datawarehouse.fabric.microsoft.com";
+      "ck32i2hmt2qeziwtnklnft2ptq-d2i76rlvl2fefjqykkky7tdwaq.datawarehouse.fabric.microsoft.com";
   private static final String TABLE = "wh_primary.probe_dw.a_write";
   // the address of a workspace reached as a guest from another organization has a third part
   private static final String GUEST_ENDPOINT =
-      "qvrmbuxie7we7glrekxgy6npqu-6xgyei3x2xiejip4iime6knh5m-jh0bi.zcf.datawarehouse.fabric.microsoft.com";
+      "45jm47djf4je5afhvapdos5fae-gakpgz3u6twe7nemz77to4q2ti-jh0bi.zcf.datawarehouse.fabric.microsoft.com";
 
   private final Map<String, String> conf = new HashMap<>();
   private final Function<String, Optional<String>> confLookup =
@@ -37,12 +37,18 @@ class FabricWarehouseSparkUtilsTest {
   void testEndpointOverrideWins() {
     conf.put(
         "spark.datawarehouse.wh_primary.sqlendpoint",
-        "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.z8b.datawarehouse.fabric.microsoft.com,1433");
+        "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.z8b.datawarehouse.fabric.microsoft.com,1433");
     conf.put("trident.tenant.id", TENANT);
     Map<String, String> options = options(TABLE);
     options.put("WorkspaceId", WORKSPACE_2);
+    options.put("DatawarehouseId", WAREHOUSE_ID);
 
-    assertThat(identifier(options).getNamespace()).isEqualTo("fabric-warehouse://" + ENDPOINT);
+    DatasetIdentifier identifier = identifier(options);
+
+    assertThat(identifier.getNamespace()).isEqualTo("fabric-warehouse://" + ENDPOINT);
+    // the address set by the user is in another workspace than the WorkspaceId option, so the
+    // warehouse ID can't be placed in it
+    assertThat(identifier.getSymlinks()).isEmpty();
   }
 
   @Test
@@ -53,11 +59,16 @@ class FabricWarehouseSparkUtilsTest {
     conf.put("trident.workspace.id", WORKSPACE);
     Map<String, String> options = options(TABLE);
     options.put("WorkspaceId", WORKSPACE_2);
+    options.put("DatawarehouseId", WAREHOUSE_ID);
 
     DatasetIdentifier identifier = identifier(options);
 
     assertThat(identifier.getNamespace()).isEqualTo("fabric-warehouse://" + ENDPOINT_2);
     assertThat(identifier.getName()).isEqualTo(TABLE);
+    // the address is built from the WorkspaceId option, so the two always agree
+    assertThat(identifier.getSymlinks())
+        .extracting(DatasetIdentifier.Symlink::getNamespace)
+        .containsExactly("abfss://" + WORKSPACE_2 + "@onelake.dfs.fabric.microsoft.com");
   }
 
   @Test

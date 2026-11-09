@@ -22,6 +22,7 @@ public class DatasetFacetsUtils {
         .dataSource(facets.getDataSource())
         .symlinks(facets.getSymlinks())
         .version(facets.getVersion())
-        .lifecycleStateChange(facets.getLifecycleStateChange());
+        .lifecycleStateChange(facets.getLifecycleStateChange())
+        .fabric_onelake(facets.getFabric_onelake());
   }
 }

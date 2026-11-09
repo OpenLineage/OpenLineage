@@ -7,24 +7,25 @@ package io.openlineage.client.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-// The IDs and addresses below come from real Fabric workspaces. They check that the address is
-// built exactly as Fabric builds it; see FabricWarehouseUtils#endpointFor.
+// The IDs below are made up; each address is built from its IDs the way Fabric builds real
+// addresses (checked against real workspaces; see FabricWarehouseUtils#endpointFor).
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class FabricWarehouseUtilsTest {
-  private static final UUID TENANT = UUID.fromString("cc0b82f3-7c2e-400b-aec3-40a3d720505b");
-  private static final UUID WORKSPACE = UUID.fromString("8b4cb800-a044-43ce-8f76-3356f709b468");
-  private static final UUID WORKSPACE_2 = UUID.fromString("bcc59eac-e270-40a8-9deb-f8f5994596a5");
-  private static final UUID WAREHOUSE = UUID.fromString("0fd9a0c2-ee93-46af-aaea-a45c8649ed9d");
+  private static final UUID TENANT = UUID.fromString("68a4b712-9eec-4ca0-a2d3-6a96d2cf4f9c");
+  private static final UUID WORKSPACE = UUID.fromString("d1f6473b-9f7a-4352-940b-a8d74461d3fc");
+  private static final UUID WORKSPACE_2 = UUID.fromString("45ff911e-5e75-428a-a618-52958fcc7604");
+  private static final UUID WAREHOUSE = UUID.fromString("d75873bd-716b-4378-a37e-864c76fc9b3b");
   private static final String ENDPOINT =
-      "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.datawarehouse.fabric.microsoft.com";
+      "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com";
   private static final String ENDPOINT_2 =
-      "6obaxtbopqfublwdicr5oicqlm-vspmlpdq4kuebhpl7d2zsrmwuu.datawarehouse.fabric.microsoft.com";
+      "ck32i2hmt2qeziwtnklnft2ptq-d2i76rlvl2fefjqykkky7tdwaq.datawarehouse.fabric.microsoft.com";
 
   @Test
   void testEndpointFor() {
@@ -34,37 +35,37 @@ class FabricWarehouseUtilsTest {
   @Test
   void testEncodeGuid() {
     assertThat(FabricWarehouseUtils.encodeGuid(WORKSPACE_2))
-        .isEqualTo("vspmlpdq4kuebhpl7d2zsrmwuu");
+        .isEqualTo("d2i76rlvl2fefjqykkky7tdwaq");
   }
 
   @Test
   void testDecodeGuidRoundTrip() {
-    assertThat(FabricWarehouseUtils.decodeGuid("vspmlpdq4kuebhpl7d2zsrmwuu")).contains(WORKSPACE_2);
+    assertThat(FabricWarehouseUtils.decodeGuid("d2i76rlvl2fefjqykkky7tdwaq")).contains(WORKSPACE_2);
     assertThat(FabricWarehouseUtils.decodeGuid(FabricWarehouseUtils.encodeGuid(TENANT)))
         .contains(TENANT);
   }
 
   @Test
   void testDecodeGuidRejectsMalformedLabels() {
-    assertThat(FabricWarehouseUtils.decodeGuid("vspmlpdq4kuebhpl7d2zsrmwu")).isEmpty();
-    assertThat(FabricWarehouseUtils.decodeGuid("vspmlpdq4kuebhpl7d2zsrmwu1")).isEmpty();
+    assertThat(FabricWarehouseUtils.decodeGuid("d2i76rlvl2fefjqykkky7tdwa")).isEmpty();
+    assertThat(FabricWarehouseUtils.decodeGuid("d2i76rlvl2fefjqykkky7tdwa1")).isEmpty();
     // the last character leaves extra bits that aren't zero, so it can't come from an ID
-    assertThat(FabricWarehouseUtils.decodeGuid("vspmlpdq4kuebhpl7d2zsrmwuv")).isEmpty();
+    assertThat(FabricWarehouseUtils.decodeGuid("d2i76rlvl2fefjqykkky7tdwar")).isEmpty();
   }
 
   @ParameterizedTest
   @CsvSource(
       delimiter = '|',
       value = {
-        "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.z8b.datawarehouse.fabric.microsoft.com,1433"
+        "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.z8b.datawarehouse.fabric.microsoft.com,1433"
             + " | "
             + ENDPOINT,
-        "6obaxtbopqfublwdicr5oicqlm-vspmlpdq4kuebhpl7d2zsrmwuu.zbc.datawarehouse.fabric.microsoft.com:1433"
+        "ck32i2hmt2qeziwtnklnft2ptq-d2i76rlvl2fefjqykkky7tdwaq.zbc.datawarehouse.fabric.microsoft.com:1433"
             + " | "
             + ENDPOINT_2,
         ENDPOINT + ":1444 | " + ENDPOINT + ":1444",
         ENDPOINT + ",1444 | " + ENDPOINT + ":1444",
-        "6OBAXTBOPQFUBLWDICR5OICQLM-AC4EZC2EUDHEHD3WGNLPOCNUNA.DATAWAREHOUSE.FABRIC.MICROSOFT.COM | "
+        "CK32I2HMT2QEZIWTNKLNFT2PTQ-HND7NUL2T5JEHFALVDLUIYOT7Q.DATAWAREHOUSE.FABRIC.MICROSOFT.COM | "
             + ENDPOINT,
         // a ".z8b"-style label is only removed right before ".datawarehouse..."
         "a.z8b.example.datawarehouse.fabric.microsoft.com | a.z8b.example.datawarehouse.fabric.microsoft.com",
@@ -84,9 +85,9 @@ class FabricWarehouseUtilsTest {
         // a port has to be a number
         ENDPOINT + ":bad | false",
         ENDPOINT + ": | false",
-        "6obaxtbopqfublwdicr5oicqlm-ac4ezc2eudhehd3wgnlpocnuna.z8b.datawarehouse.fabric.microsoft.com:1433 | true",
+        "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.z8b.datawarehouse.fabric.microsoft.com:1433 | true",
         // an address for reaching a workspace in another organization has an extra part
-        "qvrmbuxie7we7glrekxgy6npqu-6xgyei3x2xiejip4iime6knh5m-jh0bi.zcf.datawarehouse.fabric.microsoft.com | false",
+        "45jm47djf4je5afhvapdos5fae-gakpgz3u6twe7nemz77to4q2ti-jh0bi.zcf.datawarehouse.fabric.microsoft.com | false",
         "myserver.database.windows.net | false",
         "myworkspace.datawarehouse.fabric.microsoft.com | false",
       })
@@ -98,39 +99,36 @@ class FabricWarehouseUtilsTest {
   void testWorkspaceIdOf() {
     assertThat(
             FabricWarehouseUtils.workspaceIdOf(
-                "6obaxtbopqfublwdicr5oicqlm-vspmlpdq4kuebhpl7d2zsrmwuu.zbc.datawarehouse.fabric.microsoft.com"))
+                "ck32i2hmt2qeziwtnklnft2ptq-d2i76rlvl2fefjqykkky7tdwaq.zbc.datawarehouse.fabric.microsoft.com"))
         .contains(WORKSPACE_2);
     assertThat(FabricWarehouseUtils.workspaceIdOf("myserver.database.windows.net")).isEmpty();
   }
 
   @Test
   void testOneLakeLocation() {
-    UUID warehouse = UUID.fromString("0fd9a0c2-ee93-46af-aaea-a45c8649ed9d");
+    UUID warehouse = UUID.fromString("d75873bd-716b-4378-a37e-864c76fc9b3b");
 
     DatasetIdentifier location =
         FabricWarehouseUtils.oneLakeLocation(WORKSPACE, warehouse, "raw", "orders");
 
     assertThat(location.getNamespace())
-        .isEqualTo("abfss://8b4cb800-a044-43ce-8f76-3356f709b468@onelake.dfs.fabric.microsoft.com");
+        .isEqualTo("abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com");
     assertThat(location.getName())
-        .isEqualTo("0fd9a0c2-ee93-46af-aaea-a45c8649ed9d/Tables/raw/orders");
+        .isEqualTo("d75873bd-716b-4378-a37e-864c76fc9b3b/Tables/raw/orders");
   }
 
   @Test
-  void testWithOneLakeLocationFromWorkspaceOption() {
+  void testWithOneLakeLocationNeedsTheAddressWorkspace() {
+    // the workspace can't be read from this address; the WorkspaceId option alone isn't enough,
+    // because the dataset's name doesn't say which workspace it is in
     DatasetIdentifier identifier =
         FabricWarehouseUtils.withOneLakeLocation(
-            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://example.com"),
             Optional.of("wh_primary"),
             Optional.of(WORKSPACE_2.toString()),
             Optional.of(WAREHOUSE.toString()));
 
-    assertThat(identifier.getSymlinks())
-        .containsExactly(
-            new DatasetIdentifier.Symlink(
-                WAREHOUSE + "/Tables/raw/orders",
-                "abfss://" + WORKSPACE_2 + "@onelake.dfs.fabric.microsoft.com",
-                DatasetIdentifier.SymlinkType.LOCATION));
+    assertThat(identifier.getSymlinks()).isEmpty();
   }
 
   @Test
@@ -148,6 +146,34 @@ class FabricWarehouseUtilsTest {
   }
 
   @Test
+  void testWithOneLakeLocationWhenWorkspaceOptionMatchesEndpoint() {
+    DatasetIdentifier identifier =
+        FabricWarehouseUtils.withOneLakeLocation(
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
+            Optional.of(WORKSPACE.toString().toUpperCase(Locale.ROOT)),
+            Optional.of(WAREHOUSE.toString()));
+
+    assertThat(identifier.getSymlinks())
+        .extracting(DatasetIdentifier.Symlink::getNamespace)
+        .containsExactly("abfss://" + WORKSPACE + "@onelake.dfs.fabric.microsoft.com");
+  }
+
+  @Test
+  void testWithOneLakeLocationSkippedWhenWorkspaceOptionDisagreesWithEndpoint() {
+    // the address is what was queried; a warehouse ID given next to another workspace's ID may
+    // not belong to the address's workspace
+    DatasetIdentifier identifier =
+        FabricWarehouseUtils.withOneLakeLocation(
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
+            Optional.of(WORKSPACE_2.toString()),
+            Optional.of(WAREHOUSE.toString()));
+
+    assertThat(identifier.getSymlinks()).isEmpty();
+  }
+
+  @Test
   void testWithOneLakeLocationSkippedWhenUnsafe() {
     String namespace = "fabric-warehouse://" + ENDPOINT;
     Optional<String> warehouse = Optional.of(WAREHOUSE.toString());
@@ -161,7 +187,7 @@ class FabricWarehouseUtilsTest {
                     Optional.empty())
                 .getSymlinks())
         .isEmpty();
-    // a name instead of an ID would give a path that mixes IDs and names, which OneLake refuses
+    // a WorkspaceId option that isn't an ID doesn't match the address's workspace
     assertThat(
             FabricWarehouseUtils.withOneLakeLocation(
                     new DatasetIdentifier("wh_primary.raw.orders", namespace),
@@ -226,10 +252,87 @@ class FabricWarehouseUtilsTest {
   }
 
   @Test
+  void testToOneLakeLocationWithWarehouseId() {
+    DatasetIdentifier identifier =
+        FabricWarehouseUtils.withOneLakeLocation(
+            new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT),
+            Optional.of("wh_primary"),
+            Optional.empty(),
+            Optional.of(WAREHOUSE.toString()));
+
+    OneLakeLocation location = FabricWarehouseUtils.toOneLakeLocation(identifier).get();
+
+    assertThat(location.getWorkspaceId()).isEqualTo(WORKSPACE);
+    assertThat(location.getItemId()).isEqualTo(WAREHOUSE);
+    assertThat(location.getItemName()).isEqualTo("wh_primary");
+    assertThat(location.getItemType()).isEqualTo("Warehouse");
+    assertThat(location.guidLocation())
+        .contains(
+            "abfss://"
+                + WORKSPACE
+                + "@onelake.dfs.fabric.microsoft.com/"
+                + WAREHOUSE
+                + "/Tables/raw/orders");
+  }
+
+  @Test
+  void testToOneLakeLocationWithoutWarehouseId() {
+    OneLakeLocation location =
+        FabricWarehouseUtils.toOneLakeLocation(
+                new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT))
+            .get();
+
+    assertThat(location.getWorkspaceId()).isEqualTo(WORKSPACE);
+    assertThat(location.getItemName()).isEqualTo("wh_primary");
+    assertThat(location.getItemType()).isEqualTo("Warehouse");
+    assertThat(location.getItemId()).isNull();
+    assertThat(location.guidLocation()).isEmpty();
+  }
+
+  @Test
+  void testToOneLakeLocationIgnoresLocationInAnotherWorkspace() {
+    // a location in another workspace than the address's, as another producer might add; the
+    // address wins, and the location isn't used
+    DatasetIdentifier identifier =
+        new DatasetIdentifier("wh_primary.raw.orders", "fabric-warehouse://" + ENDPOINT)
+            .withSymlink(
+                WAREHOUSE + "/Tables/raw/orders",
+                "abfss://" + WORKSPACE_2 + "@onelake.dfs.fabric.microsoft.com",
+                DatasetIdentifier.SymlinkType.LOCATION);
+
+    OneLakeLocation location = FabricWarehouseUtils.toOneLakeLocation(identifier).get();
+
+    assertThat(location.getWorkspaceId()).isEqualTo(WORKSPACE);
+    assertThat(location.getItemId()).isNull();
+  }
+
+  @Test
+  void testToOneLakeLocationOnlyForFabricWarehouseTables() {
+    assertThat(
+            FabricWarehouseUtils.toOneLakeLocation(
+                new DatasetIdentifier("db.dbo.orders", "sqlserver://myserver:1433")))
+        .isEmpty();
+    assertThat(
+            FabricWarehouseUtils.toOneLakeLocation(
+                new DatasetIdentifier("raw.orders", "fabric-warehouse://" + ENDPOINT)))
+        .isEmpty();
+    // an address that isn't a workspace's still names the warehouse, without a workspace ID
+    assertThat(
+            FabricWarehouseUtils.toOneLakeLocation(
+                    new DatasetIdentifier("wh.raw.orders", "fabric-warehouse://example.com"))
+                .get()
+                .getWorkspaceId())
+        .isNull();
+  }
+
+  @Test
   void testParseGuid() {
-    assertThat(FabricWarehouseUtils.parseGuid(" 8b4cb800-a044-43ce-8f76-3356f709b468 "))
+    assertThat(FabricWarehouseUtils.parseGuid(" d1f6473b-9f7a-4352-940b-a8d74461d3fc "))
         .contains(WORKSPACE);
     assertThat(FabricWarehouseUtils.parseGuid("wh_primary")).isEmpty();
     assertThat(FabricWarehouseUtils.parseGuid(null)).isEqualTo(Optional.empty());
+    // UUID.fromString accepts these short forms, but they aren't Fabric IDs
+    assertThat(FabricWarehouseUtils.parseGuid("1-1-1-1-1")).isEmpty();
+    assertThat(FabricWarehouseUtils.parseGuid("d1f6473b-9f7a-4352-940b-a8d74461d3f")).isEmpty();
   }
 }
