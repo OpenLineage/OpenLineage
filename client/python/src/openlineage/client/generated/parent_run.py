@@ -63,6 +63,7 @@ class ParentRunFacet(RunFacet):
 class Root(RedactMixin):
     run: RootRun
     job: RootJob
+    _skip_redact: ClassVar[list[str]] = ["run", "job"]
 
 
 @attr.define

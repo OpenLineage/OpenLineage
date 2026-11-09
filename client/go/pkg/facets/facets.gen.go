@@ -384,7 +384,7 @@ type OwnershipJobFacet struct {
 	Owners []OwnershipJobFacetOwner `json:"owners,omitempty"`
 }
 
-// The parent job of this job, iff this job is a sub-job of another job by design (for example, a task defined within a DAG). Should be used on job events only; on run events the ParentRunFacet takes precedence.
+// The parent job of this job, if this job is a sub-job of another job by design (for example, a task defined within a DAG). Should be used on job events. It may also be used on run events when the specific run of the parent job is not known; if a ParentRunFacet is also present, it takes precedence.
 type ParentJobFacet struct {
 	// URI identifying the producer of this metadata.
 	Producer string `json:"_producer"`
@@ -1330,7 +1330,7 @@ type OwnershipJobFacetOwner struct {
 
 // ParentJobFacetJob
 type ParentJobFacetJob struct {
-	// Selected subset of facets of the parent job (not the current job), forwarded here for convenience. See the parent job's own event for full information.
+	// Selected subset of facets of the referenced job (not the current job), forwarded here for convenience. See the referenced job's own event for full information.
 	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The unique name for that job within that namespace
 	Name string `json:"name"`
@@ -1340,7 +1340,7 @@ type ParentJobFacetJob struct {
 
 // ParentJobFacetRoot
 type ParentJobFacetRoot struct {
-	Job RootJobIdentifier `json:"job"`
+	Job ParentJobFacetJob `json:"job"`
 }
 
 // ParentRunFacetJob
@@ -1382,16 +1382,6 @@ type PartitionSubsetConditionPartition struct {
 
 // RootJob
 type RootJob struct {
-	// Selected subset of facets of the root job (not the current job), forwarded here for convenience. See the root job's own event for full information.
-	Facets map[string]interface{} `json:"facets,omitempty"`
-	// The unique name containing root job within that namespace
-	Name string `json:"name"`
-	// The namespace containing root job
-	Namespace string `json:"namespace"`
-}
-
-// RootJobIdentifier
-type RootJobIdentifier struct {
 	// Selected subset of facets of the root job (not the current job), forwarded here for convenience. See the root job's own event for full information.
 	Facets map[string]interface{} `json:"facets,omitempty"`
 	// The unique name containing root job within that namespace

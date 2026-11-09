@@ -11,7 +11,7 @@ from openlineage.client.transport.transform.transform import EventTransformer
 
 if TYPE_CHECKING:
     from openlineage.client.client import Event
-    from openlineage.client.facet_v2 import parent_run
+    from openlineage.client.facet_v2 import parent_job, parent_run
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +46,8 @@ class JobNamespaceReplaceTransformer(EventTransformer):
             log.debug("Set `include_parent_facet` to True to include replacement in ParentRunFacet.")
             return event
 
+        self._replace_in_parent_job_facet(event)
+
         if not isinstance(event, event_v2.RunEvent):
             log.debug("Only `RunEvent` can have ParentRunFacet, skipping replacement in ParentRunFacet.")
             return event
@@ -72,3 +74,25 @@ class JobNamespaceReplaceTransformer(EventTransformer):
             parent_facet.root.job.namespace = self.new_job_namespace
 
         return event
+
+    def _replace_in_parent_job_facet(self, event: event_v2.RunEvent | event_v2.JobEvent) -> None:
+        if not event.job.facets or not event.job.facets.get("parent"):
+            log.debug("Parent job facet not found, skipping replacement in ParentJobFacet.")
+            return
+
+        # Mypy sees JobFacet, but we assume ParentJobFacet, so we ignore the check.
+        parent_job_facet: parent_job.ParentJobFacet = event.job.facets["parent"]  # type: ignore[assignment]
+        log.debug(
+            "Replacing parent job (ParentJobFacet) namespace: `%s` with: `%s` for single event.",
+            parent_job_facet.job.namespace,
+            self.new_job_namespace,
+        )
+        parent_job_facet.job.namespace = self.new_job_namespace
+
+        if parent_job_facet.root:
+            log.debug(
+                "Replacing root job (ParentJobFacet) namespace: `%s` with: `%s` for single event.",
+                parent_job_facet.root.job.namespace,
+                self.new_job_namespace,
+            )
+            parent_job_facet.root.job.namespace = self.new_job_namespace
