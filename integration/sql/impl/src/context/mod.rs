@@ -9,7 +9,8 @@ use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
 use sqlparser::ast::{
-    ExcludeSelectItem, Ident, ObjectName, RenameSelectItem, WildcardAdditionalOptions,
+    ExcludeSelectItem, Ident, ObjectName, RenameSelectItem, TableAliasColumnDef,
+    WildcardAdditionalOptions,
 };
 use sqlparser::dialect::{
     BigQueryDialect, Dialect, PostgreSqlDialect, RedshiftSqlDialect, SnowflakeDialect,
@@ -155,6 +156,14 @@ pub struct ContextFrame {
 pub struct CteDependency {
     pub is_used: bool,
     pub deps: HashSet<DbTableMeta>,
+    // The CTE's output columns, each with the ancestors its body resolved
+    // it to, so a `FROM` naming the CTE can offer them to a wildcard the
+    // way a derived table offers its own.
+    pub columns: HashMap<String, ColumnAncestors>,
+    // The output column names in projection order, for a column list at a
+    // reference (`FROM d AS x(p, q)`), which renames them by position. None
+    // when the order cannot be known statically, as for a `*` projection.
+    pub output_names: Option<Vec<Option<String>>>,
 }
 
 impl ContextFrame {
@@ -738,6 +747,8 @@ impl<'a> Context<'a> {
                 CteDependency {
                     is_used: false,
                     deps: resolved_dependencies,
+                    columns: HashMap::new(),
+                    output_names: None,
                 },
             );
 
@@ -792,10 +803,94 @@ impl<'a> Context<'a> {
                 CteDependency {
                     is_used: false,
                     deps: resolved_dependencies,
+                    columns: HashMap::new(),
+                    output_names: None,
                 },
             );
             frame.dependencies = HashSet::new();
             frame.bare_dependencies = HashSet::new();
+        }
+    }
+
+    /// Records the output columns of CTE `cte_name`, declared in the
+    /// current frame, with the ancestors its body resolved each one to, and
+    /// their names in projection order where that order is known.
+    pub fn set_cte_columns(
+        &mut self,
+        cte_name: &str,
+        columns: HashMap<String, ColumnAncestors>,
+        output_names: Option<Vec<Option<String>>>,
+    ) {
+        if let Some(cte) = self
+            .frames
+            .last_mut()
+            .and_then(|frame| frame.cte_dependencies.get_mut(cte_name))
+        {
+            cte.columns = columns;
+            cte.output_names = output_names;
+        }
+    }
+
+    /// Offers the output columns of the CTE referenced as `table` to the
+    /// current frame, so that a wildcard over it can expand them as it
+    /// expands a derived table's. The lookup uses the reference exactly as
+    /// written, the same key as [`Context::has_alias`], so a qualified
+    /// `schema.d` never names CTE `d`.
+    ///
+    /// The columns are stamped with each of `origins`: the CTE's own name,
+    /// and the alias when one is given. The alias is what a qualifier such
+    /// as `x.*` matches, while column ancestors are resolved back through the
+    /// alias to the CTE's name, so both must find the columns.
+    ///
+    /// A column list at the reference (`FROM d AS x(p, q)`) renames the
+    /// columns by position. When the CTE's column order is not known, no
+    /// columns are offered, since the names it would report are not the
+    /// names the query outputs.
+    pub fn add_cte_columns(
+        &mut self,
+        table: &str,
+        origins: &[DbTableMeta],
+        alias_columns: &[TableAliasColumnDef],
+    ) {
+        let Some(cte) = self
+            .frames
+            .iter()
+            .rev()
+            .find_map(|frame| frame.cte_dependencies.get(table))
+            .cloned()
+        else {
+            return;
+        };
+        let mut columns = cte.columns;
+        if !alias_columns.is_empty() {
+            let Some(order) = cte.output_names else {
+                return;
+            };
+            let mut renamed: HashMap<String, ColumnAncestors> = HashMap::new();
+            for (position, alias) in alias_columns.iter().enumerate() {
+                if let Some(Some(name)) = order.get(position) {
+                    if let Some(ancestors) = columns.remove(name) {
+                        renamed
+                            .entry(alias.name.value.clone())
+                            .or_default()
+                            .extend(ancestors);
+                    }
+                }
+            }
+            for (name, ancestors) in renamed {
+                columns.entry(name).or_default().extend(ancestors);
+            }
+        }
+        if let Some(frame) = self.frames.last_mut() {
+            for (name, ancestors) in columns {
+                for origin in origins {
+                    frame
+                        .column_ancestry
+                        .entry(ColumnMeta::new(name.clone(), Some(origin.clone())))
+                        .or_default()
+                        .extend(ancestors.iter().cloned());
+                }
+            }
         }
     }
 

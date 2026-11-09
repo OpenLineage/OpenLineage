@@ -4,7 +4,7 @@
 use crate::context::{wildcard_replacement_name, Context, ContextFrame};
 use crate::lineage::*;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
@@ -41,7 +41,37 @@ impl Visit for With {
             context.push_frame();
             self.cte_tables[i].query.visit(context)?;
             let frame = context.pop_frame();
-            if let Some(f) = frame {
+            let alias_columns = &self.cte_tables[i].alias.columns;
+            // The output names in projection order, after the CTE's own
+            // column list has renamed the leading positions.
+            let output_names = derived_output_names(&self.cte_tables[i].query).map(|names| {
+                names
+                    .into_iter()
+                    .enumerate()
+                    .map(|(position, name)| match alias_columns.get(position) {
+                        Some(alias) => Some(alias.name.value.clone()),
+                        None => name,
+                    })
+                    .collect()
+            });
+            let mut columns = HashMap::new();
+            if let Some(mut f) = frame {
+                // A column list (`WITH d(x, y) AS ...`) renames the CTE's
+                // output columns by position, as it does for a derived table.
+                if !alias_columns.is_empty() {
+                    apply_column_alias_list(&mut f, &self.cte_tables[i].query, alias_columns);
+                }
+                // When the list cannot be applied, because the body projects
+                // `*`, the columns keep names the CTE does not output, so
+                // none are offered to a wildcard.
+                if alias_columns.is_empty() || output_names.is_some() {
+                    for (column, ancestors) in &f.column_ancestry {
+                        columns
+                            .entry(column.name.clone())
+                            .or_insert_with(HashSet::new)
+                            .extend(ancestors.iter().cloned());
+                    }
+                }
                 let table = DbTableMeta::new(
                     vec![self.cte_tables[i].alias.name.clone()],
                     context.dialect(),
@@ -57,6 +87,7 @@ impl Visit for With {
             }
 
             context.adjust_cte_dependencies(self.cte_tables[i].alias.name.clone().value, recursive);
+            context.set_cte_columns(&self.cte_tables[i].alias.name.value, columns, output_names);
         }
         Ok(())
     }
@@ -610,6 +641,47 @@ fn visit_wildcard_replacements(
     Ok(())
 }
 
+/// Offers the output columns of each CTE a SELECT's FROM clause names to the
+/// current frame, as a derived table offers its own, so that a wildcard over
+/// it can expand them. Only a SELECT's FROM frame is consumed by the
+/// wildcard, which is why this runs here and not for every table reference:
+/// an `UPDATE ... FROM` would otherwise report the CTE's columns as lineage
+/// of their own.
+fn offer_cte_columns(context: &mut Context, relation: &TableFactor) {
+    match relation {
+        TableFactor::Table {
+            name, alias, args, ..
+        } => {
+            let Some(effective_name) = resolve_effective_table_name(name, args, context) else {
+                return;
+            };
+            let table_meta = |idents: Vec<Ident>| {
+                DbTableMeta::new(
+                    idents,
+                    context.dialect(),
+                    context.default_schema().clone(),
+                    context.default_database().clone(),
+                )
+            };
+            let mut origins = vec![table_meta(convert_to_idents(&effective_name))];
+            if let Some(alias) = alias {
+                origins.push(table_meta(vec![alias.name.clone()]));
+            }
+            let alias_columns = alias.as_ref().map_or(&[][..], |alias| &alias.columns[..]);
+            context.add_cte_columns(&effective_name.to_string(), &origins, alias_columns);
+        }
+        TableFactor::NestedJoin {
+            table_with_joins, ..
+        } => {
+            offer_cte_columns(context, &table_with_joins.relation);
+            for join in &table_with_joins.joins {
+                offer_cte_columns(context, &join.relation);
+            }
+        }
+        _ => {}
+    }
+}
+
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
         // If we're selecting from a single table, that table becomes the default
@@ -634,6 +706,7 @@ impl Visit for Select {
         for table in &self.from {
             context.push_frame();
             table.relation.visit(context)?;
+            offer_cte_columns(context, &table.relation);
             let frame = context.pop_frame().unwrap();
             context.collect_aliases(&frame);
             context.collect(frame);
@@ -641,6 +714,7 @@ impl Visit for Select {
             for join in &table.joins {
                 context.push_frame();
                 join.visit(context)?;
+                offer_cte_columns(context, &join.relation);
                 let frame = context.pop_frame().unwrap();
                 context.collect_aliases(&frame);
                 context.collect(frame);
