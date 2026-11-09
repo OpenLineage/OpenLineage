@@ -22,7 +22,6 @@ import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -50,9 +49,6 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   @Getter protected final DatasetCompositeFacetsBuilder inner;
   @Getter protected String name;
   @Getter protected String namespace;
-
-  /** Symlinks of the dataset, kept to describe it in facets derived from its identity. */
-  protected List<DatasetIdentifier.Symlink> identifierSymlinks = Collections.emptyList();
 
   public SparkDatasetBuilder(OpenLineageContext context) {
     this(context, new DatasetCompositeFacetsBuilder(context.getOpenLineage()));
@@ -98,9 +94,6 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   }
 
   public SparkDatasetBuilder<T> symlink(List<DatasetIdentifier.Symlink> symlinks) {
-    if (symlinks != null) {
-      this.identifierSymlinks = symlinks;
-    }
     if (symlinks != null && !symlinks.isEmpty()) {
       List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinkIdentifiers =
           symlinks.stream()
@@ -219,14 +212,13 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   /**
    * Adds the facets that follow from the dataset's identity (see {@link
    * DatasetIdentityFacetUtils}). Subclasses call this when building the dataset, so it uses the
-   * final name, namespace and symlinks.
+   * final name, namespace and {@code symlinks} facet.
    */
   protected void addIdentityFacets() {
     if (name == null || namespace == null) {
       return;
     }
-    DatasetIdentityFacetUtils.buildIdentityFacets(
-        context, inner, new DatasetIdentifier(name, namespace, identifierSymlinks));
+    DatasetIdentityFacetUtils.buildIdentityFacets(context, inner, name, namespace);
   }
 
   public abstract T build();

@@ -107,6 +107,44 @@ class OneLakeFacetUtilsTest {
   }
 
   @Test
+  void testFacetUsesSymlinksSetThroughTheSymlinksFacet() {
+    // a builder that sets the LOCATION symlink as a facet, not through dataset(DatasetIdentifier)
+    String location = WAREHOUSE + "/Tables/raw/orders";
+    String oneLake = "abfss://" + WORKSPACE + "@onelake.dfs.fabric.microsoft.com";
+    OpenLineage openLineage = context.getOpenLineage();
+    OpenLineage.SymlinksDatasetFacet symlinks =
+        openLineage
+            .newSymlinksDatasetFacetBuilder()
+            .identifiers(
+                Collections.singletonList(
+                    openLineage
+                        .newSymlinksDatasetFacetIdentifiersBuilder()
+                        .name(location)
+                        .namespace(oneLake)
+                        .type("LOCATION")
+                        .build()))
+            .build();
+
+    for (OpenLineage.Dataset dataset :
+        new OpenLineage.Dataset[] {
+          DatasetFactory.input(context)
+              .sparkDatasetBuilder()
+              .dataset("wh_primary.raw.orders", NAMESPACE)
+              .symlinks(symlinks)
+              .build(),
+          DatasetFactory.output(context)
+              .sparkDatasetBuilder()
+              .dataset("wh_primary.raw.orders", NAMESPACE)
+              .symlink(symlinks)
+              .build()
+        }) {
+      OpenLineage.FabricOneLakeDatasetFacet facet = dataset.getFacets().getFabric_onelake();
+      assertThat(facet.getItemId()).isEqualTo(WAREHOUSE);
+      assertThat(facet.getLocation()).isEqualTo(oneLake + "/" + location);
+    }
+  }
+
+  @Test
   void testWorkspaceNameOnlyForTheSessionsWorkspace() {
     runtimeConf.put("trident.workspace.id", WORKSPACE);
     hadoopConf.set("trident.workspace.name", "sales-analytics");
