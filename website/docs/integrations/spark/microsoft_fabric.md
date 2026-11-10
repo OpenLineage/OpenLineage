@@ -100,7 +100,7 @@ the SQL address that was queried; if a `WorkspaceId` option names another worksp
 
 ## The `fabric_onelake` facet
 
-Every Fabric table that OpenLineage reports, read or written, also gets the `fabric_onelake` dataset facet
+Every Fabric warehouse table that OpenLineage reports, read or written, also gets the `fabric_onelake` dataset facet
 ([schema](https://openlineage.io/spec/facets/1-0-0/FabricOneLakeDatasetFacet.json)). It describes where the table is
 in OneLake, so you can link it to the warehouse that holds it, whichever name a job used for the table. Every field is
 optional; producers set only what they know without calling Fabric. For warehouse tables, Spark sets:
@@ -134,3 +134,35 @@ another workspace. Outside Fabric, for example when you read a warehouse over JD
 facet has the same fields except `workspaceName`.
 
 To leave the facet out, add it to the disabled facets: `spark.openlineage.facets.fabric_onelake.disabled=true`.
+
+## Lakehouse tables
+
+Spark reads and writes lakehouse tables through their files in OneLake, so it sees them as paths, such as
+`abfss://{workspace id}@onelake.dfs.fabric.microsoft.com` / `{lakehouse id}/Tables/sales/orders`. A path doesn't say
+whether the item is a lakehouse or a warehouse, so OpenLineage names a table as a lakehouse table only when the path
+shows it:
+
+| Namespace                           | Name                           |
+|:------------------------------------|:-------------------------------|
+| `fabric-lakehouse://{workspace id}` | `{lakehouse}.{schema}.{table}` |
+
+- **The notebook's default lakehouse.** A path whose item ID is the default lakehouse's (`trident.lakehouse.id`) is
+  named with `trident.lakehouse.name`. This covers tables written with `saveAsTable`, `CREATE TABLE … AS SELECT`,
+  `INSERT INTO` and `MERGE INTO`, and tables read or written by path.
+- **Paths written with names.** A path such as `abfss://my-ws@onelake.dfs.fabric.microsoft.com/lh_sales.Lakehouse/Tables/…`
+  is named as a lakehouse table when its workspace is the notebook's (`trident.workspace.name`), so that the
+  workspace's ID is known.
+
+Lakehouses without schemas use the schema `dbo`. When the lakehouse's ID is known, the table's OneLake location,
+written with IDs, is added as a `LOCATION` symlink.
+
+A warehouse table reached by a path written with names, such as
+`abfss://my-ws@onelake.dfs.fabric.microsoft.com/wh_sales.Warehouse/Tables/dbo/orders` (or `….Datawarehouse/…`), in the
+notebook's workspace, gets the name the connector gives warehouse tables:
+`fabric-warehouse://{SQL address}` / `{warehouse}.{schema}.{table}`, with the address [built](#how-the-address-is-built) from
+`trident.tenant.id` and the workspace's ID.
+
+Every other OneLake path keeps its path as the name: tables in other lakehouses, warehouse tables reached by ID, files under `Files/`,
+and anything outside Fabric, where there are no `trident.*` settings. These still get the `fabric_onelake` facet with
+the workspace and item IDs and the location from the path, and the workspace's name when it is the notebook's.
+

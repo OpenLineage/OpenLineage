@@ -60,7 +60,9 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
     this.inner = inner;
   }
 
-  public SparkDatasetBuilder<T> dataset(DatasetIdentifier datasetIdentifier) {
+  public SparkDatasetBuilder<T> dataset(DatasetIdentifier identifier) {
+    // the name vendors give the dataset, such as a Fabric lakehouse table's logical name
+    DatasetIdentifier datasetIdentifier = DatasetIdentifierResolver.resolve(context, identifier);
     if (this.name != null) {
       // Replacing an identity: the previous one's symlinks don't belong to the new one, and the
       // identity facets are built from the symlinks facet. Symlinks set before the first

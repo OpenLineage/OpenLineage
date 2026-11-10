@@ -4,6 +4,8 @@
 
 ### Added
 
+* **Spark: Name Microsoft Fabric lakehouse tables** [`#5147`](https://github.com/OpenLineage/OpenLineage/pull/5147) [@mobuchowski](https://github.com/mobuchowski)
+  *Tables in a notebook's default lakehouse, and `<name>.Lakehouse` paths in the notebook's workspace, are named `fabric-lakehouse://<workspace ID>` / `<lakehouse>.<schema>.<table>` instead of by their OneLake path, and `<name>.Warehouse` paths in the notebook's workspace get the `fabric-warehouse` name the connector gives. Other OneLake paths keep their names and get the `fabric_onelake` facet. Vendors can now give datasets their final names through `OpenLineageEventHandlerFactory.createDatasetIdentifierResolvers`.*
 * **Spec: Add the Microsoft Fabric `fabric_onelake` dataset facet** [`#5139`](https://github.com/OpenLineage/OpenLineage/pull/5139) [@mobuchowski](https://github.com/mobuchowski)
   *A new dataset facet describes where a table is stored in OneLake, Microsoft Fabric's storage: the workspace and item (such as a lakehouse or a warehouse) that hold it, by ID and name, the item's type, the table's OneLake location written with IDs, and its Delta table ID. It is in the new `microsoft/fabric` facet registry. Spark adds it to Fabric warehouse tables. The Java and Go clients include the new facet.*
 * **Spark: Report Microsoft Fabric warehouse tables read and written with `synapsesql`** [`#5132`](https://github.com/OpenLineage/OpenLineage/pull/5132) [@mobuchowski](https://github.com/mobuchowski)

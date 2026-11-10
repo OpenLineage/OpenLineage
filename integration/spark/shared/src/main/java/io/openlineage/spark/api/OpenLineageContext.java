@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -291,6 +292,25 @@ public class OpenLineageContext {
   @Getter @Setter String jobName;
 
   @Setter Integer activeJobId;
+
+  /** The vendors' dataset identifier resolvers, created on first use. */
+  private volatile List<DatasetIdentifierResolver> datasetIdentifierResolvers;
+
+  /**
+   * The resolvers the vendors contribute, which give datasets their final names; see {@link
+   * DatasetIdentifierResolver#resolve(OpenLineageContext, DatasetIdentifier)}.
+   */
+  public List<DatasetIdentifierResolver> getDatasetIdentifierResolvers() {
+    List<DatasetIdentifierResolver> resolvers = datasetIdentifierResolvers;
+    if (resolvers == null) {
+      resolvers =
+          vendors.getEventHandlerFactories().stream()
+              .flatMap(factory -> factory.createDatasetIdentifierResolvers(this).stream())
+              .collect(Collectors.toList());
+      datasetIdentifierResolvers = resolvers;
+    }
+    return resolvers;
+  }
 
   public Optional<Integer> getActiveJobId() {
     return Optional.ofNullable(activeJobId);
