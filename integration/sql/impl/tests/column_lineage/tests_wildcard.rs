@@ -1159,3 +1159,104 @@ fn test_recursive_cte_with_permuted_recursive_branch() {
     .unwrap();
     assert_eq!(output.column_lineage, vec![]);
 }
+
+// --- Self-review round 3 ---
+
+#[test]
+fn test_partial_column_list_with_generated_name_collision_beyond_range() {
+    // The real _0 column and the unaliased expression both sit beyond
+    // the one-alias list, so their pooled entry does not endanger the
+    // position the list binds; p still binds, and the pooled entry is
+    // reported under _0 exactly as it is with no list at all.
+    let output = test_sql("SELECT * FROM (SELECT a, a + 1, _0 FROM t1) AS d(p)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "_0".to_string(),
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("t1")),
+                        name: "_0".to_string(),
+                    },
+                    ColumnMeta {
+                        origin: Some(table("t1")),
+                        name: "a".to_string(),
+                    },
+                ],
+            },
+            lineage("p", "t1", "a"),
+        ]
+    );
+}
+
+#[test]
+fn test_cte_reference_partial_list_with_generated_name_collision_beyond_range() {
+    let output =
+        test_sql("WITH c AS (SELECT a, a + 1, _0 FROM t1) SELECT * FROM c AS y(p)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "_0".to_string(),
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("t1")),
+                        name: "_0".to_string(),
+                    },
+                    ColumnMeta {
+                        origin: Some(table("t1")),
+                        name: "a".to_string(),
+                    },
+                ],
+            },
+            lineage("p", "t1", "a"),
+        ]
+    );
+}
+
+#[test]
+fn test_derived_table_column_list_binds_scalar_subquery_position() {
+    // A scalar subquery projection is registered under its inner
+    // column's name rather than a generated one; as the only unbound
+    // entry for the only unnamed position, it binds by elimination.
+    let output =
+        test_sql("SELECT * FROM (SELECT (SELECT a FROM t2), b FROM t1) AS d(p, q)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("p", "t2", "a"), lineage("q", "t1", "b")]
+    );
+}
+
+#[test]
+fn test_cte_reference_column_list_binds_scalar_subquery_position() {
+    let output =
+        test_sql("WITH d AS (SELECT (SELECT a FROM t2), b FROM t1) SELECT * FROM d AS x(p, q)")
+            .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("p", "t2", "a"), lineage("q", "t1", "b")]
+    );
+}
+
+#[test]
+fn test_derived_table_column_list_drops_unattributable_generated_name() {
+    // The constant at position 1 breaks the generated-name alignment,
+    // so the _0 entry cannot be attributed to p or q; it is dropped
+    // rather than reported under a name the query does not output.
+    let output = test_sql("SELECT * FROM (SELECT a + 1, 1, b FROM t1) AS d(p, q, r)").unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("r", "t1", "b")]);
+}
+
+#[test]
+fn test_cte_reference_column_list_drops_unattributable_generated_name() {
+    let output =
+        test_sql("WITH d AS (SELECT a + 1, 1, b FROM t1) SELECT * FROM d AS x(p, q, r)").unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("r", "t1", "b")]);
+}

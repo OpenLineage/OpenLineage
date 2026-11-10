@@ -1270,6 +1270,12 @@ impl Visit for Table {
 
 // --- Utils ---
 
+/// Whether an output name has the generated form (`_0`, `_1`, ...) that
+/// unaliased expression outputs are registered under.
+fn is_generated_output_name(name: &Option<String>) -> bool {
+    matches!(name, Some(name) if generated_column_index(name).is_some())
+}
+
 /// Renames a derived table's output columns according to a column alias
 /// list (`AS d(x, y)`), which binds by position: the first alias renames
 /// the subquery's first output column, and so on. Outputs that carry no
@@ -1286,15 +1292,20 @@ fn apply_column_alias_list(
     };
 
     // A real output column named like a generated one (`_0`, `_1`, ...)
-    // cannot be told apart from an unaliased expression's entry: both
-    // register under the same name, pooled into one entry, when the body
-    // has an unnamed position too. Positional binding is unsound then -
-    // the pooled entry would land on one alias and the other position
-    // would vanish - so the list is refused.
-    if names
-        .iter()
-        .any(|name| matches!(name, Some(name) if generated_column_index(name).is_some()))
-        && names.iter().any(|name| name.is_none())
+    // pools into one frame entry with an unaliased expression's entry
+    // when the generated counter reaches its name, and the pooled entry
+    // cannot be attributed to either position. That endangers the list
+    // only when one side of such a collision is a position the list
+    // binds and the other side exists anywhere in the body: a
+    // generated-pattern name in the list's range together with an
+    // unnamed position anywhere, or an unnamed position in the range
+    // together with a generated-pattern name anywhere. A collision
+    // entirely beyond the range leaves the bound positions untouched.
+    let range = names.len().min(columns.len());
+    if (names[..range].iter().any(is_generated_output_name)
+        && names.iter().any(|name| name.is_none()))
+        || (names[..range].iter().any(|name| name.is_none())
+            && names.iter().any(is_generated_output_name))
     {
         return false;
     }
@@ -1336,41 +1347,68 @@ fn apply_column_alias_list(
         }
     }
     // A position whose projection is an unaliased expression is keyed in
-    // the frame under a generated name (`_0`, `_1`, ...) instead of an
-    // output name, so the loop above cannot bind it. Such entries are
-    // registered in projection order, so when their count equals the
-    // number of unnamed positions in the list's range - which also rules
-    // out a lineage-less position, like a constant, shifting the
-    // alignment - they correspond to those positions in order and
-    // rename the same way.
+    // the frame under a name that is not an output name - a generated
+    // name (`_0`, `_1`, ...) for most expressions, the inner column's
+    // name for a scalar subquery - so the loop above cannot bind it.
+    // The entries such positions leave are exactly the unrenamed,
+    // origin-less entries whose names are not output names of the body.
+    // Generated entries are registered in projection order, so when
+    // every candidate is generated and their count equals the number of
+    // unnamed positions in the list's range - which also rules out a
+    // lineage-less position, like a constant, shifting the alignment -
+    // they correspond to those positions in order and rename the same
+    // way; a lone candidate for a lone unnamed position binds by
+    // elimination whatever its key. When the candidates are fewer than
+    // the unnamed positions and no unnamed position lies beyond the
+    // list's range, every candidate belongs to a renamed position but
+    // cannot be attributed to one of them, so the entries are dropped
+    // rather than reported under names the query does not output.
     let unnamed_positions: Vec<usize> = (0..columns.len())
         .filter(|&position| matches!(names.get(position), Some(None)))
         .collect();
+    let mut dropped: HashSet<usize> = HashSet::new();
     if !unnamed_positions.is_empty() {
         let known_names: HashSet<&str> = names.iter().flatten().map(String::as_str).collect();
-        let mut generated: Vec<usize> = entries
+        let mut candidates: Vec<usize> = entries
             .iter()
             .enumerate()
             .filter(|(index, (column, _))| {
                 !renamed.contains(index)
+                    && column.origin.is_none()
                     && !known_names.contains(column.name.as_str())
-                    && generated_column_index(&column.name).is_some()
             })
             .map(|(index, _)| index)
             .collect();
-        generated.sort_by_key(|&index| generated_column_index(&entries[index].0.name));
-        if generated.len() == unnamed_positions.len() {
-            for (index, position) in generated.into_iter().zip(&unnamed_positions) {
+        if candidates.len() == unnamed_positions.len()
+            && candidates
+                .iter()
+                .all(|&index| generated_column_index(&entries[index].0.name).is_some())
+        {
+            candidates.sort_by_key(|&index| generated_column_index(&entries[index].0.name));
+            for (index, position) in candidates.into_iter().zip(&unnamed_positions) {
                 let origin = entries[index].0.origin.clone();
                 entries[index].0 = ColumnMeta::new(columns[*position].name.value.clone(), origin);
                 renamed.insert(index);
             }
+        } else if candidates.len() == 1 && unnamed_positions.len() == 1 {
+            let index = candidates[0];
+            let origin = entries[index].0.origin.clone();
+            entries[index].0 =
+                ColumnMeta::new(columns[unnamed_positions[0]].name.value.clone(), origin);
+            renamed.insert(index);
+        } else if candidates.len() < unnamed_positions.len()
+            && !names.iter().skip(columns.len()).any(|name| name.is_none())
+        {
+            dropped.extend(candidates);
         }
     }
     // A positional rename can land on a name another output column
     // already carries; merge the ancestry sets then, as the insertion
     // path in Context does, instead of letting one overwrite the other.
-    for (column, ancestors) in entries {
+    for (index, (column, ancestors)) in entries.into_iter().enumerate() {
+        if dropped.contains(&index) {
+            continue;
+        }
         frame
             .column_ancestry
             .entry(column)

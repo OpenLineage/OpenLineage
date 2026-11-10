@@ -946,10 +946,13 @@ impl<'a> Context<'a> {
                 for name in order.iter().take(alias_columns.len()).flatten() {
                     *positions_by_name.entry(name.as_str()).or_default() += 1;
                 }
+                let range = order.len().min(alias_columns.len());
+                let generated_name = |name: &Option<String>| matches!(name, Some(name) if generated_column_index(name).is_some());
                 if positions_by_name.values().any(|positions| *positions > 1)
-                    || (order.iter().any(
-                        |name| matches!(name, Some(name) if generated_column_index(name).is_some()),
-                    ) && order.iter().any(|name| name.is_none()))
+                    || ((order[..range].iter().any(generated_name)
+                        && order.iter().any(|name| name.is_none()))
+                        || (order[..range].iter().any(|name| name.is_none())
+                            && order.iter().any(generated_name)))
                 {
                     return;
                 }
@@ -971,32 +974,46 @@ impl<'a> Context<'a> {
                     }
                 }
                 // A position whose projection is an unaliased expression
-                // is recorded under a generated name (`_0`, `_1`, ...)
-                // rather than an output name, so the loop above cannot
-                // bind it. Such columns are registered in projection
-                // order, so when their count equals the number of unnamed
-                // positions in the list's range - which also rules out a
-                // lineage-less position, like a constant, shifting the
-                // alignment - they correspond to those positions in order
-                // and rename the same way.
+                // is recorded under a name that is not an output name - a
+                // generated name (`_0`, `_1`, ...) for most expressions,
+                // the inner column's name for a scalar subquery - so the
+                // loop above cannot bind it. The recorded columns are
+                // keyed by name alone, so the candidates are exactly the
+                // unconsumed keys that are not output names. Generated
+                // entries are registered in projection order, so when
+                // every candidate is generated and their count equals
+                // the number of unnamed positions in the list's range -
+                // which also rules out a lineage-less position, like a
+                // constant, shifting the alignment - they correspond to
+                // those positions in order and rename the same way; a
+                // lone candidate for a lone unnamed position binds by
+                // elimination whatever its key. When the candidates are
+                // fewer than the unnamed positions and no unnamed
+                // position lies beyond the list's range, every candidate
+                // belongs to a renamed position but cannot be attributed
+                // to one, so it is consumed without being offered rather
+                // than reported under a name the query does not output.
                 let unnamed_positions: Vec<usize> = (0..alias_columns.len())
                     .filter(|&position| matches!(order.get(position), Some(None)))
                     .collect();
                 if !unnamed_positions.is_empty() {
                     let known_names: HashSet<&str> =
                         order.iter().flatten().map(String::as_str).collect();
-                    let mut generated: Vec<&String> = cte
+                    let mut candidates: Vec<&String> = cte
                         .columns
                         .keys()
                         .filter(|name| {
                             !consumed.contains(name.as_str())
                                 && !known_names.contains(name.as_str())
-                                && generated_column_index(name).is_some()
                         })
                         .collect();
-                    generated.sort_by_key(|name| generated_column_index(name));
-                    if generated.len() == unnamed_positions.len() {
-                        for (name, position) in generated.into_iter().zip(&unnamed_positions) {
+                    if candidates.len() == unnamed_positions.len()
+                        && candidates
+                            .iter()
+                            .all(|name| generated_column_index(name).is_some())
+                    {
+                        candidates.sort_by_key(|name| generated_column_index(name));
+                        for (name, position) in candidates.into_iter().zip(&unnamed_positions) {
                             consumed.insert(name.as_str());
                             if let Some(ancestors) = cte.columns.get(name) {
                                 renamed
@@ -1004,6 +1021,24 @@ impl<'a> Context<'a> {
                                     .or_default()
                                     .extend(ancestors.iter().cloned());
                             }
+                        }
+                    } else if candidates.len() == 1 && unnamed_positions.len() == 1 {
+                        let name = candidates[0];
+                        consumed.insert(name.as_str());
+                        if let Some(ancestors) = cte.columns.get(name) {
+                            renamed
+                                .entry(alias_columns[unnamed_positions[0]].name.value.clone())
+                                .or_default()
+                                .extend(ancestors.iter().cloned());
+                        }
+                    } else if candidates.len() < unnamed_positions.len()
+                        && !order
+                            .iter()
+                            .skip(alias_columns.len())
+                            .any(|name| name.is_none())
+                    {
+                        for name in candidates {
+                            consumed.insert(name.as_str());
                         }
                     }
                 }
