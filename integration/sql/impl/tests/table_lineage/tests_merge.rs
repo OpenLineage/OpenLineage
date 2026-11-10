@@ -164,3 +164,59 @@ fn merge_into_identifier_target() {
         }
     );
 }
+
+#[test]
+fn merge_when_matched_predicate_subquery_table_is_input() {
+    // Tables read by a WHEN clause's predicate subquery are inputs of
+    // the MERGE, like tables read by the ON clause.
+    assert_eq!(
+        test_sql_dialect(
+            "MERGE INTO t USING s ON t.id = s.id \
+             WHEN MATCHED AND EXISTS (SELECT 1 FROM r) THEN UPDATE SET x = 1 \
+             WHEN NOT MATCHED THEN INSERT VALUES (1)",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["r", "s"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+}
+
+#[test]
+fn merge_when_not_matched_predicate_subquery_table_is_input() {
+    assert_eq!(
+        test_sql_dialect(
+            "MERGE INTO t USING s ON t.id = s.id \
+             WHEN NOT MATCHED AND EXISTS (SELECT 1 FROM r) THEN INSERT VALUES (1)",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["r", "s"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+}
+
+#[test]
+fn merge_update_action_subquery_table_is_input() {
+    // A subquery in a WHEN clause's UPDATE assignment reads a table too.
+    assert_eq!(
+        test_sql_dialect(
+            "MERGE INTO t USING s ON t.id = s.id \
+             WHEN MATCHED THEN UPDATE SET x = (SELECT MAX(y) FROM r) \
+             WHEN NOT MATCHED THEN INSERT VALUES (1)",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["r", "s"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+}

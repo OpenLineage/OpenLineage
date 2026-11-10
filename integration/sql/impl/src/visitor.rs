@@ -1,17 +1,17 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::Context;
+use crate::context::{cte_dependency_key, Context};
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
-    JoinConstraint, JoinOperator, MultiTableInsertIntoClause, ObjectName, ObjectNamePart, Query,
-    RenameTableNameKind, Select, SelectItem, SetExpr, Statement, Subscript, Table, TableFactor,
-    TableFunctionArgs, TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec,
-    WindowType, With,
+    JoinConstraint, JoinOperator, MergeAction, MergeInsertKind, MergeUpdateKind,
+    MultiTableInsertIntoClause, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
+    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
+    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, Dialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -56,12 +56,19 @@ impl Visit for With {
                 context.collect_with_table(f, table);
             }
 
+            // CTEs are registered under a canonical key (see
+            // cte_dependency_key), so a reference spelled with different
+            // quoting or unquoted case still resolves to this CTE.
+            let cte_key = cte_dependency_key(
+                &self.cte_tables[i].alias.name.value,
+                self.cte_tables[i].alias.name.quote_style,
+            );
+
             if i == 0 {
-                context
-                    .collect_lower_nested_dependencies(self.cte_tables[i].alias.name.clone().value);
+                context.collect_lower_nested_dependencies(cte_key.clone());
             }
 
-            context.adjust_cte_dependencies(self.cte_tables[i].alias.name.clone().value, recursive);
+            context.adjust_cte_dependencies(cte_key, recursive);
         }
         Ok(())
     }
@@ -94,12 +101,25 @@ impl Visit for TableFactor {
                     context.add_table_dependency(convert_to_idents(&effective_name));
                 }
 
-                if context.is_main() && !context.has_alias(effective_name.to_string()) {
+                // Only a bare, single-part reference can name a CTE, and
+                // it is looked up under the CTE's canonical key - the
+                // object's display form would carry quote delimiters and
+                // the as-written case, which never match a registration.
+                // A qualified reference keeps its display form here, which
+                // no bare key can equal, so it stays a real table.
+                let cte_key = match effective_name.0.as_slice() {
+                    [ObjectNamePart::Identifier(part)] => {
+                        cte_dependency_key(&part.value, part.quote_style)
+                    }
+                    _ => effective_name.to_string(),
+                };
+
+                if context.is_main() && !context.has_alias(cte_key.clone()) {
                     context.add_input(convert_to_idents(&effective_name));
                 }
 
-                if context.is_main() && context.has_alias(effective_name.to_string()) {
-                    context.mark_table_as_used(effective_name.to_string());
+                if context.is_main() && context.has_alias(cte_key.clone()) {
+                    context.mark_table_as_used(cte_key);
                 }
 
                 Ok(())
@@ -854,6 +874,51 @@ impl Visit for Statement {
                 }
                 merge.source.visit(context)?;
                 merge.on.visit(context)?;
+                // A WHEN clause's predicate and action expressions are
+                // general expressions, like the ON clause: they can read
+                // tables through subqueries, and those tables are inputs
+                // of the statement. Visit each clause in a temporary
+                // frame, as a multi-table INSERT visits its WHEN
+                // predicates, and keep only the frame's table
+                // dependencies: a CTE or alias defined inside one clause
+                // is scoped to it and must not capture a later clause's
+                // references.
+                for clause in &merge.clauses {
+                    context.push_frame();
+                    if let Some(predicate) = &clause.predicate {
+                        predicate.visit(context)?;
+                    }
+                    match &clause.action {
+                        MergeAction::Insert(insert) => {
+                            if let MergeInsertKind::Values(values) = &insert.kind {
+                                for row in &values.rows {
+                                    for expr in &row.content {
+                                        expr.visit(context)?;
+                                    }
+                                }
+                            }
+                            if let Some(predicate) = &insert.insert_predicate {
+                                predicate.visit(context)?;
+                            }
+                        }
+                        MergeAction::Update(update) => {
+                            if let MergeUpdateKind::Set(assignments) = &update.kind {
+                                for assignment in assignments {
+                                    assignment.value.visit(context)?;
+                                }
+                            }
+                            if let Some(predicate) = &update.update_predicate {
+                                predicate.visit(context)?;
+                            }
+                            if let Some(predicate) = &update.delete_predicate {
+                                predicate.visit(context)?;
+                            }
+                        }
+                        MergeAction::Delete { .. } | MergeAction::DoNothing { .. } => {}
+                    }
+                    let frame = context.pop_frame().unwrap();
+                    context.collect_dependencies(&frame);
+                }
             }
             Statement::CreateTable(ct) => {
                 if let Some(query) = &ct.query {
@@ -1206,7 +1271,13 @@ fn resolve_insert_target_name(
             return None;
         }
     }
-    resolve_effective_table_name(name, &None, context)
+    match resolve_effective_table_name(name, &None, context) {
+        // A quoted empty identifier (INSERT INTO "") names nothing,
+        // like the empty IDENTIFIER('') string above: emit no output
+        // rather than one with an empty name.
+        Some(resolved) if is_empty_object_name(&resolved) => None,
+        resolved => resolved,
+    }
 }
 
 /// Whether an insert column is a plain column name, as opposed to an

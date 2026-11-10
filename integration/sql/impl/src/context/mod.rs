@@ -104,6 +104,29 @@ pub struct Context<'a> {
     column_id: u32,
 }
 
+/// The key a CTE is registered under and looked up by, derived from the
+/// name as written. A quoted identifier is case-sensitive, so its key is
+/// its value exactly (delimiters are not part of `Ident.value`, so
+/// `FROM "c"` and the alias `"c"` share a key); an unquoted identifier
+/// folds case - upper in Snowflake, lower in Postgres - so its key is
+/// lower-cased and spellings differing only in case (`MyCte`, `MYCTE`)
+/// share a key. Registration and every lookup must go through this, or
+/// the two sides never meet and the CTE's inputs are silently lost.
+pub(crate) fn cte_dependency_key(name: &str, quote_style: Option<char>) -> String {
+    match quote_style {
+        Some(_) => name.to_string(),
+        None => name.to_lowercase(),
+    }
+}
+
+/// The CTE key of a recorded table reference.
+fn cte_key_of(table: &DbTableMeta) -> String {
+    cte_dependency_key(
+        &table.name,
+        table.quote_style.as_ref().and_then(|style| style.name),
+    )
+}
+
 impl<'a> Context<'a> {
     #![allow(dead_code)]
     pub fn default() -> Context<'a> {
@@ -323,10 +346,10 @@ impl<'a> Context<'a> {
     /// Marks the CTE referenced as `table` as used, so its dependencies are
     /// collected as inputs.
     ///
-    /// CTEs are keyed by their bare alias, so the lookup uses the reference
-    /// exactly as written (the same key as [`Context::has_alias`]) rather than
-    /// a name qualified with the default schema/database. A qualified
-    /// reference such as `schema.c` therefore never matches CTE `c`.
+    /// CTEs are keyed by their bare alias (see [`cte_dependency_key`]), so
+    /// callers pass the reference's key rather than a name qualified with
+    /// the default schema/database. A qualified reference such as
+    /// `schema.c` therefore never matches CTE `c`.
     pub fn mark_table_as_used(&mut self, table: String) {
         for frame in self.frames.iter_mut().rev() {
             if let Some(cte) = frame.cte_dependencies.get_mut(&table) {
@@ -511,8 +534,8 @@ impl<'a> Context<'a> {
         let own_references: Vec<String> = frame
             .bare_dependencies
             .iter()
-            .filter(|table| frame.cte_dependencies.contains_key(&table.name))
-            .map(|table| table.name.clone())
+            .filter(|table| frame.cte_dependencies.contains_key(&cte_key_of(table)))
+            .map(cte_key_of)
             .collect();
         for name in own_references {
             if let Some(dep) = frame.cte_dependencies.get_mut(&name) {
@@ -539,9 +562,9 @@ impl<'a> Context<'a> {
             if let Some(dep) = frame.cte_dependencies.get(&name) {
                 for table in &dep.deps {
                     if dep.bare_deps.contains(table)
-                        && frame.cte_dependencies.contains_key(&table.name)
+                        && frame.cte_dependencies.contains_key(&cte_key_of(table))
                     {
-                        queue.push(table.name.clone());
+                        queue.push(cte_key_of(table));
                     } else {
                         resolved.push((table.clone(), dep.bare_deps.contains(table)));
                     }
@@ -562,8 +585,8 @@ impl<'a> Context<'a> {
         // CTE reference rather than a schema-qualified real table.
         let enclosing_is_main = self.is_main();
         for (table, was_bare) in resolved {
-            if enclosing_is_main && was_bare && self.has_alias(table.name.clone()) {
-                self.mark_table_as_used(table.name.clone());
+            if enclosing_is_main && was_bare && self.has_alias(cte_key_of(&table)) {
+                self.mark_table_as_used(cte_key_of(&table));
             } else {
                 if was_bare {
                     frame.bare_dependencies.insert(table.clone());
@@ -580,7 +603,7 @@ impl<'a> Context<'a> {
         let resolved_bare: Vec<DbTableMeta> = frame
             .bare_dependencies
             .iter()
-            .filter(|table| resolved_names.contains(&table.name))
+            .filter(|table| resolved_names.contains(&cte_key_of(table)))
             .cloned()
             .collect();
         for table in resolved_bare {
@@ -635,7 +658,7 @@ impl<'a> Context<'a> {
         // does is not itself an input - it resolves through the CTE,
         // whose own dependencies were collected above when it is used.
         for table in deps {
-            if bare_deps.contains(&table) && cte_deps.contains_key(&table.name) {
+            if bare_deps.contains(&table) && cte_deps.contains_key(&cte_key_of(&table)) {
                 continue;
             }
             self.inputs.insert(table);
@@ -755,7 +778,7 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            if cte_name.clone() == dependency.name {
+            if cte_name == cte_key_of(&dependency) {
                 if !recursive {
                     resolved_dependencies.insert(dependency.clone());
                     resolved_bare_dependencies.insert(dependency.clone());
@@ -763,8 +786,11 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            if cte_dependencies.contains_key(&dependency.name) {
-                let nested = cte_dependencies.get(&dependency.name).unwrap().clone();
+            if cte_dependencies.contains_key(&cte_key_of(&dependency)) {
+                let nested = cte_dependencies
+                    .get(&cte_key_of(&dependency))
+                    .unwrap()
+                    .clone();
                 resolved_dependencies.extend(nested.deps);
                 resolved_bare_dependencies.extend(nested.bare_deps);
                 continue;

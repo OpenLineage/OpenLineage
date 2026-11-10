@@ -1419,3 +1419,18 @@ fn insert_source_with_referencing_statement_cte() {
         }
     );
 }
+
+#[test]
+fn insert_into_quoted_empty_name_has_no_output() {
+    // A quoted empty identifier names nothing, like IDENTIFIER(''):
+    // no output is registered for it.
+    assert_eq!(
+        test_sql_dialect("INSERT INTO \"\" SELECT * FROM s", "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["s"]),
+            out_tables: tables(vec![])
+        }
+    );
+}

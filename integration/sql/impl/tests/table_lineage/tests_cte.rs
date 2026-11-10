@@ -644,3 +644,123 @@ fn used_outer_cte_through_nested_cte_body_collects_inputs() {
         }
     );
 }
+
+#[test]
+fn quoted_cte_referenced_with_quotes_keeps_inputs() {
+    // A CTE defined and referenced with quoted names: the reference is
+    // looked up by the name's value, not its display form, so the CTE
+    // resolves and its input is collected.
+    for dialect in ["snowflake", "postgres"] {
+        assert_eq!(
+            test_sql_dialect(
+                "WITH \"c\" AS (SELECT * FROM a) SELECT * FROM \"c\"",
+                dialect,
+            )
+            .unwrap()
+            .table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["a"]),
+                out_tables: tables(vec![])
+            }
+        );
+    }
+}
+
+#[test]
+fn quoted_cte_referenced_from_insert_source_and_join() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO t WITH \"c\" AS (SELECT * FROM a) SELECT * FROM \"c\"",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+    assert_eq!(
+        test_sql_dialect(
+            "WITH \"c\" AS (SELECT * FROM a) SELECT * FROM \"c\" JOIN b ON 1=1",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn cte_referenced_with_different_unquoted_case_keeps_inputs() {
+    // Unquoted identifiers fold case (upper in Snowflake, lower in
+    // Postgres), so MYCTE names the CTE defined as MyCte: it resolves,
+    // its input is collected, and no phantom MYCTE table appears.
+    for dialect in ["snowflake", "postgres"] {
+        assert_eq!(
+            test_sql_dialect(
+                "WITH MyCte AS (SELECT * FROM a) SELECT * FROM MYCTE",
+                dialect,
+            )
+            .unwrap()
+            .table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["a"]),
+                out_tables: tables(vec![])
+            }
+        );
+    }
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT INTO t WITH MyCte AS (SELECT * FROM a) SELECT * FROM MYCTE",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+    // The same resolution through a derived table's body.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH MyCte AS (SELECT * FROM a) SELECT * FROM (SELECT * FROM MYCTE) d",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn quoted_cte_with_different_quoted_case_is_a_real_table() {
+    // Quoted identifiers are case-sensitive: "c" does not name the CTE
+    // "C", so it is a real table input and the unused CTE contributes
+    // nothing.
+    let mut quoted_c = table("c");
+    quoted_c.quote_style = Some(openlineage_sql::QuoteStyle {
+        database: None,
+        schema: None,
+        name: Some('"'),
+    });
+    assert_eq!(
+        test_sql_dialect(
+            "WITH \"C\" AS (SELECT * FROM a) SELECT * FROM \"c\"",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![quoted_c],
+            out_tables: tables(vec![])
+        }
+    );
+}
