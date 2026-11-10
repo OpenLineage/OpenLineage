@@ -10,8 +10,8 @@ use crate::lineage::*;
 use alias_table::AliasTable;
 use sqlparser::ast::Ident;
 use sqlparser::dialect::{
-    BigQueryDialect, DatabricksDialect, Dialect, HiveDialect, MySqlDialect, PostgreSqlDialect,
-    RedshiftSqlDialect, SnowflakeDialect,
+    BigQueryDialect, DatabricksDialect, Dialect, HiveDialect, MsSqlDialect, MySqlDialect,
+    PostgreSqlDialect, RedshiftSqlDialect, SQLiteDialect, SnowflakeDialect,
 };
 
 type ColumnAncestors = HashSet<ColumnMeta>;
@@ -111,7 +111,9 @@ pub struct Context<'a> {
 /// stored form in the statement's dialect. A quoted identifier is
 /// stored exactly as written (delimiters are not part of
 /// `Ident.value`), so `FROM "c"` and the alias `"c"` share a key and
-/// `"C"` stays a different name. An unquoted identifier is stored
+/// `"C"` stays a different name - except in dialects whose delimited
+/// identifiers stay case-insensitive, where it folds like an unquoted
+/// one. An unquoted identifier is stored
 /// folded - upper case in Snowflake, lower case in Postgres - so
 /// spellings that fold to the same stored form (`MyCte`, `MYCTE` in
 /// Snowflake) share a key, while a quoted name only ever equals an
@@ -125,9 +127,20 @@ pub(crate) fn cte_dependency_key(
     quote_style: Option<char>,
     dialect: &dyn Dialect,
 ) -> String {
+    // In SQL Server, SQLite and the Spark/Hive/MySQL family, delimited
+    // identifiers stay case-insensitive: quoting a name there does not
+    // make its spelling significant, so it keys by its fold like an
+    // unquoted name. Everywhere else a quoted identifier is stored
+    // exactly as written and keys by its value.
+    let delimited_case_insensitive = dialect.is::<MsSqlDialect>()
+        || dialect.is::<SQLiteDialect>()
+        || dialect.is::<DatabricksDialect>()
+        || dialect.is::<HiveDialect>()
+        || dialect.is::<BigQueryDialect>()
+        || dialect.is::<MySqlDialect>();
     match quote_style {
-        Some(_) => name.to_string(),
-        None => fold_unquoted(name, dialect),
+        Some(_) if !delimited_case_insensitive => name.to_string(),
+        _ => fold_unquoted(name, dialect),
     }
 }
 
@@ -444,6 +457,7 @@ impl<'a> Context<'a> {
             return;
         }
 
+        let dialect = self.dialect.as_base();
         let frame = self.frames.last_mut().unwrap();
         let mut result: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
 
@@ -451,7 +465,7 @@ impl<'a> Context<'a> {
             let mut expanded = ColumnAncestors::new();
             for ancestor in ancestors {
                 // here we need also look on other if they are connected
-                let traversed = Context::expand_ancestors(ancestor.clone(), &old);
+                let traversed = Context::expand_ancestors(ancestor.clone(), &old, dialect);
 
                 if !traversed.is_empty() {
                     expanded.extend(traversed.iter().cloned());
@@ -465,7 +479,11 @@ impl<'a> Context<'a> {
         frame.bare_dependencies.extend(old.bare_dependencies);
     }
 
-    fn expand_ancestors(ancestor: ColumnMeta, old: &ContextFrame) -> Vec<ColumnMeta> {
+    fn expand_ancestors(
+        ancestor: ColumnMeta,
+        old: &ContextFrame,
+        dialect: &dyn Dialect,
+    ) -> Vec<ColumnMeta> {
         let mut result = Vec::new();
         let mut stack = Vec::new();
         let mut max_iter = 40;
@@ -482,10 +500,20 @@ impl<'a> Context<'a> {
                 .column_ancestry
                 .get(&current)
                 // try to find by name in case of column without origin
-                // this can happen when selecting from subquery without alias
+                // this can happen when selecting from subquery without alias;
+                // an origin spelled differently from the definition - a
+                // CTE referenced as MYCTE where it was defined as MyCte -
+                // names the same table under the dialect's stored form
+                // and must expand the same way.
                 .or_else(|| {
                     old.column_ancestry.iter().find_map(|(col, anc)| {
-                        if col.name == current.name && current.origin.is_none() {
+                        if col.name == current.name
+                            && (current.origin.is_none()
+                                || matches!((&col.origin, &current.origin), (Some(a), Some(b))
+                                    if a.database == b.database
+                                        && a.schema == b.schema
+                                        && cte_key_of(a, dialect) == cte_key_of(b, dialect)))
+                        {
                             Some(anc)
                         } else {
                             None
@@ -512,7 +540,18 @@ impl<'a> Context<'a> {
 
     pub fn collect(&mut self, mut old: ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
-            frame.column_ancestry.extend(old.column_ancestry.drain());
+            // Union the ancestor sets of columns both frames know: a
+            // merged frame can hold another arm's or subquery's
+            // contribution to the same output column (a parenthesized
+            // set-operation arm, say), and replacing the set would
+            // silently drop the earlier contributions.
+            for (column, ancestors) in old.column_ancestry.drain() {
+                frame
+                    .column_ancestry
+                    .entry(column)
+                    .and_modify(|existing| existing.extend(ancestors.iter().cloned()))
+                    .or_insert(ancestors);
+            }
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
             // CTE registrations travel up with the frame, so the used

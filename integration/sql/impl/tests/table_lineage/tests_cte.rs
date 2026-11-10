@@ -891,3 +891,95 @@ fn unquoted_reference_matching_quoted_cte_spelling_is_not_the_cte() {
         }
     );
 }
+
+#[test]
+fn delimited_case_insensitive_cte_references_resolve() {
+    // In SQL Server, SQLite and the Spark/Hive/MySQL family, delimited
+    // identifiers stay case-insensitive, so a delimited reference in
+    // different case names the same CTE.
+    for (sql, dialect) in [
+        (
+            "WITH [MyCte] AS (SELECT * FROM a) SELECT * FROM [mycte]",
+            "mssql",
+        ),
+        (
+            "WITH `MyCte` AS (SELECT * FROM a) SELECT * FROM `mycte`",
+            "mysql",
+        ),
+        (
+            "WITH \"MyCte\" AS (SELECT * FROM a) SELECT * FROM \"mycte\"",
+            "sqlite",
+        ),
+    ] {
+        assert_eq!(
+            test_sql_dialect(sql, dialect).unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["a"]),
+                out_tables: tables(vec![])
+            }
+        );
+    }
+    // Through a sibling CTE's body, too.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH [MyCte] AS (SELECT * FROM a), \
+             other AS (SELECT * FROM [mycte]) SELECT * FROM other",
+            "mssql",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn recursive_cte_with_delimited_case_differing_self_reference() {
+    // SQL Server lets any CTE refer to itself; a delimited
+    // self-reference in different case is still the recursion, not a
+    // phantom table input.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH MyCte AS (SELECT n FROM a UNION ALL SELECT n FROM [mycte]) \
+             SELECT * FROM MyCte",
+            "mssql",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn quoted_reference_equal_to_unquoted_fold_resolves() {
+    // A quoted reference whose spelling is exactly the stored form of
+    // an unquoted definition names that CTE (Postgres folds MyCte to
+    // mycte; Snowflake folds it to MYCTE), and vice versa.
+    for (sql, dialect) in [
+        (
+            "WITH MyCte AS (SELECT * FROM a) SELECT * FROM \"mycte\"",
+            "postgres",
+        ),
+        (
+            "WITH \"mycte\" AS (SELECT * FROM a) SELECT * FROM MyCte",
+            "postgres",
+        ),
+        (
+            "WITH MyCte AS (SELECT * FROM a) SELECT * FROM \"MYCTE\"",
+            "snowflake",
+        ),
+    ] {
+        assert_eq!(
+            test_sql_dialect(sql, dialect).unwrap().table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["a"]),
+                out_tables: tables(vec![])
+            }
+        );
+    }
+}
