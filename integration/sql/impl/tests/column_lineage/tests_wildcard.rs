@@ -765,3 +765,116 @@ fn test_cte_column_list_with_unknown_order_offers_nothing() {
             .unwrap();
     assert_eq!(output.column_lineage, vec![]);
 }
+
+#[test]
+fn test_star_over_cte_with_union_body_merges_branch_columns() {
+    // A set operation's output columns are named by its left branch; the
+    // right branch's columns fold onto those names by position, they are
+    // not extra output columns of their own.
+    let output =
+        test_sql("WITH d AS (SELECT a FROM t1 UNION ALL SELECT b FROM t2) SELECT * FROM d")
+            .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "a".to_string(),
+            },
+            lineage: vec![
+                ColumnMeta {
+                    origin: Some(table("t1")),
+                    name: "a".to_string(),
+                },
+                ColumnMeta {
+                    origin: Some(table("t2")),
+                    name: "b".to_string(),
+                },
+            ],
+        }]
+    );
+}
+
+#[test]
+fn test_star_over_derived_table_with_union_body_merges_branch_columns() {
+    let output = test_sql("SELECT * FROM (SELECT a FROM t1 UNION ALL SELECT b FROM t2)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "a".to_string(),
+            },
+            lineage: vec![
+                ColumnMeta {
+                    origin: Some(table("t1")),
+                    name: "a".to_string(),
+                },
+                ColumnMeta {
+                    origin: Some(table("t2")),
+                    name: "b".to_string(),
+                },
+            ],
+        }]
+    );
+}
+
+#[test]
+fn test_star_ignores_subquery_in_join_condition() {
+    // The subquery in the ON condition is not a FROM item: its output
+    // columns are not columns of the query, so the wildcard must not
+    // expand them.
+    let output =
+        test_sql("SELECT * FROM (SELECT a FROM t) d JOIN u ON d.a IN (SELECT id FROM s)").unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "t", "a")]);
+}
+
+#[test]
+fn test_star_ignores_subquery_in_unnest_argument() {
+    let output = test_sql_dialect(
+        "SELECT * FROM UNNEST(ARRAY(SELECT id FROM src)) AS n",
+        "bigquery",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_derived_column_list_with_unknown_positions_offers_nothing() {
+    // The inner query projects `*`, so the positions the column list
+    // binds to cannot be known; the wildcard expands nothing rather than
+    // reporting the inner names the query does not output.
+    let output =
+        test_sql("SELECT * FROM (SELECT * FROM (SELECT a, b FROM t) s) AS d(x, y)").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_qualified_star_matches_backtick_alias_in_databricks() {
+    // Databricks quoted identifiers are case-insensitive, so the
+    // qualifier `t` names the alias stamped from the unquoted name T.
+    let output =
+        test_sql_dialect("SELECT t.* FROM (SELECT a FROM x) AS `t`", "databricks").unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "x", "a")]);
+}
+
+#[test]
+fn test_star_exclude_quoted_matches_unquoted_column_in_snowflake() {
+    // The frame canonicalizes the unquoted column id to ID, and the
+    // quoted modifier "ID" names that stored form.
+    let output = test_sql_dialect(
+        "SELECT * EXCLUDE (\"ID\") FROM (SELECT id, x FROM t)",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![edge("x", "t", "x")]);
+}
+
+#[test]
+fn test_star_over_quoted_cte_reference() {
+    // The CTE is keyed by its name as written, without delimiters, so a
+    // quoted reference finds it the way an unquoted one does.
+    let output = test_sql("WITH \"d\" AS (SELECT a FROM t) SELECT * FROM \"d\"").unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "t", "a")]);
+    assert_eq!(output.table_lineage.in_tables, vec![table("t")]);
+}
