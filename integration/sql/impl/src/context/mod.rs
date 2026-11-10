@@ -40,13 +40,28 @@ fn rename_pairs(options: &WildcardAdditionalOptions) -> Vec<(&Ident, &Ident)> {
 /// column name - whose quoting is not retained at this layer - is read as
 /// an unquoted identifier, so a quoted `"ID"` names the column an unquoted
 /// `id` produces in Snowflake. BigQuery compares without regard to case,
-/// quoted or not, as it does for qualifiers.
+/// quoted or not, as it does for qualifiers, and so do the dialects where a
+/// quoted qualifier still matches case-insensitively
+/// ([`ident_matches_origin`]): Databricks, Hive, DuckDB, MySQL and MSSQL -
+/// a backtick-quoted `SECRET` names the column `secret` there.
 fn ident_matches_column(ident: &Ident, column_name: &str, dialect: &dyn Dialect) -> bool {
-    if dialect.is::<BigQueryDialect>() {
+    if dialect.is::<BigQueryDialect>()
+        || dialect.is::<DatabricksDialect>()
+        || dialect.is::<HiveDialect>()
+        || dialect.is::<DuckDbDialect>()
+        || dialect.is::<MySqlDialect>()
+        || dialect.is::<MsSqlDialect>()
+    {
         return ident.value.eq_ignore_ascii_case(column_name);
     }
     canonical_ident(&ident.value, ident.quote_style.is_some(), dialect)
         == canonical_ident(column_name, false, dialect)
+}
+
+/// The counter value of a generated column name (`_0`, `_1`, ...), as
+/// assigned to unaliased expression outputs, or None for a real name.
+pub(crate) fn generated_column_index(name: &str) -> Option<usize> {
+    name.strip_prefix('_')?.parse().ok()
 }
 
 /// The stored form of an identifier under the active dialect: a quoted
@@ -910,6 +925,43 @@ impl<'a> Context<'a> {
                             if let Some(ancestors) = cte.columns.get(name) {
                                 renamed
                                     .entry(alias.name.value.clone())
+                                    .or_default()
+                                    .extend(ancestors.iter().cloned());
+                            }
+                        }
+                    }
+                }
+                // A position whose projection is an unaliased expression
+                // is recorded under a generated name (`_0`, `_1`, ...)
+                // rather than an output name, so the loop above cannot
+                // bind it. Such columns are registered in projection
+                // order, so when their count equals the number of unnamed
+                // positions in the list's range - which also rules out a
+                // lineage-less position, like a constant, shifting the
+                // alignment - they correspond to those positions in order
+                // and rename the same way.
+                let unnamed_positions: Vec<usize> = (0..alias_columns.len())
+                    .filter(|&position| matches!(order.get(position), Some(None)))
+                    .collect();
+                if !unnamed_positions.is_empty() {
+                    let known_names: HashSet<&str> =
+                        order.iter().flatten().map(String::as_str).collect();
+                    let mut generated: Vec<&String> = cte
+                        .columns
+                        .keys()
+                        .filter(|name| {
+                            !consumed.contains(name.as_str())
+                                && !known_names.contains(name.as_str())
+                                && generated_column_index(name).is_some()
+                        })
+                        .collect();
+                    generated.sort_by_key(|name| generated_column_index(name));
+                    if generated.len() == unnamed_positions.len() {
+                        for (name, position) in generated.into_iter().zip(&unnamed_positions) {
+                            consumed.insert(name.as_str());
+                            if let Some(ancestors) = cte.columns.get(name) {
+                                renamed
+                                    .entry(alias_columns[*position].name.value.clone())
                                     .or_default()
                                     .extend(ancestors.iter().cloned());
                             }

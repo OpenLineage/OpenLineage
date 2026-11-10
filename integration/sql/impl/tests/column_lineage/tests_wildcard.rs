@@ -878,3 +878,169 @@ fn test_star_over_quoted_cte_reference() {
     assert_eq!(output.column_lineage, vec![lineage("a", "t", "a")]);
     assert_eq!(output.table_lineage.in_tables, vec![table("t")]);
 }
+
+// --- Self-review round: positional binding edge cases ---
+
+#[test]
+fn test_star_over_set_operation_cte_with_permuted_branch_names() {
+    // A column name that changes position between branches cannot be
+    // folded positionally in the pooled frame, so nothing is offered
+    // rather than one position's ancestors pooled under another's name.
+    let output =
+        test_sql("WITH d AS (SELECT a, b FROM t1 UNION ALL SELECT b, a FROM t2) SELECT * FROM d")
+            .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_star_over_set_operation_derived_with_permuted_branch_names() {
+    let output =
+        test_sql("SELECT * FROM (SELECT a, b FROM t1 UNION ALL SELECT b, a FROM t2) AS d").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_star_over_set_operation_cte_with_mismatched_branch_arity() {
+    // A branch with more positions than the left branch has outputs the
+    // fold cannot attribute, so nothing is offered - in particular no
+    // phantom column for the extra position.
+    let output =
+        test_sql("WITH d AS (SELECT a FROM t1 UNION ALL SELECT b, c FROM t2) SELECT * FROM d")
+            .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_star_over_set_operation_cte_with_positionally_consistent_branch_rename() {
+    // Names that stay at their position across branches still fold: the
+    // right branch's c is the left branch's b output.
+    let output =
+        test_sql("WITH d AS (SELECT a, b FROM t1 UNION ALL SELECT a, c FROM t2) SELECT * FROM d")
+            .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "a".to_string(),
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("t1")),
+                        name: "a".to_string(),
+                    },
+                    ColumnMeta {
+                        origin: Some(table("t2")),
+                        name: "a".to_string(),
+                    },
+                ],
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "b".to_string(),
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("t1")),
+                        name: "b".to_string(),
+                    },
+                    ColumnMeta {
+                        origin: Some(table("t2")),
+                        name: "c".to_string(),
+                    },
+                ],
+            },
+        ]
+    );
+}
+
+#[test]
+fn test_recursive_cte_definition_column_list_does_not_leak_self_reference() {
+    // The definition list renames the body's output column, and the
+    // recursive self-reference is recorded under the body's name; the
+    // recorded column must resolve through the rename, not report the
+    // CTE itself as an ancestor.
+    let output = test_sql(
+        "WITH RECURSIVE r(x) AS (SELECT id FROM src UNION ALL SELECT id FROM r) SELECT * FROM r",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("x", "src", "id")]);
+    assert_eq!(output.table_lineage.in_tables, vec![table("src")]);
+}
+
+#[test]
+fn test_derived_table_column_list_binds_expression_position() {
+    // The first output is an unaliased expression, registered under a
+    // generated name; the column list still binds it by position.
+    let output = test_sql("SELECT * FROM (SELECT a + 1, b FROM t) AS d(p, q)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("p", "t", "a"), lineage("q", "t", "b")]
+    );
+    assert_eq!(output.table_lineage.in_tables, vec![table("t")]);
+}
+
+#[test]
+fn test_cte_definition_column_list_binds_expression_position() {
+    let output = test_sql("WITH d(p, q) AS (SELECT a + 1, b FROM t) SELECT * FROM d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("p", "t", "a"), lineage("q", "t", "b")]
+    );
+    assert_eq!(output.table_lineage.in_tables, vec![table("t")]);
+}
+
+#[test]
+fn test_cte_reference_column_list_binds_expression_position() {
+    let output = test_sql("WITH d AS (SELECT a + 1, b FROM t) SELECT * FROM d AS x(p, q)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("p", "t", "a"), lineage("q", "t", "b")]
+    );
+    assert_eq!(output.table_lineage.in_tables, vec![table("t")]);
+}
+
+#[test]
+fn test_star_except_case_differing_quoted_name_in_databricks() {
+    // A quoted qualifier matches case-insensitively in Databricks, and a
+    // quoted modifier name does too: `SECRET` names the column secret.
+    let output = test_sql_dialect(
+        "SELECT * EXCEPT (`SECRET`) FROM (SELECT id, secret FROM t)",
+        "databricks",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("id", "t", "id")]);
+}
+
+#[test]
+fn test_star_replace_case_differing_quoted_target_in_databricks() {
+    let output = test_sql_dialect(
+        "SELECT * REPLACE (b AS `A`) FROM (SELECT a, b FROM t)",
+        "databricks",
+    )
+    .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("A", "t", "b"), lineage("b", "t", "b")]
+    );
+}
+
+#[test]
+fn test_derived_table_column_list_with_duplicate_output_names() {
+    // Both outputs carry the name a and are registered as one entry, so
+    // the list cannot split them by position; nothing is offered rather
+    // than both ancestors landing on the first alias alone.
+    let output =
+        test_sql("SELECT * FROM (SELECT t1.a, t2.a FROM t1 JOIN t2 ON true) AS d(x, y)").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_cte_definition_column_list_with_duplicate_output_names() {
+    let output =
+        test_sql("WITH d(x, y) AS (SELECT t1.a, t2.a FROM t1 JOIN t2 ON true) SELECT * FROM d")
+            .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
