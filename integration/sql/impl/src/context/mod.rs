@@ -4,14 +4,175 @@
 mod alias_table;
 
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
-use sqlparser::ast::Ident;
-use sqlparser::dialect::SnowflakeDialect;
+use sqlparser::ast::{
+    ExcludeSelectItem, Ident, ObjectName, RenameSelectItem, TableAliasColumnDef,
+    WildcardAdditionalOptions,
+};
+use sqlparser::dialect::{
+    BigQueryDialect, DatabricksDialect, Dialect, DuckDbDialect, HiveDialect, MsSqlDialect,
+    MySqlDialect, PostgreSqlDialect, RedshiftSqlDialect, SnowflakeDialect,
+};
 
 type ColumnAncestors = HashSet<ColumnMeta>;
+
+/// The (source, alias) identifier pairs of a wildcard RENAME modifier.
+fn rename_pairs(options: &WildcardAdditionalOptions) -> Vec<(&Ident, &Ident)> {
+    options
+        .opt_rename
+        .iter()
+        .flat_map(|rename| match rename {
+            RenameSelectItem::Single(item) => vec![item],
+            RenameSelectItem::Multiple(items) => items.iter().collect(),
+        })
+        .map(|item| (&item.ident, &item.alias))
+        .collect()
+}
+
+/// Whether a wildcard modifier's identifier refers to a column of the given
+/// name. The modifier and the column name are compared by their stored
+/// forms under the dialect, the same rule a wildcard qualifier is matched
+/// by ([`canonical_ident`]): the modifier keeps its own quoting, while the
+/// column name - whose quoting is not retained at this layer - is read as
+/// an unquoted identifier, so a quoted `"ID"` names the column an unquoted
+/// `id` produces in Snowflake. BigQuery compares without regard to case,
+/// quoted or not, as it does for qualifiers, and so do the dialects where a
+/// quoted qualifier still matches case-insensitively
+/// ([`ident_matches_origin`]): Databricks, Hive, DuckDB, MySQL and MSSQL -
+/// a backtick-quoted `SECRET` names the column `secret` there.
+fn ident_matches_column(ident: &Ident, column_name: &str, dialect: &dyn Dialect) -> bool {
+    if dialect.is::<BigQueryDialect>()
+        || dialect.is::<DatabricksDialect>()
+        || dialect.is::<HiveDialect>()
+        || dialect.is::<DuckDbDialect>()
+        || dialect.is::<MySqlDialect>()
+        || dialect.is::<MsSqlDialect>()
+    {
+        return ident.value.eq_ignore_ascii_case(column_name);
+    }
+    canonical_ident(&ident.value, ident.quote_style.is_some(), dialect)
+        == canonical_ident(column_name, false, dialect)
+}
+
+/// The counter value of a generated column name (`_0`, `_1`, ...), as
+/// assigned to unaliased expression outputs, or None for a real name.
+pub(crate) fn generated_column_index(name: &str) -> Option<usize> {
+    name.strip_prefix('_')?.parse().ok()
+}
+
+/// The stored form of an identifier under the active dialect: a quoted
+/// identifier is stored exactly as written, while an unquoted one is
+/// folded - to lower case by Postgres and Redshift, to upper case by
+/// Snowflake and the SQL standard. Redshift is the exception on the
+/// quoted side too: by default it folds even delimited identifiers to
+/// lower case (that is the behavior unless the session enables
+/// `enable_case_sensitive_identifier`, a setting the parser is not
+/// given), so every Redshift identifier canonicalizes to lower case.
+fn canonical_ident(value: &str, quoted: bool, dialect: &dyn Dialect) -> String {
+    if dialect.is::<RedshiftSqlDialect>() {
+        value.to_ascii_lowercase()
+    } else if quoted {
+        value.to_string()
+    } else if dialect.is::<PostgreSqlDialect>() {
+        value.to_ascii_lowercase()
+    } else {
+        value.to_ascii_uppercase()
+    }
+}
+
+/// Whether a wildcard qualifier names a frame origin. Both sides are
+/// identifiers, and the origin carries the quote style of the alias it
+/// was stamped from. Identifiers denote the same name when their stored
+/// forms agree, so each side is canonicalized with the dialect's folding
+/// for unquoted identifiers before comparing: the unquoted qualifier T
+/// names the quoted alias "t" in Postgres (both stored as t) but not in
+/// Snowflake (stored as T), and the quoted qualifier "t" names only the
+/// identifier t, never an unquoted alias the dialect folds elsewhere.
+///
+/// BigQuery never reaches the canonical comparison: GoogleSQL treats
+/// aliases within a query as case-insensitive, quoted or not, so the
+/// qualifier and the alias compare without regard to case. The same
+/// holds for the dialects whose quoted identifiers are case-insensitive
+/// too - Databricks and Hive, DuckDB, and SQL Server under its default
+/// handling - so a backtick-quoted lower-case alias in Databricks is
+/// named by the same qualifier as an unquoted one. MySQL is the
+/// exception in the other direction: its table aliases are
+/// case-sensitive on Unix under the default configuration, so a
+/// qualifier names only the alias written with the same case there
+/// (its column names stay case-insensitive - see ident_matches_column).
+/// Only alias origins are matched here - physical table names are
+/// matched elsewhere, and BigQuery table names stay case-sensitive
+/// there.
+fn ident_matches_origin(qualifier: &Ident, origin: &DbTableMeta, dialect: &dyn Dialect) -> bool {
+    if dialect.is::<MySqlDialect>() {
+        return qualifier.value == origin.name;
+    }
+    if dialect.is::<BigQueryDialect>()
+        || dialect.is::<DatabricksDialect>()
+        || dialect.is::<HiveDialect>()
+        || dialect.is::<DuckDbDialect>()
+        || dialect.is::<MsSqlDialect>()
+    {
+        return qualifier.value.eq_ignore_ascii_case(&origin.name);
+    }
+    let origin_quoted = origin
+        .quote_style
+        .as_ref()
+        .and_then(|style| style.name)
+        .is_some();
+    canonical_ident(&qualifier.value, qualifier.quote_style.is_some(), dialect)
+        == canonical_ident(&origin.name, origin_quoted, dialect)
+}
+
+/// Case-insensitive SQL LIKE match, as used by the wildcard ILIKE modifier:
+/// `%` matches any run of characters, `_` exactly one character.
+fn ilike_matches(pattern: &str, value: &str) -> bool {
+    let pattern: Vec<char> = pattern.chars().collect();
+    let value: Vec<char> = value.chars().collect();
+    let (mut p, mut v) = (0, 0);
+    // Position just past the last `%` seen, and the value position it had
+    // consumed up to; on a mismatch, retry with the `%` eating one more char.
+    let (mut star_p, mut star_v) = (usize::MAX, 0);
+    while v < value.len() {
+        if p < pattern.len() && (pattern[p] == '_' || pattern[p].eq_ignore_ascii_case(&value[v])) {
+            p += 1;
+            v += 1;
+        } else if p < pattern.len() && pattern[p] == '%' {
+            star_p = p;
+            star_v = v;
+            p += 1;
+        } else if star_p != usize::MAX {
+            p = star_p + 1;
+            star_v += 1;
+            v = star_v;
+        } else {
+            return false;
+        }
+    }
+    while p < pattern.len() && pattern[p] == '%' {
+        p += 1;
+    }
+    p == pattern.len()
+}
+
+/// The output name of a column named by a wildcard REPLACE modifier. When
+/// the same wildcard also renames that column, the RENAME alias wins: it is
+/// the name the column has in the query result.
+pub(crate) fn wildcard_replacement_name(
+    options: &WildcardAdditionalOptions,
+    column_name: &Ident,
+    dialect: &dyn Dialect,
+) -> String {
+    rename_pairs(options)
+        .iter()
+        .find(|(from, _)| ident_matches_column(from, &column_name.value, dialect))
+        .map(|(_, alias)| alias.value.clone())
+        .unwrap_or_else(|| column_name.value.clone())
+}
 
 #[derive(Debug)]
 pub struct ContextFrame {
@@ -25,6 +186,11 @@ pub struct ContextFrame {
     // symbol. Only those symbols are meaningful outside of the processed query.
     aliases: AliasTable,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
+    // Columns kept for explicit references but withheld from wildcard
+    // expansion: a set-operation fold that refused leaves its body's
+    // columns unaligned, so a wildcard must not offer them, while an
+    // explicit reference still resolves through them.
+    pub wildcard_withheld: HashSet<ColumnMeta>,
     pub dependencies: HashSet<DbTableMeta>,
     // Dependencies written without a schema or database. Only these can name a
     // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
@@ -37,15 +203,34 @@ pub struct ContextFrame {
 pub struct CteDependency {
     pub is_used: bool,
     pub deps: HashSet<DbTableMeta>,
+    // The CTE's output columns, each with the ancestors its body resolved
+    // it to, so a `FROM` naming the CTE can offer them to a wildcard the
+    // way a derived table offers its own. Behind an `Rc`: dependencies
+    // are cloned every time a frame is collected into its parent, which
+    // happens once per SELECT clause, and the recorded columns are never
+    // mutated once set - `set_cte_columns` replaces the handle instead.
+    pub columns: Rc<HashMap<String, ColumnAncestors>>,
+    // The output column names in projection order, for a column list at a
+    // reference (`FROM d AS x(p, q)`), which renames them by position. None
+    // when the order cannot be known statically, as for a `*` projection.
+    pub output_names: Rc<Option<Vec<Option<String>>>>,
 }
 
 impl ContextFrame {
+    /// Withhold every column this frame currently holds from wildcard
+    /// expansion, keeping them for explicit references.
+    pub fn withhold_wildcard_columns(&mut self) {
+        self.wildcard_withheld
+            .extend(self.column_ancestry.keys().cloned());
+    }
+
     fn new() -> Self {
         ContextFrame {
             table: None,
             column: None,
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
+            wildcard_withheld: HashSet::new(),
             dependencies: HashSet::new(),
             bare_dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
@@ -214,6 +399,94 @@ impl<'a> Context<'a> {
         entry
             .and_modify(|x| x.extend(ancestors.drain(..)))
             .or_insert(HashSet::from_iter(ancestors));
+    }
+
+    /// Registers column lineage for a wildcard projection (`*` or
+    /// `qualifier.*`) using the output columns the FROM frame already knows.
+    ///
+    /// Only derived tables contribute known output columns to the frame:
+    /// their select outputs are the frame's column_ancestry keys, stamped
+    /// with the derived table's alias as origin when one is present. Plain
+    /// tables carry no column information at this layer, so a wildcard over
+    /// them registers nothing.
+    ///
+    /// Wildcard modifiers are honored: ILIKE keeps only the columns whose
+    /// names match its pattern, EXCLUDE and EXCEPT drop columns, RENAME
+    /// renames the descendant, and columns named by REPLACE are skipped
+    /// here - the visitor attributes those to the replacement expression
+    /// instead.
+    pub fn add_wildcard_lineage(
+        &mut self,
+        tables_frame: &ContextFrame,
+        qualifier: Option<&ObjectName>,
+        options: &WildcardAdditionalOptions,
+    ) {
+        // The qualifier is kept as an identifier, not reduced to its
+        // value: whether it may fold against the origin's name depends on
+        // its quoting, exactly as for the wildcard modifiers below.
+        let last_part = |name: &ObjectName| name.0.last().and_then(|part| part.as_ident()).cloned();
+
+        let mut excluded: Vec<Ident> = Vec::new();
+        if let Some(exclude) = &options.opt_exclude {
+            let names = match exclude {
+                ExcludeSelectItem::Single(name) => vec![name],
+                ExcludeSelectItem::Multiple(names) => names.iter().collect(),
+            };
+            for name in names {
+                if let Some(ident) = name.0.last().and_then(|part| part.as_ident()) {
+                    excluded.push(ident.clone());
+                }
+            }
+        }
+        if let Some(except) = &options.opt_except {
+            excluded.push(except.first_element.clone());
+            excluded.extend(except.additional_elements.iter().cloned());
+        }
+
+        let replaced: Vec<&Ident> = options
+            .opt_replace
+            .iter()
+            .flat_map(|replace| replace.items.iter())
+            .map(|item| &item.column_name)
+            .collect();
+
+        let renames = rename_pairs(options);
+
+        let qualifier_ident = qualifier.and_then(last_part);
+
+        for col in tables_frame.column_ancestry.keys() {
+            if tables_frame.wildcard_withheld.contains(col) {
+                continue;
+            }
+            if let Some(qualifier) = &qualifier_ident {
+                match &col.origin {
+                    Some(origin)
+                        if ident_matches_origin(qualifier, origin, self.dialect().as_base()) => {}
+
+                    _ => continue,
+                }
+            }
+            if let Some(ilike) = &options.opt_ilike {
+                if !ilike_matches(&ilike.pattern, &col.name) {
+                    continue;
+                }
+            }
+            if excluded
+                .iter()
+                .any(|ident| ident_matches_column(ident, &col.name, self.dialect().as_base()))
+                || replaced
+                    .iter()
+                    .any(|ident| ident_matches_column(ident, &col.name, self.dialect().as_base()))
+            {
+                continue;
+            }
+            let descendant = renames
+                .iter()
+                .find(|(from, _)| ident_matches_column(from, &col.name, self.dialect().as_base()))
+                .map(|(_, alias)| alias.value.clone())
+                .unwrap_or_else(|| col.name.clone());
+            self.add_column_ancestors(ColumnMeta::new(descendant, None), vec![col.clone()]);
+        }
     }
 
     // --- Context Manipulators ---
@@ -427,7 +700,19 @@ impl<'a> Context<'a> {
 
     pub fn collect(&mut self, mut old: ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
-            frame.column_ancestry.extend(old.column_ancestry.drain());
+            // Ancestor sets for the same column key union, as everywhere
+            // else frames merge: replacing the set would drop a pooled
+            // contributor's ancestors - a parenthesized set-operation
+            // branch collected after its sibling, say - and report only
+            // the last one's lineage.
+            for (column, ancestors) in old.column_ancestry.drain() {
+                frame
+                    .column_ancestry
+                    .entry(column)
+                    .or_default()
+                    .extend(ancestors);
+            }
+            frame.wildcard_withheld.extend(old.wildcard_withheld);
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
             frame.is_main_body = old.is_main_body;
@@ -468,11 +753,25 @@ impl<'a> Context<'a> {
                 })
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
 
+            for mut col in old.wildcard_withheld {
+                col.origin = col.origin.or_else(|| Some(from_table.clone()));
+                frame.wildcard_withheld.insert(col);
+            }
+
             let removed_circular_deps =
                 Context::remove_circular_deps(&old_ancestry, frame, from_table);
 
             if !removed_circular_deps.is_empty() {
-                frame.column_ancestry.extend(old_ancestry);
+                // Union per key, as in `collect`: replacing the set
+                // would drop ancestors a previous contributor pooled
+                // under the same column key.
+                for (column, ancestors) in old_ancestry {
+                    frame
+                        .column_ancestry
+                        .entry(column)
+                        .or_default()
+                        .extend(ancestors);
+                }
             }
 
             frame.dependencies.extend(old.dependencies);
@@ -535,6 +834,8 @@ impl<'a> Context<'a> {
                 CteDependency {
                     is_used: false,
                     deps: resolved_dependencies,
+                    columns: Rc::new(HashMap::new()),
+                    output_names: Rc::new(None),
                 },
             );
 
@@ -589,10 +890,205 @@ impl<'a> Context<'a> {
                 CteDependency {
                     is_used: false,
                     deps: resolved_dependencies,
+                    columns: Rc::new(HashMap::new()),
+                    output_names: Rc::new(None),
                 },
             );
             frame.dependencies = HashSet::new();
             frame.bare_dependencies = HashSet::new();
+        }
+    }
+
+    /// Records the output columns of CTE `cte_name`, declared in the
+    /// current frame, with the ancestors its body resolved each one to, and
+    /// their names in projection order where that order is known.
+    pub fn set_cte_columns(
+        &mut self,
+        cte_name: &str,
+        columns: HashMap<String, ColumnAncestors>,
+        output_names: Option<Vec<Option<String>>>,
+    ) {
+        if let Some(cte) = self
+            .frames
+            .last_mut()
+            .and_then(|frame| frame.cte_dependencies.get_mut(cte_name))
+        {
+            cte.columns = Rc::new(columns);
+            cte.output_names = Rc::new(output_names);
+        }
+    }
+
+    /// Offers the output columns of the CTE referenced as `table` to the
+    /// current frame, so that a wildcard over it can expand them as it
+    /// expands a derived table's. The lookup uses the reference exactly as
+    /// written, the same key as [`Context::has_alias`], so a qualified
+    /// `schema.d` never names CTE `d`.
+    ///
+    /// The columns are stamped with each of `origins`: the CTE's own name,
+    /// and the alias when one is given. The alias is what a qualifier such
+    /// as `x.*` matches, while column ancestors are resolved back through the
+    /// alias to the CTE's name, so both must find the columns.
+    ///
+    /// A column list at the reference (`FROM d AS x(p, q)`) renames the
+    /// columns by position. When the CTE's column order is not known, no
+    /// columns are offered, since the names it would report are not the
+    /// names the query outputs.
+    pub fn add_cte_columns(
+        &mut self,
+        table: &str,
+        origins: &[DbTableMeta],
+        alias_columns: &[TableAliasColumnDef],
+    ) {
+        // The offered columns are gathered by reference first: stamping
+        // them into the frame below needs `&mut self`, and only the
+        // ancestor sets are copied (they are extended per origin) - the
+        // dependency itself is not cloned just to read its columns.
+        let mut offered: Vec<(String, ColumnAncestors)> = Vec::new();
+        {
+            let Some(cte) = self
+                .frames
+                .iter()
+                .rev()
+                .find_map(|frame| frame.cte_dependencies.get(table))
+            else {
+                return;
+            };
+            if alias_columns.is_empty() {
+                offered.extend(
+                    cte.columns
+                        .iter()
+                        .map(|(name, ancestors)| (name.clone(), ancestors.clone())),
+                );
+            } else {
+                let Some(order) = cte.output_names.as_deref() else {
+                    return;
+                };
+                // The recorded columns are keyed by name alone, so the
+                // same two shapes the definition side refuses are
+                // unsound here too: a name covering several positions in
+                // the list's range has a single pooled entry that cannot
+                // be split between the aliases, and a real output column
+                // named like a generated one (`_0`, `_1`, ...) pools with
+                // an unaliased expression's entry when the body has an
+                // unnamed position. Offer nothing in those shapes.
+                let mut positions_by_name: HashMap<&str, usize> = HashMap::new();
+                for name in order.iter().take(alias_columns.len()).flatten() {
+                    *positions_by_name.entry(name.as_str()).or_default() += 1;
+                }
+                let range = order.len().min(alias_columns.len());
+                let generated_name = |name: &Option<String>| matches!(name, Some(name) if generated_column_index(name).is_some());
+                if positions_by_name.values().any(|positions| *positions > 1)
+                    || ((order[..range].iter().any(generated_name)
+                        && order.iter().any(|name| name.is_none()))
+                        || (order[..range].iter().any(|name| name.is_none())
+                            && order.iter().any(generated_name)))
+                {
+                    return;
+                }
+                // Positions the list renames, and the names it renames
+                // them to; a name an earlier position already consumed
+                // contributes nothing the second time.
+                let mut renamed: HashMap<String, ColumnAncestors> = HashMap::new();
+                let mut consumed: HashSet<&str> = HashSet::new();
+                for (position, alias) in alias_columns.iter().enumerate() {
+                    if let Some(Some(name)) = order.get(position) {
+                        if consumed.insert(name.as_str()) {
+                            if let Some(ancestors) = cte.columns.get(name) {
+                                renamed
+                                    .entry(alias.name.value.clone())
+                                    .or_default()
+                                    .extend(ancestors.iter().cloned());
+                            }
+                        }
+                    }
+                }
+                // A position whose projection is an unaliased expression
+                // is recorded under a name that is not an output name - a
+                // generated name (`_0`, `_1`, ...) for most expressions,
+                // the inner column's name for a scalar subquery - so the
+                // loop above cannot bind it. The recorded columns are
+                // keyed by name alone, so the candidates are exactly the
+                // unconsumed keys that are not output names. Generated
+                // entries are registered in projection order, so when
+                // every candidate is generated and their count equals
+                // the number of unnamed positions in the list's range -
+                // which also rules out a lineage-less position, like a
+                // constant, shifting the alignment - they correspond to
+                // those positions in order and rename the same way; a
+                // lone candidate for a lone unnamed position binds by
+                // elimination whatever its key. When the candidates are
+                // fewer than the unnamed positions and no unnamed
+                // position lies beyond the list's range, every candidate
+                // belongs to a renamed position but cannot be attributed
+                // to one, so it is consumed without being offered rather
+                // than reported under a name the query does not output.
+                let unnamed_positions: Vec<usize> = (0..alias_columns.len())
+                    .filter(|&position| matches!(order.get(position), Some(None)))
+                    .collect();
+                if !unnamed_positions.is_empty() {
+                    let known_names: HashSet<&str> =
+                        order.iter().flatten().map(String::as_str).collect();
+                    let mut candidates: Vec<&String> = cte
+                        .columns
+                        .keys()
+                        .filter(|name| {
+                            !consumed.contains(name.as_str())
+                                && !known_names.contains(name.as_str())
+                        })
+                        .collect();
+                    if candidates.len() == unnamed_positions.len()
+                        && candidates
+                            .iter()
+                            .all(|name| generated_column_index(name).is_some())
+                    {
+                        candidates.sort_by_key(|name| generated_column_index(name));
+                        for (name, position) in candidates.into_iter().zip(&unnamed_positions) {
+                            consumed.insert(name.as_str());
+                            if let Some(ancestors) = cte.columns.get(name) {
+                                renamed
+                                    .entry(alias_columns[*position].name.value.clone())
+                                    .or_default()
+                                    .extend(ancestors.iter().cloned());
+                            }
+                        }
+                    } else if candidates.len() == 1 && unnamed_positions.len() == 1 {
+                        let name = candidates[0];
+                        consumed.insert(name.as_str());
+                        if let Some(ancestors) = cte.columns.get(name) {
+                            renamed
+                                .entry(alias_columns[unnamed_positions[0]].name.value.clone())
+                                .or_default()
+                                .extend(ancestors.iter().cloned());
+                        }
+                    } else if candidates.len() < unnamed_positions.len()
+                        && !order
+                            .iter()
+                            .skip(alias_columns.len())
+                            .any(|name| name.is_none())
+                    {
+                        for name in candidates {
+                            consumed.insert(name.as_str());
+                        }
+                    }
+                }
+                for (name, ancestors) in cte.columns.iter() {
+                    if !consumed.contains(name.as_str()) {
+                        offered.push((name.clone(), ancestors.clone()));
+                    }
+                }
+                offered.extend(renamed);
+            }
+        }
+        if let Some(frame) = self.frames.last_mut() {
+            for (name, ancestors) in offered {
+                for origin in origins {
+                    frame
+                        .column_ancestry
+                        .entry(ColumnMeta::new(name.clone(), Some(origin.clone())))
+                        .or_default()
+                        .extend(ancestors.iter().cloned());
+                }
+            }
         }
     }
 

@@ -1,16 +1,19 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::Context;
+use crate::context::{generated_column_index, wildcard_replacement_name, Context, ContextFrame};
 use crate::lineage::*;
+
+use std::collections::{HashMap, HashSet};
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
     JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
-    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    SelectItem, SelectItemQualifiedWildcardKind, SetExpr, Statement, Subscript, Table,
+    TableAliasColumnDef, TableFactor, TableFunctionArgs, TableObject, UpdateTableFromKind, Use,
+    Value, ValueWithSpan, WildcardAdditionalOptions, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -38,7 +41,127 @@ impl Visit for With {
             context.push_frame();
             self.cte_tables[i].query.visit(context)?;
             let frame = context.pop_frame();
-            if let Some(f) = frame {
+            let alias_columns = &self.cte_tables[i].alias.columns;
+            // The output names in projection order, after the CTE's own
+            // column list has renamed the leading positions.
+            let output_names = derived_output_names(&self.cte_tables[i].query).map(|names| {
+                names
+                    .into_iter()
+                    .enumerate()
+                    .map(|(position, name)| match alias_columns.get(position) {
+                        Some(alias) => Some(alias.name.value.clone()),
+                        None => name,
+                    })
+                    .collect()
+            });
+            let mut columns = HashMap::new();
+            if let Some(mut f) = frame {
+                // A branch that projects the CTE's declared columns in a
+                // different order than the definition list declares them
+                // (`SELECT y, x FROM r` for `r(x, y)`) defeats the
+                // name-based fold and rename below when the branch
+                // references the CTE itself: its entries align by
+                // position while their ancestors are attributed by name,
+                // and a source column is lost in the scramble. Offer
+                // nothing for that shape.
+                let permuted_recursive_branch = if alias_columns.is_empty() {
+                    false
+                } else {
+                    let cte_name = self.cte_tables[i].alias.name.value.as_str();
+                    let self_referencing = f.column_ancestry.values().flatten().any(|ancestor| {
+                        ancestor
+                            .origin
+                            .as_ref()
+                            .map(|origin| origin.name == cte_name)
+                            .unwrap_or(false)
+                    });
+                    self_referencing
+                        && set_operation_branch_names(&self.cte_tables[i].query.body)
+                            .map(|branches| {
+                                let declared_order: HashMap<&str, usize> = alias_columns
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(position, column)| {
+                                        (column.name.value.as_str(), position)
+                                    })
+                                    .collect();
+                                branches[1..].iter().any(|branch| {
+                                    branch
+                                        .iter()
+                                        .flatten()
+                                        .filter_map(|name| {
+                                            declared_order.get(name.as_str()).copied()
+                                        })
+                                        .collect::<Vec<_>>()
+                                        .windows(2)
+                                        .any(|pair| pair[0] > pair[1])
+                                })
+                            })
+                            .unwrap_or(false)
+                };
+                // A set operation's branches all name the same output
+                // columns, so fold them onto the left branch's names.
+                // When a branch's names cannot be known the fold refuses:
+                // the columns are then withheld from the wildcard offer
+                // below, but the frame keeps them, because explicit
+                // references resolve through it - they resolved on main,
+                // before the fold existed, and a refused fold must not
+                // take that lineage away.
+                let folded = fold_set_operation_columns(&mut f, &self.cte_tables[i].query);
+                // A column list (`WITH d(x, y) AS ...`) renames the CTE's
+                // output columns by position, as it does for a derived table.
+                let alias_list_applied = alias_columns.is_empty()
+                    || apply_column_alias_list(&mut f, &self.cte_tables[i].query, alias_columns);
+                // When the list cannot be applied - the body projects `*`,
+                // or a repeated output name cannot be split by position -
+                // the columns keep names the CTE does not output, so none
+                // are offered to a wildcard.
+                if folded && alias_list_applied && !permuted_recursive_branch {
+                    for (column, ancestors) in &f.column_ancestry {
+                        columns
+                            .entry(column.name.clone())
+                            .or_insert_with(HashSet::new)
+                            .extend(ancestors.iter().cloned());
+                    }
+                }
+                // The list renames the body's output columns, but an
+                // ancestor that references the CTE itself - the recursive
+                // case - is recorded under the body's own name for its
+                // position. Rename it to the declared name as well, or it
+                // no longer resolves against the recorded columns when
+                // the CTE is used, and the CTE leaks into its own lineage
+                // as if it were an input table's column.
+                if !alias_columns.is_empty() {
+                    if let Some(body_names) = derived_output_names(&self.cte_tables[i].query) {
+                        let cte_name = self.cte_tables[i].alias.name.value.as_str();
+                        for ancestors in columns.values_mut() {
+                            let renamed: HashSet<ColumnMeta> = ancestors
+                                .iter()
+                                .map(|ancestor| {
+                                    let is_self_reference = ancestor
+                                        .origin
+                                        .as_ref()
+                                        .map(|origin| origin.name == cte_name)
+                                        .unwrap_or(false);
+                                    if is_self_reference {
+                                        if let Some(position) = body_names.iter().position(|name| {
+                                            name.as_deref() == Some(ancestor.name.as_str())
+                                        }) {
+                                            if let Some(alias) = alias_columns.get(position) {
+                                                return ColumnMeta::new(
+                                                    alias.name.value.clone(),
+                                                    ancestor.origin.clone(),
+                                                );
+                                            }
+                                        }
+                                    }
+                                    ancestor.clone()
+                                })
+                                .collect();
+                            *ancestors = renamed;
+                        }
+                    }
+                }
                 let table = DbTableMeta::new(
                     vec![self.cte_tables[i].alias.name.clone()],
                     context.dialect(),
@@ -54,6 +177,7 @@ impl Visit for With {
             }
 
             context.adjust_cte_dependencies(self.cte_tables[i].alias.name.clone().value, recursive);
+            context.set_cte_columns(&self.cte_tables[i].alias.name.value, columns, output_names);
         }
         Ok(())
     }
@@ -86,12 +210,12 @@ impl Visit for TableFactor {
                     context.add_table_dependency(convert_to_idents(&effective_name));
                 }
 
-                if context.is_main() && !context.has_alias(effective_name.to_string()) {
+                if context.is_main() && !context.has_alias(bare_table_name(&effective_name)) {
                     context.add_input(convert_to_idents(&effective_name));
                 }
 
-                if context.is_main() && context.has_alias(effective_name.to_string()) {
-                    context.mark_table_as_used(effective_name.to_string());
+                if context.is_main() && context.has_alias(bare_table_name(&effective_name)) {
+                    context.mark_table_as_used(bare_table_name(&effective_name));
                 }
 
                 Ok(())
@@ -121,9 +245,31 @@ impl Visit for TableFactor {
             } => {
                 context.push_frame();
                 subquery.visit(context)?;
-                let frame = context.pop_frame().unwrap();
+                let mut frame = context.pop_frame().unwrap();
+
+                // A set operation's branches all name the same output
+                // columns, so fold them onto the left branch's names.
+                // When a branch's names cannot be known the fold refuses:
+                // the frame keeps its columns, because explicit references
+                // resolve through it, but they are withheld from the
+                // wildcard offer when the frame is collected below.
+                let folded = fold_set_operation_columns(&mut frame, subquery);
 
                 if let Some(alias) = alias {
+                    // A column alias list (`AS d(x, y)`) renames the
+                    // subquery's output columns by position. When the
+                    // positions cannot be known, the frame keeps the
+                    // inner names the query does not output, so offer
+                    // nothing - as the CTE path does in that case -
+                    // instead of reporting them.
+                    if !alias.columns.is_empty()
+                        && !apply_column_alias_list(&mut frame, subquery, &alias.columns)
+                    {
+                        frame.column_ancestry.clear();
+                    }
+                    if !folded {
+                        frame.withhold_wildcard_columns();
+                    }
                     let table = DbTableMeta::new(
                         vec![alias.clone().name],
                         context.dialect(),
@@ -132,6 +278,9 @@ impl Visit for TableFactor {
                     );
                     context.collect_with_table(frame, table);
                 } else {
+                    if !folded {
+                        frame.withhold_wildcard_columns();
+                    }
                     context.collect(frame);
                 }
 
@@ -163,9 +312,15 @@ impl Visit for TableFactor {
                 // row generator over an array expression, not a real table - so UNNEST itself
                 // contributes no input. But the array expression can still reference real
                 // tables (e.g. UNNEST(ARRAY(SELECT id FROM source_table))), so visit each one
-                // rather than discarding them outright.
+                // rather than discarding them outright. Each is visited in its own frame
+                // whose column ancestry is dropped when it is popped: the tables stay
+                // inputs, but a subquery's selected columns are not output columns of
+                // this query and must not reach the wildcard.
                 for array_expr in array_exprs {
+                    context.push_frame();
                     array_expr.visit(context)?;
+                    let frame = context.pop_frame().unwrap();
+                    context.collect_aliases(&frame);
                 }
                 Ok(())
             }
@@ -564,7 +719,12 @@ impl Visit for Join {
                 match_condition,
                 constraint,
             } => {
+                // A match condition is a join condition like the ON
+                // clause below, so it gets the same dropped frame.
+                context.push_frame();
                 match_condition.visit(context)?;
+                let frame = context.pop_frame().unwrap();
+                context.collect_aliases(&frame);
                 constraint
             }
             JoinOperator::CrossApply
@@ -575,10 +735,80 @@ impl Visit for Join {
         };
 
         if let JoinConstraint::On(expr) = constraint {
+            // A join condition is not a FROM item: the columns a
+            // subquery inside it selects are not output columns of the
+            // query, so the condition is visited in its own frame whose
+            // column ancestry is dropped when it is popped - only its
+            // table dependencies and CTE registrations carry up.
+            context.push_frame();
             expr.visit(context)?;
+            let frame = context.pop_frame().unwrap();
+            context.collect_aliases(&frame);
         }
 
         Ok(())
+    }
+}
+
+/// Visits the expressions of a wildcard REPLACE modifier: each replaced
+/// column's lineage comes from its replacement expression, evaluated
+/// against the same FROM clause as the wildcard itself. When the wildcard
+/// also renames the replaced column, the descendant is registered under
+/// the renamed name.
+fn visit_wildcard_replacements(
+    context: &mut Context,
+    options: &WildcardAdditionalOptions,
+) -> Result<()> {
+    if let Some(replace) = &options.opt_replace {
+        for item in &replace.items {
+            let descendant =
+                wildcard_replacement_name(options, &item.column_name, context.dialect().as_base());
+            context.set_column_context(Some(ColumnMeta::new(descendant, None)));
+            item.expr.visit(context)?;
+        }
+        context.set_column_context(None);
+    }
+    Ok(())
+}
+
+/// Offers the output columns of each CTE a SELECT's FROM clause names to the
+/// current frame, as a derived table offers its own, so that a wildcard over
+/// it can expand them. Only a SELECT's FROM frame is consumed by the
+/// wildcard, which is why this runs here and not for every table reference:
+/// an `UPDATE ... FROM` would otherwise report the CTE's columns as lineage
+/// of their own.
+fn offer_cte_columns(context: &mut Context, relation: &TableFactor) {
+    match relation {
+        TableFactor::Table {
+            name, alias, args, ..
+        } => {
+            let Some(effective_name) = resolve_effective_table_name(name, args, context) else {
+                return;
+            };
+            let table_meta = |idents: Vec<Ident>| {
+                DbTableMeta::new(
+                    idents,
+                    context.dialect(),
+                    context.default_schema().clone(),
+                    context.default_database().clone(),
+                )
+            };
+            let mut origins = vec![table_meta(convert_to_idents(&effective_name))];
+            if let Some(alias) = alias {
+                origins.push(table_meta(vec![alias.name.clone()]));
+            }
+            let alias_columns = alias.as_ref().map_or(&[][..], |alias| &alias.columns[..]);
+            context.add_cte_columns(&bare_table_name(&effective_name), &origins, alias_columns);
+        }
+        TableFactor::NestedJoin {
+            table_with_joins, ..
+        } => {
+            offer_cte_columns(context, &table_with_joins.relation);
+            for join in &table_with_joins.joins {
+                offer_cte_columns(context, &join.relation);
+            }
+        }
+        _ => {}
     }
 }
 
@@ -606,6 +836,7 @@ impl Visit for Select {
         for table in &self.from {
             context.push_frame();
             table.relation.visit(context)?;
+            offer_cte_columns(context, &table.relation);
             let frame = context.pop_frame().unwrap();
             context.collect_aliases(&frame);
             context.collect(frame);
@@ -613,6 +844,7 @@ impl Visit for Select {
             for join in &table.joins {
                 context.push_frame();
                 join.visit(context)?;
+                offer_cte_columns(context, &join.relation);
                 let frame = context.pop_frame().unwrap();
                 context.collect_aliases(&frame);
                 context.collect(frame);
@@ -638,6 +870,17 @@ impl Visit for Select {
                 SelectItem::ExprWithAlias { expr, alias } => {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
                     expr.visit(context)?;
+                }
+                SelectItem::Wildcard(options) => {
+                    context.add_wildcard_lineage(&tables_frame, None, options);
+                    visit_wildcard_replacements(context, options)?;
+                }
+                SelectItem::QualifiedWildcard(
+                    SelectItemQualifiedWildcardKind::ObjectName(name),
+                    options,
+                ) => {
+                    context.add_wildcard_lineage(&tables_frame, Some(name), options);
+                    visit_wildcard_replacements(context, options)?;
                 }
                 _ => {}
             }
@@ -1037,6 +1280,289 @@ impl Visit for Table {
 
 // --- Utils ---
 
+/// Whether an output name has the generated form (`_0`, `_1`, ...) that
+/// unaliased expression outputs are registered under.
+fn is_generated_output_name(name: &Option<String>) -> bool {
+    matches!(name, Some(name) if generated_column_index(name).is_some())
+}
+
+/// Renames a derived table's output columns according to a column alias
+/// list (`AS d(x, y)`), which binds by position: the first alias renames
+/// the subquery's first output column, and so on. Outputs that carry no
+/// lineage of their own - a constant, say - occupy a position without
+/// appearing in the frame, so positions are taken from the subquery's
+/// projection list rather than from the frame's keys.
+fn apply_column_alias_list(
+    frame: &mut ContextFrame,
+    subquery: &Query,
+    columns: &[TableAliasColumnDef],
+) -> bool {
+    let Some(names) = derived_output_names(subquery) else {
+        return false;
+    };
+
+    // A real output column named like a generated one (`_0`, `_1`, ...)
+    // pools into one frame entry with an unaliased expression's entry
+    // when the generated counter reaches its name, and the pooled entry
+    // cannot be attributed to either position. That endangers the list
+    // only when one side of such a collision is a position the list
+    // binds and the other side exists anywhere in the body: a
+    // generated-pattern name in the list's range together with an
+    // unnamed position anywhere, or an unnamed position in the range
+    // together with a generated-pattern name anywhere. A collision
+    // entirely beyond the range leaves the bound positions untouched.
+    let range = names.len().min(columns.len());
+    if (names[..range].iter().any(is_generated_output_name)
+        && names.iter().any(|name| name.is_none()))
+        || (names[..range].iter().any(|name| name.is_none())
+            && names.iter().any(is_generated_output_name))
+    {
+        return false;
+    }
+
+    // A name that covers several positions in the list's range can only
+    // be split between them when the frame holds an entry per position;
+    // two projections of one column name are registered as a single
+    // entry, and there is then no sound way to say which ancestors
+    // belong to which alias.
+    let mut positions_by_name: HashMap<&str, usize> = HashMap::new();
+    for name in names.iter().take(columns.len()).flatten() {
+        *positions_by_name.entry(name.as_str()).or_default() += 1;
+    }
+    for (name, positions) in &positions_by_name {
+        if *positions > 1 {
+            let entries = frame
+                .column_ancestry
+                .keys()
+                .filter(|column| column.name == *name)
+                .count();
+            if entries < *positions {
+                return false;
+            }
+        }
+    }
+
+    let mut entries: Vec<_> = frame.column_ancestry.drain().collect();
+    let mut renamed: HashSet<usize> = HashSet::new();
+    for (position, alias) in columns.iter().enumerate() {
+        let Some(Some(output_name)) = names.get(position) else {
+            continue;
+        };
+        for (index, (column, _)) in entries.iter_mut().enumerate() {
+            if !renamed.contains(&index) && &column.name == output_name {
+                *column = ColumnMeta::new(alias.name.value.clone(), column.origin.clone());
+                renamed.insert(index);
+                break;
+            }
+        }
+    }
+    // A position whose projection is an unaliased expression is keyed in
+    // the frame under a name that is not an output name - a generated
+    // name (`_0`, `_1`, ...) for most expressions, the inner column's
+    // name for a scalar subquery - so the loop above cannot bind it.
+    // The entries such positions leave are exactly the unrenamed,
+    // origin-less entries whose names are not output names of the body.
+    // Generated entries are registered in projection order, so when
+    // every candidate is generated and their count equals the number of
+    // unnamed positions in the list's range - which also rules out a
+    // lineage-less position, like a constant, shifting the alignment -
+    // they correspond to those positions in order and rename the same
+    // way; a lone candidate for a lone unnamed position binds by
+    // elimination whatever its key. When the candidates are fewer than
+    // the unnamed positions and no unnamed position lies beyond the
+    // list's range, every candidate belongs to a renamed position but
+    // cannot be attributed to one of them, so the entries are dropped
+    // rather than reported under names the query does not output.
+    let unnamed_positions: Vec<usize> = (0..columns.len())
+        .filter(|&position| matches!(names.get(position), Some(None)))
+        .collect();
+    let mut dropped: HashSet<usize> = HashSet::new();
+    if !unnamed_positions.is_empty() {
+        let known_names: HashSet<&str> = names.iter().flatten().map(String::as_str).collect();
+        let mut candidates: Vec<usize> = entries
+            .iter()
+            .enumerate()
+            .filter(|(index, (column, _))| {
+                !renamed.contains(index)
+                    && column.origin.is_none()
+                    && !known_names.contains(column.name.as_str())
+            })
+            .map(|(index, _)| index)
+            .collect();
+        if candidates.len() == unnamed_positions.len()
+            && candidates
+                .iter()
+                .all(|&index| generated_column_index(&entries[index].0.name).is_some())
+        {
+            candidates.sort_by_key(|&index| generated_column_index(&entries[index].0.name));
+            for (index, position) in candidates.into_iter().zip(&unnamed_positions) {
+                let origin = entries[index].0.origin.clone();
+                entries[index].0 = ColumnMeta::new(columns[*position].name.value.clone(), origin);
+                renamed.insert(index);
+            }
+        } else if candidates.len() == 1 && unnamed_positions.len() == 1 {
+            let index = candidates[0];
+            let origin = entries[index].0.origin.clone();
+            entries[index].0 =
+                ColumnMeta::new(columns[unnamed_positions[0]].name.value.clone(), origin);
+            renamed.insert(index);
+        } else if candidates.len() < unnamed_positions.len()
+            && !names.iter().skip(columns.len()).any(|name| name.is_none())
+        {
+            dropped.extend(candidates);
+        }
+    }
+    // A positional rename can land on a name another output column
+    // already carries; merge the ancestry sets then, as the insertion
+    // path in Context does, instead of letting one overwrite the other.
+    for (index, (column, ancestors)) in entries.into_iter().enumerate() {
+        if dropped.contains(&index) {
+            continue;
+        }
+        frame
+            .column_ancestry
+            .entry(column)
+            .or_default()
+            .extend(ancestors);
+    }
+    true
+}
+
+/// The output column names of each branch of a set operation, in
+/// order, or None when some branch's names cannot be known.
+fn set_operation_branch_names(body: &SetExpr) -> Option<Vec<Vec<Option<String>>>> {
+    match body {
+        SetExpr::SetOperation { left, right, .. } => {
+            let mut branches = set_operation_branch_names(left)?;
+            branches.extend(set_operation_branch_names(right)?);
+            Some(branches)
+        }
+        SetExpr::Select(select) => select_output_names(select).map(|names| vec![names]),
+        SetExpr::Query(query) => set_operation_branch_names(&query.body),
+        _ => None,
+    }
+}
+
+/// Folds a set operation's branch columns onto the left branch's names
+/// by position, in place: a set operation's output columns are named by
+/// its left branch, so the other branches' columns are those same
+/// outputs, not extra columns of their own. Returns false when the
+/// query is a set operation but the fold cannot be done positionally -
+/// some branch's output names cannot be known, the branches disagree
+/// on arity, or a name changes position between branches - the caller
+/// then offers nothing, rather than names the query does not output.
+fn fold_set_operation_columns(frame: &mut ContextFrame, query: &Query) -> bool {
+    fn body_is_set_operation(body: &SetExpr) -> bool {
+        match body {
+            SetExpr::SetOperation { .. } => true,
+            SetExpr::Query(query) => body_is_set_operation(&query.body),
+            _ => false,
+        }
+    }
+
+    if !body_is_set_operation(&query.body) {
+        return true;
+    }
+    let Some(branches) = set_operation_branch_names(&query.body) else {
+        return false;
+    };
+    let left = &branches[0];
+    // Renaming by name in the pooled frame is the positional fold only
+    // when each name sits at one position across all branches. A name
+    // that moves position between branches (SELECT a, b ... UNION ALL
+    // SELECT b, a ...) would pool one position's ancestors under another
+    // position's output name, and a branch of a different arity, or an
+    // unnamed position anywhere, leaves positions the fold cannot
+    // attribute - return false for those shapes too, so the caller
+    // offers nothing rather than scrambled lineage.
+    let mut position_of: HashMap<&str, usize> = HashMap::new();
+    for branch in &branches {
+        if branch.len() != left.len() {
+            return false;
+        }
+        for (position, name) in branch.iter().enumerate() {
+            let Some(name) = name else {
+                return false;
+            };
+            match position_of.get(name.as_str()) {
+                Some(&existing) if existing != position => return false,
+                Some(_) => {}
+                None => {
+                    position_of.insert(name.as_str(), position);
+                }
+            }
+        }
+    }
+    let mut entries: Vec<_> = frame.column_ancestry.drain().collect();
+    for branch in &branches[1..] {
+        for (position, name) in branch.iter().enumerate() {
+            let (Some(right_name), Some(Some(left_name))) = (name, left.get(position)) else {
+                continue;
+            };
+            if right_name == left_name {
+                continue;
+            }
+            for (column, _) in entries.iter_mut() {
+                if &column.name == right_name {
+                    *column = ColumnMeta::new(left_name.clone(), column.origin.clone());
+                }
+            }
+        }
+    }
+    for (column, ancestors) in entries {
+        frame
+            .column_ancestry
+            .entry(column)
+            .or_default()
+            .extend(ancestors);
+    }
+    true
+}
+
+/// The output column names of a query in projection order, or None when
+/// they cannot be determined statically - a wildcard projection expands to
+/// an unknown number of columns, which breaks positional alignment. A
+/// single name is None when that projection's output name is not knowable
+/// here (a bare expression is registered under a generated name), but its
+/// position still counts.
+fn derived_output_names(query: &Query) -> Option<Vec<Option<String>>> {
+    fn body_names(body: &SetExpr) -> Option<Vec<Option<String>>> {
+        match body {
+            SetExpr::Select(select) => select_output_names(select),
+            SetExpr::Query(query) => body_names(&query.body),
+            SetExpr::SetOperation { left, .. } => body_names(left),
+            _ => None,
+        }
+    }
+
+    body_names(&query.body)
+}
+
+/// The output column names of a single SELECT in projection order;
+/// see [`derived_output_names`] for what a None entry or a None
+/// result means.
+fn select_output_names(select: &Select) -> Option<Vec<Option<String>>> {
+    let mut names = Vec::new();
+    for item in &select.projection {
+        match item {
+            SelectItem::ExprWithAlias { alias, .. } => names.push(Some(alias.value.clone())),
+            SelectItem::UnnamedExpr(Expr::Identifier(ident)) => {
+                names.push(Some(ident.value.clone()))
+            }
+            SelectItem::UnnamedExpr(Expr::CompoundIdentifier(idents)) => {
+                names.push(idents.last().map(|ident| ident.value.clone()))
+            }
+            SelectItem::UnnamedExpr(_) => names.push(None),
+            // A wildcard, or one expression aliased to several
+            // columns, expands to an unknown number of outputs.
+            SelectItem::Wildcard(_)
+            | SelectItem::QualifiedWildcard(..)
+            | SelectItem::ExprWithAliases { .. } => return None,
+        }
+    }
+    Some(names)
+}
+
 fn get_table_name_from_table_factor(table: &TableFactor, context: &Context) -> Option<Vec<Ident>> {
     if let TableFactor::Table { name, args, .. } = table {
         resolve_effective_table_name(name, args, context)
@@ -1109,6 +1635,23 @@ fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
         vec![Ident::new(location.replace(['\"', '\''], ""))]
     } else {
         convert_to_idents(object_name)
+    }
+}
+
+/// The key a table reference is looked up by when it may name a CTE.
+/// An unqualified reference keys by its name part's value, without
+/// delimiters - the same form the CTE's definition is keyed under
+/// (`alias.name.value`), so a quoted reference `"d"` finds CTE `d`
+/// where `ObjectName`'s display form, which keeps the delimiters,
+/// would not. A qualified reference can never name a CTE, so it keeps
+/// its display form, which matches no CTE key.
+fn bare_table_name(name: &ObjectName) -> String {
+    if name.0.len() != 1 {
+        return name.to_string();
+    }
+    match &name.0[0] {
+        ObjectNamePart::Identifier(ident) => ident.value.clone(),
+        ObjectNamePart::Function(function) => function.name.value.clone(),
     }
 }
 
