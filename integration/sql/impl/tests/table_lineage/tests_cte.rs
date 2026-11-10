@@ -764,3 +764,130 @@ fn quoted_cte_with_different_quoted_case_is_a_real_table() {
         }
     );
 }
+
+#[test]
+fn quoted_and_unquoted_ctes_with_folding_names_coexist() {
+    // In Snowflake, "mycte" (quoted, stored as written) and MyCte
+    // (unquoted, stored folded to MYCTE) are two different CTEs. Their
+    // registration keys are their stored forms, so each reference
+    // resolves to its own CTE.
+    let with = "WITH \"mycte\" AS (SELECT * FROM quoted_src), \
+                MyCte AS (SELECT * FROM unquoted_src) ";
+    assert_eq!(
+        test_sql_dialect(&format!("{with} SELECT * FROM \"mycte\""), "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["quoted_src"]),
+            out_tables: tables(vec![])
+        }
+    );
+    assert_eq!(
+        test_sql_dialect(&format!("{with} SELECT * FROM MyCte"), "snowflake")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["unquoted_src"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn cte_stored_form_keying_through_set_op_and_predicate() {
+    // The same stored-form resolution through a set-operation arm and
+    // through a predicate subquery.
+    let with = "WITH \"mycte\" AS (SELECT * FROM quoted_src), \
+                MyCte AS (SELECT * FROM unquoted_src) ";
+    assert_eq!(
+        test_sql_dialect(
+            &format!("{with} SELECT * FROM \"mycte\" UNION ALL SELECT * FROM \"mycte\""),
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["quoted_src"]),
+            out_tables: tables(vec![])
+        }
+    );
+    assert_eq!(
+        test_sql_dialect(
+            &format!("{with} SELECT * FROM base WHERE EXISTS (SELECT 1 FROM \"mycte\")"),
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["base", "quoted_src"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn sibling_cte_reading_quoted_table_matching_another_ctes_fold() {
+    // CTE `other` reads the real quoted table "mycte"; the sibling CTE
+    // MyCte folds to MYCTE and must not capture that reference.
+    let mut quoted_mycte = table("mycte");
+    quoted_mycte.quote_style = Some(openlineage_sql::QuoteStyle {
+        database: None,
+        schema: None,
+        name: Some('"'),
+    });
+    assert_eq!(
+        test_sql_dialect(
+            "WITH MyCte AS (SELECT * FROM unquoted_src), \
+             other AS (SELECT * FROM \"mycte\") SELECT * FROM other",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![quoted_mycte],
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn quoted_reference_matching_unquoted_cte_spelling_is_not_the_cte() {
+    // PINNED (alias-table limitation, disclosed on the PR): in
+    // Snowflake, "mycte" is not the CTE mycte (stored MYCTE), and the
+    // CTE lookup now correctly misses - t1 is not collected. The
+    // reference should then be a real table input, but add_input's
+    // alias check compares bare qualified names, so it still resolves
+    // the reference to the CTE's empty-table alias and drops it.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH mycte AS (SELECT * FROM t1) SELECT * FROM \"mycte\"",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec![]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn unquoted_reference_matching_quoted_cte_spelling_is_not_the_cte() {
+    // PINNED (same alias-table limitation as above, mirrored): mycte
+    // folds to MYCTE in Snowflake, which is not the quoted CTE
+    // "mycte"; the lookup correctly misses, but the alias check drops
+    // the real table input the same way.
+    assert_eq!(
+        test_sql_dialect(
+            "WITH \"mycte\" AS (SELECT * FROM t1) SELECT * FROM mycte",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec![]),
+            out_tables: tables(vec![])
+        }
+    );
+}

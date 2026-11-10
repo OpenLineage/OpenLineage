@@ -9,7 +9,10 @@ use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
 use sqlparser::ast::Ident;
-use sqlparser::dialect::SnowflakeDialect;
+use sqlparser::dialect::{
+    BigQueryDialect, DatabricksDialect, Dialect, HiveDialect, MySqlDialect, PostgreSqlDialect,
+    RedshiftSqlDialect, SnowflakeDialect,
+};
 
 type ColumnAncestors = HashSet<ColumnMeta>;
 
@@ -104,26 +107,53 @@ pub struct Context<'a> {
     column_id: u32,
 }
 
-/// The key a CTE is registered under and looked up by, derived from the
-/// name as written. A quoted identifier is case-sensitive, so its key is
-/// its value exactly (delimiters are not part of `Ident.value`, so
-/// `FROM "c"` and the alias `"c"` share a key); an unquoted identifier
-/// folds case - upper in Snowflake, lower in Postgres - so its key is
-/// lower-cased and spellings differing only in case (`MyCte`, `MYCTE`)
-/// share a key. Registration and every lookup must go through this, or
-/// the two sides never meet and the CTE's inputs are silently lost.
-pub(crate) fn cte_dependency_key(name: &str, quote_style: Option<char>) -> String {
+/// The key a CTE is registered under and looked up by: the name's
+/// stored form in the statement's dialect. A quoted identifier is
+/// stored exactly as written (delimiters are not part of
+/// `Ident.value`), so `FROM "c"` and the alias `"c"` share a key and
+/// `"C"` stays a different name. An unquoted identifier is stored
+/// folded - upper case in Snowflake, lower case in Postgres - so
+/// spellings that fold to the same stored form (`MyCte`, `MYCTE` in
+/// Snowflake) share a key, while a quoted name only ever equals an
+/// unquoted name that folds to exactly it: `"mycte"` and `MyCte` are
+/// different CTEs in Snowflake and must not share a slot. Registration
+/// and every lookup must go through this, or the two sides never meet
+/// and the CTE's inputs are silently lost - or the wrong CTE's are
+/// collected.
+pub(crate) fn cte_dependency_key(
+    name: &str,
+    quote_style: Option<char>,
+    dialect: &dyn Dialect,
+) -> String {
     match quote_style {
         Some(_) => name.to_string(),
-        None => name.to_lowercase(),
+        None => fold_unquoted(name, dialect),
+    }
+}
+
+/// How a dialect stores an unquoted identifier: lower case in
+/// Postgres, Redshift and the Spark/Hive family; upper case - the SQL
+/// standard fold - everywhere else.
+fn fold_unquoted(name: &str, dialect: &dyn Dialect) -> String {
+    if dialect.is::<PostgreSqlDialect>()
+        || dialect.is::<RedshiftSqlDialect>()
+        || dialect.is::<HiveDialect>()
+        || dialect.is::<DatabricksDialect>()
+        || dialect.is::<BigQueryDialect>()
+        || dialect.is::<MySqlDialect>()
+    {
+        name.to_lowercase()
+    } else {
+        name.to_uppercase()
     }
 }
 
 /// The CTE key of a recorded table reference.
-fn cte_key_of(table: &DbTableMeta) -> String {
+fn cte_key_of(table: &DbTableMeta, dialect: &dyn Dialect) -> String {
     cte_dependency_key(
         &table.name,
         table.quote_style.as_ref().and_then(|style| style.name),
+        dialect,
     )
 }
 
@@ -531,11 +561,16 @@ impl<'a> Context<'a> {
         // plain table dependency and the CTE's own inputs would be
         // lost. (The tail of this function then drops those bare
         // dependencies, as it does for every resolved CTE.)
+        let dialect = self.dialect.as_base();
         let own_references: Vec<String> = frame
             .bare_dependencies
             .iter()
-            .filter(|table| frame.cte_dependencies.contains_key(&cte_key_of(table)))
-            .map(cte_key_of)
+            .filter(|table| {
+                frame
+                    .cte_dependencies
+                    .contains_key(&cte_key_of(table, dialect))
+            })
+            .map(|table| cte_key_of(table, dialect))
             .collect();
         for name in own_references {
             if let Some(dep) = frame.cte_dependencies.get_mut(&name) {
@@ -562,9 +597,11 @@ impl<'a> Context<'a> {
             if let Some(dep) = frame.cte_dependencies.get(&name) {
                 for table in &dep.deps {
                     if dep.bare_deps.contains(table)
-                        && frame.cte_dependencies.contains_key(&cte_key_of(table))
+                        && frame
+                            .cte_dependencies
+                            .contains_key(&cte_key_of(table, dialect))
                     {
-                        queue.push(cte_key_of(table));
+                        queue.push(cte_key_of(table, dialect));
                     } else {
                         resolved.push((table.clone(), dep.bare_deps.contains(table)));
                     }
@@ -585,8 +622,8 @@ impl<'a> Context<'a> {
         // CTE reference rather than a schema-qualified real table.
         let enclosing_is_main = self.is_main();
         for (table, was_bare) in resolved {
-            if enclosing_is_main && was_bare && self.has_alias(cte_key_of(&table)) {
-                self.mark_table_as_used(cte_key_of(&table));
+            if enclosing_is_main && was_bare && self.has_alias(cte_key_of(&table, dialect)) {
+                self.mark_table_as_used(cte_key_of(&table, dialect));
             } else {
                 if was_bare {
                     frame.bare_dependencies.insert(table.clone());
@@ -603,7 +640,7 @@ impl<'a> Context<'a> {
         let resolved_bare: Vec<DbTableMeta> = frame
             .bare_dependencies
             .iter()
-            .filter(|table| resolved_names.contains(&cte_key_of(table)))
+            .filter(|table| resolved_names.contains(&cte_key_of(table, dialect)))
             .cloned()
             .collect();
         for table in resolved_bare {
@@ -620,8 +657,10 @@ impl<'a> Context<'a> {
     /// a query body (a WITH wrapping an INSERT visits the INSERT as its
     /// own statement), and at that inner tail the enclosing statement's
     /// registrations live in deeper frames and must survive. Registrations
-    /// reach the global frame only when every statement visit pops the
-    /// frame it pushed - which is why no statement arm may return early.
+    /// reach the global frame when a statement's frame merges complete;
+    /// a visit error aborts the whole parse instead (the caller
+    /// propagates it and drops the Context), so a frame leaked by an
+    /// early return never carries registrations into another statement.
     pub fn clear_global_cte_dependencies(&mut self) {
         if let Some(frame) = self.frames.first_mut() {
             frame.cte_dependencies.clear();
@@ -658,7 +697,9 @@ impl<'a> Context<'a> {
         // does is not itself an input - it resolves through the CTE,
         // whose own dependencies were collected above when it is used.
         for table in deps {
-            if bare_deps.contains(&table) && cte_deps.contains_key(&cte_key_of(&table)) {
+            if bare_deps.contains(&table)
+                && cte_deps.contains_key(&cte_key_of(&table, self.dialect.as_base()))
+            {
                 continue;
             }
             self.inputs.insert(table);
@@ -778,7 +819,8 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            if cte_name == cte_key_of(&dependency) {
+            let dependency_key = cte_key_of(&dependency, self.dialect.as_base());
+            if cte_name == dependency_key {
                 if !recursive {
                     resolved_dependencies.insert(dependency.clone());
                     resolved_bare_dependencies.insert(dependency.clone());
@@ -786,11 +828,8 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            if cte_dependencies.contains_key(&cte_key_of(&dependency)) {
-                let nested = cte_dependencies
-                    .get(&cte_key_of(&dependency))
-                    .unwrap()
-                    .clone();
+            if cte_dependencies.contains_key(&dependency_key) {
+                let nested = cte_dependencies.get(&dependency_key).unwrap().clone();
                 resolved_dependencies.extend(nested.deps);
                 resolved_bare_dependencies.extend(nested.bare_deps);
                 continue;

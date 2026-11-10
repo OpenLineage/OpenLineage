@@ -1434,3 +1434,37 @@ fn insert_into_quoted_empty_name_has_no_output() {
         }
     );
 }
+
+#[test]
+fn insert_all_into_quoted_empty_name_has_no_output() {
+    // A quoted empty target in a multi-table clause names nothing,
+    // like the regular INSERT INTO "" case; the other targets stand.
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL INTO \"\" VALUES (1) INTO t2 VALUES (2) SELECT * FROM src",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["t2"])
+        }
+    );
+}
+
+#[test]
+fn insert_all_when_into_quoted_empty_name_has_no_output() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN 1=1 THEN INTO \"\" VALUES (1) SELECT * FROM src",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec![])
+        }
+    );
+}

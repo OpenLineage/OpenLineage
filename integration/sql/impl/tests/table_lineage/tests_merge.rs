@@ -220,3 +220,103 @@ fn merge_update_action_subquery_table_is_input() {
         }
     );
 }
+
+#[test]
+fn merge_when_insert_values_subquery_table_is_input() {
+    // A subquery inside a WHEN clause's INSERT VALUES reads a table.
+    assert_eq!(
+        test_sql_dialect(
+            "MERGE INTO t USING s ON t.id = s.id \
+             WHEN NOT MATCHED THEN INSERT VALUES ((SELECT MAX(x) FROM r))",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["r", "s"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+}
+
+#[test]
+fn merge_when_insert_predicate_subquery_table_is_input() {
+    // The Oracle-style predicate on a WHEN clause's INSERT action.
+    assert_eq!(
+        test_sql_dialect(
+            "MERGE INTO t USING s ON t.id = s.id \
+             WHEN NOT MATCHED THEN INSERT (a) VALUES (s.a) \
+             WHERE EXISTS (SELECT 1 FROM r)",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["r", "s"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+}
+
+#[test]
+fn merge_when_update_and_delete_predicates_tables_are_inputs() {
+    // The Oracle-style WHERE and DELETE WHERE predicates on a WHEN
+    // clause's UPDATE action.
+    assert_eq!(
+        test_sql_dialect(
+            "MERGE INTO t USING s ON t.id = s.id \
+             WHEN MATCHED THEN UPDATE SET x = 1 \
+             WHERE EXISTS (SELECT 1 FROM r) \
+             DELETE WHERE EXISTS (SELECT 1 FROM r2)",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["r", "r2", "s"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+}
+
+#[test]
+fn merge_when_clause_cte_does_not_capture_later_clause() {
+    // A CTE defined inside one WHEN clause's predicate subquery is
+    // scoped to that clause: a later clause's reference to the same
+    // name is the real table.
+    assert_eq!(
+        test_sql_dialect(
+            "MERGE INTO t USING s ON t.id = s.id \
+             WHEN MATCHED AND EXISTS (SELECT 1 FROM \
+             (WITH c AS (SELECT * FROM z) SELECT * FROM c) q) \
+             THEN UPDATE SET x = 1 \
+             WHEN NOT MATCHED AND EXISTS (SELECT 1 FROM c) \
+             THEN INSERT VALUES (1)",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["c", "s", "z"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+}
+
+#[test]
+fn merge_with_statement_level_cte_and_values_subquery() {
+    assert_eq!(
+        test_sql_dialect(
+            "WITH c AS (SELECT * FROM t1) \
+             MERGE INTO tgt USING c ON tgt.id = c.id \
+             WHEN NOT MATCHED THEN INSERT VALUES ((SELECT MAX(x) FROM t2))",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["t1", "t2"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}

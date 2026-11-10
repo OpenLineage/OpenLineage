@@ -56,12 +56,13 @@ impl Visit for With {
                 context.collect_with_table(f, table);
             }
 
-            // CTEs are registered under a canonical key (see
-            // cte_dependency_key), so a reference spelled with different
-            // quoting or unquoted case still resolves to this CTE.
+            // CTEs are registered under their stored-form key (see
+            // cte_dependency_key), so a reference the dialect resolves
+            // to this CTE - however it is quoted or cased - finds it.
             let cte_key = cte_dependency_key(
                 &self.cte_tables[i].alias.name.value,
                 self.cte_tables[i].alias.name.quote_style,
+                context.dialect().as_base(),
             );
 
             if i == 0 {
@@ -108,9 +109,11 @@ impl Visit for TableFactor {
                 // A qualified reference keeps its display form here, which
                 // no bare key can equal, so it stays a real table.
                 let cte_key = match effective_name.0.as_slice() {
-                    [ObjectNamePart::Identifier(part)] => {
-                        cte_dependency_key(&part.value, part.quote_style)
-                    }
+                    [ObjectNamePart::Identifier(part)] => cte_dependency_key(
+                        &part.value,
+                        part.quote_style,
+                        context.dialect().as_base(),
+                    ),
                     _ => effective_name.to_string(),
                 };
 
@@ -1213,7 +1216,11 @@ fn visit_subquery(query: &Query, context: &mut Context) -> Result<()> {
 /// drift apart.
 fn add_multi_table_target(clause: &MultiTableInsertIntoClause, context: &mut Context) {
     if let Some(name) = resolve_effective_table_name(&clause.table_name, &None, context) {
-        context.add_insert_output(convert_to_idents(&name));
+        // The same guard as the regular INSERT target: a quoted empty
+        // name (INTO "") names nothing and must not become an output.
+        if !is_empty_object_name(&name) {
+            context.add_insert_output(convert_to_idents(&name));
+        }
     }
 }
 
