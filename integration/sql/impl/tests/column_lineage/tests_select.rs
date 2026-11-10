@@ -76,3 +76,19 @@ fn test_deeply_nested_selects() {
         },]
     );
 }
+
+#[test]
+fn test_parenthesized_union_arm_keeps_both_arms_column_lineage() {
+    // A parenthesized set-operation arm merges like an unparenthesized
+    // one: the output column descends from both arms' columns, not
+    // just the parenthesized arm's.
+    let output = test_sql("SELECT a FROM t1 UNION ALL (SELECT a FROM t2)").unwrap();
+    assert_eq!(output.column_lineage.len(), 1);
+    let mut ancestors: Vec<String> = output.column_lineage[0]
+        .lineage
+        .iter()
+        .map(|anc| format!("{}@{}", anc.name, anc.origin.as_ref().unwrap().name))
+        .collect();
+    ancestors.sort();
+    assert_eq!(ancestors, vec!["a@t1".to_string(), "a@t2".to_string()]);
+}

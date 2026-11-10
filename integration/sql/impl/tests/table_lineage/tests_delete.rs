@@ -130,3 +130,23 @@ fn delete_identifier_function() {
         }
     }
 }
+
+#[test]
+fn delete_target_joined_with_derived_with_is_output_only() {
+    // Multi-table DELETE: t1 is named in the DELETE list and joined in
+    // the FROM, which also hosts a derived table with its own WITH. t1
+    // stays an output only; the derived table's input is src.
+    assert_eq!(
+        test_sql_dialect(
+            "DELETE t1 FROM (WITH c AS (SELECT * FROM src) SELECT * FROM c) q \
+             JOIN t1 ON q.id = t1.id",
+            "mysql",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}
