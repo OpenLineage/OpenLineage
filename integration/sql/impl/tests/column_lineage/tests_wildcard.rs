@@ -1260,3 +1260,54 @@ fn test_cte_reference_column_list_drops_unattributable_generated_name() {
         test_sql("WITH d AS (SELECT a + 1, 1, b FROM t1) SELECT * FROM d AS x(p, q, r)").unwrap();
     assert_eq!(output.column_lineage, vec![lineage("r", "t1", "b")]);
 }
+
+#[test]
+fn test_explicit_reference_survives_refused_fold_cte_expression_branch() {
+    let output =
+        test_sql("WITH d AS (SELECT a FROM t1 UNION ALL SELECT b + 1 FROM t2) SELECT a FROM d")
+            .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "t1", "a")]);
+}
+
+#[test]
+fn test_explicit_reference_survives_refused_fold_cte_literal_tag() {
+    let output = test_sql(
+        "WITH d AS (SELECT a, 1 AS k FROM t1 UNION ALL SELECT b, 2 FROM t2) SELECT a FROM d",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "t1", "a")]);
+}
+
+#[test]
+fn test_explicit_reference_survives_refused_fold_recursive_cte() {
+    let output = test_sql(
+        "WITH RECURSIVE r AS (SELECT a FROM t1 UNION ALL SELECT a + 1 FROM r) SELECT a FROM r",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "t1", "a")]);
+}
+
+#[test]
+fn test_explicit_reference_survives_refused_fold_derived_table() {
+    let output =
+        test_sql("SELECT s.a FROM (SELECT a FROM t1 UNION ALL SELECT b + 1 FROM t2) s").unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "t1", "a")]);
+}
+
+#[test]
+fn test_explicit_reference_survives_refused_fold_cte_wildcard_branch() {
+    let output =
+        test_sql("WITH d AS (SELECT a FROM t1 UNION ALL SELECT * FROM t2) SELECT a FROM d")
+            .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("a", "t1", "a")]);
+}
+
+#[test]
+fn test_mysql_qualified_wildcard_matches_alias_case_sensitively() {
+    let output = test_sql_dialect(
+        "SELECT T.* FROM (SELECT a FROM t1) t JOIN (SELECT b FROM t2) T ON 1=1",
+        "mysql",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![lineage("b", "t2", "b")]);
+}

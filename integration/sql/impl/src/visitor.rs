@@ -100,11 +100,14 @@ impl Visit for With {
                             .unwrap_or(false)
                 };
                 // A set operation's branches all name the same output
-                // columns, so fold them onto the left branch's names;
-                // when a branch's names cannot be known, offer nothing.
-                if !fold_set_operation_columns(&mut f, &self.cte_tables[i].query) {
-                    f.column_ancestry.clear();
-                }
+                // columns, so fold them onto the left branch's names.
+                // When a branch's names cannot be known the fold refuses:
+                // the columns are then withheld from the wildcard offer
+                // below, but the frame keeps them, because explicit
+                // references resolve through it - they resolved on main,
+                // before the fold existed, and a refused fold must not
+                // take that lineage away.
+                let folded = fold_set_operation_columns(&mut f, &self.cte_tables[i].query);
                 // A column list (`WITH d(x, y) AS ...`) renames the CTE's
                 // output columns by position, as it does for a derived table.
                 let alias_list_applied = alias_columns.is_empty()
@@ -113,7 +116,7 @@ impl Visit for With {
                 // or a repeated output name cannot be split by position -
                 // the columns keep names the CTE does not output, so none
                 // are offered to a wildcard.
-                if alias_list_applied && !permuted_recursive_branch {
+                if folded && alias_list_applied && !permuted_recursive_branch {
                     for (column, ancestors) in &f.column_ancestry {
                         columns
                             .entry(column.name.clone())
@@ -245,11 +248,12 @@ impl Visit for TableFactor {
                 let mut frame = context.pop_frame().unwrap();
 
                 // A set operation's branches all name the same output
-                // columns, so fold them onto the left branch's names;
-                // when a branch's names cannot be known, offer nothing.
-                if !fold_set_operation_columns(&mut frame, subquery) {
-                    frame.column_ancestry.clear();
-                }
+                // columns, so fold them onto the left branch's names.
+                // When a branch's names cannot be known the fold refuses:
+                // the frame keeps its columns, because explicit references
+                // resolve through it, but they are withheld from the
+                // wildcard offer when the frame is collected below.
+                let folded = fold_set_operation_columns(&mut frame, subquery);
 
                 if let Some(alias) = alias {
                     // A column alias list (`AS d(x, y)`) renames the
@@ -263,6 +267,9 @@ impl Visit for TableFactor {
                     {
                         frame.column_ancestry.clear();
                     }
+                    if !folded {
+                        frame.withhold_wildcard_columns();
+                    }
                     let table = DbTableMeta::new(
                         vec![alias.clone().name],
                         context.dialect(),
@@ -271,6 +278,9 @@ impl Visit for TableFactor {
                     );
                     context.collect_with_table(frame, table);
                 } else {
+                    if !folded {
+                        frame.withhold_wildcard_columns();
+                    }
                     context.collect(frame);
                 }
 

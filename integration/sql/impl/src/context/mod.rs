@@ -97,17 +97,24 @@ fn canonical_ident(value: &str, quoted: bool, dialect: &dyn Dialect) -> String {
 /// aliases within a query as case-insensitive, quoted or not, so the
 /// qualifier and the alias compare without regard to case. The same
 /// holds for the dialects whose quoted identifiers are case-insensitive
-/// too - Databricks and Hive, DuckDB, and MySQL and SQL Server under
-/// their default handling - so a backtick-quoted lower-case alias in
-/// Databricks is named by the same qualifier as an unquoted one. Only
-/// alias origins are matched here - physical table names are matched
-/// elsewhere, and BigQuery table names stay case-sensitive there.
+/// too - Databricks and Hive, DuckDB, and SQL Server under its default
+/// handling - so a backtick-quoted lower-case alias in Databricks is
+/// named by the same qualifier as an unquoted one. MySQL is the
+/// exception in the other direction: its table aliases are
+/// case-sensitive on Unix under the default configuration, so a
+/// qualifier names only the alias written with the same case there
+/// (its column names stay case-insensitive - see ident_matches_column).
+/// Only alias origins are matched here - physical table names are
+/// matched elsewhere, and BigQuery table names stay case-sensitive
+/// there.
 fn ident_matches_origin(qualifier: &Ident, origin: &DbTableMeta, dialect: &dyn Dialect) -> bool {
+    if dialect.is::<MySqlDialect>() {
+        return qualifier.value == origin.name;
+    }
     if dialect.is::<BigQueryDialect>()
         || dialect.is::<DatabricksDialect>()
         || dialect.is::<HiveDialect>()
         || dialect.is::<DuckDbDialect>()
-        || dialect.is::<MySqlDialect>()
         || dialect.is::<MsSqlDialect>()
     {
         return qualifier.value.eq_ignore_ascii_case(&origin.name);
@@ -179,6 +186,11 @@ pub struct ContextFrame {
     // symbol. Only those symbols are meaningful outside of the processed query.
     aliases: AliasTable,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
+    // Columns kept for explicit references but withheld from wildcard
+    // expansion: a set-operation fold that refused leaves its body's
+    // columns unaligned, so a wildcard must not offer them, while an
+    // explicit reference still resolves through them.
+    pub wildcard_withheld: HashSet<ColumnMeta>,
     pub dependencies: HashSet<DbTableMeta>,
     // Dependencies written without a schema or database. Only these can name a
     // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
@@ -205,12 +217,20 @@ pub struct CteDependency {
 }
 
 impl ContextFrame {
+    /// Withhold every column this frame currently holds from wildcard
+    /// expansion, keeping them for explicit references.
+    pub fn withhold_wildcard_columns(&mut self) {
+        self.wildcard_withheld
+            .extend(self.column_ancestry.keys().cloned());
+    }
+
     fn new() -> Self {
         ContextFrame {
             table: None,
             column: None,
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
+            wildcard_withheld: HashSet::new(),
             dependencies: HashSet::new(),
             bare_dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
@@ -435,6 +455,9 @@ impl<'a> Context<'a> {
         let qualifier_ident = qualifier.and_then(last_part);
 
         for col in tables_frame.column_ancestry.keys() {
+            if tables_frame.wildcard_withheld.contains(col) {
+                continue;
+            }
             if let Some(qualifier) = &qualifier_ident {
                 match &col.origin {
                     Some(origin)
@@ -689,6 +712,7 @@ impl<'a> Context<'a> {
                     .or_default()
                     .extend(ancestors);
             }
+            frame.wildcard_withheld.extend(old.wildcard_withheld);
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
             frame.is_main_body = old.is_main_body;
@@ -728,6 +752,11 @@ impl<'a> Context<'a> {
                     (col, anc)
                 })
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
+
+            for mut col in old.wildcard_withheld {
+                col.origin = col.origin.or_else(|| Some(from_table.clone()));
+                frame.wildcard_withheld.insert(col);
+            }
 
             let removed_circular_deps =
                 Context::remove_circular_deps(&old_ancestry, frame, from_table);
