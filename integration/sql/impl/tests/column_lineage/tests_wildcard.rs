@@ -1044,3 +1044,118 @@ fn test_cte_definition_column_list_with_duplicate_output_names() {
             .unwrap();
     assert_eq!(output.column_lineage, vec![]);
 }
+
+// --- Self-review round 2 ---
+
+#[test]
+fn test_derived_table_column_list_with_generated_name_collision() {
+    // A real output column named _0 pools into one frame entry with an
+    // unaliased expression's generated _0, so the positions cannot be
+    // told apart; nothing is offered rather than the pooled ancestors
+    // landing on the first alias and the second position vanishing.
+    let output = test_sql("SELECT * FROM (SELECT a AS _0, b + 1 FROM t) AS d(p, q)").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_cte_definition_column_list_with_generated_name_collision() {
+    let output =
+        test_sql("WITH d(p, q) AS (SELECT a AS _0, b + 1 FROM t) SELECT * FROM d").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_cte_reference_column_list_with_generated_name_collision() {
+    let output =
+        test_sql("WITH d AS (SELECT a AS _0, b + 1 FROM t) SELECT * FROM d AS x(p, q)").unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_generated_pattern_column_name_without_expression_still_binds() {
+    // With no unnamed position in the body, a column named _5 is an
+    // ordinary name and the list binds it like any other.
+    let output = test_sql("SELECT * FROM (SELECT a AS _5, b FROM t) AS d(p, q)").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![lineage("p", "t", "a"), lineage("q", "t", "b")]
+    );
+}
+
+#[test]
+fn test_star_over_parenthesized_set_operation_branches() {
+    // Parenthesized branches are collected into the pooled frame one
+    // after another; their ancestor sets for the same column union
+    // rather than the later branch replacing the earlier one's.
+    let output =
+        test_sql("SELECT * FROM ((SELECT a FROM t1) UNION ALL (SELECT a FROM t2)) AS d").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "a".to_string(),
+            },
+            lineage: vec![
+                ColumnMeta {
+                    origin: Some(table("t1")),
+                    name: "a".to_string(),
+                },
+                ColumnMeta {
+                    origin: Some(table("t2")),
+                    name: "a".to_string(),
+                },
+            ],
+        }]
+    );
+}
+
+#[test]
+fn test_star_over_cte_with_parenthesized_set_operation_branches() {
+    let output =
+        test_sql("WITH d AS ((SELECT a FROM t1) UNION ALL (SELECT a FROM t2)) SELECT * FROM d")
+            .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![ColumnLineage {
+            descendant: ColumnMeta {
+                origin: None,
+                name: "a".to_string(),
+            },
+            lineage: vec![
+                ColumnMeta {
+                    origin: Some(table("t1")),
+                    name: "a".to_string(),
+                },
+                ColumnMeta {
+                    origin: Some(table("t2")),
+                    name: "a".to_string(),
+                },
+            ],
+        }]
+    );
+}
+
+#[test]
+fn test_cte_reference_column_list_with_duplicate_output_names() {
+    // The recorded columns are keyed by name, so two outputs named a
+    // are one pooled entry the reference list cannot split either.
+    let output = test_sql(
+        "WITH d AS (SELECT t1.a, t2.a FROM t1 JOIN t2 ON true) SELECT * FROM d AS x(p, q)",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}
+
+#[test]
+fn test_recursive_cte_with_permuted_recursive_branch() {
+    // The recursive branch projects the declared columns in the
+    // opposite order; its entries align by position while their
+    // ancestors are attributed by name, which scrambles the fold, so
+    // nothing is offered.
+    let output = test_sql(
+        "WITH RECURSIVE r(x, y) AS (SELECT a, b FROM src UNION ALL SELECT y, x FROM r) SELECT * FROM r",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![]);
+}

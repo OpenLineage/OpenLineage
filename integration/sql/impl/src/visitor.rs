@@ -56,6 +56,49 @@ impl Visit for With {
             });
             let mut columns = HashMap::new();
             if let Some(mut f) = frame {
+                // A branch that projects the CTE's declared columns in a
+                // different order than the definition list declares them
+                // (`SELECT y, x FROM r` for `r(x, y)`) defeats the
+                // name-based fold and rename below when the branch
+                // references the CTE itself: its entries align by
+                // position while their ancestors are attributed by name,
+                // and a source column is lost in the scramble. Offer
+                // nothing for that shape.
+                let permuted_recursive_branch = if alias_columns.is_empty() {
+                    false
+                } else {
+                    let cte_name = self.cte_tables[i].alias.name.value.as_str();
+                    let self_referencing = f.column_ancestry.values().flatten().any(|ancestor| {
+                        ancestor
+                            .origin
+                            .as_ref()
+                            .map(|origin| origin.name == cte_name)
+                            .unwrap_or(false)
+                    });
+                    self_referencing
+                        && set_operation_branch_names(&self.cte_tables[i].query.body)
+                            .map(|branches| {
+                                let declared_order: HashMap<&str, usize> = alias_columns
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(position, column)| {
+                                        (column.name.value.as_str(), position)
+                                    })
+                                    .collect();
+                                branches[1..].iter().any(|branch| {
+                                    branch
+                                        .iter()
+                                        .flatten()
+                                        .filter_map(|name| {
+                                            declared_order.get(name.as_str()).copied()
+                                        })
+                                        .collect::<Vec<_>>()
+                                        .windows(2)
+                                        .any(|pair| pair[0] > pair[1])
+                                })
+                            })
+                            .unwrap_or(false)
+                };
                 // A set operation's branches all name the same output
                 // columns, so fold them onto the left branch's names;
                 // when a branch's names cannot be known, offer nothing.
@@ -70,7 +113,7 @@ impl Visit for With {
                 // or a repeated output name cannot be split by position -
                 // the columns keep names the CTE does not output, so none
                 // are offered to a wildcard.
-                if alias_list_applied {
+                if alias_list_applied && !permuted_recursive_branch {
                     for (column, ancestors) in &f.column_ancestry {
                         columns
                             .entry(column.name.clone())
@@ -1242,6 +1285,20 @@ fn apply_column_alias_list(
         return false;
     };
 
+    // A real output column named like a generated one (`_0`, `_1`, ...)
+    // cannot be told apart from an unaliased expression's entry: both
+    // register under the same name, pooled into one entry, when the body
+    // has an unnamed position too. Positional binding is unsound then -
+    // the pooled entry would land on one alias and the other position
+    // would vanish - so the list is refused.
+    if names
+        .iter()
+        .any(|name| matches!(name, Some(name) if generated_column_index(name).is_some()))
+        && names.iter().any(|name| name.is_none())
+    {
+        return false;
+    }
+
     // A name that covers several positions in the list's range can only
     // be split between them when the frame holds an entry per position;
     // two projections of one column name are registered as a single
@@ -1323,6 +1380,21 @@ fn apply_column_alias_list(
     true
 }
 
+/// The output column names of each branch of a set operation, in
+/// order, or None when some branch's names cannot be known.
+fn set_operation_branch_names(body: &SetExpr) -> Option<Vec<Vec<Option<String>>>> {
+    match body {
+        SetExpr::SetOperation { left, right, .. } => {
+            let mut branches = set_operation_branch_names(left)?;
+            branches.extend(set_operation_branch_names(right)?);
+            Some(branches)
+        }
+        SetExpr::Select(select) => select_output_names(select).map(|names| vec![names]),
+        SetExpr::Query(query) => set_operation_branch_names(&query.body),
+        _ => None,
+    }
+}
+
 /// Folds a set operation's branch columns onto the left branch's names
 /// by position, in place: a set operation's output columns are named by
 /// its left branch, so the other branches' columns are those same
@@ -1340,23 +1412,10 @@ fn fold_set_operation_columns(frame: &mut ContextFrame, query: &Query) -> bool {
         }
     }
 
-    fn branch_names(body: &SetExpr) -> Option<Vec<Vec<Option<String>>>> {
-        match body {
-            SetExpr::SetOperation { left, right, .. } => {
-                let mut branches = branch_names(left)?;
-                branches.extend(branch_names(right)?);
-                Some(branches)
-            }
-            SetExpr::Select(select) => select_output_names(select).map(|names| vec![names]),
-            SetExpr::Query(query) => branch_names(&query.body),
-            _ => None,
-        }
-    }
-
     if !body_is_set_operation(&query.body) {
         return true;
     }
-    let Some(branches) = branch_names(&query.body) else {
+    let Some(branches) = set_operation_branch_names(&query.body) else {
         return false;
     };
     let left = &branches[0];

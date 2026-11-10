@@ -677,7 +677,18 @@ impl<'a> Context<'a> {
 
     pub fn collect(&mut self, mut old: ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
-            frame.column_ancestry.extend(old.column_ancestry.drain());
+            // Ancestor sets for the same column key union, as everywhere
+            // else frames merge: replacing the set would drop a pooled
+            // contributor's ancestors - a parenthesized set-operation
+            // branch collected after its sibling, say - and report only
+            // the last one's lineage.
+            for (column, ancestors) in old.column_ancestry.drain() {
+                frame
+                    .column_ancestry
+                    .entry(column)
+                    .or_default()
+                    .extend(ancestors);
+            }
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
             frame.is_main_body = old.is_main_body;
@@ -722,7 +733,16 @@ impl<'a> Context<'a> {
                 Context::remove_circular_deps(&old_ancestry, frame, from_table);
 
             if !removed_circular_deps.is_empty() {
-                frame.column_ancestry.extend(old_ancestry);
+                // Union per key, as in `collect`: replacing the set
+                // would drop ancestors a previous contributor pooled
+                // under the same column key.
+                for (column, ancestors) in old_ancestry {
+                    frame
+                        .column_ancestry
+                        .entry(column)
+                        .or_default()
+                        .extend(ancestors);
+                }
             }
 
             frame.dependencies.extend(old.dependencies);
@@ -914,6 +934,25 @@ impl<'a> Context<'a> {
                 let Some(order) = cte.output_names.as_deref() else {
                     return;
                 };
+                // The recorded columns are keyed by name alone, so the
+                // same two shapes the definition side refuses are
+                // unsound here too: a name covering several positions in
+                // the list's range has a single pooled entry that cannot
+                // be split between the aliases, and a real output column
+                // named like a generated one (`_0`, `_1`, ...) pools with
+                // an unaliased expression's entry when the body has an
+                // unnamed position. Offer nothing in those shapes.
+                let mut positions_by_name: HashMap<&str, usize> = HashMap::new();
+                for name in order.iter().take(alias_columns.len()).flatten() {
+                    *positions_by_name.entry(name.as_str()).or_default() += 1;
+                }
+                if positions_by_name.values().any(|positions| *positions > 1)
+                    || (order.iter().any(
+                        |name| matches!(name, Some(name) if generated_column_index(name).is_some()),
+                    ) && order.iter().any(|name| name.is_none()))
+                {
+                    return;
+                }
                 // Positions the list renames, and the names it renames
                 // them to; a name an earlier position already consumed
                 // contributes nothing the second time.
