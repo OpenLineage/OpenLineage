@@ -4,7 +4,7 @@
 import os
 import sys
 
-# Find the absolute path of the directory containing 'src' 
+# Find the absolute path of the directory containing 'src'
 # by stepping one folder up from 'tests/'
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..src/openlineage/"))
 
