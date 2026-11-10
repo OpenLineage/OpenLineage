@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import shutil
 import subprocess
 import zlib
@@ -53,24 +54,9 @@ class TestFindGitDir:
         result = _find_git_dir(str(subdir))
         assert result == tmp_path / ".git"
 
-    def test_returns_none_when_no_git(self, tmp_path, monkeypatch):
+    def test_returns_none_when_no_git(self, tmp_path):
         subdir = tmp_path / "project"
         subdir.mkdir()
-        # The walk climbs to the real filesystem root, where an ambient .git
-        # may exist (e.g. /tmp/.git on some machines). Bound the walk to
-        # tmp_path so the not-found branch stays hermetic.
-        base = tmp_path.resolve()
-
-        def bounded_parents(self):
-            parents = []
-            parent = self.parent
-            while parent != base:
-                parents.append(parent)
-                parent = parent.parent
-            parents.append(parent)
-            return parents
-
-        monkeypatch.setattr(Path, "parents", property(bounded_parents))
         assert _find_git_dir(str(subdir)) is None
 
     def test_finds_real_repo(self):
@@ -378,6 +364,9 @@ class TestGetGitTag:
 
     @pytest.mark.skipif(shutil.which("git") is None, reason="git binary not available")
     def test_loose_annotated_tag_with_packed_object(self, tmp_path, monkeypatch):
+        # Ignore the developer's global/system git config (e.g. tag.gpgsign=true).
+        monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+        monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
         repo = tmp_path / "repo"
         repo.mkdir()
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
@@ -432,12 +421,9 @@ class TestGetGitTag:
         (git_dir / "refs" / "tags" / "v1.0.0").write_text(tag_sha + "\n")
         assert (git_dir / "objects" / tag_sha[:2] / tag_sha[2:]).exists() is False
         (git_dir / "HEAD").write_text(head + "\n")
-        # A packed tag object is only resolved when the fallback is opted
-        # into, because it shells out to `git cat-file`, which can take
-        # seconds on large repos and must stay off the hot path by default.
-        assert get_git_tag(git_dir) is None
-        monkeypatch.setenv("OPENLINEAGE_GIT_TAG_FALLBACK", "1")
-        assert get_git_tag(git_dir) == "v1.0.0"
+        # Packed tag objects are not resolved: we never run git on the emit path.
+        with mock.patch("subprocess.run", side_effect=AssertionError("git must not be called")):
+            assert get_git_tag(git_dir) is None
 
     def test_packed_tag(self, tmp_path):
         git_dir = tmp_path / ".git"
@@ -445,6 +431,54 @@ class TestGetGitTag:
         (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
         (git_dir / "packed-refs").write_text(f"# pack-refs with: peeled\n{_FAKE_SHA} refs/tags/v2.0.0\n")
         assert get_git_tag(git_dir) == "v2.0.0"
+
+    @pytest.mark.parametrize("packed", [False, True])
+    def test_tagged_head_does_not_read_tag_objects(self, tmp_path, packed):
+        """A HEAD tagged by a loose or packed ref never reads tag objects."""
+        git_dir = tmp_path / ".git"
+        tag_dir = git_dir / "refs" / "tags"
+        tag_dir.mkdir(parents=True)
+        (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
+        (tag_dir / "other").write_text(_TAG_OBJ_SHA + "\n")
+        if packed:
+            (git_dir / "packed-refs").write_text(f"# pack-refs with: peeled\n{_FAKE_SHA} refs/tags/v1\n")
+        else:
+            (tag_dir / "v1").write_text(_FAKE_SHA + "\n")
+        with patch(
+            "openlineage.client.git._read_loose_tag_target",
+            side_effect=AssertionError("tag objects must not be read when HEAD is tagged"),
+        ):
+            assert get_git_tag(git_dir) == "v1"
+
+    def test_large_non_tag_object_is_not_fully_inflated(self, tmp_path):
+        """A loose ref to a large blob is rejected without inflating all of it."""
+        git_dir = tmp_path / ".git"
+        tag_dir = git_dir / "refs" / "tags"
+        tag_dir.mkdir(parents=True)
+        (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
+        blob = b"x" * 10_000_000
+        raw = b"blob " + str(len(blob)).encode() + b"\0" + blob
+        blob_sha = hashlib.sha1(raw).hexdigest()
+        (git_dir / "objects" / blob_sha[:2]).mkdir(parents=True)
+        (git_dir / "objects" / blob_sha[:2] / blob_sha[2:]).write_bytes(zlib.compress(raw))
+        (tag_dir / "big").write_text(blob_sha + "\n")
+
+        real_decompressobj = zlib.decompressobj
+        reads: list[tuple[int, int]] = []
+
+        class _SpyDecompressor:
+            def __init__(self):
+                self._inner = real_decompressobj()
+
+            def decompress(self, data, max_length=-1):
+                reads.append((len(data), max_length))
+                return self._inner.decompress(data, max_length)
+
+        with patch("openlineage.client.git.zlib.decompressobj", _SpyDecompressor):
+            assert get_git_tag(git_dir) is None
+        # Only the first few KB of the object are read and inflated.
+        assert reads
+        assert all(read <= 4096 and max_length <= 4096 for read, max_length in reads)
 
     def test_returns_none_when_untagged(self, tmp_path):
         git_dir = tmp_path / ".git"
@@ -936,11 +970,11 @@ def test_worktree_emits_shared_metadata_and_its_own_commit(repository, tmp_path,
 @pytest.mark.parametrize("absolute", [False, True])
 def test_common_git_directory_pointer(tmp_path, absolute):
     """Relative and absolute commondir pointers resolve to the shared metadata directory."""
-    from openlineage.client.git import _get_common_git_dir
+    from openlineage.client.git import _common_git_dir
 
     common = tmp_path / "common"
     private = common / "worktrees" / "linked"
     private.mkdir(parents=True)
     (private / "commondir").write_text(str(common) if absolute else "../..")
-    assert _get_common_git_dir(private) == common.resolve()
-    assert _get_common_git_dir(common) == common
+    assert _common_git_dir(private) == common.resolve()
+    assert _common_git_dir(common) == common
