@@ -719,7 +719,11 @@ impl Visit for SetExpr {
                 Ok(())
             }
             SetExpr::Insert(stmt) => stmt.visit(context),
-            SetExpr::Query(q) => q.visit(context),
+            // A parenthesized query is a scope of its own - as a set
+            // operation branch it must not leave its CTE registrations
+            // in the shared set-operation frame, where they would
+            // capture the other branches' references.
+            SetExpr::Query(q) => visit_subquery(q, context),
             SetExpr::SetOperation {
                 op: _,
                 set_quantifier: _,
@@ -744,6 +748,12 @@ impl Visit for Query {
         }
 
         context.push_frame();
+        // Whether the region this query sits in is the main body -
+        // the body frame below may only be promoted back to main if
+        // it is. A query nested inside a CTE body keeps the enclosing
+        // region's flag: its direct table reads are dependencies of
+        // that CTE, not inputs of the statement.
+        let enclosing_is_main = context.is_main();
         if self.with.is_some() {
             context.unset_frame_to_main_body();
         }
@@ -756,7 +766,7 @@ impl Visit for Query {
         context.collect_aliases(&with_frame);
 
         context.push_frame();
-        if self.with.is_some() {
+        if self.with.is_some() && enclosing_is_main {
             context.set_frame_to_main_body();
         }
 
@@ -1070,7 +1080,20 @@ impl Visit for Statement {
             _ => {}
         }
 
-        let frame = context.pop_frame().unwrap();
+        let mut frame = context.pop_frame().unwrap();
+        if matches!(self, Statement::Insert(_)) {
+            // An INSERT can sit inside a statement-level WITH (the
+            // query body is a SetExpr::Insert), with its source
+            // query's own CTE registrations accumulated on this
+            // statement frame. collect_inputs below inserts a used
+            // registration's dependencies verbatim, so a bare
+            // dependency naming a CTE of the enclosing statement
+            // would be emitted as a table and the CTE's own inputs
+            // lost. Resolve this frame the way a subquery's frame is
+            // resolved: such a dependency marks the enclosing CTE
+            // used instead.
+            context.resolve_subquery_cte_dependencies(&mut frame);
+        }
         let cte_deps = frame.cte_dependencies.clone();
         let deps = frame.dependencies.clone();
         let bare_deps = frame.bare_dependencies.clone();
@@ -1104,7 +1127,13 @@ fn visit_subquery(query: &Query, context: &mut Context) -> Result<()> {
     let result = query.visit(context);
     let mut frame = context.pop_frame().unwrap();
     context.resolve_subquery_cte_dependencies(&mut frame);
-    context.collect_aliases(&frame);
+    // Deliberately no collect_aliases here (TableFactor::Derived does
+    // the same): the frame's aliases are scoped to the subquery, and
+    // the CTE names among them - each registered as an alias of an
+    // empty table - would otherwise leak into the enclosing frame and
+    // hide real tables of the same name read later. collect() already
+    // merges everything that may travel up: column ancestry,
+    // dependencies and the (resolved) CTE outcome.
     context.collect(frame);
     result
 }

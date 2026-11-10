@@ -1386,3 +1386,36 @@ fn select_from_identifier_databricks_qualified() {
         }
     );
 }
+
+#[test]
+fn insert_all_when_second_subquery_table_not_hidden_by_first_subquery_cte() {
+    assert_eq!(
+        test_sql_dialect(
+            "INSERT ALL WHEN x IN (WITH q AS (SELECT x FROM lk) SELECT x FROM q) \
+             AND y IN (SELECT y FROM q) THEN INTO o1 SELECT x, y FROM src",
+            "snowflake",
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["lk", "q", "src"]),
+            out_tables: tables(vec!["o1"])
+        }
+    );
+}
+
+#[test]
+fn insert_source_with_referencing_statement_cte() {
+    assert_eq!(
+        test_sql(
+            "WITH c AS (SELECT * FROM a) \
+             INSERT INTO t1 WITH d AS (SELECT * FROM c) SELECT * FROM d"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec!["t1"])
+        }
+    );
+}

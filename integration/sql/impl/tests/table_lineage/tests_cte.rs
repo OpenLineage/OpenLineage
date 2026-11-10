@@ -500,3 +500,147 @@ fn qualified_join_matching_cte_name_is_an_input() {
         }
     );
 }
+
+#[test]
+fn subquery_cte_alias_does_not_hide_real_table_in_second_exists() {
+    assert_eq!(
+        test_sql(
+            "SELECT * FROM a WHERE EXISTS (WITH t AS (SELECT * FROM b) SELECT * FROM t) \
+             AND EXISTS (SELECT * FROM t)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b", "t"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn subquery_cte_alias_does_not_hide_joined_real_table() {
+    assert_eq!(
+        test_sql(
+            "SELECT * FROM s JOIN u ON EXISTS (WITH t AS (SELECT * FROM a) SELECT * FROM t) \
+             JOIN t ON s.id = t.id"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "s", "t", "u"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn subquery_cte_alias_does_not_hide_select_into_target() {
+    assert_eq!(
+        test_sql(
+            "SELECT * INTO t FROM a WHERE EXISTS (WITH t AS (SELECT * FROM b) SELECT * FROM t)"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b"]),
+            out_tables: tables(vec!["t"])
+        }
+    );
+}
+
+#[test]
+fn unused_outer_cte_not_marked_used_through_nested_cte_body() {
+    assert_eq!(
+        test_sql(
+            "WITH c1 AS (SELECT * FROM a), \
+             c2 AS (WITH d AS (SELECT * FROM c1) SELECT * FROM d) \
+             SELECT * FROM b"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["b"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn recursive_cte_self_reference_through_nested_with_is_not_an_input() {
+    assert_eq!(
+        test_sql(
+            "WITH RECURSIVE c AS (SELECT * FROM a UNION ALL \
+             SELECT * FROM (WITH d AS (SELECT * FROM c) SELECT * FROM d) sub) \
+             SELECT * FROM c"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn inner_with_does_not_promote_cte_body_to_main() {
+    assert_eq!(
+        test_sql(
+            "WITH unused AS (WITH d AS (SELECT * FROM a) SELECT * FROM d JOIN b ON 1=1), \
+             used AS (SELECT * FROM c) \
+             SELECT * FROM used"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["c"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn parenthesized_with_branch_does_not_capture_later_branch_table() {
+    assert_eq!(
+        test_sql("(WITH t AS (SELECT * FROM a) SELECT * FROM t) UNION ALL SELECT * FROM t")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "t"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn parenthesized_with_branch_shadowing_outer_cte_keeps_both_inputs() {
+    assert_eq!(
+        test_sql(
+            "WITH c AS (SELECT * FROM a) \
+             (WITH c AS (SELECT * FROM b) SELECT * FROM c) UNION ALL SELECT * FROM c"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a", "b"]),
+            out_tables: tables(vec![])
+        }
+    );
+}
+
+#[test]
+fn used_outer_cte_through_nested_cte_body_collects_inputs() {
+    assert_eq!(
+        test_sql(
+            "WITH c1 AS (SELECT * FROM a), \
+             c2 AS (WITH d AS (SELECT * FROM c1) SELECT * FROM d) \
+             SELECT * FROM c2"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["a"]),
+            out_tables: tables(vec![])
+        }
+    );
+}

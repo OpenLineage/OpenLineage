@@ -485,9 +485,12 @@ impl<'a> Context<'a> {
     ///   the frame (references between the subquery's own CTEs are
     ///   resolved transitively first);
     /// - a dependency that was written bare and names a CTE of an
-    ///   enclosing scope is a reference to that CTE: the enclosing
-    ///   registration is marked used and the dependency itself is
-    ///   dropped, so the enclosing CTE's own inputs are collected;
+    ///   enclosing scope is a reference to that CTE: at the main body
+    ///   the enclosing registration is marked used and the dependency
+    ///   itself is dropped, so the enclosing CTE's own inputs are
+    ///   collected; inside another CTE body the dependency travels up
+    ///   as a bare dependency instead, because the enclosing CTE may
+    ///   itself go unused;
     /// - unused CTEs contribute nothing, as at statement level.
     ///
     /// Call this with the subquery's frame already popped: the frames
@@ -495,6 +498,26 @@ impl<'a> Context<'a> {
     pub fn resolve_subquery_cte_dependencies(&mut self, frame: &mut ContextFrame) {
         if frame.cte_dependencies.is_empty() {
             return;
+        }
+
+        // A reference to one of this frame's own CTEs from a region
+        // that records dependencies - anywhere outside the main body,
+        // where a table reference cannot mark the CTE used directly -
+        // arrives as a bare dependency naming it. That is a use of
+        // the CTE: without this step the name would travel up as a
+        // plain table dependency and the CTE's own inputs would be
+        // lost. (The tail of this function then drops those bare
+        // dependencies, as it does for every resolved CTE.)
+        let own_references: Vec<String> = frame
+            .bare_dependencies
+            .iter()
+            .filter(|table| frame.cte_dependencies.contains_key(&table.name))
+            .map(|table| table.name.clone())
+            .collect();
+        for name in own_references {
+            if let Some(dep) = frame.cte_dependencies.get_mut(&name) {
+                dep.is_used = true;
+            }
         }
 
         // Resolve the used registrations transitively: a used CTE whose
@@ -528,10 +551,23 @@ impl<'a> Context<'a> {
 
         frame.cte_dependencies.clear();
 
+        // Marking an enclosing CTE used is only sound at the main
+        // body: inside another CTE body the enclosing CTE may itself
+        // go unused, and marking it would collect its inputs anyway.
+        // There the dependency travels up as a (bare) dependency
+        // instead, so it is resolved when the enclosing CTE is
+        // adjusted - and dropped if that CTE is recursive or unused.
+        // Keeping was_bare in that case matters: a bare dependency is
+        // the only kind adjust_cte_dependencies can recognise as a
+        // CTE reference rather than a schema-qualified real table.
+        let enclosing_is_main = self.is_main();
         for (table, was_bare) in resolved {
-            if was_bare && self.has_alias(table.name.clone()) {
+            if enclosing_is_main && was_bare && self.has_alias(table.name.clone()) {
                 self.mark_table_as_used(table.name.clone());
             } else {
+                if was_bare {
+                    frame.bare_dependencies.insert(table.clone());
+                }
                 frame.dependencies.insert(table);
             }
         }
