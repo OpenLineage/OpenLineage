@@ -18,7 +18,7 @@ import attr
 import requests
 import urllib3.util
 from openlineage.client.serde import Serde
-from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG
+from openlineage.client.transport.http_common import DEFAULT_RETRY_CONFIG, redirect_refusal
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import (
     config_value_to_str,
@@ -36,6 +36,14 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+
+def _raise_on_method_changing_redirect(response: Response, **_: Any) -> None:
+    source_url = response.request.url if response.request is not None else None
+    if msg := redirect_refusal(response.status_code, source_url, response.headers.get("Location")):
+        # Consume the body so it remains available on the raised exception.
+        len(response.content)
+        raise requests.HTTPError(msg, response=response)
 
 
 class TokenProvider:
@@ -574,6 +582,13 @@ class HttpTransport(Transport):
         http_client.HTTPConnection.debuglevel = 0
         try:
             body, headers = self._prepare_request(Serde.to_json(event))
+            session_hooks = self.session.hooks.get("response") or ()
+            if callable(session_hooks):
+                session_hooks = (session_hooks,)
+            response_hooks = [
+                _raise_on_method_changing_redirect,
+                *(hook for hook in session_hooks if hook is not _raise_on_method_changing_redirect),
+            ]
 
             post_kwargs: dict[str, Any] = {
                 "url": urljoin(self.url, self.endpoint),
@@ -581,6 +596,7 @@ class HttpTransport(Transport):
                 "headers": headers,
                 "timeout": self.timeout,
                 "verify": self.verify,
+                "hooks": {"response": response_hooks},
             }
             if self.cert is not None:
                 # Only pass ``cert`` when a client certificate is configured,
@@ -599,7 +615,10 @@ class HttpTransport(Transport):
                     "target was not requested."
                 )
                 raise RuntimeError(msg)
-            resp.raise_for_status()
+            if not 200 <= resp.status_code < 300:
+                resp.raise_for_status()
+                msg = f"Unexpected HTTP status {resp.status_code} for lineage event POST"
+                raise requests.HTTPError(msg, response=resp)
             return resp
         finally:
             http_client.HTTPConnection.debuglevel = prev_debuglevel

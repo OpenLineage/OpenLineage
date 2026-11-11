@@ -348,6 +348,7 @@ def mock_http_session():
     mock_response.status_code = 200
     mock_response.is_redirect = False
     mock_client.post.return_value = mock_response
+    mock_client.hooks = {"response": []}
 
     # Return both the client and response for flexibility
     return mock_client, mock_response

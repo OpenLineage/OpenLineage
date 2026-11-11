@@ -3,6 +3,36 @@
 """Common constants and utilities shared between HTTP and Async HTTP transports."""
 
 from typing import Any
+from urllib.parse import urljoin, urlsplit
+
+
+def same_origin(url: str, location: str) -> bool:
+    """Whether a redirect keeps the scheme, host, and effective port."""
+    try:
+        source = urlsplit(url)
+        target = urlsplit(urljoin(url, location))
+        if source.scheme not in ("http", "https") or target.scheme not in ("http", "https"):
+            return False
+        source_port = source.port if source.port is not None else (443 if source.scheme == "https" else 80)
+        target_port = target.port if target.port is not None else (443 if target.scheme == "https" else 80)
+        return (
+            source.scheme == target.scheme
+            and source.hostname is not None
+            and source.hostname == target.hostname
+            and source_port == target_port
+        )
+    except ValueError:
+        return False
+
+
+def redirect_refusal(status_code: int, url: str | None, location: str | None) -> str | None:
+    """Return why a lineage event POST must not follow this redirect, or None if it may be followed."""
+    if status_code in (301, 302, 303):
+        return f"Refusing HTTP {status_code} redirect for lineage event POST"
+    if status_code in (307, 308) and location and (url is None or not same_origin(url, location)):
+        return f"Refusing cross-origin redirect for lineage event POST: {location}"
+    return None
+
 
 # Default retry configuration for HTTP transports
 DEFAULT_RETRY_CONFIG: dict[str, Any] = {

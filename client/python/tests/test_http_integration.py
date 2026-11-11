@@ -8,7 +8,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import closing
 
 import pytest
+import requests
 from openlineage.client.transport.async_http import AsyncHttpConfig, AsyncHttpTransport
+from openlineage.client.transport.http import HttpConfig, HttpTransport
 
 from tests.fixtures.events import (
     BASIC_RUN_EVENTS,
@@ -62,6 +64,60 @@ class TestBasicEventFlow:
         events = server_helper.get_events()
         # With persistent 500 errors, we expect 0 successful events
         assert len(events) == 0
+
+    @pytest.mark.parametrize("status_code", [301, 302, 303])
+    def test_sync_transport_rejects_method_changing_redirect_before_caller_hook(
+        self, test_server, status_code
+    ):
+        observed_statuses = []
+
+        def caller_hook(response, **_):
+            observed_statuses.append(response.status_code)
+
+        session = requests.Session()
+        session.hooks["response"].append(caller_hook)
+        hooks = session.hooks["response"].copy()
+        transport = HttpTransport(
+            HttpConfig(
+                url=test_server,
+                endpoint=f"redirect/{status_code}",
+                session=session,
+            )
+        )
+
+        with closing(transport), pytest.raises(requests.HTTPError) as error:
+            transport.emit(BASIC_RUN_EVENTS["start"])
+
+        assert error.value.response.status_code == status_code
+        assert error.value.response.text == "redirect response"
+        assert observed_statuses == []
+        assert session.hooks["response"] == hooks
+
+    @pytest.mark.parametrize("status_code", [307, 308])
+    def test_sync_transport_follows_method_preserving_redirect_with_caller_hook(
+        self, test_server_url, server_helper, status_code
+    ):
+        observed_statuses = []
+
+        def caller_hook(response, **_):
+            observed_statuses.append(response.status_code)
+
+        session = requests.Session()
+        session.hooks["response"].append(caller_hook)
+        transport = HttpTransport(
+            HttpConfig(
+                url=test_server_url,
+                endpoint=f"redirect/{status_code}",
+                session=session,
+            )
+        )
+
+        with closing(transport):
+            response = transport.emit(BASIC_RUN_EVENTS["start"])
+
+        assert response.status_code == 200
+        assert observed_statuses == [status_code, 200]
+        assert server_helper.wait_for_events(1, timeout=0.5)
 
     def test_sync_transport_multiple_events_sequential(self, sync_transport, server_helper):
         """Test synchronous transport processes multiple events sequentially."""

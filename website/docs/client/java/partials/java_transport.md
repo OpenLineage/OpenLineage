@@ -31,6 +31,10 @@ Allows sending events to HTTP endpoint, using [ApacheHTTPClient](https://hc.apac
 
 Events are serialized to JSON, and then are send as HTTP POST request with `Content-Type: application/json`.
 
+The transport rejects `301`, `302`, and `303` redirects because they can change the POST to a GET and discard the event body. It follows `307` and `308` only when the scheme, host, and effective port stay the same. Configure proxies to use same-origin `307` or `308` redirects, and configure an HTTPS URL directly instead of relying on an HTTP-to-HTTPS redirect. A terminal non-2xx response fails emission.
+
+When injecting a wrapped `CloseableHttpClient` that does not expose its default `RequestConfig`, pass that config to `HttpTransport(client, config, requestConfig)` or `Builder.http(client, requestConfig)`. This preserves its request settings and applies the redirect rules above. Without it, the wrapped client's own defaults apply, including its redirect handling.
+
 #### Unix Domain Socket
 
 :::info Requires Java 16 or later
