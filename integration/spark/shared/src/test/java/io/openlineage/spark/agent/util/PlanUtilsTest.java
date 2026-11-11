@@ -12,6 +12,9 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.util.Arrays;
+import java.util.Collections;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
@@ -245,5 +248,16 @@ class PlanUtilsTest {
         .hasFieldOrPropertyWithValue("dataType", IntegerType$.MODULE$)
         .hasFieldOrPropertyWithValue("nullable", false)
         .hasFieldOrPropertyWithValue("metadata", null);
+  }
+
+  @Test
+  void testGetRelationPathsKeepsFilesystemRoot() {
+    Path root = new Path("file:/");
+    Path dir = new Path("file:/tmp");
+
+    assertThat(PlanUtils.getRelationPaths(Collections.singletonList(root), new Configuration()))
+        .containsExactly(root);
+    assertThat(PlanUtils.getRelationPaths(Arrays.asList(dir, root), new Configuration()))
+        .containsExactly(dir, root);
   }
 }
