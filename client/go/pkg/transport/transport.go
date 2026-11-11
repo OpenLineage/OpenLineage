@@ -69,9 +69,12 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 	case TransportTypeHTTP:
 		retryClient := retryablehttp.NewClient()
 		retryClient.Logger = nil // suppress default debug logging
+		// Only httpClient follows redirects, so each Location resolves against the hop that returned it.
+		retryClient.HTTPClient.CheckRedirect = func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
 		checkRedirect := func(req *http.Request, via []*http.Request) error {
 			if len(via) >= maxRedirects {
-				// retryablehttp recognizes this exact shape and does not retry the redirect loop.
 				return fmt.Errorf("stopped after %d redirects", maxRedirects)
 			}
 			switch req.Response.StatusCode {
@@ -83,7 +86,6 @@ func NewWithContext(ctx context.Context, config *Config) (Transport, error) {
 			}
 			return nil
 		}
-		retryClient.HTTPClient.CheckRedirect = checkRedirect
 
 		timeout := defaultTimeout
 		if config.HTTP.TimeoutInMillis > 0 {

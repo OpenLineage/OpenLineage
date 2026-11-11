@@ -25,6 +25,15 @@ def same_origin(url: str, location: str) -> bool:
         return False
 
 
+def redirect_refusal(status_code: int, url: str | None, location: str | None) -> str | None:
+    """Return why a lineage event POST must not follow this redirect, or None if it may be followed."""
+    if status_code in (301, 302, 303):
+        return f"Refusing HTTP {status_code} redirect for lineage event POST"
+    if status_code in (307, 308) and location and (url is None or not same_origin(url, location)):
+        return f"Refusing cross-origin redirect for lineage event POST: {location}"
+    return None
+
+
 # Default retry configuration for HTTP transports
 DEFAULT_RETRY_CONFIG: dict[str, Any] = {
     "total": 5,

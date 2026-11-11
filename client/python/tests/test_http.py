@@ -21,7 +21,7 @@ from openlineage.client.transport.http import (
     TokenProvider,
     _raise_on_method_changing_redirect,
 )
-from openlineage.client.transport.http_common import same_origin
+from openlineage.client.transport.http_common import redirect_refusal, same_origin
 from openlineage.client.uuid import generate_new_uuid
 
 
@@ -41,6 +41,38 @@ class CustomTokenProvider(TokenProvider):
 )
 def test_redirect_origin_comparison(location, expected):
     assert same_origin("http://example.com/api/v1/lineage", location) is expected
+
+
+@pytest.mark.parametrize(
+    ("status_code", "url", "location", "expected"),
+    [
+        (
+            301,
+            "http://example.com/api/v1/lineage",
+            "/accepted",
+            "Refusing HTTP 301 redirect for lineage event POST",
+        ),
+        (302, "http://example.com/api/v1/lineage", None, "Refusing HTTP 302 redirect for lineage event POST"),
+        (
+            303,
+            "http://example.com/api/v1/lineage",
+            "/accepted",
+            "Refusing HTTP 303 redirect for lineage event POST",
+        ),
+        (307, "http://example.com/api/v1/lineage", "/accepted", None),
+        (308, "http://example.com/api/v1/lineage", None, None),
+        (
+            307,
+            "http://example.com/api/v1/lineage",
+            "http://other.example/accepted",
+            "Refusing cross-origin redirect for lineage event POST: http://other.example/accepted",
+        ),
+        (307, None, "/accepted", "Refusing cross-origin redirect for lineage event POST: /accepted"),
+        (200, "http://example.com/api/v1/lineage", "http://other.example/accepted", None),
+    ],
+)
+def test_redirect_refusal(status_code, url, location, expected):
+    assert redirect_refusal(status_code, url, location) == expected
 
 
 class NotATokenProvider:

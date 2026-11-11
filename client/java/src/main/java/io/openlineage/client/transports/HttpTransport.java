@@ -27,10 +27,8 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import lombok.NonNull;
@@ -55,8 +53,10 @@ import org.apache.hc.client5.http.io.DetachedSocketFactory;
 import org.apache.hc.client5.http.io.HttpClientConnectionOperator;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
+import org.apache.hc.client5.http.utils.URIUtils;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.config.Registry;
@@ -81,7 +81,7 @@ public final class HttpTransport extends Transport {
 
   private final CloseableHttpClient http;
   private final URI uri;
-  private final RequestConfig requestConfig;
+  private @Nullable final RequestConfig requestConfig;
   private @Nullable final TokenProvider tokenProvider;
 
   private final Map<String, String> headers;
@@ -256,31 +256,40 @@ public final class HttpTransport extends Transport {
 
   public HttpTransport(
       @NonNull final CloseableHttpClient httpClient, @NonNull final HttpConfig httpConfig) {
-    this(httpClient, httpConfig, clientRequestConfig(httpClient, httpConfig));
+    this(httpClient, httpConfig, Optional.ofNullable(clientRequestConfig(httpClient)));
   }
 
-  private static RequestConfig clientRequestConfig(
-      CloseableHttpClient httpClient, HttpConfig httpConfig) {
-    if (httpClient instanceof Configurable) {
-      return ((Configurable) httpClient).getConfig();
+  /** Returns null for a non-Configurable client, so that the client's own defaults apply. */
+  private static @Nullable RequestConfig clientRequestConfig(CloseableHttpClient httpClient) {
+    if (!(httpClient instanceof Configurable)) {
+      return null;
     }
-    Timeout timeout = getTimeout(httpConfig);
-    return RequestConfig.custom()
-        .setConnectionRequestTimeout(timeout)
-        .setResponseTimeout(timeout)
-        .build();
+    RequestConfig config = ((Configurable) httpClient).getConfig();
+    return config != null ? config : RequestConfig.DEFAULT;
   }
 
   /**
    * Use this overload when an injected client wraps another client and does not expose its default
-   * {@link RequestConfig}. Pass the wrapped client's config to preserve its request settings.
+   * {@link RequestConfig}. Pass the wrapped client's config to preserve its request settings and to
+   * have this transport disable redirect handling for the event POST. Without it, the wrapped
+   * client's own defaults apply, including its redirect handling.
    */
   public HttpTransport(
       @NonNull final CloseableHttpClient httpClient,
       @NonNull final HttpConfig httpConfig,
       @NonNull final RequestConfig clientRequestConfig) {
+    this(httpClient, httpConfig, Optional.of(clientRequestConfig));
+  }
+
+  private HttpTransport(
+      CloseableHttpClient httpClient,
+      HttpConfig httpConfig,
+      Optional<RequestConfig> clientRequestConfig) {
     this.http = httpClient;
-    this.requestConfig = RequestConfig.copy(clientRequestConfig).setRedirectsEnabled(false).build();
+    this.requestConfig =
+        clientRequestConfig
+            .map(config -> RequestConfig.copy(config).setRedirectsEnabled(false).build())
+            .orElse(null);
     try {
       this.uri = getUri(httpConfig);
     } catch (URISyntaxException e) {
@@ -356,36 +365,37 @@ public final class HttpTransport extends Transport {
     log.debug("POST event on URL {}", uri);
     try {
       URI requestUri = uri;
-      Set<URI> visited = new HashSet<>();
-      visited.add(requestUri);
       int redirectCount = 0;
       while (true) {
         HttpPost request = new HttpPost(requestUri);
-        request.setConfig(requestConfig);
+        if (requestConfig != null) {
+          request.setConfig(requestConfig);
+        }
         setHeaders(request);
         setBody(request, eventAsJson);
 
-        AtomicReference<String> redirect = new AtomicReference<>();
-        http.execute(
-            request,
-            response -> {
-              int statusCode = response.getCode();
-              if ((statusCode == 307 || statusCode == 308)
-                  && response.getFirstHeader(LOCATION) != null) {
-                redirect.set(response.getFirstHeader(LOCATION).getValue());
-                EntityUtils.consume(response.getEntity());
-              } else {
-                throwOnHttpError(response);
-              }
-              return null;
-            });
-        String redirectLocation = redirect.get();
+        String redirectLocation =
+            http.execute(
+                request,
+                response -> {
+                  int statusCode = response.getCode();
+                  Header location = response.getFirstHeader(LOCATION);
+                  // A blank Location resolves to the same URL; treat it as terminal like Go/Python.
+                  if ((statusCode == 307 || statusCode == 308)
+                      && location != null
+                      && StringUtils.isNotBlank(location.getValue())) {
+                    EntityUtils.consume(response.getEntity());
+                    return location.getValue();
+                  }
+                  throwOnHttpError(response);
+                  return null;
+                });
         if (redirectLocation == null) {
           return;
         }
         URI redirectUri;
         try {
-          redirectUri = requestUri.resolve(redirectLocation);
+          redirectUri = URIUtils.resolve(requestUri, redirectLocation);
         } catch (IllegalArgumentException e) {
           throw new OpenLineageClientException("Invalid redirect location", e);
         }
@@ -393,15 +403,12 @@ public final class HttpTransport extends Transport {
           throw new OpenLineageClientException(
               "Refusing cross-origin redirect from " + requestUri + " to " + redirectUri);
         }
-        if (!visited.add(redirectUri)) {
-          throw new OpenLineageClientException("Circular redirect to " + redirectUri);
-        }
-        // The visited set catches cycles; this separately bounds long chains of distinct URLs.
-        redirectCount++;
+        // Follow at most MAX_REDIRECTS redirects; the redirect after that fails.
         if (redirectCount >= MAX_REDIRECTS) {
           throw new OpenLineageClientException(
               "Maximum redirects (" + MAX_REDIRECTS + ") exceeded");
         }
+        redirectCount++;
         requestUri = redirectUri;
       }
     } catch (IOException e) {

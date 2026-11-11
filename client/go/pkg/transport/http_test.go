@@ -265,6 +265,44 @@ func TestHTTPTransport_Emit_RefusesCrossOriginRedirect(t *testing.T) {
 	}
 }
 
+// TestHTTPTransport_Emit_ResolvesRelativeRedirectsAgainstRedirectingHop verifies that each relative
+// Location in a same-origin 307 chain is resolved against the hop that returned it.
+func TestHTTPTransport_Emit_ResolvesRelativeRedirectsAgainstRedirectingHop(t *testing.T) {
+	var mu sync.Mutex
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		paths = append(paths, r.URL.Path)
+		mu.Unlock()
+		switch r.URL.Path {
+		case "/api/v1/lineage":
+			w.Header().Set("Location", "/hop/a")
+			w.WriteHeader(http.StatusTemporaryRedirect)
+		case "/hop/a":
+			w.Header().Set("Location", "b")
+			w.WriteHeader(http.StatusTemporaryRedirect)
+		case "/hop/b":
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	tr := newHTTPTransport(t, HTTPConfig{URL: srv.URL})
+	if _, err := tr.Emit(context.Background(), map[string]string{"event": "lineage"}); err != nil {
+		t.Fatalf("Emit() error: %v", err)
+	}
+
+	mu.Lock()
+	gotPaths := append([]string(nil), paths...)
+	mu.Unlock()
+	wantPaths := []string{"/api/v1/lineage", "/hop/a", "/hop/b"}
+	if strings.Join(gotPaths, " ") != strings.Join(wantPaths, " ") {
+		t.Errorf("request paths = %v, want %v", gotPaths, wantPaths)
+	}
+}
+
 func TestSameOrigin(t *testing.T) {
 	for _, tt := range []struct {
 		first, second string

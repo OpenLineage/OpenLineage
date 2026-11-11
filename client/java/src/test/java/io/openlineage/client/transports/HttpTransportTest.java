@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineageClient;
@@ -227,7 +228,7 @@ class HttpTransportTest {
     when(response.getCode()).thenReturn(200);
 
     when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
-        .thenReturn(response);
+        .thenReturn(null);
 
     client.emit(runEvent());
 
@@ -378,7 +379,7 @@ class HttpTransportTest {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     when(response.getCode()).thenReturn(200);
     when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
-        .thenReturn(response);
+        .thenReturn(null);
 
     try (HttpTransport transport = new HttpTransport(http, config, clientConfig);
         HttpTransport built =
@@ -401,9 +402,8 @@ class HttpTransportTest {
       assertThat(actual.getResponseTimeout()).isEqualTo(Timeout.ofMilliseconds(100));
       assertThat(actual.isRedirectsEnabled()).isFalse();
     }
-    RequestConfig reset = ((Configurable) captor.getAllValues().get(2)).getConfig();
-    assertThat(reset.getResponseTimeout()).isEqualTo(Timeout.ofSeconds(5));
-    assertThat(reset.isRedirectsEnabled()).isFalse();
+    // Without a RequestConfig, the injected client's own defaults apply to the request.
+    assertThat(((Configurable) captor.getAllValues().get(2)).getConfig()).isNull();
   }
 
   @Test
@@ -425,26 +425,8 @@ class HttpTransportTest {
 
     RequestConfig clientConfig =
         RequestConfig.custom().setResponseTimeout(Timeout.ofMilliseconds(100)).build();
-    CloseableHttpClient delegate =
-        HttpClients.custom().setDefaultRequestConfig(clientConfig).build();
     CloseableHttpClient wrapped =
-        new CloseableHttpClient() {
-          @Override
-          protected CloseableHttpResponse doExecute(
-              HttpHost target, ClassicHttpRequest request, HttpContext context) throws IOException {
-            return delegate.execute(target, request, context);
-          }
-
-          @Override
-          public void close() throws IOException {
-            delegate.close();
-          }
-
-          @Override
-          public void close(CloseMode mode) {
-            delegate.close(mode);
-          }
-        };
+        wrapping(HttpClients.custom().setDefaultRequestConfig(clientConfig).build());
 
     try {
       HttpConfig config = new HttpConfig();
@@ -458,6 +440,196 @@ class HttpTransportTest {
     } finally {
       server.stop(0);
     }
+  }
+
+  @Test
+  void wrappedInjectedClientWithoutRequestConfigKeepsItsOwnTimeout() throws IOException {
+    HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          try {
+            Thread.sleep(500);
+            exchange.sendResponseHeaders(200, -1);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          } finally {
+            exchange.close();
+          }
+        });
+    server.start();
+
+    RequestConfig clientConfig =
+        RequestConfig.custom().setResponseTimeout(Timeout.ofMilliseconds(100)).build();
+    CloseableHttpClient wrapped =
+        wrapping(HttpClients.custom().setDefaultRequestConfig(clientConfig).build());
+
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      config.setTimeoutInMillis(2000);
+      // The transport must not override the wrapped client's 100ms response timeout.
+      try (HttpTransport transport = new HttpTransport(wrapped, config)) {
+        assertThrows(
+            OpenLineageClientException.class,
+            () -> new OpenLineageClient(transport).emit(runEvent()));
+      }
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void configurableClientWithNullRequestConfigDisablesRedirects() throws IOException {
+    CloseableHttpClient http =
+        mock(CloseableHttpClient.class, withSettings().extraInterfaces(Configurable.class));
+    when(((Configurable) http).getConfig()).thenReturn(null);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("http://localhost:1500"));
+
+    try (HttpTransport transport = new HttpTransport(http, config)) {
+      new OpenLineageClient(transport).emit(runEvent());
+    }
+
+    ArgumentCaptor<ClassicHttpRequest> captor = ArgumentCaptor.forClass(ClassicHttpRequest.class);
+    verify(http, times(1)).execute(captor.capture(), any(HttpClientResponseHandler.class));
+    assertThat(((Configurable) captor.getValue()).getConfig().isRedirectsEnabled()).isFalse();
+  }
+
+  @Test
+  void httpTransportFollowsExactlyMaxRedirects() throws IOException {
+    AtomicInteger requests = new AtomicInteger();
+    HttpServer server = redirectingServer(requests, 50);
+
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      try (HttpTransport transport = new HttpTransport(config)) {
+        new OpenLineageClient(transport).emit(runEvent());
+      }
+      assertThat(requests).hasValue(51);
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void httpTransportFailsOnRedirectBeyondMaxRedirects() throws IOException {
+    AtomicInteger requests = new AtomicInteger();
+    HttpServer server = redirectingServer(requests, Integer.MAX_VALUE);
+
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      try (HttpTransport transport = new HttpTransport(config)) {
+        OpenLineageClientException exception =
+            assertThrows(
+                OpenLineageClientException.class,
+                () -> new OpenLineageClient(transport).emit(runEvent()));
+        assertThat(exception).hasMessageContaining("Maximum redirects (50) exceeded");
+        assertThat(requests).hasValue(51);
+      }
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void httpTransportTreatsBlankRedirectLocationAsFailure() throws IOException {
+    AtomicInteger requests = new AtomicInteger();
+    HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          exchange.getRequestBody().readAllBytes();
+          requests.incrementAndGet();
+          exchange.getResponseHeaders().add("Location", "");
+          exchange.sendResponseHeaders(307, -1);
+          exchange.close();
+        });
+    server.start();
+
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      try (HttpTransport transport = new HttpTransport(config)) {
+        OpenLineageClient client = new OpenLineageClient(transport);
+        HttpTransportResponseException exception =
+            assertThrows(HttpTransportResponseException.class, () -> client.emit(runEvent()));
+        assertThat(exception.getStatusCode()).isEqualTo(307);
+      }
+      assertThat(requests.get()).isEqualTo(1);
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void httpTransportResolvesQueryOnlyRedirectAgainstRequestPath() throws IOException {
+    AtomicReference<String> redirectedTo = new AtomicReference<>();
+    HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          exchange.getRequestBody().readAllBytes();
+          if (exchange.getRequestURI().getQuery() == null) {
+            exchange.getResponseHeaders().add("Location", "?x=2");
+            exchange.sendResponseHeaders(307, -1);
+          } else {
+            redirectedTo.set(exchange.getRequestURI().toString());
+            exchange.sendResponseHeaders(200, -1);
+          }
+          exchange.close();
+        });
+    server.start();
+
+    try {
+      HttpConfig config = new HttpConfig();
+      config.setUrl(URI.create("http://localhost:" + server.getAddress().getPort()));
+      try (HttpTransport transport = new HttpTransport(config)) {
+        new OpenLineageClient(transport).emit(runEvent());
+      }
+      assertThat(redirectedTo.get()).isEqualTo("/api/v1/lineage?x=2");
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  /** Redirects every request to the same URL until {@code redirects} responses have been sent. */
+  private static HttpServer redirectingServer(AtomicInteger requests, int redirects)
+      throws IOException {
+    HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+    server.createContext(
+        "/api/v1/lineage",
+        exchange -> {
+          int request = requests.incrementAndGet();
+          exchange.getRequestBody().readAllBytes();
+          exchange.getResponseHeaders().add("Location", "/api/v1/lineage");
+          exchange.sendResponseHeaders(request <= redirects ? 307 : 200, -1);
+          exchange.close();
+        });
+    server.start();
+    return server;
+  }
+
+  private static CloseableHttpClient wrapping(CloseableHttpClient delegate) {
+    return new CloseableHttpClient() {
+      @Override
+      protected CloseableHttpResponse doExecute(
+          HttpHost target, ClassicHttpRequest request, HttpContext context) throws IOException {
+        return delegate.execute(target, request, context);
+      }
+
+      @Override
+      public void close() throws IOException {
+        delegate.close();
+      }
+
+      @Override
+      public void close(CloseMode mode) {
+        delegate.close(mode);
+      }
+    };
   }
 
   @Test
@@ -547,7 +719,7 @@ class HttpTransportTest {
 
     when(response.getCode()).thenReturn(200);
     when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
-        .thenReturn(response);
+        .thenReturn(null);
 
     client.emit(runEvent());
 
@@ -573,7 +745,7 @@ class HttpTransportTest {
 
     when(response.getCode()).thenReturn(200);
     when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
-        .thenReturn(response);
+        .thenReturn(null);
 
     client.emit(runEvent());
 
@@ -650,7 +822,7 @@ class HttpTransportTest {
 
     when(response.getCode()).thenReturn(200);
     when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
-        .thenReturn(response);
+        .thenReturn(null);
 
     ArgumentCaptor<ClassicHttpRequest> captor = ArgumentCaptor.forClass(ClassicHttpRequest.class);
 
@@ -689,7 +861,7 @@ class HttpTransportTest {
         .thenAnswer(
             invocation -> {
               map.put("test", invocation.getArgument(0));
-              return response;
+              return null;
             });
 
     client.emit(runEvent());
@@ -721,7 +893,7 @@ class HttpTransportTest {
         .thenAnswer(
             invocation -> {
               map.put("test", invocation.getArgument(0));
-              return response;
+              return null;
             });
 
     client.emit(runEvent());
@@ -762,7 +934,7 @@ class HttpTransportTest {
     when(response.getCode()).thenReturn(200);
 
     when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
-        .thenReturn(response);
+        .thenReturn(null);
 
     client.emit(datasetEvent());
 
@@ -781,7 +953,7 @@ class HttpTransportTest {
     when(response.getCode()).thenReturn(200);
 
     when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
-        .thenReturn(response);
+        .thenReturn(null);
 
     client.emit(jobEvent());
 
