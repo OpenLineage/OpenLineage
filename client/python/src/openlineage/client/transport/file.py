@@ -15,7 +15,7 @@ from urllib.request import url2pathname
 
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import import_from_string
+from openlineage.client.utils import config_value_to_str, import_from_string
 
 if TYPE_CHECKING:
     from openlineage.client.client import Event
@@ -75,7 +75,7 @@ class FileConfig(Config):
             raise RuntimeError(msg)
 
         config = cls(
-            log_file_path=params["log_file_path"],
+            log_file_path=config_value_to_str(params["log_file_path"]),
             append=params.get("append", False),
             storage_options=params.get("storage_options"),
             filesystem=params.get("filesystem"),

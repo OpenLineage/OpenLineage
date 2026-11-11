@@ -17,6 +17,50 @@ fn update_table() {
     );
 }
 
+/// Direct and derived MySQL joins contribute inputs without changing the UPDATE target.
+#[test]
+fn update_table_join_mysql() {
+    for source in [
+        "dataset.NewArrivals n",
+        "(SELECT product, quantity FROM dataset.NewArrivals) n",
+    ] {
+        let sql = format!(
+            "UPDATE dataset.Inventory i JOIN {source} ON i.product = n.product \
+             SET i.quantity = i.quantity + n.quantity"
+        );
+        let result = test_sql_dialect(&sql, "mysql").unwrap();
+        assert!(result.errors.is_empty());
+        assert_eq!(
+            result.table_lineage,
+            TableLineage {
+                in_tables: tables(vec!["dataset.NewArrivals"]),
+                out_tables: tables(vec!["dataset.Inventory"]),
+            },
+            "SQL: {sql}"
+        );
+    }
+}
+
+/// Subqueries in a MySQL join predicate contribute their source tables as inputs.
+#[test]
+fn update_table_join_predicate_subquery_mysql() {
+    let result = test_sql_dialect(
+        "UPDATE inventory i JOIN new_arrivals n ON i.product = n.product \
+         AND n.product IN (SELECT product FROM eligible_products) \
+         SET i.quantity = n.quantity",
+        "mysql",
+    )
+    .unwrap();
+    assert!(result.errors.is_empty());
+    assert_eq!(
+        result.table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["eligible_products", "new_arrivals"]),
+            out_tables: tables(vec!["inventory"]),
+        }
+    );
+}
+
 #[test]
 fn update_table_from() {
     assert_eq!(

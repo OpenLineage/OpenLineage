@@ -26,6 +26,50 @@ from openlineage.common.test import match
 CURRENT_DIR = str(Path(__file__).absolute().parent)
 
 
+@pytest.mark.parametrize("fixture", ["alias", "test"])
+def test_artifact_source_identifier(fixture, monkeypatch):
+    """Artifact inputs use the same physical source as column lineage and quality assertions."""
+    project_dir = f"{CURRENT_DIR}/{fixture}"
+    processor = DbtLocalArtifactProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage",
+        job_namespace="dbt",
+        project_dir=project_dir,
+        dbt_command_line=["dbt", "run", "--profiles-dir", project_dir],
+    )
+    metadata = processor.get_dbt_metadata()
+    manifest = metadata[0]
+    for source in manifest["sources"].values():
+        source["identifier"] = "api_" + source["name"]
+        source["relation_name"] = ".".join(f"`{source[key]}`" for key in ("database", "schema", "identifier"))
+    for node in manifest["nodes"].values():
+        for key in ("compiled_sql", "compiled_code"):
+            if node.get(key):
+                node[key] = (
+                    node[key].replace("source_table", "api_source_table").replace("select *", "select id")
+                )
+    monkeypatch.setattr(processor, "get_dbt_metadata", lambda: metadata)
+
+    events = processor.parse().completes
+
+    source_inputs = {
+        dataset.name for event in events for dataset in event.inputs if dataset.name.endswith("source_table")
+    }
+    assert source_inputs
+    assert all(name.endswith(".api_source_table") for name in source_inputs)
+    if fixture == "alias":
+        lineage = events[0].outputs[0].facets["columnLineage"]
+        assert {
+            field.name for column in lineage.fields.values() for field in column.inputFields
+        } == source_inputs
+    else:
+        assert any(
+            "dataQualityAssertions" in dataset.inputFacets
+            for event in events
+            for dataset in event.inputs
+            if dataset.name in source_inputs
+        )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def setup_producer():
     set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt")

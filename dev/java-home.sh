@@ -14,28 +14,41 @@
 #   3. macOS /usr/libexec/java_home.
 #   4. The inherited JAVA_HOME (what CI provides via setup-java / CI image).
 #
-# Version selection: the JAVA_VERSION environment variable (explicit
-# override, e.g. `JAVA_VERSION=21 task build`), else the first argument
-# (the component's pinned version), else 17. Java 11 is the minimum —
-# the legacy 1.x version scheme (Java 8 and older) is not supported.
+# With --strict as the first argument the result is verified: the script
+# fails unless the resolved home is a JDK of the requested major version,
+# instead of falling back to whatever JAVA_HOME happens to hold.
+#
+# Version selection: the first argument, else the JAVA_VERSION environment
+# variable, else 17. An explicit argument always wins; components that allow
+# overriding their pinned JDK (e.g. `JAVA_VERSION=21 task build`) pass
+# "${JAVA_VERSION:-<pinned>}" as the argument themselves.
 
-v="${JAVA_VERSION:-${1:-17}}"
+strict=0
+if [ "${1:-}" = "--strict" ]; then
+  strict=1
+  shift
+fi
+
+v="${1:-${JAVA_VERSION:-17}}"
 case "$v" in
   *[!0-9]* | '')
-    echo "java-home.sh: '$v' is not a valid major Java version (integer >= 11)" >&2
+    echo "java-home.sh: '$v' is not a valid major Java version (integer >= 8)" >&2
     exit 1
     ;;
 esac
-if [ "$v" -lt 11 ]; then
-  echo "java-home.sh: Java $v is not supported, the minimum is 11" >&2
+if [ "$v" -lt 8 ]; then
+  echo "java-home.sh: Java $v is not supported, the minimum is 8" >&2
   exit 1
 fi
 
 # Print the major version of the java installation at $1, e.g. 17 for
-# "17.0.12". Java 8-style "1.8.0_392" parses as major 1 and never matches.
+# "17.0.12" and 8 for legacy "1.8.0_392".
 java_major() {
   ver=$("$1/bin/java" -version 2>&1 | awk -F'"' '/version/ {print $2; exit}')
-  echo "${ver%%[.+]*}"
+  case "$ver" in
+    1.8.*) echo 8 ;;
+    *) echo "${ver%%[.+]*}" ;;
+  esac
 }
 
 # 1) The developer's shell, profile hooks applied. Skipped in CI (no user
@@ -73,4 +86,14 @@ for d in "$HOME/.sdkman/candidates/java/$v."*; do
 done
 
 # 3) macOS java_home, then 4) inherited JAVA_HOME.
-/usr/libexec/java_home -v "$v" 2>/dev/null || echo "${JAVA_HOME:-}"
+# macOS java_home treats "-v 8" as "newest JDK"; Java 8 is spelled 1.8.
+jv="$v"
+[ "$v" = 8 ] && jv=1.8
+home=$(/usr/libexec/java_home -v "$jv" 2>/dev/null || echo "${JAVA_HOME:-}")
+if [ "$strict" = 1 ]; then
+  if [ -z "$home" ] || [ ! -x "$home/bin/java" ] || [ "$(java_major "$home")" != "$v" ]; then
+    echo "java-home.sh: no JDK $v found (resolved '${home}'); install one or set JAVA_HOME to it" >&2
+    exit 1
+  fi
+fi
+echo "$home"

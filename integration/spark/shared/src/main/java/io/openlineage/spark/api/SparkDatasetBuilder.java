@@ -17,6 +17,7 @@ import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.CatalogDatasetFacetUtils;
+import io.openlineage.spark.agent.util.DatasetIdentityFacetUtils;
 import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -60,6 +61,12 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   }
 
   public SparkDatasetBuilder<T> dataset(DatasetIdentifier datasetIdentifier) {
+    if (this.name != null) {
+      // Replacing an identity: the previous one's symlinks don't belong to the new one, and the
+      // identity facets are built from the symlinks facet. Symlinks set before the first
+      // identity are kept.
+      inner.getFacets().symlinks(null);
+    }
     this.name = datasetIdentifier.getName();
     this.namespace = datasetIdentifier.getNamespace();
     dataSource(datasetIdentifier.getNamespace());
@@ -93,7 +100,7 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   }
 
   public SparkDatasetBuilder<T> symlink(List<DatasetIdentifier.Symlink> symlinks) {
-    if (!symlinks.isEmpty()) {
+    if (symlinks != null && !symlinks.isEmpty()) {
       List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinkIdentifiers =
           symlinks.stream()
               .map(
@@ -206,6 +213,18 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   public SparkDatasetBuilder<T> version(DatasetVersionDatasetFacet versionFacet) {
     inner.getFacets().version(versionFacet);
     return this;
+  }
+
+  /**
+   * Adds the facets that follow from the dataset's identity (see {@link
+   * DatasetIdentityFacetUtils}). Subclasses call this when building the dataset, so it uses the
+   * final name, namespace and {@code symlinks} facet.
+   */
+  protected void addIdentityFacets() {
+    if (name == null || namespace == null) {
+      return;
+    }
+    DatasetIdentityFacetUtils.buildIdentityFacets(context, inner, name, namespace);
   }
 
   public abstract T build();

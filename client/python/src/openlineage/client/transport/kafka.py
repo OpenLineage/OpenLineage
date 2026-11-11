@@ -11,7 +11,11 @@ from openlineage.client.facet_v2 import parent_run
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import get_only_specified_fields
+from openlineage.client.utils import (
+    config_value_to_str,
+    get_only_specified_fields,
+    optional_config_value_to_str,
+)
 from packaging.version import Version
 
 if TYPE_CHECKING:
@@ -31,10 +35,10 @@ class KafkaConfig(Config):
     config: dict[str, str]
 
     # Topic on which we should send messages
-    topic: str
+    topic: str = attr.field(converter=config_value_to_str)
 
     # Explicit key for Kafka producer
-    messageKey: str | None = None  # noqa: N815
+    messageKey: str | None = attr.field(default=None, converter=optional_config_value_to_str)  # noqa: N815
 
     # Set to true if Kafka should flush after each event. The process that emits can be killed in
     # some cases - for example in Airflow integration, so flushing is desirable there.
@@ -43,8 +47,9 @@ class KafkaConfig(Config):
     @classmethod
     def from_dict(cls: type[_T], params: dict[str, Any]) -> _T:
         # alias message_key to messageKey
-        if message_key := params.pop("message_key", None):
-            params["messageKey"] = params.get("messageKey") or message_key
+        message_key = params.pop("message_key", None)
+        if message_key is not None and params.get("messageKey") is None:
+            params["messageKey"] = message_key
         if "config" not in params:
             msg = "kafka `config` not passed to KafkaConfig"
             raise RuntimeError(msg)

@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector;
 import io.openlineage.spark3.agent.lifecycle.plan.column.OutputFieldsCollector;
+import io.openlineage.spark3.agent.utils.V2WriteQueryUtils;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -66,7 +67,8 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
       ReplaceIcebergData replaceIcebergData = (ReplaceIcebergData) node;
       NamedRelation namedRelation = replaceIcebergData.table();
 
-      LogicalPlan query = replaceIcebergData.query();
+      // a partitioned table puts the Project below the nodes requesting a write distribution
+      LogicalPlan query = V2WriteQueryUtils.unwrapWriteQuery(replaceIcebergData.query());
 
       if (query instanceof Project) {
         List<NamedExpression> queryOutputs =

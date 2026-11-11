@@ -1,0 +1,72 @@
+# OData (SAP Datasphere example) -> OpenLineage: non-secret configuration.
+# Copy to config/config.yaml (gitignored) and adjust. Secrets go in .env / VCAP_SERVICES, never here.
+# Select the active file with the DS_OL_CONFIG env var (defaults to config/config.yaml, then this example).
+
+scheduler:
+  cron: "0 * * * *"        # UTC cron (5- or 6-field). Default: hourly.
+  timezone: "UTC"
+
+datasphere:
+  # Your own SAP Datasphere tenant. Replace with your host; no real tenant URL ships in this example.
+  base_url: "https://your-tenant.your-region.hcs.cloud.sap"
+  tenant_host: "your-tenant.your-region.hcs.cloud.sap"   # used to build the OpenLineage namespace
+  # OData service root. The default is SAP Datasphere's documented consumption API; the catalog is
+  # read from <odata_base_path>/catalog. Change it to point at another OData v4 host.
+  odata_base_path: "/api/v1/datasphere/consumption"
+  request_timeout_seconds: 180
+  auth:
+    #   oauth2_client_credentials - OAuth client with purpose "API Access" (technical user). Default.
+    #   oauth2_refresh_token      - OAuth client with purpose "Interactive Usage"; get the refresh token
+    #                               once with `python -m app.oauth_login`. Acts as that user.
+    #   basic | bearer            - for generic OData v4 servers.
+    #   cookie                    - browser session cookie; dev/demo only, expires within hours.
+    type: "oauth2_client_credentials"
+    # Secret material (client secret, refresh token, ...) is resolved from env/.env/VCAP by key,
+    # not stored here. See .env.example for the expected keys per auth type.
+    # extra: {scope: "..."}   # optional OAuth scope
+  discovery:
+    # catalog:  SAP Datasphere catalog service under odata_base_path (spaces -> assets). Default.
+    # services: any OData v4 service. Each entry's standard service document is read and every
+    #           entity set becomes a dataset; "name" plays the role of a space. Paths are relative
+    #           to base_url. Datasets are emitted under the odata://<tenant_host> namespace.
+    type: "catalog"
+    # services:
+    #   - name: "SALES"
+    #     path: "/odata/v4/sales"
+
+spaces:
+  # If include is non-empty, only these spaces are scanned; exclude is then subtracted.
+  # With discovery.type "catalog", include is sent to the server as an OData $filter.
+  include: ["SAP_S4H"]
+  exclude: []
+
+lastupdated:
+  # Ordered strategies; the first that yields a value wins. Intended semantic: "last time data was written".
+  #   monitoring           - real data-write time from the admin/OAuth monitoring API (needs admin; scaffold)
+  #   max_timestamp_column - proxy: MAX() of a change-timestamp column via OData (works today)
+  #   design_time          - fallback: view deployment_date/modification_date (labeled as definition time)
+  strategies: ["max_timestamp_column", "design_time"]
+  timestamp_column_patterns:
+    - "*LastChanged*"
+    - "*LastChangeDateTime*"
+    - "*ChangedOn*"
+    - "*Timestamp*"
+    - "*UpdatedAt*"
+
+openlineage:
+  # Standard OpenLineage transport config, passed through to OpenLineageClient (vendor-neutral).
+  # Default: console (prints events; safe for local dev). To send events somewhere, point a standard
+  # transport at any OpenLineage-compatible backend, e.g. a generic http transport:
+  #   transport:
+  #     type: "http"
+  #     url: "https://<your-openlineage-endpoint>"
+  #     auth:
+  #       type: "api_key"
+  #       api_key: "${OPENLINEAGE_API_KEY}"   # ${VAR} resolved from env/.env/VCAP at runtime
+  # See https://openlineage.io/docs/client/python/#transports for all transport types.
+  transport:
+    type: "console"
+  producer: "https://github.com/OpenLineage/OpenLineage"
+
+logging:
+  level: "INFO"

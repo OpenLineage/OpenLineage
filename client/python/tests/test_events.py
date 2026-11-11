@@ -54,16 +54,19 @@ def test_run_id_uuid_check() -> None:
         run.Run(runId="1500100900", facets={})
 
 
-def test_run_event_type_validated() -> None:
+@pytest.mark.parametrize("event_type", list(RunState))
+def test_run_event_type_validated(event_type: RunState) -> None:
     valid_event = run.RunEvent(
-        RunState.START,
+        event_type,
         "2021-11-03T10:53:52.427343",
         run.Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", {}),
         run.Job("default", "name"),
         "producer",
         "schemaURL",
     )
-    with pytest.raises(ValueError, match="'eventType' must be in <enum"):
+    assert valid_event.eventType is event_type
+
+    with pytest.raises(ValueError, match="'eventType' must be in"):
         run.RunEvent(
             "asdf",
             valid_event.eventTime,

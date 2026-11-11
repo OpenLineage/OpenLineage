@@ -14,7 +14,7 @@ tasks:
   publish-local:
     env:
       JAVA_HOME:
-        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" 17'
+        sh: '"$(git rev-parse --show-toplevel)/dev/java-home.sh" "${JAVA_VERSION:-17}"'
     desc: Publish spark-extension-interfaces to Maven Local without running tests
     cmds:
       - ./gradlew clean publishToMavenLocal -x test

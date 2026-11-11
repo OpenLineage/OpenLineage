@@ -185,4 +185,25 @@ class JdbcDatasetUtilsTestForSqlServer {
         .hasFieldOrPropertyWithValue("namespace", "sqlserver://test.host.com/MYINSTANCE")
         .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
   }
+
+  @Test
+  void testGetDatasetIdentifierWithFullyQualifiedName() {
+    // the table already names its database, so the URL's one is not prepended
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:sqlserver://hostname;databaseName=MYTESTDB",
+                "MYTESTDB.dbo.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "sqlserver://hostname")
+        .hasFieldOrPropertyWithValue("name", "MYTESTDB.dbo.table1");
+
+    // a table of another database keeps its own database
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:sqlserver://hostname;databaseName=MYTESTDB",
+                "OTHERDB.dbo.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "sqlserver://hostname")
+        .hasFieldOrPropertyWithValue("name", "OTHERDB.dbo.table1");
+  }
 }

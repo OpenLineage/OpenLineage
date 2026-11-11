@@ -13,7 +13,7 @@ from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
 from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor, DbtRunContext, ModelNode
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
-from openlineage.common.provider.dbt.utils import get_dbt_profiles_dir
+from openlineage.common.provider.dbt.utils import get_dbt_command, get_dbt_profiles_dir
 
 DBT_VERSION = "0.0.1"
 JOB_NAMESPACE = "job-namespace"
@@ -151,16 +151,46 @@ def test_get_query_id_missing_adapter_response(dbt_artifact_processor, run_resul
     assert generated_query_id is None
 
 
-def test_fabric_warehouse_namespace_with_port(dbt_artifact_processor):
-    dbt_artifact_processor.adapter_type = Adapter.FABRIC
-    dbt_artifact_processor.extract_dataset_namespace(
-        {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433}
-    )
+_FABRIC_HOST = "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q"
 
-    assert (
-        dbt_artifact_processor.dataset_namespace
-        == "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1433"
-    )
+
+@pytest.mark.parametrize(
+    "profile, expected",
+    [
+        # port 1433 is the default, so it is left out
+        (
+            {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1433},
+            "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com",
+        ),
+        (
+            {"server": "myworkspace.datawarehouse.fabric.microsoft.com", "port": 1444},
+            "fabric-warehouse://myworkspace.datawarehouse.fabric.microsoft.com:1444",
+        ),
+        # the ".z8b"-style label Fabric sometimes adds is left out
+        (
+            {"server": f"{_FABRIC_HOST}.z8b.datawarehouse.fabric.microsoft.com", "port": 1433},
+            f"fabric-warehouse://{_FABRIC_HOST}.datawarehouse.fabric.microsoft.com",
+        ),
+        (
+            {"server": f"{_FABRIC_HOST.upper()}.DATAWAREHOUSE.FABRIC.MICROSOFT.COM"},
+            f"fabric-warehouse://{_FABRIC_HOST}.datawarehouse.fabric.microsoft.com",
+        ),
+        (
+            {"server": f"{_FABRIC_HOST}.zbc.datawarehouse.fabric.microsoft.com,1433"},
+            f"fabric-warehouse://{_FABRIC_HOST}.datawarehouse.fabric.microsoft.com",
+        ),
+        # a ".z8b"-style label elsewhere in the address is kept
+        (
+            {"server": "a.z8b.example.datawarehouse.fabric.microsoft.com"},
+            "fabric-warehouse://a.z8b.example.datawarehouse.fabric.microsoft.com",
+        ),
+    ],
+)
+def test_fabric_warehouse_canonical_namespace(dbt_artifact_processor, profile, expected):
+    dbt_artifact_processor.adapter_type = Adapter.FABRIC
+    dbt_artifact_processor.extract_dataset_namespace(profile)
+
+    assert dbt_artifact_processor.dataset_namespace == expected
 
 
 def test_presto_namespace(dbt_artifact_processor):
@@ -237,7 +267,19 @@ def test_athena_dataset_symlink_uses_assume_role_account(dbt_artifact_processor,
     assert facets["symlinks"].identifiers[0].type == "TABLE"
 
 
-def test_athena_dataset_symlink_uses_source_name(dbt_artifact_processor):
+@pytest.mark.parametrize(
+    "source_metadata, expected_table",
+    [
+        ({"identifier": "api_orders"}, "api_orders"),
+        ({"identifier": "raw_orders"}, "raw_orders"),
+        ({}, "raw_orders"),
+        ({"identifier": None}, "raw_orders"),
+        ({"identifier": ""}, "raw_orders"),
+    ],
+)
+@pytest.mark.parametrize("has_facets", [False, True])
+def test_athena_source_dataset_identity(dbt_artifact_processor, source_metadata, expected_table, has_facets):
+    """Dataset and Glue identities agree for physical identifiers and name fallbacks."""
     dbt_artifact_processor.adapter_type = Adapter.ATHENA
     dbt_artifact_processor.extract_dataset_namespace(
         {"region_name": "us-east-1", "assume_role_arn": "arn:aws:iam::123456789012:role/dbt-athena"}
@@ -249,12 +291,45 @@ def test_athena_dataset_symlink_uses_source_name(dbt_artifact_processor):
             "database": "awsdatacatalog",
             "schema": "analytics",
             "name": "raw_orders",
+            "columns": {},
+            **source_metadata,
         },
     )
 
-    _, _, facets, _ = dbt_artifact_processor.extract_dataset_data(source, None)
+    namespace, name, facets, _ = dbt_artifact_processor.extract_dataset_data(
+        source, None, has_facets=has_facets
+    )
 
-    assert facets["symlinks"].identifiers[0].name == "table/analytics/raw_orders"
+    assert namespace == dbt_artifact_processor.dataset_namespace
+    assert name == f"awsdatacatalog.analytics.{expected_table}"
+    assert facets["symlinks"].identifiers[0].name == f"table/analytics/{expected_table}"
+
+
+def test_athena_source_symlink_without_table_is_omitted(dbt_artifact_processor):
+    """Incomplete source metadata must not produce a Glue table identifier."""
+    dbt_artifact_processor.adapter_type = Adapter.ATHENA
+    dbt_artifact_processor.dataset_symlink_namespace = "arn:aws:glue:us-east-1:123456789012"
+
+    source = ModelNode(type="source", metadata_node={"schema": "analytics"})
+
+    assert dbt_artifact_processor._create_dataset_symlink(source) is None
+
+
+@pytest.mark.parametrize("node_type", ["model", "seed", "snapshot"])
+def test_non_source_dataset_keeps_alias(dbt_artifact_processor, node_type):
+    """Source-only identifiers must not replace materialized model, seed, or snapshot aliases."""
+    node = ModelNode(
+        type=node_type,
+        metadata_node={
+            "database": "db",
+            "schema": "public",
+            "name": "logical_name",
+            "identifier": "source_only_identifier",
+            "alias": "physical_alias",
+        },
+    )
+
+    assert dbt_artifact_processor.node_to_dataset(node).name == "db.public.physical_alias"
 
 
 def test_athena_dataset_symlink_uses_effective_profile_credentials(monkeypatch, dbt_artifact_processor):
@@ -550,8 +625,7 @@ class TestParseSingularTests:
         assert assertion.column is None
 
     def test_seed_parent_resolves_to_alias_not_name(self, processor):
-        """A seed materializes as a real table addressed by its alias, like a
-        model -- only true sources are addressed by their logical name."""
+        """Seeds use aliases like models; sources use their physical identifiers."""
         manifest_nodes = {
             "seed.project.raw_customers": {
                 "name": "raw_customers",
@@ -1038,3 +1112,186 @@ class TestDbtMetaTags:
     def test_tags_and_meta_combined(self, dbt_artifact_processor):
         facet = dbt_artifact_processor._build_tags_run_facet(["core"], {"tier": "gold"})
         assert [(t.key, t.source) for t in facet.tags] == [("core", "DBT"), ("tier", "DBT_META")]
+
+
+class TestModelRunStatus:
+    """Model runs reported as ``warn`` emit COMPLETE, matching the structured-logs path.
+
+    Regression: dbt v2 reports an unchanged Snowflake dynamic table (a no-op with
+    adapter code ``skip``) as ``warn``, which ``to_openlineage_events`` rejected with
+    ValueError."""
+
+    @pytest.fixture
+    def processor(self):
+        """Processor configured for a ``dbt run`` against Snowflake."""
+        p = DbtArtifactProcessor(
+            producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            job_namespace="ns",
+        )
+        p.manifest_version = 12
+        p.command = "run"
+        p.dataset_namespace = "snowflake://acct"
+        p.dbt_run_run_facet = MagicMock(return_value={})
+        return p
+
+    @staticmethod
+    def _ctx(status):
+        """Run context with one model whose run result has the given status."""
+        manifest = {
+            "nodes": {
+                "model.project.my_model": {
+                    "database": "DB",
+                    "schema": "SCH",
+                    "alias": "my_model",
+                    "unique_id": "model.project.my_model",
+                    "resource_type": "model",
+                    "columns": {},
+                },
+            },
+            "sources": {},
+            "exposures": {},
+            "parent_map": {"model.project.my_model": []},
+        }
+        run_results = {
+            "results": [
+                {
+                    "unique_id": "model.project.my_model",
+                    "status": status,
+                    "timing": [],
+                    "adapter_response": {"code": "skip", "rows_affected": -1},
+                }
+            ]
+        }
+        return DbtRunContext(manifest=manifest, run_results=run_results, catalog={})
+
+    @pytest.mark.parametrize("status", ["success", "warn"])
+    def test_succeeded_model_emits_complete(self, processor, status):
+        """``success`` and ``warn`` both emit START and COMPLETE, with no FAIL."""
+        context = self._ctx(status)
+        processor.manifest = context.manifest
+        events = processor.parse_execution(context, context.manifest["nodes"])
+
+        assert len(events.starts) == 1
+        assert len(events.completes) == 1
+        assert not events.fails
+
+    def test_error_model_emits_fail(self, processor):
+        """``error`` still emits FAIL, so the warn mapping does not hide real failures."""
+        context = self._ctx("error")
+        processor.manifest = context.manifest
+        events = processor.parse_execution(context, context.manifest["nodes"])
+
+        assert len(events.fails) == 1
+        assert not events.completes
+
+
+@pytest.mark.parametrize(
+    "command_line, expected",
+    [
+        (["dbt", "run", "--select", "orders"], "run"),
+        (["dbt", "build"], "build"),
+        # an option's value that happens to be a command name isn't the command
+        (["dbt", "debug", "--log-path", "run"], None),
+        (["dbt", "docs", "generate", "--select", "test"], None),
+        (["dbt", "run-operation", "build", "--args", "{}"], None),
+        # options before the command, with and without a value
+        (["dbt", "--log-path", "logs", "run"], "run"),
+        (["dbt", "--log-path=logs", "test"], "test"),
+        (["dbt", "--debug", "seed"], "seed"),
+        (["dbt", "--target", "prod", "--debug", "snapshot"], "snapshot"),
+        (["dbt", "deps"], None),
+        (["dbt", "--version"], None),
+        (["dbt"], None),
+    ],
+)
+def test_get_dbt_command_takes_the_subcommand_not_option_values(command_line, expected):
+    assert get_dbt_command(command_line) == expected
+
+
+@pytest.mark.parametrize(
+    "version,expected", [("1.10.15", "legacy"), ("1.11.0", "engine"), ("1.12.6", "engine")]
+)
+def test_project_directory_environment_precedence(monkeypatch, tmp_path, version, expected):
+    """Explicit flags win over environment variables; known versions select the supported variable."""
+    from openlineage.common.provider.dbt.utils import get_dbt_project_dir
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DBT_PROJECT_DIR", "legacy")
+    monkeypatch.setenv("DBT_ENGINE_PROJECT_DIR", "engine")
+    assert get_dbt_project_dir(["run"], engine=(1, version)) == str(tmp_path / expected)
+    assert get_dbt_project_dir(["run", "--project-dir", "explicit"]) == str(tmp_path / "explicit")
+    assert get_dbt_project_dir(["run", "--project-dir=explicit"]) == str(tmp_path / "explicit")
+
+
+def test_project_directory_parent_discovery_and_explicit_invalid_path(monkeypatch, tmp_path):
+    """Find the nearest project without silently replacing an explicitly selected invalid directory."""
+    from openlineage.common.provider.dbt.utils import get_dbt_project_dir
+
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    (tmp_path / "dbt_project.yml").write_text("name: outer")
+    project = tmp_path / "analytics"
+    project.mkdir()
+    (project / "dbt_project.yml").write_text("name: inner")
+    models = project / "models"
+    models.mkdir()
+    monkeypatch.chdir(models)
+    assert get_dbt_project_dir(["run"]) == str(project)
+    assert get_dbt_project_dir(["run", "--project-dir", "missing"]) == str(models / "missing")
+    monkeypatch.setenv("DBT_PROJECT_DIR", "also-missing")
+    assert get_dbt_project_dir(["run"]) == str(models / "also-missing")
+
+
+def test_project_directory_without_project_uses_current_directory(monkeypatch, tmp_path):
+    """Keep the current directory when no project selection or parent project exists."""
+    from openlineage.common.provider.dbt.utils import get_dbt_project_dir
+
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(tmp_path)
+    assert get_dbt_project_dir(["run"]) == str(tmp_path)
+
+
+def test_log_path_uses_selected_project(monkeypatch, tmp_path):
+    """Default logs belong to the project selected through the environment."""
+    from openlineage.common.provider.dbt.utils import get_dbt_log_path
+
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_LOG_PATH", raising=False)
+    monkeypatch.setenv("DBT_PROJECT_DIR", str(tmp_path / "analytics"))
+    monkeypatch.setattr("openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: "logs")
+    assert get_dbt_log_path(["run"]) == str(tmp_path / "analytics" / "logs" / "dbt.log")
+
+
+@pytest.mark.parametrize("source", ["flag", "legacy", "engine"])
+def test_project_directory_expands_home_before_resolving(monkeypatch, tmp_path, source):
+    """Literal home-directory shortcuts resolve correctly for flags and both environment variables."""
+    from openlineage.common.provider.dbt.utils import get_dbt_log_path, get_dbt_project_dir
+
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_ENGINE_PROJECT_DIR", raising=False)
+    monkeypatch.delenv("DBT_LOG_PATH", raising=False)
+    command = ["run"]
+    if source == "flag":
+        command.append("--project-dir=~/analytics")
+    else:
+        variable = "DBT_PROJECT_DIR" if source == "legacy" else "DBT_ENGINE_PROJECT_DIR"
+        monkeypatch.setenv(variable, "~/analytics")
+    directory = get_dbt_project_dir(command, engine=(1, "1.11.0"))
+    assert directory == str(tmp_path / "analytics")
+    monkeypatch.setattr("openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: "logs")
+    assert get_dbt_log_path(command, project_dir=directory) == str(tmp_path / "analytics/logs/dbt.log")
+
+
+@pytest.mark.parametrize("legacy,expected", [(None, "engine"), ("legacy", "legacy")])
+def test_unknown_engine_project_directory_fallback(monkeypatch, tmp_path, legacy, expected):
+    """An unknown engine honors the newer variable only when the legacy variable is absent."""
+    from openlineage.common.provider.dbt.utils import get_dbt_project_dir
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("DBT_PROJECT_DIR", raising=False)
+    if legacy:
+        monkeypatch.setenv("DBT_PROJECT_DIR", legacy)
+    monkeypatch.setenv("DBT_ENGINE_PROJECT_DIR", "engine")
+    assert get_dbt_project_dir(["send-events"]) == str(tmp_path / expected)

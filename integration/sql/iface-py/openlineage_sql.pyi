@@ -73,5 +73,6 @@ def parse(
     sql: list[str],
     dialect: str | None = None,
     default_schema: str | None = None,
+    default_database: str | None = None,
 ) -> SqlMeta: ...
 def provider() -> str: ...

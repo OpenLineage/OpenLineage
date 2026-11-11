@@ -245,7 +245,9 @@ def test_emit_raises_error_when_all_failed(mock_factory):
 
 
 @mock.patch("openlineage.client.transport.get_default_factory")
-def test_close_all_succeed(mock_factory):
+def test_close_all_succeed(mock_factory, monkeypatch):
+    """Successful children share the full budget when the clock does not advance."""
+    monkeypatch.setattr("time.monotonic", lambda: 100.0)
     mock_transport1 = MagicMock(spec=Transport)
     mock_transport2 = MagicMock(spec=Transport)
     mock_transport1.close.return_value = True
@@ -263,7 +265,9 @@ def test_close_all_succeed(mock_factory):
 
 
 @mock.patch("openlineage.client.transport.get_default_factory")
-def test_close_with_exception_raises_last_exception(mock_factory):
+def test_close_with_exception_raises_last_exception(mock_factory, monkeypatch):
+    """Attempt every child and propagate the last close failure."""
+    monkeypatch.setattr("time.monotonic", lambda: 100.0)
     mock_transport1 = MagicMock(spec=Transport)
     mock_transport2 = MagicMock(spec=Transport)
     mock_transport3 = MagicMock(spec=Transport)
@@ -290,6 +294,7 @@ def test_close_with_exception_raises_last_exception(mock_factory):
 
 @mock.patch("openlineage.client.transport.get_default_factory")
 def test_close_continues_despite_exceptions(mock_factory):
+    """A failed close must not prevent later children from cleaning up."""
     mock_transport1 = MagicMock(spec=Transport)
     mock_transport2 = MagicMock(spec=Transport)
     mock_transport3 = MagicMock(spec=Transport)
@@ -314,6 +319,7 @@ def test_close_continues_despite_exceptions(mock_factory):
 
 @mock.patch("openlineage.client.transport.get_default_factory")
 def test_close_default_timeout(mock_factory):
+    """Omitting the timeout passes the unbounded sentinel to every child."""
     mock_transport1 = MagicMock(spec=Transport)
     mock_transport2 = MagicMock(spec=Transport)
     mock_transport1.close.return_value = True
@@ -328,3 +334,74 @@ def test_close_default_timeout(mock_factory):
     assert result is True
     mock_transport1.close.assert_called_once_with(-1.0)
     mock_transport2.close.assert_called_once_with(-1.0)
+
+
+@pytest.mark.parametrize("first_duration", [4.0, 10.0, 12.0])
+@mock.patch("openlineage.client.transport.get_default_factory")
+def test_close_shares_timeout_between_children(mock_factory, monkeypatch, first_duration):
+    """Charge elapsed time once, including exhausted and exceeded budgets."""
+    clock = [100.0]
+    monkeypatch.setattr("time.monotonic", lambda: clock[0])
+    children = [MagicMock(spec=Transport), MagicMock(spec=Transport)]
+
+    def close_first(timeout):
+        """Advance virtual time and report whether this child met its budget."""
+        clock[0] += first_duration
+        return first_duration <= timeout
+
+    children[0].close.side_effect = close_first
+    children[1].close.return_value = True
+    mock_factory.return_value.create.side_effect = children
+    transport = CompositeTransport(CompositeConfig(transports=[{}, {}]))
+
+    assert transport.close(10.0) is (first_duration <= 10.0)
+    children[0].close.assert_called_once_with(10.0)
+    children[1].close.assert_called_once_with(max(0.0, 10.0 - first_duration))
+
+
+@mock.patch("openlineage.client.transport.get_default_factory")
+def test_close_deducts_time_spent_in_failing_child(mock_factory, monkeypatch):
+    """A child that raises still consumes time from the shared deadline."""
+    clock = [100.0]
+    monkeypatch.setattr("time.monotonic", lambda: clock[0])
+    children = [MagicMock(spec=Transport), MagicMock(spec=Transport)]
+    error = RuntimeError("close failed")
+
+    def close_first(timeout):
+        """Consume virtual time before reporting a cleanup failure."""
+        clock[0] += 3.0
+        raise error
+
+    children[0].close.side_effect = close_first
+    children[1].close.return_value = True
+    mock_factory.return_value.create.side_effect = children
+    transport = CompositeTransport(CompositeConfig(transports=[{}, {}]))
+
+    with pytest.raises(RuntimeError) as raised:
+        transport.close(5.0)
+
+    assert raised.value is error
+    children[1].close.assert_called_once_with(2.0)
+
+
+@pytest.mark.parametrize("timeout", [0.0, -1.0, -2.0])
+@mock.patch("openlineage.client.transport.get_default_factory")
+def test_close_preserves_immediate_and_unbounded_timeouts(mock_factory, monkeypatch, timeout):
+    """Zero permits immediate cleanup; negative values remain unbounded."""
+    clock = [100.0]
+    monkeypatch.setattr("time.monotonic", lambda: clock[0])
+    children = [MagicMock(spec=Transport), MagicMock(spec=Transport)]
+
+    def close_first(_timeout):
+        """Advance virtual time without changing the supplied timeout semantics."""
+        clock[0] += 3.0
+        return True
+
+    children[0].close.side_effect = close_first
+    children[1].close.return_value = True
+    mock_factory.return_value.create.side_effect = children
+    transport = CompositeTransport(CompositeConfig(transports=[{}, {}]))
+
+    assert transport.close(timeout) is True
+    for child in children:
+        child.close.assert_called_once_with(timeout)

@@ -74,6 +74,8 @@ dependencies {
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // Scala 2.13
+    testImplementation("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
+    testImplementation(testFixtures(project(path: ":test-commons")))
     scala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
     scala213Implementation(project(path: ":spark3", configuration: "scala213RuntimeElements"))
 
@@ -82,6 +84,7 @@ dependencies {
     scala213CompileOnly("io.delta:delta-spark_4.0_2.13:${deltaVersion}")
 
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
+    testScala213Implementation("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.hadoop:hadoop-azure:${hadoopAzureVersion}")
     testScala213Implementation(testFixtures(project(path: ":test-commons")))
     testScala213Implementation("io.delta:delta-spark_4.0_2.13:${deltaVersion}")

@@ -16,6 +16,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 
 /** Class created to collect output fields with the corresponding ExprId from LogicalPlan. */
 @Slf4j
@@ -35,6 +36,15 @@ public class OutputFieldsCollector {
   }
 
   static List<NamedExpression> getOutputExpressionsFromRoot(LogicalPlan plan) {
+    // The output columns of CTAS/RTAS are the columns of the query. Always read them from the
+    // query: some runtimes (e.g. Databricks) populate the command's own output with attributes
+    // whose ExprIds do not match the query's, which breaks the output-to-input dependency chain.
+    if (plan instanceof CreateTableAsSelect) {
+      return getOutputExpressionsFromRoot(((CreateTableAsSelect) plan).query());
+    } else if (plan instanceof ReplaceTableAsSelect) {
+      return getOutputExpressionsFromRoot(((ReplaceTableAsSelect) plan).query());
+    }
+
     List<NamedExpression> expressions =
         ScalaConversionUtils.fromSeq(plan.output()).stream()
             .filter(attr -> attr instanceof Attribute)
@@ -47,8 +57,6 @@ public class OutputFieldsCollector {
     } else if (plan instanceof Project) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Project) plan).projectList()));
-    } else if (expressions.isEmpty() && plan instanceof CreateTableAsSelect) {
-      return getOutputExpressionsFromRoot(((CreateTableAsSelect) plan).query());
     }
 
     return expressions;

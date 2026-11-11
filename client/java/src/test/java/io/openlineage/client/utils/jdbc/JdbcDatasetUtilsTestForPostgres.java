@@ -115,4 +115,14 @@ class JdbcDatasetUtilsTestForPostgres {
         .hasFieldOrPropertyWithValue("namespace", "postgres://hostname1:5432,hostname2:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
+
+  @Test
+  void testGetDatasetIdentifierWithFullyQualifiedName() {
+    // the table already names its database, so the URL's one is not prepended
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:postgresql://hostname/mydb", "mydb.schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname:5432")
+        .hasFieldOrPropertyWithValue("name", "mydb.schema.table1");
+  }
 }

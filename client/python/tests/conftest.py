@@ -23,7 +23,7 @@ def _no_git_autodetect():
     based on the repo where tests happen to run."""
     with (
         patch("openlineage.client.client.get_git_repo_url", return_value=None),
-        patch("openlineage.client.client._find_git_dir", return_value=None),
+        patch("openlineage.client.client._git_dir_from_root", return_value=None),
     ):
         yield
 
@@ -346,6 +346,7 @@ def mock_http_session():
     mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.status_code = 200
+    mock_response.is_redirect = False
     mock_client.post.return_value = mock_response
     mock_client.hooks = {"response": []}
 

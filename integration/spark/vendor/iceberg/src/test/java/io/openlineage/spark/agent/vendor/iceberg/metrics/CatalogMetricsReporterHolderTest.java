@@ -32,6 +32,8 @@ import org.junit.jupiter.api.Test;
 public class CatalogMetricsReporterHolderTest {
 
   public static final String CATALOG_NAME = "catalog-name";
+  private static final String FIRST_CATALOG_NAME = "a";
+  private static final String SECOND_CATALOG_NAME = "b";
   TestingIcebergCatalog icebergCatalog;
   OpenLineageContext context = mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
 
@@ -137,6 +139,77 @@ public class CatalogMetricsReporterHolderTest {
         .isEqualTo(1L);
   }
 
+  @Test
+  void testCommitReportNotReturnedForAnotherRun() {
+    CommitReport commitReport = mock(CommitReport.class);
+    when(commitReport.snapshotId()).thenReturn(1L);
+
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
+    getMetricsReporter(icebergCatalog).report(commitReport);
+
+    assertThat(getMetricHolder().getCommitReportFacet(1L)).isPresent();
+    // the same output can be built more than once within a run
+    assertThat(getMetricHolder().getCommitReportFacet(1L)).isPresent();
+
+    // a later run that ends at the same snapshot uses a new holder with the same reporter
+    when(context.getVendors().getVendorsContext()).thenReturn(new VendorsContext());
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
+
+    assertThat(getMetricHolder().getCommitReportFacet(1L)).isEmpty();
+  }
+
+  @Test
+  void testGetScanReportWithMultipleCatalogs() {
+    TestingIcebergCatalog first = new TestingIcebergCatalog(FIRST_CATALOG_NAME);
+    TestingIcebergCatalog second = new TestingIcebergCatalog(SECOND_CATALOG_NAME);
+    CatalogMetricsReporterHolder.register(context, first);
+    CatalogMetricsReporterHolder.register(context, second);
+
+    ScanReport firstReport = mock(ScanReport.class);
+    when(firstReport.snapshotId()).thenReturn(1L);
+    getMetricsReporter(first).report(firstReport);
+    ScanReport secondReport = mock(ScanReport.class);
+    when(secondReport.snapshotId()).thenReturn(2L);
+    getMetricsReporter(second).report(secondReport);
+
+    assertThat(getMetricHolder().getScanReportFacet(1L))
+        .isPresent()
+        .get()
+        .extracting("snapshotId")
+        .isEqualTo(1L);
+    assertThat(getMetricHolder().getScanReportFacet(2L))
+        .isPresent()
+        .get()
+        .extracting("snapshotId")
+        .isEqualTo(2L);
+  }
+
+  @Test
+  void testGetCommitReportWithMultipleCatalogs() {
+    TestingIcebergCatalog first = new TestingIcebergCatalog(FIRST_CATALOG_NAME);
+    TestingIcebergCatalog second = new TestingIcebergCatalog(SECOND_CATALOG_NAME);
+    CatalogMetricsReporterHolder.register(context, first);
+    CatalogMetricsReporterHolder.register(context, second);
+
+    CommitReport firstReport = mock(CommitReport.class);
+    when(firstReport.snapshotId()).thenReturn(1L);
+    getMetricsReporter(first).report(firstReport);
+    CommitReport secondReport = mock(CommitReport.class);
+    when(secondReport.snapshotId()).thenReturn(2L);
+    getMetricsReporter(second).report(secondReport);
+
+    assertThat(getMetricHolder().getCommitReportFacet(1L))
+        .isPresent()
+        .get()
+        .extracting("snapshotId")
+        .isEqualTo(1L);
+    assertThat(getMetricHolder().getCommitReportFacet(2L))
+        .isPresent()
+        .get()
+        .extracting("snapshotId")
+        .isEqualTo(2L);
+  }
+
   private CatalogMetricsReporterHolder getMetricHolder() {
     return ((CatalogMetricsReporterHolder)
         context.getVendors().getVendorsContext().fromVendorsContext(VENDOR_CONTEXT_KEY).get());
@@ -150,9 +223,19 @@ public class CatalogMetricsReporterHolderTest {
 
   private static class TestingIcebergCatalog extends BaseMetastoreCatalog {
 
+    private final String name;
+
+    TestingIcebergCatalog() {
+      this(CATALOG_NAME);
+    }
+
+    TestingIcebergCatalog(String name) {
+      this.name = name;
+    }
+
     @Override
     public String name() {
-      return CATALOG_NAME;
+      return name;
     }
 
     @Override

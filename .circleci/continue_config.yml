@@ -319,8 +319,9 @@ jobs:
       - run:
           name: Run tox tests
           command: |
-            uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --notest
-            uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
+            # tox 4.67.5 breaks under umask 002: https://github.com/tox-dev/tox/issues/4357
+            uv run --python << parameters.py_env >> --with "tox<4.67.5" python -m tox r -e "<< parameters.tox_env >>" --notest
+            uv run --python << parameters.py_env >> --with "tox<4.67.5" python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
   unit-tests-client-python:
     working_directory: ~/openlineage/client/python
@@ -393,6 +394,18 @@ jobs:
           paths:
             - ./dist/*.whl
             - ./dist/*.tar.gz
+
+  unit-test-integration-odata:
+    working_directory: ~/openlineage/integration/odata
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - *checkout_project_root
+      - install_uv_python
+      - run: uv sync --extra dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest tests/
 
   build-integration-common:
     working_directory: ~/openlineage/integration/common

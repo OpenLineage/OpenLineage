@@ -148,6 +148,33 @@ class JavaRuntimeCircuitBreakerTest {
   }
 
   @Test
+  void testGcTimeAccumulatedBeforeFirstCheckIsNotCounted() {
+    try (MockedStatic mocked = mockStatic(RuntimeUtils.class)) {
+      // free memory stays below the threshold, so the GC CPU time alone decides the state
+      when(RuntimeUtils.totalMemory()).thenReturn(26000L * MEGABYTE + MEGABYTE);
+      when(RuntimeUtils.freeMemory()).thenReturn(2000L * MEGABYTE - MEGABYTE);
+      when(RuntimeUtils.maxMemory()).thenReturn(30000L * MEGABYTE);
+
+      GarbageCollectorMXBean gcBean = mock(GarbageCollectorMXBean.class);
+      when(gcBean.getName()).thenReturn("oldGcBean");
+      when(gcBean.getCollectionCount()).thenReturn(2l);
+      // the JVM collected garbage for 100 seconds before the circuit breaker was first called
+      // and does not collect anything between the two checks below
+      when(gcBean.getCollectionTime())
+          .thenReturn(TimeUnit.MILLISECONDS.convert(100, TimeUnit.SECONDS));
+      when(RuntimeUtils.getGarbageCollectorMXBeans()).thenReturn(Collections.singletonList(gcBean));
+
+      JavaRuntimeCircuitBreaker circuitBreaker = new JavaRuntimeCircuitBreaker(config);
+
+      // first run only records the baseline
+      assertFalse(circuitBreaker.currentState().isClosed());
+
+      // no garbage collection happened since the baseline, so GC CPU time is 0%
+      assertFalse(circuitBreaker.currentState().isClosed());
+    }
+  }
+
+  @Test
   void testCheckInterval() {
     when(config.getCircuitCheckIntervalInMillis()).thenReturn(200);
     circuitBreaker = new JavaRuntimeCircuitBreaker(config);

@@ -1,0 +1,10 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
+transport:
+  type: http
+  url: https://lineage-endpoint
+  proxy:
+    host: squid.internal
+    port: 3128
+    nonProxyHosts: localhost,*.internal

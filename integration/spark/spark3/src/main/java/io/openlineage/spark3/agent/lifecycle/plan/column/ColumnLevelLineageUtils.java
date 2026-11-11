@@ -15,6 +15,7 @@ import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -122,6 +123,54 @@ public class ColumnLevelLineageUtils {
     return plan;
   }
 
+  /**
+   * Makes each output column of an {@link InMemoryRelation} depend on the cached plan's output
+   * column at the same position.
+   *
+   * <p>Spark serves a cached plan to a query through {@code InMemoryRelation.withOutput}, which
+   * renames the cached columns to the ones the query expects but keeps their order, so the position
+   * is reliable where names are not: Spark 4.1, for instance, answers {@code cached.select(a AS
+   * c).cache().select(c AS e)} straight from the first cache, with an {@code InMemoryRelation}
+   * whose output is {@code e} over a cached plan whose output is {@code a}.
+   *
+   * @return {@code false} when the outputs differ in size and no dependency was added
+   */
+  static boolean mapCachedOutputsByPosition(
+      ColumnLevelLineageContext context, LogicalPlan inMemoryRelation, LogicalPlan cachedPlan) {
+    List<Attribute> relationOutput = ScalaConversionUtils.fromSeq(inMemoryRelation.output());
+    List<Attribute> cachedOutput = ScalaConversionUtils.fromSeq(cachedPlan.output());
+    if (relationOutput.size() != cachedOutput.size()) {
+      return false;
+    }
+    for (int i = 0; i < relationOutput.size(); i++) {
+      context
+          .getBuilder()
+          .addDependency(
+              relationOutput.get(i).exprId(),
+              cachedOutput.get(i).exprId(),
+              relationOutput.get(i).qualifiedName());
+    }
+    return true;
+  }
+
+  private static void mapCachedOutputsByName(
+      ColumnLevelLineageContext context, LogicalPlan inMemoryRelation, LogicalPlan cachedPlan) {
+    Map<String, ExprId> idMap =
+        ScalaConversionUtils.<Attribute>fromSeq(inMemoryRelation.output()).stream()
+            .collect(Collectors.toMap(Attribute::qualifiedName, Attribute::exprId));
+
+    OutputFieldsCollector.getOutputExpressionsFromTree(cachedPlan).stream()
+        .filter(namedExpression -> idMap.containsKey(namedExpression.qualifiedName()))
+        .forEach(
+            namedExpression ->
+                context
+                    .getBuilder()
+                    .addDependency(
+                        namedExpression.exprId(),
+                        idMap.get(namedExpression.name()),
+                        namedExpression.qualifiedName()));
+  }
+
   static void collectInputsAndExpressionDependencies(
       ColumnLevelLineageContext context, LogicalPlan plan) {
     ExpressionDependencyCollector.collect(context, plan);
@@ -138,24 +187,12 @@ public class ColumnLevelLineageUtils {
                         // run self for the cached plan
                         collectInputsAndExpressionDependencies(context, cachedPlan);
 
-                        // map outputs of cachedPlan onto inputs of InMemoryRelation
-                        Map<String, ExprId> idMap =
-                            ScalaConversionUtils.<Attribute>fromSeq(node.output()).stream()
-                                .collect(
-                                    Collectors.toMap(Attribute::qualifiedName, Attribute::exprId));
-
-                        OutputFieldsCollector.getOutputExpressionsFromTree(cachedPlan).stream()
-                            .filter(
-                                namedExpression ->
-                                    idMap.containsKey(namedExpression.qualifiedName()))
-                            .forEach(
-                                namedExpression ->
-                                    context
-                                        .getBuilder()
-                                        .addDependency(
-                                            namedExpression.exprId(),
-                                            idMap.get(namedExpression.name()),
-                                            namedExpression.qualifiedName()));
+                        // Map outputs of cachedPlan onto inputs of InMemoryRelation. Matching by
+                        // name as well would add links in the opposite direction, which chain
+                        // into wrong lineage when the query swaps column names.
+                        if (!mapCachedOutputsByPosition(context, node, cachedPlan)) {
+                          mapCachedOutputsByName(context, node, cachedPlan);
+                        }
                       });
             }
             return scala.runtime.BoxedUnit.UNIT;

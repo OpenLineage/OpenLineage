@@ -23,6 +23,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
@@ -32,6 +33,8 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import scala.collection.immutable.Map$;
 
@@ -193,5 +196,69 @@ class JdbcRelationHandlerTest {
     List datasets = jdbcRelationHandler.getDatasets(relation);
     assertTrue(datasets.isEmpty());
     verify(datasetFactory.sparkDatasetBuilder(), never()).dataset(any(DatasetIdentifier.class));
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "jdbc:postgresql://localhost:5432/app|app.public.orders|app.public.orders",
+        "jdbc:postgresql://localhost:5432/app|app.public.\"Orders\"|app.public.\"Orders\"",
+        "jdbc:sqlserver://localhost:1433;databaseName=app|app.dbo.orders|app.dbo.orders",
+        "jdbc:sqlserver://localhost:1433;databaseName=app|otherdb.dbo.orders|otherdb.dbo.orders"
+      })
+  void testDbTableWithDatabaseKeepsItsDatabase(String url, String dbtable, String expectedName) {
+    assertEquals(expectedName, getDatasetOfDbTable(url, dbtable).getName());
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "jdbc:postgresql://localhost:5432/app|orders|app.orders",
+        "jdbc:postgresql://localhost:5432/app|public.orders|app.public.orders",
+        "jdbc:sqlserver://localhost:1433;databaseName=app|dbo.orders|app.dbo.orders",
+        "jdbc:mysql://localhost:3306/app|orders|app.orders",
+        "jdbc:mysql://localhost:3306/app|sales.orders|sales.orders"
+      })
+  void testDbTableWithoutDatabaseGetsUrlDatabase(String url, String dbtable, String expectedName) {
+    assertEquals(expectedName, getDatasetOfDbTable(url, dbtable).getName());
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "jdbc:postgresql://localhost:5432/app|select id from app.public.orders|app.public.orders",
+        "jdbc:sqlserver://localhost:1433;databaseName=app|select id from otherdb.dbo.orders|otherdb.dbo.orders"
+      })
+  void testQueryReadingTableWithDatabaseKeepsItsDatabase(
+      String url, String query, String expectedName) {
+    when(jdbcOptions.url()).thenReturn(url);
+    when(jdbcOptions.asConnectionProperties()).thenReturn(new Properties());
+    when(jdbcOptions.tableOrQuery()).thenReturn("(" + query + ") SPARK_GEN_SUBQ_0");
+
+    jdbcRelationHandler.getDatasets(relation);
+
+    ArgumentCaptor<DatasetIdentifier> diCaptor = ArgumentCaptor.forClass(DatasetIdentifier.class);
+    verify(datasetFactory.sparkDatasetBuilder(), times(1)).dataset(diCaptor.capture());
+    assertEquals(expectedName, diCaptor.getValue().getName());
+  }
+
+  private DatasetIdentifier getDatasetOfDbTable(String url, String dbtable) {
+    CaseInsensitiveMap params =
+        CaseInsensitiveMap$.MODULE$.apply(
+            ScalaConversionUtils.fromJavaMap(
+                Collections.singletonMap(JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), dbtable)));
+    when(jdbcOptions.parameters()).thenReturn(params);
+    when(jdbcOptions.tableOrQuery()).thenReturn(dbtable);
+    when(jdbcOptions.url()).thenReturn(url);
+    when(jdbcOptions.asConnectionProperties()).thenReturn(new Properties());
+
+    jdbcRelationHandler.getDatasets(relation);
+
+    ArgumentCaptor<DatasetIdentifier> diCaptor = ArgumentCaptor.forClass(DatasetIdentifier.class);
+    verify(datasetFactory.sparkDatasetBuilder(), times(1)).dataset(diCaptor.capture());
+    return diCaptor.getValue();
   }
 }

@@ -35,6 +35,17 @@
               "type": "string",
               "description": "dbt cloud account id",
               "example": "1234567890"
+            },
+            "pre_parse": {
+              "type": "string",
+              "description": "dbt Core v2 only: how the `dbt parse` that dbt-ol runs before the command went. Node events take their inputs from its manifest; without it, they wait for the manifest dbt writes at the end of the run.",
+              "enum": ["succeeded", "failed", "timed_out", "skipped"],
+              "example": "succeeded"
+            },
+            "write_json": {
+              "type": "boolean",
+              "description": "dbt Core v2 only: whether dbt writes manifest.json and run_results.json at the end of the run.",
+              "example": true
             }
           },
           "required": ["invocation_id"]

@@ -10,7 +10,7 @@ use anyhow::Result;
 use pyo3::basic::CompareOp;
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use rust_impl::{get_generic_dialect, parse_multiple_statements};
+use rust_impl::{get_generic_dialect, parse_multiple_statements_with_default_database};
 
 #[pyclass(from_py_object)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -400,13 +400,20 @@ impl SqlMeta {
 }
 
 // Parses SQL.
-#[pyfunction(signature = (sql, dialect=None, default_schema=None))]
+#[pyfunction(signature = (sql, dialect=None, default_schema=None, default_database=None))]
 fn parse(
     sql: Vec<String>,
     dialect: Option<String>,
     default_schema: Option<String>,
+    default_database: Option<String>,
 ) -> Result<SqlMeta> {
-    parse_multiple_statements(sql, get_generic_dialect(dialect), default_schema).map(SqlMeta::new)
+    parse_multiple_statements_with_default_database(
+        sql,
+        get_generic_dialect(dialect),
+        default_schema,
+        default_database,
+    )
+    .map(SqlMeta::new)
 }
 
 #[pyfunction]
@@ -474,6 +481,7 @@ fn test_python_conversion() {
             FROM cte1
             JOIN cte2 ON cte1.col2 = cte2.col4"
             .to_string()],
+        None,
         None,
         None,
     )

@@ -140,9 +140,6 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionH
             validOutputs.stream().map(Entity::getName).collect(Collectors.joining(",")));
         return;
       }
-      if (hookContext.getQueryPlan().getOperation() == HiveOperation.IMPORT) {
-        log.debug("aaaaaa");
-      }
       OpenLineage.RunEvent.EventType eventType = getEventType(hookContext);
       OpenLineageContext olContext =
           OpenLineageContext.builder()

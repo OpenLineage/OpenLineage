@@ -1,10 +1,10 @@
 [build-system]
-requires = ["uv_build>=0.9.4,<0.13.0"]
+requires = ["uv_build>=0.9.4,<0.14.0"]
 build-backend = "uv_build"
 
 [project]
 name = "openlineage-python"
-version = "1.54.0"
+version = "1.56.0"
 description = "OpenLineage Python Client"
 readme = "README.md"
 license = "Apache-2.0"
@@ -157,7 +157,8 @@ addopts = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-requires = tox-uv
+# tox 4.67.5 breaks under umask 002: https://github.com/tox-dev/tox/issues/4357
+requires = tox-uv, tox<4.67.5
 env_list = py310,py311,py312,py313,py314
 skip_missing_interpreters = true
 
@@ -188,7 +189,7 @@ commands =
 """
 
 [tool.bumpversion]
-current_version = "1.54.0"
+current_version = "1.56.0"
 commit = false
 tag = false
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<rc>.*)"

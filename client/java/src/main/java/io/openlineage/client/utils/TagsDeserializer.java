@@ -75,7 +75,8 @@ public class TagsDeserializer extends JsonDeserializer<List<TagField>> {
               .map(JsonNode::asText)
               .filter(StringUtils::isNotBlank)
               .map(this::preprocessEscapes);
-    } else if (node.isTextual()) {
+    } else if (node.isValueNode() && !node.isNull()) {
+      // Also accept a single number or boolean, e.g. OPENLINEAGE__JOB__TAGS=4521 parsed as JSON
       tagText =
           Arrays.stream(preprocessEscapes(node.asText()).split(";"))
               .filter(StringUtils::isNotBlank);

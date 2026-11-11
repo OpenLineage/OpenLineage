@@ -22,9 +22,11 @@ from openlineage.client.facet_v2 import (
 from openlineage.client.facets import FacetsConfig, SourceCodeLocationConfig
 from openlineage.client.filter import Filter, FilterConfig, create_filter
 from openlineage.client.git import (
-    _find_git_dir,
+    _find_git_root,
+    _git_dir_from_root,
     get_ci_pr_number,
     get_git_branch,
+    get_git_project_path,
     get_git_repo_url,
     get_git_tag,
     get_git_version,
@@ -38,7 +40,7 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
-from openlineage.client.utils import deep_merge_dicts, split_into_list
+from openlineage.client.utils import EnvFloat, EnvInt, deep_merge_dicts, split_into_list
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -117,7 +119,11 @@ class OpenLineageClient:
         factory: TransportFactory | None = None,
         *,
         config: dict[str, Any] | None = None,
+        source_code_location_dir: str | None = None,
     ) -> None:
+        # Look for Git metadata from the selected project folder.
+        """Configure event delivery and the directory used for optional source-location discovery."""
+        self._source_code_location_dir = source_code_location_dir
         # Set parent's logging level if environment variable is present
         custom_logging_level = os.getenv("OPENLINEAGE_CLIENT_LOGGING", None)
         if custom_logging_level:
@@ -429,22 +435,39 @@ class OpenLineageClient:
 
         for env_key, env_value in env_vars:
             keys = env_key[len(cls.DYNAMIC_ENV_VARS_PREFIX) :].split("__")
-
-            # Parse value (try to parse as JSON, otherwise lowercase the value)
-            try:
-                env_value = json.loads(env_value)  # noqa: PLW2901
-            except json.JSONDecodeError as err:
-                if any(c in env_value for c in "{}[]"):
-                    log.warning(
-                        "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "
-                        "Treating as plain string. Error: %s",
-                        env_key,
-                        env_value,
-                        err,
-                    )
-            cls._insert_into_config(config, keys, env_value)
+            cls._insert_into_config(config, keys, cls._parse_env_value(env_key, env_value))
 
         return config
+
+    @staticmethod
+    def _parse_env_value(env_key: str, env_value: str) -> Any:
+        """Decode an `OPENLINEAGE__*` value as JSON, falling back to the raw string.
+
+        String-typed settings turn decoded booleans and numbers back into text with
+        `config_value_to_str`. Numbers whose JSON text does not round-trip, such as `0.50`, `1e5`
+        or `1234e5678` (which decodes to `inf`), are returned as `EnvFloat`/`EnvInt`: numeric
+        settings use them as numbers, and string settings such as tag values, API keys or paths
+        get the text as written.
+        """
+        try:
+            value = json.loads(env_value)
+        except ValueError as err:  # JSONDecodeError, or an int too long to convert
+            if any(c in env_value for c in "{}[]"):
+                log.warning(
+                    "OpenLineage failed to parse value of environment variable `%s` as JSON: `%s`. "
+                    "Treating as plain string. Error: %s",
+                    env_key,
+                    env_value,
+                    err,
+                )
+            return env_value
+        if (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and json.dumps(value) != env_value.strip()
+        ):
+            return EnvFloat(value, env_value) if isinstance(value, float) else EnvInt(value, env_value)
+        return value
 
     @staticmethod
     def _insert_into_config(config: dict[str, Any], key_path: list[str], value: str) -> None:
@@ -594,6 +617,7 @@ class OpenLineageClient:
 
     @cached_property
     def _source_code_location(self) -> dict[str, str | None] | None:
+        """Discover and cache source metadata, honoring configured overrides and the selected project."""
         scl = self.config.facets.source_code_location
 
         url: str | None = scl.repo_url
@@ -602,9 +626,13 @@ class OpenLineageClient:
         tag: str | None = scl.tag
         pr_number: str | None = scl.pull_request_number
 
+        path = None
         try:
-            git_dir = _find_git_dir()
+            root = _find_git_root(self._source_code_location_dir)
+            git_dir = _git_dir_from_root(root)
             if git_dir:
+                if self._source_code_location_dir is not None and root is not None:
+                    path = get_git_project_path(self._source_code_location_dir, root)
                 if url is None:
                     url = get_git_repo_url(git_dir=git_dir)
                 if sha is None:
@@ -622,7 +650,14 @@ class OpenLineageClient:
         if url is None:
             return None
 
-        return {"url": url, "version": sha, "branch": branch, "tag": tag, "pullRequestNumber": pr_number}
+        return {
+            "url": url,
+            "version": sha,
+            "branch": branch,
+            "tag": tag,
+            "pullRequestNumber": pr_number,
+            "path": path,
+        }
 
     def add_source_code_location_facet(self, event: Event) -> Event:
         """Adds sourceCodeLocation job facet if not already present and not disabled."""
@@ -641,6 +676,7 @@ class OpenLineageClient:
                 type="git",
                 url=scl["url"],
                 repoUrl=scl["url"],
+                path=scl["path"],
                 version=scl["version"],
                 branch=scl["branch"],
                 tag=scl["tag"],

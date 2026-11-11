@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -300,10 +301,14 @@ class OpenLineageRunEventBuilder {
     if (!datasets.isEmpty()) {
       Map<String, InputDatasetFacet> inputFacetsMap = new HashMap<>();
       nodes.forEach(
-          event -> inputDatasetFacetBuilders.forEach(fn -> fn.accept(event, inputFacetsMap::put)));
+          event ->
+              inputDatasetFacetBuilders.forEach(
+                  fn -> applyFacetBuilder(fn, event, inputFacetsMap::put)));
       Map<String, DatasetFacet> datasetFacetsMap = new HashMap<>();
       nodes.forEach(
-          event -> datasetFacetBuilders.forEach(fn -> fn.accept(event, datasetFacetsMap::put)));
+          event ->
+              datasetFacetBuilders.forEach(
+                  fn -> applyFacetBuilder(fn, event, datasetFacetsMap::put)));
       return datasets.stream()
           .map(
               ds ->
@@ -386,10 +391,13 @@ class OpenLineageRunEventBuilder {
       Map<String, OutputDatasetFacet> outputFacetsMap = new HashMap<>();
       nodes.forEach(
           event ->
-              outputDatasetFacetBuilders.forEach(fn -> fn.accept(event, outputFacetsMap::put)));
+              outputDatasetFacetBuilders.forEach(
+                  fn -> applyFacetBuilder(fn, event, outputFacetsMap::put)));
       Map<String, DatasetFacet> datasetFacetsMap = new HashMap<>();
       nodes.forEach(
-          event -> datasetFacetBuilders.forEach(fn -> fn.accept(event, datasetFacetsMap::put)));
+          event ->
+              datasetFacetBuilders.forEach(
+                  fn -> applyFacetBuilder(fn, event, datasetFacetsMap::put)));
       return datasets.stream()
           .map(
               ds -> {
@@ -461,7 +469,7 @@ class OpenLineageRunEventBuilder {
                                 .map(Object::getClass)
                                 .map(Class::getCanonicalName)
                                 .orElse(""))
-                        .record(() -> fn.accept(event, jobFacetsBuilder::put))));
+                        .record(() -> applyFacetBuilder(fn, event, jobFacetsBuilder::put))));
     return jobFacetsBuilder.build();
   }
 
@@ -501,13 +509,39 @@ class OpenLineageRunEventBuilder {
                                 .orElse(""))
                         .record(
                             () -> {
-                              fn.accept(event, runFacetsBuilder::put);
+                              applyFacetBuilder(fn, event, runFacetsBuilder::put);
                             })));
     return runFacetsBuilder.build();
   }
 
   public RunFacets buildRunFacets(SparkListenerEvent event, RunFacetsBuilder builder) {
-    runFacetBuilders.forEach(customFacetBuilder -> customFacetBuilder.accept(event, builder::put));
+    runFacetBuilders.forEach(
+        customFacetBuilder -> applyFacetBuilder(customFacetBuilder, event, builder::put));
     return builder.build();
+  }
+
+  /**
+   * Applies a single facet builder, so that a failing builder only loses its own facet instead of
+   * the whole event. {@link LinkageError}s are caught as well, as they are typically caused by
+   * incompatible versions of libraries a builder depends on. Other {@link Error}s, such as {@link
+   * OutOfMemoryError}, are not caught.
+   */
+  private static <F> void applyFacetBuilder(
+      CustomFacetBuilder<?, F> builder, Object event, BiConsumer<String, ? super F> consumer) {
+    // A timeout cancels the build by interrupting this thread and discards its result, so the
+    // remaining builders would only do wasted work.
+    if (Thread.currentThread().isInterrupted()) {
+      return;
+    }
+    try {
+      builder.accept(event, consumer);
+    } catch (Exception | LinkageError e) {
+      log.warn(
+          "Facet builder {} failed for {}: {}",
+          builder.getClass().getName(),
+          event == null ? null : event.getClass().getName(),
+          e.toString());
+      log.debug("Facet builder failure", e);
+    }
   }
 }

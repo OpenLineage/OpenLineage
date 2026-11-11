@@ -749,6 +749,37 @@ class TestDatadogTransportMethods:
 class TestDatadogTransportAsyncRules:
     """Test async transport rules functionality."""
 
+    @pytest.mark.parametrize(
+        ("integration", "job_type", "rules", "use_async"),
+        [
+            ("dbt", None, {"dbt": {"*": True}}, True),
+            ("dbt", "", {"dbt": {"*": True}}, True),
+            ("dbt", None, {"dbt": {"model": True}}, False),
+            ("dbt", "", {"dbt": {"model": True}}, False),
+            ("dbt", None, {"dbt": {"*": False}}, False),
+            (None, "model", {"dbt": {"*": True}}, False),
+            ("", "model", {"dbt": {"*": True}}, False),
+            (None, None, {"*": {"*": True}}, True),
+        ],
+    )
+    @patch("openlineage.client.transport.datadog.HttpTransport")
+    @patch("openlineage.client.transport.datadog.AsyncHttpTransport")
+    def test_routing_with_empty_job_type_fields(
+        self, mock_async_http, mock_http, integration, job_type, rules, use_async
+    ):
+        config = DatadogConfig.from_dict({"apiKey": "test-key", "async_transport_rules": rules})
+        transport = DatadogTransport(config)
+        event = self._create_event(integration, job_type)
+
+        transport.emit(event)
+
+        if use_async:
+            mock_async_http.return_value.emit.assert_called_once_with(event)
+            mock_http.return_value.emit.assert_not_called()
+        else:
+            mock_http.return_value.emit.assert_called_once_with(event)
+            mock_async_http.assert_not_called()
+
     def _create_event(self, integration: str, job_type: str) -> RunEvent:
         """Helper method to create events with JobTypeJobFacet."""
         job_facets = {

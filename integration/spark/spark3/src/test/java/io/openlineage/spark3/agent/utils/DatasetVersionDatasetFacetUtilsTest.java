@@ -20,6 +20,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.iceberg.exceptions.ServiceFailureException;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 import org.apache.spark.sql.connector.catalog.Identifier;
@@ -112,6 +113,29 @@ class DatasetVersionDatasetFacetUtilsTest {
           Optional.of("some-version"),
           DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
               openLineageContext, v2Relation));
+    }
+  }
+
+  /** A catalog failure while loading the table must not escape and drop the whole dataset. */
+  @Test
+  void testExtractVersionReturnsEmptyWhenCatalogLookupFails() {
+    when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
+    when(v2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
+    when(v2Relation.table()).thenReturn(table);
+    when(table.properties()).thenReturn(tableProperties);
+
+    try (MockedStatic<CatalogUtils> mocked = mockStatic(CatalogUtils.class)) {
+      when(CatalogUtils.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenThrow(new ServiceFailureException("Service failed: 503"));
+
+      assertEquals(
+          Optional.empty(),
+          DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
+
+      mocked.verify(
+          () -> CatalogUtils.getOwningCatalogFromRelation(openLineageContext, v2Relation), never());
     }
   }
 

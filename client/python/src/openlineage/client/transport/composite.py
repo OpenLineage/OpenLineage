@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
@@ -157,11 +158,19 @@ class CompositeTransport(Transport):
         return
 
     def close(self, timeout: float = -1) -> bool:
+        """Close every child, sharing a nonnegative timeout across their close calls.
+
+        Children are still closed with a zero timeout once the budget is exhausted.
+        A negative timeout remains unbounded. Each child must honor its own timeout;
+        this method cannot interrupt a blocking child implementation.
+        """
         result = True
         last_exception: Exception | None = None
+        deadline = time.monotonic() + timeout if timeout >= 0 else None
         for transport in self.transports:
             try:
-                result = transport.close(timeout) and result
+                remaining = max(0.0, deadline - time.monotonic()) if deadline is not None else timeout
+                result = transport.close(remaining) and result
             except Exception as e:
                 log.exception("Error while closing transport %s", transport)
                 last_exception = e

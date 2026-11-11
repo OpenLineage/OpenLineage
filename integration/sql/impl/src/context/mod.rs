@@ -26,6 +26,9 @@ pub struct ContextFrame {
     aliases: AliasTable,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
     pub dependencies: HashSet<DbTableMeta>,
+    // Dependencies written without a schema or database. Only these can name a
+    // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
+    pub bare_dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
     pub is_main_body: bool,
 }
@@ -44,6 +47,7 @@ impl ContextFrame {
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
             dependencies: HashSet::new(),
+            bare_dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
             is_main_body: true,
         }
@@ -257,6 +261,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn add_table_dependency(&mut self, table: Vec<Ident>) {
+        let is_bare = table.len() == 1;
         let name = DbTableMeta::new(
             table,
             self.dialect,
@@ -265,6 +270,9 @@ impl<'a> Context<'a> {
         );
 
         if let Some(frame) = self.frames.last_mut() {
+            if is_bare {
+                frame.bare_dependencies.insert(name.clone());
+            }
             frame.dependencies.extend(vec![name]);
         }
     }
@@ -279,20 +287,17 @@ impl<'a> Context<'a> {
         false
     }
 
-    pub fn mark_table_as_used(&mut self, table: Vec<Ident>) {
-        let name = DbTableMeta::new(
-            table,
-            self.dialect,
-            self.default_schema.clone(),
-            self.default_database.clone(),
-        );
-
+    /// Marks the CTE referenced as `table` as used, so its dependencies are
+    /// collected as inputs.
+    ///
+    /// CTEs are keyed by their bare alias, so the lookup uses the reference
+    /// exactly as written (the same key as [`Context::has_alias`]) rather than
+    /// a name qualified with the default schema/database. A qualified
+    /// reference such as `schema.c` therefore never matches CTE `c`.
+    pub fn mark_table_as_used(&mut self, table: String) {
         for frame in self.frames.iter_mut().rev() {
-            if frame.cte_dependencies.contains_key(&name.qualified_name()) {
-                if let Some(cte) = frame.cte_dependencies.get_mut(&name.qualified_name()) {
-                    cte.is_used = true;
-                }
-
+            if let Some(cte) = frame.cte_dependencies.get_mut(&table) {
+                cte.is_used = true;
                 return;
             }
         }
@@ -371,6 +376,7 @@ impl<'a> Context<'a> {
 
         frame.column_ancestry = result;
         frame.dependencies.extend(old.dependencies);
+        frame.bare_dependencies.extend(old.bare_dependencies);
         frame.is_main_body = old.is_main_body;
     }
 
@@ -423,6 +429,7 @@ impl<'a> Context<'a> {
         if let Some(frame) = self.frames.last_mut() {
             frame.column_ancestry.extend(old.column_ancestry.drain());
             frame.dependencies.extend(old.dependencies);
+            frame.bare_dependencies.extend(old.bare_dependencies);
             frame.is_main_body = old.is_main_body;
         }
     }
@@ -469,6 +476,7 @@ impl<'a> Context<'a> {
             }
 
             frame.dependencies.extend(old.dependencies);
+            frame.bare_dependencies.extend(old.bare_dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
             frame.is_main_body = old.is_main_body;
         }
@@ -531,20 +539,38 @@ impl<'a> Context<'a> {
             );
 
             frame.dependencies = HashSet::new();
+            frame.bare_dependencies = HashSet::new();
         }
     }
 
-    pub fn adjust_cte_dependencies(&mut self, cte_name: String) {
+    /// Resolves the dependencies collected for CTE `cte_name`. `recursive` is
+    /// whether the CTE's own name is in scope inside its body: true for
+    /// `WITH RECURSIVE`, and in dialects such as Snowflake where any CTE may
+    /// refer to itself. Otherwise a reference to that name is the real table.
+    pub fn adjust_cte_dependencies(&mut self, cte_name: String, recursive: bool) {
         // filter upper level deps
         let size = self.frames.iter().clone().len();
 
         let dependencies = self.frames[size - 1].dependencies.clone();
         let cte_dependencies = self.frames[size - 1].cte_dependencies.clone();
 
+        let bare_dependencies = self.frames[size - 1].bare_dependencies.clone();
+
         let mut resolved_dependencies = HashSet::new();
 
         for dependency in dependencies {
+            // CTEs are keyed by their bare alias, so only a reference written
+            // without a schema or database can point at one; `raw.orders` and
+            // `public.orders` stay real tables even inside CTE `orders`.
+            if !bare_dependencies.contains(&dependency) {
+                resolved_dependencies.insert(dependency.clone());
+                continue;
+            }
+
             if cte_name.clone() == dependency.name {
+                if !recursive {
+                    resolved_dependencies.insert(dependency.clone());
+                }
                 continue;
             }
 
@@ -566,6 +592,7 @@ impl<'a> Context<'a> {
                 },
             );
             frame.dependencies = HashSet::new();
+            frame.bare_dependencies = HashSet::new();
         }
     }
 
@@ -573,6 +600,9 @@ impl<'a> Context<'a> {
         if let Some(frame) = self.frames.last_mut() {
             frame.is_main_body = old.is_main_body;
             frame.dependencies.extend(old.dependencies.clone());
+            frame
+                .bare_dependencies
+                .extend(old.bare_dependencies.clone());
             frame.cte_dependencies.extend(old.cte_dependencies.clone());
 
             for (alias, t) in old.aliases.tables() {

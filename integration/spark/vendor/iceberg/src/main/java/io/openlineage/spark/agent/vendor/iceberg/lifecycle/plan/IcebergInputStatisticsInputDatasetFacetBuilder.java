@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.vendor.iceberg.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
+import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.lang.reflect.InvocationTargetException;
@@ -45,7 +46,7 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
 
   @Override
   public boolean isDefinedAt(Object x) {
-    if (!(x instanceof Scan)) {
+    if (!(x instanceof Scan) || FacetUtils.isFacetDisabled(context, "inputStatistics")) {
       return false;
     }
 
@@ -74,7 +75,8 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
               .filter(ScanTask::isFileScanTask)
               .map(ScanTask::asFileScanTask)
               .map(FileScanTask::file)
-              .collect(Collectors.toMap(ContentFile::path, f -> f))
+              // the same file can appear in more than one task, e.g. when it is split
+              .collect(Collectors.toMap(f -> f.path().toString(), f -> f, (a, b) -> a))
               .values();
 
       consumer.accept(
@@ -86,7 +88,12 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
               .size(dataFiles.stream().map(ContentFile::fileSizeInBytes).reduce(0L, Long::sum))
               .rowCount(dataFiles.stream().map(ContentFile::recordCount).reduce(0L, Long::sum))
               .build());
-    } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+    } catch (NoSuchMethodException e) {
+      // some scans, like SparkStagedScan or SparkChangelogScan, don't expose tasks()
+      log.debug(
+          "Iceberg scan class {} has no tasks() method, skipping input statistics",
+          scan.getClass().getCanonicalName());
+    } catch (InvocationTargetException | IllegalAccessException e) {
       // do nothing
       log.warn(
           "Failed to extract input statistics from Iceberg scan class {}",

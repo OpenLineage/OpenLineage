@@ -63,6 +63,10 @@ class DbtRunRunFacet(BaseFacet):
     account_id: str | None = attr.field(default=None)
     # Run-wide --full-refresh flag for the invocation; None when it wasn't set.
     full_refresh: bool | None = attr.field(default=None)
+    # dbt Core v2 only, on the wrapper run: how the `dbt parse` before the command went (succeeded, failed,
+    # timed_out or skipped), and whether dbt writes manifest.json at the end of the run.
+    pre_parse: str | None = attr.field(default=None)
+    write_json: bool | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
@@ -224,6 +228,8 @@ class DbtNodeJobFacet(JobFacet):
     alias: str | None = attr.field(default=None)
     unique_id: str | None = attr.field(default=None)
     test_type: str | None = attr.field(default=None)
+    # Unit tests only: the node the test checks. A unit test runs on mocked rows, so it has no input dataset.
+    tested_node_unique_id: str | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:

@@ -6,8 +6,10 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -15,20 +17,26 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.client.circuitBreaker.TimeoutCircuitBreakerConfig;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
+import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.TimeoutConfig;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import lombok.SneakyThrows;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.ActiveJob;
@@ -37,12 +45,16 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import scala.PartialFunction;
 import scala.collection.JavaConverters;
 
 class OpenLineageRunEventBuilderTest {
 
   public static final String DEBUG = "debug";
+  private static final String WORKING_FACET = "working";
+  private static final String NAMESPACE = "ns";
   SparkSession session = mock(SparkSession.class);
   OpenLineageContext openLineageContext;
   SparkOpenLineageConfig config = mock(SparkOpenLineageConfig.class, RETURNS_DEEP_STUBS);
@@ -90,10 +102,10 @@ class OpenLineageRunEventBuilderTest {
         .thenReturn(
             openLineage.newParentRunFacet(
                 openLineage.newParentRunFacetRun(UUID.randomUUID(), null),
-                openLineage.newParentRunFacetJob("ns", "jobName", null),
+                openLineage.newParentRunFacetJob(NAMESPACE, "jobName", null),
                 openLineage.newParentRunFacetRoot(
                     openLineage.newRootRun(UUID.randomUUID(), null),
-                    openLineage.newRootJob("ns", "rootJobName", null))));
+                    openLineage.newRootJob(NAMESPACE, "rootJobName", null))));
     when(runEventContext.loadNodes(anyMap(), anyMap()))
         .thenReturn(Collections.singletonList(mock(SparkListenerSQLExecutionEnd.class)));
     when(config.getCircuitBreaker()).thenReturn(circuitBreakerConfig);
@@ -172,5 +184,159 @@ class OpenLineageRunEventBuilderTest {
 
     assertThat(builder.getRetainedJobCount()).isZero();
     assertThat(builder.getRetainedStageCount()).isZero();
+  }
+
+  @ParameterizedTest
+  @ValueSource(classes = {IllegalStateException.class, NoSuchMethodError.class})
+  void testFailingFacetBuildersDoNotDropEvent(Class<? extends Throwable> failure) {
+    when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.empty());
+    Supplier<Throwable> thrower = () -> newThrowable(failure);
+    PartialFunction<Object, List<InputDataset>> inputDatasetBuilder =
+        new PartialFunction<Object, List<InputDataset>>() {
+          @Override
+          public List<InputDataset> apply(Object v1) {
+            return Collections.singletonList(
+                openLineage.newInputDatasetBuilder().namespace(NAMESPACE).name("table").build());
+          }
+
+          @Override
+          public boolean isDefinedAt(Object x) {
+            return true;
+          }
+        };
+    when(openLineageEventHandlerFactory.createInputDatasetBuilder(openLineageContext))
+        .thenReturn(Collections.singletonList(inputDatasetBuilder));
+    PartialFunction<Object, List<OutputDataset>> outputDatasetBuilder =
+        new PartialFunction<Object, List<OutputDataset>>() {
+          @Override
+          public List<OutputDataset> apply(Object v1) {
+            return Collections.singletonList(
+                openLineage
+                    .newOutputDatasetBuilder()
+                    .namespace(NAMESPACE)
+                    .name("output")
+                    .facets(openLineage.newDatasetFacetsBuilder().build())
+                    .build());
+          }
+
+          @Override
+          public boolean isDefinedAt(Object x) {
+            return true;
+          }
+        };
+    when(openLineageEventHandlerFactory.createOutputDatasetBuilder(openLineageContext))
+        .thenReturn(Collections.singletonList(outputDatasetBuilder));
+    doReturn(Collections.singletonList(failingFacetBuilder(thrower)))
+        .when(openLineageEventHandlerFactory)
+        .createDatasetFacetBuilders(openLineageContext);
+    doReturn(Collections.singletonList(failingFacetBuilder(thrower)))
+        .when(openLineageEventHandlerFactory)
+        .createInputDatasetFacetBuilders(openLineageContext);
+    doReturn(Collections.singletonList(failingFacetBuilder(thrower)))
+        .when(openLineageEventHandlerFactory)
+        .createOutputDatasetFacetBuilders(openLineageContext);
+    doReturn(Collections.singletonList(failingFacetBuilder(thrower)))
+        .when(openLineageEventHandlerFactory)
+        .createJobFacetBuilders(openLineageContext);
+    doReturn(
+            Arrays.asList(
+                failingFacetBuilder(thrower),
+                new CustomFacetBuilder<Object, RunFacet>() {
+                  @Override
+                  public boolean isDefinedAt(Object x) {
+                    return true;
+                  }
+
+                  @Override
+                  protected void build(
+                      Object event, BiConsumer<String, ? super RunFacet> consumer) {
+                    consumer.accept(WORKING_FACET, openLineage.newRunFacet());
+                  }
+                }))
+        .when(openLineageEventHandlerFactory)
+        .createRunFacetBuilders(openLineageContext);
+
+    RunEvent event =
+        new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory)
+            .buildRun(runEventContext);
+
+    assertThat(event.getInputs()).hasSize(1);
+    assertThat(event.getOutputs()).hasSize(1);
+    assertThat(event.getJob().getFacets().getSql()).isNotNull();
+    assertThat(event.getRun().getFacets().getParent()).isNotNull();
+    assertThat(event.getRun().getFacets().getAdditionalProperties()).containsKey(WORKING_FACET);
+  }
+
+  @Test
+  void testFacetBuildersAreSkippedAfterInterruption() {
+    when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.empty());
+    doReturn(
+            Arrays.asList(
+                failingFacetBuilder(
+                    () -> {
+                      Thread.currentThread().interrupt();
+                      return new IllegalStateException("interrupted");
+                    }),
+                new CustomFacetBuilder<Object, RunFacet>() {
+                  @Override
+                  public boolean isDefinedAt(Object x) {
+                    return true;
+                  }
+
+                  @Override
+                  protected void build(
+                      Object event, BiConsumer<String, ? super RunFacet> consumer) {
+                    consumer.accept(WORKING_FACET, openLineage.newRunFacet());
+                  }
+                }))
+        .when(openLineageEventHandlerFactory)
+        .createRunFacetBuilders(openLineageContext);
+
+    RunEvent event;
+    try {
+      event =
+          new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory)
+              .buildRun(runEventContext);
+    } finally {
+      Thread.interrupted();
+    }
+
+    assertThat(event.getRun().getFacets().getAdditionalProperties())
+        .doesNotContainKey(WORKING_FACET);
+  }
+
+  @Test
+  void testVirtualMachineErrorFromFacetBuilderIsNotSwallowed() {
+    when(circuitBreakerConfig.getTimeout()).thenReturn(Optional.empty());
+    doReturn(Collections.singletonList(failingFacetBuilder(StackOverflowError::new)))
+        .when(openLineageEventHandlerFactory)
+        .createJobFacetBuilders(openLineageContext);
+
+    OpenLineageRunEventBuilder builder =
+        new OpenLineageRunEventBuilder(openLineageContext, openLineageEventHandlerFactory);
+
+    assertThatThrownBy(() -> builder.buildRun(runEventContext))
+        .isInstanceOf(StackOverflowError.class);
+  }
+
+  @SneakyThrows
+  private static Throwable newThrowable(Class<? extends Throwable> type) {
+    return type.getConstructor(String.class).newInstance("simulated");
+  }
+
+  private static <F> CustomFacetBuilder<Object, F> failingFacetBuilder(
+      Supplier<? extends Throwable> failure) {
+    return new CustomFacetBuilder<Object, F>() {
+      @Override
+      public boolean isDefinedAt(Object x) {
+        return true;
+      }
+
+      @Override
+      @SneakyThrows
+      protected void build(Object event, BiConsumer<String, ? super F> consumer) {
+        throw failure.get();
+      }
+    };
   }
 }

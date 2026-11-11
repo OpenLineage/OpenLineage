@@ -1,0 +1,46 @@
+# Copyright 2018-2026 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
+"""DatasphereClient interface + factory.
+
+There is one client, :class:`app.datasphere.odata_client.OdataClient`, which relies solely on OData
+services. What it scans is chosen by ``datasphere.discovery`` (see :mod:`app.datasphere.discovery`).
+How it connects is set by two orthogonal settings: the OData ``base_url`` + ``odata_base_path``
+(service root) and the ``auth`` method. For SAP Datasphere the service root is the documented
+``/api/v1/datasphere/consumption`` API (DatasphereCatalog + DatasphereConsumption on api.sap.com),
+reached with OAuth in production; any other OData v4 host is just a different (base path, auth)
+combination, not a different code path.
+
+Methods that hit OData raise :class:`app.datasphere.errors.ODataRequestError` on any non-2xx response.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Protocol, runtime_checkable
+
+from app.datasphere.models import Dataset, DatasetSchema, Space
+
+
+@runtime_checkable
+class DatasphereClient(Protocol):
+    def list_spaces(self) -> list[Space]: ...
+    def list_datasets(self, space_id: str) -> list[Dataset]: ...
+    def get_schema(self, dataset: Dataset) -> DatasetSchema: ...
+    def get_row_count(self, dataset: Dataset) -> int: ...
+    def get_max_timestamp(self, dataset: Dataset, column: str) -> datetime | None: ...
+    def close(self) -> None: ...
+
+
+def build_client(settings, secrets) -> DatasphereClient:
+    from app.auth import build_auth
+    from app.datasphere.discovery import build_discovery
+    from app.datasphere.odata_client import OdataClient
+
+    return OdataClient(
+        base_url=settings.datasphere.base_url,
+        auth=build_auth(settings.datasphere.auth, secrets),
+        odata_base_path=settings.datasphere.odata_base_path,
+        timeout=settings.datasphere.request_timeout_seconds,
+        discovery=build_discovery(settings),
+    )

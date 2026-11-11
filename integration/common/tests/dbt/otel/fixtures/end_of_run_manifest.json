@@ -1,0 +1,1982 @@
+{
+ "child_map": {
+  "model.otel_jaffle.active_customers": [
+   "unit_test.otel_jaffle.active_customers.ut_active_customers_wrong_expectation"
+  ],
+  "model.otel_jaffle.broken_model": [
+   "model.otel_jaffle.downstream_of_broken"
+  ],
+  "model.otel_jaffle.customer_totals": [],
+  "model.otel_jaffle.downstream_of_broken": [],
+  "model.otel_jaffle.eph_order_totals": [
+   "model.otel_jaffle.customer_totals"
+  ],
+  "model.otel_jaffle.order_statuses": [
+   "test.otel_jaffle.accepted_values_order_statuses_status__placed__shipped.a0d576e128"
+  ],
+  "model.otel_jaffle.stg_customers": [
+   "model.otel_jaffle.active_customers",
+   "model.otel_jaffle.customer_totals",
+   "snapshot.otel_jaffle.snap_customers",
+   "test.otel_jaffle.accepted_values_stg_customers_status__active.36a78cb4f9",
+   "test.otel_jaffle.not_null_stg_customers_customer_id.e2cfb1f9aa",
+   "test.otel_jaffle.unique_stg_customers_customer_id.c7614daada",
+   "unit_test.otel_jaffle.stg_customers.ut_stg_customers_renames"
+  ],
+  "model.otel_jaffle.stg_orders": [
+   "model.otel_jaffle.eph_order_totals",
+   "model.otel_jaffle.order_statuses",
+   "test.otel_jaffle.assert_positive_amounts"
+  ],
+  "seed.otel_jaffle.raw_customers": [
+   "model.otel_jaffle.stg_customers"
+  ],
+  "seed.otel_jaffle.raw_orders": [
+   "model.otel_jaffle.stg_orders"
+  ],
+  "snapshot.otel_jaffle.snap_customers": [],
+  "test.otel_jaffle.accepted_values_order_statuses_status__placed__shipped.a0d576e128": [],
+  "test.otel_jaffle.accepted_values_stg_customers_status__active.36a78cb4f9": [],
+  "test.otel_jaffle.assert_positive_amounts": [],
+  "test.otel_jaffle.not_null_stg_customers_customer_id.e2cfb1f9aa": [],
+  "test.otel_jaffle.unique_stg_customers_customer_id.c7614daada": [],
+  "unit_test.otel_jaffle.active_customers.ut_active_customers_wrong_expectation": [],
+  "unit_test.otel_jaffle.stg_customers.ut_stg_customers_renames": []
+ },
+ "exposures": {},
+ "metadata": {
+  "adapter_type": "duckdb",
+  "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+  "dbt_version": "2.0.8",
+  "env": {},
+  "generated_at": "2026-10-13T16:52:20.702507Z",
+  "invocation_id": "01a1362d-e32a-7a10-8d04-62f853999b91",
+  "invocation_started_at": "2026-10-13T16:52:19.379160Z",
+  "project_id": "1c43885033bb4e733ff97336c59ec13b",
+  "project_name": "otel_jaffle",
+  "quoting": {
+   "database": true,
+   "identifier": true,
+   "schema": true
+  },
+  "send_anonymous_usage_stats": null,
+  "user_id": null
+ },
+ "nodes": {
+  "model.otel_jaffle.active_customers": {
+   "access": "protected",
+   "alias": "active_customers",
+   "checksum": {
+    "checksum": "4e432d0d5f3ea7f90883e8305847b71bb71a1ff4ba81417e25988ce63141d6d6",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "select customer_id, name from \"otel_jaffle\".\"main\".\"stg_customers\" where status = 'active'",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/models/active_customers.sql",
+   "config": {
+    "access": "protected",
+    "alias": null,
+    "batch_size": null,
+    "begin": null,
+    "column_types": {},
+    "concurrent_batches": null,
+    "contract": {
+     "alias_types": true,
+     "enforced": false
+    },
+    "database": null,
+    "docs": {
+     "node_color": null,
+     "show": true
+    },
+    "enabled": true,
+    "event_time": null,
+    "freshness": null,
+    "full_refresh": null,
+    "grants": {},
+    "group": null,
+    "incremental_strategy": null,
+    "latest_version_pointer": {
+     "alias": null,
+     "enabled": null
+    },
+    "lookback": 1,
+    "materialized": "view",
+    "meta": {},
+    "on_configuration_change": "apply",
+    "on_error": null,
+    "on_schema_change": null,
+    "packages": [],
+    "persist_docs": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": null,
+    "static_analysis": "baseline",
+    "tags": [],
+    "unique_key": null
+   },
+   "constraints": [],
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.stg_customers"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_customers",
+      {
+       "col": 31,
+       "expanded": null,
+       "file": "models/active_customers.sql",
+       "index": 30,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "active_customers"
+   ],
+   "functions": [],
+   "language": "sql",
+   "latest_version": null,
+   "meta": {},
+   "metrics": [],
+   "name": "active_customers",
+   "original_file_path": "models/active_customers.sql",
+   "package_name": "otel_jaffle",
+   "path": "active_customers.sql",
+   "primary_key": [],
+   "raw_code": "select customer_id, name from {{ ref('stg_customers') }} where status = 'active'",
+   "refs": [
+    {
+     "name": "stg_customers",
+     "package": null,
+     "version": null
+    }
+   ],
+   "relation_name": "\"otel_jaffle\".\"main\".\"active_customers\"",
+   "resource_type": "model",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "model.otel_jaffle.active_customers",
+   "unrendered_config": {
+    "materialized": "view"
+   },
+   "version": null
+  },
+  "model.otel_jaffle.broken_model": {
+   "access": "protected",
+   "alias": "broken_model",
+   "checksum": {
+    "checksum": "dfb8c46a0740ab42b100721730f0189a7a3eded553ef341b36d949ff78c2a665",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "-- Fails at run time: the table doesn't exist.\nselect * from main.does_not_exist",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/models/broken_model.sql",
+   "config": {
+    "access": "protected",
+    "alias": null,
+    "batch_size": null,
+    "begin": null,
+    "column_types": {},
+    "concurrent_batches": null,
+    "contract": {
+     "alias_types": true,
+     "enforced": false
+    },
+    "database": null,
+    "docs": {
+     "node_color": null,
+     "show": true
+    },
+    "enabled": true,
+    "event_time": null,
+    "freshness": null,
+    "full_refresh": null,
+    "grants": {},
+    "group": null,
+    "incremental_strategy": null,
+    "latest_version_pointer": {
+     "alias": null,
+     "enabled": null
+    },
+    "lookback": 1,
+    "materialized": "view",
+    "meta": {},
+    "on_configuration_change": "apply",
+    "on_error": null,
+    "on_schema_change": null,
+    "packages": [],
+    "persist_docs": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": null,
+    "static_analysis": "baseline",
+    "tags": [],
+    "unique_key": null
+   },
+   "constraints": [],
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [],
+    "nodes_with_ref_location": []
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "broken_model"
+   ],
+   "functions": [],
+   "language": "sql",
+   "latest_version": null,
+   "meta": {},
+   "metrics": [],
+   "name": "broken_model",
+   "original_file_path": "models/broken_model.sql",
+   "package_name": "otel_jaffle",
+   "path": "broken_model.sql",
+   "primary_key": [],
+   "raw_code": "-- Fails at run time: the table doesn't exist.\nselect * from main.does_not_exist",
+   "refs": [],
+   "relation_name": "\"otel_jaffle\".\"main\".\"broken_model\"",
+   "resource_type": "model",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "model.otel_jaffle.broken_model",
+   "unrendered_config": {
+    "materialized": "view"
+   },
+   "version": null
+  },
+  "model.otel_jaffle.customer_totals": {
+   "access": "protected",
+   "alias": "customer_totals",
+   "checksum": {
+    "checksum": "e0715121079d7c8635756d059b5dc4a3a304ac09eb5b6cb8aac657571c95f323",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "with __dbt__cte__eph_order_totals as (\n\nselect customer_id, sum(amount) as total from \"otel_jaffle\".\"main\".\"stg_orders\" group by customer_id\n)\n--EPHEMERAL-SELECT-WRAPPER-START\nselect * from (\n\nselect c.customer_id, c.name, coalesce(t.total, 0) as total\nfrom \"otel_jaffle\".\"main\".\"stg_customers\" as c\nleft join __dbt__cte__eph_order_totals as t on c.customer_id = t.customer_id\n--EPHEMERAL-SELECT-WRAPPER-END\n)",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/models/customer_totals.sql",
+   "config": {
+    "access": "protected",
+    "alias": null,
+    "batch_size": null,
+    "begin": null,
+    "column_types": {},
+    "concurrent_batches": null,
+    "contract": {
+     "alias_types": true,
+     "enforced": false
+    },
+    "database": null,
+    "docs": {
+     "node_color": null,
+     "show": true
+    },
+    "enabled": true,
+    "event_time": null,
+    "freshness": null,
+    "full_refresh": null,
+    "grants": {},
+    "group": null,
+    "incremental_strategy": null,
+    "latest_version_pointer": {
+     "alias": null,
+     "enabled": null
+    },
+    "lookback": 1,
+    "materialized": "table",
+    "meta": {},
+    "on_configuration_change": "apply",
+    "on_error": null,
+    "on_schema_change": null,
+    "packages": [],
+    "persist_docs": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": null,
+    "static_analysis": "baseline",
+    "tags": [],
+    "unique_key": null
+   },
+   "constraints": [],
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.stg_customers",
+     "model.otel_jaffle.eph_order_totals"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_customers",
+      {
+       "col": 6,
+       "expanded": null,
+       "file": "models/customer_totals.sql",
+       "index": 100,
+       "line": 3
+      }
+     ],
+     [
+      "model.otel_jaffle.eph_order_totals",
+      {
+       "col": 11,
+       "expanded": null,
+       "file": "models/customer_totals.sql",
+       "index": 142,
+       "line": 4
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "customer_totals"
+   ],
+   "functions": [],
+   "language": "sql",
+   "latest_version": null,
+   "meta": {},
+   "metrics": [],
+   "name": "customer_totals",
+   "original_file_path": "models/customer_totals.sql",
+   "package_name": "otel_jaffle",
+   "path": "customer_totals.sql",
+   "primary_key": [],
+   "raw_code": "{{ config(materialized='table') }}\nselect c.customer_id, c.name, coalesce(t.total, 0) as total\nfrom {{ ref('stg_customers') }} as c\nleft join {{ ref('eph_order_totals') }} as t on c.customer_id = t.customer_id",
+   "refs": [
+    {
+     "name": "stg_customers",
+     "package": null,
+     "version": null
+    },
+    {
+     "name": "eph_order_totals",
+     "package": null,
+     "version": null
+    }
+   ],
+   "relation_name": "\"otel_jaffle\".\"main\".\"customer_totals\"",
+   "resource_type": "model",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "model.otel_jaffle.customer_totals",
+   "unrendered_config": {
+    "materialized": "table"
+   },
+   "version": null
+  },
+  "model.otel_jaffle.downstream_of_broken": {
+   "access": "protected",
+   "alias": "downstream_of_broken",
+   "checksum": {
+    "checksum": "c2b58a28f5811f0a03db3e35dd27f154eaa2ee1b35001377503603c78c674230",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "config": {
+    "access": "protected",
+    "alias": null,
+    "batch_size": null,
+    "begin": null,
+    "column_types": {},
+    "concurrent_batches": null,
+    "contract": {
+     "alias_types": true,
+     "enforced": false
+    },
+    "database": null,
+    "docs": {
+     "node_color": null,
+     "show": true
+    },
+    "enabled": true,
+    "event_time": null,
+    "freshness": null,
+    "full_refresh": null,
+    "grants": {},
+    "group": null,
+    "incremental_strategy": null,
+    "latest_version_pointer": {
+     "alias": null,
+     "enabled": null
+    },
+    "lookback": 1,
+    "materialized": "view",
+    "meta": {},
+    "on_configuration_change": "apply",
+    "on_error": null,
+    "on_schema_change": null,
+    "packages": [],
+    "persist_docs": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": null,
+    "static_analysis": "baseline",
+    "tags": [],
+    "unique_key": null
+   },
+   "constraints": [],
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.broken_model"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.broken_model",
+      {
+       "col": 15,
+       "expanded": null,
+       "file": "models/downstream_of_broken.sql",
+       "index": 14,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "downstream_of_broken"
+   ],
+   "functions": [],
+   "language": "sql",
+   "latest_version": null,
+   "meta": {},
+   "metrics": [],
+   "name": "downstream_of_broken",
+   "original_file_path": "models/downstream_of_broken.sql",
+   "package_name": "otel_jaffle",
+   "path": "downstream_of_broken.sql",
+   "primary_key": [],
+   "raw_code": "select * from {{ ref('broken_model') }}",
+   "refs": [
+    {
+     "name": "broken_model",
+     "package": null,
+     "version": null
+    }
+   ],
+   "relation_name": "\"otel_jaffle\".\"main\".\"downstream_of_broken\"",
+   "resource_type": "model",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "model.otel_jaffle.downstream_of_broken",
+   "unrendered_config": {
+    "materialized": "view"
+   },
+   "version": null
+  },
+  "model.otel_jaffle.eph_order_totals": {
+   "access": "protected",
+   "alias": "eph_order_totals",
+   "checksum": {
+    "checksum": "9826caf38d184d84071ac73de38aa4c344734a7ef5b0c9f8d1f848dbe7b4ad7e",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "\nselect customer_id, sum(amount) as total from \"otel_jaffle\".\"main\".\"stg_orders\" group by customer_id",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/models/eph_order_totals.sql",
+   "config": {
+    "access": "protected",
+    "alias": null,
+    "batch_size": null,
+    "begin": null,
+    "column_types": {},
+    "concurrent_batches": null,
+    "contract": {
+     "alias_types": true,
+     "enforced": false
+    },
+    "database": null,
+    "docs": {
+     "node_color": null,
+     "show": true
+    },
+    "enabled": true,
+    "event_time": null,
+    "freshness": null,
+    "full_refresh": null,
+    "grants": {},
+    "group": null,
+    "incremental_strategy": null,
+    "latest_version_pointer": {
+     "alias": null,
+     "enabled": null
+    },
+    "lookback": 1,
+    "materialized": "ephemeral",
+    "meta": {},
+    "on_configuration_change": "apply",
+    "on_error": null,
+    "on_schema_change": null,
+    "packages": [],
+    "persist_docs": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": null,
+    "static_analysis": "baseline",
+    "tags": [],
+    "unique_key": null
+   },
+   "constraints": [],
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.stg_orders"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_orders",
+      {
+       "col": 47,
+       "expanded": null,
+       "file": "models/eph_order_totals.sql",
+       "index": 85,
+       "line": 2
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "eph_order_totals"
+   ],
+   "functions": [],
+   "language": "sql",
+   "latest_version": null,
+   "meta": {},
+   "metrics": [],
+   "name": "eph_order_totals",
+   "original_file_path": "models/eph_order_totals.sql",
+   "package_name": "otel_jaffle",
+   "path": "eph_order_totals.sql",
+   "primary_key": [],
+   "raw_code": "{{ config(materialized='ephemeral') }}\nselect customer_id, sum(amount) as total from {{ ref('stg_orders') }} group by customer_id",
+   "refs": [
+    {
+     "name": "stg_orders",
+     "package": null,
+     "version": null
+    }
+   ],
+   "resource_type": "model",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "model.otel_jaffle.eph_order_totals",
+   "unrendered_config": {
+    "materialized": "ephemeral"
+   },
+   "version": null
+  },
+  "model.otel_jaffle.order_statuses": {
+   "access": "protected",
+   "alias": "order_statuses",
+   "checksum": {
+    "checksum": "e091ebc352a7321e07d2ba6f23e648464b6153fb95b1d1239bbbe53daa686207",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {
+    "status": {
+     "config": {},
+     "constraints": [],
+     "description": "",
+     "meta": {},
+     "name": "status",
+     "tags": []
+    }
+   },
+   "compiled": true,
+   "compiled_code": "-- Leaf model: its failing test mustn't skip anything downstream.\nselect distinct status from \"otel_jaffle\".\"main\".\"stg_orders\"",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/models/order_statuses.sql",
+   "config": {
+    "access": "protected",
+    "alias": null,
+    "batch_size": null,
+    "begin": null,
+    "column_types": {},
+    "concurrent_batches": null,
+    "contract": {
+     "alias_types": true,
+     "enforced": false
+    },
+    "database": null,
+    "docs": {
+     "node_color": null,
+     "show": true
+    },
+    "enabled": true,
+    "event_time": null,
+    "freshness": null,
+    "full_refresh": null,
+    "grants": {},
+    "group": null,
+    "incremental_strategy": null,
+    "latest_version_pointer": {
+     "alias": null,
+     "enabled": null
+    },
+    "lookback": 1,
+    "materialized": "view",
+    "meta": {},
+    "on_configuration_change": "apply",
+    "on_error": null,
+    "on_schema_change": null,
+    "packages": [],
+    "persist_docs": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": null,
+    "static_analysis": "baseline",
+    "tags": [],
+    "unique_key": null
+   },
+   "constraints": [],
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.stg_orders"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_orders",
+      {
+       "col": 29,
+       "expanded": null,
+       "file": "models/order_statuses.sql",
+       "index": 94,
+       "line": 2
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "order_statuses"
+   ],
+   "functions": [],
+   "language": "sql",
+   "latest_version": null,
+   "meta": {},
+   "metrics": [],
+   "name": "order_statuses",
+   "original_file_path": "models/order_statuses.sql",
+   "package_name": "otel_jaffle",
+   "patch_path": "otel_jaffle://models/schema.yml",
+   "path": "order_statuses.sql",
+   "primary_key": [],
+   "raw_code": "-- Leaf model: its failing test mustn't skip anything downstream.\nselect distinct status from {{ ref('stg_orders') }}",
+   "refs": [
+    {
+     "name": "stg_orders",
+     "package": null,
+     "version": null
+    }
+   ],
+   "relation_name": "\"otel_jaffle\".\"main\".\"order_statuses\"",
+   "resource_type": "model",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "model.otel_jaffle.order_statuses",
+   "unrendered_config": {
+    "materialized": "view"
+   },
+   "version": null
+  },
+  "model.otel_jaffle.stg_customers": {
+   "access": "protected",
+   "alias": "stg_customers",
+   "checksum": {
+    "checksum": "9d3a5b54a513a061173a46322a1787776fe41fb7cf8cab9642ff7902f4190806",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {
+    "customer_id": {
+     "config": {},
+     "constraints": [],
+     "description": "",
+     "meta": {},
+     "name": "customer_id",
+     "tags": []
+    },
+    "status": {
+     "config": {},
+     "constraints": [],
+     "description": "",
+     "meta": {},
+     "name": "status",
+     "tags": []
+    }
+   },
+   "compiled": true,
+   "compiled_code": "select id as customer_id, name, status from \"otel_jaffle\".\"main\".\"raw_customers\"",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/models/staging/stg_customers.sql",
+   "config": {
+    "access": "protected",
+    "alias": null,
+    "batch_size": null,
+    "begin": null,
+    "column_types": {},
+    "concurrent_batches": null,
+    "contract": {
+     "alias_types": true,
+     "enforced": false
+    },
+    "database": null,
+    "docs": {
+     "node_color": null,
+     "show": true
+    },
+    "enabled": true,
+    "event_time": null,
+    "freshness": null,
+    "full_refresh": null,
+    "grants": {},
+    "group": null,
+    "incremental_strategy": null,
+    "latest_version_pointer": {
+     "alias": null,
+     "enabled": null
+    },
+    "lookback": 1,
+    "materialized": "view",
+    "meta": {},
+    "on_configuration_change": "apply",
+    "on_error": null,
+    "on_schema_change": null,
+    "packages": [],
+    "persist_docs": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": null,
+    "static_analysis": "baseline",
+    "tags": [],
+    "unique_key": null
+   },
+   "constraints": [],
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "seed.otel_jaffle.raw_customers"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "seed.otel_jaffle.raw_customers",
+      {
+       "col": 45,
+       "expanded": null,
+       "file": "models/staging/stg_customers.sql",
+       "index": 44,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "staging",
+    "stg_customers"
+   ],
+   "functions": [],
+   "language": "sql",
+   "latest_version": null,
+   "meta": {},
+   "metrics": [],
+   "name": "stg_customers",
+   "original_file_path": "models/staging/stg_customers.sql",
+   "package_name": "otel_jaffle",
+   "patch_path": "otel_jaffle://models/schema.yml",
+   "path": "staging/stg_customers.sql",
+   "primary_key": [
+    "customer_id"
+   ],
+   "raw_code": "select id as customer_id, name, status from {{ ref('raw_customers') }}",
+   "refs": [
+    {
+     "name": "raw_customers",
+     "package": null,
+     "version": null
+    }
+   ],
+   "relation_name": "\"otel_jaffle\".\"main\".\"stg_customers\"",
+   "resource_type": "model",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "model.otel_jaffle.stg_customers",
+   "unrendered_config": {
+    "materialized": "view"
+   },
+   "version": null
+  },
+  "model.otel_jaffle.stg_orders": {
+   "access": "protected",
+   "alias": "stg_orders",
+   "checksum": {
+    "checksum": "f245f83b7bca4c38134b44212c7de8ce73a00f5271507e628546d3594b929d7b",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "select id as order_id, customer_id, amount, status from \"otel_jaffle\".\"main\".\"raw_orders\"",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/models/staging/stg_orders.sql",
+   "config": {
+    "access": "protected",
+    "alias": null,
+    "batch_size": null,
+    "begin": null,
+    "column_types": {},
+    "concurrent_batches": null,
+    "contract": {
+     "alias_types": true,
+     "enforced": false
+    },
+    "database": null,
+    "docs": {
+     "node_color": null,
+     "show": true
+    },
+    "enabled": true,
+    "event_time": null,
+    "freshness": null,
+    "full_refresh": null,
+    "grants": {},
+    "group": null,
+    "incremental_strategy": null,
+    "latest_version_pointer": {
+     "alias": null,
+     "enabled": null
+    },
+    "lookback": 1,
+    "materialized": "view",
+    "meta": {},
+    "on_configuration_change": "apply",
+    "on_error": null,
+    "on_schema_change": null,
+    "packages": [],
+    "persist_docs": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": null,
+    "static_analysis": "baseline",
+    "tags": [],
+    "unique_key": null
+   },
+   "constraints": [],
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "seed.otel_jaffle.raw_orders"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "seed.otel_jaffle.raw_orders",
+      {
+       "col": 57,
+       "expanded": null,
+       "file": "models/staging/stg_orders.sql",
+       "index": 56,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "staging",
+    "stg_orders"
+   ],
+   "functions": [],
+   "language": "sql",
+   "latest_version": null,
+   "meta": {},
+   "metrics": [],
+   "name": "stg_orders",
+   "original_file_path": "models/staging/stg_orders.sql",
+   "package_name": "otel_jaffle",
+   "path": "staging/stg_orders.sql",
+   "primary_key": [],
+   "raw_code": "select id as order_id, customer_id, amount, status from {{ ref('raw_orders') }}",
+   "refs": [
+    {
+     "name": "raw_orders",
+     "package": null,
+     "version": null
+    }
+   ],
+   "relation_name": "\"otel_jaffle\".\"main\".\"stg_orders\"",
+   "resource_type": "model",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "model.otel_jaffle.stg_orders",
+   "unrendered_config": {
+    "materialized": "view"
+   },
+   "version": null
+  },
+  "seed.otel_jaffle.raw_customers": {
+   "alias": "raw_customers",
+   "checksum": {
+    "checksum": "9d5d27c7558d404efecfd06a86f1b4ac5d63f8697fd3e75c185af4c5290968ca",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "config": {
+    "enabled": true,
+    "grants": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "static_analysis": "baseline"
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [],
+    "nodes_with_ref_location": []
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "raw_customers"
+   ],
+   "functions": [],
+   "meta": {},
+   "metrics": [],
+   "name": "raw_customers",
+   "original_file_path": "seeds/raw_customers.csv",
+   "package_name": "otel_jaffle",
+   "path": "raw_customers.csv",
+   "raw_code": "",
+   "refs": [],
+   "relation_name": "\"otel_jaffle\".\"main\".\"raw_customers\"",
+   "resource_type": "seed",
+   "root_path": "<project>",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "seed.otel_jaffle.raw_customers",
+   "unrendered_config": {}
+  },
+  "seed.otel_jaffle.raw_orders": {
+   "alias": "raw_orders",
+   "checksum": {
+    "checksum": "276e9296c14e7072b8f4478d88202c2eb033c912fb3366776abc8c275462b647",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "config": {
+    "enabled": true,
+    "grants": {},
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "static_analysis": "baseline"
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [],
+    "nodes_with_ref_location": []
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "raw_orders"
+   ],
+   "functions": [],
+   "meta": {},
+   "metrics": [],
+   "name": "raw_orders",
+   "original_file_path": "seeds/raw_orders.csv",
+   "package_name": "otel_jaffle",
+   "path": "raw_orders.csv",
+   "raw_code": "",
+   "refs": [],
+   "relation_name": "\"otel_jaffle\".\"main\".\"raw_orders\"",
+   "resource_type": "seed",
+   "root_path": "<project>",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "seed.otel_jaffle.raw_orders",
+   "unrendered_config": {}
+  },
+  "snapshot.otel_jaffle.snap_customers": {
+   "alias": "snap_customers",
+   "checksum": {
+    "checksum": "2735974024815b8f8b2031dbda0db2f803db829e29ef53e0659b7fb95ed7d69a",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "select * from \"otel_jaffle\".\"main\".\"stg_customers\"",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/snapshots/snap_customers.yml/snap_customers.sql",
+   "config": {
+    "check_cols": "all",
+    "enabled": true,
+    "grants": {},
+    "materialized": "snapshot",
+    "post-hook": [],
+    "pre-hook": [],
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "static_analysis": "baseline",
+    "strategy": "check",
+    "tags": [],
+    "unique_key": "customer_id"
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.stg_customers"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_customers",
+      {
+       "col": 15,
+       "expanded": null,
+       "file": "snapshots/snap_customers.sql",
+       "index": 14,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "snap_customers"
+   ],
+   "functions": [],
+   "language": "sql",
+   "meta": {},
+   "metrics": [],
+   "name": "snap_customers",
+   "original_file_path": "snapshots/snap_customers.yml",
+   "package_name": "otel_jaffle",
+   "patch_path": "otel_jaffle://snapshots/snap_customers.yml",
+   "path": "snap_customers.sql",
+   "raw_code": "select * from {{ ref('stg_customers') }}",
+   "raw_relation": "ref('stg_customers')",
+   "refs": [
+    {
+     "name": "stg_customers",
+     "package": null,
+     "version": null
+    }
+   ],
+   "relation_name": "\"otel_jaffle\".\"main\".\"snap_customers\"",
+   "resource_type": "snapshot",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "unique_id": "snapshot.otel_jaffle.snap_customers",
+   "unrendered_config": {
+    "check_cols": "all",
+    "strategy": "check",
+    "unique_key": "customer_id"
+   }
+  },
+  "test.otel_jaffle.accepted_values_order_statuses_status__placed__shipped.a0d576e128": {
+   "alias": "accepted_values_order_statuses_status__placed__shipped",
+   "attached_node": "model.otel_jaffle.order_statuses",
+   "checksum": {
+    "checksum": "",
+    "name": "none"
+   },
+   "classifiers": [],
+   "column_name": "status",
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "\n    \n    \n\nwith all_values as (\n\n    select\n        status as value_field,\n        count(*) as n_records\n\n    from \"otel_jaffle\".\"main\".\"order_statuses\"\n    group by status\n\n)\n\nselect *\nfrom all_values\nwhere value_field not in (\n    'placed','shipped'\n)\n\n\n",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/generic_tests/accepted_values_order_statuses_status__placed__shipped.sql",
+   "config": {
+    "alias": null,
+    "compute": null,
+    "database": null,
+    "enabled": true,
+    "error_if": "!= 0",
+    "fail_calc": "count(*)",
+    "full_refresh": null,
+    "group": null,
+    "limit": null,
+    "materialized": "test",
+    "meta": {},
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": "dbt_test__audit",
+    "severity": "ERROR",
+    "sql_header": null,
+    "static_analysis": "baseline",
+    "store_failures": null,
+    "store_failures_as": null,
+    "tags": [],
+    "warn_if": "!= 0",
+    "where": null
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [
+     "macro.dbt.get_where_subquery",
+     "macro.dbt.test_accepted_values"
+    ],
+    "nodes": [
+     "model.otel_jaffle.order_statuses"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.order_statuses",
+      {
+       "col": 72,
+       "expanded": null,
+       "file": "generic_tests/accepted_values_order_statuses_status__placed__shipped.sql",
+       "index": 71,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "file_key_name": "models.order_statuses",
+   "fqn": [
+    "otel_jaffle",
+    "accepted_values_order_statuses_status__placed__shipped"
+   ],
+   "functions": [],
+   "generated_sql_file": "../../../../../../../../../../../../private<tmp>/build/generic_tests/accepted_values_order_statuses_status__placed__shipped.sql",
+   "language": "sql",
+   "meta": {},
+   "metrics": [],
+   "name": "accepted_values_order_statuses_status__placed__shipped",
+   "original_file_path": "models/schema.yml",
+   "package_name": "otel_jaffle",
+   "path": "accepted_values_order_statuses_status__placed__shipped.sql",
+   "raw_code": "{{ test_accepted_values(**_dbt_generic_test_kwargs) }}",
+   "refs": [
+    {
+     "name": "order_statuses",
+     "package": null,
+     "version": null
+    }
+   ],
+   "resource_type": "test",
+   "schema": "main_dbt_test__audit",
+   "sources": [],
+   "tags": [],
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "status",
+     "model": "{{ get_where_subquery(ref('order_statuses')) }}",
+     "values": [
+      "placed",
+      "shipped"
+     ]
+    },
+    "name": "accepted_values"
+   },
+   "unique_id": "test.otel_jaffle.accepted_values_order_statuses_status__placed__shipped.a0d576e128",
+   "unrendered_config": {}
+  },
+  "test.otel_jaffle.accepted_values_stg_customers_status__active.36a78cb4f9": {
+   "alias": "accepted_values_stg_customers_status__active",
+   "attached_node": "model.otel_jaffle.stg_customers",
+   "checksum": {
+    "checksum": "",
+    "name": "none"
+   },
+   "classifiers": [],
+   "column_name": "status",
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "\n    \n    \n\nwith all_values as (\n\n    select\n        status as value_field,\n        count(*) as n_records\n\n    from \"otel_jaffle\".\"main\".\"stg_customers\"\n    group by status\n\n)\n\nselect *\nfrom all_values\nwhere value_field not in (\n    'active'\n)\n\n\n",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/generic_tests/accepted_values_stg_customers_status__active.sql",
+   "config": {
+    "alias": null,
+    "compute": null,
+    "database": null,
+    "enabled": true,
+    "error_if": "!= 0",
+    "fail_calc": "count(*)",
+    "full_refresh": null,
+    "group": null,
+    "limit": null,
+    "materialized": "test",
+    "meta": {},
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": "dbt_test__audit",
+    "severity": "WARN",
+    "sql_header": null,
+    "static_analysis": "baseline",
+    "store_failures": null,
+    "store_failures_as": null,
+    "tags": [],
+    "warn_if": "!= 0",
+    "where": null
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [
+     "macro.dbt.get_where_subquery",
+     "macro.dbt.test_accepted_values"
+    ],
+    "nodes": [
+     "model.otel_jaffle.stg_customers"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_customers",
+      {
+       "col": 72,
+       "expanded": null,
+       "file": "generic_tests/accepted_values_stg_customers_status__active.sql",
+       "index": 71,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "file_key_name": "models.stg_customers",
+   "fqn": [
+    "otel_jaffle",
+    "accepted_values_stg_customers_status__active"
+   ],
+   "functions": [],
+   "generated_sql_file": "../../../../../../../../../../../../private<tmp>/build/generic_tests/accepted_values_stg_customers_status__active.sql",
+   "language": "sql",
+   "meta": {},
+   "metrics": [],
+   "name": "accepted_values_stg_customers_status__active",
+   "original_file_path": "models/schema.yml",
+   "package_name": "otel_jaffle",
+   "path": "accepted_values_stg_customers_status__active.sql",
+   "raw_code": "{{ test_accepted_values(**_dbt_generic_test_kwargs) }}{{ config(severity=\"warn\") }}",
+   "refs": [
+    {
+     "name": "stg_customers",
+     "package": null,
+     "version": null
+    }
+   ],
+   "resource_type": "test",
+   "schema": "main_dbt_test__audit",
+   "sources": [],
+   "tags": [],
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "status",
+     "model": "{{ get_where_subquery(ref('stg_customers')) }}",
+     "values": [
+      "active"
+     ]
+    },
+    "name": "accepted_values"
+   },
+   "unique_id": "test.otel_jaffle.accepted_values_stg_customers_status__active.36a78cb4f9",
+   "unrendered_config": {
+    "severity": "warn"
+   }
+  },
+  "test.otel_jaffle.assert_positive_amounts": {
+   "alias": "assert_positive_amounts",
+   "checksum": {
+    "checksum": "79c13510a609af089bba3c7aa701a65eba8dc942bf63bdf5af371d4580b30c7e",
+    "name": "sha256"
+   },
+   "classifiers": [],
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "select * from \"otel_jaffle\".\"main\".\"stg_orders\" where amount <= 0",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/tests/assert_positive_amounts.sql",
+   "config": {
+    "alias": null,
+    "compute": null,
+    "database": null,
+    "enabled": true,
+    "error_if": "!= 0",
+    "fail_calc": "count(*)",
+    "full_refresh": null,
+    "group": null,
+    "limit": null,
+    "materialized": "test",
+    "meta": {},
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": "dbt_test__audit",
+    "severity": "ERROR",
+    "sql_header": null,
+    "static_analysis": "baseline",
+    "store_failures": null,
+    "store_failures_as": null,
+    "tags": [],
+    "warn_if": "!= 0",
+    "where": null
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.stg_orders"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_orders",
+      {
+       "col": 15,
+       "expanded": null,
+       "file": "tests/assert_positive_amounts.sql",
+       "index": 14,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "fqn": [
+    "otel_jaffle",
+    "assert_positive_amounts"
+   ],
+   "functions": [],
+   "generated_sql_file": "tests/assert_positive_amounts.sql",
+   "language": "sql",
+   "meta": {},
+   "metrics": [],
+   "name": "assert_positive_amounts",
+   "original_file_path": "tests/assert_positive_amounts.sql",
+   "package_name": "otel_jaffle",
+   "path": "assert_positive_amounts.sql",
+   "raw_code": "select * from {{ ref('stg_orders') }} where amount <= 0",
+   "refs": [
+    {
+     "name": "stg_orders",
+     "package": null,
+     "version": null
+    }
+   ],
+   "resource_type": "test",
+   "schema": "main_dbt_test__audit",
+   "sources": [],
+   "tags": [],
+   "unique_id": "test.otel_jaffle.assert_positive_amounts",
+   "unrendered_config": {}
+  },
+  "test.otel_jaffle.not_null_stg_customers_customer_id.e2cfb1f9aa": {
+   "alias": "not_null_stg_customers_customer_id",
+   "attached_node": "model.otel_jaffle.stg_customers",
+   "checksum": {
+    "checksum": "",
+    "name": "none"
+   },
+   "classifiers": [],
+   "column_name": "customer_id",
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "\n    \n    \n\n\n\nselect customer_id\nfrom \"otel_jaffle\".\"main\".\"stg_customers\"\nwhere customer_id is null\n\n\n",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/generic_tests/not_null_stg_customers_customer_id.sql",
+   "config": {
+    "alias": null,
+    "compute": null,
+    "database": null,
+    "enabled": true,
+    "error_if": "!= 0",
+    "fail_calc": "count(*)",
+    "full_refresh": null,
+    "group": null,
+    "limit": null,
+    "materialized": "test",
+    "meta": {},
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": "dbt_test__audit",
+    "severity": "ERROR",
+    "sql_header": null,
+    "static_analysis": "baseline",
+    "store_failures": null,
+    "store_failures_as": null,
+    "tags": [],
+    "warn_if": "!= 0",
+    "where": null
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [
+     "macro.dbt.get_where_subquery",
+     "macro.dbt.test_not_null"
+    ],
+    "nodes": [
+     "model.otel_jaffle.stg_customers"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_customers",
+      {
+       "col": 70,
+       "expanded": null,
+       "file": "generic_tests/not_null_stg_customers_customer_id.sql",
+       "index": 69,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "file_key_name": "models.stg_customers",
+   "fqn": [
+    "otel_jaffle",
+    "not_null_stg_customers_customer_id"
+   ],
+   "functions": [],
+   "generated_sql_file": "../../../../../../../../../../../../private<tmp>/build/generic_tests/not_null_stg_customers_customer_id.sql",
+   "language": "sql",
+   "meta": {},
+   "metrics": [],
+   "name": "not_null_stg_customers_customer_id",
+   "original_file_path": "models/schema.yml",
+   "package_name": "otel_jaffle",
+   "path": "not_null_stg_customers_customer_id.sql",
+   "raw_code": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+   "refs": [
+    {
+     "name": "stg_customers",
+     "package": null,
+     "version": null
+    }
+   ],
+   "resource_type": "test",
+   "schema": "main_dbt_test__audit",
+   "sources": [],
+   "tags": [],
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "customer_id",
+     "model": "{{ get_where_subquery(ref('stg_customers')) }}"
+    },
+    "name": "not_null"
+   },
+   "unique_id": "test.otel_jaffle.not_null_stg_customers_customer_id.e2cfb1f9aa",
+   "unrendered_config": {}
+  },
+  "test.otel_jaffle.unique_stg_customers_customer_id.c7614daada": {
+   "alias": "unique_stg_customers_customer_id",
+   "attached_node": "model.otel_jaffle.stg_customers",
+   "checksum": {
+    "checksum": "",
+    "name": "none"
+   },
+   "classifiers": [],
+   "column_name": "customer_id",
+   "columns": {},
+   "compiled": true,
+   "compiled_code": "\n    \n    \n\nselect\n    customer_id as unique_field,\n    count(*) as n_records\n\nfrom \"otel_jaffle\".\"main\".\"stg_customers\"\nwhere customer_id is not null\ngroup by customer_id\nhaving count(*) > 1\n\n\n",
+   "compiled_path": "../../../../../../../../../../../../private<tmp>/build/compiled/otel_jaffle/generic_tests/unique_stg_customers_customer_id.sql",
+   "config": {
+    "alias": null,
+    "compute": null,
+    "database": null,
+    "enabled": true,
+    "error_if": "!= 0",
+    "fail_calc": "count(*)",
+    "full_refresh": null,
+    "group": null,
+    "limit": null,
+    "materialized": "test",
+    "meta": {},
+    "quoting": {
+     "database": true,
+     "identifier": true,
+     "schema": true,
+     "snowflake_ignore_case": false
+    },
+    "schema": "dbt_test__audit",
+    "severity": "ERROR",
+    "sql_header": null,
+    "static_analysis": "baseline",
+    "store_failures": null,
+    "store_failures_as": null,
+    "tags": [],
+    "warn_if": "!= 0",
+    "where": null
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [
+     "macro.dbt.get_where_subquery",
+     "macro.dbt.test_unique"
+    ],
+    "nodes": [
+     "model.otel_jaffle.stg_customers"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_customers",
+      {
+       "col": 68,
+       "expanded": null,
+       "file": "generic_tests/unique_stg_customers_customer_id.sql",
+       "index": 67,
+       "line": 1
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "file_key_name": "models.stg_customers",
+   "fqn": [
+    "otel_jaffle",
+    "unique_stg_customers_customer_id"
+   ],
+   "functions": [],
+   "generated_sql_file": "../../../../../../../../../../../../private<tmp>/build/generic_tests/unique_stg_customers_customer_id.sql",
+   "language": "sql",
+   "meta": {},
+   "metrics": [],
+   "name": "unique_stg_customers_customer_id",
+   "original_file_path": "models/schema.yml",
+   "package_name": "otel_jaffle",
+   "path": "unique_stg_customers_customer_id.sql",
+   "raw_code": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+   "refs": [
+    {
+     "name": "stg_customers",
+     "package": null,
+     "version": null
+    }
+   ],
+   "resource_type": "test",
+   "schema": "main_dbt_test__audit",
+   "sources": [],
+   "tags": [],
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "customer_id",
+     "model": "{{ get_where_subquery(ref('stg_customers')) }}"
+    },
+    "name": "unique"
+   },
+   "unique_id": "test.otel_jaffle.unique_stg_customers_customer_id.c7614daada",
+   "unrendered_config": {}
+  }
+ },
+ "parent_map": {
+  "model.otel_jaffle.active_customers": [
+   "model.otel_jaffle.stg_customers"
+  ],
+  "model.otel_jaffle.broken_model": [],
+  "model.otel_jaffle.customer_totals": [
+   "model.otel_jaffle.eph_order_totals",
+   "model.otel_jaffle.stg_customers"
+  ],
+  "model.otel_jaffle.downstream_of_broken": [
+   "model.otel_jaffle.broken_model"
+  ],
+  "model.otel_jaffle.eph_order_totals": [
+   "model.otel_jaffle.stg_orders"
+  ],
+  "model.otel_jaffle.order_statuses": [
+   "model.otel_jaffle.stg_orders"
+  ],
+  "model.otel_jaffle.stg_customers": [
+   "seed.otel_jaffle.raw_customers"
+  ],
+  "model.otel_jaffle.stg_orders": [
+   "seed.otel_jaffle.raw_orders"
+  ],
+  "seed.otel_jaffle.raw_customers": [],
+  "seed.otel_jaffle.raw_orders": [],
+  "snapshot.otel_jaffle.snap_customers": [
+   "model.otel_jaffle.stg_customers"
+  ],
+  "test.otel_jaffle.accepted_values_order_statuses_status__placed__shipped.a0d576e128": [
+   "model.otel_jaffle.order_statuses"
+  ],
+  "test.otel_jaffle.accepted_values_stg_customers_status__active.36a78cb4f9": [
+   "model.otel_jaffle.stg_customers"
+  ],
+  "test.otel_jaffle.assert_positive_amounts": [
+   "model.otel_jaffle.stg_orders"
+  ],
+  "test.otel_jaffle.not_null_stg_customers_customer_id.e2cfb1f9aa": [
+   "model.otel_jaffle.stg_customers"
+  ],
+  "test.otel_jaffle.unique_stg_customers_customer_id.c7614daada": [
+   "model.otel_jaffle.stg_customers"
+  ],
+  "unit_test.otel_jaffle.active_customers.ut_active_customers_wrong_expectation": [
+   "model.otel_jaffle.active_customers"
+  ],
+  "unit_test.otel_jaffle.stg_customers.ut_stg_customers_renames": [
+   "model.otel_jaffle.stg_customers"
+  ]
+ },
+ "sources": {},
+ "unit_tests": {
+  "unit_test.otel_jaffle.active_customers.ut_active_customers_wrong_expectation": {
+   "alias": "ut_active_customers_wrong_expectation",
+   "checksum": {
+    "checksum": "",
+    "name": "none"
+   },
+   "classifiers": [],
+   "columns": {},
+   "config": {
+    "enabled": true,
+    "static_analysis": "baseline",
+    "tags": []
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.active_customers"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.active_customers",
+      {
+       "col": 12,
+       "expanded": null,
+       "file": "models/schema.yml",
+       "index": 827,
+       "line": 36
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "expect": {
+    "fixture": null,
+    "format": "dict",
+    "rows": [
+     {
+      "customer_id": 2,
+      "name": "bob"
+     }
+    ]
+   },
+   "fqn": [
+    "otel_jaffle",
+    "active_customers",
+    "ut_active_customers_wrong_expectation"
+   ],
+   "functions": [],
+   "given": [
+    {
+     "fixture": null,
+     "format": "dict",
+     "input": "ref('stg_customers')",
+     "rows": [
+      {
+       "customer_id": 1,
+       "name": "alice",
+       "status": "active"
+      }
+     ]
+    }
+   ],
+   "language": "sql",
+   "meta": {},
+   "metrics": [],
+   "model": "active_customers",
+   "name": "ut_active_customers_wrong_expectation",
+   "original_file_path": "models/schema.yml",
+   "package_name": "otel_jaffle",
+   "path": "schema.yml",
+   "refs": [
+    {
+     "name": "active_customers",
+     "package": "otel_jaffle",
+     "version": null
+    }
+   ],
+   "resource_type": "unit_test",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "tested_node_unique_id": "model.otel_jaffle.active_customers",
+   "unique_id": "unit_test.otel_jaffle.active_customers.ut_active_customers_wrong_expectation",
+   "unrendered_config": {}
+  },
+  "unit_test.otel_jaffle.stg_customers.ut_stg_customers_renames": {
+   "alias": "ut_stg_customers_renames",
+   "checksum": {
+    "checksum": "",
+    "name": "none"
+   },
+   "classifiers": [],
+   "columns": {},
+   "config": {
+    "enabled": true,
+    "static_analysis": "baseline",
+    "tags": []
+   },
+   "contract": {
+    "alias_types": true,
+    "enforced": false
+   },
+   "database": "otel_jaffle",
+   "depends_on": {
+    "macros": [],
+    "nodes": [
+     "model.otel_jaffle.stg_customers"
+    ],
+    "nodes_with_ref_location": [
+     [
+      "model.otel_jaffle.stg_customers",
+      {
+       "col": 12,
+       "expanded": null,
+       "file": "models/schema.yml",
+       "index": 564,
+       "line": 27
+      }
+     ]
+    ]
+   },
+   "description": "",
+   "expect": {
+    "fixture": null,
+    "format": "dict",
+    "rows": [
+     {
+      "customer_id": 1,
+      "name": "alice",
+      "status": "active"
+     }
+    ]
+   },
+   "fqn": [
+    "otel_jaffle",
+    "stg_customers",
+    "ut_stg_customers_renames"
+   ],
+   "functions": [],
+   "given": [
+    {
+     "fixture": null,
+     "format": "dict",
+     "input": "ref('raw_customers')",
+     "rows": [
+      {
+       "id": 1,
+       "name": "alice",
+       "status": "active"
+      }
+     ]
+    }
+   ],
+   "language": "sql",
+   "meta": {},
+   "metrics": [],
+   "model": "stg_customers",
+   "name": "ut_stg_customers_renames",
+   "original_file_path": "models/schema.yml",
+   "package_name": "otel_jaffle",
+   "path": "schema.yml",
+   "refs": [
+    {
+     "name": "stg_customers",
+     "package": "otel_jaffle",
+     "version": null
+    }
+   ],
+   "resource_type": "unit_test",
+   "schema": "main",
+   "sources": [],
+   "tags": [],
+   "tested_node_unique_id": "model.otel_jaffle.stg_customers",
+   "unique_id": "unit_test.otel_jaffle.stg_customers.ut_stg_customers_renames",
+   "unrendered_config": {}
+  }
+ }
+}

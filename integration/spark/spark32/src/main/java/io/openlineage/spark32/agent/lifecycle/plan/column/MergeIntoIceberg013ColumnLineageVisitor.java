@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector;
 import io.openlineage.spark3.agent.lifecycle.plan.column.OutputFieldsCollector;
+import io.openlineage.spark3.agent.utils.V2WriteQueryUtils;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -25,6 +26,8 @@ import org.apache.spark.sql.catalyst.plans.logical.WriteDelta;
 
 @Slf4j
 public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLineageVisitor {
+  private static final String MATCHED_INSTRUCTIONS = "matchedInstructions";
+
   protected OpenLineageContext context;
 
   public MergeIntoIceberg013ColumnLineageVisitor(OpenLineageContext context) {
@@ -34,6 +37,31 @@ public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLinea
   public static boolean hasClasses() {
     return ReflectionUtils.hasClass("org.apache.spark.sql.catalyst.plans.logical.ReplaceData")
         && ReflectionUtils.hasClass("org.apache.spark.sql.catalyst.plans.logical.WriteDelta");
+  }
+
+  /**
+   * Whether {@code query} is Spark's own {@code MergeRows} (Spark 3.5+), recognised by its {@code
+   * matchedInstructions()} accessor. Iceberg's {@code MergeRows} of the same name, which this
+   * visitor was written for, exposes {@code matchedOutputs()} instead.
+   *
+   * <p>When a copy-on-write MERGE is planned with Spark's own {@code ReplaceData} and {@code
+   * MergeRows} - as Iceberg 1.11 does on Spark 4.1 - the {@code ReplaceData} table carries the same
+   * attributes as the target read inside the query. Taking the outputs from that table would make
+   * every output column resolve straight to the target column and drop the source columns. The
+   * outputs are left to the default collector instead, which takes them from {@code MergeRows},
+   * whose dependencies {@code MergeRowsColumnLineageVisitor} collects.
+   */
+  static boolean isSparkMergeRows(LogicalPlan query) {
+    LogicalPlan plan = V2WriteQueryUtils.unwrapWriteQuery(query);
+    if (plan == null) {
+      return false;
+    }
+    try {
+      plan.getClass().getMethod(MATCHED_INSTRUCTIONS);
+      return true;
+    } catch (NoSuchMethodException e) {
+      return false;
+    }
   }
 
   @Override
@@ -50,7 +78,7 @@ public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLinea
 
   @Override
   public void collectOutputs(ColumnLevelLineageContext context, LogicalPlan node) {
-    if (node instanceof ReplaceData) {
+    if (node instanceof ReplaceData && !isSparkMergeRows(((ReplaceData) node).query())) {
       OutputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceData) node).table());
     }
     if (node instanceof WriteDelta) {
@@ -63,7 +91,8 @@ public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLinea
     if (node instanceof ReplaceData) {
       ReplaceData replaceIcebergData = (ReplaceData) node;
       NamedRelation namedRelation = replaceIcebergData.table();
-      LogicalPlan query = replaceIcebergData.query();
+      // a partitioned table puts the Project below the nodes requesting a write distribution
+      LogicalPlan query = V2WriteQueryUtils.unwrapWriteQuery(replaceIcebergData.query());
 
       if (query instanceof Project) {
         List<NamedExpression> queryOutputs =

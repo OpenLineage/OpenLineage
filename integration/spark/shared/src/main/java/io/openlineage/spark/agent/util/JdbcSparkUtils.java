@@ -6,6 +6,8 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.FabricWarehouseUtils;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnLineage;
@@ -18,7 +20,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -35,15 +36,48 @@ public class JdbcSparkUtils {
       DatasetFactory<D> datasetFactory, SqlMeta meta, JDBCRelation relation) {
 
     StructType schema = relation.schema();
-    String jdbcUrl = relation.jdbcOptions().url();
-    Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
+    JDBCOptions jdbcOptions = relation.jdbcOptions();
 
     return SqlUtils.createDatasets(
-        datasetFactory,
-        meta,
-        schema,
-        dbtm ->
-            JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl, dbtm.qualifiedName(), jdbcProperties));
+        datasetFactory, meta, schema, table -> getDatasetIdentifier(jdbcOptions, table));
+  }
+
+  /**
+   * Builds the dataset identifier of a table referenced by a JDBC relation. Input datasets and
+   * column-level lineage inputs must both be named through this method, so that column lineage
+   * input fields point to the same datasets as the inputs of the event.
+   *
+   * @param jdbcOptions options of the JDBC relation
+   * @param table table extracted from the relation's query
+   * @return dataset identifier, before namespace resolution
+   */
+  public static DatasetIdentifier getDatasetIdentifier(JDBCOptions jdbcOptions, DbTableMeta table) {
+    DatasetIdentifier identifier =
+        JdbcDatasetUtils.getDatasetIdentifier(
+            jdbcOptions.url(), table.qualifiedName(), jdbcOptions.asConnectionProperties());
+    // Microsoft's Spark connector for Fabric passes the user's options (such as the warehouse ID)
+    // through to the JDBC read, so they can be read here
+    return FabricWarehouseUtils.withOneLakeLocation(
+        identifier,
+        queryWarehouse(jdbcOptions),
+        option(jdbcOptions, FabricWarehouseUtils.WORKSPACE_ID_OPTION),
+        option(jdbcOptions, FabricWarehouseUtils.DATAWAREHOUSE_ID_OPTION));
+  }
+
+  // The warehouse a query runs in, which the DatawarehouseId option belongs to: the connector's
+  // database_name option, or else the database in the JDBC URL. A query can also read tables from
+  // other warehouses in the workspace, and those tables must not get this warehouse's location.
+  private static Optional<String> queryWarehouse(JDBCOptions jdbcOptions) {
+    Optional<String> databaseName = option(jdbcOptions, FabricWarehouseUtils.DATABASE_NAME_OPTION);
+    if (databaseName.isPresent()) {
+      return databaseName;
+    }
+    return JdbcDatasetUtils.getDatabase(jdbcOptions.url(), jdbcOptions.asConnectionProperties());
+  }
+
+  private static Optional<String> option(JDBCOptions jdbcOptions, String key) {
+    // parameters() ignores upper and lower case in option names
+    return ScalaConversionUtils.asJavaOptional(jdbcOptions.parameters().get(key));
   }
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
@@ -76,14 +110,11 @@ public class JdbcSparkUtils {
               Collections.emptyList()));
     }
 
-    String query =
-        dbtable
-            .filter(t -> !dbtableIsASubquery(t))
-            .map(fromClause -> "select * from " + fromClause)
-            .orElseGet(() -> queryStringFromJdbcOptions(relation.jdbcOptions()));
-
     String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
-    Optional<SqlMeta> sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), dialect);
+    Optional<SqlMeta> sqlMeta =
+        dbtable
+            .map(fromClause -> parseDbtable(fromClause, dialect))
+            .orElseGet(() -> parse(queryStringFromJdbcOptions(relation.jdbcOptions()), dialect));
 
     if (!sqlMeta.isPresent()) { // missing JNI library
       return sqlMeta;
@@ -104,9 +135,37 @@ public class JdbcSparkUtils {
     return sqlMeta;
   }
 
+  /**
+   * Parses {@code dbtable} as {@code select * from <dbtable>}. That has no column lineage, so a
+   * single subquery like {@code (SELECT ...) t} is parsed on its own instead: the text between its
+   * first {@code (} and last {@code )}. A dbtable that only starts with a subquery is told apart by
+   * the parser: that text then fails to parse, e.g. for {@code (SELECT ...) a JOIN (SELECT ...) b
+   * ON ...}, or reads fewer tables than the whole dbtable, e.g. for {@code (SELECT ...) a JOIN b ON
+   * ...}. Leaving quoting and comments to the parser keeps every dialect's lexical rules.
+   */
+  private static Optional<SqlMeta> parseDbtable(String dbtable, String dialect) {
+    Optional<SqlMeta> wholeTable = parse("select * from " + dbtable, dialect);
+    if (!wholeTable.isPresent() || !dbtableIsASubquery(dbtable)) {
+      return wholeTable;
+    }
+    List<DbTableMeta> tables = wholeTable.get().inTables();
+    Optional<SqlMeta> subquery =
+        parse(unwrapParentheses(dbtable), dialect)
+            .filter(meta -> meta.errors().isEmpty() && meta.inTables().containsAll(tables));
+    return subquery.isPresent() ? subquery : wholeTable;
+  }
+
+  private static Optional<SqlMeta> parse(String query, String dialect) {
+    return OpenLineageSql.parse(Collections.singletonList(query), dialect);
+  }
+
   public static String queryStringFromJdbcOptions(JDBCOptions options) {
-    String tableOrQuery = options.tableOrQuery();
-    return tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
+    return unwrapParentheses(options.tableOrQuery());
+  }
+
+  /** Returns the text between the first {@code (} and the last {@code )}. */
+  private static String unwrapParentheses(String sql) {
+    return sql.substring(0, sql.lastIndexOf(")")).replaceFirst("\\(", "");
   }
 
   private static boolean dbtableIsASubquery(String dbtable) {

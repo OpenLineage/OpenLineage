@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -75,7 +76,8 @@ abstract class BaseCatalogTypeHandler {
     return new Path(warehouseLocation, String.join(Path.SEPARATOR, pathComponents));
   }
 
-  Map<String, String> catalogProperties(Map<String, String> catalogConf) {
+  Map<String, String> catalogProperties(
+      Map<String, String> catalogConf, OpenLineageContext context) {
     return Collections.emptyMap();
   }
 
@@ -99,9 +101,9 @@ abstract class BaseCatalogTypeHandler {
               loadedTable.getClass().getName(),
               identifier);
 
-          // Try to extract the underlying Iceberg Table using reflection
-          // SparkChangelogTable and other wrappers typically have a table() method
-          Optional<Table> reflectedTable = extractIcebergTableViaReflection(loadedTable);
+          // Try to extract the underlying Iceberg Table through a public table() accessor, the
+          // same way IcebergRelationHandler unwraps tables such as SparkRewriteTable
+          Optional<Table> reflectedTable = IcebergSparkTables.fromTableAccessor(loadedTable);
           if (reflectedTable.isPresent()) {
             log.debug(
                 "Successfully extracted Iceberg Table via reflection for identifier: {}",
@@ -144,40 +146,5 @@ abstract class BaseCatalogTypeHandler {
       log.error("Unexpected error while loading table: {}", identifier, e);
       throw e;
     }
-  }
-
-  /**
-   * Attempts to extract an Iceberg Table from unknown table implementations using reflection. This
-   * handles cases like SparkChangelogTable and future table types that wrap an Iceberg Table.
-   *
-   * @param table The loaded Spark table
-   * @return Optional containing the Iceberg Table if successfully extracted, empty otherwise
-   */
-  private Optional<Table> extractIcebergTableViaReflection(
-      org.apache.spark.sql.connector.catalog.Table table) {
-    try {
-      // Try to invoke table() method which is common across Iceberg table implementations
-      java.lang.reflect.Method tableMethod = table.getClass().getMethod("table");
-      Object result = tableMethod.invoke(table);
-
-      if (result instanceof Table) {
-        return Optional.of((Table) result);
-      } else if (result != null) {
-        log.warn(
-            "table() method returned non-Table type: {} for table class: {}",
-            result.getClass().getName(),
-            table.getClass().getName());
-      }
-    } catch (NoSuchMethodException e) {
-      log.debug(
-          "No table() method found on table type: {}. This may not be an Iceberg table wrapper.",
-          table.getClass().getName());
-    } catch (Exception e) {
-      log.warn(
-          "Failed to extract Iceberg Table via reflection from table type: {}",
-          table.getClass().getName(),
-          e);
-    }
-    return Optional.empty();
   }
 }
