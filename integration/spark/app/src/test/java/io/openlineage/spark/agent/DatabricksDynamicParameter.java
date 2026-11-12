@@ -36,6 +36,13 @@ public enum DatabricksDynamicParameter implements DynamicParameter {
   ClusterId("development.clusterId", ""),
 
   /**
+   * When set to {@code true} and an existing cluster is used, the cluster is started (or restarted)
+   * after the OpenLineage jar is uploaded, so that the init script loads the fresh jar. Requires
+   * only the CAN_RESTART permission on the cluster.
+   */
+  RestartExistingCluster("development.restartExistingCluster", "false"),
+
+  /**
    * When set to {@code true}, prevents the EMR cluster from terminating after tests complete. This
    * allows for manual inspection and debugging of the cluster state.
    */
