@@ -15,6 +15,37 @@ import org.junit.jupiter.api.Test;
 class EventEmitterTest {
   @SneakyThrows
   @Test
+  void usesSparkJobNamespaceWhenNotConfigured() {
+    SparkConf conf = new SparkConf(false).setAppName("orders");
+    EventEmitter emitter = new EventEmitter(ArgumentParser.parse(conf), "orders", conf);
+    assertThat(emitter.getJobNamespace()).isEqualTo("spark-jobs");
+  }
+
+  @SneakyThrows
+  @Test
+  void keepsExplicitDefaultJobNamespace() {
+    SparkConf conf =
+        new SparkConf(false).setAppName("orders").set("spark.openlineage.namespace", "default");
+    EventEmitter emitter = new EventEmitter(ArgumentParser.parse(conf), "orders", conf);
+    assertThat(emitter.getJobNamespace()).isEqualTo("default");
+  }
+
+  @Test
+  void namespaceMergeDistinguishesUnsetFromExplicitDefault() {
+    SparkOpenLineageConfig configured = new SparkOpenLineageConfig();
+    configured.setNamespace("custom");
+    SparkOpenLineageConfig unset = new SparkOpenLineageConfig();
+    assertThat(unset.getNamespace()).isEqualTo("spark-jobs");
+    assertThat(configured.mergeWithNonNull(unset).getNamespace()).isEqualTo("custom");
+    for (String namespace : new String[] {"default", "spark-jobs"}) {
+      SparkOpenLineageConfig override = new SparkOpenLineageConfig();
+      override.setNamespace(namespace);
+      assertThat(configured.mergeWithNonNull(override).getNamespace()).isEqualTo(namespace);
+    }
+  }
+
+  @SneakyThrows
+  @Test
   void testApplicationNameOverride() {
     String appName = "test-app";
     String overrideName = "override-app";
@@ -42,5 +73,32 @@ class EventEmitterTest {
     eventEmitter.setApplicationJobName(resolvedName);
 
     assertThat(eventEmitter.getApplicationJobName()).isEqualTo(resolvedName);
+  }
+
+  @SneakyThrows
+  @Test
+  void keepsConfiguredJobNamespaceWithoutSharedRegistry() {
+    SparkConf conf =
+        new SparkConf(false)
+            .setAppName("native-tables")
+            .set("spark.openlineage.namespace", "spark-jobs");
+
+    EventEmitter emitter = new EventEmitter(ArgumentParser.parse(conf), "native-tables", conf);
+
+    assertThat(emitter.getJobNamespace()).isEqualTo("spark-jobs");
+  }
+
+  @SneakyThrows
+  @Test
+  void keepsConfiguredJobNamespaceWithSharedRegistry() {
+    SparkConf conf =
+        new SparkConf(false)
+            .setAppName("hive-tables")
+            .set("spark.openlineage.namespace", "spark-jobs")
+            .set("spark.openlineage.dataset.identity.sources", "{\"sources\":[]}");
+
+    EventEmitter emitter = new EventEmitter(ArgumentParser.parse(conf), "hive-tables", conf);
+
+    assertThat(emitter.getJobNamespace()).isEqualTo("spark-jobs");
   }
 }

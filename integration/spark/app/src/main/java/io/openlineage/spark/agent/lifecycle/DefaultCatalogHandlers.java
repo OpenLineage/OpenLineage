@@ -6,6 +6,8 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import com.google.common.collect.ImmutableList;
+import io.openlineage.spark.agent.gravitino.GravitinoHiveCatalogHandler;
+import io.openlineage.spark.agent.gravitino.LanceCatalogHandler;
 import io.openlineage.spark.agent.lifecycle.plan.catalog.CatalogHandler;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.ClickHouseHandler;
@@ -23,6 +25,8 @@ final class DefaultCatalogHandlers {
 
   static List<CatalogHandler> list(OpenLineageContext context) {
     return ImmutableList.of(
+        new GravitinoHiveCatalogHandler(),
+        new LanceCatalogHandler(),
         new IcebergHandler(context),
         new DeltaHandler(context),
         new ClickHouseHandler(context),

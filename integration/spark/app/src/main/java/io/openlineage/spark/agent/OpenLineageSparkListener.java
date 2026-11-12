@@ -479,7 +479,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
       // Needs to be done before initializing OpenLineageClient
       initializeMetrics(config);
-      contextFactory = new ContextFactory(new EventEmitter(config, appName), meterRegistry, config);
+      contextFactory =
+          new ContextFactory(new EventEmitter(config, appName, sparkConf), meterRegistry, config);
       circuitBreaker = new CircuitBreakerFactory(config.getCircuitBreaker()).build();
       registerStateGauges();
     } catch (URISyntaxException e) {

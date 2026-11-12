@@ -70,6 +70,20 @@ class OpenLineageJobStatusChangedListenerTest {
 
   @Test
   @SneakyThrows
+  void keepsExplicitDefaultJobNamespace() {
+    context.getConfiguration().setString("openlineage.job.namespace", "default");
+    listener = new OpenLineageJobStatusChangedListener(context, factory);
+    JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
+    when(createdEvent.jobName()).thenReturn("orders");
+    listener.onEvent(createdEvent);
+    RunEvent event =
+        OpenLineageClientUtils.runEventFromJson(
+            Files.readAllLines(Path.of(eventFileLocation)).get(0));
+    assertThat(event.getJob().getNamespace()).isEqualTo("default");
+  }
+
+  @Test
+  @SneakyThrows
   void testOnEventForJobCreated() {
     listener = new OpenLineageJobStatusChangedListener(context, factory);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);

@@ -15,6 +15,9 @@ plugins {
     id 'com.github.johnrengelman.shadow'
 }
 
+sourceSets.main.java.srcDir("../../lineage-identity/src/main/java")
+sourceSets.test.java.srcDir("../../lineage-identity/src/test/java")
+
 group = "io.openlineage"
 
 ext {

@@ -63,4 +63,23 @@ public class HiveUtilsTest {
     assertThat(symlink.getNamespace()).isEqualTo("file");
     assertThat(symlink.getType().name()).isEqualTo("LOCATION");
   }
+
+  @Test
+  public void testDatasetIdentifierTableWithInvalidLocation() {
+    org.apache.hadoop.hive.metastore.api.Table metastoreApiTable =
+        new org.apache.hadoop.hive.metastore.api.Table();
+    metastoreApiTable.setTableName("mytable");
+    metastoreApiTable.setDbName("mydb");
+    metastoreApiTable.setCatName("mycatalog");
+    StorageDescriptor sd = new StorageDescriptor();
+    sd.setLocation("hdfs://namenode.example/invalid path");
+    metastoreApiTable.setSd(sd);
+
+    DatasetIdentifier datasetIdentifier =
+        getDatasetIdentifierFromTable(new Table(metastoreApiTable));
+
+    assertThat(datasetIdentifier.getName()).isEqualTo("mydb.mytable");
+    assertThat(datasetIdentifier.getNamespace()).isEqualTo("mycatalog");
+    assertThat(datasetIdentifier.getSymlinks()).isEmpty();
+  }
 }

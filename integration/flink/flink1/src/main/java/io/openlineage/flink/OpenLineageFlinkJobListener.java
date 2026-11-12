@@ -51,7 +51,7 @@ import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 @Builder
 public class OpenLineageFlinkJobListener implements JobListener {
 
-  public static final String DEFAULT_JOB_NAMESPACE = "flink_jobs";
+  public static final String DEFAULT_JOB_NAMESPACE = "flink-jobs";
 
   static final Duration DEFAULT_TRACKING_INTERVAL = Duration.ofSeconds(10);
 

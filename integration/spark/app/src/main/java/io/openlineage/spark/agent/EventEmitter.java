@@ -11,10 +11,13 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.TransportFactory;
 import io.openlineage.client.utils.UUIDUtils;
+import io.openlineage.integration.identity.DatasetIdentityNormalizer;
 import io.openlineage.spark.api.DebugConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,6 +26,7 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.SparkConf;
 
 @Slf4j
 public class EventEmitter {
@@ -43,9 +47,16 @@ public class EventEmitter {
   @Getter private UUID applicationRunId;
   @Getter @Setter private String applicationJobName;
   @Getter private Optional<List<String>> customEnvironmentVariables;
+  private final DatasetIdentityNormalizer identityNormalizer;
 
   public EventEmitter(SparkOpenLineageConfig config, String applicationJobName)
       throws URISyntaxException {
+    this(config, applicationJobName, null);
+  }
+
+  public EventEmitter(SparkOpenLineageConfig config, String applicationJobName, SparkConf sparkConf)
+      throws URISyntaxException {
+    this.identityNormalizer = DatasetIdentityNormalizer.fromTransport(config.getTransportConfig());
     this.jobNamespace = config.getNamespace();
     this.parentJobName = Optional.ofNullable(config.getParentJobName());
     this.parentJobNamespace = Optional.ofNullable(config.getParentJobNamespace());
@@ -87,24 +98,34 @@ public class EventEmitter {
         this.overriddenApplicationRunId.map(UUID::fromString).orElse(UUIDUtils.generateNewUUID());
   }
 
-  public void emit(OpenLineage.RunEvent event) {
+  public synchronized void emit(OpenLineage.RunEvent event) {
     try {
-      this.client.emit(event);
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Emitting lineage completed successfully  with run id: {}: {}",
-            event.getRun().getRunId(),
-            OpenLineageClientUtils.toJson(event));
-      } else {
-        log.info(
-            "Emitting lineage completed successfully with run id: {}", event.getRun().getRunId());
+      List<OpenLineage.RunEvent> ready =
+          identityNormalizer == null
+              ? Collections.singletonList(event)
+              : identityNormalizer.normalizeEvents(event, null);
+      for (OpenLineage.RunEvent readyEvent : ready) {
+        emitNormalized(readyEvent);
       }
-    } catch (OpenLineageClientException exception) {
+    } catch (OpenLineageClientException | IOException | IllegalArgumentException exception) {
       log.error("Could not emit lineage w/ exception", exception);
     }
   }
 
-  public void close() {
+  private void emitNormalized(OpenLineage.RunEvent event) {
+    this.client.emit(event);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "Emitting lineage completed successfully  with run id: {}: {}",
+          event.getRun().getRunId(),
+          OpenLineageClientUtils.toJson(event));
+    } else {
+      log.info(
+          "Emitting lineage completed successfully with run id: {}", event.getRun().getRunId());
+    }
+  }
+
+  public synchronized void close() {
     try {
       client.close();
     } catch (Exception e) {

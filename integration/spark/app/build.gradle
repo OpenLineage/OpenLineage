@@ -20,6 +20,14 @@ plugins {
     id "org.gradle.test-retry" version "1.6.6"
 }
 
+sourceSets.main.java.srcDir("../../lineage-identity/src/main/java")
+
+spotless {
+    java {
+        target("src/**/*.java")
+    }
+}
+
 ext {
     spark = project.findProperty('spark.version').toString()
     scala = project.findProperty('scala.binary.version').toString()

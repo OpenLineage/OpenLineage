@@ -22,9 +22,11 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.V2SessionCatalog;
+import scala.Option;
 
 @Slf4j
 public class V2SessionCatalogHandler implements CatalogHandler {
@@ -65,11 +67,8 @@ public class V2SessionCatalogHandler implements CatalogHandler {
             "Unable to extract DatasetIdentifier from V2SessionCatalog");
       }
 
-      // table is dropped, no information in catalog
-      di =
-          PathUtils.fromPath(
-              PathUtils.reconstructDefaultLocation(
-                  namespaceLocation, identifier.namespace(), identifier.name()));
+      // Namespace metadata already contains the database directory, including custom locations.
+      di = PathUtils.fromPath(new Path(namespaceLocation, identifier.name()));
     }
     if (CatalogDatasetFacetUtils.isHiveSupportEnabled(session.sparkContext())
         && isHiveCatalog(tableCatalog)) {
@@ -86,9 +85,15 @@ public class V2SessionCatalogHandler implements CatalogHandler {
       }
     }
 
-    if (namespaceLocation != null && di.getSymlinks().isEmpty()) {
-      di.withSymlink(
-          new Symlink(identifier.toString(), namespaceMetadata.get("location"), SymlinkType.TABLE));
+    if (di.getSymlinks().isEmpty()) {
+      String[] namespace = identifier.namespace();
+      TableIdentifier tableIdentifier =
+          new TableIdentifier(
+              identifier.name(),
+              Option.apply(namespace.length == 0 ? null : namespace[namespace.length - 1]));
+      // Use the same warehouse and table alias as V1 read/write events.
+      return PathUtils.fromTableIdentifier(
+          tableIdentifier, session.sparkContext(), FilesystemDatasetUtils.toLocation(di));
     }
     return di;
   }
