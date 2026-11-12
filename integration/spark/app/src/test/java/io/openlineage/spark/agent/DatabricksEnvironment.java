@@ -22,7 +22,7 @@ import com.databricks.sdk.service.compute.InitScriptInfo;
 import com.databricks.sdk.service.compute.ListClustersRequest;
 import com.databricks.sdk.service.compute.State;
 import com.databricks.sdk.service.compute.WorkspaceStorageInfo;
-import com.databricks.sdk.service.files.Delete;
+import com.databricks.sdk.service.files.FileInfo;
 import com.databricks.sdk.service.jobs.Run;
 import com.databricks.sdk.service.jobs.Source;
 import com.databricks.sdk.service.jobs.SparkPythonTask;
@@ -34,6 +34,7 @@ import com.databricks.sdk.service.workspace.ImportFormat;
 import com.databricks.sdk.support.Wait;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.Hashing;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
@@ -58,7 +59,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -183,13 +183,8 @@ public class DatabricksEnvironment implements AutoCloseable {
   private ClusterInitialization prepareNewCluster() {
     uploadInitializationScript();
 
-    // We may reuse the cluster name where there are existing old logs. This can happen if the
-    // tests failed. Here we make sure the logs are clean.
-    Delete deleteClusterLogs = new Delete();
-    deleteClusterLogs.setPath(DBFS_CLUSTER_LOGS);
-    deleteClusterLogs.setRecursive(true);
-    dbfs.delete(deleteClusterLogs);
-
+    // Cluster logs are stored per cluster ID, so a new cluster never sees old logs. Do not wipe
+    // DBFS_CLUSTER_LOGS here: it is shared with the other matrix jobs running in parallel.
     log.info("Creating a new Databricks cluster.");
     String sparkPlatformVersion = getSparkPlatformVersion();
     String clusterName = CLUSTER_NAME + "_" + sparkPlatformVersion;
@@ -335,7 +330,9 @@ public class DatabricksEnvironment implements AutoCloseable {
   @SneakyThrows
   public List<RunEvent> runScript(String scriptName) {
     // upload scripts
-    String dbfsScriptPath = "dbfs:/databricks/openlineage/scripts/" + scriptName;
+    // per platform version, so parallel matrix jobs never rewrite a script another job is running
+    String dbfsScriptPath =
+        "dbfs:/databricks/openlineage/scripts/" + platformVersion + "/" + scriptName;
     log.info("Uploading script [{}] to [{}]", scriptName, dbfsScriptPath);
     String taskName = scriptName.replace(".py", "");
 
@@ -440,15 +437,47 @@ public class DatabricksEnvironment implements AutoCloseable {
     } catch (RuntimeException e) {
     }
 
-    // clear other jars in DBFS
+    // The matrix jobs (one per Spark version) share this DBFS directory and run in parallel. The
+    // jar name includes a content hash, so jobs building the same commit use the same file and
+    // never delete or overwrite each other's jar. Only jars with a different name are stale.
+    String targetName = hashedJarName(jarFile);
+    String targetLocation = "dbfs:/databricks/openlineage/" + targetName;
+    boolean alreadyUploaded = false;
     if (dbfs.list("dbfs:/databricks/openlineage/") != null) {
-      StreamSupport.stream(dbfs.list("dbfs:/databricks/openlineage/").spliterator(), false)
-          .filter(f -> f.getPath().contains("openlineage-spark"))
-          .filter(f -> f.getPath().endsWith(".jar"))
-          .forEach(f -> dbfs.delete(f.getPath()));
+      for (FileInfo f : dbfs.list("dbfs:/databricks/openlineage/")) {
+        String path = f.getPath();
+        if (!path.contains("openlineage-spark") || !path.endsWith(".jar")) {
+          continue;
+        }
+        if (path.endsWith("/" + targetName)) {
+          alreadyUploaded = true;
+        } else {
+          try {
+            dbfs.delete(path);
+          } catch (RuntimeException e) {
+            log.debug("Could not delete the stale jar [{}], another job may have removed it", path);
+          }
+        }
+      }
     }
 
-    uploadFileToDbfs(jarFile);
+    if (alreadyUploaded) {
+      log.info("OpenLineage jar already exists at [{}], keeping it", targetLocation);
+      return;
+    }
+    uploadFileToDbfs(jarFile, targetLocation);
+  }
+
+  /** Adds a short content hash before the extension, e.g. openlineage-spark_2.12-1.0-abc123.jar. */
+  @SneakyThrows
+  private static String hashedJarName(Path jarFile) {
+    String hash =
+        com.google.common.io.Files.asByteSource(jarFile.toFile())
+            .hash(Hashing.sha256())
+            .toString()
+            .substring(0, 12);
+    String name = jarFile.getFileName().toString();
+    return name.substring(0, name.length() - ".jar".length()) + "-" + hash + ".jar";
   }
 
   /**
@@ -474,12 +503,10 @@ public class DatabricksEnvironment implements AutoCloseable {
   }
 
   @SneakyThrows
-  private void uploadFileToDbfs(Path jarFile) {
-    String basePath = "dbfs:/databricks/openlineage/";
+  private void uploadFileToDbfs(Path jarFile, String targetLocation) {
     FileInputStream fis = new FileInputStream(jarFile.toString());
 
-    String tempLocation = basePath + jarFile.getFileName() + UUID.randomUUID() + ".tmp";
-    String targetLocation = basePath + jarFile.getFileName();
+    String tempLocation = targetLocation + UUID.randomUUID() + ".tmp";
 
     // copy to temp location to avoid conflicts in case of concurrent uploads
     OutputStream outputStream = dbfs.getOutputStream(tempLocation);
