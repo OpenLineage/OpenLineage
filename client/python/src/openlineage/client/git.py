@@ -147,7 +147,6 @@ def _read_loose_tag_target(common_dir: Path, object_sha: str) -> str | None:
             return None
         # The header and the "object <sha>" line sit at the very start of the
         # object; don't inflate a large blob or commit just to reject it.
-        try:
         with object_path.open("rb") as f:
             raw = zlib.decompressobj().decompress(f.read(128), 128)
     except (OSError, zlib.error):
