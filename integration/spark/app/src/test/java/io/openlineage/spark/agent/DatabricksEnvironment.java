@@ -10,6 +10,7 @@ import static org.awaitility.Awaitility.await;
 
 import com.databricks.sdk.WorkspaceClient;
 import com.databricks.sdk.core.DatabricksConfig;
+import com.databricks.sdk.core.error.platform.ResourceAlreadyExists;
 import com.databricks.sdk.mixin.DbfsExt;
 import com.databricks.sdk.service.compute.ClusterDetails;
 import com.databricks.sdk.service.compute.ClusterLogConf;
@@ -492,7 +493,16 @@ public class DatabricksEnvironment implements AutoCloseable {
       len = fis.read(buf);
     }
     outputStream.close();
-    dbfs.move(tempLocation, targetLocation);
+    try {
+      dbfs.move(tempLocation, targetLocation);
+    } catch (ResourceAlreadyExists e) {
+      // The matrix jobs (one per Spark version) run in parallel against the same workspace and
+      // upload the same jar to the same path. If another job moved its copy first, its jar is
+      // already in place, so drop our temporary copy instead of failing.
+      log.info("OpenLineage jar already exists at [{}], keeping it", targetLocation);
+      dbfs.delete(tempLocation);
+      return;
+    }
     log.info("OpenLineage jar has been uploaded to [{}]", targetLocation);
   }
 
