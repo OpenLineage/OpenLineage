@@ -19,6 +19,7 @@ import com.databricks.sdk.service.compute.DataSecurityMode;
 import com.databricks.sdk.service.compute.DbfsStorageInfo;
 import com.databricks.sdk.service.compute.InitScriptInfo;
 import com.databricks.sdk.service.compute.ListClustersRequest;
+import com.databricks.sdk.service.compute.State;
 import com.databricks.sdk.service.compute.WorkspaceStorageInfo;
 import com.databricks.sdk.service.files.Delete;
 import com.databricks.sdk.service.jobs.Run;
@@ -39,6 +40,7 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,6 +72,7 @@ public class DatabricksEnvironment implements AutoCloseable {
       ImmutableMap.of("3.4.4", "13.3.x-scala2.12", "3.5.6", "16.4.x-scala2.12");
   public static final Map<String, String> PLATFORM_VERSIONS =
       ImmutableMap.of("3.4.4", "13.3", "3.5.6", "16.4");
+  private static final Duration CLUSTER_START_TIMEOUT = Duration.ofMinutes(10);
   public static final String NODE_TYPE = "Standard_DS3_v2";
   public static final String INIT_SCRIPT_FILE = "/Shared/open-lineage-init-script.sh";
   public static final String DBFS_CLUSTER_LOGS = "dbfs:/databricks/openlineage/cluster-logs";
@@ -114,6 +117,7 @@ public class DatabricksEnvironment implements AutoCloseable {
     static class Development {
       private String existingClusterId;
       private boolean preventClusterTermination;
+      private boolean restartExistingCluster;
       private String log4jLogsLocation;
       private boolean fetchLog4jLogs;
       private String stdoutLocation;
@@ -147,10 +151,19 @@ public class DatabricksEnvironment implements AutoCloseable {
          To ensure the updated jar is used, the cluster must be restarted after updating the jar.
          Without a restart, the initialization script won't run again, and the old jar will still be used.
       */
-      log.warn(
-          "⚠️ The cluster must be restarted to apply changes if the OpenLineage jar has been updated. ⚠️");
       this.clusterId = resolvedClusterId;
-      this.initializationSuccessful = true;
+      if (properties.getDevelopment().isRestartExistingCluster()) {
+        // The jar has just been uploaded to DBFS above, so the restart makes the init script pick
+        // it up. The init script itself is refreshed too, so the copy in the workspace cannot go
+        // stale. This needs write access to the workspace /Shared folder and CAN_RESTART on the
+        // cluster, but not cluster creation rights.
+        uploadInitializationScriptUnchecked();
+        this.initializationSuccessful = restartExistingCluster(resolvedClusterId);
+      } else {
+        log.warn(
+            "⚠️ The cluster must be restarted to apply changes if the OpenLineage jar has been updated. ⚠️");
+        this.initializationSuccessful = true;
+      }
     } else {
       ClusterInitialization clusterInitialization = prepareNewCluster();
       this.initializationSuccessful = clusterInitialization.isSuccessful();
@@ -192,6 +205,47 @@ public class DatabricksEnvironment implements AutoCloseable {
       return new ClusterInitialization(clusterId, false);
     }
     return new ClusterInitialization(clusterId, true);
+  }
+
+  private void uploadInitializationScriptUnchecked() {
+    try {
+      uploadInitializationScript();
+    } catch (IOException e) {
+      throw new UncheckedIOException("Failed to upload the cluster init script", e);
+    }
+  }
+
+  /**
+   * Starts a terminated cluster or restarts a running one and waits until it is running, so the
+   * init script copies the just-uploaded OpenLineage jar onto it.
+   *
+   * @return true if the cluster is running after the operation
+   */
+  private boolean restartExistingCluster(String existingClusterId) {
+    try {
+      State state = workspace.clusters().get(existingClusterId).getState();
+      log.info("Existing cluster [{}] is in state [{}]", existingClusterId, state);
+      if (state == State.TERMINATING) {
+        workspace.clusters().waitGetClusterTerminated(existingClusterId);
+        state = State.TERMINATED;
+      }
+      if (state == State.TERMINATED) {
+        log.info("Starting the existing cluster [{}]...", existingClusterId);
+        workspace.clusters().start(existingClusterId).get(CLUSTER_START_TIMEOUT);
+      } else if (state == State.PENDING || state == State.RESTARTING || state == State.RESIZING) {
+        // already coming up; it will run the init script with the uploaded jar only if it was
+        // started after the upload, so restart it once it is running
+        workspace.clusters().waitGetClusterRunning(existingClusterId);
+        workspace.clusters().restart(existingClusterId).get(CLUSTER_START_TIMEOUT);
+      } else {
+        log.info("Restarting the existing cluster [{}]...", existingClusterId);
+        workspace.clusters().restart(existingClusterId).get(CLUSTER_START_TIMEOUT);
+      }
+      return true;
+    } catch (Exception e) {
+      log.error("Failed to (re)start the existing cluster [{}]", existingClusterId, e);
+      return false;
+    }
   }
 
   private void ensureClusterDoesntExist(String clusterName) {

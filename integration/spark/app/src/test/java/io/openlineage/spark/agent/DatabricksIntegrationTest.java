@@ -60,6 +60,9 @@ class DatabricksIntegrationTest {
                 .development(
                     DatabricksEnvironment.DatabricksEnvironmentProperties.Development.builder()
                         .existingClusterId(DatabricksDynamicParameter.ClusterId.resolve())
+                        .restartExistingCluster(
+                            Boolean.parseBoolean(
+                                DatabricksDynamicParameter.RestartExistingCluster.resolve()))
                         .preventClusterTermination(
                             Boolean.parseBoolean(
                                 DatabricksDynamicParameter.PreventClusterTermination.resolve()))
