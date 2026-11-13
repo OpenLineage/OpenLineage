@@ -866,14 +866,11 @@ jobs:
             - run: mkdir -p app/build/events
             - run: ./gradlew --console=plain clean shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
             - run:
+                # The tests restart the pre-created, pinned cluster named openlineage-test... that runs
+                # the Databricks runtime for this Spark/Scala version, so the CI principal does not
+                # need cluster creation rights. See DatabricksIntegrationTest.
                 name: Run Databricks integration tests on a pre-created cluster
-                command: |
-                  # Clusters are pre-created (one per Spark version) so that the CI principal does
-                  # not need cluster creation rights. Set DATABRICKS_CLUSTER_ID_<spark version with
-                  # dots replaced by underscores>, e.g. DATABRICKS_CLUSTER_ID_3_5_6.
-                  CLUSTER_ID_VAR="DATABRICKS_CLUSTER_ID_${SPARK//./_}"
-                  CLUSTER_ID="${!CLUSTER_ID_VAR:?${CLUSTER_ID_VAR} is not set}"
-                  ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Dopenlineage.tests.databricks.workspace.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.workspace.token=$DATABRICKS_TOKEN -Dopenlineage.tests.databricks.development.clusterId=$CLUSTER_ID -Dopenlineage.tests.databricks.development.restartExistingCluster=true
+                command: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Dopenlineage.tests.databricks.workspace.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.workspace.token=$DATABRICKS_TOKEN
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
             - store_artifacts:

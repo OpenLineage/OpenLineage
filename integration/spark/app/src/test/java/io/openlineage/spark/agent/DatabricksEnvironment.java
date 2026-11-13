@@ -10,7 +10,6 @@ import static org.awaitility.Awaitility.await;
 
 import com.databricks.sdk.WorkspaceClient;
 import com.databricks.sdk.core.DatabricksConfig;
-import com.databricks.sdk.core.error.platform.ResourceAlreadyExists;
 import com.databricks.sdk.mixin.DbfsExt;
 import com.databricks.sdk.service.compute.ClusterDetails;
 import com.databricks.sdk.service.compute.ClusterLogConf;
@@ -20,6 +19,7 @@ import com.databricks.sdk.service.compute.DataSecurityMode;
 import com.databricks.sdk.service.compute.DbfsStorageInfo;
 import com.databricks.sdk.service.compute.InitScriptInfo;
 import com.databricks.sdk.service.compute.ListClustersRequest;
+import com.databricks.sdk.service.compute.SparkVersion;
 import com.databricks.sdk.service.compute.State;
 import com.databricks.sdk.service.compute.WorkspaceStorageInfo;
 import com.databricks.sdk.service.files.FileInfo;
@@ -34,7 +34,6 @@ import com.databricks.sdk.service.workspace.ImportFormat;
 import com.databricks.sdk.support.Wait;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.Hashing;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
@@ -42,7 +41,6 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,37 +51,87 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Prepares a Databricks cluster for the integration tests and runs the test scripts on it.
+ *
+ * <p>The cluster is chosen in this order:
+ *
+ * <ol>
+ *   <li>the cluster given by {@code development.clusterId},
+ *   <li>a new cluster, created when {@code development.createCluster} is {@code true} (needs
+ *       cluster creation rights),
+ *   <li>otherwise, the only cluster named {@value #TEST_CLUSTER_NAME_PREFIX}... whose Databricks
+ *       runtime matches the Spark and Scala versions of the build. This is what CI uses: the
+ *       clusters are pre-created and pinned, and the CI principal can only restart them.
+ * </ol>
+ */
 @Slf4j
 public class DatabricksEnvironment implements AutoCloseable {
 
-  public static final String CLUSTER_NAME = "openlineage-test-cluster";
-  public static final Map<String, String> PLATFORM_VERSIONS_NAMES =
-      ImmutableMap.of("3.4.4", "13.3.x-scala2.12", "3.5.6", "16.4.x-scala2.12");
-  public static final Map<String, String> PLATFORM_VERSIONS =
-      ImmutableMap.of("3.4.4", "13.3", "3.5.6", "16.4");
+  /** CI clusters are found by this name prefix and their Databricks runtime. */
+  public static final String TEST_CLUSTER_NAME_PREFIX = "openlineage-test";
+
+  /**
+   * Clusters created by the tests use another prefix, so a leftover one is never mistaken for a CI
+   * cluster, and creating one never deletes a CI cluster with the same name.
+   */
+  public static final String CREATED_CLUSTER_NAME_PREFIX = "openlineage-dev-cluster";
+
+  /**
+   * Databricks runtime (major or major.minor) for each supported "spark.version/scala version".
+   * 16.4 LTS is the last runtime with Spark 3.5. 18 LTS runs Spark 4.1 and only Scala 2.13.
+   */
+  public static final Map<String, String> DATABRICKS_RUNTIMES =
+      ImmutableMap.of(
+          "3.5.6/2.12", "16.4",
+          "3.5.6/2.13", "16.4",
+          "4.1.3/2.13", "18");
+
   private static final Duration CLUSTER_START_TIMEOUT = Duration.ofMinutes(10);
   public static final String NODE_TYPE = "Standard_DS3_v2";
   public static final String INIT_SCRIPT_FILE = "/Shared/open-lineage-init-script.sh";
   public static final String DBFS_CLUSTER_LOGS = "dbfs:/databricks/openlineage/cluster-logs";
+
+  /**
+   * Each cluster loads the OpenLineage jar from its own directory, named after the cluster, so jobs
+   * running in parallel for different Scala versions never share or delete each other's jar.
+   */
+  public static final String DBFS_CLUSTER_JARS = "dbfs:/databricks/openlineage/clusters/";
+
+  private static final String INIT_SCRIPT_STAGE_DIR = "STAGE_DIR=\"/dbfs/databricks/openlineage\"";
+  private static final String INIT_SCRIPT_CLUSTER_STAGE_DIR =
+      "STAGE_DIR=\"/dbfs/databricks/openlineage/clusters/${DB_CLUSTER_NAME}\"";
+
   private static final String executionTimestamp =
       ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
   private final DatabricksEnvironmentProperties properties;
   private final WorkspaceClient workspace;
   private final DbfsExt dbfs;
+  private final String runtime;
+  private final String scalaVersion;
   private final String clusterId;
+  private final boolean clusterCreated;
+
+  /**
+   * Suffix for table names, paths and the events file, e.g. {@code 16_4_scala2_13}. It is passed to
+   * the scripts, so that jobs for the same runtime but different Scala versions don't collide.
+   */
   @Getter private final String platformVersion;
+
   private final String dbfsEventsFile;
   private final Path clusterLogs;
   private final Path stdoutLogs;
@@ -111,12 +159,14 @@ public class DatabricksEnvironment implements AutoCloseable {
     @Getter
     static class Cluster {
       private String sparkVersion;
+      private String scalaVersion;
     }
 
     @Builder
     @Getter
     static class Development {
       private String existingClusterId;
+      private boolean createCluster;
       private boolean preventClusterTermination;
       private boolean restartExistingCluster;
       private String log4jLogsLocation;
@@ -130,9 +180,13 @@ public class DatabricksEnvironment implements AutoCloseable {
     }
   }
 
+  @SneakyThrows
   DatabricksEnvironment(DatabricksEnvironmentProperties properties) {
     log.info("Initializing Databricks environment");
     this.properties = properties;
+    this.scalaVersion = properties.getCluster().getScalaVersion();
+    this.runtime = resolveRuntime(properties.getCluster().getSparkVersion(), scalaVersion);
+    this.platformVersion = runtime.replace(".", "_") + "_scala" + scalaVersion.replace(".", "_");
     this.workspace =
         new WorkspaceClient(
             new DatabricksConfig()
@@ -140,75 +194,151 @@ public class DatabricksEnvironment implements AutoCloseable {
                 .setToken(properties.getWorkspace().getToken()));
     this.dbfs = workspace.dbfs();
 
-    uploadOpenLineageJar();
-
-    // Create cluster or connect to an existing one
-    String resolvedClusterId = properties.getDevelopment().getExistingClusterId();
-    boolean attachingToExistingCluster = !"".equals(resolvedClusterId);
-    if (attachingToExistingCluster) {
-      log.info("Attaching to the existing cluster [{}]", resolvedClusterId);
-      /*
-         OpenLineage jars are copied from DBFS to the cluster during the initialization script execution.
-         To ensure the updated jar is used, the cluster must be restarted after updating the jar.
-         Without a restart, the initialization script won't run again, and the old jar will still be used.
-      */
-      this.clusterId = resolvedClusterId;
-      if (properties.getDevelopment().isRestartExistingCluster()) {
-        // The jar has just been uploaded to DBFS above, so the restart makes the init script pick
-        // it up. The init script itself is refreshed too, so the copy in the workspace cannot go
-        // stale. This needs write access to the workspace /Shared folder and CAN_RESTART on the
-        // cluster, but not cluster creation rights.
-        uploadInitializationScriptUnchecked();
-        this.initializationSuccessful = restartExistingCluster(resolvedClusterId);
+    DatabricksEnvironmentProperties.Development development = properties.getDevelopment();
+    String existingClusterId = development.getExistingClusterId();
+    if (existingClusterId != null && !existingClusterId.isEmpty()) {
+      log.info("Attaching to the existing cluster [{}]", existingClusterId);
+      this.clusterId = existingClusterId;
+      this.clusterCreated = false;
+      uploadOpenLineageJar(workspace.clusters().get(existingClusterId).getClusterName());
+      if (development.isRestartExistingCluster()) {
+        uploadInitializationScript();
+        this.initializationSuccessful = restartExistingCluster(existingClusterId);
       } else {
+        /*
+           OpenLineage jars are copied from DBFS to the cluster during the initialization script execution.
+           To ensure the updated jar is used, the cluster must be restarted after updating the jar.
+           Without a restart, the initialization script won't run again, and the old jar will still be used.
+        */
         log.warn(
             "⚠️ The cluster must be restarted to apply changes if the OpenLineage jar has been updated. ⚠️");
-        this.initializationSuccessful = true;
       }
-    } else {
-      ClusterInitialization clusterInitialization = prepareNewCluster();
-      this.initializationSuccessful = clusterInitialization.isSuccessful();
+    } else if (development.isCreateCluster()) {
+      String sparkVersionKey = resolveSparkVersionKey();
+      String clusterName = CREATED_CLUSTER_NAME_PREFIX + "_" + sparkVersionKey;
+      uploadOpenLineageJar(clusterName);
+      uploadInitializationScript();
+      ClusterInitialization clusterInitialization = createNewCluster(clusterName, sparkVersionKey);
       this.clusterId = clusterInitialization.getClusterId();
+      this.clusterCreated = true;
+      this.initializationSuccessful = clusterInitialization.isSuccessful();
+    } else {
+      ClusterDetails cluster = findTestCluster();
+      log.info(
+          "Using the cluster [{}] with ID [{}] on runtime [{}]",
+          cluster.getClusterName(),
+          cluster.getClusterId(),
+          cluster.getSparkVersion());
+      this.clusterId = cluster.getClusterId();
+      this.clusterCreated = false;
+      uploadOpenLineageJar(cluster.getClusterName());
+      uploadInitializationScript();
+      // the init script copies the jar onto the cluster only when the cluster starts
+      this.initializationSuccessful = restartExistingCluster(clusterId);
     }
 
-    this.platformVersion =
-        PLATFORM_VERSIONS.get(properties.cluster.getSparkVersion()).replace(".", "_");
     this.dbfsEventsFile = "dbfs:/databricks/openlineage/events_" + this.platformVersion + ".log";
     this.clusterLogs = Paths.get(DBFS_CLUSTER_LOGS + "/" + clusterId + "/driver/log4j-active.log");
     this.stdoutLogs = Paths.get(DBFS_CLUSTER_LOGS + "/" + clusterId + "/driver/stdout");
     this.stdout = Paths.get(DBFS_CLUSTER_LOGS + "/" + clusterId + "/driver/stderr");
   }
 
-  @SneakyThrows
-  private ClusterInitialization prepareNewCluster() {
-    uploadInitializationScript();
+  private static String resolveRuntime(String sparkVersion, String scalaVersion) {
+    String key = sparkVersion + "/" + scalaVersion;
+    if (!DATABRICKS_RUNTIMES.containsKey(key)) {
+      throw new IllegalStateException(
+          String.format(
+              "Unsupported Spark/Scala versions for the Databricks tests: [%s]. Supported: %s",
+              key, DATABRICKS_RUNTIMES.keySet()));
+    }
+    String runtime = DATABRICKS_RUNTIMES.get(key);
+    log.info("Databricks runtime: [{}], Scala [{}].", runtime, scalaVersion);
+    return runtime;
+  }
 
+  /** True for a runtime key such as {@code 16.4.x-scala2.13} of the required runtime and Scala. */
+  private boolean matchesRuntime(String sparkVersionKey) {
+    return sparkVersionKey != null
+        && sparkVersionKey.startsWith(runtime + ".")
+        && sparkVersionKey.endsWith("-scala" + scalaVersion);
+  }
+
+  /**
+   * Finds the only cluster named {@value #TEST_CLUSTER_NAME_PREFIX}... on the required runtime.
+   * Only clusters the principal has a permission on are listed, and terminated clusters only if
+   * they are pinned or terminated within the last 30 days.
+   */
+  private ClusterDetails findTestCluster() {
+    List<ClusterDetails> clusters =
+        StreamSupport.stream(
+                workspace.clusters().list(new ListClustersRequest()).spliterator(), false)
+            .collect(Collectors.toList());
+    List<ClusterDetails> matching =
+        clusters.stream()
+            .filter(c -> c.getClusterName() != null)
+            .filter(c -> c.getClusterName().startsWith(TEST_CLUSTER_NAME_PREFIX))
+            .filter(c -> matchesRuntime(c.getSparkVersion()))
+            .collect(Collectors.toList());
+    if (matching.size() != 1) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected exactly one cluster named [%s...] on Databricks runtime [%s] with Scala [%s], "
+                  + "found %d. Create and pin one, and give the CI principal CAN_RESTART on it. "
+                  + "Visible clusters: %s",
+              TEST_CLUSTER_NAME_PREFIX,
+              runtime,
+              scalaVersion,
+              matching.size(),
+              clusters.stream()
+                  .map(
+                      c ->
+                          String.format(
+                              "%s (%s, %s)",
+                              c.getClusterName(), c.getClusterId(), c.getSparkVersion()))
+                  .collect(Collectors.toList())));
+    }
+    return matching.get(0);
+  }
+
+  /** Picks the plain (no ML, GPU, Photon or ARM) runtime key, preferring an LTS one. */
+  private String resolveSparkVersionKey() {
+    String key =
+        workspace.clusters().sparkVersions().getVersions().stream()
+            .filter(v -> matchesRuntime(v.getKey()))
+            .filter(v -> v.getKey().indexOf('-') == v.getKey().lastIndexOf('-'))
+            .max(
+                Comparator.comparing(
+                        (SparkVersion v) -> v.getName() != null && v.getName().contains("LTS"))
+                    .thenComparing(SparkVersion::getKey))
+            .map(SparkVersion::getKey)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        String.format(
+                            "No Databricks runtime [%s] with Scala [%s] in the workspace",
+                            runtime, scalaVersion)));
+    log.info("Databricks runtime key: [{}].", key);
+    return key;
+  }
+
+  @SneakyThrows
+  private ClusterInitialization createNewCluster(String clusterName, String sparkVersionKey) {
     // Cluster logs are stored per cluster ID, so a new cluster never sees old logs. Do not wipe
     // DBFS_CLUSTER_LOGS here: it is shared with the other matrix jobs running in parallel.
     log.info("Creating a new Databricks cluster.");
-    String sparkPlatformVersion = getSparkPlatformVersion();
-    String clusterName = CLUSTER_NAME + "_" + sparkPlatformVersion;
     ensureClusterDoesntExist(clusterName);
     Wait<ClusterDetails, CreateClusterResponse> cluster =
-        createCluster(clusterName, sparkPlatformVersion);
+        createCluster(clusterName, sparkVersionKey);
 
-    String clusterId = cluster.getResponse().getClusterId();
-    log.info("Ensuring the new cluster [{}] with ID [{}] is running...", clusterName, clusterId);
+    String newClusterId = cluster.getResponse().getClusterId();
+    log.info("Ensuring the new cluster [{}] with ID [{}] is running...", clusterName, newClusterId);
     try {
-      cluster.get(Duration.ofMinutes(10));
+      cluster.get(CLUSTER_START_TIMEOUT);
     } catch (TimeoutException e) {
       log.error("Cluster [{}] failed to start within the specified time.", clusterName);
-      return new ClusterInitialization(clusterId, false);
+      return new ClusterInitialization(newClusterId, false);
     }
-    return new ClusterInitialization(clusterId, true);
-  }
-
-  private void uploadInitializationScriptUnchecked() {
-    try {
-      uploadInitializationScript();
-    } catch (IOException e) {
-      throw new UncheckedIOException("Failed to upload the cluster init script", e);
-    }
+    return new ClusterInitialization(newClusterId, true);
   }
 
   /**
@@ -247,7 +377,7 @@ public class DatabricksEnvironment implements AutoCloseable {
   private void ensureClusterDoesntExist(String clusterName) {
     log.debug("Ensuring the cluster with name [{}] doesn't exist.", clusterName);
     for (ClusterDetails clusterDetail : workspace.clusters().list(new ListClustersRequest())) {
-      if (clusterDetail.getClusterName().equals(clusterName)) {
+      if (clusterName.equals(clusterDetail.getClusterName())) {
         log.info(
             "Deleting a cluster [{}] with ID [{}].",
             clusterDetail.getClusterName(),
@@ -260,12 +390,11 @@ public class DatabricksEnvironment implements AutoCloseable {
   @SneakyThrows
   @Override
   public void close() {
-    boolean existingClusterUsed = !"".equals(properties.getDevelopment().getExistingClusterId());
-
     log.info("Deleting events file [{}]", dbfsEventsFile);
     deleteEventsFile();
 
-    if (!(properties.getDevelopment().isPreventClusterTermination() || existingClusterUsed)) {
+    // only clusters created by this run are terminated; pre-created ones terminate on their own
+    if (clusterCreated && !properties.getDevelopment().isPreventClusterTermination()) {
       log.info("Terminating cluster [{}].", clusterId);
       workspace.clusters().delete(clusterId);
       workspace.clusters().waitGetClusterTerminated(clusterId);
@@ -345,6 +474,8 @@ public class DatabricksEnvironment implements AutoCloseable {
     SparkPythonTask task = new SparkPythonTask();
     task.setSource(Source.WORKSPACE);
     task.setPythonFile(dbfsScriptPath);
+    // the scripts use it as the suffix of their table names, paths and events file
+    task.setParameters(Collections.singletonList(platformVersion));
 
     SubmitTask runSubmitTaskSettings = new SubmitTask();
     runSubmitTaskSettings.setTaskKey(taskName);
@@ -367,7 +498,7 @@ public class DatabricksEnvironment implements AutoCloseable {
 
   @SneakyThrows
   private Wait<ClusterDetails, CreateClusterResponse> createCluster(
-      String clusterName, String sparkPlatformVersion) {
+      String clusterName, String sparkVersionKey) {
     HashMap<String, String> sparkConf = new HashMap<>();
     sparkConf.put("spark.openlineage.facets.debug.disabled", "false");
     sparkConf.put("spark.openlineage.transport.type", "file");
@@ -379,7 +510,7 @@ public class DatabricksEnvironment implements AutoCloseable {
         new CreateCluster()
             .setClusterName(clusterName)
             .setDataSecurityMode(DataSecurityMode.SINGLE_USER)
-            .setSparkVersion(sparkPlatformVersion)
+            .setSparkVersion(sparkVersionKey)
             .setNodeTypeId(NODE_TYPE)
             .setAutoterminationMinutes(10L)
             .setNumWorkers(1L)
@@ -388,7 +519,6 @@ public class DatabricksEnvironment implements AutoCloseable {
                     new InitScriptInfo()
                         .setWorkspace(new WorkspaceStorageInfo().setDestination(INIT_SCRIPT_FILE))))
             .setSparkConf(sparkConf)
-            .setDataSecurityMode(DataSecurityMode.SINGLE_USER)
             .setClusterLogConf(
                 new ClusterLogConf()
                     .setDbfs(new DbfsStorageInfo().setDestination(DBFS_CLUSTER_LOGS)));
@@ -398,28 +528,13 @@ public class DatabricksEnvironment implements AutoCloseable {
     return workspace.clusters().create(createCluster);
   }
 
-  private String getSparkPlatformVersion() {
-    String sparkVersion = properties.getCluster().getSparkVersion();
-    if (!PLATFORM_VERSIONS_NAMES.containsKey(sparkVersion)) {
-      log.error(
-          "Unsupported [spark.version] for Databricks test: [{}]. Supported versions are {}",
-          sparkVersion,
-          PLATFORM_VERSIONS_NAMES.keySet());
-      throw new IllegalStateException("Unsupported [spark.version] for Databricks");
-    }
-
-    String platformVersion = PLATFORM_VERSIONS_NAMES.get(sparkVersion);
-    log.info("Databricks version: [{}].", platformVersion);
-    return platformVersion;
-  }
-
   /**
-   * Copies the jar to the DBFS location from where it is copied to the driver host by the
-   * initialization script. The copying happens only on the cluster initialization, so you have to
-   * restart the cluster if you change the jar and want to use it.
+   * Copies the jar to the cluster's own DBFS directory, from where the initialization script copies
+   * it to the driver host. The copying happens only when the cluster starts, so the cluster has to
+   * be restarted to use a new jar.
    */
   @SneakyThrows
-  private void uploadOpenLineageJar() {
+  private void uploadOpenLineageJar(String clusterName) {
     Path jarFile =
         Files.list(Paths.get("../build/libs/"))
             .filter(p -> p.getFileName().toString().startsWith("openlineage-spark_"))
@@ -427,71 +542,43 @@ public class DatabricksEnvironment implements AutoCloseable {
             .findAny()
             .orElseThrow(() -> new RuntimeException("openlineage-spark jar not found"));
 
-    // make sure dbfs:/databricks/openlineage/ exists
-    try {
-      dbfs.mkdirs("dbfs:/databricks");
-    } catch (RuntimeException e) {
-    }
-    try {
-      dbfs.mkdirs("dbfs:/databricks/openlineage/");
-    } catch (RuntimeException e) {
-    }
+    String jarDir = DBFS_CLUSTER_JARS + clusterName + "/";
+    dbfs.mkdirs(jarDir);
 
-    // The matrix jobs (one per Spark version) share this DBFS directory and run in parallel. The
-    // jar name includes a content hash, so jobs building the same commit use the same file and
-    // never delete or overwrite each other's jar. Only jars with a different name are stale.
-    String targetName = hashedJarName(jarFile);
-    String targetLocation = "dbfs:/databricks/openlineage/" + targetName;
-    boolean alreadyUploaded = false;
-    if (dbfs.list("dbfs:/databricks/openlineage/") != null) {
-      for (FileInfo f : dbfs.list("dbfs:/databricks/openlineage/")) {
-        String path = f.getPath();
-        if (!path.contains("openlineage-spark") || !path.endsWith(".jar")) {
-          continue;
-        }
-        if (path.endsWith("/" + targetName)) {
-          alreadyUploaded = true;
-        } else {
-          try {
-            dbfs.delete(path);
-          } catch (RuntimeException e) {
-            log.debug("Could not delete the stale jar [{}], another job may have removed it", path);
-          }
-        }
+    // the init script loads every OpenLineage jar in the directory, so remove the old ones
+    for (FileInfo f : dbfs.list(jarDir)) {
+      String path = f.getPath();
+      if (path.contains("openlineage-spark") && path.endsWith(".jar")) {
+        log.info("Deleting the old jar [{}]", path);
+        dbfs.delete(path);
       }
     }
 
-    if (alreadyUploaded) {
-      log.info("OpenLineage jar already exists at [{}], keeping it", targetLocation);
-      return;
-    }
-    uploadFileToDbfs(jarFile, targetLocation);
-  }
-
-  /** Adds a short content hash before the extension, e.g. openlineage-spark_2.12-1.0-abc123.jar. */
-  @SneakyThrows
-  private static String hashedJarName(Path jarFile) {
-    String hash =
-        com.google.common.io.Files.asByteSource(jarFile.toFile())
-            .hash(Hashing.sha256())
-            .toString()
-            .substring(0, 12);
-    String name = jarFile.getFileName().toString();
-    return name.substring(0, name.length() - ".jar".length()) + "-" + hash + ".jar";
+    uploadFileToDbfs(jarFile, jarDir + jarFile.getFileName());
   }
 
   /**
-   * Uploads the cluster initialization script to DBFS.
+   * Uploads the cluster initialization script to the workspace.
    *
-   * <p>The script is used by the clusters to copy OpenLineage jar to the location where it can be
-   * loaded by the driver.
+   * <p>The script copies the OpenLineage jar to the location where it is loaded by the driver. Its
+   * stage directory is changed to the cluster's own directory, see {@link #DBFS_CLUSTER_JARS}.
+   * {@code DB_CLUSTER_NAME} is set by Databricks when the script runs.
    */
   private void uploadInitializationScript() throws IOException {
-    String string =
+    String script =
         Resources.toString(
             Paths.get("../databricks/open-lineage-init-script.sh").toUri().toURL(),
             StandardCharsets.UTF_8);
-    String encodedString = Base64.getEncoder().encodeToString(string.getBytes());
+    if (!script.contains(INIT_SCRIPT_STAGE_DIR)) {
+      throw new IllegalStateException(
+          "The init script no longer contains [" + INIT_SCRIPT_STAGE_DIR + "]");
+    }
+    String clusterScript =
+        script
+            .replace(INIT_SCRIPT_STAGE_DIR, INIT_SCRIPT_CLUSTER_STAGE_DIR)
+            .replace("$STAGE_DIR/", "\"$STAGE_DIR\"/");
+    String encodedString =
+        Base64.getEncoder().encodeToString(clusterScript.getBytes(StandardCharsets.UTF_8));
     this.workspace
         .workspace()
         .importContent(
@@ -504,32 +591,21 @@ public class DatabricksEnvironment implements AutoCloseable {
 
   @SneakyThrows
   private void uploadFileToDbfs(Path jarFile, String targetLocation) {
-    FileInputStream fis = new FileInputStream(jarFile.toString());
-
     String tempLocation = targetLocation + UUID.randomUUID() + ".tmp";
 
-    // copy to temp location to avoid conflicts in case of concurrent uploads
-    OutputStream outputStream = dbfs.getOutputStream(tempLocation);
-
-    // upload to DBFS -> 12MB file upload need to go in chunks smaller than 1MB each
-    byte[] buf = new byte[500000]; // approx 0.5MB
-    int len = fis.read(buf);
-    while (len != -1) {
-      outputStream.write(buf, 0, len);
-      outputStream.flush();
-      len = fis.read(buf);
+    // copy to a temp location first, so the cluster never sees a partially uploaded jar
+    try (FileInputStream fis = new FileInputStream(jarFile.toString());
+        OutputStream outputStream = dbfs.getOutputStream(tempLocation)) {
+      // upload to DBFS -> 12MB file upload need to go in chunks smaller than 1MB each
+      byte[] buf = new byte[500000]; // approx 0.5MB
+      int len = fis.read(buf);
+      while (len != -1) {
+        outputStream.write(buf, 0, len);
+        outputStream.flush();
+        len = fis.read(buf);
+      }
     }
-    outputStream.close();
-    try {
-      dbfs.move(tempLocation, targetLocation);
-    } catch (ResourceAlreadyExists e) {
-      // The matrix jobs (one per Spark version) run in parallel against the same workspace and
-      // upload the same jar to the same path. If another job moved its copy first, its jar is
-      // already in place, so drop our temporary copy instead of failing.
-      log.info("OpenLineage jar already exists at [{}], keeping it", targetLocation);
-      dbfs.delete(tempLocation);
-      return;
-    }
+    dbfs.move(tempLocation, targetLocation);
     log.info("OpenLineage jar has been uploaded to [{}]", targetLocation);
   }
 
