@@ -37,6 +37,19 @@ class TestJwtTokenProvider:
         assert provider.response_type == "token"
         assert provider.token_refresh_buffer == 120  # Default value
 
+    @pytest.mark.parametrize("config_key", ["tokenRefreshBuffer", "token_refresh_buffer"])
+    @pytest.mark.parametrize("config_value", [0, "0"])
+    def test_jwt_token_provider_preserves_zero_refresh_buffer(self, config_key, config_value):
+        provider = JwtTokenProvider(
+            {
+                "apiKey": "test-key",
+                "tokenEndpoint": "https://auth.example.com/token",
+                config_key: config_value,
+            }
+        )
+
+        assert provider.token_refresh_buffer == 0
+
     def test_jwt_token_provider_initialization_with_custom_values(self):
         """Test JwtTokenProvider initialization with custom values"""
         provider = JwtTokenProvider(
