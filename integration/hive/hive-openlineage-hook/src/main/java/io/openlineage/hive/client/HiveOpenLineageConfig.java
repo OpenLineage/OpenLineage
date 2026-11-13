@@ -48,16 +48,19 @@ public class HiveOpenLineageConfig extends OpenLineageConfig<HiveOpenLineageConf
 
   @Override
   public HiveOpenLineageConfig mergeWithNonNull(HiveOpenLineageConfig other) {
-    return new HiveOpenLineageConfig(
-        mergePropertyWith(parentRunId, other.parentRunId),
-        mergePropertyWith(parentJobName, other.parentJobName),
-        mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
-        mergePropertyWith(transportConfig, other.transportConfig),
-        mergePropertyWith(facetsConfig, other.facetsConfig),
-        mergePropertyWith(datasetConfig, other.datasetConfig),
-        mergePropertyWith(circuitBreaker, other.circuitBreaker),
-        mergePropertyWith(metricsConfig, other.metricsConfig),
-        mergePropertyWith(runConfig, other.runConfig),
-        mergePropertyWith(jobConfig, other.jobConfig));
+    HiveOpenLineageConfig merged =
+        new HiveOpenLineageConfig(
+            mergePropertyWith(parentRunId, other.parentRunId),
+            mergePropertyWith(parentJobName, other.parentJobName),
+            mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
+            mergePropertyWith(transportConfig, other.transportConfig),
+            mergePropertyWith(facetsConfig, other.facetsConfig),
+            mergePropertyWith(datasetConfig, other.datasetConfig),
+            mergePropertyWith(circuitBreaker, other.circuitBreaker),
+            mergePropertyWith(metricsConfig, other.metricsConfig),
+            mergePropertyWith(runConfig, other.runConfig),
+            mergePropertyWith(jobConfig, other.jobConfig));
+    merged.setLineageConfig(mergePropertyWith(lineageConfig, other.lineageConfig));
+    return merged;
   }
 }
