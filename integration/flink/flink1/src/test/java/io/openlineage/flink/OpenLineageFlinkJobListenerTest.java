@@ -5,6 +5,7 @@
 
 package io.openlineage.flink;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -16,6 +17,21 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 public class OpenLineageFlinkJobListenerTest {
+  @Test
+  void defaultAndExplicitJobNamespaces() {
+    org.apache.flink.configuration.Configuration configuration =
+        new org.apache.flink.configuration.Configuration();
+    assertThat(
+            configuration.get(
+                OpenLineageFlinkJobListener.OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE))
+        .isEqualTo("flink-jobs");
+    configuration.set(
+        OpenLineageFlinkJobListener.OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE, "default");
+    assertThat(
+            configuration.get(
+                OpenLineageFlinkJobListener.OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE))
+        .isEqualTo("default");
+  }
 
   @Test
   void testJobListenerFailsForFlink2() {

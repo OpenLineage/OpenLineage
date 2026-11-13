@@ -2,6 +2,7 @@
 /* Copyright 2018-2026 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
+
 package io.openlineage.hive.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,13 +15,13 @@ import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.UUID;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryInfo;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.junit.jupiter.api.Test;
 
 class EventEmitterTest {
-
   @Test
   void testRunIdFromQueryInfo() {
     HookContext hookContext = mock(HookContext.class);
@@ -68,5 +69,38 @@ class EventEmitterTest {
         .eventTime(ZonedDateTime.now())
         .eventType(OpenLineage.RunEvent.EventType.START)
         .build();
+  }
+
+  @Test
+  void usesHiveJobNamespaceAndPreservesExplicitConfiguration() throws Exception {
+    HiveConf conf = new HiveConf();
+    HookContext hook = mock(HookContext.class);
+    QueryInfo query = mock(QueryInfo.class);
+    when(query.getBeginTime()).thenReturn(1L);
+    when(query.getOperationId()).thenReturn("orders");
+    when(hook.getQueryInfo()).thenReturn(query);
+    when(hook.getConf()).thenReturn(conf);
+    when(hook.getOperationName()).thenReturn("INSERT");
+    HiveOpenLineageConfig config = new HiveOpenLineageConfig();
+    config.setTransportConfig(new io.openlineage.client.transports.ConsoleConfig());
+    OpenLineageContext context =
+        OpenLineageContext.builder()
+            .openLineage(new OpenLineage(URI.create("https://openlineage.io/test")))
+            .openLineageConfig(config)
+            .hookContext(hook)
+            .readEntities(Collections.emptySet())
+            .writeEntities(Collections.emptySet())
+            .eventTime(ZonedDateTime.now())
+            .eventType(OpenLineage.RunEvent.EventType.START)
+            .build();
+    try (EventEmitter emitter = new EventEmitter(context)) {
+      assertThat(emitter.getJobNamespace()).isEqualTo("hive-jobs");
+    }
+    for (String namespace : new String[] {"custom-hive", "default"}) {
+      conf.set(HiveOpenLineageConfigParser.NAMESPACE_KEY, namespace);
+      try (EventEmitter emitter = new EventEmitter(context)) {
+        assertThat(emitter.getJobNamespace()).isEqualTo(namespace);
+      }
+    }
   }
 }

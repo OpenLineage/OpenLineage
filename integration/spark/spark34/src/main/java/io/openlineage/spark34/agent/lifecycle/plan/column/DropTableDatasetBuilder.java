@@ -55,4 +55,12 @@ public class DropTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuild
         .map(d -> Collections.singletonList(d))
         .orElseGet(() -> Collections.emptyList());
   }
+
+  @Override
+  public Optional<String> jobNameSuffix(DropTable dropTable) {
+    ResolvedIdentifier resolvedIdentifier = (ResolvedIdentifier) dropTable.child();
+    return Optional.ofNullable(resolvedIdentifier.catalog())
+        .filter(catalog -> catalog instanceof TableCatalog)
+        .map(catalog -> catalog.name() + "_" + identToSuffix(resolvedIdentifier.identifier()));
+  }
 }

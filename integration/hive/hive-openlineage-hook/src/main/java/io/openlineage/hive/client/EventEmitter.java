@@ -14,7 +14,11 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.hive.api.OpenLineageContext;
+import io.openlineage.integration.identity.DatasetIdentityNormalizer;
+import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -30,21 +34,34 @@ public class EventEmitter implements AutoCloseable {
   private final UUID runId;
   private final String jobName;
   private final String jobNamespace;
+  private final DatasetIdentityNormalizer identityNormalizer;
+  private final String identitySourceHint;
 
   public EventEmitter(OpenLineageContext olContext) {
     Configuration conf = olContext.getHookContext().getConf();
     this.client = Clients.newClient(olContext.getOpenLineageConfig());
     this.runId = getRunId(olContext);
-    this.jobNamespace = conf.get(HiveOpenLineageConfigParser.NAMESPACE_KEY, "default");
+    this.jobNamespace = conf.get(HiveOpenLineageConfigParser.NAMESPACE_KEY, "hive-jobs");
     this.jobName = conf.get(HiveOpenLineageConfigParser.JOB_NAME_KEY, getJobName(olContext));
+    this.identityNormalizer =
+        DatasetIdentityNormalizer.fromTransport(
+            olContext.getOpenLineageConfig().getTransportConfig());
+    this.identitySourceHint = conf.get("hive.metastore.uris", "").split(",")[0].trim();
   }
 
-  public void emit(RunEvent event) {
+  public synchronized void emit(RunEvent event) {
     try {
-      client.emit(event);
-      log.debug(
-          "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
-    } catch (OpenLineageClientException exception) {
+      List<RunEvent> ready =
+          identityNormalizer == null
+              ? Collections.singletonList(event)
+              : identityNormalizer.normalizeEvents(event, identitySourceHint);
+      for (RunEvent readyEvent : ready) {
+        client.emit(readyEvent);
+        log.debug(
+            "Emitting lineage completed successfully: {}",
+            OpenLineageClientUtils.toJson(readyEvent));
+      }
+    } catch (OpenLineageClientException | IOException | IllegalArgumentException exception) {
       log.error("Could not emit lineage", exception);
     }
   }
@@ -81,7 +98,7 @@ public class EventEmitter implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public synchronized void close() throws Exception {
     client.close();
   }
 }

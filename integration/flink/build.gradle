@@ -257,8 +257,19 @@ shadowJar {
     zip64 true
 }
 
+tasks.register('stageFlink119Agent', Copy) {
+    group = 'build'
+    description = 'Stage the Flink 1.19 SQL agent bundle in the root build directory'
+    dependsOn ':flink119:shadowJar'
+    from { project(':flink119').tasks.named('shadowJar').get().archiveFile.get() }
+    into(layout.buildDirectory.dir('libs'))
+}
+
+// CircleCI invokes shadowJar directly and collects build/libs, without running assemble.
+shadowJar.finalizedBy tasks.named('stageFlink119Agent')
+
 assemble {
-    dependsOn shadowJar
+    dependsOn shadowJar, stageFlink119Agent
 }
 
 spotlessJava {

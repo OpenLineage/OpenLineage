@@ -35,7 +35,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   public static List<String> DISABLED_BY_DEFAULT =
       ImmutableList.of("spark_unknown", "spark.logicalPlan", "debug");
 
-  public static final String DEFAULT_NAMESPACE = "default";
+  public static final String DEFAULT_NAMESPACE = "spark-jobs";
 
   @NonNull private String namespace;
   private String parentJobName;
@@ -137,10 +137,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   }
 
   public String getNamespace() {
-    if (namespace == null) {
-      namespace = DEFAULT_NAMESPACE;
-    }
-    return namespace;
+    return namespace == null ? DEFAULT_NAMESPACE : namespace;
   }
 
   public ColumnLineageConfig getColumnLineageConfig() {
@@ -187,7 +184,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @Override
   public SparkOpenLineageConfig mergeWithNonNull(SparkOpenLineageConfig other) {
     return new SparkOpenLineageConfig(
-        mergeWithDefaultValue(namespace, other.namespace, DEFAULT_NAMESPACE),
+        mergePropertyWith(namespace, other.namespace),
         mergePropertyWith(parentJobName, other.parentJobName),
         mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
         mergePropertyWith(parentRunId, other.parentRunId),

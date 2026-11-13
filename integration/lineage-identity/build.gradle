@@ -1,0 +1,20 @@
+/*
+/* Copyright 2018-2026 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+plugins {
+    id 'com.diffplug.spotless' version '6.13.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+spotless {
+    java {
+        target('src/**/*.java')
+        googleJavaFormat()
+        removeUnusedImports()
+    }
+}
