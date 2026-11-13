@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/SemanticModelDatasetFacet.json",
+  "$defs": {
+    "SemanticModelDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "spec": {
+              "description": "Identifier of the semantic specification the model conforms to.",
+              "type": "string",
+              "example": "ossie"
+            },
+            "specVersion": {
+              "description": "Version of the semantic specification the model conforms to, as declared in the model document.",
+              "type": "string",
+              "example": "0.2.0.dev0"
+            },
+            "modelUri": {
+              "description": "Reference to the semantic model document. Full definitions, including metrics and multi-dialect expressions, live there.",
+              "type": "string",
+              "format": "uri",
+              "example": "https://github.com/apache/ossie/blob/main/examples/tpcds_semantic_model.yaml"
+            },
+            "modelName": {
+              "description": "The name declared in the Ossie model document, which identifies the model.",
+              "type": "string",
+              "example": "tpcds_retail_model"
+            },
+            "datasetName": {
+              "description": "Name of the logical dataset in the semantic model that this physical dataset backs.",
+              "type": "string",
+              "example": "store_sales"
+            }
+          },
+          "required": ["spec", "modelName", "datasetName"]
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "semanticModel": {
+      "$ref": "#/$defs/SemanticModelDatasetFacet"
+    }
+  }
+}
