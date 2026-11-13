@@ -27,18 +27,36 @@ dependencies {
     testImplementation('com.google.cloud:google-cloud-nio:0.139.0')
 }
 
+// google-cloud-storage needs the XML stack only for its XML multipart upload API, which this transport does not use.
+// Shipping Woodstox breaks hosts that have their own (Hadoop's Configuration fails with NoSuchMethodError), and the
+// jar would also register it as the JVM-wide javax.xml.stream provider. If the XML API is ever needed, drop these
+// excludes and relocate com.ctc.wstx and com.fasterxml.jackson.dataformat.xml instead.
+// Conscrypt is optional for the client (it falls back to the JDK's TLS). Its native library cannot be relocated, and a
+// host's own, older Conscrypt (e.g. on Dataproc) loads ours and aborts the JVM.
+configurations.configureEach {
+    exclude group: 'com.fasterxml.woodstox', module: 'woodstox-core'
+    exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
+    exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-xml'
+    exclude group: 'org.conscrypt', module: 'conscrypt-openjdk-uber'
+}
+
 shadowJar {
     dependencies {
         exclude 'google/**'
         exclude 'grpc/**'
         exclude 'opencensus/**'
         exclude 'com/fasterxml/**'
+        exclude 'META-INF/versions/*/com/fasterxml/**'
         exclude 'org/slf4j/**'
+        // grpc-netty-shaded's native libraries are named for the io.grpc.netty.shaded package, which is relocated
+        // here, so our Netty never loads them, but a host's unrelocated grpc-netty-shaded could
+        exclude 'META-INF/native/**'
     }
 
     relocate "com.google", "io.openlineage.client.transports.gcs.shaded.com.google"
     relocate "org.checkerframework", "io.openlineage.client.transports.gcs.shaded.org.checkerframework"
     relocate "org.codehaus", "io.openlineage.client.transports.gcs.shaded.org.codehaus"
+    // Conscrypt itself is excluded; relocating keeps the classes that probe for it away from a host's own Conscrypt
     relocate "org.conscrypt", "io.openlineage.client.transports.gcs.shaded.org.conscrypt"
     relocate "org.threeten", "io.openlineage.client.transports.gcs.shaded.org.threeten"
     relocate "org.apache", "io.openlineage.client.transports.gcs.shaded.org.apache"
@@ -46,6 +64,47 @@ shadowJar {
     relocate "io.grpc", "io.openlineage.client.transports.gcs.shaded.io.grpc"
     relocate "io.opentelemetry", "io.openlineage.client.transports.gcs.shaded.io.opentelemetry"
     relocate "io.perfmark", "io.openlineage.client.transports.gcs.shaded.io.perfmark"
+    relocate "dev.cel", "io.openlineage.client.transports.gcs.shaded.dev.cel"
 }
+
+// The shaded jar ends up on host classpaths (Hadoop, HiveServer2, Spark extraClassPath). A third-party class left under
+// its original package can shadow the host's own copy, so only OpenLineage classes and the annotation-only JSpecify
+// package may stay unrelocated. Native libraries are not allowed either: relocation does not rename them, so a host's
+// own Conscrypt or Netty can load ours and abort the JVM. A failure here usually means a dependency bump brought in a
+// new package or native library: add a relocate (or exclude) line to shadowJar above.
+tasks.register('verifyShadowJarContents') {
+    group = 'verification'
+    description = 'Fails if the shaded jar contains unrelocated third-party classes, native libraries or javax.xml ' +
+            'service registrations.'
+    def jarFile = tasks.named('shadowJar').flatMap { it.archiveFile }
+    def allowedClassPrefixes = ['io/openlineage/', 'org/jspecify/']
+    inputs.file(jarFile)
+    // jar and shadowJar write the same file (archiveClassifier is '' in transports.build.gradle)
+    mustRunAfter tasks.named('jar')
+    doLast {
+        def offending = new TreeSet<String>()
+        new java.util.zip.ZipFile(jarFile.get().asFile).withCloseable { zip ->
+            zip.entries().each { entry ->
+                def name = entry.name
+                def className = name.replaceFirst('^META-INF/versions/[0-9]+/', '')
+                if (name.endsWith('.class') && !allowedClassPrefixes.any { className.startsWith(it) }) {
+                    def segments = name.split('/')
+                    def packageDepth = Math.min(name == className ? 3 : 5, segments.length - 1)
+                    offending << (packageDepth == 0 ? name : segments.take(packageDepth).join('/') + '/**')
+                }
+                if (name.startsWith('META-INF/services/javax.xml.') || (name.startsWith('META-INF/native/') && !entry.directory)) {
+                    offending << name
+                }
+            }
+        }
+        if (!offending.isEmpty()) {
+            throw new GradleException("Shaded jar ${jarFile.get().asFile.name} contains entries that can clash with " +
+                    "the host classpath. Relocate or exclude them in shadowJar:\n  " + offending.join('\n  '))
+        }
+    }
+}
+
+tasks.named('shadowJar') { finalizedBy 'verifyShadowJarContents' }
+tasks.named('check') { dependsOn 'verifyShadowJarContents' }
 
 apply from: '../transports.build.gradle'
