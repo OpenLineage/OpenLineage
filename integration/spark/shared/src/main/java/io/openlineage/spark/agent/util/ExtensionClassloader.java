@@ -27,16 +27,23 @@ public class ExtensionClassloader extends ClassLoader {
   @Override
   protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
     log.trace("Using multiple classloaders: {}", classLoaders);
+    List<Throwable> failures = new ArrayList<>();
     for (ClassLoader cl : classLoaders) {
       try {
         Class<?> aClass = cl.loadClass(name);
         log.trace("Classloader {} successfully loaded a class: {}", cl, aClass);
         return aClass;
       } catch (NoClassDefFoundError | Exception e) {
-        log.error("Classloader {} failed to load {} class", cl, name, e);
+        // expected whenever a later classloader can see the class
+        log.debug("Classloader {} failed to load {} class", cl, name);
+        failures.add(e);
       }
     }
-    throw new ClassNotFoundException(name);
+    ClassNotFoundException notFound = new ClassNotFoundException(name);
+    failures.forEach(notFound::addSuppressed);
+    // ServiceLoader replaces this exception with one which has no cause, so log it here
+    log.warn("None of the classloaders {} could load {} class", classLoaders, name, notFound);
+    throw notFound;
   }
 
   @Override
