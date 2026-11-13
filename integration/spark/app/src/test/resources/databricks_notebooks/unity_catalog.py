@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import sys
 import time
 from pyspark.sql import functions as f
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType
@@ -12,7 +13,8 @@ catalog = "PROVIDE_NAME"
 if os.path.exists("/tmp/events.log"):
     os.remove("/tmp/events.log")
 
-runtime_version = os.environ.get("DATABRICKS_RUNTIME_VERSION", None).replace(".", "_")
+# suffix for names and paths, e.g. 16_4_scala2_13, passed by DatabricksEnvironment.runScript
+runtime_version = sys.argv[1]
 
 schema = f"{catalog}.default"
 tbl1 = f"{schema}.tbl1_{runtime_version}"

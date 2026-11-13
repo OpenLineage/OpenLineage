@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -33,6 +32,14 @@ import org.junit.jupiter.api.Test;
  * takes some time as it requires starting databricks cluster and this can take up to 10 minutes.
  * Test suite is run in Circle CI when triggered manually with extra parameter `databricks-test` set
  * to `enabled`.
+ *
+ * <p>By default the tests use a pre-created cluster: the only one named {@code openlineage-test...}
+ * whose Databricks runtime matches the Spark and Scala versions of the build (see {@link
+ * DatabricksEnvironment#DATABRICKS_RUNTIMES}). The cluster is restarted so that it loads the
+ * freshly built jar. The cluster must be pinned (so it stays listed while terminated), use the init
+ * script {@value DatabricksEnvironment#INIT_SCRIPT_FILE}, log to {@value
+ * DatabricksEnvironment#DBFS_CLUSTER_LOGS}, run in single user mode with the CI principal as the
+ * user, and the CI principal needs CAN_RESTART on it. The tests fail if no such cluster is found.
  */
 @Tag("integration-test")
 @Tag("databricks")
@@ -56,10 +63,17 @@ class DatabricksIntegrationTest {
                 .cluster(
                     DatabricksEnvironment.DatabricksEnvironmentProperties.Cluster.builder()
                         .sparkVersion(DatabricksDynamicParameter.SparkVersion.resolve())
+                        .scalaVersion(DatabricksDynamicParameter.ScalaVersion.resolve())
                         .build())
                 .development(
                     DatabricksEnvironment.DatabricksEnvironmentProperties.Development.builder()
                         .existingClusterId(DatabricksDynamicParameter.ClusterId.resolve())
+                        .createCluster(
+                            Boolean.parseBoolean(
+                                DatabricksDynamicParameter.CreateCluster.resolve()))
+                        .restartExistingCluster(
+                            Boolean.parseBoolean(
+                                DatabricksDynamicParameter.RestartExistingCluster.resolve()))
                         .preventClusterTermination(
                             Boolean.parseBoolean(
                                 DatabricksDynamicParameter.PreventClusterTermination.resolve()))
@@ -87,16 +101,21 @@ class DatabricksIntegrationTest {
   }
 
   /**
-   * The assumption that must be true before every test. It is necessary because we want to
-   * gracefully clean the resources and collect the cluster logs even if the initialization failed.
+   * Fails the test if the cluster didn't start. It's checked per test instead of throwing in {@link
+   * #beforeAll()}, so the resources are still cleaned and the cluster logs collected.
    */
-  private void assumeClusterRunning() {
-    Assumptions.assumeTrue(
-        databricks.isInitializationSuccessful(), "Cluster not initialized, skipping test.");
+  private void requireClusterRunning() {
+    assertThat(databricks.isInitializationSuccessful())
+        .as("The Databricks cluster failed to start, see the log above")
+        .isTrue();
   }
 
   @AfterAll
   public static void shutdown() {
+    // null when beforeAll failed, e.g. no matching cluster was found
+    if (databricks == null) {
+      return;
+    }
     databricks.fetchLogs();
     databricks.close();
   }
@@ -104,7 +123,7 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testCreateTableAsSelect() {
-    assumeClusterRunning();
+    requireClusterRunning();
 
     List<RunEvent> runEvents = databricks.runScript("ctas.py");
     RunEvent lastEvent = runEvents.get(runEvents.size() - 1);
@@ -157,7 +176,7 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testNarrowTransformation() {
-    assumeClusterRunning();
+    requireClusterRunning();
 
     List<RunEvent> runEvents = databricks.runScript("narrow_transformation.py");
     assertThat(runEvents).isNotEmpty();
@@ -191,7 +210,7 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testWideTransformation() {
-    assumeClusterRunning();
+    requireClusterRunning();
 
     List<RunEvent> runEvents = databricks.runScript("wide_transformation.py");
     assertThat(runEvents).isNotEmpty();
@@ -218,7 +237,7 @@ class DatabricksIntegrationTest {
 
   @Test
   void testWriteReadFromTableWithLocation() {
-    assumeClusterRunning();
+    requireClusterRunning();
 
     List<RunEvent> runEvents = databricks.runScript("dataset_names.py");
 
@@ -249,7 +268,7 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testMergeInto() {
-    assumeClusterRunning();
+    requireClusterRunning();
 
     List<RunEvent> runEvents = databricks.runScript("merge_into.py");
 
@@ -315,7 +334,7 @@ class DatabricksIntegrationTest {
   // unity_catalog.py
   void testUnityCatalog() {
     String catalogName = "PROVIDE_NAME";
-    assumeClusterRunning();
+    requireClusterRunning();
 
     List<RunEvent> runEvents = databricks.runScript("unity_catalog.py");
 
