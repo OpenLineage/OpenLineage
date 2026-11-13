@@ -6,6 +6,7 @@ import configparser
 import logging
 import os
 import re
+import zlib
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -85,7 +86,8 @@ def _resolve_ref(git_dir: Path, ref: str) -> str | None:
 
     Checks loose ref files first, then falls back to ``packed-refs``.
     """
-    git_dir = _common_git_dir(git_dir)
+    if ref.startswith("refs/") and not ref.startswith(("refs/bisect/", "refs/worktree/", "refs/rewritten/")):
+        git_dir = _common_git_dir(git_dir)
     loose = git_dir / ref
     if loose.exists():
         return loose.read_text().strip()
@@ -130,6 +132,37 @@ def _find_tag_in_packed_refs(git_dir: Path, head_sha: str) -> str | None:
     return None
 
 
+def _read_loose_tag_target(common_dir: Path, object_sha: str) -> str | None:
+    """Return the commit SHA targeted by a loose annotated tag object.
+
+    Reads the tag object from the common object store only, and only its first
+    128 bytes; packed tag objects are not resolved, since the client never
+    spawns a ``git`` process.
+    """
+    if len(object_sha) != 40:
+        return None
+    object_path = common_dir / "objects" / object_sha[:2] / object_sha[2:]
+    try:
+        if not object_path.is_file():
+            return None
+        # The header and the "object <sha>" line sit at the very start of the
+        # object; don't inflate a large blob or commit just to reject it.
+        with object_path.open("rb") as f:
+            raw = zlib.decompressobj().decompress(f.read(128), 128)
+    except (OSError, zlib.error):
+        return None
+    header, _, body = raw.partition(b"\0")
+    if not header.startswith(b"tag ") or not body.startswith(b"object "):
+        return None
+    object_line, newline, _ = body.partition(b"\n")
+    if not newline:
+        return None
+    try:
+        return object_line.removeprefix(b"object ").decode("ascii")
+    except UnicodeDecodeError:
+        return None
+
+
 def get_git_repo_url(repo_url: str | None = None, git_dir: Path | None = None) -> str | None:
     """Return a repo URL suitable for SourceCodeLocationJobFacet.
 
@@ -151,6 +184,13 @@ def get_git_repo_url(repo_url: str | None = None, git_dir: Path | None = None) -
     # https://host/repo%2Fname.git don't raise InterpolationSyntaxError.
     config = configparser.RawConfigParser(strict=False)
     config.read(config_file)
+    try:
+        worktree_config_enabled = config.getboolean("extensions", "worktreeConfig", fallback=False)
+    except ValueError:
+        # git accepts values configparser cannot parse (e.g. "true # enabled")
+        worktree_config_enabled = False
+    if worktree_config_enabled:
+        config.read(git_dir / "config.worktree")
     return config.get('remote "origin"', "url", fallback=None)
 
 
@@ -208,20 +248,39 @@ def get_ci_pr_number() -> str | None:
 def get_git_tag(git_dir: Path) -> str | None:
     """Return a tag pointing at HEAD, or ``None`` if HEAD is untagged.
 
-    Checks loose tag files in ``refs/tags/`` first, then ``packed-refs``.
+    The common dir is resolved once; lightweight loose tags and
+    ``packed-refs`` are checked before any tag object is read, so an
+    untagged HEAD costs file reads only. Annotated loose tags are peeled
+    from the loose object store; packed tag objects are not resolved.
     """
     head_sha = _read_head_sha(git_dir)
     if not head_sha:
         return None
 
+    common_dir = _common_git_dir(git_dir)
+    tags_dir = common_dir / "refs" / "tags"
     # rglob covers nested tag namespaces like refs/tags/release/v1.2.3.
-    # Note: loose annotated tag files store a tag-object SHA, not a commit SHA,
-    # so they won't match here. They are nearly always packed by git gc, so
-    # _find_tag_in_packed_refs handles the annotated case in practice.
-    tags_dir = _common_git_dir(git_dir) / "refs" / "tags"
+    # Compare the SHA while scanning and compute the name only for the match —
+    # avoids computing relative_to() + as_posix() for every loose tag on disk.
+    unmatched: list[tuple[Path, str]] = []
+    # rglob covers nested tag namespaces like refs/tags/release/v1.2.3.
+    # Compare while scanning; compute the name only for the tag we return.
     if tags_dir.exists():
         for tag_file in tags_dir.rglob("*"):
-            if tag_file.is_file() and tag_file.read_text().strip() == head_sha:
+            if not tag_file.is_file():
+                continue
+            tag_sha = tag_file.read_text().strip()
+            if tag_sha == head_sha:  # lightweight loose tag
                 return tag_file.relative_to(tags_dir).as_posix()
+            unmatched.append((tag_file, tag_sha))
 
-    return _find_tag_in_packed_refs(git_dir, head_sha)
+    packed_tag = _find_tag_in_packed_refs(git_dir, head_sha)
+    if packed_tag is not None:
+        return packed_tag
+
+    # Annotated loose tags: at most one object read per tag, only after the
+    # cheap checks have missed. Reuse the first scan instead of walking again.
+    for tag_file, tag_sha in unmatched:
+        if _read_loose_tag_target(common_dir, tag_sha) == head_sha:
+            return tag_file.relative_to(tags_dir).as_posix()
+    return None
