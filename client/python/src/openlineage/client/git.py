@@ -136,8 +136,8 @@ def _read_loose_tag_target(common_dir: Path, object_sha: str) -> str | None:
     """Return the commit SHA targeted by a loose annotated tag object.
 
     Reads the tag object from the common object store only, and only its first
-    few KB; packed tag objects are not resolved, since the client never spawns
-    a ``git`` process.
+    128 bytes; packed tag objects are not resolved, since the client never
+    spawns a ``git`` process.
     """
     if len(object_sha) != 40:
         return None
@@ -262,6 +262,9 @@ def get_git_tag(git_dir: Path) -> str | None:
     # rglob covers nested tag namespaces like refs/tags/release/v1.2.3.
     # Compare the SHA while scanning and compute the name only for the match —
     # avoids computing relative_to() + as_posix() for every loose tag on disk.
+    unmatched: list[tuple[Path, str]] = []
+    # rglob covers nested tag namespaces like refs/tags/release/v1.2.3.
+    # Compare while scanning; compute the name only for the tag we return.
     if tags_dir.exists():
         for tag_file in tags_dir.rglob("*"):
             if not tag_file.is_file():
@@ -269,22 +272,15 @@ def get_git_tag(git_dir: Path) -> str | None:
             tag_sha = tag_file.read_text().strip()
             if tag_sha == head_sha:  # lightweight loose tag
                 return tag_file.relative_to(tags_dir).as_posix()
+            unmatched.append((tag_file, tag_sha))
 
     packed_tag = _find_tag_in_packed_refs(git_dir, head_sha)
     if packed_tag is not None:
         return packed_tag
 
-    # Annotated loose tags: read the tag object only for tags whose SHA
-    # does not match HEAD directly (cheap check above missed). Re-scan the
-    # directory rather than accumulating every (path, sha) pair upfront.
-    if tags_dir.exists():
-        for tag_file in tags_dir.rglob("*"):
-            if not tag_file.is_file():
-                continue
-            tag_sha = tag_file.read_text().strip()
-            if tag_sha == head_sha:
-                continue  # already handled above as lightweight
-            annotated = _read_loose_tag_target(common_dir, tag_sha)
-            if annotated == head_sha:
-                return tag_file.relative_to(tags_dir).as_posix()
+    # Annotated loose tags: at most one object read per tag, only after the
+    # cheap checks have missed. Reuse the first scan instead of walking again.
+    for tag_file, tag_sha in unmatched:
+        if _read_loose_tag_target(common_dir, tag_sha) == head_sha:
+            return tag_file.relative_to(tags_dir).as_posix()
     return None
