@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import zlib
+from collections import Counter
 from pathlib import Path
 from unittest import mock
 from unittest.mock import patch
@@ -479,6 +480,36 @@ class TestGetGitTag:
         # Only the first few KB of the object are read and inflated.
         assert reads
         assert all(read <= 4096 and max_length <= 4096 for read, max_length in reads)
+
+    def test_loose_tags_are_read_once_each(self, tmp_path):
+        """The annotated-tag fallback reuses the first scan instead of re-reading files."""
+        git_dir = tmp_path / ".git"
+        objects = git_dir / "objects"
+        tag_dir = git_dir / "refs" / "tags"
+        tag_dir.mkdir(parents=True)
+        (git_dir / "HEAD").write_text(_FAKE_SHA + "\n")
+        body = f"object {_FAKE_SHA}\ntype commit\ntag v1.0.0\n\nrelease\n".encode()
+        raw = b"tag " + str(len(body)).encode() + b"\0" + body
+        tag_sha = hashlib.sha1(raw).hexdigest()
+        (objects / tag_sha[:2]).mkdir(parents=True)
+        (objects / tag_sha[:2] / tag_sha[2:]).write_bytes(zlib.compress(raw))
+        (tag_dir / "v1.0.0").write_text(tag_sha + "\n")
+        for i in range(5):
+            (tag_dir / f"other-{i}").write_text(f"{i:040x}\n")
+
+        reads = Counter()
+        real_read_text = Path.read_text
+
+        def counting_read_text(self, *args, **kwargs):
+            reads[self] += 1
+            return real_read_text(self, *args, **kwargs)
+
+        with patch.object(Path, "read_text", counting_read_text):
+            assert get_git_tag(git_dir) == "v1.0.0"
+
+        tag_reads = {path.name: count for path, count in reads.items() if path.parent == tag_dir}
+        assert set(tag_reads) == {"v1.0.0", "other-0", "other-1", "other-2", "other-3", "other-4"}
+        assert all(count == 1 for count in tag_reads.values())
 
     def test_returns_none_when_untagged(self, tmp_path):
         git_dir = tmp_path / ".git"
