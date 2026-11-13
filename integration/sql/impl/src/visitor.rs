@@ -13,7 +13,8 @@ use sqlparser::ast::{
     UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
-    DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
+    BigQueryDialect, DatabricksDialect, GenericDialect, MsSqlDialect, MySqlDialect, SQLiteDialect,
+    SnowflakeDialect,
 };
 
 pub trait Visit {
@@ -155,15 +156,51 @@ impl Visit for TableFactor {
                 }
                 Ok(())
             }
-            TableFactor::UNNEST { array_exprs, .. } => {
+            TableFactor::UNNEST {
+                array_exprs,
+                alias,
+                with_offset,
+                with_offset_alias,
+                with_ordinality,
+            } => {
                 // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator
                 // BigQuery's `UNNEST(...)` (e.g. UNNEST(GENERATE_ARRAY(1, 1000)) AS n) is a
                 // row generator over an array expression, not a real table - so UNNEST itself
                 // contributes no input. But the array expression can still reference real
                 // tables (e.g. UNNEST(ARRAY(SELECT id FROM source_table))), so visit each one
                 // rather than discarding them outright.
-                for array_expr in array_exprs {
-                    array_expr.visit(context)?;
+                let dialect = context.dialect().as_base();
+                // Generic mode also parses BigQuery SQL for integrations that omit a dialect.
+                // An explicit column list uses table-alias semantics instead of element aliases.
+                if (dialect.is::<BigQueryDialect>() || dialect.is::<GenericDialect>())
+                    && array_exprs.len() == 1
+                    && !with_ordinality
+                    && alias.as_ref().is_none_or(|alias| alias.columns.is_empty())
+                {
+                    let mut ancestors = Vec::new();
+                    for array_expr in array_exprs {
+                        context.push_frame();
+                        // Capture ancestry without consuming a projected column's synthetic name.
+                        context.set_column_context(Some(ColumnMeta::new(String::new(), None)));
+                        array_expr.visit(context)?;
+                        let mut frame = context.pop_frame().unwrap();
+                        ancestors.extend(frame.column_ancestry.drain().flat_map(|(_, anc)| anc));
+                        context.collect(frame);
+                    }
+                    if let Some(alias) = alias {
+                        context.add_unnest_alias(alias.name.value.clone(), ancestors);
+                    }
+                    if *with_offset {
+                        let offset = with_offset_alias
+                            .as_ref()
+                            .map(|alias| alias.value.clone())
+                            .unwrap_or_else(|| "offset".to_string());
+                        context.add_unnest_alias(offset, vec![]);
+                    }
+                } else {
+                    for array_expr in array_exprs {
+                        array_expr.visit(context)?;
+                    }
                 }
                 Ok(())
             }
@@ -241,19 +278,25 @@ impl Visit for Expr {
                 let context_set = context.column_context().is_some();
                 if context_set {
                     let descendant = context.column_context().as_ref().unwrap().name.clone();
-                    context.add_column_ancestors(
-                        ColumnMeta::new(descendant, None),
+                    let ancestors = context.unnest_ancestors(&id.value).unwrap_or_else(|| {
                         vec![ColumnMeta::new(
                             id.value.clone(),
                             context.table_context().clone(),
-                        )],
-                    );
+                        )]
+                    });
+                    context.add_column_ancestors(ColumnMeta::new(descendant, None), ancestors);
                 }
             }
             Expr::CompoundIdentifier(ids) => {
                 let context_set = context.column_context().is_some();
                 if context_set {
                     let descendant = context.column_context().as_ref().unwrap().name.clone();
+                    if let Some(ancestors) = context.unnest_ancestors(&ids[0].value) {
+                        // Without an array schema, retain the source array column rather
+                        // than treating the element alias as a physical table.
+                        context.add_column_ancestors(ColumnMeta::new(descendant, None), ancestors);
+                        return Ok(());
+                    }
                     let ancestor = ids.last().unwrap().value.clone();
                     let table = DbTableMeta::new(
                         ids.iter().take(ids.len() - 1).cloned().collect(),
@@ -582,6 +625,7 @@ impl Visit for Join {
 
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
+        context.start_select_scope();
         // If we're selecting from a single table, that table becomes the default
         if self.from.len() == 1 {
             let t = self.from.first().unwrap();

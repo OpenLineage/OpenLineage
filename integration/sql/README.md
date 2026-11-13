@@ -12,6 +12,13 @@ The interface is explained in INTERFACE.md.
 For MySQL `UPDATE ... JOIN`, the target table is an output dataset and joined source tables are input
 datasets, including derived sources and tables read by subqueries in the join predicate.
 
+For BigQuery, `UNNEST` element aliases retain column lineage to the array expression's source columns.
+Nested element fields retain ancestry at the source array-column level, without schema-level field expansion.
+Literal arrays and generated offsets contribute no physical source columns.
+Subqueries in array expressions still contribute their input tables.
+The default `generic` dialect also supports this BigQuery-style alias resolution for a single array
+without an explicit column list or `WITH ORDINALITY`.
+
 ## Supported Dialects
 
 The parser supports several dialects. For an up-to-date list of supported dialects, please refer to [dialect.rs](impl/src/dialect.rs), specifically the function `get_dialect`.
