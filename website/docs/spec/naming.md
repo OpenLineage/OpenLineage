@@ -25,6 +25,7 @@ A dataset, or `table`, is organized according to a producer, namespace, database
 | Cassandra                     | Warehouse                            | `cassandra://{host}:{port}`                                                                                                        | `{keyspace}.{table}`                                                         |
 | Milvus                        | Vector database                      | `milvus://{host}:{port}`                                                                                                            | `{database}.{collection}`                                                         |
 | Microsoft Fabric Warehouse    | Warehouse                            | `fabric-warehouse://{sql analytics endpoint}` or `fabric-warehouse://{sql analytics endpoint}:{port}`                              | `{database}.{schema}.{table}`                                                |
+| Microsoft Fabric Lakehouse    | Data lake                            | `fabric-lakehouse://{workspace id}`                                                                                                | `{lakehouse}.{schema}.{table}`                                               |
 | MySQL                         | Warehouse                            | `mysql://{host}:{port}`                                                                                                            | `{database}.{table}`                                                         |
 | CrateDB                       | Warehouse                            | `crate://{host}:{port}`                                                                                                            | `{database}.{schema}.{table}`                                                |
 | DB2                           | Warehouse                            | `db2://{host}:{port}`                                                                                                              | `{database}.{schema}.{table}`                                                |
@@ -79,6 +80,11 @@ Microsoft's .NET stores them, written in lowercase base32 without `=` padding. M
 
 If you know the warehouse's ID, also add the table's OneLake file location as a `LOCATION` symlink, using IDs only:
 `abfss://{workspace id}@onelake.dfs.fabric.microsoft.com` with name `{warehouse id}/Tables/{schema}/{table}`.
+
+Microsoft Fabric lakehouse tables use the workspace ID in lowercase. Lakehouses without schemas use the schema `dbo`,
+as Fabric's SQL analytics endpoint does. If you know the lakehouse's ID, also add the table's OneLake file location as
+a `LOCATION` symlink, using IDs only: `abfss://{workspace id}@onelake.dfs.fabric.microsoft.com` with name
+`{lakehouse id}/Tables/{schema}/{table}`, or `{lakehouse id}/Tables/{table}` in a lakehouse without schemas.
 
 ## Job Naming
 

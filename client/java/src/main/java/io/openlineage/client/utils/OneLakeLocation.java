@@ -92,8 +92,7 @@ public class OneLakeLocation {
       return Optional.empty();
     }
     String container = authority.substring(0, at);
-    String host = authority.substring(at + 1).toLowerCase(Locale.ROOT);
-    if (!HOST_PATTERN.matcher(host).matches()) {
+    if (!isOneLakeHost(authority.substring(at + 1))) {
       return Optional.empty();
     }
 
@@ -119,6 +118,29 @@ public class OneLakeLocation {
             .itemId(itemId.get())
             .path(Collections.unmodifiableList(path))
             .build());
+  }
+
+  /** Whether a host is a OneLake host: global, regional, DFS or Blob. */
+  public static boolean isOneLakeHost(String host) {
+    return host != null && HOST_PATTERN.matcher(host.toLowerCase(Locale.ROOT)).matches();
+  }
+
+  /**
+   * The dataset's {@code LOCATION} symlink in OneLake, written with IDs, if it is in the given
+   * workspace.
+   */
+  public static Optional<OneLakeLocation> locationSymlink(
+      DatasetIdentifier identifier, UUID workspaceId) {
+    if (identifier.getSymlinks() == null || workspaceId == null) {
+      return Optional.empty();
+    }
+    return identifier.getSymlinks().stream()
+        .filter(s -> s.getType() == DatasetIdentifier.SymlinkType.LOCATION)
+        .map(s -> parse(s.getNamespace(), s.getName()))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .filter(location -> workspaceId.equals(location.getWorkspaceId()))
+        .findFirst();
   }
 
   /** Reads an ID, returning empty instead of failing when the text isn't one. */

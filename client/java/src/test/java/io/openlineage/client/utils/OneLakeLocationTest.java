@@ -158,6 +158,36 @@ class OneLakeLocationTest {
   }
 
   @Test
+  void testIsOneLakeHost() {
+    assertThat(OneLakeLocation.isOneLakeHost("onelake.dfs.fabric.microsoft.com")).isTrue();
+    assertThat(OneLakeLocation.isOneLakeHost("WestUS-OneLake.blob.fabric.microsoft.com")).isTrue();
+    assertThat(OneLakeLocation.isOneLakeHost("account.dfs.core.windows.net")).isFalse();
+    assertThat(OneLakeLocation.isOneLakeHost(null)).isFalse();
+  }
+
+  @Test
+  void testLocationSymlinkInTheWorkspace() {
+    DatasetIdentifier identifier =
+        new DatasetIdentifier("lh_sales.sales.orders", "fabric-lakehouse://" + WORKSPACE)
+            .withSymlink("db.orders", "file:/warehouse", DatasetIdentifier.SymlinkType.TABLE)
+            .withSymlink(
+                LAKEHOUSE + "/Tables/sales/orders",
+                NAMESPACE,
+                DatasetIdentifier.SymlinkType.LOCATION);
+
+    assertThat(
+            OneLakeLocation.locationSymlink(identifier, WORKSPACE)
+                .flatMap(OneLakeLocation::guidLocation))
+        .contains(GUID_PATH);
+    // a location in another workspace doesn't describe this dataset
+    assertThat(
+            OneLakeLocation.locationSymlink(
+                identifier, UUID.fromString("45ff911e-5e75-428a-a618-52958fcc7604")))
+        .isEmpty();
+    assertThat(OneLakeLocation.locationSymlink(identifier, null)).isEmpty();
+  }
+
+  @Test
   void testGuid() {
     assertThat(OneLakeLocation.guid(" C7A14054-60A7-4121-8FB7-252D16F687EB ")).contains(LAKEHOUSE);
     assertThat(OneLakeLocation.guid("lh_sales")).isEmpty();

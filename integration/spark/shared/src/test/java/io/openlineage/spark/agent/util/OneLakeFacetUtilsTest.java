@@ -18,8 +18,10 @@ import io.openlineage.client.utils.OneLakeLocation;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.DatasetIdentifierResolver;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.Vendors;
 import io.openlineage.sql.DbTableMeta;
 import java.util.Collections;
 import java.util.HashMap;
@@ -164,6 +166,68 @@ class OneLakeFacetUtilsTest {
     assertThat(facet.getItemName()).isEqualTo("wh_other");
     assertThat(facet.getItemId()).isNull();
     assertThat(facet.getLocation()).isNull();
+  }
+
+  @Test
+  void testOneLakePathGetsTheFacetFromThePath() {
+    String path = WAREHOUSE + "/Tables/raw/orders";
+    String oneLake = "abfss://" + WORKSPACE + "@onelake.dfs.fabric.microsoft.com";
+
+    OpenLineage.FabricOneLakeDatasetFacet facet =
+        DatasetFactory.input(context)
+            .sparkDatasetBuilder()
+            .dataset(path, oneLake)
+            .build()
+            .getFacets()
+            .getFabric_onelake();
+
+    assertThat(facet.getWorkspaceId()).isEqualTo(WORKSPACE);
+    assertThat(facet.getItemId()).isEqualTo(WAREHOUSE);
+    assertThat(facet.getLocation()).isEqualTo(oneLake + "/" + path);
+    // the path doesn't say what the item is
+    assertThat(facet.getItemType()).isNull();
+    assertThat(facet.getItemName()).isNull();
+  }
+
+  @Test
+  void testFabricVendorNamesTheDefaultLakehouse() {
+    String lakehouse = "c7a14054-60a7-4121-8fb7-252d16f687eb";
+    String oneLake = "abfss://" + WORKSPACE + "@onelake.dfs.fabric.microsoft.com";
+    runtimeConf.put("trident.workspace.id", WORKSPACE);
+    runtimeConf.put("trident.workspace.name", "sales-analytics");
+    runtimeConf.put("trident.lakehouse.id", lakehouse);
+    runtimeConf.put("trident.lakehouse.name", "lh_sales");
+    OpenLineageContext fabric =
+        OpenLineageContext.builder()
+            .sparkSession(context.getSparkSession().get())
+            .sparkContext(context.getSparkContext().get())
+            .openLineage(context.getOpenLineage())
+            .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(config)
+            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .vendors(Vendors.getVendors())
+            .build();
+
+    OpenLineage.OutputDataset output =
+        DatasetFactory.output(fabric)
+            .sparkDatasetBuilder()
+            .dataset(lakehouse + "/Tables/sales/orders", oneLake)
+            .build();
+
+    assertThat(output.getNamespace()).isEqualTo("fabric-lakehouse://" + WORKSPACE);
+    assertThat(output.getName()).isEqualTo("lh_sales.sales.orders");
+    OpenLineage.FabricOneLakeDatasetFacet facet = output.getFacets().getFabric_onelake();
+    assertThat(facet.getItemType()).isEqualTo("Lakehouse");
+    assertThat(facet.getItemName()).isEqualTo("lh_sales");
+    assertThat(facet.getItemId()).isEqualTo(lakehouse);
+    assertThat(facet.getWorkspaceName()).isEqualTo("sales-analytics");
+    assertThat(facet.getLocation()).isEqualTo(oneLake + "/" + lakehouse + "/Tables/sales/orders");
+    // outside Fabric, the vendor names nothing
+    assertThat(
+            DatasetIdentifierResolver.resolve(
+                context, new DatasetIdentifier(lakehouse + "/Tables/sales/orders", oneLake)))
+        .extracting(DatasetIdentifier::getNamespace)
+        .isEqualTo(oneLake);
   }
 
   @Test

@@ -22,7 +22,8 @@ public interface Vendors {
           // Add vendor classes here
           "io.openlineage.spark.agent.vendor.snowflake.SnowflakeVendor",
           "io.openlineage.spark.agent.vendor.iceberg.IcebergVendor",
-          "io.openlineage.spark.agent.vendor.gcp.GcpVendor");
+          "io.openlineage.spark.agent.vendor.gcp.GcpVendor",
+          "io.openlineage.spark.agent.vendor.fabric.FabricVendor");
 
   static Vendors getVendors() {
     return getVendors(Collections.emptyList());

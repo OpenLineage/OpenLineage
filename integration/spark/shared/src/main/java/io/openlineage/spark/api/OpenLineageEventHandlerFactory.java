@@ -214,4 +214,16 @@ public interface OpenLineageEventHandlerFactory {
       OpenLineageContext context) {
     return Collections.emptyList();
   }
+
+  /**
+   * Resolvers that give datasets their final names; see {@link DatasetIdentifierResolver}. They are
+   * created once per {@link OpenLineageContext}.
+   *
+   * @param context the context the resolvers are created for
+   * @return the resolvers, or an empty collection
+   */
+  default Collection<DatasetIdentifierResolver> createDatasetIdentifierResolvers(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
 }

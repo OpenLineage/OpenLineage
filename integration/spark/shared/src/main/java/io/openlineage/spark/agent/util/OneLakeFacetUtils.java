@@ -15,7 +15,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Adds the {@code fabric_onelake} facet to datasets stored in OneLake, Microsoft Fabric's storage.
+ * Adds the {@code fabric_onelake} facet to datasets stored in OneLake, Microsoft Fabric's storage:
+ * Fabric warehouse and lakehouse tables, and other OneLake paths written with IDs.
  *
  * <p>The facet is built from the dataset's own name, namespace and symlinks, so it describes the
  * dataset however the job reached it, including from outside Fabric. When the job runs in Fabric,
@@ -40,7 +41,7 @@ public final class OneLakeFacetUtils {
     if (FacetUtils.isFacetDisabled(context, FACET_NAME)) {
       return Optional.empty();
     }
-    return FabricWarehouseUtils.toOneLakeLocation(identifier)
+    return describe(identifier)
         .map(
             location ->
                 withWorkspaceName(
@@ -50,6 +51,21 @@ public final class OneLakeFacetUtils {
                         .map(FabricWarehouseSparkUtils::confOf)
                         .orElse(key -> Optional.empty())))
         .map(location -> location.toFacet(context.getOpenLineage()));
+  }
+
+  /**
+   * Describes the dataset in OneLake terms: a Fabric warehouse or lakehouse table from its name and
+   * {@code LOCATION} symlink, or any other OneLake path written with IDs from the path itself.
+   */
+  private static Optional<OneLakeLocation> describe(DatasetIdentifier identifier) {
+    Optional<OneLakeLocation> location = FabricWarehouseUtils.toOneLakeLocation(identifier);
+    if (!location.isPresent()) {
+      location = FabricLakehouseSparkUtils.toOneLakeLocation(identifier);
+    }
+    if (!location.isPresent()) {
+      location = OneLakeLocation.parse(identifier.getNamespace(), identifier.getName());
+    }
+    return location;
   }
 
   /**
