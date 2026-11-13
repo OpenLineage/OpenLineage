@@ -13,6 +13,7 @@ from openlineage.client.transport.gcplineage import GCPLineageConfig, GCPLineage
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.kafka import KafkaConfig, KafkaTransport
 from openlineage.client.transport.msk_iam import MSKIAMConfig, MSKIAMTransport
+from openlineage.client.transport.nats import NatsConfig, NatsTransport
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.transport.transform.transform import (
     TransformConfig,
@@ -26,6 +27,7 @@ _factory.register_transport(HttpTransport.kind, HttpTransport)
 _factory.register_transport(AsyncHttpTransport.kind, AsyncHttpTransport)
 _factory.register_transport(KafkaTransport.kind, KafkaTransport)
 _factory.register_transport(MSKIAMTransport.kind, MSKIAMTransport)
+_factory.register_transport(NatsTransport.kind, NatsTransport)
 _factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
 _factory.register_transport(NoopTransport.kind, NoopTransport)
 _factory.register_transport(FileTransport.kind, FileTransport)
@@ -65,6 +67,8 @@ __all__ = [
     "KafkaTransport",
     "MSKIAMConfig",
     "MSKIAMTransport",
+    "NatsConfig",
+    "NatsTransport",
     "NoopTransport",
     "TransformConfig",
     "TransformTransport",
