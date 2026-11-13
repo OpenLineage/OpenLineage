@@ -231,6 +231,18 @@
       redact_fields: []
     - class_name: OwnershipJobFacet
       redact_fields: []
+- module: parent_job
+  classes:
+    - class_name: ParentJobFacetJob
+      redact_fields:
+        - namespace
+        - name
+    - class_name: ParentJobFacetRoot
+      redact_fields:
+        - job
+    - class_name: ParentJobFacet
+      redact_fields:
+        - job
 - module: parent_run
   classes:
     - class_name: Job

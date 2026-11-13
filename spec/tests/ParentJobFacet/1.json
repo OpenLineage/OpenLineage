@@ -1,0 +1,10 @@
+{
+  "parent": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/ParentJobFacet.json",
+    "job": {
+      "namespace": "airflow",
+      "name": "my_dag"
+    }
+  }
+}
