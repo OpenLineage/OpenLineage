@@ -253,7 +253,7 @@ class DbtLiveProcessor(DbtLocalArtifactProcessor):
             Dataset(  # type: ignore[misc]
                 name=attached.name,
                 namespace=attached.namespace,
-                facets={**attached.facets, "dataQualityAssertions": assertion_facet},  # type: ignore[dict-item]
+                facets={**attached.facets, "dataQualityAssertions": assertion_facet},
             )
             for attached in self._get_attached_datasets(test_node_id) or []
         ]
