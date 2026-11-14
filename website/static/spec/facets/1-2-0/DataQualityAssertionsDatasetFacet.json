@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-2-0/DataQualityAssertionsDatasetFacet.json",
+  "$defs": {
+    "DataQualityAssertionsDatasetFacet": {
+      "description": "list of tests performed on dataset or dataset columns, and their results",
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
+        },
+        {
+          "type": "object",
+          "required": ["assertions"],
+          "properties": {
+            "assertions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "assertion": {
+                    "type": "string",
+                    "description": "Classification of the test, e.g. 'not_null', 'unique', 'row_count', 'freshness', 'custom_sql'.",
+                    "example": "not_null"
+                  },
+                  "success": {
+                    "type": "boolean",
+                    "description": "Whether the test found issues: 'true' (no issues found), 'false' (issues found). Independent of severity - a test can fail without blocking the pipeline when severity is 'warn'."
+                  },
+                  "column": {
+                    "type": "string",
+                    "description": "Column that test refers to. It should match the name provided in SchemaDatasetFacet. If column field is empty, then test refers to whole dataset.",
+                    "example": "id"
+                  },
+                  "severity": {
+                    "type": "string",
+                    "description": "The configured severity level of the assertion. Common values are 'error' (test failure blocks pipeline) or 'warn' (test failure produces warning only).",
+                    "example": "error"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name identifying the test.",
+                    "example": "assert_no_orphans"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Human-readable description of what the assertion checks.",
+                    "example": "Ensures all order IDs are unique across the table."
+                  },
+                  "expected": {
+                    "type": "string",
+                    "description": "The expected value or threshold for the assertion, serialized as a string.",
+                    "example": "1000"
+                  },
+                  "actual": {
+                    "type": "string",
+                    "description": "The actual value observed during the assertion, serialized as a string.",
+                    "example": "999"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "The assertion body, e.g. a SQL query or expression.",
+                    "example": "SELECT COUNT(*) FROM orders WHERE amount < 0"
+                  },
+                  "contentType": {
+                    "type": "string",
+                    "description": "The format of the content field, allowing consumers to interpret or filter assertion content. Common values include 'sql', 'json', 'expression'.",
+                    "example": "sql"
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Arbitrary key-value pairs for assertion-specific inputs.",
+                    "additionalProperties": true
+                  }
+                },
+                "required": ["assertion", "success"]
+              }
+            }
+          }
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "dataQualityAssertions": {
+      "$ref": "#/$defs/DataQualityAssertionsDatasetFacet"
+    }
+  }
+}
