@@ -1,5 +1,7 @@
-# Copyright 2018-2026 contributors to the OpenLineage project
-# SPDX-License-Identifier: Apache-2.0
+---
+sidebar_position: 2
+title: Quickstart
+---
 
 ## OpenLineage Prefect Guide
 
@@ -26,11 +28,10 @@ This guide demos how to spin up a **Marquez** instance for OpenLineage visualiza
     export OPENLINEAGE_NAMESPACE="prefect_test" &&
     export OPENLINEAGE__TRANSPORT__TYPE="http" &&
     export OPENLINEAGE__TRANSPORT__URL="http://localhost:5000" &&
-    export OPENLINEAGE__TRANSPORT__ENDPOINT="/api/v1/lineage" &&
-    export PREFECT_API_URL="http://localhost:4200/api"
+    export OPENLINEAGE__TRANSPORT__ENDPOINT="/api/v1/lineage"
     ```
 
-3. **Copy and deploy the code below to your Prefect instance:**
+4. **Copy and deploy the code below to your Prefect instance:**
         
     ```py
     import random
@@ -99,8 +100,27 @@ This guide demos how to spin up a **Marquez** instance for OpenLineage visualiza
         update_customers()
     ```
 
-4. **Trigger a run of prefect-test in the Prefect UI.**
+5. **Copy and paste the below code into new file listener.py:**
 
-5. **Verify event tracking in Marquez:**
+    ```py
+    import asyncio
+    from openlineage_prefect.prefect_adapter.listener import PrefectOpenLineageListener
+
+    async def main():
+        await PrefectOpenLineageListener().collect_and_process_runs()
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+
+    Run the file in its own process:
+
+    ```py
+    python listener.py
+    ```
+
+6. **Trigger a run of prefect-test in the Prefect UI.**
+
+7. **Verify event tracking in Marquez:**
     * Watch the flow completion logs pop up in your **Prefect UI**.
     * Switch tabs to the **Marquez UI** to see the structural metadata graphs dynamically drawn from your code run.

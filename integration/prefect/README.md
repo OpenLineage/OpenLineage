@@ -110,8 +110,7 @@ This guide explains how to spin up a **Marquez** instance for OpenLineage visual
     export OPENLINEAGE_NAMESPACE="prefect_test" &&
     export OPENLINEAGE__TRANSPORT__TYPE="http" &&
     export OPENLINEAGE__TRANSPORT__URL="http://localhost:5000" &&
-    export OPENLINEAGE__TRANSPORT__ENDPOINT="/api/v1/lineage" &&
-    export PREFECT_API_URL="http://localhost:4200/api"
+    export OPENLINEAGE__TRANSPORT__ENDPOINT="/api/v1/lineage"
     ```
 
 4. **Copy and paste the below code into new file quickstart.py:**

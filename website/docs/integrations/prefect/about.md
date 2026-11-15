@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: Prefect
+slug: /integrations/prefect
 ---
 
 ## Overview
@@ -13,7 +14,7 @@ The `openlineage-prefect` integration collects, adapts, and emits information fr
 
 The Prefect integration leverages the `prefect-client` library to subscribe to events logged by tasks and flows executed locally by a Prefect worker. The user can opt to convert the unique task and flow objects logged by the worker to idempotent objects (the default configuration) or collect them without conversion. Code modification is not required for a basic implementation.
 
-Standard OpenLineage facets employed include the `JobTypeJobFacet`, `NominalTimeRunFacet`, `ProcessingEngineRunFacet`, and `ParentRunFacet` (for attaching flow run information to task run events). A new custom facet, `PrefectDeploymentRunFacet`, adds deployment information to flow run and task run events.
+Standard OpenLineage facets employed include the `JobTypeJobFacet`, `NominalTimeRunFacet`, `ProcessingEngineRunFacet`, and `ParentRunFacet` (for attaching flow run information to task run events). A custom facet, `PrefectDeploymentRunFacet`, adds deployment information to flow run and task run events.
 
 ## Configuration
 
