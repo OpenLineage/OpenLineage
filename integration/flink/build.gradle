@@ -263,6 +263,24 @@ assemble {
     dependsOn shadowJar
 }
 
+def verifyShadowJarServices = tasks.register("verifyShadowJarServices") {
+    group = "verification"
+    description = "Check that the shadow jar keeps no Jackson service files that name classes it relocated"
+    dependsOn shadowJar
+    doLast {
+        def unrelocated = zipTree(shadowJar.archiveFile).matching {
+            include 'META-INF/services/com.fasterxml.jackson.*'
+        }.files*.name
+        if (!unrelocated.isEmpty()) {
+            throw new GradleException("shadowJar keeps unrelocated Jackson service files: ${unrelocated}")
+        }
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn(verifyShadowJarServices)
+}
+
 spotlessJava {
     dependsOn("compileJava", "compileTestJava")
 }
