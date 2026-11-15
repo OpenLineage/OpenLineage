@@ -1166,6 +1166,7 @@ Designed mainly for integration testing, the `FileTransport` emits OpenLineage e
 - `type` - string, must be `"file"`. Required.
 - `log_file_path` - string specifying the path of the file or file prefix (when `append` is true). Required.
 - `append` - boolean, see *Behavior* section below. Optional, default: `false`.
+- `debug_mode` - boolean, pretty-prints JSON and includes event details in filenames when `append` is `false`. Ignored when `append` is `true` so each event remains on a single line. Optional, default: `false`.
 - `storage_options` - dictionary, additional options passed to fsspec for authentication and configuration. Optional.
 - `filesystem` - string, dotted import path to a custom filesystem class or instance. Optional, provides explicit control over the filesystem.
 - `fs_kwargs` - dictionary, keyword arguments for constructing the filesystem when using `filesystem`. Optional.
