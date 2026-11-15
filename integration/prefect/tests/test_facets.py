@@ -23,10 +23,13 @@ def test_prefect_deployment_run_facet_initialization():
         name="test_deploy",
     )
 
-    assert facet.deployment_id == "dep-123"
+    assert facet.deploymentId == "dep-123"
     assert facet.created == "2026-07-05T08:05:01.001Z"
     assert facet.updated == "2026-07-05T08:06:02.100Z"
     assert facet.name == "test_deploy"
+    serialized = Serde.to_dict(facet)
+    assert serialized["deploymentId"] == "dep-123"
+    assert "deployment_id" not in serialized
 
 
 def test_prefect_deployment_run_facet_attributes():
@@ -40,7 +43,7 @@ def test_prefect_deployment_run_facet_attributes():
         deployment_id=deployment_id, created=created, updated=updated, name=name
     )
 
-    assert facet.deployment_id == deployment_id
+    assert facet.deploymentId == deployment_id
     assert facet.created == created
     assert facet.updated == updated
     assert facet.name == name
@@ -110,14 +113,14 @@ def test_prefect_deployment_run_facet_empty_deployment_id():
         name="test_deploy",
     )
 
-    assert facet.deployment_id == ""
+    assert facet.deploymentId == ""
 
 
 def test_prefect_deployment_run_facet_none_values():
     """Test facet creation with None values (if allowed)."""
     facet = PrefectDeploymentRunFacet(deployment_id="dep-123", created=None, updated=None, name="test_deploy")
 
-    assert facet.deployment_id == "dep-123"
+    assert facet.deploymentId == "dep-123"
     assert facet.created is None
     assert facet.updated is None
     assert facet.name == "test_deploy"
@@ -151,7 +154,7 @@ def test_prefect_deployment_run_facet_multiple_instances():
         name="deploy_2",
     )
 
-    assert facet1.deployment_id != facet2.deployment_id
+    assert facet1.deploymentId != facet2.deploymentId
     assert facet1.name != facet2.name
     assert facet1.created != facet2.created
 
@@ -165,7 +168,7 @@ def test_prefect_deployment_run_facet_special_characters():
         name="test_deploy-@#$%",
     )
 
-    assert "@#$%" in facet.deployment_id
+    assert "@#$%" in facet.deploymentId
     assert "@#$%" in facet.name
 
 
@@ -181,5 +184,5 @@ def test_prefect_deployment_run_facet_long_strings():
         name=long_name,
     )
 
-    assert facet.deployment_id == long_id
+    assert facet.deploymentId == long_id
     assert facet.name == long_name

@@ -86,7 +86,7 @@ class PrefectOpenLineageAdapter:
             if flow_info.state_msg
             else None,
         }
-        if all([deployment.id, deployment.created, deployment.updated, deployment.name]):
+        if deployment and all([deployment.id, deployment.created, deployment.updated, deployment.name]):
             run_facets["prefectDeployment"] = PrefectDeploymentRunFacet(
                 deployment_id=deployment.id,
                 created=deployment.created.isoformat(),
@@ -154,7 +154,7 @@ class PrefectOpenLineageAdapter:
             if state_msg
             else None,
         }
-        if all([deployment.id, deployment.created, deployment.updated, deployment.name]):
+        if deployment and all([deployment.id, deployment.created, deployment.updated, deployment.name]):
             run_facets["prefectDeployment"] = PrefectDeploymentRunFacet(
                 deployment_id=deployment.id,
                 created=deployment.created.isoformat(),

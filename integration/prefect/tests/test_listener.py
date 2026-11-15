@@ -8,9 +8,11 @@ Tests cover event processing, Prefect API interactions, and OpenLineage event cr
 """
 
 import json
+import logging
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 from openlineage.client.run import RunState
 from openlineage_prefect.prefect_adapter.adapter import (
@@ -162,31 +164,63 @@ async def test_get_flow_info_success(listener, mock_prefect_client):
 
 
 @pytest.mark.asyncio
-async def test_get_prefect_version_success(listener):
+async def test_get_prefect_version_success(listener, mock_prefect_client):
     """Test successful version retrieval."""
-    mock_response = MagicMock()
-    mock_response.json.return_value = "3.7.6"
+    mock_prefect_client.api_version.return_value = "3.7.6"
 
-    with patch(
-        "openlineage_prefect.prefect_adapter.listener.requests.get",
-        return_value=mock_response,
-    ) as get:
-        version = await listener.get_prefect_version()
+    version = await listener.get_prefect_version()
 
     assert version == "3.7.6"
-    get.assert_called_once_with("http://localhost:4200/api/admin/version", timeout=(5, 20))
+    mock_prefect_client.api_version.assert_awaited_once_with()
 
 
 @pytest.mark.asyncio
-async def test_get_prefect_version_handles_error(listener):
+async def test_get_prefect_version_handles_error(listener, mock_prefect_client):
     """Test that version retrieval handles errors gracefully."""
-    with patch(
-        "openlineage_prefect.prefect_adapter.listener.requests.get",
-        side_effect=TypeError("API error"),
-    ):
-        version = await listener.get_prefect_version()
+    mock_prefect_client.api_version.side_effect = httpx.ConnectError("API error")
+
+    version = await listener.get_prefect_version()
 
     assert version is None
+
+
+@pytest.mark.asyncio
+async def test_get_prefect_version_does_not_suppress_unexpected_error(listener, mock_prefect_client):
+    """Test that version retrieval only handles HTTP and JSON decoding errors."""
+    mock_prefect_client.api_version.side_effect = TypeError("Unexpected error")
+
+    with pytest.raises(TypeError, match="Unexpected error"):
+        await listener.get_prefect_version()
+
+
+@pytest.mark.asyncio
+async def test_get_prefect_version_logs_error(listener, mock_prefect_client, caplog):
+    """Test that version retrieval logs the caught error."""
+    caplog.set_level(logging.INFO)
+    mock_prefect_client.api_version.side_effect = httpx.ConnectError("API error")
+
+    version = await listener.get_prefect_version()
+
+    assert version is None
+    assert "ConnectError: API error" in caplog.text
+
+
+def test_process_artifact_description_logs_errors(listener, caplog):
+    """Test that malformed artifact descriptions include exception details in logs."""
+
+    class InvalidDescription(str):
+        def split(self):
+            raise ValueError
+
+    caplog.set_level(logging.WARNING)
+
+    dataset_type = listener.process_artifact_description(
+        {"description": InvalidDescription("ol-dataset_input")}
+    )
+
+    assert dataset_type is None
+    assert "ValueError: Cannot split on _" in caplog.text
+    assert "ValueError: Cannot split on -" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -209,7 +243,7 @@ async def test_get_deployment_info_uses_default_namespace(listener, mock_prefect
 
 
 @pytest.mark.asyncio
-async def test_get_artifacts_by_task_run_success(listener):
+async def test_get_artifacts_by_task_run_success(listener, mock_prefect_client):
     """Test successful artifact retrieval and parsing."""
     artifacts = [
         {
@@ -226,21 +260,22 @@ async def test_get_artifacts_by_task_run_success(listener):
     mock_response.status_code = 200
     mock_response.json.return_value = artifacts
 
-    with patch(
-        "openlineage_prefect.prefect_adapter.listener.requests.post",
-        return_value=mock_response,
-    ) as post:
-        result = await listener.get_artifacts_by_task_run("task-run-123")
+    mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
+
+    result = await listener.get_artifacts_by_task_run("task-run-123")
 
     assert result[0]["uri"] == "postgres://localhost"
     assert result[0]["table"] == "users"
     assert result[0]["dataset_type"] == "input"
     assert result[1]["dataset_type"] == "output"
-    post.assert_called_once()
+    mock_prefect_client._client.post.assert_awaited_once_with(  # NOQA: SLF001
+        "/artifacts/filter",
+        json={"artifacts": {"task_run_id": {"any_": ["task-run-123"]}}},
+    )
 
 
 @pytest.mark.asyncio
-async def test_get_artifacts_by_task_run_filters_ol_datasets(listener):
+async def test_get_artifacts_by_task_run_filters_ol_datasets(listener, mock_prefect_client):
     """Test that non-openlineage artifacts are filtered out."""
     artifacts = [
         {
@@ -257,43 +292,37 @@ async def test_get_artifacts_by_task_run_filters_ol_datasets(listener):
     mock_response.status_code = 200
     mock_response.json.return_value = artifacts
 
-    with patch(
-        "openlineage_prefect.prefect_adapter.listener.requests.post",
-        return_value=mock_response,
-    ):
-        result = await listener.get_artifacts_by_task_run("task-run-123")
+    mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
+
+    result = await listener.get_artifacts_by_task_run("task-run-123")
 
     assert len(result) == 1
     assert result[0]["uri"] == "postgres://localhost"
 
 
 @pytest.mark.asyncio
-async def test_get_artifacts_by_task_run_no_artifacts(listener):
+async def test_get_artifacts_by_task_run_no_artifacts(listener, mock_prefect_client):
     """Test handling when no artifacts are found."""
     mock_response = MagicMock()
     mock_response.status_code = 404
 
-    with patch(
-        "openlineage_prefect.prefect_adapter.listener.requests.post",
-        return_value=mock_response,
-    ):
-        result = await listener.get_artifacts_by_task_run("task-run-123")
+    mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
+
+    result = await listener.get_artifacts_by_task_run("task-run-123")
 
     assert result == []
 
 
 @pytest.mark.asyncio
-async def test_get_artifacts_by_task_run_empty_list(listener):
+async def test_get_artifacts_by_task_run_empty_list(listener, mock_prefect_client):
     """Test handling when artifacts list is empty."""
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = []
 
-    with patch(
-        "openlineage_prefect.prefect_adapter.listener.requests.post",
-        return_value=mock_response,
-    ):
-        result = await listener.get_artifacts_by_task_run("task-run-123")
+    mock_prefect_client._client.post.return_value = mock_response  # NOQA: SLF001
+
+    result = await listener.get_artifacts_by_task_run("task-run-123")
 
     assert result == []
 

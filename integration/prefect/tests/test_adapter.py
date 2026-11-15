@@ -96,7 +96,7 @@ def test_create_and_emit_flow_event(adapter, flow_info, deployment_info, sample_
     assert event.producer == PRODUCER
     assert event.run.facets["processingEngine"].version == "3.7.6"
     assert event.run.facets["processingEngine"].name == "Prefect"
-    assert event.run.facets["prefectDeployment"].deployment_id == "dep-123"
+    assert event.run.facets["prefectDeployment"].deploymentId == "dep-123"
     assert event.run.facets["prefectDeployment"].name == "test_deploy"
     assert event.job.facets["jobType"].processingType == "BATCH"
     assert event.job.facets["jobType"].integration == "Prefect"
@@ -137,7 +137,7 @@ def test_create_and_emit_flow_event_includes_error_message(adapter, sample_datet
 def test_create_and_emit_task_event(adapter, task_info, deployment_info):
     adapter.create_and_emit_task_event(
         task_info=task_info,
-        flow_run_id="flow-run-456",
+        flow_run_id="12345678-1234-5678-1234-567812345678",
         flow_name="test_flow",
         deployment=deployment_info,
         datasets=DatasetInfo(input_datasets=[], output_datasets=[]),
@@ -151,9 +151,9 @@ def test_create_and_emit_task_event(adapter, task_info, deployment_info):
     assert event.job.name == "test_task"
     assert event.job.namespace == "default"
     assert event.run.facets["nominalTime"].nominalStartTime == task_info.expected_start_time
-    assert event.run.facets["parentRun"].run["runId"] == "flow-run-456"
-    assert event.run.facets["parentRun"].job["name"] == "test_flow"
-    assert event.run.facets["prefectDeployment"].deployment_id == "dep-123"
+    assert event.run.facets["parent"].run.runId == "12345678-1234-5678-1234-567812345678"
+    assert event.run.facets["parent"].job.name == "test_flow"
+    assert event.run.facets["prefectDeployment"].deploymentId == "dep-123"
     assert event.run.facets["processingEngine"].version == "3.7.6"
     assert event.run.facets["processingEngine"].name == "Prefect"
     assert event.job.facets["jobType"].processingType == "BATCH"
@@ -216,7 +216,7 @@ def test_create_and_emit_task_event_includes_error_message(adapter, task_info):
 
     event = adapter.client.emit.call_args.args[0]
     assert event.eventType == RunState.FAIL
-    assert event.run.facets["errorMessageRun"].message == "task failed"
+    assert event.run.facets["errorMessage"].message == "task failed"
 
 
 def test_adapter_initialization_with_client(mock_client):

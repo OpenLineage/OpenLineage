@@ -60,7 +60,9 @@ class PrefectOpenLineageListener:
             occurred=EventOccurredFilter(since=datetime.now(timezone.utc)),
         )
 
-    def build_run_id(self, execution_time: datetime, run_name: str, namespace: str) -> str:
+    def build_run_id(
+        self, execution_time: datetime, run_name: str, namespace: str, prefect_run_id: str
+    ) -> str:
         """
         Builds a deterministic UUID for the OpenLineage run based on the execution
         time, run name, and namespace.
@@ -68,7 +70,7 @@ class PrefectOpenLineageListener:
         return str(
             generate_static_uuid(
                 instant=execution_time,
-                data=f"{namespace}.{run_name}".encode(),
+                data=f"{namespace}.{run_name}.{prefect_run_id}".encode(),
             )
         )
 
@@ -212,7 +214,7 @@ class PrefectOpenLineageListener:
                     parent_deployment_info = await self.get_deployment_info(parent_run.flow_run_id)
                     if parent_run.start_time:
                         parent_run_id = self.build_run_id(
-                            parent_run.start_time, parent_name, parent_deployment_info.namespace
+                            parent_run.start_time, parent_name, parent_deployment_info.namespace, task_run_id
                         )
                         parent_runs.append(
                             {
@@ -261,6 +263,7 @@ class PrefectOpenLineageListener:
                         flow_info.start_time,
                         flow_info.name,
                         self.related_deployment_info[flow_run_id].namespace,
+                        flow_run_id,
                     )
                 except AttributeError:
                     logger.info(
@@ -367,6 +370,7 @@ class PrefectOpenLineageListener:
                 task_run_data["start_time"],
                 task_run_data["task_name"],
                 self.related_deployment_info[flow_run_id].namespace,
+                task_run_data["prefect_task_run_id"],
             )
         except AttributeError:
             logger.info(
@@ -387,7 +391,10 @@ class PrefectOpenLineageListener:
         ol_flow_run_id = ""
         try:
             ol_flow_run_id = self.build_run_id(
-                flow_info.start_time, flow_info.name, self.related_deployment_info[flow_run_id].namespace
+                flow_info.start_time,
+                flow_info.name,
+                self.related_deployment_info[flow_run_id].namespace,
+                flow_run_id,
             )
         except AttributeError:
             logger.info(
