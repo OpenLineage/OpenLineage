@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -28,6 +29,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
+import org.apache.spark.sql.sources.BaseRelation;
 import scala.Option;
 
 /**
@@ -90,19 +92,35 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         hudiBaseRelation
             ? HudiUtils.metaClient(relation)
             : HudiUtils.metaClient(((HadoopFsRelation) relation).location());
-    SparkDatasetBuilder<D> builder =
-        datasetFactory.sparkDatasetBuilder().datasetType("TABLE", HudiUtils.tableType(metaClient));
+    // without a table type the dataset is still emitted, just without its datasetType facet
+    Optional<String> tableType = HudiUtils.tableType(metaClient);
+    Supplier<SparkDatasetBuilder<D>> builders =
+        () -> {
+          SparkDatasetBuilder<D> builder = datasetFactory.sparkDatasetBuilder();
+          tableType.ifPresent(type -> builder.datasetType("TABLE", type));
+          return builder;
+        };
     if (hasCatalogTable(logRel)) {
-      return handleCatalogTable(logRel, builder);
+      return handleCatalogTable(logRel, builders.get());
     }
     if (hudiBaseRelation) {
       return Collections.singletonList(
-          builder
+          builders
+              .get()
               .dataset(HudiUtils.basePath(relation, metaClient))
               .schema(HudiUtils.schema(relation))
               .build());
     }
-    return handleHadoopFsRelation(logRel, builder);
+    return handleHadoopFsRelation(logRel, builders);
+  }
+
+  /**
+   * Hudi's {@code HoodieBaseRelation} is not a {@code HadoopFsRelation}, but its {@code
+   * sizeInBytes()} builds its lazy {@code HoodieFileIndex}, which lists the whole table.
+   */
+  @Override
+  protected boolean canReadRelationSize(BaseRelation relation) {
+    return super.canReadRelationSize(relation) && !HudiUtils.isHudiBaseRelation(relation);
   }
 
   private boolean hasCatalogTable(LogicalRelation logRel) {

@@ -20,8 +20,9 @@ import scala.PartialFunction;
 
 /**
  * Extracts the input datasets of Hudi's {@code InsertIntoHoodieTableCommand} (Hudi SQL {@code
- * INSERT INTO/OVERWRITE}). The source query is not a child of the command, so it is traversed
- * explicitly with the other input builders.
+ * INSERT INTO/OVERWRITE}). In Hudi 0.x the source query is not a child of the command, so it is
+ * traversed explicitly with the other input builders. In 1.x it is also a child; visited-node
+ * tracking keeps its inputs from being counted twice.
  */
 public class InsertIntoHoodieTableCommandInputDatasetBuilder
     extends AbstractQueryPlanInputDatasetBuilder<LogicalPlan> {
