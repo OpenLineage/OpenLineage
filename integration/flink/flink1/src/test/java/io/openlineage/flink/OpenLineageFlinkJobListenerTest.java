@@ -5,6 +5,7 @@
 
 package io.openlineage.flink;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -16,6 +17,38 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 public class OpenLineageFlinkJobListenerTest {
+  @Test
+  void defaultAndExplicitJobNamespaces() {
+    org.apache.flink.configuration.Configuration configuration =
+        new org.apache.flink.configuration.Configuration();
+    assertThat(
+            configuration.get(
+                OpenLineageFlinkJobListener.OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE))
+        .isEqualTo("flink_jobs");
+    assertThat(OpenLineageFlinkJobListener.defaultJobNamespace(configuration))
+        .isEqualTo("flink_jobs");
+    configuration.set(
+        OpenLineageFlinkJobListener.OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE, "default");
+    assertThat(
+            configuration.get(
+                OpenLineageFlinkJobListener.OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE))
+        .isEqualTo("default");
+    assertThat(OpenLineageFlinkJobListener.defaultJobNamespace(configuration)).isEqualTo("default");
+  }
+
+  @Test
+  void usesFlinkJobsOnlyForGravitinoTransport() {
+    org.apache.flink.configuration.Configuration configuration =
+        new org.apache.flink.configuration.Configuration();
+    configuration.setString("openlineage.transport.type", "http");
+    configuration.setString("openlineage.transport.url", "http://localhost:8080");
+    configuration.setString("openlineage.transport.endpoint", "/api/lineage");
+    assertThat(OpenLineageFlinkJobListener.defaultJobNamespace(configuration))
+        .isEqualTo("flink-jobs");
+    configuration.set(
+        OpenLineageFlinkJobListener.OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE, "default");
+    assertThat(OpenLineageFlinkJobListener.defaultJobNamespace(configuration)).isEqualTo("default");
+  }
 
   @Test
   void testJobListenerFailsForFlink2() {

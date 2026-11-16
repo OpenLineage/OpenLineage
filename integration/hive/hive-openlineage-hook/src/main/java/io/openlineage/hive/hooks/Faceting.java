@@ -38,6 +38,7 @@ import io.openlineage.hive.parsing.Parsing;
 import io.openlineage.hive.parsing.QueryExpr;
 import io.openlineage.hive.util.HiveUtils;
 import io.openlineage.hive.util.NetworkUtils;
+import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -126,15 +127,13 @@ public class Faceting {
         DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(table);
         OpenLineage ol = olContext.getOpenLineage();
         SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, table);
-        SymlinksDatasetFacet symlinksDatasetFacet = getSymlinkFacets(ol, di);
         inputs.add(
             ol.newInputDatasetBuilder()
                 .namespace(getDatasetNamespace(olContext))
                 .name(di.getName())
                 .facets(
-                    ol.newDatasetFacetsBuilder()
+                    tableFacets(ol, olContext.getHookContext().getConf(), table)
                         .schema(schemaFacet)
-                        .symlinks(symlinksDatasetFacet)
                         .build())
                 .build());
       }
@@ -192,9 +191,8 @@ public class Faceting {
         DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(outputTable);
         OpenLineage ol = olContext.getOpenLineage();
         SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, outputTable);
-        SymlinksDatasetFacet symlinksFacet = getSymlinkFacets(ol, di);
         DatasetFacetsBuilder datasetFacetsBuilder =
-            ol.newDatasetFacetsBuilder().schema(schemaFacet).symlinks(symlinksFacet);
+            tableFacets(ol, hookContext.getConf(), outputTable).schema(schemaFacet);
         QueryExpr query =
             Parsing.buildQueryTree(semanticAnalyzer.getQB(), outputTable.getFullyQualifiedName());
         OutputCLL outputCLL = ColumnLineageCollector.collectCLL(query, outputTable);
@@ -234,21 +232,67 @@ public class Faceting {
     }
 
     InputDataset inputDataset = inputDatasets.get(0);
+    DatasetFacetsBuilder facets =
+        olContext
+            .getOpenLineage()
+            .newDatasetFacetsBuilder()
+            .schema(inputDataset.getFacets().getSchema())
+            .columnLineage(getIdentityCLL(inputDataset, olContext));
+    if (olContext.getHookContext().getQueryPlan().getOperation() != HiveOperation.EXPORT) {
+      addTableMetadata(
+          facets,
+          olContext.getOpenLineage(),
+          olContext.getHookContext().getConf(),
+          writeEntity.getTable());
+    }
     return Collections.singletonList(
         olContext
             .getOpenLineage()
             .newOutputDatasetBuilder()
             .namespace(datasetIdentifier.getNamespace())
             .name(datasetIdentifier.getName())
-            .facets(
-                olContext
-                    .getOpenLineage()
-                    .newDatasetFacetsBuilder()
-                    .schema(inputDataset.getFacets().getSchema())
-                    .symlinks(getSymlinkFacets(olContext.getOpenLineage(), datasetIdentifier))
-                    .columnLineage(getIdentityCLL(inputDataset, olContext))
-                    .build())
+            .facets(facets.build())
             .build());
+  }
+
+  static DatasetFacetsBuilder tableFacets(OpenLineage ol, Configuration conf, Table table) {
+    DatasetFacetsBuilder facets = ol.newDatasetFacetsBuilder();
+    addTableMetadata(facets, ol, conf, table);
+    return facets;
+  }
+
+  private static void addTableMetadata(
+      DatasetFacetsBuilder facets, OpenLineage ol, Configuration conf, Table table) {
+    String metastoreUris = conf.getTrimmed("hive.metastore.uris");
+    if (metastoreUris != null && !metastoreUris.isEmpty()) {
+      URI metastoreUri = parseUri(metastoreUris.split(",", 2)[0].trim());
+      if (metastoreUri != null && metastoreUri.getHost() != null) {
+        facets.dataSource(
+            ol.newDatasourceDatasetFacetBuilder()
+                .name(metastoreUri.toString())
+                .uri(metastoreUri)
+                .build());
+      }
+    }
+    if (table.getSd() != null && table.getSd().getLocation() != null) {
+      URI location = parseUri(table.getSd().getLocation());
+      if (location != null && location.getScheme() != null) {
+        facets.storage(
+            ol.newStorageDatasetFacetBuilder()
+                .storageLayer(location.getScheme())
+                .put("location", location.toString())
+                .build());
+      }
+    }
+  }
+
+  private static URI parseUri(String value) {
+    try {
+      return URI.create(value);
+    } catch (IllegalArgumentException e) {
+      log.debug("Skipping dataset metadata facet due to invalid URI");
+      return null;
+    }
   }
 
   private static ColumnLineageDatasetFacet getIdentityCLL(

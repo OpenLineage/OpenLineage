@@ -9,9 +9,11 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.client.OpenLineage.SymlinksDatasetFacet;
+import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.HiveOpenLineageConfig;
@@ -24,6 +26,7 @@ import java.util.Collections;
 import java.util.UUID;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.QueryState;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
@@ -213,6 +216,64 @@ class FacetingTest {
     SymlinksDatasetFacet result = Faceting.getSymlinkFacets(openLineage, di);
 
     assertThat(result).isNull();
+  }
+
+  @Test
+  void tableFacetsKeepMetastoreAndStorageLocationWithoutSymlinks() {
+    HiveConf conf = new HiveConf();
+    conf.set("hive.metastore.uris", "thrift://metastore.example:9083");
+    StorageDescriptor storage = mock(StorageDescriptor.class);
+    when(storage.getLocation()).thenReturn("hdfs://namenode.example:9000/warehouse/orders");
+    Table table = mock(Table.class);
+    when(table.getSd()).thenReturn(storage);
+
+    JsonNode facets =
+        OpenLineageClientUtils.newObjectMapper()
+            .valueToTree(Faceting.tableFacets(openLineage, conf, table).build());
+
+    assertThat(facets.path("dataSource").path("name").asText())
+        .isEqualTo("thrift://metastore.example:9083");
+    assertThat(facets.path("dataSource").path("uri").asText())
+        .isEqualTo("thrift://metastore.example:9083");
+    assertThat(facets.path("storage").path("location").asText())
+        .isEqualTo("hdfs://namenode.example:9000/warehouse/orders");
+    assertThat(facets.has("symlinks")).isFalse();
+  }
+
+  @Test
+  void tableFacetsSkipInvalidStorageLocation() {
+    HiveConf conf = new HiveConf();
+    conf.set("hive.metastore.uris", "thrift://metastore.example:9083");
+    StorageDescriptor storage = mock(StorageDescriptor.class);
+    when(storage.getLocation()).thenReturn("hdfs://namenode.example/invalid path");
+    Table table = mock(Table.class);
+    when(table.getSd()).thenReturn(storage);
+
+    JsonNode facets =
+        OpenLineageClientUtils.newObjectMapper()
+            .valueToTree(Faceting.tableFacets(openLineage, conf, table).build());
+
+    assertThat(facets.path("dataSource").path("uri").asText())
+        .isEqualTo("thrift://metastore.example:9083");
+    assertThat(facets.has("storage")).isFalse();
+  }
+
+  @Test
+  void tableFacetsSkipInvalidMetastoreUri() {
+    HiveConf conf = new HiveConf();
+    conf.set("hive.metastore.uris", "thrift://invalid host:9083");
+    StorageDescriptor storage = mock(StorageDescriptor.class);
+    when(storage.getLocation()).thenReturn("hdfs://namenode.example/warehouse/orders");
+    Table table = mock(Table.class);
+    when(table.getSd()).thenReturn(storage);
+
+    JsonNode facets =
+        OpenLineageClientUtils.newObjectMapper()
+            .valueToTree(Faceting.tableFacets(openLineage, conf, table).build());
+
+    assertThat(facets.has("dataSource")).isFalse();
+    assertThat(facets.path("storage").path("location").asText())
+        .isEqualTo("hdfs://namenode.example/warehouse/orders");
   }
 
   // cannot mock static methods with Mockito, so using real object here
