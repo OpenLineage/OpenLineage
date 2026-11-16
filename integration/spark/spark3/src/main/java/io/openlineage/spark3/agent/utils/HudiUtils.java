@@ -5,15 +5,21 @@
 
 package io.openlineage.spark3.agent.utils;
 
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.types.StructType;
+import scala.Option;
 
 /**
  * Reflection based helpers for Hudi relations. Hudi classes are not guaranteed to be present on the
@@ -66,6 +72,29 @@ public class HudiUtils {
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       log.warn("Unable to call overwrite on Hudi command {}", command.getClass().getName(), e);
       return false;
+    }
+  }
+
+  /**
+   * Returns the static partition columns of an {@code InsertIntoHoodieTableCommand}: those given a
+   * value in its {@code PARTITION} clause, which the query doesn't produce.
+   */
+  public static Set<String> staticPartitionColumns(LogicalPlan command) {
+    try {
+      Object spec = MethodUtils.invokeMethod(command, "partitionSpec");
+      if (!(spec instanceof scala.collection.immutable.Map)) {
+        return Collections.emptySet();
+      }
+      return ScalaConversionUtils.<String, Option<String>>fromMap(
+              (scala.collection.immutable.Map<String, Option<String>>) spec)
+          .entrySet()
+          .stream()
+          .filter(e -> e.getValue() != null && e.getValue().isDefined())
+          .map(Map.Entry::getKey)
+          .collect(Collectors.toSet());
+    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+      log.warn("Unable to call partitionSpec on Hudi command {}", command.getClass().getName(), e);
+      return Collections.emptySet();
     }
   }
 

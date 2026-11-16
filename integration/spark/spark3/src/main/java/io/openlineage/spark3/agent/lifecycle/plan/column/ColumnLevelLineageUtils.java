@@ -60,7 +60,10 @@ public class ColumnLevelLineageUtils {
 
     LogicalPlan plan = getAdjustedPlan(olContext);
 
-    OutputFieldsCollector.collect(context, plan);
+    if (!HudiInsertOutputsCollector.collectByPosition(
+        context, olContext.getOptimizedPlan(), plan, schemaFacet)) {
+      OutputFieldsCollector.collect(context, plan);
+    }
     collectInputsAndExpressionDependencies(context, plan);
 
     OpenLineage.ColumnLineageDatasetFacetBuilder facetBuilder =
