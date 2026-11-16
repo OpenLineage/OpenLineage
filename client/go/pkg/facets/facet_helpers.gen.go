@@ -66,6 +66,7 @@ type RunFacets struct {
 	ExecutionParametersRunFacet  *ExecutionParametersRunFacet  `json:"executionParameters,omitempty"`
 	ExternalQueryRunFacet        *ExternalQueryRunFacet        `json:"externalQuery,omitempty"`
 	ExtractionErrorRunFacet      *ExtractionErrorRunFacet      `json:"extractionError,omitempty"`
+	FabricSparkRunFacet          *FabricSparkRunFacet          `json:"fabric_spark,omitempty"`
 	GcpComposerRunFacet          *GcpComposerRunFacet          `json:"gcp_composer_run,omitempty"`
 	GcpDataprocRunFacet          *GcpDataprocRunFacet          `json:"gcp_dataproc,omitempty"`
 	JobDependenciesRunFacet      *JobDependenciesRunFacet      `json:"jobDependencies,omitempty"`
@@ -1620,6 +1621,61 @@ func NewExtractionErrorRunFacet(
 		FailedTasks: failedTasks,
 		TotalTasks:  totalTasks,
 	}
+}
+
+var _ RunFacet = (*FabricSparkRunFacet)(nil)
+
+// Apply sets this FabricSparkRunFacet facet in the RunFacets container.
+func (f *FabricSparkRunFacet) Apply(facets **RunFacets) {
+	if *facets == nil {
+		*facets = &RunFacets{}
+	}
+	(*facets).FabricSparkRunFacet = f
+}
+
+// NewFabricSparkRunFacet creates a new FabricSparkRunFacet facet.
+func NewFabricSparkRunFacet(
+	producer string,
+) *FabricSparkRunFacet {
+	return &FabricSparkRunFacet{
+		Producer:  producer,
+		SchemaURL: "https://openlineage.io/spec/facets/1-0-0/FabricSparkRunFacet.json",
+	}
+}
+
+// WithItemID sets the ItemID field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithItemID(itemID string) *FabricSparkRunFacet {
+	f.ItemID = &itemID
+
+	return f
+}
+
+// WithItemType sets the ItemType field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithItemType(itemType string) *FabricSparkRunFacet {
+	f.ItemType = &itemType
+
+	return f
+}
+
+// WithJobInstanceID sets the JobInstanceID field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithJobInstanceID(jobInstanceID string) *FabricSparkRunFacet {
+	f.JobInstanceID = &jobInstanceID
+
+	return f
+}
+
+// WithLivyID sets the LivyID field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithLivyID(livyID string) *FabricSparkRunFacet {
+	f.LivyID = &livyID
+
+	return f
+}
+
+// WithWorkspaceID sets the WorkspaceID field on this FabricSparkRunFacet.
+func (f *FabricSparkRunFacet) WithWorkspaceID(workspaceID string) *FabricSparkRunFacet {
+	f.WorkspaceID = &workspaceID
+
+	return f
 }
 
 var _ RunFacet = (*GcpComposerRunFacet)(nil)
