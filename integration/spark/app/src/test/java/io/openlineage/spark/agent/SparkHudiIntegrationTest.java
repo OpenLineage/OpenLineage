@@ -226,6 +226,17 @@ class SparkHudiIntegrationTest {
     assertOverwriteLifecycleStateChange(outputPath);
   }
 
+  @Test
+  void testHudiSqlInsertWithoutAliasesAlignsColumnsByPosition() {
+    String outputPath = HUDI_BASE_PATH + "/sql_positional_target";
+    String tableName = "default.hudi_sql_positional_target";
+
+    // Hudi writes id into entity_id by position, as the names don't match
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName, "id, name, ts");
+
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+  }
+
   private RunEvent getLatestSaveCompleteEvent() {
     List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
     return events.stream()
@@ -355,6 +366,11 @@ class SparkHudiIntegrationTest {
   }
 
   private void writeHudiSqlTable(String tableType, String outputPath, String tableName) {
+    writeHudiSqlTable(tableType, outputPath, tableName, "id as entity_id, name, ts");
+  }
+
+  private void writeHudiSqlTable(
+      String tableType, String outputPath, String tableName, String selectList) {
     String hudiTableType = "MERGE_ON_READ".equals(tableType) ? "mor" : "cow";
     writeInputParquet();
     spark.read().parquet(INPUT_PATH).createOrReplaceTempView("hudi_sql_input");
@@ -372,8 +388,9 @@ class SparkHudiIntegrationTest {
     spark.sql(
         String.format(
             Locale.ROOT,
-            "INSERT OVERWRITE TABLE %s SELECT id as entity_id, name, ts FROM hudi_sql_input",
-            tableName));
+            "INSERT OVERWRITE TABLE %s SELECT %s FROM hudi_sql_input",
+            tableName,
+            selectList));
   }
 
   private void writeInputParquet() {
