@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
 import io.openlineage.client.OpenLineage.DatasetTypeDatasetFacet;
+import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.InputField;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -235,6 +236,105 @@ class SparkHudiIntegrationTest {
     writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName, "id, name, ts");
 
     assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+  }
+
+  @Test
+  void testHudiSqlMergeIntoCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_merge_target";
+    String tableName = "default.hudi_sql_merge_target";
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
+    spark
+        .read()
+        .parquet(INPUT_PATH)
+        .selectExpr("id + 1 as id", "concat(name, '_new') as name", "ts + 1 as ts")
+        .createOrReplaceTempView("hudi_merge_source");
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.sql(
+        "MERGE INTO "
+            + tableName
+            + " t USING hudi_merge_source s ON t.entity_id = s.id "
+            + "WHEN MATCHED THEN UPDATE SET entity_id = s.id, name = s.name, ts = s.ts "
+            + "WHEN NOT MATCHED THEN INSERT (entity_id, name, ts) VALUES (s.id, s.name, s.ts)");
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(event.getJob().getName()).endsWith(".hudi_sql_merge_target");
+    assertThat(inputNames(event)).contains(INPUT_PATH, outputPath);
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+  }
+
+  @Test
+  void testHudiSqlUpdateCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_update_target";
+    String tableName = "default.hudi_sql_update_target";
+    writeHudiSqlTable("COPY_ON_WRITE", outputPath, tableName);
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.sql("UPDATE " + tableName + " SET name = 'updated' WHERE entity_id = 1");
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(event.getJob().getName()).endsWith(".hudi_sql_update_target");
+    assertThat(inputNames(event)).containsExactly(outputPath);
+  }
+
+  @Test
+  void testHudiSqlDeleteCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_delete_target";
+    String tableName = "default.hudi_sql_delete_target";
+    writeHudiSqlTable("MERGE_ON_READ", outputPath, tableName);
+    MockServerUtils.clearRequests(mockServer);
+
+    spark.sql("DELETE FROM " + tableName + " WHERE entity_id = 2");
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(event.getJob().getName()).endsWith(".hudi_sql_delete_target");
+    assertThat(inputNames(event)).containsExactly(outputPath);
+    assertHudiOutputDatasetType(outputPath, "MERGE_ON_READ");
+  }
+
+  @Test
+  void testHudiSqlCreateTableAsSelectCapturesLineage() {
+    String outputPath = HUDI_BASE_PATH + "/sql_ctas_target";
+    String tableName = "default.hudi_sql_ctas_target";
+    writeInputParquet();
+    spark.read().parquet(INPUT_PATH).createOrReplaceTempView("hudi_sql_input");
+    spark.sql("DROP TABLE IF EXISTS " + tableName);
+
+    spark.sql(
+        String.format(
+            Locale.ROOT,
+            "CREATE TABLE %s USING hudi LOCATION '%s' "
+                + "TBLPROPERTIES (primaryKey = 'entity_id', preCombineField = 'ts') "
+                + "AS SELECT id as entity_id, name, ts FROM hudi_sql_input",
+            tableName,
+            outputPath));
+
+    RunEvent event = getCompleteEventWritingTo(outputPath);
+    assertThat(event.getJob().getName()).endsWith("hudi_sql_ctas_target");
+    assertThat(inputNames(event)).contains(INPUT_PATH);
+    assertThat(
+            event.getOutputs().stream()
+                .filter(d -> outputPath.equals(d.getName()))
+                .map(d -> d.getFacets().getLifecycleStateChange().getLifecycleStateChange()))
+        .containsOnly(LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
+    assertColumnLineage(outputPath, INPUT_PATH, RENAMED_ID_LINEAGE);
+  }
+
+  private RunEvent getCompleteEventWritingTo(String outputPath) {
+    return MockServerUtils.getEventsEmitted(mockServer).stream()
+        .filter(e -> e.getEventType() == RunEvent.EventType.COMPLETE)
+        .filter(
+            e ->
+                e.getOutputs() != null
+                    && e.getOutputs().stream().anyMatch(d -> outputPath.equals(d.getName())))
+        .reduce((previous, current) -> current)
+        .orElseThrow(
+            () ->
+                new AssertionError("No COMPLETE event writing to " + outputPath + " was emitted."));
+  }
+
+  private static List<String> inputNames(RunEvent event) {
+    return event.getInputs().stream().map(InputDataset::getName).collect(Collectors.toList());
   }
 
   private RunEvent getLatestSaveCompleteEvent() {
