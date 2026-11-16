@@ -53,8 +53,8 @@ class BaseCatalogTypeHandlerTest {
             .master("local[1]")
             .appName("iceberg-catalog-lookup-test")
             .config("spark.ui.enabled", "false")
-            .config("spark.driver.bindAddress", "127.0.0.1")
-            .config("spark.driver.host", "127.0.0.1")
+            .config("spark.driver.bindAddress", "localhost")
+            .config("spark.driver.host", "localhost")
             .config("spark.local.dir", sparkDirectory.toString())
             .config("spark.sql.warehouse.dir", sparkDirectory.resolve("warehouse").toString())
             .getOrCreate();
