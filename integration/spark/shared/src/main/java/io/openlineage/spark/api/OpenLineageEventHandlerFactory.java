@@ -214,4 +214,28 @@ public interface OpenLineageEventHandlerFactory {
       OpenLineageContext context) {
     return Collections.emptyList();
   }
+
+  /**
+   * Builders that add facets to a dataset based on its name, namespace and symlinks; see {@link
+   * DatasetIdentityFacetBuilder}. Called once per {@link OpenLineageContext}.
+   *
+   * @param context the context the builders are created for
+   * @return the builders, or an empty collection
+   */
+  default Collection<DatasetIdentityFacetBuilder> createDatasetIdentityFacetBuilders(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  /**
+   * Resolvers that can report a different output for a file write; see {@link
+   * FileWriteTargetResolver}. Called once per {@link OpenLineageContext}.
+   *
+   * @param context the context the resolvers are created for
+   * @return the resolvers, or an empty collection
+   */
+  default Collection<FileWriteTargetResolver> createFileWriteTargetResolvers(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
 }

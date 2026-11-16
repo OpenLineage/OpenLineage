@@ -3,10 +3,13 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.util;
+package io.openlineage.spark.agent.vendor.fabric;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.FabricWarehouseUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.FileWriteTargetResolver;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +17,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
 
 /**
  * Names the table written by Microsoft's Spark connector for Fabric warehouses ({@code
@@ -57,6 +61,35 @@ public final class FabricWarehouseSparkUtils {
   private static final int TABLE_NAME_PARTS = 3;
 
   private FabricWarehouseSparkUtils() {}
+
+  /**
+   * Reports the warehouse table that a write with Microsoft's Spark connector for Fabric loads; see
+   * {@link FileWriteTargetResolver}.
+   *
+   * <p>The connector writes a table in two steps. This command is the first: it writes Parquet
+   * files to a temporary folder. The second step loads them into the table. So the output is the
+   * table, not the folder. If the table's SQL address can't be determined, no output is reported.
+   *
+   * <p>The first step always overwrites the temporary folder, whatever save mode the user chose.
+   * The user's mode isn't recorded anywhere, so the table gets no lifecycle change rather than a
+   * wrong one.
+   *
+   * @return empty if this isn't a Fabric connector write
+   */
+  public static Optional<FileWriteTargetResolver.Target> writeTarget(
+      InsertIntoHadoopFsRelationCommand command, Function<String, Optional<String>> conf) {
+    Map<String, String> options =
+        command.options() == null
+            ? Collections.emptyMap()
+            : ScalaConversionUtils.fromMap(command.options());
+    if (!isConnectorWrite(options)) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        getWriteIdentifier(options, conf)
+            .map(FileWriteTargetResolver.Target::of)
+            .orElseGet(FileWriteTargetResolver.Target::none));
+  }
 
   /** Whether these write options come from the Fabric connector's first step. */
   public static boolean isConnectorWrite(Map<String, String> options) {

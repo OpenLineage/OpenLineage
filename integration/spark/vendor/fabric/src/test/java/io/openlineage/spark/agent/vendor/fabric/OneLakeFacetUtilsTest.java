@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.util;
+package io.openlineage.spark.agent.vendor.fabric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -17,9 +17,12 @@ import io.openlineage.client.utils.FabricWarehouseUtils;
 import io.openlineage.client.utils.OneLakeLocation;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.Vendors;
 import io.openlineage.sql.DbTableMeta;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,6 +74,18 @@ class OneLakeFacetUtilsTest {
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
+    // what the agent does with every vendor, so FabricVendor is loaded by its class name too
+    Vendors.getVendors()
+        .getEventHandlerFactories()
+        .forEach(
+            factory -> {
+              context
+                  .getDatasetIdentityFacetBuilders()
+                  .addAll(factory.createDatasetIdentityFacetBuilders(context));
+              context
+                  .getFileWriteTargetResolvers()
+                  .addAll(factory.createFileWriteTargetResolvers(context));
+            });
   }
 
   @Test
