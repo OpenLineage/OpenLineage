@@ -23,6 +23,7 @@ import com.databricks.sdk.service.compute.SparkVersion;
 import com.databricks.sdk.service.compute.State;
 import com.databricks.sdk.service.compute.WorkspaceStorageInfo;
 import com.databricks.sdk.service.files.FileInfo;
+import com.databricks.sdk.service.iam.User;
 import com.databricks.sdk.service.jobs.Run;
 import com.databricks.sdk.service.jobs.Source;
 import com.databricks.sdk.service.jobs.SparkPythonTask;
@@ -269,35 +270,72 @@ public class DatabricksEnvironment implements AutoCloseable {
    * they are pinned or terminated within the last 30 days.
    */
   private ClusterDetails findTestCluster() {
+    String principal = describeCurrentPrincipal();
+    String host = properties.getWorkspace().getHost();
     List<ClusterDetails> clusters =
         StreamSupport.stream(
                 workspace.clusters().list(new ListClustersRequest()).spliterator(), false)
             .collect(Collectors.toList());
-    List<ClusterDetails> matching =
+    log.info(
+        "Principal [{}] sees [{}] clusters in workspace [{}]", principal, clusters.size(), host);
+    clusters.forEach(c -> log.info("Visible cluster: {}", describeCluster(c)));
+
+    List<ClusterDetails> testClusters =
         clusters.stream()
             .filter(c -> c.getClusterName() != null)
             .filter(c -> c.getClusterName().startsWith(TEST_CLUSTER_NAME_PREFIX))
+            .collect(Collectors.toList());
+    List<ClusterDetails> matching =
+        testClusters.stream()
             .filter(c -> matchesRuntime(c.getSparkVersion()))
             .collect(Collectors.toList());
     if (matching.size() != 1) {
       throw new IllegalStateException(
           String.format(
-              "Expected exactly one cluster named [%s...] on Databricks runtime [%s] with Scala [%s], "
-                  + "found %d. Create and pin one, and give the CI principal CAN_RESTART on it. "
-                  + "Visible clusters: %s",
+              "Expected exactly one cluster named [%s...] on Databricks runtime [%s] with Scala [%s] "
+                  + "(runtime key [%s.*-scala%s]), found %d. Principal [%s] sees %d clusters in "
+                  + "workspace [%s]. Clusters named [%s...]: %s. Other visible clusters: %s. An "
+                  + "empty list usually means the principal has no permission on any cluster: "
+                  + "give it CAN_RESTART on the cluster, and pin the cluster.",
               TEST_CLUSTER_NAME_PREFIX,
               runtime,
               scalaVersion,
+              runtime,
+              scalaVersion,
               matching.size(),
+              principal,
+              clusters.size(),
+              host,
+              TEST_CLUSTER_NAME_PREFIX,
+              testClusters.stream().map(this::describeCluster).collect(Collectors.toList()),
               clusters.stream()
-                  .map(
-                      c ->
-                          String.format(
-                              "%s (%s, %s)",
-                              c.getClusterName(), c.getClusterId(), c.getSparkVersion()))
+                  .filter(c -> !testClusters.contains(c))
+                  .map(this::describeCluster)
                   .collect(Collectors.toList())));
     }
     return matching.get(0);
+  }
+
+  private String describeCluster(ClusterDetails c) {
+    return String.format(
+        "%s (id %s, runtime %s, state %s, access mode %s, single user %s)",
+        c.getClusterName(),
+        c.getClusterId(),
+        c.getSparkVersion(),
+        c.getState(),
+        c.getDataSecurityMode(),
+        c.getSingleUserName());
+  }
+
+  /** The user or service principal the token belongs to, so a wrong token is easy to spot. */
+  private String describeCurrentPrincipal() {
+    try {
+      User me = workspace.currentUser().me();
+      return String.format("%s, id %s, %s", me.getUserName(), me.getId(), me.getDisplayName());
+    } catch (RuntimeException e) {
+      log.warn("Could not read the current principal", e);
+      return "unknown: " + e.getMessage();
+    }
   }
 
   /** Picks the plain (no ML, GPU, Photon or ARM) runtime key, preferring an LTS one. */
