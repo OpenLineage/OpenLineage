@@ -25,7 +25,6 @@ pub trait Visit {
 
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
-        let size = self.cte_tables.len();
         // Snowflake, SQL Server and SQLite let any CTE refer to itself, with or
         // without RECURSIVE.
         let dialect = context.dialect().as_base();
@@ -33,18 +32,18 @@ impl Visit for With {
             || dialect.is::<SnowflakeDialect>()
             || dialect.is::<MsSqlDialect>()
             || dialect.is::<SQLiteDialect>();
-        for i in 0..size {
+        for (i, cte) in self.cte_tables.iter().enumerate() {
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),
-                vec![self.cte_tables[i].alias.name.clone()],
+                vec![cte.alias.name.clone()],
             );
             context.push_frame();
-            self.cte_tables[i].query.visit(context)?;
+            cte.query.visit(context)?;
             let frame = context.pop_frame();
-            let alias_columns = &self.cte_tables[i].alias.columns;
+            let alias_columns = &cte.alias.columns;
             // The output names in projection order, after the CTE's own
             // column list has renamed the leading positions.
-            let output_names = derived_output_names(&self.cte_tables[i].query).map(|names| {
+            let output_names = derived_output_names(&cte.query).map(|names| {
                 names
                     .into_iter()
                     .enumerate()
@@ -67,7 +66,7 @@ impl Visit for With {
                 let permuted_recursive_branch = if alias_columns.is_empty() {
                     false
                 } else {
-                    let cte_name = self.cte_tables[i].alias.name.value.as_str();
+                    let cte_name = cte.alias.name.value.as_str();
                     let self_referencing = f.column_ancestry.values().flatten().any(|ancestor| {
                         ancestor
                             .origin
@@ -76,7 +75,7 @@ impl Visit for With {
                             .unwrap_or(false)
                     });
                     self_referencing
-                        && set_operation_branch_names(&self.cte_tables[i].query.body)
+                        && set_operation_branch_names(&cte.query.body)
                             .map(|branches| {
                                 let declared_order: HashMap<&str, usize> = alias_columns
                                     .iter()
@@ -107,11 +106,11 @@ impl Visit for With {
                 // references resolve through it - they resolved on main,
                 // before the fold existed, and a refused fold must not
                 // take that lineage away.
-                let folded = fold_set_operation_columns(&mut f, &self.cte_tables[i].query);
+                let folded = fold_set_operation_columns(&mut f, &cte.query);
                 // A column list (`WITH d(x, y) AS ...`) renames the CTE's
                 // output columns by position, as it does for a derived table.
                 let alias_list_applied = alias_columns.is_empty()
-                    || apply_column_alias_list(&mut f, &self.cte_tables[i].query, alias_columns);
+                    || apply_column_alias_list(&mut f, &cte.query, alias_columns);
                 // When the list cannot be applied - the body projects `*`,
                 // or a repeated output name cannot be split by position -
                 // the columns keep names the CTE does not output, so none
@@ -132,8 +131,8 @@ impl Visit for With {
                 // the CTE is used, and the CTE leaks into its own lineage
                 // as if it were an input table's column.
                 if !alias_columns.is_empty() {
-                    if let Some(body_names) = derived_output_names(&self.cte_tables[i].query) {
-                        let cte_name = self.cte_tables[i].alias.name.value.as_str();
+                    if let Some(body_names) = derived_output_names(&cte.query) {
+                        let cte_name = cte.alias.name.value.as_str();
                         for ancestors in columns.values_mut() {
                             let renamed: HashSet<ColumnMeta> = ancestors
                                 .iter()
@@ -163,7 +162,7 @@ impl Visit for With {
                     }
                 }
                 let table = DbTableMeta::new(
-                    vec![self.cte_tables[i].alias.name.clone()],
+                    vec![cte.alias.name.clone()],
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
@@ -172,12 +171,11 @@ impl Visit for With {
             }
 
             if i == 0 {
-                context
-                    .collect_lower_nested_dependencies(self.cte_tables[i].alias.name.clone().value);
+                context.collect_lower_nested_dependencies(cte.alias.name.clone().value);
             }
 
-            context.adjust_cte_dependencies(self.cte_tables[i].alias.name.clone().value, recursive);
-            context.set_cte_columns(&self.cte_tables[i].alias.name.value, columns, output_names);
+            context.adjust_cte_dependencies(cte.alias.name.clone().value, recursive);
+            context.set_cte_columns(&cte.alias.name.value, columns, output_names);
         }
         Ok(())
     }

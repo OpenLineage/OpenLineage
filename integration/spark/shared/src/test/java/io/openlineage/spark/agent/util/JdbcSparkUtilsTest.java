@@ -33,6 +33,7 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -40,6 +41,15 @@ class JdbcSparkUtilsTest {
   private static final String DEFAULT_URL = "jdbc:postgresql://localhost:5432/testdb";
   private static final String SQLSERVER_URL = "jdbc:sqlserver://localhost:1433;databaseName=testdb";
   private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/testdb";
+  private static final String FABRIC_HOST =
+      "ck32i2hmt2qeziwtnklnft2ptq-hnd7nul2t5jehfalvdluiyot7q.datawarehouse.fabric.microsoft.com";
+  // the URL the Fabric connector builds when it looks up the address itself, with ".z8b"
+  private static final String FABRIC_URL =
+      "jdbc:sqlserver://;servername="
+          + FABRIC_HOST.replace(".datawarehouse", ".z8b.datawarehouse")
+          + ";encrypt=true;databaseName=wh_primary";
+  private static final String FABRIC_NAMESPACE = "fabric-warehouse://" + FABRIC_HOST;
+  private static final String FABRIC_WAREHOUSE_ID = "d75873bd-716b-4378-a37e-864c76fc9b3b";
   private final JDBCRelation relation = mock(JDBCRelation.class);
 
   @ParameterizedTest
@@ -70,6 +80,158 @@ class JdbcSparkUtilsTest {
 
     assertEquals("testdb.public.users", identifier.getName());
     assertEquals("postgres://localhost:5432", identifier.getNamespace());
+  }
+
+  @Test
+  void testFabricWarehouseConnectorQuery() {
+    // the query the Fabric connector sends for spark.read.synapsesql("wh_primary.raw.orders")
+    givenJdbcOptions(
+        JdbcOptions.builder()
+            .url(FABRIC_URL)
+            .driver("org.postgresql.Driver")
+            .dbtable("(SELECT [a],[b] FROM [wh_primary].[raw].orders) as Qry0123abcdAlias")
+            .build());
+    givenSchema(new StructType().add("a", DataTypes.IntegerType).add("b", DataTypes.StringType));
+
+    Optional<SqlMeta> result = JdbcSparkUtils.extractQueryFromSpark(relation);
+
+    assertInputTables(result, Collections.singletonList("wh_primary.raw.orders"));
+    assertColumnLineage(
+        result,
+        Arrays.asList(
+            columnLineage("wh_primary.raw.orders.a"), columnLineage("wh_primary.raw.orders.b")));
+    DatasetIdentifier identifier =
+        JdbcSparkUtils.getDatasetIdentifier(relation.jdbcOptions(), result.get().inTables().get(0));
+    assertEquals(FABRIC_NAMESPACE, identifier.getNamespace());
+    assertEquals("wh_primary.raw.orders", identifier.getName());
+    assertTrue(identifier.getSymlinks().isEmpty());
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      nullValues = "null",
+      value = {
+        // a WorkspaceId option that matches the workspace in the address
+        "WorkspaceId|d1f6473b-9f7a-4352-940b-a8d74461d3fc|DatawarehouseId",
+        // without WorkspaceId, the workspace ID is read from the address
+        "null|null|DatawarehouseId",
+        // option names can be in any case
+        "workspaceid|D1F6473B-9F7A-4352-940B-A8D74461D3FC|DATAWAREHOUSEID",
+      })
+  void testFabricWarehouseOneLakeLocation(
+      String workspaceKey, String workspaceId, String warehouseKey) {
+    JdbcOptions builder =
+        JdbcOptions.builder()
+            .url(FABRIC_URL)
+            .driver("org.postgresql.Driver")
+            .dbtable("raw.orders")
+            .option(warehouseKey, FABRIC_WAREHOUSE_ID);
+    if (workspaceKey != null) {
+      builder.option(workspaceKey, workspaceId);
+    }
+
+    DatasetIdentifier identifier =
+        JdbcSparkUtils.getDatasetIdentifier(
+            builder.build(), new DbTableMeta(null, "raw", "orders"));
+
+    assertEquals(FABRIC_NAMESPACE, identifier.getNamespace());
+    assertEquals("wh_primary.raw.orders", identifier.getName());
+    assertEquals(
+        Collections.singletonList(
+            new DatasetIdentifier.Symlink(
+                FABRIC_WAREHOUSE_ID + "/Tables/raw/orders",
+                "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com",
+                DatasetIdentifier.SymlinkType.LOCATION)),
+        identifier.getSymlinks());
+  }
+
+  @Test
+  void testFabricWarehouseOneLakeLocationSkippedWhenWorkspaceOptionDisagrees() {
+    // the address is what was queried; a WorkspaceId option naming another workspace means the
+    // warehouse ID may not be in the address's workspace, so no location is added
+    JDBCOptions options =
+        JdbcOptions.builder()
+            .url(FABRIC_URL)
+            .driver("org.postgresql.Driver")
+            .dbtable("raw.orders")
+            .option("WorkspaceId", "45ff911e-5e75-428a-a618-52958fcc7604")
+            .option("DatawarehouseId", FABRIC_WAREHOUSE_ID)
+            .build();
+
+    DatasetIdentifier identifier =
+        JdbcSparkUtils.getDatasetIdentifier(options, new DbTableMeta(null, "raw", "orders"));
+
+    assertEquals(FABRIC_NAMESPACE, identifier.getNamespace());
+    assertTrue(identifier.getSymlinks().isEmpty());
+  }
+
+  @Test
+  void testOneLakeLocationOnlyForDatabaseNameWarehouse() {
+    // a query sent with the connector's database_name option; the URL names no database
+    JdbcOptions options =
+        JdbcOptions.builder()
+            .url(
+                "jdbc:sqlserver://;servername="
+                    + FABRIC_HOST.replace(".datawarehouse", ".z8b.datawarehouse")
+                    + ";encrypt=true")
+            .option("database_name", "wh_primary");
+
+    assertLocationOnlyForPrimaryWarehouse(options);
+  }
+
+  @Test
+  void testOneLakeLocationOnlyForUrlDatabaseWarehouse() {
+    // without the database_name option, the database in the URL is used
+    assertLocationOnlyForPrimaryWarehouse(JdbcOptions.builder().url(FABRIC_URL));
+  }
+
+  // A query in wh_primary that also reads a table from wh_secondary, in the same workspace. The
+  // DatawarehouseId option is wh_primary's ID, so only wh_primary's table gets a OneLake location.
+  private void assertLocationOnlyForPrimaryWarehouse(JdbcOptions options) {
+    givenJdbcOptions(
+        options
+            .driver("org.postgresql.Driver")
+            .dbtable(
+                "(SELECT TOP 5 o.order_id, x.v FROM wh_primary.raw.orders o"
+                    + " CROSS JOIN wh_secondary.probe_pr.l9_other x) as Qry0123abcdAlias")
+            .option("WorkspaceId", "d1f6473b-9f7a-4352-940b-a8d74461d3fc")
+            .option("DatawarehouseId", FABRIC_WAREHOUSE_ID)
+            .build());
+    givenSchema(
+        new StructType().add("order_id", DataTypes.IntegerType).add("v", DataTypes.StringType));
+
+    Map<String, List<DatasetIdentifier.Symlink>> symlinks =
+        JdbcSparkUtils.extractQueryFromSpark(relation).get().inTables().stream()
+            .map(table -> JdbcSparkUtils.getDatasetIdentifier(relation.jdbcOptions(), table))
+            .collect(Collectors.toMap(DatasetIdentifier::getName, DatasetIdentifier::getSymlinks));
+
+    assertEquals(2, symlinks.size());
+    assertEquals(
+        Collections.singletonList(
+            new DatasetIdentifier.Symlink(
+                FABRIC_WAREHOUSE_ID + "/Tables/raw/orders",
+                "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com",
+                DatasetIdentifier.SymlinkType.LOCATION)),
+        symlinks.get("wh_primary.raw.orders"));
+    assertTrue(symlinks.get("wh_secondary.probe_pr.l9_other").isEmpty());
+  }
+
+  @Test
+  void testDatawarehouseIdIgnoredForNonFabricUrls() {
+    JDBCOptions options =
+        JdbcOptions.builder()
+            .url(SQLSERVER_URL)
+            .driver("org.postgresql.Driver")
+            .dbtable("dbo.orders")
+            .option("DatawarehouseId", FABRIC_WAREHOUSE_ID)
+            .build();
+
+    DatasetIdentifier identifier =
+        JdbcSparkUtils.getDatasetIdentifier(options, new DbTableMeta(null, "dbo", "orders"));
+
+    assertEquals("sqlserver://localhost:1433", identifier.getNamespace());
+    assertTrue(identifier.getSymlinks().isEmpty());
   }
 
   private static Collection<TestCase> testCases() {
@@ -378,6 +540,11 @@ class JdbcSparkUtilsTest {
 
     public JdbcOptions url(String url) {
       paramsMap.put(JDBCOptions$.MODULE$.JDBC_URL(), url);
+      return this;
+    }
+
+    public JdbcOptions option(String key, String value) {
+      paramsMap.put(key, value);
       return this;
     }
 

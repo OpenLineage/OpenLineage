@@ -29,6 +29,7 @@ public class SparkOutputDatasetBuilder extends SparkDatasetBuilder<OpenLineage.O
 
   @Override
   public OpenLineage.OutputDataset build() {
+    addIdentityFacets();
     return context
         .getOpenLineage()
         .newOutputDatasetBuilder()

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import json
+import os
 import sys
 from enum import Enum
 from pathlib import Path
@@ -1220,7 +1221,7 @@ def test_parse_waits_for_dbt_after_event_parsing_error(
                 "--log-level-file",
                 "debug",
                 "--log-path",
-                "./" + DUMMY_RANDOM_LOG_FILE,
+                os.path.join(CURRENT_DIR, DUMMY_RANDOM_LOG_FILE),
                 "--log-file-max-bytes",
                 DBT_LOG_FILE_MAX_BYTES,
                 "--write-json",
@@ -1296,7 +1297,7 @@ def test_executed_dbt_command_line(input_dbt_command_line, expected_dbt_command_
     [
         (
             ["dbt", "run", "--select", "orders", "--project-dir", "my-dbt-project"],
-            f"my-dbt-project/{DUMMY_RANDOM_LOG_FILE}/dbt.log",
+            os.path.join(CURRENT_DIR, DUMMY_RANDOM_LOG_FILE, "dbt.log"),
         ),
         (
             [
@@ -2684,10 +2685,11 @@ def test_unit_test_events_have_no_datasets_or_extraction_errors(tested_node_fiel
 
 
 def test_random_log_directory_is_removed(monkeypatch, tmp_path):
+    (tmp_path / "dbt_project.yml").write_text((Path(CURRENT_DIR) / "dbt_project.yml").read_text())
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir=CURRENT_DIR,
+        project_dir=str(tmp_path),
         target="postgres",
         dbt_command_line=["dbt", "run", "--project-dir", str(tmp_path)],
     )
