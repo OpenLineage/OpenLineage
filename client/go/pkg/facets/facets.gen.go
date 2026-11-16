@@ -570,6 +570,24 @@ type ExtractionErrorRunFacet struct {
 	TotalTasks int64 `json:"totalTasks"`
 }
 
+// FabricSparkRunFacet
+type FabricSparkRunFacet struct {
+	// URI identifying the producer of this metadata.
+	Producer string `json:"_producer"`
+	// The JSON Pointer URL to the corresponding version of the schema definition for this facet
+	SchemaURL string `json:"_schemaURL"`
+	// ID of the Fabric item the Spark session runs for, in lowercase: the notebook or Spark Job Definition that started it, or the lakehouse a Livy API session or batch runs against. A notebook run from another notebook reports the outer notebook, because both run in the same session.
+	ItemID *string `json:"itemId,omitempty"`
+	// Type of that item, as Fabric names it in the session's settings, for example SynapseNotebook, SparkJobDefinition or Lakehouse.
+	ItemType *string `json:"itemType,omitempty"`
+	// ID of the Fabric job instance the session belongs to, in lowercase. All attempts of one Spark Job Definition run share it.
+	JobInstanceID *string `json:"jobInstanceId,omitempty"`
+	// ID of the Livy session that runs the Spark application, in lowercase. Fabric's Livy session list and run history key runs on it. A retried Spark Job Definition gets a new Livy session for each attempt.
+	LivyID *string `json:"livyId,omitempty"`
+	// ID of the Microsoft Fabric workspace that holds the item the Spark session runs for, in lowercase.
+	WorkspaceID *string `json:"workspaceId,omitempty"`
+}
+
 // GcpComposerRunFacet
 type GcpComposerRunFacet struct {
 	// URI identifying the producer of this metadata.

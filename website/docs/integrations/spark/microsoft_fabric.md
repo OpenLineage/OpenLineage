@@ -167,3 +167,32 @@ and anything outside Fabric, where there are no `trident.*` settings. Those writ
 `fabric_onelake` facet with the workspace and item IDs and the location from the path, and the workspace's name when it
 is the notebook's. Paths written with names in another workspace get no facet, because their IDs aren't known.
 
+
+## The `fabric_spark` run facet
+
+Every event of a Spark application running in Fabric, from the application's START to its SQL jobs, gets the
+`fabric_spark` run facet ([schema](https://openlineage.io/spec/facets/1-0-0/FabricSparkRunFacet.json)). It says which
+Fabric item and which run the session belongs to, so a consumer can link the Spark events to the notebook or Spark Job
+Definition that ran them, and to Fabric's own record of the run. It needs no `spark.openlineage.capturedProperties`:
+OpenLineage reads the settings Fabric sets when it starts the session.
+
+| Field           | Value                                                                                                   |
+|:----------------|:--------------------------------------------------------------------------------------------------------|
+| `workspaceId`   | the workspace that holds the item, from `spark.hadoop.trident.artifact.workspace.id`                    |
+| `itemId`        | the notebook or Spark Job Definition that started the session, or the lakehouse a Livy API session or batch runs against, from `spark.hadoop.trident.artifact.id` |
+| `itemType`      | the item's type as Fabric names it, such as `SynapseNotebook`, `SparkJobDefinition` or `Lakehouse`, from `spark.hadoop.trident.artifact.type` |
+| `livyId`        | the Livy session, which Fabric's run history and Livy session list key runs on; the last segment of `spark.synapse.jobidentifier` |
+| `jobInstanceId` | the Fabric job instance, shared by every attempt of a Spark Job Definition run, from `spark.hadoop.trident.activity.id` |
+
+IDs are lowercase. A notebook run from another notebook reports the outer notebook, because both run in the same
+session. Outside Fabric, where these settings don't exist, events don't get the facet.
+
+```json
+"fabric_spark": {
+  "workspaceId": "8b4cb800-a044-43ce-8f76-3356f709b468",
+  "itemId": "af3e0877-abde-4457-8e7d-2f6026993a02",
+  "itemType": "SynapseNotebook",
+  "livyId": "fa3ea1fc-c6bf-4b1d-a926-9be1bbf4851c",
+  "jobInstanceId": "a266f2f5-8c88-4788-8915-cb4d4456b790"
+}
+```
