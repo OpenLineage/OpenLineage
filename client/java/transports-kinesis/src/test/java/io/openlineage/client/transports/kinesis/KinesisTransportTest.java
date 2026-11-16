@@ -127,6 +127,90 @@ class KinesisTransportTest {
   }
 
   @Test
+  void clientEmitsRunEventWithParentJobFacetKinesisTransport() throws IOException {
+    OpenLineage openLineage = new OpenLineage(URI.create("http://test.producer"));
+    OpenLineage.ParentJobFacet parentJobFacet =
+        openLineage
+            .newParentJobFacetBuilder()
+            .job(
+                openLineage
+                    .newParentJobFacetJobBuilder()
+                    .namespace("parent-namespace")
+                    .name("parent-job")
+                    .build())
+            .build();
+
+    assertPartitionKey(parentJobFacet, "run:parent-namespace/parent-job");
+  }
+
+  @Test
+  void clientEmitsRunEventWithRootParentJobFacetKinesisTransport() throws IOException {
+    OpenLineage openLineage = new OpenLineage(URI.create("http://test.producer"));
+    OpenLineage.ParentJobFacet parentJobFacet =
+        openLineage
+            .newParentJobFacetBuilder()
+            .job(
+                openLineage
+                    .newParentJobFacetJobBuilder()
+                    .namespace("parent-namespace")
+                    .name("parent-job")
+                    .build())
+            .root(
+                openLineage
+                    .newParentJobFacetRootBuilder()
+                    .job(
+                        openLineage
+                            .newParentJobFacetJobBuilder()
+                            .namespace("root-namespace")
+                            .name("root-job")
+                            .build())
+                    .build())
+            .build();
+
+    assertPartitionKey(parentJobFacet, "run:root-namespace/root-job");
+  }
+
+  private void assertPartitionKey(OpenLineage.ParentJobFacet parentJobFacet, String expectedKey)
+      throws IOException {
+    KinesisProducer producer = Mockito.mock(KinesisProducer.class);
+    KinesisConfig config = new KinesisConfig();
+
+    Properties properties = new Properties();
+    properties.setProperty("MinConnections", "1");
+
+    config.setRegion("us-west-2");
+    config.setRoleArn("test-role");
+    config.setStreamName("test-stream");
+    config.setProperties(properties);
+
+    KinesisTransport transport = new KinesisTransport(producer, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    when(producer.addUserRecord(any(UserRecord.class))).thenReturn(mock(ListenableFuture.class));
+
+    OpenLineage openLineage = new OpenLineage(URI.create("http://test.producer"));
+    OpenLineage.Job job =
+        new OpenLineage.JobBuilder()
+            .namespace("test-namespace")
+            .name("test-job")
+            .facets(openLineage.newJobFacetsBuilder().parent(parentJobFacet).build())
+            .build();
+    OpenLineage.Run run =
+        new OpenLineage.RunBuilder()
+            .runId(UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54"))
+            .build();
+    OpenLineage.RunEvent event = openLineage.newRunEventBuilder().job(job).run(run).build();
+    client.emit(event);
+
+    ArgumentCaptor<UserRecord> captor = ArgumentCaptor.forClass(UserRecord.class);
+
+    verify(producer, times(1)).addUserRecord(captor.capture());
+
+    assertThat(captor.getValue().getStreamName()).isEqualTo("test-stream");
+    assertThat(captor.getValue().getPartitionKey()).isEqualTo(expectedKey);
+  }
+
+  @Test
   void clientEmitsRunEventWithRootParentFacetKinesisTransport() throws IOException {
     KinesisProducer producer = Mockito.mock(KinesisProducer.class);
     KinesisConfig config = new KinesisConfig();

@@ -11,10 +11,9 @@ It is the design-time counterpart of the [Parent Run Facet](../run-facets/parent
 
 ## When to use it
 
-Parent Job Facet is used to reference a design time relationship of a job to it's parent job. In a similar way, [Parent Run Facet](../run-facets/parent_run.md) is used to document a runtime invokation by a specific instance of a parent job. 
+Parent Job Facet is used to reference a design-time relationship of a job to its parent job. In a similar way, [Parent Run Facet](../run-facets/parent_run.md) is used to document a runtime invocation by a specific instance of a parent job.
 
-The primary use case for Parent Job facet is to document this design relationship within a Job event, but the facet can be used in the same way on a Run event in case the specific instance (runId) of the parent job is not known. If both facets are present on the same Run event, it is expected that they reference the same Job, but the in case there is conflict, Parent Run facet takes precedense. 
-
+The primary use case for Parent Job Facet is to document this design relationship within a Job event, but the facet can be used in the same way on a Run event in case the specific instance (runId) of the parent job is not known. If both facets are present on the same Run event, it is expected that they reference the same Job, but in case of a conflict, Parent Run Facet takes precedence.
 
 ## Structure
 

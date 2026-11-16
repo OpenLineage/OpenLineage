@@ -49,18 +49,22 @@ public final class KafkaTransport extends Transport {
       For (2) source for `<namespace>` and `<name>` is selected using this order:
       - run.facets.parent.root.job
       - run.facets.parent.job
+      - job.facets.parent.root.job (ParentJobFacet, used when parent run is not known)
+      - job.facets.parent.job (ParentJobFacet, used when parent run is not known)
       - run.job
     */
     final String defaultResult = "run:" + job.getNamespace() + "/" + job.getName();
+    final String parentJobResult = ParentJobKey.resolve(job);
+    final String fallbackResult = parentJobResult != null ? parentJobResult : defaultResult;
 
     final OpenLineage.RunFacets runFacets = run.getFacets();
     if (runFacets == null) {
-      return defaultResult;
+      return fallbackResult;
     }
 
     final OpenLineage.ParentRunFacet parentFacet = runFacets.getParent();
     if (parentFacet == null) {
-      return defaultResult;
+      return fallbackResult;
     }
 
     final OpenLineage.ParentRunFacetRoot rootParent = parentFacet.getRoot();
@@ -73,7 +77,7 @@ public final class KafkaTransport extends Transport {
 
     final OpenLineage.ParentRunFacetJob parentJob = parentFacet.getJob();
     if (parentJob == null) {
-      return defaultResult;
+      return fallbackResult;
     }
     return "run:" + parentJob.getNamespace() + "/" + parentJob.getName();
   }
