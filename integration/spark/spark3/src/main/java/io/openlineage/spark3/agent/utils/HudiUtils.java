@@ -8,6 +8,7 @@ package io.openlineage.spark3.agent.utils;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.fs.Path;
@@ -41,8 +42,8 @@ public class HudiUtils {
 
   /**
    * Checks whether the plan is Hudi's {@code InsertIntoHoodieTableCommand}, which Hudi SQL uses for
-   * {@code INSERT INTO/OVERWRITE} on Hudi tables. It is a leaf command, so its target and query are
-   * not reachable through {@link LogicalPlan#children()}.
+   * {@code INSERT INTO/OVERWRITE} on Hudi tables. Its target is never a child of the command, and
+   * its query is a child only from Hudi 1.x (a {@code DataWritingCommand}; in 0.x it is a leaf).
    */
   public static boolean isInsertIntoHoodieTableCommand(LogicalPlan plan) {
     return isInstanceOf(plan, INSERT_INTO_HOODIE_TABLE_COMMAND_CLASS);
@@ -78,12 +79,21 @@ public class HudiUtils {
     }
   }
 
+  /**
+   * Checks whether {@code instance} is of the class {@code className} or a subclass of it, by name.
+   * Hudi is often added per job (e.g. with {@code --packages}), so its classes may not be visible
+   * from this class's classloader; comparing names also avoids a failed class lookup on every call
+   * when Hudi is absent. Only classes are matched, not interfaces.
+   */
   public static boolean isInstanceOf(Object instance, String className) {
-    try {
-      return Class.forName(className).isInstance(instance);
-    } catch (ClassNotFoundException | LinkageError e) {
-      return false;
+    for (Class<?> c = instance == null ? null : instance.getClass();
+        c != null;
+        c = c.getSuperclass()) {
+      if (c.getName().equals(className)) {
+        return true;
+      }
     }
+    return false;
   }
 
   /** Returns the meta client of a {@code HoodieBaseRelation} or a {@code HoodieFileIndex}. */
@@ -104,12 +114,20 @@ public class HudiUtils {
     }
   }
 
-  /** Returns the table type ({@code COPY_ON_WRITE} or {@code MERGE_ON_READ}) of a meta client. */
-  public static String tableType(Object metaClient) {
+  /**
+   * Returns the table type ({@code COPY_ON_WRITE} or {@code MERGE_ON_READ}) of a meta client, or
+   * empty if it can't be read.
+   */
+  public static Optional<String> tableType(Object metaClient) {
     try {
-      return MethodUtils.invokeMethod(metaClient, "getTableType").toString();
-    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      throw new IllegalStateException("Unable to resolve Hudi table type", e);
+      return Optional.ofNullable(MethodUtils.invokeMethod(metaClient, "getTableType"))
+          .map(Object::toString);
+    } catch (IllegalAccessException
+        | InvocationTargetException
+        | NoSuchMethodException
+        | RuntimeException e) {
+      log.debug("Unable to resolve Hudi table type", e);
+      return Optional.empty();
     }
   }
 
@@ -118,12 +136,8 @@ public class HudiUtils {
    * resolved. The meta client is only used when the relation has no {@code basePath()} of its own.
    */
   public static Optional<URI> basePath(Object relation) {
-    Optional<URI> uri = pathUri(relation, "basePath");
-    if (uri.isPresent()) {
-      return uri;
-    }
     try {
-      return metaClientBasePath(metaClient(relation));
+      return resolveBasePath(relation, () -> metaClient(relation));
     } catch (RuntimeException e) {
       log.debug("Unable to resolve Hudi base path", e);
       return Optional.empty();
@@ -136,11 +150,13 @@ public class HudiUtils {
    * StoragePath}, so any value with a {@code toUri()} method is accepted.
    */
   public static URI basePath(Object relation, Object metaClient) {
+    return resolveBasePath(relation, () -> metaClient)
+        .orElseThrow(() -> new IllegalStateException("Unable to resolve Hudi base path"));
+  }
+
+  private static Optional<URI> resolveBasePath(Object relation, Supplier<Object> metaClient) {
     Optional<URI> uri = pathUri(relation, "basePath");
-    if (!uri.isPresent()) {
-      uri = metaClientBasePath(metaClient);
-    }
-    return uri.orElseThrow(() -> new IllegalStateException("Unable to resolve Hudi base path"));
+    return uri.isPresent() ? uri : metaClientBasePath(metaClient.get());
   }
 
   private static Optional<URI> metaClientBasePath(Object metaClient) {

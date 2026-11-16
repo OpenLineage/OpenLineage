@@ -24,6 +24,7 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkDatasetBuilder;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.io.IOException;
 import java.net.URI;
@@ -33,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -356,12 +358,53 @@ class LogicalRelationDatasetBuilderTest {
     List<OpenLineage.Dataset> datasets =
         builder.handleHadoopFsRelation(
             logicalRelation,
-            DatasetFactory.output(openLineageContext)
-                .sparkDatasetBuilder()
-                .datasetType("TABLE", "COPY_ON_WRITE"));
+            () ->
+                DatasetFactory.output(openLineageContext)
+                    .sparkDatasetBuilder()
+                    .datasetType("TABLE", "COPY_ON_WRITE"));
 
     assertEquals(1, datasets.size());
     assertEquals("/tmp/table", datasets.get(0).getName());
     assertEquals("COPY_ON_WRITE", datasets.get(0).getFacets().getDatasetType().getSubType());
+  }
+
+  @Test
+  void testHadoopFsRelationBuildsEachPathWithItsOwnBuilder() {
+    HadoopFsRelation hadoopFsRelation = mock(HadoopFsRelation.class);
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    FileIndex fileIndex = mock(FileIndex.class);
+    SessionState sessionState = mock(SessionState.class);
+    when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    when(session.sessionState()).thenReturn(sessionState);
+    when(sessionState.newHadoopConfWithOptions(any()))
+        .thenThrow(new IllegalStateException("no Credential Scope"));
+    when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    when(hadoopFsRelation.schema()).thenReturn(new StructType());
+    when(fileIndex.rootPaths())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(new Path("/tmp/t1"), new Path("/tmp/t2")))
+                .asScala()
+                .toSeq());
+    // a facet set on one path's builder, as build() does for fabric_onelake, must not reach the
+    // next path's dataset
+    AtomicInteger built = new AtomicInteger();
+
+    List<OpenLineage.Dataset> datasets =
+        builder.handleHadoopFsRelation(
+            logicalRelation,
+            () -> {
+              SparkDatasetBuilder<OutputDataset> sparkBuilder =
+                  DatasetFactory.output(openLineageContext).sparkDatasetBuilder();
+              if (built.getAndIncrement() == 0) {
+                sparkBuilder.datasetType("TABLE", "FIRST");
+              }
+              return sparkBuilder;
+            });
+
+    assertEquals(2, datasets.size());
+    assertEquals("FIRST", datasets.get(0).getFacets().getDatasetType().getSubType());
+    assertNull(datasets.get(1).getFacets().getDatasetType());
   }
 }

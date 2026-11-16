@@ -12,6 +12,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -272,6 +274,44 @@ class LogicalRelationDatasetBuilderTest {
     assertEquals("/warehouse/orders", dataset.getName());
     assertCatalogSymlink(dataset);
     assertNull(dataset.getFacets().getDatasetType());
+  }
+
+  @Test
+  void testApplyForHudiBaseRelationWithUnreadableTableTypeOmitsDatasetType() {
+    HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
+    HoodieTableMetaClient metaClient = mock(HoodieTableMetaClient.class);
+    when(logicalRelation.relation()).thenReturn(hudiRelation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
+    when(hudiRelation.basePath()).thenReturn(new Path("/tmp/hudi_mor"));
+    when(hudiRelation.schema()).thenReturn(hudiSchema());
+    when(hudiRelation.metaClient()).thenReturn(metaClient);
+    when(metaClient.getTableType()).thenThrow(new IllegalStateException("incompatible Hudi"));
+
+    List<OpenLineage.Dataset> datasets =
+        visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
+
+    assertEquals(1, datasets.size());
+    assertEquals("/tmp/hudi_mor", datasets.get(0).getName());
+    assertNull(datasets.get(0).getFacets().getDatasetType());
+  }
+
+  @Test
+  void testApplyForCatalogBackedHudiMorRelationDoesNotReadRelationSize() {
+    HoodieBaseRelation hudiRelation = mock(HoodieBaseRelation.class);
+    HoodieTableMetaClient metaClient = mock(HoodieTableMetaClient.class);
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    when(logicalRelation.relation()).thenReturn(hudiRelation);
+    when(logicalRelation.catalogTable()).thenReturn(Option.apply(catalogTable));
+    when(logicalRelation.schema()).thenReturn(hudiSchema());
+    when(catalogTable.stats()).thenReturn(Option.empty());
+    when(hudiRelation.metaClient()).thenReturn(metaClient);
+    when(metaClient.getTableType()).thenReturn(HoodieTableType.MERGE_ON_READ);
+
+    OpenLineage.Dataset dataset = applyWithCatalogIdentity(catalogTable);
+
+    assertEquals("/warehouse/orders", dataset.getName());
+    // sizeInBytes() would build the relation's HoodieFileIndex and list the whole table
+    verify(hudiRelation, never()).sizeInBytes();
   }
 
   private OpenLineage.Dataset applyWithCatalogIdentity(CatalogTable catalogTable) {

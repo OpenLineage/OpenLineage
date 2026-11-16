@@ -423,6 +423,9 @@ def integrationTestDependencies = [
         tasks.named("copyAdditionalConfiguration"),
 ]
 
+// Tests run by integrationTest and hudiIntegrationTest together, to check a --tests filter matched some
+def filteredIntegrationTestCount = new java.util.concurrent.atomic.AtomicLong()
+
 tasks.register("integrationTest", Test.class) {
     group = "verification"
     dependsOn(integrationTestDependencies)
@@ -460,9 +463,16 @@ tasks.register("integrationTest", Test.class) {
     systemProperties.put("test.output.dir", buildDirectory.dir("test-output/${name}").get().asFile.toString())
     systemProperties.put("test.results.dir", buildDirectory.dir("test-results/${name}/o").get().asFile.toString())
     finalizedBy("hudiIntegrationTest")
+    afterSuite { desc, result ->
+        if (desc.parent == null) {
+            filteredIntegrationTestCount.addAndGet(result.testCount)
+        }
+    }
     doFirst {
-        // A --tests filter may only match tests of hudiIntegrationTest
-        if (!filter.commandLineIncludePatterns.isEmpty()) {
+        // A --tests filter may only match tests of hudiIntegrationTest, which then checks that the
+        // filter matched tests in either task. Without Hudi, hudiIntegrationTest is skipped and this
+        // task keeps Gradle's own check.
+        if (!filter.commandLineIncludePatterns.isEmpty() && hasHudiDependencies(spark, scala)) {
             filter.failOnNoMatchingTests = false
         }
     }
@@ -493,6 +503,19 @@ tasks.register("hudiIntegrationTest", Test.class) {
         if (!integrationTestFilter.commandLineIncludePatterns.isEmpty()) {
             filter.includePatterns = integrationTestFilter.commandLineIncludePatterns
             filter.failOnNoMatchingTests = false
+        }
+    }
+    afterSuite { desc, result ->
+        if (desc.parent == null) {
+            filteredIntegrationTestCount.addAndGet(result.testCount)
+        }
+    }
+    doLast {
+        def integrationTestFilter = tasks.named("integrationTest", Test.class).get().filter
+        if (!integrationTestFilter.commandLineIncludePatterns.isEmpty()
+                && filteredIntegrationTestCount.get() == 0) {
+            throw new GradleException(
+                    "No tests found for given includes: ${integrationTestFilter.commandLineIncludePatterns}")
         }
     }
 }

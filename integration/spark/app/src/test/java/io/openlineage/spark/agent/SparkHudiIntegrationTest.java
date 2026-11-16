@@ -92,15 +92,9 @@ class SparkHudiIntegrationTest {
             .config("spark.ui.enabled", false)
             .config("spark.sql.shuffle.partitions", 1)
             .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-            .config("spark.openlineage.transport.type", "composite")
-            .config("spark.openlineage.transport.transports.http.type", "http")
-            .config("spark.openlineage.transport.transports.console.type", "console")
-            .config("spark.openlineage.transport.transports.file.type", "file")
+            .config("spark.openlineage.transport.type", "http")
             .config(
-                "spark.openlineage.transport.transports.file.location",
-                ".target/test-output/test-output.json")
-            .config(
-                "spark.openlineage.transport.transports.http.url",
+                "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.sql.extensions", "org.apache.spark.sql.hudi.HoodieSparkSessionExtension")

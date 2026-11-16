@@ -58,7 +58,6 @@ dependencies {
     compileOnly("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
     compileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
-    compileOnly("org.apache.hudi:hudi-spark3.5-bundle_${scalaBinaryVersion}:${hudiVersion}")
     testFixturesApi("org.apache.hudi:hudi-spark3.5-bundle_${scalaBinaryVersion}:${hudiVersion}")
 
     // TODO: Convert this to testImplementation

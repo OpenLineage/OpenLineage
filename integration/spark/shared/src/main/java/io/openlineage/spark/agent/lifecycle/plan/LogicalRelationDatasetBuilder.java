@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -162,10 +163,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
               });
       if (catalogTable.stats() == null || catalogTable.stats().isEmpty()) {
         Optional.ofNullable(logRel.relation())
-            .filter(
-                relation ->
-                    !(relation instanceof HadoopFsRelation)
-                        || ((HadoopFsRelation) relation).location() instanceof InMemoryFileIndex)
+            .filter(this::canReadRelationSize)
             .map(BaseRelation::sizeInBytes)
             .ifPresent(
                 size -> {
@@ -187,11 +185,26 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     return Collections.singletonList(sparkBuilder.build());
   }
 
-  protected List<D> handleHadoopFsRelation(LogicalRelation logRel) {
-    return handleHadoopFsRelation(logRel, datasetFactory.sparkDatasetBuilder());
+  /**
+   * Whether {@link BaseRelation#sizeInBytes()} can be called on the listener bus. Dynamic file
+   * indexes (notably Delta's) list files or run Spark jobs to compute it, so only relations backed
+   * by an {@link InMemoryFileIndex}, or not file based at all, are asked.
+   */
+  protected boolean canReadRelationSize(BaseRelation relation) {
+    return !(relation instanceof HadoopFsRelation)
+        || ((HadoopFsRelation) relation).location() instanceof InMemoryFileIndex;
   }
 
-  protected List<D> handleHadoopFsRelation(LogicalRelation x, SparkDatasetBuilder<D> sparkBuilder) {
+  protected List<D> handleHadoopFsRelation(LogicalRelation logRel) {
+    return handleHadoopFsRelation(logRel, datasetFactory::sparkDatasetBuilder);
+  }
+
+  /**
+   * Builds one dataset per directory of the relation, each from a new builder, so that facets set
+   * while building one path's dataset (e.g. {@code fabric_onelake}) don't leak into the next.
+   */
+  protected List<D> handleHadoopFsRelation(
+      LogicalRelation x, Supplier<SparkDatasetBuilder<D>> sparkBuilders) {
     HadoopFsRelation relation = (HadoopFsRelation) x.relation();
     try {
       return context
@@ -230,6 +243,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                 return dirPaths.stream()
                     .map(
                         p -> {
+                          SparkDatasetBuilder<D> sparkBuilder = sparkBuilders.get();
                           sparkBuilder.dataset(p.toUri()).schema(relation.schema());
                           datasetVersion.ifPresent(sparkBuilder::version);
                           inputStats.ifPresent(
@@ -260,7 +274,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       List<Path> paths =
           new ArrayList<>(ScalaConversionUtils.fromSeq(relation.location().rootPaths()));
       for (Path p : paths) {
-        inputDatasets.add(sparkBuilder.dataset(p.toUri()).schema(relation.schema()).build());
+        inputDatasets.add(sparkBuilders.get().dataset(p.toUri()).schema(relation.schema()).build());
       }
       if (inputDatasets.isEmpty()) {
         return Collections.emptyList();
