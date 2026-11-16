@@ -31,6 +31,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnEndI
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnStartInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DeleteCommandOutputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.HudiCommandInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.HudiCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InsertIntoHoodieTableCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InsertIntoHoodieTableCommandOutputDatasetBuilder;
@@ -45,6 +47,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuild
 import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.UpdateCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.WriteToDataSourceV2DatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.HudiMergeIntoColumnLineageVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.JdbcColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
@@ -76,6 +79,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
             .add(new InsertIntoHoodieTableCommandInputDatasetBuilder(context))
+            .add(new HudiCommandInputDatasetBuilder(context))
             .add(new DeleteCommandInputDatasetBuilder(context))
             .add(new UpdateCommandInputDatasetBuilder(context))
             .add(new CopyIntoCommandInputDatasetBuilder(context))
@@ -109,6 +113,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(getCreateReplaceDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
             .add(new InsertIntoHoodieTableCommandOutputDatasetBuilder(context))
+            .add(new HudiCommandOutputDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
@@ -162,6 +167,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
     if (MergeIntoIceberg013ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoIceberg013ColumnLineageVisitor(context));
     }
+    builder.add(new HudiMergeIntoColumnLineageVisitor());
     builder.add(new JdbcColumnLineageVisitor(context));
     return builder.build();
   }

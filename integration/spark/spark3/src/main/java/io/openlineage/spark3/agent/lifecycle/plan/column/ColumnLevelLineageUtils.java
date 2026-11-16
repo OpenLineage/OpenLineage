@@ -123,6 +123,8 @@ public class ColumnLevelLineageUtils {
       plan = ((CreateHiveTableAsSelectCommand) logicalPlan).query();
     } else if (HudiUtils.isInsertIntoHoodieTableCommand(logicalPlan)) {
       plan = HudiUtils.insertQuery(logicalPlan).orElse(logicalPlan);
+    } else if (HudiUtils.isCreateHoodieTableAsSelectCommand(logicalPlan)) {
+      plan = HudiUtils.ctasQuery(logicalPlan).orElse(logicalPlan);
     } else {
       plan = logicalPlan;
     }

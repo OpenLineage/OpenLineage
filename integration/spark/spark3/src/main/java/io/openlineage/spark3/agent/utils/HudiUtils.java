@@ -17,7 +17,12 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
+import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.MergeIntoTable;
+import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
+import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.types.StructType;
 import scala.Option;
 
@@ -31,6 +36,14 @@ public class HudiUtils {
   private static final String HOODIE_FILE_INDEX_CLASS = "org.apache.hudi.HoodieFileIndex";
   private static final String INSERT_INTO_HOODIE_TABLE_COMMAND_CLASS =
       "org.apache.spark.sql.hudi.command.InsertIntoHoodieTableCommand";
+  private static final String MERGE_INTO_HOODIE_TABLE_COMMAND_CLASS =
+      "org.apache.spark.sql.hudi.command.MergeIntoHoodieTableCommand";
+  private static final String UPDATE_HOODIE_TABLE_COMMAND_CLASS =
+      "org.apache.spark.sql.hudi.command.UpdateHoodieTableCommand";
+  private static final String DELETE_HOODIE_TABLE_COMMAND_CLASS =
+      "org.apache.spark.sql.hudi.command.DeleteHoodieTableCommand";
+  private static final String CREATE_HOODIE_TABLE_AS_SELECT_COMMAND_CLASS =
+      "org.apache.spark.sql.hudi.command.CreateHoodieTableAsSelectCommand";
 
   private HudiUtils() {}
 
@@ -53,6 +66,80 @@ public class HudiUtils {
    */
   public static boolean isInsertIntoHoodieTableCommand(LogicalPlan plan) {
     return isInstanceOf(plan, INSERT_INTO_HOODIE_TABLE_COMMAND_CLASS);
+  }
+
+  /**
+   * Checks whether the plan is one of the commands Hudi SQL uses for {@code MERGE INTO}, {@code
+   * UPDATE} and {@code DELETE} on Hudi tables. Their target is never a child of the command; in
+   * Hudi 1.x, {@code UPDATE} and {@code DELETE} have a query reading the target as a child.
+   */
+  public static boolean isHudiDmlCommand(LogicalPlan plan) {
+    return isMergeIntoHoodieTableCommand(plan)
+        || isInstanceOf(plan, UPDATE_HOODIE_TABLE_COMMAND_CLASS)
+        || isInstanceOf(plan, DELETE_HOODIE_TABLE_COMMAND_CLASS);
+  }
+
+  /** Checks whether the plan is Hudi's {@code MergeIntoHoodieTableCommand} ({@code MERGE INTO}). */
+  public static boolean isMergeIntoHoodieTableCommand(LogicalPlan plan) {
+    return isInstanceOf(plan, MERGE_INTO_HOODIE_TABLE_COMMAND_CLASS);
+  }
+
+  /**
+   * Checks whether the plan is Hudi's {@code CreateHoodieTableAsSelectCommand} ({@code CREATE TABLE
+   * ... AS SELECT} of a Hudi table). Its query is a child only from Hudi 1.x.
+   */
+  public static boolean isCreateHoodieTableAsSelectCommand(LogicalPlan plan) {
+    return isInstanceOf(plan, CREATE_HOODIE_TABLE_AS_SELECT_COMMAND_CLASS);
+  }
+
+  /**
+   * Returns the relation of the target table of a Hudi {@code MERGE INTO}, {@code UPDATE} or {@code
+   * DELETE} command. Hudi 1.x's {@code DeleteHoodieTableCommand} only keeps the query that reads
+   * the target, so the relation is taken from there.
+   */
+  public static Optional<LogicalRelation> dmlTarget(LogicalPlan command) {
+    Optional<LogicalPlan> table;
+    if (isMergeIntoHoodieTableCommand(command)) {
+      table = mergeInto(command).map(MergeIntoTable::targetTable);
+    } else if (isInstanceOf(command, UPDATE_HOODIE_TABLE_COMMAND_CLASS)) {
+      table =
+          invoke(command, "ut")
+              .filter(UpdateTable.class::isInstance)
+              .map(update -> ((UpdateTable) update).table());
+    } else if (isInstanceOf(command, DELETE_HOODIE_TABLE_COMMAND_CLASS)) {
+      Optional<LogicalPlan> deleteFrom =
+          invoke(command, "dft")
+              .filter(DeleteFromTable.class::isInstance)
+              .map(delete -> ((DeleteFromTable) delete).table());
+      table = deleteFrom.isPresent() ? deleteFrom : invokePlanMethod(command, "query");
+    } else {
+      table = Optional.empty();
+    }
+    return table.flatMap(
+        plan ->
+            ScalaConversionUtils.fromSeq(plan.collectLeaves()).stream()
+                .filter(LogicalRelation.class::isInstance)
+                .map(LogicalRelation.class::cast)
+                .findFirst());
+  }
+
+  /** Returns the Spark {@code MergeIntoTable} a {@code MergeIntoHoodieTableCommand} runs. */
+  public static Optional<MergeIntoTable> mergeInto(LogicalPlan command) {
+    return invoke(command, "mergeInto")
+        .filter(MergeIntoTable.class::isInstance)
+        .map(MergeIntoTable.class::cast);
+  }
+
+  /** Returns the table created by a {@code CreateHoodieTableAsSelectCommand}. */
+  public static Optional<CatalogTable> ctasTable(LogicalPlan command) {
+    return invoke(command, "table")
+        .filter(CatalogTable.class::isInstance)
+        .map(CatalogTable.class::cast);
+  }
+
+  /** Returns the query of a {@code CreateHoodieTableAsSelectCommand}. */
+  public static Optional<LogicalPlan> ctasQuery(LogicalPlan command) {
+    return invokePlanMethod(command, "query");
   }
 
   /** Returns the target relation of an {@code InsertIntoHoodieTableCommand}. */
@@ -95,6 +182,16 @@ public class HudiUtils {
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
       log.warn("Unable to call partitionSpec on Hudi command {}", command.getClass().getName(), e);
       return Collections.emptySet();
+    }
+  }
+
+  /** Calls a method that the command has only in some Hudi versions. */
+  private static Optional<Object> invoke(LogicalPlan command, String method) {
+    try {
+      return Optional.ofNullable(MethodUtils.invokeMethod(command, method));
+    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+      log.debug("Unable to call {} on Hudi command {}", method, command.getClass().getName(), e);
+      return Optional.empty();
     }
   }
 
