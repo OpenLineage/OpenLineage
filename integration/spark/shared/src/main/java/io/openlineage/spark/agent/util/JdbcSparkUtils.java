@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.FabricWarehouseUtils;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnLineage;
@@ -51,8 +52,32 @@ public class JdbcSparkUtils {
    * @return dataset identifier, before namespace resolution
    */
   public static DatasetIdentifier getDatasetIdentifier(JDBCOptions jdbcOptions, DbTableMeta table) {
-    return JdbcDatasetUtils.getDatasetIdentifier(
-        jdbcOptions.url(), table.qualifiedName(), jdbcOptions.asConnectionProperties());
+    DatasetIdentifier identifier =
+        JdbcDatasetUtils.getDatasetIdentifier(
+            jdbcOptions.url(), table.qualifiedName(), jdbcOptions.asConnectionProperties());
+    // Microsoft's Spark connector for Fabric passes the user's options (such as the warehouse ID)
+    // through to the JDBC read, so they can be read here
+    return FabricWarehouseUtils.withOneLakeLocation(
+        identifier,
+        queryWarehouse(jdbcOptions),
+        option(jdbcOptions, FabricWarehouseUtils.WORKSPACE_ID_OPTION),
+        option(jdbcOptions, FabricWarehouseUtils.DATAWAREHOUSE_ID_OPTION));
+  }
+
+  // The warehouse a query runs in, which the DatawarehouseId option belongs to: the connector's
+  // database_name option, or else the database in the JDBC URL. A query can also read tables from
+  // other warehouses in the workspace, and those tables must not get this warehouse's location.
+  private static Optional<String> queryWarehouse(JDBCOptions jdbcOptions) {
+    Optional<String> databaseName = option(jdbcOptions, FabricWarehouseUtils.DATABASE_NAME_OPTION);
+    if (databaseName.isPresent()) {
+      return databaseName;
+    }
+    return JdbcDatasetUtils.getDatabase(jdbcOptions.url(), jdbcOptions.asConnectionProperties());
+  }
+
+  private static Optional<String> option(JDBCOptions jdbcOptions, String key) {
+    // parameters() ignores upper and lower case in option names
+    return ScalaConversionUtils.asJavaOptional(jdbcOptions.parameters().get(key));
   }
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {

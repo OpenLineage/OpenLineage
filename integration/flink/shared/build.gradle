@@ -14,7 +14,7 @@ plugins {
     id 'com.github.johnrengelman.shadow'
     id 'io.franzbecker.gradle-lombok'
     id 'io.openlineage.common-config'
-    id "com.google.protobuf" version "0.10.0"
+    id "com.google.protobuf" version "0.10.1"
 }
 
 configurations {

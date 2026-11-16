@@ -25,7 +25,6 @@ pub trait Visit {
 
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
-        let size = self.cte_tables.len();
         // Snowflake, SQL Server and SQLite let any CTE refer to itself, with or
         // without RECURSIVE.
         let dialect = context.dialect().as_base();
@@ -33,13 +32,13 @@ impl Visit for With {
             || dialect.is::<SnowflakeDialect>()
             || dialect.is::<MsSqlDialect>()
             || dialect.is::<SQLiteDialect>();
-        for i in 0..size {
+        for (i, cte) in self.cte_tables.iter().enumerate() {
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),
-                vec![self.cte_tables[i].alias.name.clone()],
+                vec![cte.alias.name.clone()],
             );
             context.push_frame();
-            self.cte_tables[i].query.visit(context)?;
+            cte.query.visit(context)?;
             let frame = context.pop_frame();
             if let Some(mut f) = frame {
                 // The CTE body's own WITH scope ends with the body:
@@ -48,7 +47,7 @@ impl Visit for With {
                 // meant for real tables or enclosing CTEs.
                 context.resolve_subquery_cte_dependencies(&mut f);
                 let table = DbTableMeta::new(
-                    vec![self.cte_tables[i].alias.name.clone()],
+                    vec![cte.alias.name.clone()],
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
@@ -60,8 +59,8 @@ impl Visit for With {
             // cte_dependency_key), so a reference the dialect resolves
             // to this CTE - however it is quoted or cased - finds it.
             let cte_key = cte_dependency_key(
-                &self.cte_tables[i].alias.name.value,
-                self.cte_tables[i].alias.name.quote_style,
+                &cte.alias.name.value,
+                cte.alias.name.quote_style,
                 context.dialect().as_base(),
             );
 

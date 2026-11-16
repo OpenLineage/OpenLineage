@@ -34,11 +34,11 @@ vars:
   # The newest CI-tested Spark/Scala combination. Alternative pairs: run
   # `task versions`, or see the matrix in .circleci/workflows/openlineage-spark.yml.
   DEFAULT_JAVA: "21"
-  DEFAULT_SPARK: "4.2.0"
+  DEFAULT_SPARK: "4.3.0"
   DEFAULT_SCALA: "2.13"
   CI_DEFAULT_MATRIX: |
     8 3.2.4 2.12
-    21 4.2.0 2.13
+    21 4.3.0 2.13
   CI_FULL_MATRIX: |
     8 3.2.4 2.12
     8 3.2.4 2.13
@@ -53,8 +53,10 @@ vars:
     17 3.5.6 2.12
     17 3.5.6 2.13
     17 4.0.0 2.13
+    17 4.1.3 2.13
     17 4.2.0 2.13
-    21 4.2.0 2.13
+    17 4.3.0 2.13
+    21 4.3.0 2.13
 
 tasks:
   default:
@@ -132,7 +134,7 @@ tasks:
         "$(git rev-parse --show-toplevel)/dev/spark-gradle.sh" test {{.JAVA | default .DEFAULT_JAVA}} {{.SPARK | default .DEFAULT_SPARK}} {{.SCALA | default .DEFAULT_SCALA}} "{{.TESTS}}" "{{.MODULE}}"
 
   test:ci:
-    desc: CI-aligned local test across multiple versions. Default runs JAVA=8/SPARK=3.2.4/SCALA=2.12 and JAVA=21/SPARK=4.2.0/SCALA=2.13. Set FULL=true for all matrix combinations. Optionally set TESTS=… to pass --tests, MODULE=… to scope the filter to one module, e.g. :app.
+    desc: CI-aligned local test across multiple versions. Default runs JAVA=8/SPARK=3.2.4/SCALA=2.12 and JAVA=21/SPARK=4.3.0/SCALA=2.13. Set FULL=true for all matrix combinations. Optionally set TESTS=… to pass --tests, MODULE=… to scope the filter to one module, e.g. :app.
     silent: true
     cmds:
       - |
@@ -155,7 +157,7 @@ tasks:
         "$(git rev-parse --show-toplevel)/dev/spark-gradle.sh" integration-test {{.JAVA | default .DEFAULT_JAVA}} {{.SPARK | default .DEFAULT_SPARK}} {{.SCALA | default .DEFAULT_SCALA}} "{{.TESTS}}"
 
   integration-test:ci:
-    desc: CI-aligned local integration test across multiple versions. Default runs JAVA=8/SPARK=3.2.4/SCALA=2.12 and JAVA=21/SPARK=4.2.0/SCALA=2.13. Set FULL=true for all matrix combinations. Optionally set TESTS=… to pass --tests.
+    desc: CI-aligned local integration test across multiple versions. Default runs JAVA=8/SPARK=3.2.4/SCALA=2.12 and JAVA=21/SPARK=4.3.0/SCALA=2.13. Set FULL=true for all matrix combinations. Optionally set TESTS=… to pass --tests.
     silent: true
     cmds:
       - |

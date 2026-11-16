@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/FabricOneLakeDatasetFacet.json",
+  "$defs": {
+    "FabricOneLakeDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "location": {
+              "description": "Location of the table's files in OneLake, Microsoft Fabric's storage, using IDs only: abfss://{workspaceId}@onelake.dfs.fabric.microsoft.com/{itemId}/Tables/{schema}/{table}, or .../Tables/{table} in a lakehouse without schemas. IDs are lowercase, with no trailing slash.",
+              "type": "string",
+              "example": "abfss://d1f6473b-9f7a-4352-940b-a8d74461d3fc@onelake.dfs.fabric.microsoft.com/c7a14054-60a7-4121-8fb7-252d16f687eb/Tables/sales/orders"
+            },
+            "workspaceId": {
+              "description": "ID of the Fabric workspace that holds the item, in lowercase.",
+              "type": "string",
+              "example": "d1f6473b-9f7a-4352-940b-a8d74461d3fc"
+            },
+            "workspaceName": {
+              "description": "Name of the Fabric workspace that holds the item.",
+              "type": "string",
+              "example": "sales-analytics"
+            },
+            "itemId": {
+              "description": "ID of the Fabric item that holds the table, such as a lakehouse or a warehouse, in lowercase.",
+              "type": "string",
+              "example": "c7a14054-60a7-4121-8fb7-252d16f687eb"
+            },
+            "itemName": {
+              "description": "Name of the Fabric item that holds the table.",
+              "type": "string",
+              "example": "lh_sales"
+            },
+            "itemType": {
+              "description": "Type of the Fabric item that holds the table, as Fabric names item types, for example Lakehouse, Warehouse or MirroredDatabase. Set only when the producer knows it.",
+              "type": "string",
+              "example": "Warehouse"
+            },
+            "tableId": {
+              "description": "ID of the table's Delta metadata (metaData.id in the Delta log), in lowercase. For a table reached through a shortcut, this is the ID of the target table.",
+              "type": "string",
+              "example": "6d3a2bc0-7f1e-4f4b-9a39-2c4e8f1d2b7a"
+            }
+          }
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "fabric_onelake": {
+      "$ref": "#/$defs/FabricOneLakeDatasetFacet"
+    }
+  }
+}

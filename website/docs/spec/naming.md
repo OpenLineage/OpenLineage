@@ -63,6 +63,23 @@ Using the legacy Snowflake account locator format (that will create `snowflake:/
 but it forces dataset IDs that won’t match IDs created with the orgname-account_name format.
 If you switch formats later, existing lineage nodes won’t connect to new ones.
 
+For Microsoft Fabric Warehouse, each workspace has one SQL address, shared by all its warehouses and lakehouses;
+`{database}` is the warehouse or lakehouse name. The same address can be written in several ways, so to make sure
+every tool reports a table under the same name, write the address:
+- in lowercase;
+- without the `.z{xx}` label that Fabric sometimes adds before `.datawarehouse.fabric.microsoft.com`;
+- without port 1433, the default.
+
+For example, `ABC-DEF.z8b.datawarehouse.fabric.microsoft.com,1433` becomes
+`fabric-warehouse://abc-def.datawarehouse.fabric.microsoft.com`.
+
+If you know only the tenant and workspace IDs, you can build the address as
+`{tenant part}-{workspace part}.datawarehouse.fabric.microsoft.com`. Each part is the ID's bytes, in the order
+Microsoft's .NET stores them, written in lowercase base32 without `=` padding. Microsoft doesn't document this.
+
+If you know the warehouse's ID, also add the table's OneLake file location as a `LOCATION` symlink, using IDs only:
+`abfss://{workspace id}@onelake.dfs.fabric.microsoft.com` with name `{warehouse id}/Tables/{schema}/{table}`.
+
 ## Job Naming
 
 A `Job` is a recurring data transformation with inputs and outputs. Each execution is captured as a `Run` with
