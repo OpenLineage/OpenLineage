@@ -21,7 +21,6 @@ class ParentJobFacet(JobFacet):
 
     job: ParentJobFacetJob
     root: ParentJobFacetRoot | None = attr.field(default=None)
-    _additional_skip_redact: ClassVar[list[str]] = ["job"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -57,7 +56,6 @@ class ParentJobFacetJob(RedactMixin):
 @attr.define
 class ParentJobFacetRoot(RedactMixin):
     job: ParentJobFacetJob
-    _skip_redact: ClassVar[list[str]] = ["job"]
 
     @staticmethod
     def _get_schema() -> str:

@@ -43,7 +43,10 @@ class JobNamespaceReplaceTransformer(EventTransformer):
         event.job.namespace = self.new_job_namespace
 
         if not self.include_parent_facet:
-            log.debug("Set `include_parent_facet` to True to include replacement in ParentRunFacet.")
+            log.debug(
+                "Set `include_parent_facet` to True to include replacement in "
+                "ParentJobFacet and ParentRunFacet."
+            )
             return event
 
         self._replace_in_parent_job_facet(event)
@@ -58,6 +61,22 @@ class JobNamespaceReplaceTransformer(EventTransformer):
 
         # Mypy sees RunFacet, but we assume ParentRunFacet, so we ignore the check.
         parent_facet: parent_run.ParentRunFacet = event.run.facets["parent"]  # type: ignore[assignment]
+        self._replace_parent_facet_namespaces(parent_facet)
+
+        return event
+
+    def _replace_in_parent_job_facet(self, event: event_v2.RunEvent | event_v2.JobEvent) -> None:
+        if not event.job.facets or not event.job.facets.get("parent"):
+            log.debug("Parent job facet not found, skipping replacement in ParentJobFacet.")
+            return
+
+        # Mypy sees JobFacet, but we assume ParentJobFacet, so we ignore the check.
+        parent_job_facet: parent_job.ParentJobFacet = event.job.facets["parent"]  # type: ignore[assignment]
+        self._replace_parent_facet_namespaces(parent_job_facet)
+
+    def _replace_parent_facet_namespaces(
+        self, parent_facet: parent_job.ParentJobFacet | parent_run.ParentRunFacet
+    ) -> None:
         log.debug(
             "Replacing parent OpenLineage job namespace: `%s` with: `%s` for single event.",
             parent_facet.job.namespace,
@@ -72,27 +91,3 @@ class JobNamespaceReplaceTransformer(EventTransformer):
                 self.new_job_namespace,
             )
             parent_facet.root.job.namespace = self.new_job_namespace
-
-        return event
-
-    def _replace_in_parent_job_facet(self, event: event_v2.RunEvent | event_v2.JobEvent) -> None:
-        if not event.job.facets or not event.job.facets.get("parent"):
-            log.debug("Parent job facet not found, skipping replacement in ParentJobFacet.")
-            return
-
-        # Mypy sees JobFacet, but we assume ParentJobFacet, so we ignore the check.
-        parent_job_facet: parent_job.ParentJobFacet = event.job.facets["parent"]  # type: ignore[assignment]
-        log.debug(
-            "Replacing parent job (ParentJobFacet) namespace: `%s` with: `%s` for single event.",
-            parent_job_facet.job.namespace,
-            self.new_job_namespace,
-        )
-        parent_job_facet.job.namespace = self.new_job_namespace
-
-        if parent_job_facet.root:
-            log.debug(
-                "Replacing root job (ParentJobFacet) namespace: `%s` with: `%s` for single event.",
-                parent_job_facet.root.job.namespace,
-                self.new_job_namespace,
-            )
-            parent_job_facet.root.job.namespace = self.new_job_namespace

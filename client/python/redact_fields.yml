@@ -238,11 +238,9 @@
         - namespace
         - name
     - class_name: ParentJobFacetRoot
-      redact_fields:
-        - job
+      redact_fields: []
     - class_name: ParentJobFacet
-      redact_fields:
-        - job
+      redact_fields: []
 - module: parent_run
   classes:
     - class_name: Job

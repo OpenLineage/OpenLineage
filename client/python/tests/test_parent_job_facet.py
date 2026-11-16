@@ -56,3 +56,16 @@ def test_parent_job_facet_copy_serialization() -> None:
     )
 
     assert Serde.to_json(facet) == Serde.to_json(copy.deepcopy(facet))
+
+
+def test_parent_job_facet_redaction_descends_into_forwarded_job_facets() -> None:
+    # Redactors (e.g. Airflow's OpenLineageRedactor) skip attributes listed in `skip_redact`.
+    # `job` and `root` must not be skipped, otherwise forwarded job facets would never be redacted.
+    job = parent_job.ParentJobFacetJob(namespace="airflow", name="my_dag")
+    root = parent_job.ParentJobFacetRoot(job=job)
+    facet = parent_job.ParentJobFacet(job=job, root=root)
+
+    assert "job" not in facet.skip_redact
+    assert "root" not in facet.skip_redact
+    assert "job" not in root.skip_redact
+    assert job.skip_redact == ["namespace", "name"]
