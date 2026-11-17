@@ -82,6 +82,70 @@ class JdbcSparkUtilsTest {
     assertEquals("postgres://localhost:5432", identifier.getNamespace());
   }
 
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "jdbc:sqlserver://localhost:1433;databaseName=testdb | [raw].[orders] | raw.orders",
+        "jdbc:postgresql://localhost:5432/testdb | \"raw\".\"orders\" | raw.orders",
+        "jdbc:mysql://localhost:3306/testdb | `testdb`.`orders` | testdb.orders",
+      })
+  void testQuotedDbtableIsNamedLikeTheSameTableInAQuery(String url, String quoted, String plain) {
+    assertEquals(datasetNameFromDbtable(url, plain), datasetNameFromDbtable(url, quoted));
+    assertEquals(
+        datasetNameFromQuery(url, "SELECT * FROM " + quoted), datasetNameFromDbtable(url, quoted));
+  }
+
+  @Test
+  void testQuotedDbtableKeepsAQuotedDotInOnePart() {
+    assertEquals(
+        "testdb.raw.my.orders", datasetNameFromDbtable(SQLSERVER_URL, "[raw].[my.orders]"));
+  }
+
+  @Test
+  void testPlainDbtableIsNamedAsWritten() {
+    assertEquals("otherdb.raw.orders", datasetNameFromDbtable(SQLSERVER_URL, "otherdb.raw.orders"));
+    assertEquals("testdb.raw.orders", datasetNameFromDbtable(SQLSERVER_URL, "raw.orders"));
+  }
+
+  @Test
+  void testQuotedDbtableKeepsColumnLineageFromTheSchema() {
+    givenJdbcOptions(
+        JdbcOptions.builder()
+            .url(SQLSERVER_URL)
+            .driver("org.postgresql.Driver")
+            .dbtable("[raw].[orders]")
+            .build());
+    givenSchema(new StructType().add("id", DataTypes.IntegerType).add("v", DataTypes.StringType));
+
+    SqlMeta meta = JdbcSparkUtils.extractQueryFromSpark(relation).get();
+
+    assertEquals(2, meta.columnLineage().size());
+    assertEquals(
+        "raw.orders", meta.columnLineage().get(0).lineage().get(0).origin().get().qualifiedName());
+  }
+
+  private String datasetNameFromDbtable(String url, String dbtable) {
+    givenJdbcOptions(
+        JdbcOptions.builder().url(url).driver("org.postgresql.Driver").dbtable(dbtable).build());
+    givenSchema(new StructType().add("id", DataTypes.IntegerType));
+    return datasetName();
+  }
+
+  private String datasetNameFromQuery(String url, String query) {
+    givenJdbcOptions(
+        JdbcOptions.builder().url(url).driver("org.postgresql.Driver").query(query).build());
+    givenSchema(new StructType().add("id", DataTypes.IntegerType));
+    return datasetName();
+  }
+
+  private String datasetName() {
+    SqlMeta meta = JdbcSparkUtils.extractQueryFromSpark(relation).get();
+    assertEquals(1, meta.inTables().size());
+    return JdbcSparkUtils.getDatasetIdentifier(relation.jdbcOptions(), meta.inTables().get(0))
+        .getName();
+  }
+
   @Test
   void testFabricWarehouseConnectorQuery() {
     // the query the Fabric connector sends for spark.read.synapsesql("wh_primary.raw.orders")

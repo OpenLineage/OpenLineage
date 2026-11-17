@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/FabricSparkRunFacet.json",
+  "$defs": {
+    "FabricSparkRunFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "workspaceId": {
+              "description": "ID of the Microsoft Fabric workspace that holds the item the Spark session runs for, in lowercase.",
+              "type": "string",
+              "example": "8b4cb800-a044-43ce-8f76-3356f709b468"
+            },
+            "itemId": {
+              "description": "ID of the Fabric item the Spark session runs for, in lowercase: the notebook or Spark Job Definition that started it, or the lakehouse a Livy API session or batch runs against. A notebook run from another notebook reports the outer notebook, because both run in the same session.",
+              "type": "string",
+              "example": "af3e0877-abde-4457-8e7d-2f6026993a02"
+            },
+            "itemType": {
+              "description": "Type of that item, as Fabric names it in the session's settings, for example SynapseNotebook, SparkJobDefinition or Lakehouse.",
+              "type": "string",
+              "example": "SynapseNotebook"
+            },
+            "livyId": {
+              "description": "ID of the Livy session that runs the Spark application, in lowercase. Fabric's Livy session list and run history key runs on it. A retried Spark Job Definition gets a new Livy session for each attempt.",
+              "type": "string",
+              "example": "fa3ea1fc-c6bf-4b1d-a926-9be1bbf4851c"
+            },
+            "jobInstanceId": {
+              "description": "ID of the Fabric job instance the session belongs to, in lowercase. All attempts of one Spark Job Definition run share it.",
+              "type": "string",
+              "example": "a266f2f5-8c88-4788-8915-cb4d4456b790"
+            }
+          }
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "fabric_spark": {
+      "$ref": "#/$defs/FabricSparkRunFacet"
+    }
+  }
+}

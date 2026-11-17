@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.util;
+package io.openlineage.spark.agent.vendor.fabric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -17,9 +17,12 @@ import io.openlineage.client.utils.FabricWarehouseUtils;
 import io.openlineage.client.utils.OneLakeLocation;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.Vendors;
 import io.openlineage.sql.DbTableMeta;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,6 +74,18 @@ class OneLakeFacetUtilsTest {
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
+    // what the agent does with every vendor, so FabricVendor is loaded by its class name too
+    Vendors.getVendors()
+        .getEventHandlerFactories()
+        .forEach(
+            factory -> {
+              context
+                  .getDatasetIdentityFacetBuilders()
+                  .addAll(factory.createDatasetIdentityFacetBuilders(context));
+              context
+                  .getFileWriteTargetResolvers()
+                  .addAll(factory.createFileWriteTargetResolvers(context));
+            });
   }
 
   @Test
@@ -167,6 +182,57 @@ class OneLakeFacetUtilsTest {
   }
 
   @Test
+  void testOneLakePathGetsTheFacetFromThePath() {
+    String path = WAREHOUSE + "/Tables/raw/orders";
+    String oneLake = "abfss://" + WORKSPACE + "@onelake.dfs.fabric.microsoft.com";
+
+    OpenLineage.FabricOneLakeDatasetFacet facet =
+        DatasetFactory.input(context)
+            .sparkDatasetBuilder()
+            .dataset(path, oneLake)
+            .build()
+            .getFacets()
+            .getFabric_onelake();
+
+    assertThat(facet.getWorkspaceId()).isEqualTo(WORKSPACE);
+    assertThat(facet.getItemId()).isEqualTo(WAREHOUSE);
+    assertThat(facet.getLocation()).isEqualTo(oneLake + "/" + path);
+    // the path doesn't say what the item is
+    assertThat(facet.getItemType()).isNull();
+    assertThat(facet.getItemName()).isNull();
+  }
+
+  @Test
+  void testFabricVendorNamesTheDefaultLakehouse() {
+    String lakehouse = "c7a14054-60a7-4121-8fb7-252d16f687eb";
+    String oneLake = "abfss://" + WORKSPACE + "@onelake.dfs.fabric.microsoft.com";
+    runtimeConf.put("trident.workspace.id", WORKSPACE);
+    runtimeConf.put("trident.workspace.name", "sales-analytics");
+    runtimeConf.put("trident.lakehouse.id", lakehouse);
+    runtimeConf.put("trident.lakehouse.name", "lh_sales");
+    // the agent creates the resolvers with each SQL execution's context, once Fabric has set the
+    // session's settings
+    context
+        .getDatasetIdentifierResolvers()
+        .addAll(new FabricEventHandlerFactory().createDatasetIdentifierResolvers(context));
+
+    OpenLineage.OutputDataset output =
+        DatasetFactory.output(context)
+            .sparkDatasetBuilder()
+            .dataset(lakehouse + "/Tables/sales/orders", oneLake)
+            .build();
+
+    assertThat(output.getNamespace()).isEqualTo("fabric-lakehouse://" + WORKSPACE);
+    assertThat(output.getName()).isEqualTo("lh_sales.sales.orders");
+    OpenLineage.FabricOneLakeDatasetFacet facet = output.getFacets().getFabric_onelake();
+    assertThat(facet.getItemType()).isEqualTo("Lakehouse");
+    assertThat(facet.getItemName()).isEqualTo("lh_sales");
+    assertThat(facet.getItemId()).isEqualTo(lakehouse);
+    assertThat(facet.getWorkspaceName()).isEqualTo("sales-analytics");
+    assertThat(facet.getLocation()).isEqualTo(oneLake + "/" + lakehouse + "/Tables/sales/orders");
+  }
+
+  @Test
   void testWorkspaceNameOnlyForTheSessionsWorkspace() {
     runtimeConf.put("trident.workspace.id", WORKSPACE);
     hadoopConf.set("trident.workspace.name", "sales-analytics");
@@ -215,8 +281,10 @@ class OneLakeFacetUtilsTest {
     assertThat(
             OneLakeFacetUtils.withWorkspaceName(
                 location,
-                key ->
-                    Optional.of("trident.workspace.id".equals(key) ? WORKSPACE : "from-session")))
+                FabricSession.of(
+                    key ->
+                        Optional.of(
+                            "trident.workspace.id".equals(key) ? WORKSPACE : "from-session"))))
         .isSameAs(location);
   }
 

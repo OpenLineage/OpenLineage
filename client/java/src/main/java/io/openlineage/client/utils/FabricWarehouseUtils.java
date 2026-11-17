@@ -250,17 +250,8 @@ public final class FabricWarehouseUtils {
             .itemName(parts[0])
             .itemType(OneLakeLocation.WAREHOUSE)
             .path(Arrays.asList(OneLakeLocation.TABLES, parts[1], parts[2]));
-    if (identifier.getSymlinks() != null && workspaceId.isPresent()) {
-      identifier.getSymlinks().stream()
-          .filter(s -> s.getType() == DatasetIdentifier.SymlinkType.LOCATION)
-          .map(s -> OneLakeLocation.parse(s.getNamespace(), s.getName()))
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .filter(location -> workspaceId.get().equals(location.getWorkspaceId()))
-          .filter(location -> location.getItemId() != null)
-          .findFirst()
-          .ifPresent(location -> builder.itemId(location.getItemId()).path(location.getPath()));
-    }
+    OneLakeLocation.locationSymlink(identifier, workspaceId.orElse(null))
+        .ifPresent(location -> builder.itemId(location.getItemId()).path(location.getPath()));
     return Optional.of(builder.build());
   }
 

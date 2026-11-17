@@ -5,8 +5,10 @@
 
 package io.openlineage.client.utils.jdbc;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.FabricWarehouseUtils;
 import java.net.URISyntaxException;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -48,5 +50,37 @@ public class FabricWarehouseJdbcExtractor implements JdbcExtractor {
         location.getAuthority().map(FabricWarehouseUtils::canonicalEndpoint),
         Optional.empty(),
         location.getDatabase());
+  }
+
+  /**
+   * Adds the location of the table's files in OneLake, when the read comes from Microsoft's Spark
+   * connector for Fabric and the user set the warehouse ID ({@code DatawarehouseId}); see {@link
+   * FabricWarehouseUtils#withOneLakeLocation}.
+   *
+   * <p>The ID is for the warehouse the query runs in: the connector's {@code database_name} option,
+   * or else the database in the URL. A query can also read from other warehouses in the same
+   * workspace. Their tables don't get a location, because their IDs aren't known.
+   */
+  @Override
+  public DatasetIdentifier enrich(
+      DatasetIdentifier identifier, JdbcLocation location, Properties properties) {
+    Optional<String> queryWarehouse =
+        property(properties, FabricWarehouseUtils.DATABASE_NAME_OPTION);
+    return FabricWarehouseUtils.withOneLakeLocation(
+        identifier,
+        queryWarehouse.isPresent() ? queryWarehouse : location.getDatabase(),
+        property(properties, FabricWarehouseUtils.WORKSPACE_ID_OPTION),
+        property(properties, FabricWarehouseUtils.DATAWAREHOUSE_ID_OPTION));
+  }
+
+  // Spark keeps the option names as the user wrote them, so match them in any case
+  private static Optional<String> property(Properties properties, String key) {
+    String lower = key.toLowerCase(Locale.ROOT);
+    return properties.stringPropertyNames().stream()
+        .filter(name -> name.toLowerCase(Locale.ROOT).equals(lower))
+        .map(properties::getProperty)
+        // a blank option is the same as no option
+        .filter(value -> !value.trim().isEmpty())
+        .findFirst();
   }
 }

@@ -1,6 +1,9 @@
 {
   "producer": {
     "root_doc_URL": "https://learn.microsoft.com/en-us/fabric/onelake/onelake-overview",
-    "produced_facets": ["ol:microsoft:fabric:FabricOneLakeDatasetFacet.json"]
+    "produced_facets": [
+      "ol:microsoft:fabric:FabricOneLakeDatasetFacet.json",
+      "ol:microsoft:fabric:FabricSparkRunFacet.json"
+    ]
   }
 }
