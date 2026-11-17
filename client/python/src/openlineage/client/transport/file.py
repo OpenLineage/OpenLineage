@@ -253,7 +253,7 @@ class FileTransport(Transport):
 
         try:
             with self._file_handler.open_file(log_file_path, mode) as f:
-                kwargs = {"indent": 2} if self.config.debug_mode else {}
+                kwargs = {"indent": 2} if self.config.debug_mode and not self.config.append else {}
                 f.write(Serde.to_json(event, **kwargs) + "\n")
         except (PermissionError, io.UnsupportedOperation) as error:
             # If we lack write permissions or file is opened in wrong mode
