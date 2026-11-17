@@ -92,6 +92,9 @@ public class DatabricksEnvironment implements AutoCloseable {
    */
   public static final String CREATED_CLUSTER_NAME_PREFIX = "openlineage-dev-cluster";
 
+  /** Name prefix of the CI clusters created with {@code development.createTestCluster}. */
+  public static final String TEST_CLUSTER_NAME = TEST_CLUSTER_NAME_PREFIX + "-cluster";
+
   /**
    * Databricks runtime (major or major.minor) for each supported "spark.version/scala version".
    * 16.4 LTS is the last runtime with Spark 3.5. 18 LTS runs Spark 4.1 and only Scala 2.13.
@@ -168,6 +171,7 @@ public class DatabricksEnvironment implements AutoCloseable {
     static class Development {
       private String existingClusterId;
       private boolean createCluster;
+      private boolean createTestCluster;
       private boolean preventClusterTermination;
       private boolean restartExistingCluster;
       private String log4jLogsLocation;
@@ -214,15 +218,27 @@ public class DatabricksEnvironment implements AutoCloseable {
         log.warn(
             "⚠️ The cluster must be restarted to apply changes if the OpenLineage jar has been updated. ⚠️");
       }
-    } else if (development.isCreateCluster()) {
+    } else if (development.isCreateCluster()
+        || development.isCreateTestCluster() && listTestClusters().isEmpty()) {
       String sparkVersionKey = resolveSparkVersionKey();
-      String clusterName = CREATED_CLUSTER_NAME_PREFIX + "_" + sparkVersionKey;
+      // a test cluster is kept and found by name in later runs; a dev cluster is deleted at the end
+      String clusterName =
+          (development.isCreateTestCluster() ? TEST_CLUSTER_NAME : CREATED_CLUSTER_NAME_PREFIX)
+              + "_"
+              + sparkVersionKey;
       uploadOpenLineageJar(clusterName);
       uploadInitializationScript();
       ClusterInitialization clusterInitialization = createNewCluster(clusterName, sparkVersionKey);
       this.clusterId = clusterInitialization.getClusterId();
-      this.clusterCreated = true;
+      this.clusterCreated = !development.isCreateTestCluster();
       this.initializationSuccessful = clusterInitialization.isSuccessful();
+      if (development.isCreateTestCluster()) {
+        log.warn(
+            "Created the test cluster [{}] with ID [{}]. Pin it and give it the permissions CI "
+                + "needs, see DatabricksIntegrationTest.",
+            clusterName,
+            clusterId);
+      }
     } else {
       ClusterDetails cluster = findTestCluster();
       log.info(
@@ -269,6 +285,16 @@ public class DatabricksEnvironment implements AutoCloseable {
    * Only clusters the principal has a permission on are listed, and terminated clusters only if
    * they are pinned or terminated within the last 30 days.
    */
+  /** The visible clusters named {@value #TEST_CLUSTER_NAME_PREFIX}... on the required runtime. */
+  private List<ClusterDetails> listTestClusters() {
+    return StreamSupport.stream(
+            workspace.clusters().list(new ListClustersRequest()).spliterator(), false)
+        .filter(c -> c.getClusterName() != null)
+        .filter(c -> c.getClusterName().startsWith(TEST_CLUSTER_NAME_PREFIX))
+        .filter(c -> matchesRuntime(c.getSparkVersion()))
+        .collect(Collectors.toList());
+  }
+
   private ClusterDetails findTestCluster() {
     String principal = describeCurrentPrincipal();
     String host = properties.getWorkspace().getHost();
@@ -548,6 +574,8 @@ public class DatabricksEnvironment implements AutoCloseable {
         new CreateCluster()
             .setClusterName(clusterName)
             .setDataSecurityMode(DataSecurityMode.SINGLE_USER)
+            // the principal running the tests must be the single user to run jobs on the cluster
+            .setSingleUserName(workspace.currentUser().me().getUserName())
             .setSparkVersion(sparkVersionKey)
             .setNodeTypeId(NODE_TYPE)
             .setAutoterminationMinutes(10L)

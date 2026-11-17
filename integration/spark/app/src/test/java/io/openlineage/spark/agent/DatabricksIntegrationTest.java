@@ -71,6 +71,9 @@ class DatabricksIntegrationTest {
                         .createCluster(
                             Boolean.parseBoolean(
                                 DatabricksDynamicParameter.CreateCluster.resolve()))
+                        .createTestCluster(
+                            Boolean.parseBoolean(
+                                DatabricksDynamicParameter.CreateTestCluster.resolve()))
                         .restartExistingCluster(
                             Boolean.parseBoolean(
                                 DatabricksDynamicParameter.RestartExistingCluster.resolve()))

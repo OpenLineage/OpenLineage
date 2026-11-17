@@ -55,6 +55,14 @@ public enum DatabricksDynamicParameter implements DynamicParameter {
   CreateCluster("development.createCluster", "false"),
 
   /**
+   * When set to {@code true} and no test cluster for the runtime is found, a CI test cluster
+   * ({@code openlineage-test-cluster_<runtime>}) is created with the current principal as its
+   * single user, and kept after the tests, so that later runs find it. If one is found, it is used
+   * as usual. Requires cluster creation rights; meant for setting up the CI clusters once.
+   */
+  CreateTestCluster("development.createTestCluster", "false"),
+
+  /**
    * When set to {@code true}, prevents the EMR cluster from terminating after tests complete. This
    * allows for manual inspection and debugging of the cluster state.
    */
