@@ -55,8 +55,6 @@ import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationComm
 @Slf4j
 public final class FabricWarehouseSparkUtils {
   public static final String ENDPOINT_OVERRIDE_CONF = "spark.datawarehouse.%s.sqlendpoint";
-  public static final String TENANT_ID_CONF = "trident.tenant.id";
-  public static final String WORKSPACE_ID_CONF = "trident.workspace.id";
 
   private static final int TABLE_NAME_PARTS = 3;
 
@@ -171,11 +169,12 @@ public final class FabricWarehouseSparkUtils {
 
   private static Optional<String> buildEndpoint(
       Optional<String> workspaceOption, Function<String, Optional<String>> conf) {
-    Optional<UUID> tenant = conf.apply(TENANT_ID_CONF).flatMap(FabricWarehouseUtils::parseGuid);
+    FabricSession session = FabricSession.of(conf);
+    Optional<UUID> tenant = Optional.ofNullable(session.getTenantId());
     Optional<UUID> workspace =
         workspaceOption.isPresent()
             ? workspaceOption.flatMap(FabricWarehouseUtils::parseGuid)
-            : conf.apply(WORKSPACE_ID_CONF).flatMap(FabricWarehouseUtils::parseGuid);
+            : Optional.ofNullable(session.getWorkspaceId());
     if (!tenant.isPresent() || !workspace.isPresent()) {
       return Optional.empty();
     }
