@@ -203,7 +203,8 @@ class JdbcRelationHandlerTest {
       delimiter = '|',
       value = {
         "jdbc:postgresql://localhost:5432/app|app.public.orders|app.public.orders",
-        "jdbc:postgresql://localhost:5432/app|app.public.\"Orders\"|app.public.\"Orders\"",
+        // quotes are removed, as when a query reads the same table
+        "jdbc:postgresql://localhost:5432/app|app.public.\"Orders\"|app.public.Orders",
         "jdbc:sqlserver://localhost:1433;databaseName=app|app.dbo.orders|app.dbo.orders",
         "jdbc:sqlserver://localhost:1433;databaseName=app|otherdb.dbo.orders|otherdb.dbo.orders"
       })
