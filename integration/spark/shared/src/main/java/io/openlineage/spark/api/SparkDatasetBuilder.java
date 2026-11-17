@@ -66,10 +66,12 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
   }
 
   /**
-   * Sets the dataset's name, namespace and symlinks. Call it once per builder; see the class
-   * description.
+   * Sets the dataset's name, namespace and symlinks, after the vendors' resolvers have renamed it.
+   * Call it once per builder; see the class description.
    */
-  public SparkDatasetBuilder<T> dataset(DatasetIdentifier datasetIdentifier) {
+  public SparkDatasetBuilder<T> dataset(DatasetIdentifier identifier) {
+    // the name vendors give the dataset, such as a Fabric lakehouse table's logical name
+    DatasetIdentifier datasetIdentifier = DatasetIdentifierResolver.resolve(context, identifier);
     if (this.name != null) {
       // Builders aren't meant to be reused, but if the identity is replaced anyway, drop the old
       // identity's symlinks: they don't belong to the new one. Symlinks set before the first

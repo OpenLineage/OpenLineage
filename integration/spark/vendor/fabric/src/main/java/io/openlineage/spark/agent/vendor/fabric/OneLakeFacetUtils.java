@@ -7,16 +7,16 @@ package io.openlineage.spark.agent.vendor.fabric;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.FabricLakehouseUtils;
 import io.openlineage.client.utils.FabricWarehouseUtils;
 import io.openlineage.client.utils.OneLakeLocation;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Function;
 
 /**
- * Adds the {@code fabric_onelake} facet to datasets stored in OneLake, Microsoft Fabric's storage.
+ * Adds the {@code fabric_onelake} facet to datasets stored in OneLake, Microsoft Fabric's storage:
+ * Fabric warehouse and lakehouse tables, and OneLake paths that use IDs.
  *
  * <p>The facet is built from the dataset's own name, namespace and symlinks, so it describes the
  * dataset however the job reached it, including from outside Fabric. When the job runs in Fabric,
@@ -25,7 +25,6 @@ import java.util.function.Function;
  */
 public final class OneLakeFacetUtils {
   public static final String FACET_NAME = "fabric_onelake";
-  public static final String WORKSPACE_NAME_CONF = "trident.workspace.name";
 
   private OneLakeFacetUtils() {}
 
@@ -41,36 +40,46 @@ public final class OneLakeFacetUtils {
     if (FacetUtils.isFacetDisabled(context, FACET_NAME)) {
       return Optional.empty();
     }
-    return FabricWarehouseUtils.toOneLakeLocation(identifier)
+    return describe(identifier)
         .map(
             location ->
                 withWorkspaceName(
                     location,
-                    context
-                        .getSparkSession()
-                        .map(FabricWarehouseSparkUtils::confOf)
-                        .orElse(key -> Optional.empty())))
+                    FabricSession.of(
+                        context
+                            .getSparkSession()
+                            .map(FabricWarehouseSparkUtils::confOf)
+                            .orElse(key -> Optional.empty()))))
         .map(location -> location.toFacet(context.getOpenLineage()));
   }
 
   /**
-   * Adds the workspace's name from {@code trident.workspace.name}, if the location is in the
-   * workspace the Fabric session runs in ({@code trident.workspace.id}).
+   * Describes where the dataset is stored in OneLake. For a warehouse or lakehouse table, this
+   * comes from its name and {@code LOCATION} symlink; for any other OneLake path with IDs, from the
+   * path.
    */
-  static OneLakeLocation withWorkspaceName(
-      OneLakeLocation location, Function<String, Optional<String>> conf) {
-    if (location.getWorkspaceName() != null || location.getWorkspaceId() == null) {
+  private static Optional<OneLakeLocation> describe(DatasetIdentifier identifier) {
+    Optional<OneLakeLocation> location = FabricWarehouseUtils.toOneLakeLocation(identifier);
+    if (!location.isPresent()) {
+      location = FabricLakehouseUtils.toOneLakeLocation(identifier);
+    }
+    if (!location.isPresent()) {
+      location = OneLakeLocation.parse(identifier.getNamespace(), identifier.getName());
+    }
+    return location;
+  }
+
+  /**
+   * Adds the workspace's name from {@code trident.workspace.name}, if the location is in the
+   * workspace the Fabric session runs in.
+   */
+  static OneLakeLocation withWorkspaceName(OneLakeLocation location, FabricSession session) {
+    if (location.getWorkspaceName() != null
+        || location.getWorkspaceId() == null
+        || session.getWorkspaceName() == null
+        || !location.getWorkspaceId().equals(session.getWorkspaceId())) {
       return location;
     }
-    Optional<UUID> sessionWorkspace =
-        conf.apply(FabricWarehouseSparkUtils.WORKSPACE_ID_CONF)
-            .flatMap(FabricWarehouseUtils::parseGuid);
-    if (!sessionWorkspace.filter(location.getWorkspaceId()::equals).isPresent()) {
-      return location;
-    }
-    return conf.apply(WORKSPACE_NAME_CONF)
-        .filter(name -> !name.trim().isEmpty())
-        .map(name -> location.toBuilder().workspaceName(name).build())
-        .orElse(location);
+    return location.toBuilder().workspaceName(session.getWorkspaceName()).build();
   }
 }
