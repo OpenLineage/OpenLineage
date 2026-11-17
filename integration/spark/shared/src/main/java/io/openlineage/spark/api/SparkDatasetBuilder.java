@@ -40,6 +40,9 @@ import org.apache.spark.sql.types.StructType;
  * <p>All methods return {@code this} for fluent chaining. The underlying {@link
  * DatasetCompositeFacetsBuilder} is accessible via {@link #getInner()} for passing to existing APIs
  * that still require it.
+ *
+ * <p>Use one builder per dataset: call {@link #dataset(DatasetIdentifier)} once, then {@link
+ * #build()} once. Builders aren't meant to be reused.
  */
 public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
 
@@ -60,11 +63,9 @@ public abstract class SparkDatasetBuilder<T extends OpenLineage.Dataset> {
     this.inner = inner;
   }
 
+  /** Sets the dataset's name, namespace and symlinks. */
   public SparkDatasetBuilder<T> dataset(DatasetIdentifier datasetIdentifier) {
     if (this.name != null) {
-      // Replacing an identity: the previous one's symlinks don't belong to the new one, and the
-      // identity facets are built from the symlinks facet. Symlinks set before the first
-      // identity are kept.
       inner.getFacets().symlinks(null);
     }
     this.name = datasetIdentifier.getName();

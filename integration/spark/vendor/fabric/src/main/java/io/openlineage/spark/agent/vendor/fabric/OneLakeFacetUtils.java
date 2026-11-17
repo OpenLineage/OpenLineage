@@ -3,12 +3,13 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.util;
+package io.openlineage.spark.agent.vendor.fabric;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.FabricWarehouseUtils;
 import io.openlineage.client.utils.OneLakeLocation;
+import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import java.util.UUID;

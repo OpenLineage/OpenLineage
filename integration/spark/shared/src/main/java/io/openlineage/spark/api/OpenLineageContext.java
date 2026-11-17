@@ -123,6 +123,20 @@ public class OpenLineageContext {
   final List<ColumnLevelLineageVisitor> columnLevelLineageVisitors = new ArrayList<>();
 
   /**
+   * Builders that add facets to a dataset based on its name, namespace and symlinks; see {@link
+   * DatasetIdentityFacetBuilder}. Filled from the event handler factories.
+   */
+  @Default @NonNull @Getter
+  final List<DatasetIdentityFacetBuilder> datasetIdentityFacetBuilders = new ArrayList<>();
+
+  /**
+   * Resolvers that can report a different output for a file write; see {@link
+   * FileWriteTargetResolver}. Filled from the event handler factories.
+   */
+  @Default @NonNull @Getter
+  final List<FileWriteTargetResolver> fileWriteTargetResolvers = new ArrayList<>();
+
+  /**
    * A {@link VisitedNodes} instance that tracks visited leaf nodes in a Spark LogicalPlan from
    * which InputDataset information has been extracted. This field is used to prevent duplicate
    * processing of nodes representing the same data source.

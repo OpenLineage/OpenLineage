@@ -172,6 +172,11 @@ class OpenLineageRunEventBuilder {
         factory.createJobFacetBuilders(context),
         factory.createColumnLevelLineageVisitors(context),
         new OpenLineageRunEventTimeoutExecutor(context));
+    // the context uses these when it builds datasets, so they go on the context
+    context
+        .getDatasetIdentityFacetBuilders()
+        .addAll(factory.createDatasetIdentityFacetBuilders(context));
+    context.getFileWriteTargetResolvers().addAll(factory.createFileWriteTargetResolvers(context));
   }
 
   /**
