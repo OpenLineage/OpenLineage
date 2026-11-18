@@ -291,9 +291,9 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     for (int failures = 1; ; failures++) {
       try {
         return iterator.hasNext();
-      } catch (ServiceConfigurationError e) {
-        // the iterator has moved past the services file which failed, so retrying continues with
-        // the next one
+      } catch (ServiceConfigurationError | LinkageError e) {
+        // the iterator has moved past the services file or provider class which failed, so
+        // retrying continues with the next one. On Java 9+, provider classes are loaded here.
         log.warn("Failed to look up further OpenLineageExtensionProvider implementations", e);
         if (failures >= MAX_PROVIDER_LOOKUP_FAILURES) {
           return false;
