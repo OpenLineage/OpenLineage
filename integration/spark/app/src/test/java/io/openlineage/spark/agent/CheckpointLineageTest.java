@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -436,5 +437,34 @@ class CheckpointLineageTest {
         .anyMatch(name -> name.endsWith("checkpoint_loop_3"))
         .noneMatch(
             name -> name.endsWith("checkpoint_loop_1") || name.endsWith("checkpoint_loop_2"));
+  }
+
+  /**
+   * The {@code spark_unknown} facet records visited plan nodes in a JVM-wide listener, which is
+   * only cleared once the facet is built for a regular event. A checkpoint never builds it, so it
+   * mustn't leave its plan's nodes recorded - otherwise, in a loop of checkpoints, the plans (and
+   * the persisted RDDs they reference) of all previous iterations would be kept alive.
+   */
+  @Test
+  @SneakyThrows
+  void testCheckpointsDoNotRetainPlansForUnknownEntryFacet() {
+    spark.stop();
+    Spark4CompatUtils.cleanupAnyExistingSession();
+    spark =
+        createSession(
+            true,
+            Collections.singletonMap("spark.openlineage.facets.spark_unknown.disabled", "false"));
+    spark.sql("CREATE TABLE checkpoint_t1 (a string, b string) USING parquet");
+    spark.sql("INSERT INTO checkpoint_t1 VALUES ('x', 'y')");
+    spark.sparkContext().listenerBus().waitUntilEmpty(10_000);
+    UnknownEntryFacetListener.getInstance().clear();
+
+    Dataset<Row> df = spark.table("checkpoint_t1");
+    for (int i = 0; i < 3; i++) {
+      df = df.selectExpr("a", "upper(b) AS b").localCheckpoint(true);
+    }
+    spark.sparkContext().listenerBus().waitUntilEmpty(10_000);
+
+    assertThat(UnknownEntryFacetListener.getInstance().getVisitedNodesSize()).isZero();
   }
 }

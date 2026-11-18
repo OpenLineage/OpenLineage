@@ -73,12 +73,23 @@ public class InputFieldsCollector {
   }
 
   private static void discoverInputsFromNode(ColumnLevelLineageContext context, LogicalPlan node) {
-    if (node instanceof LogicalRDD && isCheckpoint(context, (LogicalRDD) node)) {
+    if (node instanceof LogicalRDD) {
       // the checkpointed RDD has no dataset identifier of its own - its lineage was captured
       // eagerly while the checkpoint was being materialized and stashed in CheckpointContext;
-      // reattach it here instead of the usual dataset-identifier based collection.
-      collectCheckpointInputs(context, (LogicalRDD) node);
-      return;
+      // reattach it here instead of the usual dataset-identifier based collection. It's looked up
+      // regardless of RDD#isCheckpointed(), which stays false for a lazy checkpoint until the first
+      // job reading it materializes it.
+      LogicalRDD logicalRdd = (LogicalRDD) node;
+      Optional<Checkpoint> checkpoint =
+          context.getOlContext().getCheckpointContext().getCheckpoint(logicalRdd.rdd().id());
+      if (checkpoint.isPresent()) {
+        collectCheckpointInputs(context, logicalRdd, checkpoint.get());
+        return;
+      }
+      if (logicalRdd.rdd().isCheckpointed()) {
+        log.debug("No lineage recorded for checkpointed RDD id={}", logicalRdd.rdd().id());
+        return;
+      }
     }
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isQueryRelationNode(node)) {
@@ -93,15 +104,6 @@ public class InputFieldsCollector {
   }
 
   /**
-   * Lineage is looked up regardless of {@link org.apache.spark.rdd.RDD#isCheckpointed()}, which
-   * stays false for a lazy checkpoint until the first job reading it materializes it.
-   */
-  private static boolean isCheckpoint(ColumnLevelLineageContext context, LogicalRDD node) {
-    return node.rdd().isCheckpointed()
-        || context.getOlContext().getCheckpointContext().getCheckpoint(node.rdd().id()).isPresent();
-  }
-
-  /**
    * Attaches the column lineage captured for a checkpoint (see {@link Checkpoint}) to the current,
    * downstream plan: the {@link LogicalRDD} output attributes representing the checkpointed data
    * are matched to the checkpoint's output fields by name (Spark reuses the exact same output
@@ -110,16 +112,9 @@ public class InputFieldsCollector {
    * output field depends on them. Dataset-level dependencies apply to the downstream plan as a
    * whole.
    */
-  private static void collectCheckpointInputs(ColumnLevelLineageContext context, LogicalRDD node) {
-    Optional<Checkpoint> checkpoint =
-        context.getOlContext().getCheckpointContext().getCheckpoint(node.rdd().id());
-
-    if (!checkpoint.isPresent()) {
-      log.debug("No lineage recorded for checkpointed RDD id={}", node.rdd().id());
-      return;
-    }
-
-    CheckpointColumnLineage lineage = checkpoint.get().getColumnLineage();
+  private static void collectCheckpointInputs(
+      ColumnLevelLineageContext context, LogicalRDD node, Checkpoint checkpoint) {
+    CheckpointColumnLineage lineage = checkpoint.getColumnLineage();
     List<AttributeReference> attributes =
         ScalaConversionUtils.<org.apache.spark.sql.catalyst.expressions.Attribute>fromSeq(
                 node.output())

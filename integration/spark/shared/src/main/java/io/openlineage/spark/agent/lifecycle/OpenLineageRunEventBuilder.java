@@ -270,15 +270,25 @@ class OpenLineageRunEventBuilder {
    * whose plan won't be retrievable once the checkpoint completes.
    *
    * <p>The input datasets and the column lineage are built within the datasets timeout, the same as
-   * the datasets of a regular event. If the column lineage times out, the checkpoint is returned
-   * without it and marked as incomplete. If the input datasets time out, nothing is returned.
+   * the datasets of a regular event. The plan nodes recorded for the {@code spark_unknown} facet
+   * while building the input datasets are cleared afterwards, as the facet is never built for a
+   * checkpoint - otherwise the checkpoint's plan, and the RDDs it references, would be retained. If
+   * the column lineage times out, the checkpoint is returned without it and marked as incomplete.
+   * If the input datasets time out, nothing is returned.
    *
    * @see io.openlineage.spark.api.CheckpointContext
    */
   Optional<Checkpoint> buildCheckpoint(SparkListenerEvent event, QueryExecution queryExecution) {
     List<Object> nodes = Collections.singletonList(event);
     List<InputDataset> inputDatasets =
-        timeouter.timeoutInputDatasets(() -> buildInputDatasets(nodes));
+        timeouter.timeoutInputDatasets(
+            () -> {
+              try {
+                return buildInputDatasets(nodes);
+              } finally {
+                unknownEntryFacetListener.clear();
+              }
+            });
     if (timeouter.isInputsTimedOut()) {
       log.warn("Building input datasets of a checkpoint timed out, its lineage is not captured");
       return Optional.empty();
