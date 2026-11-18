@@ -149,3 +149,25 @@ fn test_cte_select_wildcard_with_modifier_keeps_cte_origin() {
     .unwrap();
     assert_eq!(output.column_lineage, vec![column("id", "source")]);
 }
+
+#[test]
+fn test_cte_select_wildcard_from_identifier_function() {
+    let output = test_sql_dialect(
+        "WITH source AS (SELECT * FROM IDENTIFIER('raw_customers'))
+         SELECT id FROM source",
+        "snowflake",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "raw_customers")]);
+}
+
+#[test]
+fn test_cte_select_wildcard_with_lateral_view_keeps_cte_origin() {
+    let output = test_sql_dialect(
+        "WITH source AS (SELECT * FROM t LATERAL VIEW explode(arr) x AS col)
+         SELECT col FROM source",
+        "hive",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("col", "source")]);
+}

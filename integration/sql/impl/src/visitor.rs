@@ -1117,7 +1117,7 @@ fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
 }
 
 /// The table a query takes all of its columns from unchanged: `SELECT * FROM table`,
-/// with no join and no wildcard modifier. Any other query gives `None`.
+/// with no join, lateral view or wildcard modifier. Any other query gives `None`.
 fn pass_through_source(query: &Query, context: &Context) -> Option<DbTableMeta> {
     if query.with.is_some() {
         return None;
@@ -1128,7 +1128,8 @@ fn pass_through_source(query: &Query, context: &Context) -> Option<DbTableMeta> 
     let [SelectItem::Wildcard(options)] = select.projection.as_slice() else {
         return None;
     };
-    if options.opt_ilike.is_some()
+    if !select.lateral_views.is_empty()
+        || options.opt_ilike.is_some()
         || options.opt_exclude.is_some()
         || options.opt_except.is_some()
         || options.opt_replace.is_some()
@@ -1149,8 +1150,9 @@ fn pass_through_source(query: &Query, context: &Context) -> Option<DbTableMeta> 
     else {
         return None;
     };
+    let name = resolve_effective_table_name(name, &None, context)?;
     Some(DbTableMeta::new(
-        convert_to_idents(name),
+        convert_to_idents(&name),
         context.dialect(),
         context.default_schema().clone(),
         context.default_database().clone(),
