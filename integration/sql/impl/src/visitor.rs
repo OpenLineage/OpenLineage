@@ -9,8 +9,8 @@ use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
     JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
-    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    SelectItem, SetExpr, Statement, Subscript, Table, TableAlias, TableFactor, TableFunctionArgs,
+    TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -45,7 +45,7 @@ impl Visit for With {
                     context.default_database().clone(),
                 );
                 context.collect_with_table(f, table.clone());
-                if let Some(source) = pass_through_source(&cte.query, context) {
+                if let Some(source) = pass_through_source(&cte.query, &cte.alias, context) {
                     context.add_pass_through(table, source);
                 }
             }
@@ -132,7 +132,7 @@ impl Visit for TableFactor {
                         context.default_database().clone(),
                     );
                     context.collect_with_table(frame, table.clone());
-                    if let Some(source) = pass_through_source(subquery, context) {
+                    if let Some(source) = pass_through_source(subquery, alias, context) {
                         context.add_pass_through(table, source);
                     }
                 } else {
@@ -1117,9 +1117,15 @@ fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
 }
 
 /// The table a query takes all of its columns from unchanged: `SELECT * FROM table`,
-/// with no join, lateral view or wildcard modifier. Any other query gives `None`.
-fn pass_through_source(query: &Query, context: &Context) -> Option<DbTableMeta> {
-    if query.with.is_some() {
+/// with no join, lateral view or wildcard modifier. Any other query gives `None`, and
+/// so does a column list on `alias`, the query's own alias, or on the table's alias,
+/// since it renames the columns.
+fn pass_through_source(
+    query: &Query,
+    alias: &TableAlias,
+    context: &Context,
+) -> Option<DbTableMeta> {
+    if query.with.is_some() || !alias.columns.is_empty() {
         return None;
     }
     let SetExpr::Select(select) = query.body.as_ref() else {
@@ -1145,11 +1151,20 @@ fn pass_through_source(query: &Query, context: &Context) -> Option<DbTableMeta> 
         return None;
     }
     let TableFactor::Table {
-        name, args: None, ..
+        name,
+        alias: table_alias,
+        args: None,
+        ..
     } = &from.relation
     else {
         return None;
     };
+    if table_alias
+        .as_ref()
+        .is_some_and(|alias| !alias.columns.is_empty())
+    {
+        return None;
+    }
     let name = resolve_effective_table_name(name, &None, context)?;
     Some(DbTableMeta::new(
         convert_to_idents(&name),

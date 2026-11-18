@@ -171,3 +171,21 @@ fn test_cte_select_wildcard_with_lateral_view_keeps_cte_origin() {
     .unwrap();
     assert_eq!(output.column_lineage, vec![column("col", "source")]);
 }
+
+#[test]
+fn test_cte_with_column_list_select_wildcard_keeps_cte_origin() {
+    let output = test_sql("WITH source(x) AS (SELECT * FROM t) SELECT x FROM source").unwrap();
+    assert_eq!(output.column_lineage, vec![column("x", "source")]);
+}
+
+#[test]
+fn test_derived_table_with_column_list_select_wildcard_keeps_alias_origin() {
+    let output = test_sql("SELECT s.x FROM (SELECT * FROM t) s(x)").unwrap();
+    assert_eq!(output.column_lineage, vec![column("x", "s")]);
+}
+
+#[test]
+fn test_cte_select_wildcard_from_table_with_column_list_keeps_cte_origin() {
+    let output = test_sql("WITH source AS (SELECT * FROM t AS r(x)) SELECT x FROM source").unwrap();
+    assert_eq!(output.column_lineage, vec![column("x", "source")]);
+}
