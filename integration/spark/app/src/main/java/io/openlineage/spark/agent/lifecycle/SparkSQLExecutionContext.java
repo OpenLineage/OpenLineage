@@ -11,6 +11,7 @@ import static io.openlineage.client.OpenLineage.RunEvent.EventType.RUNNING;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.START;
 import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
@@ -26,11 +27,13 @@ import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.rdd.RDDOperationScope;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
@@ -61,6 +64,12 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private static final String CHECKPOINT_METHOD = "checkpoint";
   private static final String LOCAL_CHECKPOINT_METHOD = "localCheckpoint";
 
+  /** Job property holding the {@link RDDOperationScope} the job was submitted under. */
+  private static final String RDD_SCOPE_PROPERTY = "spark.rdd.scope";
+
+  /** Name of the scope {@code RDD.doCheckpoint()} runs the checkpoint materialization job under. */
+  private static final String CHECKPOINT_RDD_SCOPE = "checkpoint";
+
   private boolean emittedOnSqlExecutionStart = false;
   private boolean emittedOnSqlExecutionEnd = false;
   private boolean emittedOnJobStart = false;
@@ -88,12 +97,11 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private boolean isLocalCheckpoint = false;
 
   /**
-   * Highest id of an RDD computed by a job run within a non-local checkpoint execution. The
-   * checkpointed RDD is created after all the RDDs of the plan being checkpointed, so for an eager
-   * checkpoint it's the one with the highest id. A lazy checkpoint runs no job computing it - see
-   * {@link #resolveCheckpointRddId()}.
+   * Highest id of an RDD computed by a job materializing the checkpoint within this execution - see
+   * {@link #recordCheckpointJob(SparkListenerJobStart)}. Only eager checkpoints run such a job, a
+   * lazy one is materialized by the first job reading it - see {@link #resolveCheckpointRddId()}.
    */
-  private Optional<Integer> nonLocalCheckpointRddId = Optional.empty();
+  private Optional<Integer> checkpointJobRddId = Optional.empty();
 
   private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
 
@@ -488,23 +496,54 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   /**
-   * Records the RDD computed by a job run within a non-local checkpoint execution - that's the RDD
-   * of the job's result stage, which has the highest stage id, as its parent stages are created
-   * before it. Local checkpoints don't need it, see {@link #findLocalCheckpointRddId()}.
+   * Records the RDD computed by a job materializing the checkpoint - that's the RDD of the job's
+   * result stage, which has the highest stage id, as its parent stages are created before it.
+   *
+   * <p>An eager checkpoint is materialized by {@code RDD.doCheckpoint()}, which runs its job under
+   * the {@code checkpoint} {@link RDDOperationScope}. Other jobs run within the execution - while
+   * the plan being checkpointed is prepared, e.g. broadcasts, subqueries or adaptive query
+   * execution stages - compute other RDDs and are ignored. Should a job have no properties to tell
+   * that apart, it's recorded for non-local checkpoints only, as local checkpoints can still be
+   * resolved by {@link #findLocalCheckpointRddId()}.
    */
   private void recordCheckpointJob(SparkListenerJobStart jobStart) {
-    if (isLocalCheckpoint) {
+    Optional<Boolean> materializesCheckpoint =
+        isCheckpointMaterializationJob(jobStart.properties());
+    if (!materializesCheckpoint.orElse(!isLocalCheckpoint)) {
       return;
     }
-    ScalaConversionUtils.<StageInfo>fromSeq(jobStart.stageInfos()).stream()
-        .max(Comparator.comparingInt(StageInfo::stageId))
-        .filter(stage -> !stage.rddInfos().isEmpty())
-        .map(stage -> stage.rddInfos().head().id())
+    resultStageRddId(jobStart)
         .ifPresent(
             rddId ->
-                nonLocalCheckpointRddId =
-                    Optional.of(
-                        nonLocalCheckpointRddId.map(id -> Math.max(id, rddId)).orElse(rddId)));
+                checkpointJobRddId =
+                    Optional.of(checkpointJobRddId.map(id -> Math.max(id, rddId)).orElse(rddId)));
+  }
+
+  /**
+   * Whether the job was submitted by {@code RDD.doCheckpoint()}, based on its {@link
+   * RDDOperationScope}, or empty if the job has no properties to tell.
+   */
+  static Optional<Boolean> isCheckpointMaterializationJob(Properties jobProperties) {
+    if (jobProperties == null) {
+      return Optional.empty();
+    }
+    String scopeJson = jobProperties.getProperty(RDD_SCOPE_PROPERTY);
+    if (scopeJson == null) {
+      return Optional.of(false);
+    }
+    try {
+      return Optional.of(CHECKPOINT_RDD_SCOPE.equals(RDDOperationScope.fromJson(scopeJson).name()));
+    } catch (Exception e) { // fromJson throws checked Jackson exceptions, undeclared
+      log.debug("Failed to parse RDD scope of a job: {}", scopeJson, e);
+      return Optional.of(false);
+    }
+  }
+
+  private static Optional<Integer> resultStageRddId(SparkListenerJobStart jobStart) {
+    return ScalaConversionUtils.<StageInfo>fromSeq(jobStart.stageInfos()).stream()
+        .max(Comparator.comparingInt(StageInfo::stageId))
+        .filter(stage -> !stage.rddInfos().isEmpty())
+        .map(stage -> stage.rddInfos().head().id());
   }
 
   /**
@@ -512,17 +551,21 @@ class SparkSQLExecutionContext implements ExecutionContext {
    * looked up by once the checkpointed RDD is read downstream.
    *
    * <ul>
-   *   <li>local checkpoints (eager or lazy) persist the checkpointed RDD as soon as {@code
-   *       localCheckpoint()} is called, so it's found among the persisted RDDs.
-   *   <li>non-local checkpoints are only resolved when eager, from the jobs materializing them. A
-   *       lazy one runs no job computing the checkpointed RDD and there's no other way to reach it,
-   *       so it's not supported. If the lazy checkpoint's execution still runs jobs (e.g.
-   *       broadcasts, adaptive query execution stages) the resolved id is of one of the plan's RDDs
-   *       instead, which is never looked up - the captured lineage is unused, but harmless.
+   *   <li>eager checkpoints (local or non-local) are resolved from the job materializing them,
+   *       which computes exactly the checkpointed RDD.
+   *   <li>lazy local checkpoints - and eager ones with no partitions, which run no job - persist
+   *       the checkpointed RDD as soon as {@code localCheckpoint()} is called, so it's found among
+   *       the persisted RDDs.
+   *   <li>lazy non-local checkpoints run no job computing the checkpointed RDD and there's no other
+   *       way to reach it, so they're not supported.
    * </ul>
    */
-  private Optional<Integer> resolveCheckpointRddId() {
-    return isLocalCheckpoint ? findLocalCheckpointRddId() : nonLocalCheckpointRddId;
+  @VisibleForTesting
+  Optional<Integer> resolveCheckpointRddId() {
+    if (checkpointJobRddId.isPresent()) {
+      return checkpointJobRddId;
+    }
+    return isLocalCheckpoint ? findLocalCheckpointRddId() : Optional.empty();
   }
 
   /**
@@ -530,8 +573,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
    * the same call site as this execution and not yet claimed by another checkpoint execution. If
    * there are multiple (e.g. checkpoints created in a loop), the one with the lowest id is picked -
    * RDDs are numbered in creation order and checkpoint executions are handled in the same order.
-   * Only the id is kept, as persisted RDDs are referenced weakly by Spark and shouldn't be kept
-   * alive by us.
+   * That doesn't hold for lazy checkpoints created concurrently at the same call site (e.g. by the
+   * same method run from multiple threads), which may be resolved to each other's RDDs. Eager ones
+   * aren't affected, as they're resolved from their materialization job instead. Only the id is
+   * kept, as persisted RDDs are referenced weakly by Spark and shouldn't be kept alive by us.
    */
   private Optional<Integer> findLocalCheckpointRddId() {
     Optional<Integer> result = Optional.empty();
@@ -565,7 +610,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     if (!rddId.isPresent()) {
       log.debug(
           "Not capturing checkpoint lineage for executionId: {} as the checkpointed RDD can't be "
-              + "resolved (lazy non-local checkpoint)",
+              + "resolved (e.g. lazy non-local checkpoint)",
           endEvent.executionId());
       return;
     }
