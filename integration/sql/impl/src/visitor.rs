@@ -48,10 +48,10 @@ impl Visit for With {
             }
 
             if i == 0 {
-                context.collect_lower_nested_dependencies(cte.alias.name.clone().value);
+                context.collect_lower_nested_dependencies(cte.alias.name.clone());
             }
 
-            context.adjust_cte_dependencies(cte.alias.name.clone().value, recursive);
+            context.adjust_cte_dependencies(cte.alias.name.clone(), recursive);
         }
         Ok(())
     }
@@ -70,8 +70,17 @@ impl Visit for TableFactor {
                     None => return Ok(()), // Exit if couldn't parse identifier function
                 };
 
+                // A reference to a CTE in scope is replaced by the CTE's name
+                // as defined, which may differ in case (`orders` for CTE
+                // `Orders` in Snowflake).
+                let cte = context.cte_named_by(&convert_to_idents(&effective_name));
+                let idents = match &cte {
+                    Some(cte) => vec![cte.clone()],
+                    None => convert_to_idents(&effective_name),
+                };
+
                 let table = DbTableMeta::new(
-                    convert_to_idents(&effective_name),
+                    idents.clone(),
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
@@ -81,15 +90,14 @@ impl Visit for TableFactor {
                 }
 
                 if !context.is_main() {
-                    context.add_table_dependency(convert_to_idents(&effective_name));
+                    context.add_table_dependency(idents.clone());
                 }
 
-                if context.is_main() && !context.has_alias(effective_name.to_string()) {
-                    context.add_input(convert_to_idents(&effective_name));
-                }
-
-                if context.is_main() && context.has_alias(effective_name.to_string()) {
-                    context.mark_table_as_used(effective_name.to_string());
+                if context.is_main() {
+                    match cte {
+                        Some(cte) => context.mark_table_as_used(cte.value),
+                        None => context.add_input(idents),
+                    }
                 }
 
                 Ok(())
@@ -100,7 +108,7 @@ impl Visit for TableFactor {
                     if let Some(pivot_alias) = alias {
                         context.add_table_alias(
                             DbTableMeta::new(
-                                ident.clone(),
+                                context.resolve_cte_reference(ident),
                                 context.dialect(),
                                 context.default_schema().clone(),
                                 context.default_database().clone(),
@@ -177,7 +185,7 @@ impl Visit for TableFactor {
                     if let Some(unpivot_alias) = alias {
                         context.add_table_alias(
                             DbTableMeta::new(
-                                ident.clone(),
+                                context.resolve_cte_reference(ident),
                                 context.dialect(),
                                 context.default_schema().clone(),
                                 context.default_database().clone(),
@@ -255,12 +263,26 @@ impl Visit for Expr {
                 if context_set {
                     let descendant = context.column_context().as_ref().unwrap().name.clone();
                     let ancestor = ids.last().unwrap().value.clone();
-                    let table = DbTableMeta::new(
-                        ids.iter().take(ids.len() - 1).cloned().collect(),
+                    let qualifier: Vec<Ident> = ids.iter().take(ids.len() - 1).cloned().collect();
+                    let mut table = DbTableMeta::new(
+                        qualifier.clone(),
                         context.dialect(),
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
+                    // A qualifier naming a CTE in another case (`orders.id`
+                    // for CTE `Orders`) takes the CTE's name as defined, unless
+                    // it is a table alias in scope, which takes precedence.
+                    if !context.is_table_alias(&table) {
+                        if let Some(cte) = context.cte_named_by(&qualifier) {
+                            table = DbTableMeta::new(
+                                vec![cte],
+                                context.dialect(),
+                                context.default_schema().clone(),
+                                context.default_database().clone(),
+                            );
+                        }
+                    }
                     context.add_column_ancestors(
                         ColumnMeta::new(descendant, None),
                         vec![ColumnMeta::new(ancestor, Some(table))],
@@ -587,7 +609,7 @@ impl Visit for Select {
             let t = self.from.first().unwrap();
             if let TableFactor::Table { name, alias, .. } = &t.relation {
                 let table = DbTableMeta::new(
-                    convert_to_idents(name),
+                    context.resolve_cte_reference(convert_to_idents(name)),
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),

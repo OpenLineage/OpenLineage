@@ -196,3 +196,101 @@ fn cte_insert_overwrite() {
         }
     )
 }
+
+fn cte_lineage(sql: &str, dialect: &str) -> TableLineage {
+    test_sql_dialect(sql, dialect).unwrap().table_lineage
+}
+
+#[test]
+fn cte_reference_in_another_case_resolves_in_snowflake() {
+    assert_eq!(
+        cte_lineage(
+            "WITH Orders AS (SELECT id FROM raw.orders) INSERT INTO tgt SELECT id FROM orders",
+            "snowflake",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["raw.orders"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+    assert_eq!(
+        cte_lineage(
+            "WITH C AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM c",
+            "snowflake",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+#[test]
+fn cte_reference_in_another_case_resolves_in_postgres() {
+    assert_eq!(
+        cte_lineage(
+            "WITH C AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM c",
+            "postgres",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+    // Unquoted `C` folds to `c`, which is the quoted name exactly.
+    assert_eq!(
+        cte_lineage(
+            "WITH \"c\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM C",
+            "postgres",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+#[test]
+fn quoted_cte_name_does_not_match_a_differently_folded_reference() {
+    // Quoted "C" keeps its case, and unquoted `c` folds to `c`, so in
+    // Postgres the reference names a real table rather than the CTE.
+    assert_eq!(
+        cte_lineage(
+            "WITH \"C\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM c",
+            "postgres",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["c"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+#[test]
+fn recursive_cte_referring_to_itself_in_another_case_is_not_an_input() {
+    assert_eq!(
+        cte_lineage(
+            "WITH RECURSIVE Nums AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM nums WHERE n < 5) \
+             INSERT INTO tgt SELECT n FROM nums",
+            "postgres",
+        ),
+        TableLineage {
+            in_tables: vec![],
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
+
+#[test]
+fn bigquery_matches_cte_names_without_regard_to_case_even_when_quoted() {
+    assert_eq!(
+        cte_lineage(
+            "WITH Orders AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM `orders`",
+            "bigquery",
+        ),
+        TableLineage {
+            in_tables: tables(vec!["src"]),
+            out_tables: tables(vec!["tgt"])
+        }
+    );
+}
