@@ -30,6 +30,10 @@ pub struct ContextFrame {
     // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
     pub bare_dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
+    // CTEs and derived tables that are a bare `SELECT *` over one table, mapped to
+    // that table. Their columns are the table's columns, but the wildcard records
+    // no column ancestry to follow.
+    pass_through: HashMap<DbTableMeta, DbTableMeta>,
     pub is_main_body: bool,
 }
 
@@ -49,6 +53,7 @@ impl ContextFrame {
             dependencies: HashSet::new(),
             bare_dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
+            pass_through: HashMap::new(),
             is_main_body: true,
         }
     }
@@ -260,6 +265,16 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// Records that every column of `alias` is the column of the same name in `source`.
+    pub fn add_pass_through(&mut self, alias: DbTableMeta, source: DbTableMeta) {
+        if alias == source {
+            return;
+        }
+        if let Some(frame) = self.frames.last_mut() {
+            frame.pass_through.insert(alias, source);
+        }
+    }
+
     pub fn add_table_dependency(&mut self, table: Vec<Ident>) {
         let is_bare = table.len() == 1;
         let name = DbTableMeta::new(
@@ -408,7 +423,16 @@ impl<'a> Context<'a> {
                     })
                 });
             if column_ancestors.is_none() {
-                result.push(current.clone());
+                let source = current
+                    .origin
+                    .as_ref()
+                    .and_then(|origin| old.pass_through.get(origin));
+                match source {
+                    Some(source) => {
+                        stack.push(ColumnMeta::new(current.name.clone(), Some(source.clone())))
+                    }
+                    None => result.push(current.clone()),
+                }
                 continue;
             }
 
@@ -430,6 +454,7 @@ impl<'a> Context<'a> {
             frame.column_ancestry.extend(old.column_ancestry.drain());
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
+            frame.pass_through.extend(old.pass_through);
             frame.is_main_body = old.is_main_body;
         }
     }
@@ -478,6 +503,7 @@ impl<'a> Context<'a> {
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
+            frame.pass_through.extend(old.pass_through);
             frame.is_main_body = old.is_main_body;
         }
     }

@@ -44,7 +44,10 @@ impl Visit for With {
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
-                context.collect_with_table(f, table);
+                context.collect_with_table(f, table.clone());
+                if let Some(source) = pass_through_source(&cte.query, context) {
+                    context.add_pass_through(table, source);
+                }
             }
 
             if i == 0 {
@@ -128,7 +131,10 @@ impl Visit for TableFactor {
                         context.default_schema().clone(),
                         context.default_database().clone(),
                     );
-                    context.collect_with_table(frame, table);
+                    context.collect_with_table(frame, table.clone());
+                    if let Some(source) = pass_through_source(subquery, context) {
+                        context.add_pass_through(table, source);
+                    }
                 } else {
                     context.collect(frame);
                 }
@@ -1108,6 +1114,47 @@ fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
     } else {
         convert_to_idents(object_name)
     }
+}
+
+/// The table a query takes all of its columns from unchanged: `SELECT * FROM table`,
+/// with no join and no wildcard modifier. Any other query gives `None`.
+fn pass_through_source(query: &Query, context: &Context) -> Option<DbTableMeta> {
+    if query.with.is_some() {
+        return None;
+    }
+    let SetExpr::Select(select) = query.body.as_ref() else {
+        return None;
+    };
+    let [SelectItem::Wildcard(options)] = select.projection.as_slice() else {
+        return None;
+    };
+    if options.opt_ilike.is_some()
+        || options.opt_exclude.is_some()
+        || options.opt_except.is_some()
+        || options.opt_replace.is_some()
+        || options.opt_rename.is_some()
+        || options.opt_alias.is_some()
+    {
+        return None;
+    }
+    let [from] = select.from.as_slice() else {
+        return None;
+    };
+    if !from.joins.is_empty() {
+        return None;
+    }
+    let TableFactor::Table {
+        name, args: None, ..
+    } = &from.relation
+    else {
+        return None;
+    };
+    Some(DbTableMeta::new(
+        convert_to_idents(name),
+        context.dialect(),
+        context.default_schema().clone(),
+        context.default_database().clone(),
+    ))
 }
 
 fn convert_to_idents(object_name: &ObjectName) -> Vec<Ident> {
