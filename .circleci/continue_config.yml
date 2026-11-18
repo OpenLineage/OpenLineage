@@ -864,7 +864,8 @@ jobs:
                   env-variant: << parameters.env-variant >>
             - run: mkdir -p app/build/logs
             - run: mkdir -p app/build/events
-            - run: ./gradlew --console=plain clean shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
+            # the tests upload this jar to the cluster, so it must be built for the job's Scala version
+            - run: ./gradlew --console=plain clean shadowJar -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
             - run:
                 # The tests restart the pre-created, pinned cluster named openlineage-test... that runs
                 # the Databricks runtime for this Spark/Scala version, so the CI principal does not

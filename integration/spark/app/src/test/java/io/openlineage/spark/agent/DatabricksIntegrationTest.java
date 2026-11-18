@@ -244,9 +244,12 @@ class DatabricksIntegrationTest {
 
     List<RunEvent> runEvents = databricks.runScript("dataset_names.py");
 
-    // find complete event with output dataset containing name
+    // find complete event with output dataset containing name. The DROP TABLE IF EXISTS events at
+    // the start of the script report the default warehouse location, not the table's LOCATION, so
+    // they are skipped.
     OutputDataset outputDataset =
         runEvents.stream()
+            .filter(runEvent -> !runEvent.getJob().getName().contains("drop_table"))
             .filter(runEvent -> runEvent.getOutputs().size() > 0)
             .filter(runEvent -> runEvent.getOutputs().get(0).getName().contains("t1"))
             .map(runEvent -> runEvent.getOutputs().get(0))

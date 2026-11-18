@@ -601,12 +601,21 @@ public class DatabricksEnvironment implements AutoCloseable {
    */
   @SneakyThrows
   private void uploadOpenLineageJar(String clusterName) {
+    // the jar must match the cluster's Scala version, a 2.12 jar crashes the driver on 2.13
+    String jarPrefix = "openlineage-spark_" + scalaVersion + "-";
     Path jarFile =
         Files.list(Paths.get("../build/libs/"))
-            .filter(p -> p.getFileName().toString().startsWith("openlineage-spark_"))
+            .filter(p -> p.getFileName().toString().startsWith(jarPrefix))
             .filter(p -> p.getFileName().toString().endsWith("-SNAPSHOT.jar"))
             .findAny()
-            .orElseThrow(() -> new RuntimeException("openlineage-spark jar not found"));
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "No "
+                            + jarPrefix
+                            + "*-SNAPSHOT.jar in ../build/libs. Build it with: ./gradlew shadowJar "
+                            + "-Pscala.binary.version="
+                            + scalaVersion));
 
     String jarDir = DBFS_CLUSTER_JARS + clusterName + "/";
     dbfs.mkdirs(jarDir);
