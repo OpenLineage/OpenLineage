@@ -323,6 +323,36 @@ class SparkOpenLineageExtensionVisitorWrapperTest {
   }
 
   @Test
+  void testLoadProvidersSkipsProviderFailingWithLinkageError(@TempDir Path dir) throws Exception {
+    Path services = dir.resolve(SERVICES_FILE);
+    Files.createDirectories(services.getParent());
+    Files.write(
+        services,
+        Arrays.asList(
+            "com.example.IncompatibleExtensionProvider",
+            AnotherTestExtensionProvider.class.getName()));
+
+    try (URLClassLoader loader =
+        new URLClassLoader(new URL[] {dir.toUri().toURL()}, getClass().getClassLoader()) {
+          @Override
+          protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            if ("com.example.IncompatibleExtensionProvider".equals(name)) {
+              // like a connector compiled for a newer JDK
+              throw new UnsupportedClassVersionError(name);
+            }
+            return super.loadClass(name, resolve);
+          }
+        }) {
+      List<OpenLineageExtensionProvider> providers =
+          SparkOpenLineageExtensionVisitorWrapper.loadProviders(Collections.singletonList(loader));
+
+      assertThat(providers)
+          .extracting(Object::getClass)
+          .contains(AnotherTestExtensionProvider.class);
+    }
+  }
+
+  @Test
   void testLoadVisitorUsesProviderClassloader(@TempDir Path dir) throws Exception {
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     assumeTrue(compiler != null, "requires a JDK");
