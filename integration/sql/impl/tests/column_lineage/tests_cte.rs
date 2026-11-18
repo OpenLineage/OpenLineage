@@ -189,3 +189,14 @@ fn test_cte_select_wildcard_from_table_with_column_list_keeps_cte_origin() {
     let output = test_sql("WITH source AS (SELECT * FROM t AS r(x)) SELECT x FROM source").unwrap();
     assert_eq!(output.column_lineage, vec![column("x", "source")]);
 }
+
+#[test]
+fn test_cte_select_wildcard_not_shadowed_by_derived_table_alias_in_another_cte() {
+    let output = test_sql(
+        "WITH c AS (SELECT * FROM t1),
+              d AS (SELECT * FROM (SELECT * FROM t2) c)
+         SELECT id FROM c",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "t1")]);
+}
