@@ -387,7 +387,7 @@ public final class HttpTransport extends Transport {
       throws IOException, ParseException {
     final int code = response.getCode();
     HttpEntity entity = response.getEntity();
-    String body = EntityUtils.toString(entity, UTF_8);
+    String body = entity == null ? "" : EntityUtils.toString(entity, UTF_8);
     EntityUtils.consume(entity);
     if (code >= 400 && code < 600) { // non-2xx
       throw new HttpTransportResponseException(code, body);
