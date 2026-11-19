@@ -30,10 +30,10 @@ pub struct ContextFrame {
     // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
     pub bare_dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
-    // CTEs and derived tables that are a bare `SELECT *` over one table, mapped to
-    // that table. Their columns are the table's columns, but the wildcard records
-    // no column ancestry to follow.
-    pass_through: HashMap<DbTableMeta, DbTableMeta>,
+    // CTEs and derived tables that are a bare `SELECT *` over one table, keyed by
+    // qualified name and mapped to that table. Their columns are the table's
+    // columns, but the wildcard records no column ancestry to follow.
+    pass_through: HashMap<String, DbTableMeta>,
     pub is_main_body: bool,
 }
 
@@ -267,11 +267,50 @@ impl<'a> Context<'a> {
 
     /// Records that every column of `alias` is the column of the same name in `source`.
     pub fn add_pass_through(&mut self, alias: DbTableMeta, source: DbTableMeta) {
-        if alias == source {
+        let alias = alias.qualified_name();
+        if alias == source.qualified_name() {
             return;
         }
         if let Some(frame) = self.frames.last_mut() {
             frame.pass_through.insert(alias, source);
+        }
+    }
+
+    /// Like [`Context::add_pass_through`], for a CTE: `source` may name a CTE
+    /// declared earlier in the same `WITH`, whose own source is then recorded.
+    pub fn add_cte_pass_through(&mut self, alias: DbTableMeta, source: DbTableMeta) {
+        let earlier = self
+            .frames
+            .last()
+            .and_then(|frame| frame.pass_through.get(&source.qualified_name()))
+            .cloned();
+        self.add_pass_through(alias, earlier.unwrap_or(source));
+    }
+
+    /// Rewrites the ancestors in `old`, the frame of a CTE, that refer to a
+    /// pass-through CTE declared before it. A CTE sees only the CTEs before it,
+    /// so this cannot wait until every CTE of the `WITH` is known.
+    pub fn resolve_earlier_pass_through(&self, old: &mut ContextFrame) {
+        let Some(frame) = self.frames.last() else {
+            return;
+        };
+        if frame.pass_through.is_empty() {
+            return;
+        }
+        for ancestors in old.column_ancestry.values_mut() {
+            *ancestors = ancestors
+                .drain()
+                .map(|mut ancestor| {
+                    let source = ancestor
+                        .origin
+                        .as_ref()
+                        .and_then(|origin| frame.pass_through.get(&origin.qualified_name()));
+                    if let Some(source) = source {
+                        ancestor.origin = Some(source.clone());
+                    }
+                    ancestor
+                })
+                .collect();
         }
     }
 
@@ -400,9 +439,12 @@ impl<'a> Context<'a> {
         let mut stack = Vec::new();
         let mut max_iter = 40;
 
-        stack.push(ancestor.clone());
+        // Only the ancestor itself may go through `pass_through`. What it leads to
+        // was written inside another CTE or derived table, where the aliases of
+        // this frame are not in scope.
+        stack.push((ancestor.clone(), true));
 
-        while let Some(current) = stack.pop() {
+        while let Some((current, direct)) = stack.pop() {
             max_iter -= 1;
             if max_iter <= 0 {
                 break;
@@ -426,11 +468,13 @@ impl<'a> Context<'a> {
                 let source = current
                     .origin
                     .as_ref()
-                    .and_then(|origin| old.pass_through.get(origin));
+                    .filter(|_| direct)
+                    .and_then(|origin| old.pass_through.get(&origin.qualified_name()));
                 match source {
-                    Some(source) => {
-                        stack.push(ColumnMeta::new(current.name.clone(), Some(source.clone())))
-                    }
+                    Some(source) => stack.push((
+                        ColumnMeta::new(current.name.clone(), Some(source.clone())),
+                        false,
+                    )),
                     None => result.push(current.clone()),
                 }
                 continue;
@@ -440,7 +484,7 @@ impl<'a> Context<'a> {
                 for anc in ancestors {
                     // avoid infinite loop
                     if anc != &current {
-                        stack.push(anc.clone());
+                        stack.push((anc.clone(), false));
                     }
                 }
             }
@@ -503,7 +547,6 @@ impl<'a> Context<'a> {
             frame.dependencies.extend(old.dependencies);
             frame.bare_dependencies.extend(old.bare_dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
-            frame.pass_through.extend(old.pass_through);
             frame.is_main_body = old.is_main_body;
         }
     }

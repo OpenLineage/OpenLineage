@@ -10,7 +10,8 @@ use sqlparser::ast::{
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
     JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
     SelectItem, SetExpr, Statement, Subscript, Table, TableAlias, TableFactor, TableFunctionArgs,
-    TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    TableObject, UpdateTableFromKind, Use, Value, ValueWithSpan, WildcardAdditionalOptions,
+    WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -37,16 +38,17 @@ impl Visit for With {
             context.push_frame();
             cte.query.visit(context)?;
             let frame = context.pop_frame();
-            if let Some(f) = frame {
+            if let Some(mut f) = frame {
                 let table = DbTableMeta::new(
                     vec![cte.alias.name.clone()],
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
+                context.resolve_earlier_pass_through(&mut f);
                 context.collect_with_table(f, table.clone());
                 if let Some(source) = pass_through_source(&cte.query, &cte.alias, context) {
-                    context.add_pass_through(table, source);
+                    context.add_cte_pass_through(table, source);
                 }
             }
 
@@ -602,6 +604,21 @@ impl Visit for Select {
                     context.add_table_alias(table.clone(), vec![alias.clone().name]);
                 }
                 context.set_table_context(Some(table));
+            } else if let TableFactor::Derived {
+                subquery,
+                alias: Some(alias),
+                ..
+            } = &t.relation
+            {
+                // An unqualified column can only be found through the alias here.
+                if t.joins.is_empty() && pass_through_source(subquery, alias, context).is_some() {
+                    context.set_table_context(Some(DbTableMeta::new(
+                        vec![alias.name.clone()],
+                        context.dialect(),
+                        context.default_schema().clone(),
+                        context.default_database().clone(),
+                    )));
+                }
             }
         }
 
@@ -1117,9 +1134,8 @@ fn convert_copy_location_to_idents(object_name: &ObjectName) -> Vec<Ident> {
 }
 
 /// The table a query takes all of its columns from unchanged: `SELECT * FROM table`,
-/// with no join, lateral view or wildcard modifier. Any other query gives `None`, and
-/// so does a column list on `alias`, the query's own alias, or on the table's alias,
-/// since it renames the columns.
+/// with nothing that adds, removes or renames a column. Any other query gives
+/// `None`, and so does a column list on `alias`, the query's own alias.
 fn pass_through_source(
     query: &Query,
     alias: &TableAlias,
@@ -1131,16 +1147,21 @@ fn pass_through_source(
     let SetExpr::Select(select) = query.body.as_ref() else {
         return None;
     };
-    let [SelectItem::Wildcard(options)] = select.projection.as_slice() else {
+    let [SelectItem::Wildcard(WildcardAdditionalOptions {
+        wildcard_token: _,
+        opt_ilike: None,
+        opt_exclude: None,
+        opt_except: None,
+        opt_replace: None,
+        opt_rename: None,
+        opt_alias: None,
+    })] = select.projection.as_slice()
+    else {
         return None;
     };
     if !select.lateral_views.is_empty()
-        || options.opt_ilike.is_some()
-        || options.opt_exclude.is_some()
-        || options.opt_except.is_some()
-        || options.opt_replace.is_some()
-        || options.opt_rename.is_some()
-        || options.opt_alias.is_some()
+        || select.value_table_mode.is_some()
+        || select.exclude.is_some()
     {
         return None;
     }
@@ -1153,7 +1174,9 @@ fn pass_through_source(
     let TableFactor::Table {
         name,
         alias: table_alias,
-        args: None,
+        args,
+        with_ordinality: false,
+        json_path: None,
         ..
     } = &from.relation
     else {
@@ -1165,13 +1188,27 @@ fn pass_through_source(
     {
         return None;
     }
-    let name = resolve_effective_table_name(name, &None, context)?;
+    if args.is_some() && !is_identifier_function_with_args(name, context) {
+        return None;
+    }
+    let name = resolve_effective_table_name(name, args, context)?;
     Some(DbTableMeta::new(
         convert_to_idents(&name),
         context.dialect(),
         context.default_schema().clone(),
         context.default_database().clone(),
     ))
+}
+
+/// Whether `name(args)` in `FROM` is the `IDENTIFIER(...)` function of a dialect
+/// that parses it as a table name with arguments.
+fn is_identifier_function_with_args(name: &ObjectName, context: &Context) -> bool {
+    let dialect = context.dialect().as_base();
+    (dialect.is::<DatabricksDialect>() || dialect.is::<MsSqlDialect>())
+        && matches!(
+            name.0.first(),
+            Some(ObjectNamePart::Identifier(ident)) if ident.value.eq_ignore_ascii_case("identifier")
+        )
 }
 
 fn convert_to_idents(object_name: &ObjectName) -> Vec<Ident> {

@@ -200,3 +200,131 @@ fn test_cte_select_wildcard_not_shadowed_by_derived_table_alias_in_another_cte()
     .unwrap();
     assert_eq!(output.column_lineage, vec![column("id", "t1")]);
 }
+
+#[test]
+fn test_cte_select_wildcard_from_table_named_like_later_cte() {
+    let output = test_sql(
+        "WITH a AS (SELECT * FROM b),
+              b AS (SELECT * FROM a)
+         SELECT id FROM b",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "b")]);
+}
+
+#[test]
+fn test_cte_reading_table_named_like_later_select_wildcard_cte() {
+    let output = test_sql(
+        "WITH a AS (SELECT id FROM b),
+              b AS (SELECT * FROM c)
+         SELECT id FROM a",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "b")]);
+}
+
+#[test]
+fn test_derived_table_select_wildcard_does_not_resolve_through_sibling() {
+    for sql in [
+        "SELECT t1.id FROM (SELECT * FROM t2) t1 JOIN (SELECT * FROM t1) t2 ON t1.id = t2.id",
+        "SELECT t1.id FROM (SELECT * FROM t2) t1 JOIN (SELECT * FROM t3) t2 ON t1.id = t2.id",
+        "SELECT t1.id FROM (SELECT id FROM t2) t1 JOIN (SELECT * FROM t3) t2 ON t1.id = t2.id",
+    ] {
+        let output = test_sql(sql).unwrap();
+        assert_eq!(output.column_lineage, vec![column("id", "t2")], "{sql}");
+    }
+}
+
+#[test]
+fn test_derived_table_select_wildcard_unqualified_columns() {
+    let output = test_sql("SELECT id, name FROM (SELECT * FROM raw_customers) s").unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            column("id", "raw_customers"),
+            column("name", "raw_customers")
+        ]
+    );
+}
+
+#[test]
+fn test_cte_select_wildcard_from_identifier_function_with_args() {
+    for dialect in ["databricks", "mssql"] {
+        let output = test_sql_dialect(
+            "WITH source AS (SELECT * FROM IDENTIFIER('raw_customers'))
+             SELECT id FROM source",
+            dialect,
+        )
+        .unwrap();
+        assert_eq!(
+            output.column_lineage,
+            vec![column("id", "raw_customers")],
+            "{dialect}"
+        );
+    }
+}
+
+#[test]
+fn test_cte_select_wildcard_from_table_function_keeps_cte_origin() {
+    let output = test_sql_dialect(
+        "WITH source AS (SELECT * FROM my_tvf(1)) SELECT id FROM source",
+        "databricks",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "source")]);
+}
+
+#[test]
+fn test_cte_select_wildcard_not_shadowed_by_derived_table_alias_in_update_cte() {
+    let output = test_sql(
+        "WITH c AS (SELECT * FROM t1),
+              d AS (UPDATE target SET x = c.x FROM (SELECT * FROM t2) c)
+         SELECT id FROM c",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "t1")]);
+}
+
+#[test]
+fn test_cte_select_wildcard_alias_quoted_differently() {
+    for sql in [
+        r#"WITH "source" AS (SELECT * FROM raw_customers) SELECT id FROM source"#,
+        r#"WITH source AS (SELECT * FROM raw_customers) SELECT id FROM "source""#,
+    ] {
+        let output = test_sql(sql).unwrap();
+        assert_eq!(
+            output.column_lineage,
+            vec![column("id", "raw_customers")],
+            "{sql}"
+        );
+    }
+}
+
+#[test]
+fn test_cte_select_wildcard_changing_columns_keeps_cte_origin() {
+    for (sql, dialect, name) in [
+        (
+            "WITH s AS (SELECT AS STRUCT * FROM raw_customers) SELECT id FROM s",
+            "bigquery",
+            "id",
+        ),
+        (
+            "WITH s AS (SELECT * EXCLUDE secret FROM raw_customers) SELECT id FROM s",
+            "redshift",
+            "id",
+        ),
+        (
+            "WITH s AS (SELECT * FROM raw_customers WITH ORDINALITY) SELECT ordinality FROM s",
+            "postgres",
+            "ordinality",
+        ),
+        (
+            "WITH s AS (SELECT * FROM raw_customers[0]) SELECT id FROM s",
+            "redshift",
+            "id",
+        ),
+    ] {
+        let output = test_sql_dialect(sql, dialect).unwrap();
+        assert_eq!(output.column_lineage, vec![column(name, "s")], "{sql}");
+    }
+}
