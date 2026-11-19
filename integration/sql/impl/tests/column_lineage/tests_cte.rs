@@ -250,3 +250,31 @@ fn qualifier_binds_to_the_from_clause_under_the_dialects_folding() {
         vec!["id <- raw.orders.id"]
     );
 }
+
+#[test]
+fn outer_from_item_does_not_capture_a_lateral_qualifier() {
+    // `orders` inside the LATERAL subquery is the preceding `inner_src AS
+    // orders`, so an outer `FROM raw.orders` must not change the result.
+    // (Resolving an alias from inside a LATERAL subquery to its table is a
+    // separate limitation: main reports `orders.id` for both queries.)
+    let inner = "SELECT s.id FROM inner_src AS orders CROSS JOIN LATERAL (SELECT orders.id) AS s";
+    assert_eq!(
+        edges(
+            &format!("SELECT ({inner}) AS id FROM raw.orders"),
+            "postgres"
+        ),
+        edges(inner, "postgres")
+    );
+}
+
+#[test]
+fn alias_inside_a_parenthesized_join_shadows_an_outer_from_item() {
+    assert_eq!(
+        edges(
+            "SELECT (SELECT orders.id FROM (inner_src AS orders CROSS JOIN helper)) AS id \
+             FROM raw.orders",
+            "postgres"
+        ),
+        vec!["id <- inner_src.id"]
+    );
+}

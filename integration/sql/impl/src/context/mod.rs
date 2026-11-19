@@ -388,16 +388,24 @@ impl<'a> Context<'a> {
         }
     }
 
-    /// Opens the scope of a SELECT whose FROM clause introduces `names`,
-    /// each an alias or an unaliased table's last name part, with the
-    /// relation it stands for. Closed by `pop_correlation_names`.
-    pub fn push_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>)>) {
+    /// Opens the scope of the names a SELECT's FROM clause introduces,
+    /// filled by `add_correlation_names` and closed by
+    /// `pop_correlation_names`.
+    pub fn push_correlation_names(&mut self) {
+        self.correlation_names.push(HashMap::new());
+    }
+
+    /// Adds `names` to the innermost scope, each an alias or an unaliased
+    /// table's last name part, with the relation it stands for.
+    pub fn add_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>)>) {
         let dialect = self.dialect().as_base();
-        let scope = names
+        let keyed: Vec<(String, Vec<Ident>)> = names
             .into_iter()
             .map(|(name, relation)| (ident_key(&name, dialect), relation))
             .collect();
-        self.correlation_names.push(scope);
+        if let Some(scope) = self.correlation_names.last_mut() {
+            scope.extend(keyed);
+        }
     }
 
     pub fn pop_correlation_names(&mut self) {

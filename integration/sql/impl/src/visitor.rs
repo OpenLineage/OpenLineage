@@ -1,7 +1,7 @@
 // Copyright 2018-2026 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::context::Context;
+use crate::context::{Context, ContextFrame};
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
@@ -9,8 +9,9 @@ use sqlparser::ast::{
     AccessExpr, AlterTableOperation, CopyIntoSnowflakeKind, CreateTableLikeKind, Expr, FromTable,
     Function, FunctionArg, FunctionArgExpr, FunctionArgumentClause, FunctionArguments, Ident, Join,
     JoinConstraint, JoinOperator, ObjectName, ObjectNamePart, Query, RenameTableNameKind, Select,
-    SelectItem, SetExpr, Statement, Subscript, Table, TableFactor, TableFunctionArgs, TableObject,
-    TableWithJoins, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec, WindowType, With,
+    SelectItem, SetExpr, Statement, Subscript, Table, TableAlias, TableFactor, TableFunctionArgs,
+    TableObject, TableWithJoins, UpdateTableFromKind, Use, Value, ValueWithSpan, WindowSpec,
+    WindowType, With,
 };
 use sqlparser::dialect::{
     DatabricksDialect, MsSqlDialect, MySqlDialect, SQLiteDialect, SnowflakeDialect,
@@ -633,32 +634,16 @@ impl Visit for Select {
             }
         }
 
-        context.push_frame();
-
-        for table in &self.from {
-            context.push_frame();
-            table.relation.visit(context)?;
-            let frame = context.pop_frame().unwrap();
-            context.collect_aliases(&frame);
-            context.collect(frame);
-
-            for join in &table.joins {
-                context.push_frame();
-                join.visit(context)?;
-                let frame = context.pop_frame().unwrap();
-                context.collect_aliases(&frame);
-                context.collect(frame);
-            }
-        }
-
-        let tables_frame = context.pop_frame().unwrap();
-        context.collect_aliases(&tables_frame);
-
-        let names = correlation_names(&self.from, context);
-        context.push_correlation_names(names);
-        let clauses = visit_select_clauses(self, context);
+        // The names FROM introduces are in scope from the item that
+        // introduces them on, so a LATERAL item sees the ones before it, and
+        // until the end of this SELECT, even when visiting it fails.
+        context.push_correlation_names();
+        let visited = visit_from(&self.from, context).and_then(|tables_frame| {
+            visit_select_clauses(self, context)?;
+            Ok(tables_frame)
+        });
         context.pop_correlation_names();
-        clauses?;
+        let tables_frame = visited?;
 
         if let Some(into) = &self.into {
             // MySQL SELECT INTO assigns variables rather than creating tables.
@@ -687,29 +672,78 @@ impl Visit for Select {
     }
 }
 
-/// The names `from` introduces for column qualifiers, each with the relation
-/// it stands for: an alias stands for itself, and an unaliased table for its
-/// full name (CTE references resolved), under its last name part.
-fn correlation_names(from: &[TableWithJoins], context: &Context) -> Vec<(Ident, Vec<Ident>)> {
-    from.iter()
-        .flat_map(|table| {
-            std::iter::once(&table.relation).chain(table.joins.iter().map(|j| &j.relation))
-        })
-        .filter_map(|relation| match relation {
-            TableFactor::Table {
-                alias: Some(alias), ..
-            }
-            | TableFactor::Derived {
-                alias: Some(alias), ..
-            } => Some((alias.name.clone(), vec![alias.name.clone()])),
-            TableFactor::Table { alias: None, .. } => {
-                let name = context
-                    .resolve_cte_reference(get_table_name_from_table_factor(relation, context)?);
-                Some((name.last()?.clone(), name))
-            }
-            _ => None,
-        })
-        .collect()
+/// Visits the FROM items of a SELECT, adding the names each introduces to
+/// the innermost correlation scope once it has been visited, and returns the
+/// frame holding their tables.
+fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextFrame> {
+    context.push_frame();
+
+    for table in from {
+        context.push_frame();
+        table.relation.visit(context)?;
+        let frame = context.pop_frame().unwrap();
+        context.collect_aliases(&frame);
+        context.collect(frame);
+        let names = correlation_names(&table.relation, context);
+        context.add_correlation_names(names);
+
+        for join in &table.joins {
+            context.push_frame();
+            join.visit(context)?;
+            let frame = context.pop_frame().unwrap();
+            context.collect_aliases(&frame);
+            context.collect(frame);
+            let names = correlation_names(&join.relation, context);
+            context.add_correlation_names(names);
+        }
+    }
+
+    let tables_frame = context.pop_frame().unwrap();
+    context.collect_aliases(&tables_frame);
+    Ok(tables_frame)
+}
+
+/// The names a FROM item introduces for column qualifiers, each with the
+/// relation it stands for. An alias stands for itself and hides whatever
+/// it renames; an unaliased table stands for its full name (CTE references
+/// resolved) under its last name part; an unaliased parenthesized join
+/// introduces the names of its members.
+fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, Vec<Ident>)> {
+    if let Some(alias) = table_factor_alias(relation) {
+        return vec![(alias.name.clone(), vec![alias.name.clone()])];
+    }
+    match relation {
+        TableFactor::Table { .. } => get_table_name_from_table_factor(relation, context)
+            .map(|name| context.resolve_cte_reference(name))
+            .and_then(|name| Some((name.last()?.clone(), name)))
+            .into_iter()
+            .collect(),
+        TableFactor::NestedJoin {
+            table_with_joins, ..
+        } => std::iter::once(&table_with_joins.relation)
+            .chain(table_with_joins.joins.iter().map(|join| &join.relation))
+            .flat_map(|member| correlation_names(member, context))
+            .collect(),
+        _ => vec![],
+    }
+}
+
+fn table_factor_alias(relation: &TableFactor) -> Option<&TableAlias> {
+    match relation {
+        TableFactor::Table { alias, .. }
+        | TableFactor::Derived { alias, .. }
+        | TableFactor::TableFunction { alias, .. }
+        | TableFactor::Function { alias, .. }
+        | TableFactor::UNNEST { alias, .. }
+        | TableFactor::JsonTable { alias, .. }
+        | TableFactor::OpenJsonTable { alias, .. }
+        | TableFactor::NestedJoin { alias, .. }
+        | TableFactor::Pivot { alias, .. }
+        | TableFactor::Unpivot { alias, .. }
+        | TableFactor::MatchRecognize { alias, .. }
+        | TableFactor::XmlTable { alias, .. } => alias.as_ref(),
+        _ => None,
+    }
 }
 
 fn visit_select_clauses(select: &Select, context: &mut Context) -> Result<()> {
