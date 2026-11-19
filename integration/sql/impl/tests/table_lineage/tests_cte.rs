@@ -285,7 +285,7 @@ fn recursive_cte_referring_to_itself_in_another_case_is_not_an_input() {
 fn bigquery_matches_cte_names_without_regard_to_case_even_when_quoted() {
     assert_eq!(
         cte_lineage(
-            "WITH Orders AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM `orders`",
+            "INSERT INTO tgt WITH Orders AS (SELECT id FROM src) SELECT id FROM `orders`",
             "bigquery",
         ),
         TableLineage {
@@ -293,4 +293,109 @@ fn bigquery_matches_cte_names_without_regard_to_case_even_when_quoted() {
             out_tables: tables(vec!["tgt"])
         }
     );
+}
+
+fn in_tables(sql: &str, dialect: &str) -> Vec<String> {
+    let mut names: Vec<String> = cte_lineage(sql, dialect)
+        .in_tables
+        .iter()
+        .map(|t| t.qualified_name())
+        .collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn reference_with_the_spelling_of_a_differently_folded_cte_is_a_table() {
+    // `"c"` stays c and unquoted `c` folds to C in Snowflake; Postgres is the
+    // mirror image. Neither reference names the CTE, so it is a real table.
+    assert_eq!(
+        in_tables(
+            "WITH \"c\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM c",
+            "snowflake"
+        ),
+        vec!["c"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH \"C\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM C",
+            "postgres"
+        ),
+        vec!["C"]
+    );
+}
+
+#[test]
+fn ctes_with_one_spelling_and_different_quoting_stay_distinct() {
+    assert_eq!(
+        in_tables(
+            "WITH \"C\" AS (SELECT id FROM src_upper), C AS (SELECT id FROM src_lower) \
+             INSERT INTO tgt SELECT id FROM \"C\"",
+            "postgres"
+        ),
+        vec!["src_upper"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH C AS (SELECT id FROM src_lower), \"C\" AS (SELECT id FROM src_upper) \
+             INSERT INTO tgt SELECT id FROM c",
+            "postgres"
+        ),
+        vec!["src_lower"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH \"orders\" AS (SELECT id FROM t1), orders AS (SELECT id FROM t2) \
+             INSERT INTO tgt SELECT id FROM \"orders\"",
+            "snowflake"
+        ),
+        vec!["t1"]
+    );
+}
+
+#[test]
+fn reference_resolves_to_the_cte_it_names_across_nested_scopes() {
+    // The inner unquoted C folds to c; "C" names only the outer CTE.
+    assert_eq!(
+        in_tables(
+            "WITH \"C\" AS (SELECT id FROM outer_src) INSERT INTO tgt \
+             SELECT id FROM (WITH C AS (SELECT id FROM inner_src) SELECT id FROM \"C\") sub",
+            "postgres"
+        ),
+        vec!["outer_src"]
+    );
+}
+
+#[test]
+fn sqlite_matches_cte_names_without_regard_to_case_even_when_quoted() {
+    assert_eq!(
+        in_tables(
+            "WITH \"orders\" AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM orders",
+            "sqlite"
+        ),
+        vec!["src"]
+    );
+    assert_eq!(
+        in_tables(
+            "WITH Orders AS (SELECT id FROM src) INSERT INTO tgt SELECT id FROM \"orders\"",
+            "sqlite"
+        ),
+        vec!["src"]
+    );
+}
+
+#[test]
+fn ctes_folding_to_one_name_resolve_the_same_way_every_time() {
+    // Snowflake rejects two CTEs that fold to one name; the parser should at
+    // least answer deterministically, with the later definition.
+    for _ in 0..20 {
+        assert_eq!(
+            in_tables(
+                "WITH tab1 AS (SELECT id FROM s1), TAB1 AS (SELECT id FROM s2) \
+                 INSERT INTO tgt SELECT id FROM Tab1",
+                "snowflake"
+            ),
+            vec!["s2"]
+        );
+    }
 }

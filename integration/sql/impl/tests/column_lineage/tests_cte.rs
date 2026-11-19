@@ -130,3 +130,123 @@ fn table_alias_takes_precedence_over_a_cte_of_the_same_folded_name() {
         vec!["x <- t.x"]
     );
 }
+
+#[test]
+fn table_alias_in_another_case_takes_precedence_over_a_cte() {
+    assert_eq!(
+        edges(
+            "WITH c AS (SELECT x FROM s) SELECT c.x FROM t AS C",
+            "snowflake"
+        ),
+        vec!["x <- t.x"]
+    );
+    assert_eq!(
+        edges(
+            "WITH Orders AS (SELECT x FROM s) SELECT orders.x FROM t AS ORDERS",
+            "snowflake"
+        ),
+        vec!["x <- t.x"]
+    );
+}
+
+#[test]
+fn qualifier_naming_an_unaliased_table_in_from_is_not_a_cte() {
+    assert_eq!(
+        edges(
+            "WITH Orders AS (SELECT id FROM wrong_src) SELECT orders.id FROM raw.orders",
+            "snowflake"
+        ),
+        vec!["id <- raw.orders.id"]
+    );
+    let mut joined = edges(
+        "WITH Orders AS (SELECT id FROM wrong_src) \
+         SELECT o.id, orders.id AS id2 FROM Orders AS o JOIN raw.orders ON o.id = orders.id",
+        "snowflake",
+    );
+    joined.sort();
+    assert_eq!(joined, vec!["id <- wrong_src.id", "id2 <- raw.orders.id"]);
+}
+
+#[test]
+fn qualifier_quoted_differently_from_its_cte_traces_to_the_table() {
+    for (sql, dialect) in [
+        (
+            "WITH \"c\" AS (SELECT id FROM src) SELECT c.id FROM c",
+            "postgres",
+        ),
+        (
+            "WITH orders AS (SELECT id FROM src) SELECT `orders`.id FROM `orders`",
+            "bigquery",
+        ),
+        (
+            "WITH ORDERS AS (SELECT id FROM src) SELECT \"ORDERS\".id FROM \"ORDERS\"",
+            "snowflake",
+        ),
+        (
+            "WITH orders AS (SELECT id FROM src) SELECT [orders].id FROM [orders]",
+            "mssql",
+        ),
+    ] {
+        assert_eq!(
+            edges(sql, dialect),
+            vec!["id <- src.id"],
+            "{dialect}: {sql}"
+        );
+    }
+}
+
+#[test]
+fn recursive_self_reference_in_another_case_adds_no_column_lineage() {
+    // Same output as the self-reference written in the CTE's own case.
+    for (differing, matching, dialect) in [
+        (
+            "WITH RECURSIVE Nums AS (SELECT id AS n FROM seed UNION ALL SELECT n FROM nums) \
+             INSERT INTO tgt SELECT n FROM nums",
+            "WITH RECURSIVE Nums AS (SELECT id AS n FROM seed UNION ALL SELECT n FROM Nums) \
+             INSERT INTO tgt SELECT n FROM Nums",
+            "postgres",
+        ),
+        (
+            "WITH Nums AS (SELECT id AS n FROM seed UNION ALL SELECT n FROM nums) \
+             SELECT n FROM Nums",
+            "WITH Nums AS (SELECT id AS n FROM seed UNION ALL SELECT n FROM Nums) \
+             SELECT n FROM Nums",
+            "snowflake",
+        ),
+    ] {
+        assert_eq!(
+            edges(differing, dialect),
+            edges(matching, dialect),
+            "{dialect}"
+        );
+    }
+}
+
+#[test]
+fn identifier_function_in_single_table_select_resolves_the_cte() {
+    assert_eq!(
+        edges(
+            "WITH Orders AS (SELECT id FROM raw.orders) SELECT id FROM IDENTIFIER('orders')",
+            "snowflake"
+        ),
+        vec!["id <- raw.orders.id"]
+    );
+}
+
+#[test]
+fn qualifier_binds_to_the_from_clause_under_the_dialects_folding() {
+    // No CTE involved: on main these reported tables that do not exist
+    // (`orders`, `ORDERS`, `o`).
+    assert_eq!(
+        edges("SELECT orders.id FROM raw.orders", "snowflake"),
+        vec!["id <- raw.orders.id"]
+    );
+    assert_eq!(
+        edges("SELECT ORDERS.id FROM orders", "snowflake"),
+        vec!["id <- orders.id"]
+    );
+    assert_eq!(
+        edges("SELECT o.id FROM raw.orders AS O", "snowflake"),
+        vec!["id <- raw.orders.id"]
+    );
+}
