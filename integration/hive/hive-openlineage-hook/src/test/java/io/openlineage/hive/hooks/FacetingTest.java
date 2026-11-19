@@ -29,8 +29,13 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.QueryState;
+import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.ql.plan.AlterTableDesc;
+import org.apache.hadoop.hive.ql.plan.DDLWork;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -274,6 +279,97 @@ class FacetingTest {
     assertThat(facets.has("dataSource")).isFalse();
     assertThat(facets.path("storage").path("location").asText())
         .isEqualTo("hdfs://namenode.example/warehouse/orders");
+  }
+
+  @Test
+  void createTableProducesOutputWithLifecycleFacetAndNoInputs() throws Exception {
+    QueryPlan plan = mock(QueryPlan.class);
+    when(plan.getOperation()).thenReturn(HiveOperation.CREATETABLE);
+    when(hookContext.getQueryPlan()).thenReturn(plan);
+    when(hookContext.getConf()).thenReturn(configuration);
+    when(configuration.get("hive.metastore.uris")).thenReturn("thrift://metastore.example:9083");
+
+    StorageDescriptor storage = mock(StorageDescriptor.class);
+    java.util.List<FieldSchema> columns =
+        Collections.singletonList(new FieldSchema("id", "int", null));
+    when(storage.getCols()).thenReturn(columns);
+    Table table = mock(Table.class);
+    when(table.getSd()).thenReturn(storage);
+    when(table.getFullyQualifiedName()).thenReturn("default.created_table");
+    when(table.getAllCols()).thenReturn(columns);
+    WriteEntity output = mock(WriteEntity.class);
+    when(output.getTable()).thenReturn(table);
+
+    OpenLineageContext context =
+        OpenLineageContext.builder()
+            .openLineage(openLineage)
+            .openLineageConfig(openLineageConfig)
+            .hookContext(hookContext)
+            .readEntities(Collections.emptySet())
+            .writeEntities(Collections.singleton(output))
+            .eventTime(testEventTime)
+            .eventType(OpenLineage.RunEvent.EventType.START)
+            .build();
+
+    assertThat(Faceting.getInputDatasets(context)).isEmpty();
+    assertThat(Faceting.getOutputDatasets(context, Collections.emptyList()))
+        .singleElement()
+        .satisfies(
+            dataset -> {
+              assertThat(dataset.getName()).isEqualTo("default.created_table");
+              assertThat(dataset.getFacets().getLifecycleStateChange().getLifecycleStateChange())
+                  .isEqualTo(
+                      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
+            });
+  }
+
+  @Test
+  void renameTableIncludesNewAndPreviousIdentifiers() throws Exception {
+    QueryPlan plan = mock(QueryPlan.class);
+    when(plan.getOperation()).thenReturn(HiveOperation.ALTERTABLE_RENAME);
+    DDLWork work = mock(DDLWork.class);
+    AlterTableDesc alter = mock(AlterTableDesc.class);
+    when(alter.getOldName()).thenReturn("default.old_table");
+    when(alter.getNewName()).thenReturn("default.new_table");
+    when(work.getAlterTblDesc()).thenReturn(alter);
+    @SuppressWarnings("unchecked")
+    Task<? extends java.io.Serializable> task = mock(Task.class);
+    when(task.getWork()).thenReturn(work);
+    java.util.ArrayList<Task<? extends java.io.Serializable>> tasks = new java.util.ArrayList<>();
+    tasks.add(task);
+    when(plan.getRootTasks()).thenReturn(tasks);
+    when(hookContext.getQueryPlan()).thenReturn(plan);
+    when(hookContext.getConf()).thenReturn(configuration);
+    when(configuration.get("hive.metastore.uris")).thenReturn("thrift://metastore.example:9083");
+
+    StorageDescriptor storage = mock(StorageDescriptor.class);
+    java.util.List<FieldSchema> columns =
+        Collections.singletonList(new FieldSchema("id", "int", null));
+    when(storage.getCols()).thenReturn(columns);
+    Table table = mock(Table.class);
+    when(table.getSd()).thenReturn(storage);
+    when(table.getFullyQualifiedName()).thenReturn("default.old_table");
+    when(table.getAllCols()).thenReturn(columns);
+    WriteEntity output = mock(WriteEntity.class);
+    when(output.getTable()).thenReturn(table);
+    OpenLineageContext context =
+        OpenLineageContext.builder()
+            .openLineage(openLineage)
+            .openLineageConfig(openLineageConfig)
+            .hookContext(hookContext)
+            .readEntities(Collections.emptySet())
+            .writeEntities(Collections.singleton(output))
+            .eventTime(testEventTime)
+            .eventType(OpenLineage.RunEvent.EventType.START)
+            .build();
+
+    OpenLineage.OutputDataset dataset =
+        Faceting.getOutputDatasets(context, Collections.emptyList()).get(0);
+    assertThat(dataset.getName()).isEqualTo("default.new_table");
+    assertThat(dataset.getFacets().getLifecycleStateChange().getLifecycleStateChange())
+        .isEqualTo(OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.RENAME);
+    assertThat(dataset.getFacets().getLifecycleStateChange().getPreviousIdentifier().getName())
+        .isEqualTo("default.old_table");
   }
 
   // cannot mock static methods with Mockito, so using real object here

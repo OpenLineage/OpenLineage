@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.IOException;
@@ -24,6 +25,49 @@ class DatasetIdentityNormalizerTest {
           + "\"managedTables\":[{\"name\":\"test_db.orders\",\"metalake\":\"spark_metalake\","
           + "\"catalog\":\"hive_catalog\"}]},{\"id\":\"hms-other\","
           + "\"aliases\":[\"thrift://hms-other:9083\"],\"namespace\":\"hive://hms-other:9083\"}]}";
+
+  @Test
+  void mapsRenamedTablesPreviousIdentifierWithCurrentCatalog() throws Exception {
+    try (FakeGravitino gravitino = new FakeGravitino()) {
+    String event =
+        "{\"outputs\":[{\"namespace\":\"hive://hms-prod:9083\",\"name\":\"db.new_table\","
+            + "\"facets\":{\"lifecycleStateChange\":{\"lifecycleStateChange\":\"RENAME\","
+            + "\"previousIdentifier\":{\"namespace\":\"hive://hms-prod:9083\","
+            + "\"name\":\"db.old_table\"}}}}]}";
+    JsonNode output =
+        json(DatasetIdentityNormalizer.fromJson(dynamicRegistry(gravitino.url())).normalizeJson(event, null))
+            .path("outputs")
+            .get(0);
+    JsonNode previous = output.path("facets").path("lifecycleStateChange").path("previousIdentifier");
+    assertThat(output.path("namespace").asText()).isEqualTo("spark_metalake");
+    assertThat(output.path("name").asText()).isEqualTo("hive_catalog.db.new_table");
+    assertThat(previous.path("namespace").asText()).isEqualTo("spark_metalake");
+    assertThat(previous.path("name").asText()).isEqualTo("hive_catalog.db.old_table");
+    ObjectNode canonicalEvent = (ObjectNode) json(event);
+    ObjectNode canonicalPrevious =
+        (ObjectNode)
+            canonicalEvent
+                .path("outputs")
+                .get(0)
+                .path("facets")
+                .path("lifecycleStateChange")
+                .path("previousIdentifier");
+    canonicalPrevious.put("namespace", "spark_metalake");
+    canonicalPrevious.put("name", "hive_catalog.db.old_table");
+    JsonNode normalized =
+        json(
+            DatasetIdentityNormalizer.fromJson(dynamicRegistry(gravitino.url()))
+                .normalizeJson(canonicalEvent.toString(), null));
+    assertThat(
+            normalized
+                .path("outputs")
+                .get(0)
+                .path("facets")
+                .path("lifecycleStateChange")
+                .path("previousIdentifier"))
+        .isEqualTo(previous);
+    }
+  }
 
   @Test
   void mapsSparkLocationUsingTableSymlink() throws Exception {

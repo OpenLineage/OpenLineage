@@ -11,6 +11,12 @@ This integration supports a wide range of Hive query types, including:
 * `INSERT` (`OVERWRITE TABLE` | `INTO TABLE`): Captures lineage from source data
   to the destination table. Includes operations like `SELECT`, `JOIN`, `WHERE`
   filters, and aggregations within the `INSERT` statement.
+* Table DDL: Captures `CREATE TABLE`, `DROP TABLE`, `TRUNCATE TABLE`, table rename,
+  and supported table or partition alterations as output datasets with a
+  `lifecycleStateChange` facet. Completed DDL events use the current table
+  schema from the Hive Metastore. `CREATE TABLE AS SELECT` also includes its source
+  datasets. Statements that do not change a table, such as `CREATE TABLE IF NOT
+  EXISTS` when the table already exists, do not emit lifecycle events.
 * `SELECT` statements: Do not emit lineage events on their own (as they don't
   change data). However, intermediate transformations within a `SELECT` used in
   a `CTAS` or `INSERT` are analyzed for column-level lineage.

@@ -59,6 +59,8 @@ import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
+import org.apache.hadoop.hive.ql.plan.AlterTableDesc;
+import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.ExportWork;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hive.common.util.HiveVersionInfo;
@@ -76,6 +78,10 @@ public class Faceting {
   }
 
   public static List<InputDataset> getInputDatasets(OpenLineageContext olContext) throws Exception {
+    if (HiveDdlOperations.lifecycleState(olContext.getHookContext().getQueryPlan().getOperation())
+        != null) {
+      return Collections.emptyList();
+    }
     if (olContext.getHookContext().getQueryPlan().getOperation() == HiveOperation.LOAD
         || olContext.getHookContext().getQueryPlan().getOperation() == HiveOperation.IMPORT) {
       return getIdentityInputDataset(olContext);
@@ -160,12 +166,90 @@ public class Faceting {
   public static List<OutputDataset> getOutputDatasets(
       OpenLineageContext olContext, List<InputDataset> inputDatasets) throws Exception {
     HookContext hookContext = olContext.getHookContext();
+    if (HiveDdlOperations.lifecycleState(hookContext.getQueryPlan().getOperation()) != null) {
+      return getDdlOutputDatasets(olContext);
+    }
     if (hookContext.getQueryPlan().getOperation() == HiveOperation.EXPORT
         || hookContext.getQueryPlan().getOperation() == HiveOperation.LOAD
         || hookContext.getQueryPlan().getOperation() == HiveOperation.IMPORT) {
       return getIdentityOutputDataset(olContext, inputDatasets);
     }
     return getQueryOutputDatasets(olContext, inputDatasets, hookContext);
+  }
+
+  private static List<OutputDataset> getDdlOutputDatasets(OpenLineageContext olContext) {
+    HookContext hookContext = olContext.getHookContext();
+    HiveOperation operation = hookContext.getQueryPlan().getOperation();
+    OpenLineage ol = olContext.getOpenLineage();
+    AlterTableDesc rename = null;
+    if (operation == HiveOperation.ALTERTABLE_RENAME
+        && hookContext.getQueryPlan().getRootTasks() != null
+        && !hookContext.getQueryPlan().getRootTasks().isEmpty()
+        && hookContext.getQueryPlan().getRootTasks().get(0).getWork() instanceof DDLWork) {
+      rename =
+          ((DDLWork) hookContext.getQueryPlan().getRootTasks().get(0).getWork()).getAlterTblDesc();
+    }
+    List<OutputDataset> outputs = new ArrayList<>();
+    for (WriteEntity entity : olContext.getWriteEntities()) {
+      Table table = entity.getTable();
+      if (table == null) {
+        continue;
+      }
+      if (operation != HiveOperation.DROPTABLE
+          && olContext.getEventType() == RunEvent.EventType.COMPLETE) {
+        String dbName = table.getDbName();
+        String tableName = table.getTableName();
+        if (rename != null && rename.getNewName() != null) {
+          String newName = rename.getNewName();
+          int separator = newName.indexOf('.');
+          dbName = separator < 0 ? dbName : newName.substring(0, separator);
+          tableName = separator < 0 ? newName : newName.substring(separator + 1);
+        }
+        // WriteEntity can contain the pre-DDL schema; the metastore has the completed result.
+        table = HiveUtils.getTable(hookContext.getConf(), dbName, tableName, table);
+      } else if (operation != HiveOperation.DROPTABLE
+          && (table.getSd() == null
+              || table.getSd().getCols() == null
+              || table.getSd().getCols().isEmpty())) {
+        table = HiveUtils.getTable(hookContext.getConf(), table);
+      }
+      DatasetIdentifier identifier = HiveUtils.getDatasetIdentifierFromTable(table);
+      String datasetName = identifier.getName();
+      DatasetFacetsBuilder facets = tableFacets(ol, hookContext.getConf(), table);
+      SchemaDatasetFacet schema = getSchemaDatasetFacet(ol, table);
+      if (schema != null) {
+        facets.schema(schema);
+      }
+      OpenLineage.LifecycleStateChangeDatasetFacetBuilder lifecycle =
+          ol.newLifecycleStateChangeDatasetFacetBuilder()
+              .lifecycleStateChange(HiveDdlOperations.lifecycleState(operation));
+      if (rename != null) {
+        if (rename.getOldName() != null) {
+          lifecycle.previousIdentifier(
+              ol.newLifecycleStateChangeDatasetFacetPreviousIdentifierBuilder()
+                  .namespace(getDatasetNamespace(olContext))
+                  .name(
+                      rename.getOldName().contains(".")
+                          ? rename.getOldName()
+                          : table.getDbName() + "." + rename.getOldName())
+                  .build());
+        }
+        if (rename.getNewName() != null) {
+          datasetName =
+              rename.getNewName().contains(".")
+                  ? rename.getNewName()
+                  : table.getDbName() + "." + rename.getNewName();
+        }
+      }
+      facets.lifecycleStateChange(lifecycle.build());
+      outputs.add(
+          ol.newOutputDatasetBuilder()
+              .namespace(getDatasetNamespace(olContext))
+              .name(datasetName)
+              .facets(facets.build())
+              .build());
+    }
+    return outputs;
   }
 
   private static List<OutputDataset> getQueryOutputDatasets(
@@ -193,6 +277,13 @@ public class Faceting {
         SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, outputTable);
         DatasetFacetsBuilder datasetFacetsBuilder =
             tableFacets(ol, hookContext.getConf(), outputTable).schema(schemaFacet);
+        if (hookContext.getQueryPlan().getOperation() == HiveOperation.CREATETABLE_AS_SELECT) {
+          datasetFacetsBuilder.lifecycleStateChange(
+              ol.newLifecycleStateChangeDatasetFacetBuilder()
+                  .lifecycleStateChange(
+                      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE)
+                  .build());
+        }
         QueryExpr query =
             Parsing.buildQueryTree(semanticAnalyzer.getQB(), outputTable.getFullyQualifiedName());
         OutputCLL outputCLL = ColumnLineageCollector.collectCLL(query, outputTable);

@@ -31,11 +31,16 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 public class HiveUtils {
 
   public static Table getTable(Configuration conf, Table table) {
+    return getTable(conf, table.getDbName(), table.getTableName(), table);
+  }
+
+  public static Table getTable(
+      Configuration conf, String dbName, String tableName, Table fallback) {
     HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
     try {
-      return Hive.get(hiveConf).getTable(table.getDbName(), table.getTableName());
+      return Hive.get(hiveConf).getTable(dbName, tableName);
     } catch (HiveException e) {
-      return table;
+      return fallback;
     }
   }
 

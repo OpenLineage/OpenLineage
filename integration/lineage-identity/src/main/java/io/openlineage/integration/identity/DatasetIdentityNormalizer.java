@@ -208,6 +208,7 @@ public final class DatasetIdentityNormalizer {
         throw new IllegalArgumentException(
             "Conflicting identities for " + oldNamespace + "/" + oldName);
       }
+      mapPreviousIdentifier(dataset, source, identity, table);
       ((ObjectNode) dataset).put(NAMESPACE, identity.namespace).put(NAME, identity.name);
       ((ObjectNode) dataset).with(FACETS).remove(SYMLINKS);
       JsonNode dataSource = dataset.path(FACETS).path("dataSource");
@@ -225,6 +226,28 @@ public final class DatasetIdentityNormalizer {
         ((ObjectNode) dataSource).put(NAME, uri).put(URI_FIELD, uri);
       }
     }
+  }
+
+  private void mapPreviousIdentifier(
+      JsonNode dataset, Source source, Identity identity, String currentTable) throws IOException {
+    JsonNode lifecycle = dataset.path(FACETS).path("lifecycleStateChange");
+    if (!"RENAME".equalsIgnoreCase(lifecycle.path("lifecycleStateChange").asText(""))) return;
+    JsonNode previous = lifecycle.path("previousIdentifier");
+    if (!(previous instanceof ObjectNode)) return;
+    String previousNamespace = previous.path(NAMESPACE).asText("");
+    String previousTable = tableName(previous.path(NAME).asText(""));
+    if (previousTable == null || !identity.name.endsWith(currentTable)) {
+      throw new IllegalArgumentException("Invalid previous table identifier");
+    }
+    String prefix = identity.name.substring(0, identity.name.length() - currentTable.length());
+    if (previousNamespace.equals(identity.namespace)
+        && previous.path(NAME).asText("").equals(prefix + previousTable)) return;
+    if (lookup(previousNamespace) != source) {
+      throw new IllegalArgumentException("Previous table belongs to a different source");
+    }
+    ((ObjectNode) previous)
+        .put(NAMESPACE, identity.namespace)
+        .put(NAME, prefix + previousTable);
   }
 
   private static void removeLocalFileTableAliases(ObjectNode dataset) {
