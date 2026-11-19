@@ -328,3 +328,21 @@ fn test_cte_select_wildcard_changing_columns_keeps_cte_origin() {
         assert_eq!(output.column_lineage, vec![column(name, "s")], "{sql}");
     }
 }
+
+#[test]
+fn test_cte_select_wildcard_from_table_named_like_later_explicit_cte() {
+    let output = test_sql(
+        "WITH a AS (SELECT * FROM b),
+              b AS (SELECT id FROM c)
+         SELECT id FROM a",
+    )
+    .unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "b")]);
+}
+
+#[test]
+fn test_cte_select_wildcard_alias_with_dot_is_not_a_qualified_table() {
+    let output =
+        test_sql(r#"WITH "s.t" AS (SELECT * FROM raw_customers) SELECT id FROM s.t"#).unwrap();
+    assert_eq!(output.column_lineage, vec![column("id", "s.t")]);
+}

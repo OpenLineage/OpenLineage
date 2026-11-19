@@ -13,6 +13,25 @@ use sqlparser::dialect::SnowflakeDialect;
 
 type ColumnAncestors = HashSet<ColumnMeta>;
 
+// A table name without its quoting, so `"t"` and `t` are the same key.
+type TableKey = (Option<String>, Option<String>, String);
+
+fn table_key(table: &DbTableMeta) -> TableKey {
+    (
+        table.database.clone(),
+        table.schema.clone(),
+        table.name.clone(),
+    )
+}
+
+#[derive(Debug, Clone)]
+struct PassThrough {
+    source: DbTableMeta,
+    // Whether `source` is a CTE declared before, whose recorded columns are to be
+    // followed. Otherwise `source` is a table, even if a later CTE has its name.
+    source_is_cte: bool,
+}
+
 #[derive(Debug)]
 pub struct ContextFrame {
     // Indicates whether we are talking about columns in a context of some specific table.
@@ -30,10 +49,10 @@ pub struct ContextFrame {
     // CTE: defaults make `orders` and `public.orders` the same `DbTableMeta`.
     pub bare_dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
-    // CTEs and derived tables that are a bare `SELECT *` over one table, keyed by
-    // qualified name and mapped to that table. Their columns are the table's
-    // columns, but the wildcard records no column ancestry to follow.
-    pass_through: HashMap<String, DbTableMeta>,
+    // CTEs and derived tables that are a bare `SELECT *` over one table, mapped to
+    // that table. Their columns are the table's columns, but the wildcard records
+    // no column ancestry to follow.
+    pass_through: HashMap<TableKey, PassThrough>,
     pub is_main_body: bool,
 }
 
@@ -265,26 +284,46 @@ impl<'a> Context<'a> {
         }
     }
 
-    /// Records that every column of `alias` is the column of the same name in `source`.
+    /// Records that every column of `alias` is the column of the same name in the
+    /// table `source`.
     pub fn add_pass_through(&mut self, alias: DbTableMeta, source: DbTableMeta) {
-        let alias = alias.qualified_name();
-        if alias == source.qualified_name() {
-            return;
-        }
-        if let Some(frame) = self.frames.last_mut() {
-            frame.pass_through.insert(alias, source);
-        }
+        self.insert_pass_through(
+            alias,
+            PassThrough {
+                source,
+                source_is_cte: false,
+            },
+        );
     }
 
     /// Like [`Context::add_pass_through`], for a CTE: `source` may name a CTE
-    /// declared earlier in the same `WITH`, whose own source is then recorded.
+    /// declared earlier in the same `WITH`.
     pub fn add_cte_pass_through(&mut self, alias: DbTableMeta, source: DbTableMeta) {
-        let earlier = self
-            .frames
-            .last()
-            .and_then(|frame| frame.pass_through.get(&source.qualified_name()))
-            .cloned();
-        self.add_pass_through(alias, earlier.unwrap_or(source));
+        let Some(frame) = self.frames.last() else {
+            return;
+        };
+        let key = table_key(&source);
+        let pass_through = match frame.pass_through.get(&key) {
+            Some(earlier) => earlier.clone(),
+            None => PassThrough {
+                source_is_cte: frame
+                    .column_ancestry
+                    .keys()
+                    .any(|column| column.origin.as_ref().map(table_key).as_ref() == Some(&key)),
+                source,
+            },
+        };
+        self.insert_pass_through(alias, pass_through);
+    }
+
+    fn insert_pass_through(&mut self, alias: DbTableMeta, pass_through: PassThrough) {
+        let alias = table_key(&alias);
+        if alias == table_key(&pass_through.source) {
+            return;
+        }
+        if let Some(frame) = self.frames.last_mut() {
+            frame.pass_through.insert(alias, pass_through);
+        }
     }
 
     /// Rewrites the ancestors in `old`, the frame of a CTE, that refer to a
@@ -301,12 +340,12 @@ impl<'a> Context<'a> {
             *ancestors = ancestors
                 .drain()
                 .map(|mut ancestor| {
-                    let source = ancestor
+                    let pass_through = ancestor
                         .origin
                         .as_ref()
-                        .and_then(|origin| frame.pass_through.get(&origin.qualified_name()));
-                    if let Some(source) = source {
-                        ancestor.origin = Some(source.clone());
+                        .and_then(|origin| frame.pass_through.get(&table_key(origin)));
+                    if let Some(pass_through) = pass_through {
+                        ancestor.origin = Some(pass_through.source.clone());
                     }
                     ancestor
                 })
@@ -465,16 +504,23 @@ impl<'a> Context<'a> {
                     })
                 });
             if column_ancestors.is_none() {
-                let source = current
+                let pass_through = current
                     .origin
                     .as_ref()
                     .filter(|_| direct)
-                    .and_then(|origin| old.pass_through.get(&origin.qualified_name()));
-                match source {
-                    Some(source) => stack.push((
-                        ColumnMeta::new(current.name.clone(), Some(source.clone())),
-                        false,
-                    )),
+                    .and_then(|origin| old.pass_through.get(&table_key(origin)));
+                match pass_through {
+                    Some(pass_through) => {
+                        let column = ColumnMeta::new(
+                            current.name.clone(),
+                            Some(pass_through.source.clone()),
+                        );
+                        if pass_through.source_is_cte {
+                            stack.push((column, false));
+                        } else {
+                            result.push(column);
+                        }
+                    }
                     None => result.push(current.clone()),
                 }
                 continue;
