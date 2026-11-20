@@ -78,6 +78,11 @@ pub struct ContextFrame {
     pub bare_dependencies: HashSet<DbTableMeta>,
     // Keyed by `ident_key` of the CTE's name.
     pub cte_dependencies: HashMap<String, CteDependency>,
+    // Recursive CTEs whose body is being visited, keyed like
+    // `cte_dependencies`, so a self-reference resolves to the CTE's name.
+    // Kept apart from `cte_dependencies` so a nested CTE of the same name
+    // cannot replace the entry.
+    recursive_ctes: HashMap<String, Ident>,
     pub is_main_body: bool,
 }
 
@@ -100,6 +105,7 @@ impl ContextFrame {
             dependencies: HashSet::new(),
             bare_dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
+            recursive_ctes: HashMap::new(),
             is_main_body: true,
         }
     }
@@ -136,13 +142,12 @@ pub struct Context<'a> {
     dialect: &'a dyn CanonicalDialect,
     // Used to generate unique names for unaliased columns created from compound expressions
     column_id: u32,
-    // For each SELECT being visited, innermost last: the names its FROM clause
-    // introduces, keyed by `ident_key`, with the relation each one stands for.
-    // An alias stands for itself, so the alias table resolves it; an unaliased
-    // table stands for its full name (`orders` for `FROM raw.orders`).
+    // For each SELECT being visited, innermost last: the names its own FROM
+    // clause introduces, keyed by `ident_key`, with the relation each one
+    // stands for. An alias stands for itself, so the alias table resolves it;
+    // an unaliased table stands for its full name (`orders` for
+    // `FROM raw.orders`).
     correlation_names: Vec<HashMap<String, Vec<Ident>>>,
-    // Where each SELECT's scopes begin in `correlation_names`.
-    select_scope_starts: Vec<usize>,
 }
 
 impl<'a> Context<'a> {
@@ -157,7 +162,6 @@ impl<'a> Context<'a> {
             dialect: &SnowflakeDialect,
             column_id: 0,
             correlation_names: Vec::new(),
-            select_scope_starts: Vec::new(),
         }
     }
 
@@ -175,7 +179,6 @@ impl<'a> Context<'a> {
             dialect,
             column_id: 0,
             correlation_names: Vec::new(),
-            select_scope_starts: Vec::new(),
         }
     }
 
@@ -367,87 +370,60 @@ impl<'a> Context<'a> {
             return None;
         };
         let key = ident_key(reference, self.dialect().as_base());
-        self.frames
-            .iter()
-            .rev()
-            .find_map(|frame| frame.cte_dependencies.get(&key))
-            .map(|cte| cte.name.clone())
+        self.frames.iter().rev().find_map(|frame| {
+            frame
+                .recursive_ctes
+                .get(&key)
+                .or_else(|| frame.cte_dependencies.get(&key).map(|cte| &cte.name))
+                .cloned()
+        })
     }
 
     /// Makes a recursive CTE's own name resolvable inside its body, so a
     /// self-reference in another case resolves like one in the CTE's own
-    /// case. `adjust_cte_dependencies` replaces the entry once the body has
-    /// been visited.
+    /// case. `adjust_cte_dependencies` removes it once the body has been
+    /// visited.
     pub fn declare_recursive_cte(&mut self, cte_name: Ident) {
         let key = ident_key(&cte_name, self.dialect().as_base());
         if let Some(frame) = self.frames.last_mut() {
-            frame.cte_dependencies.insert(
-                key,
-                CteDependency {
-                    name: cte_name,
-                    is_used: false,
-                    deps: HashSet::new(),
-                },
-            );
+            frame.recursive_ctes.insert(key, cte_name);
         }
     }
 
-    /// Opens the scope of the names a SELECT's FROM clause introduces,
-    /// filled by `add_correlation_names` and closed by
-    /// `pop_correlation_names`.
-    pub fn push_correlation_names(&mut self) {
-        self.select_scope_starts.push(self.correlation_names.len());
-        self.correlation_names.push(HashMap::new());
+    /// Opens the scope of a SELECT with the names its FROM clause
+    /// introduces, each an alias or an unaliased table's last name part,
+    /// with the relation it stands for. Closed by `pop_correlation_names`.
+    pub fn push_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>)>) {
+        let dialect = self.dialect.as_base();
+        self.correlation_names.push(
+            names
+                .into_iter()
+                .map(|(name, relation)| (ident_key(&name, dialect), relation))
+                .collect(),
+        );
     }
 
-    /// Opens a scope for the members of a parenthesized join, which a
-    /// LATERAL member sees as they are added. Closed by `pop_join_scope`.
-    pub fn push_join_scope(&mut self) {
-        self.correlation_names.push(HashMap::new());
-    }
-
-    pub fn pop_join_scope(&mut self) {
+    pub fn pop_correlation_names(&mut self) {
         self.correlation_names.pop();
     }
 
-    /// Removes the scopes of the SELECT whose FROM clause is being visited,
-    /// so a non-LATERAL derived table cannot bind to the items beside it;
-    /// enclosing SELECTs stay visible. Undone by `restore_from_names`.
-    pub fn hide_from_names(&mut self) -> Vec<HashMap<String, Vec<Ident>>> {
-        match self.select_scope_starts.last() {
-            Some(&start) => self.correlation_names.split_off(start),
-            None => Vec::new(),
-        }
-    }
-
-    pub fn restore_from_names(&mut self, hidden: Vec<HashMap<String, Vec<Ident>>>) {
-        self.correlation_names.extend(hidden);
-    }
-
-    /// Adds `names` to the innermost scope, each an alias or an unaliased
-    /// table's last name part, with the relation it stands for.
-    pub fn add_correlation_names(&mut self, names: Vec<(Ident, Vec<Ident>)>) {
-        let dialect = self.dialect().as_base();
-        let keyed: Vec<(String, Vec<Ident>)> = names
-            .into_iter()
-            .map(|(name, relation)| (ident_key(&name, dialect), relation))
-            .collect();
-        if let Some(scope) = self.correlation_names.last_mut() {
-            scope.extend(keyed);
-        }
-    }
-
-    /// Closes the SELECT's scope, and any join scope a failed visit left open.
-    pub fn pop_correlation_names(&mut self) {
-        if let Some(start) = self.select_scope_starts.pop() {
-            self.correlation_names.truncate(start);
-        }
-    }
-
-    /// The relation a column qualifier names through the FROM clause of an
-    /// enclosing SELECT, innermost first, compared under the dialect's
-    /// folding, or None when no FROM clause in scope introduces it.
+    /// The relation a column qualifier names through the FROM clause of the
+    /// SELECT being visited, compared under the dialect's folding, or None
+    /// when that FROM clause does not introduce it. Enclosing SELECTs are
+    /// not consulted, so a qualifier in a nested query that names an outer
+    /// FROM item is resolved as it is on `main`.
     pub fn correlation_named_by(&self, qualifier: &[Ident]) -> Option<Vec<Ident>> {
+        let [name] = qualifier else {
+            return None;
+        };
+        let key = ident_key(name, self.dialect().as_base());
+        self.correlation_names.last()?.get(&key).cloned()
+    }
+
+    /// Like `correlation_named_by`, but for the FROM clauses of the
+    /// enclosing SELECTs, innermost first. Used only to keep a CTE from
+    /// capturing a qualifier that may name one of those FROM items.
+    pub fn enclosing_correlation_named_by(&self, qualifier: &[Ident]) -> Option<&Vec<Ident>> {
         let [name] = qualifier else {
             return None;
         };
@@ -455,8 +431,8 @@ impl<'a> Context<'a> {
         self.correlation_names
             .iter()
             .rev()
+            .skip(1)
             .find_map(|scope| scope.get(&key))
-            .cloned()
     }
 
     /// `name` with a reference to a CTE in scope replaced by the CTE's name
@@ -475,6 +451,9 @@ impl<'a> Context<'a> {
     pub fn mark_table_as_used(&mut self, table: &Ident) {
         let key = ident_key(table, self.dialect().as_base());
         for frame in self.frames.iter_mut().rev() {
+            if frame.recursive_ctes.contains_key(&key) {
+                return;
+            }
             if let Some(cte) = frame.cte_dependencies.get_mut(&key) {
                 cte.is_used = true;
                 return;
@@ -527,14 +506,22 @@ impl<'a> Context<'a> {
         self.resolve_table(name) != name
     }
 
-    /// Like `is_table_alias`, but not counting the placeholder entries
-    /// `With::visit` registers for CTE names, which map to an empty table.
-    /// The alias table matches names without regard to quoting, so those
-    /// entries also catch references that fold to a different name than the
-    /// CTE; CTE references are resolved by `cte_named_by` instead.
+    /// Whether `name` is an alias for a relation, judged by the innermost
+    /// alias entry for it. Unlike `is_table_alias`, this does not count the
+    /// placeholder entries `With::visit` registers for CTE names, which map
+    /// to an empty table: the alias table matches names without regard to
+    /// quoting, so those entries also catch references that fold to a
+    /// different name than the CTE. Only the first step is checked, because
+    /// an alias of a CTE (`FROM orders AS o`) continues to that CTE's
+    /// placeholder.
     pub fn is_relation_alias(&self, name: &DbTableMeta) -> bool {
-        let resolved = self.resolve_table(name);
-        resolved != name && !resolved.name.is_empty()
+        self.is_table_alias(name)
+            && self
+                .frames
+                .iter()
+                .rev()
+                .find_map(|frame| frame.aliases.get_table_from_alias(name.qualified_name()))
+                .is_some_and(|table| !table.name.is_empty())
     }
 
     // --- Synthesize Attributes From Frames ---
@@ -699,12 +686,10 @@ impl<'a> Context<'a> {
     pub fn collect_lower_nested_dependencies(&mut self, cte_name: Ident) {
         let cte_key = ident_key(&cte_name, self.dialect().as_base());
         if let Some(frame) = self.frames.last_mut() {
-            // Not the CTE's own entry from `declare_recursive_cte`.
             let deps_in_one_level_below: Vec<CteDependency> = frame
                 .cte_dependencies
-                .iter()
-                .filter(|(key, _)| **key != cte_key)
-                .map(|(_, dep)| dep.clone())
+                .values()
+                .cloned()
                 .collect::<Vec<CteDependency>>();
 
             if deps_in_one_level_below.is_empty() {
@@ -753,6 +738,12 @@ impl<'a> Context<'a> {
 
         let mut resolved_dependencies = HashSet::new();
 
+        // A used CTE nested in the body under the same key is replaced by
+        // this one below, so its tables are carried over.
+        if let Some(nested) = cte_dependencies.get(&cte_key).filter(|cte| cte.is_used) {
+            resolved_dependencies.extend(nested.deps.clone());
+        }
+
         for dependency in dependencies {
             // CTEs are keyed by their bare alias, so only a reference written
             // without a schema or database can point at one; `raw.orders` and
@@ -771,6 +762,13 @@ impl<'a> Context<'a> {
 
             let reference_key = ident_key(&reference, dialect);
 
+            // A CTE nested in the body shadows the CTE's own name, so
+            // `C AS (WITH c AS (...) SELECT id FROM c)` reads the nested `c`.
+            if let Some(cte) = cte_dependencies.get(&reference_key) {
+                resolved_dependencies.extend(cte.deps.clone());
+                continue;
+            }
+
             if reference_key == cte_key {
                 if !recursive {
                     resolved_dependencies.insert(dependency.clone());
@@ -778,15 +776,11 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            if let Some(cte) = cte_dependencies.get(&reference_key) {
-                resolved_dependencies.extend(cte.deps.clone());
-                continue;
-            }
-
             resolved_dependencies.insert(dependency.clone());
         }
 
         if let Some(frame) = self.frames.last_mut() {
+            frame.recursive_ctes.remove(&cte_key);
             frame.cte_dependencies.insert(
                 cte_key,
                 CteDependency {

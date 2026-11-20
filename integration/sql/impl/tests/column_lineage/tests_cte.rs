@@ -280,17 +280,87 @@ fn alias_inside_a_parenthesized_join_shadows_an_outer_from_item() {
 }
 
 #[test]
-fn non_lateral_derived_table_does_not_see_its_sibling_from_items() {
-    // Without LATERAL, `orders` inside the derived table can only be the
-    // enclosing query's `raw.orders`, never the sibling `stage.orders`.
-    assert_eq!(
-        edges(
+fn qualifier_in_a_nested_query_does_not_bind_to_an_enclosing_from_item() {
+    // Only a SELECT's own FROM clause binds a qualifier. Which outer item a
+    // nested `orders` names depends on LATERAL, APPLY and the dialect, so
+    // these keep the result they have on `main`.
+    for (sql, dialect) in [
+        (
             "SELECT (SELECT s.id FROM stage.orders CROSS JOIN (SELECT orders.id) AS s) AS id \
              FROM raw.orders",
-            "postgres"
+            "postgres",
+        ),
+        (
+            "SELECT (SELECT s.id FROM stage.orders CROSS APPLY (SELECT orders.id) AS s) AS id \
+             FROM raw.orders",
+            "mssql",
+        ),
+    ] {
+        assert_eq!(
+            edges(sql, dialect),
+            vec!["id <- orders.id"],
+            "{dialect}: {sql}"
+        );
+    }
+}
+
+#[test]
+fn cte_does_not_capture_a_qualifier_an_enclosing_from_item_introduces() {
+    // `orders` may name `raw.orders` in both, so CTE `Orders` must not take
+    // it; the qualifier stays as written, as on `main`.
+    for sql in [
+        "WITH Orders AS (SELECT id FROM wrong_src) \
+         SELECT id FROM (SELECT 1) t JOIN raw.orders ON 1 = (SELECT orders.id FROM helper)",
+        "WITH Orders AS (SELECT id FROM wrong_src) \
+         SELECT (SELECT orders.id FROM helper) AS id FROM raw.orders",
+    ] {
+        assert_eq!(edges(sql, "snowflake"), vec!["id <- orders.id"], "{sql}");
+    }
+}
+
+#[test]
+fn correlated_reference_to_a_cte_in_another_case_traces_to_the_table() {
+    assert_eq!(
+        edges(
+            "WITH Orders AS (SELECT id FROM raw.orders) \
+             SELECT (SELECT orders.id FROM helper) AS id FROM orders",
+            "snowflake"
         ),
         vec!["id <- raw.orders.id"]
     );
+}
+
+#[test]
+fn unaliased_pivot_introduces_the_name_of_the_table_it_wraps() {
+    assert_eq!(
+        edges(
+            "WITH Orders AS (SELECT id FROM wrong_src) \
+             SELECT orders.id FROM raw.orders PIVOT(SUM(amount) FOR month IN ('JAN'))",
+            "snowflake"
+        ),
+        vec!["id <- raw.orders.id"]
+    );
+    assert_eq!(
+        edges(
+            "WITH Orders AS (SELECT id FROM wrong_src) \
+             SELECT o.id FROM raw.orders AS o PIVOT(SUM(amount) FOR month IN ('JAN'))",
+            "snowflake"
+        ),
+        vec!["id <- raw.orders.id"]
+    );
+}
+
+#[test]
+fn alias_of_a_cte_is_not_taken_by_a_cte_named_like_the_alias() {
+    let sql = "WITH Orders AS (SELECT id FROM src1), O AS (SELECT id FROM wrong_src) \
+               UPDATE tgt SET x = (SELECT o.id) FROM orders AS o";
+    for dialect in ["postgres", "snowflake"] {
+        let edges = edges(sql, dialect);
+        assert!(
+            edges.iter().all(|edge| !edge.contains("wrong_src")),
+            "{dialect}: {edges:?}"
+        );
+    }
 }
 
 #[test]

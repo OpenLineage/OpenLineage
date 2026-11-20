@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::{parse_sql, ExtractionError, TableLineage};
+use openlineage_sql::{get_dialect, parse_sql, ExtractionError, TableLineage};
 use sqlparser::dialect::PostgreSqlDialect;
 
 #[test]
@@ -398,4 +398,55 @@ fn ctes_folding_to_one_name_resolve_the_same_way_every_time() {
             vec!["s2"]
         );
     }
+}
+
+fn in_tables_with_default_schema(sql: &str, dialect: &str, schema: &str) -> Vec<String> {
+    let mut names: Vec<String> = parse_sql(sql, get_dialect(dialect), Some(schema.to_string()))
+        .unwrap()
+        .table_lineage
+        .in_tables
+        .iter()
+        .map(|t| t.qualified_name())
+        .collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn cte_reference_and_a_table_in_the_default_schema_stay_distinct() {
+    // A CTE reference keeps its spelling as a dependency, so under a default
+    // schema `ORDERS` does not become the same table as `public.orders`.
+    assert_eq!(
+        in_tables_with_default_schema(
+            "WITH RECURSIVE orders AS \
+             (SELECT * FROM public.orders UNION ALL SELECT * FROM ORDERS) \
+             INSERT INTO target SELECT * FROM orders",
+            "postgres",
+            "public"
+        ),
+        vec!["public.orders"]
+    );
+    assert_eq!(
+        in_tables_with_default_schema(
+            "WITH Orders AS (SELECT id FROM src), \
+             j AS (SELECT o.id FROM orders AS o JOIN raw.Orders AS r ON o.id = r.id) \
+             INSERT INTO tgt SELECT id FROM j",
+            "postgres",
+            "raw"
+        ),
+        vec!["raw.Orders", "raw.src"]
+    );
+}
+
+#[test]
+fn cte_nested_under_the_same_folded_name_keeps_its_tables() {
+    assert_eq!(
+        in_tables(
+            "WITH x AS (SELECT 1 AS id), \
+             C AS (WITH c AS (SELECT id FROM src) SELECT id FROM c) \
+             INSERT INTO tgt SELECT id FROM C",
+            "snowflake"
+        ),
+        vec!["src"]
+    );
 }

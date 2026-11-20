@@ -77,10 +77,11 @@ impl Visit for TableFactor {
                 // A reference to a CTE in scope is replaced by the CTE's name
                 // as defined, which may differ in case (`orders` for CTE
                 // `Orders` in Snowflake).
-                let cte = context.cte_named_by(&convert_to_idents(&effective_name));
+                let effective_idents = convert_to_idents(&effective_name);
+                let cte = context.cte_named_by(&effective_idents);
                 let idents = match &cte {
                     Some(cte) => vec![cte.clone()],
-                    None => convert_to_idents(&effective_name),
+                    None => effective_idents.clone(),
                 };
 
                 let table = DbTableMeta::new(
@@ -93,8 +94,12 @@ impl Visit for TableFactor {
                     context.add_table_alias(table, vec![alias.name.clone()]);
                 }
 
+                // A dependency keeps the name as written: `adjust_cte_dependencies`
+                // matches it to a CTE by folded key, and the CTE's spelling would
+                // make `ORDERS` and `public.orders` one table under a default
+                // schema.
                 if !context.is_main() {
-                    context.add_table_dependency(idents.clone());
+                    context.add_table_dependency(effective_idents);
                 }
 
                 if context.is_main() {
@@ -124,19 +129,13 @@ impl Visit for TableFactor {
                 Ok(())
             }
             TableFactor::Derived {
-                lateral,
+                lateral: _,
                 subquery,
                 alias,
                 sample: _,
             } => {
-                // Only a LATERAL subquery sees the FROM items beside it.
-                let hidden = (!lateral).then(|| context.hide_from_names());
                 context.push_frame();
-                let visited = subquery.visit(context);
-                if let Some(hidden) = hidden {
-                    context.restore_from_names(hidden);
-                }
-                visited?;
+                subquery.visit(context)?;
                 let frame = context.pop_frame().unwrap();
 
                 if let Some(alias) = alias {
@@ -167,12 +166,11 @@ impl Visit for TableFactor {
             TableFactor::NestedJoin {
                 table_with_joins, ..
             } => {
-                // Members are named as they are visited, so a LATERAL member
-                // sees the ones before it.
-                context.push_join_scope();
-                let visited = visit_nested_join(table_with_joins, context);
-                context.pop_join_scope();
-                visited
+                table_with_joins.relation.visit(context)?;
+                for join in &table_with_joins.joins {
+                    join.visit(context)?;
+                }
+                Ok(())
             }
             TableFactor::UNNEST { array_exprs, .. } => {
                 // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator
@@ -275,25 +273,35 @@ impl Visit for Expr {
                     let descendant = context.column_context().as_ref().unwrap().name.clone();
                     let ancestor = ids.last().unwrap().value.clone();
                     let qualifier: Vec<Ident> = ids.iter().take(ids.len() - 1).cloned().collect();
-                    // The qualifier binds to a name an enclosing FROM clause
+                    // The qualifier binds to a name this SELECT's FROM clause
                     // introduces before it can bind to a CTE, compared under
                     // the dialect's folding: `orders.x` is `t.x` in
                     // `FROM t AS ORDERS`, and `raw.orders.id` in
                     // `FROM raw.orders`, even with CTE `Orders` in scope.
+                    // A name an enclosing SELECT's FROM clause introduces
+                    // keeps the qualifier as written, unless that FROM item
+                    // is the CTE itself.
                     let relation = match context.correlation_named_by(&qualifier) {
                         Some(relation) => relation,
-                        None => {
-                            let as_written = DbTableMeta::new(
-                                qualifier.clone(),
-                                context.dialect(),
-                                context.default_schema().clone(),
-                                context.default_database().clone(),
-                            );
-                            match context.cte_named_by(&qualifier) {
-                                Some(cte) if !context.is_relation_alias(&as_written) => vec![cte],
-                                _ => qualifier,
+                        None => match context.cte_named_by(&qualifier) {
+                            Some(cte) => {
+                                let as_written = DbTableMeta::new(
+                                    qualifier.clone(),
+                                    context.dialect(),
+                                    context.default_schema().clone(),
+                                    context.default_database().clone(),
+                                );
+                                let outer = context.enclosing_correlation_named_by(&qualifier);
+                                if context.is_relation_alias(&as_written)
+                                    || outer.is_some_and(|relation| relation[..] != [cte.clone()])
+                                {
+                                    qualifier
+                                } else {
+                                    vec![cte]
+                                }
                             }
-                        }
+                            None => qualifier,
+                        },
                     };
                     let table = DbTableMeta::new(
                         relation,
@@ -641,10 +649,19 @@ impl Visit for Select {
             }
         }
 
-        // The names FROM introduces are in scope from the item that
-        // introduces them on, so a LATERAL item sees the ones before it, and
-        // until the end of this SELECT, even when visiting it fails.
-        context.push_correlation_names();
+        // The names this SELECT's FROM clause introduces, in scope until the
+        // end of the SELECT, even when visiting it fails. A nested query
+        // opens its own scope, so it never binds to these.
+        let names = self
+            .from
+            .iter()
+            .flat_map(|table| {
+                std::iter::once(&table.relation)
+                    .chain(table.joins.iter().map(|join| &join.relation))
+            })
+            .flat_map(|relation| correlation_names(relation, context))
+            .collect();
+        context.push_correlation_names(names);
         let visited = visit_from(&self.from, context).and_then(|tables_frame| {
             visit_select_clauses(self, context)?;
             Ok(tables_frame)
@@ -679,9 +696,8 @@ impl Visit for Select {
     }
 }
 
-/// Visits the FROM items of a SELECT, adding the names each introduces to
-/// the innermost correlation scope once it has been visited, and returns the
-/// frame holding their tables.
+/// Visits the FROM items of a SELECT and returns the frame holding their
+/// tables.
 fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextFrame> {
     context.push_frame();
 
@@ -691,8 +707,6 @@ fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextF
         let frame = context.pop_frame().unwrap();
         context.collect_aliases(&frame);
         context.collect(frame);
-        let names = correlation_names(&table.relation, context);
-        context.add_correlation_names(names);
 
         for join in &table.joins {
             context.push_frame();
@@ -700,8 +714,6 @@ fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextF
             let frame = context.pop_frame().unwrap();
             context.collect_aliases(&frame);
             context.collect(frame);
-            let names = correlation_names(&join.relation, context);
-            context.add_correlation_names(names);
         }
     }
 
@@ -714,7 +726,8 @@ fn visit_from(from: &[TableWithJoins], context: &mut Context) -> Result<ContextF
 /// relation it stands for. An alias stands for itself and hides whatever
 /// it renames; an unaliased table stands for its full name (CTE references
 /// resolved) under its last name part; an unaliased parenthesized join
-/// introduces the names of its members.
+/// introduces the names of its members, and an unaliased PIVOT or UNPIVOT
+/// those of the table it wraps.
 fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, Vec<Ident>)> {
     if let Some(alias) = table_factor_alias(relation) {
         return vec![(alias.name.clone(), vec![alias.name.clone()])];
@@ -731,20 +744,11 @@ fn correlation_names(relation: &TableFactor, context: &Context) -> Vec<(Ident, V
             .chain(table_with_joins.joins.iter().map(|join| &join.relation))
             .flat_map(|member| correlation_names(member, context))
             .collect(),
+        TableFactor::Pivot { table, .. } | TableFactor::Unpivot { table, .. } => {
+            correlation_names(table, context)
+        }
         _ => vec![],
     }
-}
-
-fn visit_nested_join(table_with_joins: &TableWithJoins, context: &mut Context) -> Result<()> {
-    table_with_joins.relation.visit(context)?;
-    let names = correlation_names(&table_with_joins.relation, context);
-    context.add_correlation_names(names);
-    for join in &table_with_joins.joins {
-        join.visit(context)?;
-        let names = correlation_names(&join.relation, context);
-        context.add_correlation_names(names);
-    }
-    Ok(())
 }
 
 fn table_factor_alias(relation: &TableFactor) -> Option<&TableAlias> {
