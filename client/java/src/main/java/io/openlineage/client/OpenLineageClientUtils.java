@@ -359,7 +359,7 @@ public final class OpenLineageClientUtils {
   public static ExecutorService getOrCreateExecutor() {
     return EXECUTOR.updateAndGet(
         existing -> {
-          if (existing == null) {
+          if (existing == null || existing.isShutdown()) {
             return Executors.newFixedThreadPool(
                 DEFAULT_THREAD_POOL_SIZE, new ExecutorThreadFactory("openlineage-executor"));
           }
@@ -370,7 +370,7 @@ public final class OpenLineageClientUtils {
   public static ExecutorService getOrCreateExecutor(ThreadFactory threadFactory) {
     return EXECUTOR.updateAndGet(
         existing -> {
-          if (existing == null) {
+          if (existing == null || existing.isShutdown()) {
             return Executors.newFixedThreadPool(DEFAULT_THREAD_POOL_SIZE, threadFactory);
           }
           return existing;
